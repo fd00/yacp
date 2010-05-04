@@ -1,0 +1,83 @@
+--- origsrc/hamsterdb-1.1.4/Makefile.am	2010-02-23 06:15:25.000000000 +0900
++++ src/hamsterdb-1.1.4/Makefile.am	2010-05-04 21:16:52.647892600 +0900
+@@ -1,5 +1,4 @@
+-ACLOCAL_AMFLAGS	= -I m4
+-
++#ACLOCAL_AMFLAGS	= -I m4
+ 
+ SUBDIRS = 3rdparty src include samples tools unittests
+ 
+--- origsrc/hamsterdb-1.1.4/samples/Makefile.am	2009-11-22 05:46:41.000000000 +0900
++++ src/hamsterdb-1.1.4/samples/Makefile.am	2010-05-04 21:39:06.991642600 +0900
+@@ -1,5 +1,5 @@
+ 
+-INCLUDES		= -I$(top_builddir)/include
++INCLUDES		= -I$(top_srcdir)/include
+ 
+ noinst_PROGRAMS	= db1 db2 db3 db4 db5 db6 env1 env2 env3 
+ 
+--- origsrc/hamsterdb-1.1.4/src/Makefile.am	2010-03-02 01:22:21.000000000 +0900
++++ src/hamsterdb-1.1.4/src/Makefile.am	2010-05-04 21:17:25.444767600 +0900
+@@ -1,5 +1,5 @@
+ 
+-AM_CPPFLAGS = -I../include -I$(top_builddir)/3rdparty/aes
++AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/3rdparty/aes
+ 
+ lib_LTLIBRARIES = libhamsterdb.la
+ 
+@@ -35,7 +35,7 @@ libhamsterdb_la_SOURCES = log.c \
+ 			btree_cursor.c \
+ 			device.c
+ 
+-libhamsterdb_la_LDFLAGS = -version-info 2:0:0
++libhamsterdb_la_LDFLAGS = -version-info 2:0:0 -no-undefined
+ 
+ if ENABLE_ENCRYPTION
+ libhamsterdb_la_LDFLAGS += $(top_builddir)/3rdparty/aes/libaes.la
+--- origsrc/hamsterdb-1.1.4/tools/Makefile.am	2007-12-02 00:17:17.000000000 +0900
++++ src/hamsterdb-1.1.4/tools/Makefile.am	2010-05-04 21:16:52.804142600 +0900
+@@ -1,5 +1,5 @@
+ 
+-INCLUDES		    = -I$(top_builddir)/include -I$(top_builddir)/src
++INCLUDES		    = -I$(top_srcdir)/include -I$(top_srcdir)/src
+ 
+ ham_info_SOURCES    = ham_info.c getopts.c
+ ham_info_LDADD      = $(top_builddir)/src/libhamsterdb.la
+--- origsrc/hamsterdb-1.1.4/unittests/hamsterdb.cpp	2010-03-19 04:20:15.000000000 +0900
++++ src/hamsterdb-1.1.4/unittests/hamsterdb.cpp	2010-05-04 23:36:41.555527100 +0900
+@@ -1528,7 +1528,7 @@ static int HAM_CALLCONV my_compare_func_
+ 
+         f=db_default_compare;
+         BFC_ASSERT_EQUAL(0, ham_set_compare_func(m_db, 0));
+-        BFC_ASSERT(f==db_get_compare_func(m_db));
++        BFC_ASSERT_EQUAL(f, db_get_compare_func(m_db));
+     }
+ 
+     void prefixCompareTest(void)
+--- origsrc/hamsterdb-1.1.4/unittests/log.cpp	2010-04-15 03:37:28.000000000 +0900
++++ src/hamsterdb-1.1.4/unittests/log.cpp	2010-05-04 22:41:46.960392600 +0900
+@@ -232,11 +232,13 @@ public:
+ 
+     void negativeCreateTest(void)
+     {
++#if !defined(__CYGWIN__)
+         ham_log_t *log;
+         BFC_ASSERT_EQUAL(HAM_IO_ERROR, 
+                 ham_log_create((mem_allocator_t *)m_alloc, m_env,
+                         "/::asdf", 0644, 0, &log));
+         BFC_ASSERT_EQUAL((ham_log_t *)0, log);
++#endif // !defined(__CYGWIN__)
+     }
+ 
+     void negativeOpenTest(void)
+--- origsrc/hamsterdb-1.1.4/unittests/Makefile.am	2010-03-19 07:22:36.000000000 +0900
++++ src/hamsterdb-1.1.4/unittests/Makefile.am	2010-05-04 21:16:52.804142600 +0900
+@@ -9,7 +9,7 @@ EXTRA_DIST      = valgrind.supp
+ 
+ noinst_PROGRAMS = test bfc_sample
+ 
+-AM_CPPFLAGS     = -I$(top_builddir)/include
++AM_CPPFLAGS     = -I$(top_srcdir)/include
+ 
+ test_SOURCES    = log.cpp \
+                   api110.cpp \
