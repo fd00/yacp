@@ -1,0 +1,97 @@
+--- origsrc/libstatgrab-0.17/configure.in	2010-02-21 19:08:51.000000000 +0900
++++ src/libstatgrab-0.17/configure.in	2010-05-05 09:49:07.558760700 +0900
+@@ -21,6 +21,7 @@ AM_CONFIG_HEADER([config.h])
+ # Checks for programs
+ AC_PROG_CC
+ AC_PROG_INSTALL
++AC_LIBTOOL_WIN32_DLL
+ AC_PROG_LIBTOOL
+ 
+ # Checks for header files
+--- origsrc/libstatgrab-0.17/src/libstatgrab/Makefile.am	2010-02-21 03:17:04.000000000 +0900
++++ src/libstatgrab-0.17/src/libstatgrab/Makefile.am	2010-05-05 09:49:42.105635700 +0900
+@@ -8,7 +8,7 @@ endif
+ include_HEADERS = statgrab.h $(include_DEPRECATEDHEADERS)
+ lib_LTLIBRARIES = libstatgrab.la
+ 
+-libstatgrab_la_LDFLAGS = -version-info 8:3:2
++libstatgrab_la_LDFLAGS = -version-info 8:3:2 -no-undefined
+ 
+ if DEPRECATED
+ libstatgrab_la_DEPRECATEDSOURCES = statgrab_deprecated.c
+--- origsrc/libstatgrab-0.17/src/libstatgrab/process_stats.c	2006-10-09 23:47:58.000000000 +0900
++++ src/libstatgrab-0.17/src/libstatgrab/process_stats.c	2010-05-05 11:15:29.386885700 +0900
+@@ -28,7 +28,7 @@
+ #include "statgrab.h"
+ #include "tools.h"
+ #include "vector.h"
+-#if defined(SOLARIS) || defined(LINUX)
++#if defined(SOLARIS) || defined(LINUX) || defined(__CYGWIN__)
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/types.h>
+@@ -42,7 +42,7 @@
+ #define PROC_LOCATION "/proc"
+ #define MAX_FILE_LENGTH PATH_MAX
+ #endif
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ #include <limits.h>
+ #include <unistd.h>
+ #include <sys/stat.h>
+@@ -123,7 +123,7 @@ sg_process_stats *sg_get_process_stats(i
+ 	struct kinfo_lwp *kl_stats;
+ #endif
+ #endif
+-#if defined(SOLARIS) || defined(LINUX)
++#if defined(SOLARIS) || defined(LINUX) || defined(__CYGWIN__)
+ 	DIR *proc_dir;
+ 	struct dirent *dir_entry;
+ 	char filename[MAX_FILE_LENGTH];
+@@ -131,7 +131,7 @@ sg_process_stats *sg_get_process_stats(i
+ #ifdef SOLARIS
+ 	psinfo_t process_info;
+ #endif
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ 	char s;
+ 	/* If someone has a executable of 4k filename length, they deserve to get it truncated :) */
+ 	char ps_name[4096];
+@@ -146,7 +146,7 @@ sg_process_stats *sg_get_process_stats(i
+ 	long tickspersec;
+ #endif
+ 
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ 	if ((f=fopen("/proc/uptime", "r")) == NULL) {
+ 		sg_set_error_with_errno(SG_ERROR_OPEN, "/proc/uptime");
+ 		return NULL;
+@@ -169,7 +169,7 @@ sg_process_stats *sg_get_process_stats(i
+ #ifdef SOLARIS
+ 		snprintf(filename, MAX_FILE_LENGTH, "/proc/%s/psinfo", dir_entry->d_name);
+ #endif
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ 		snprintf(filename, MAX_FILE_LENGTH, "/proc/%s/stat", dir_entry->d_name);
+ #endif
+ 		if((f=fopen(filename, "r"))==NULL){
+@@ -225,7 +225,7 @@ sg_process_stats *sg_get_process_stats(i
+ 			break;
+ 		}
+ #endif
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ 		x = fscanf(f, "%d %4096s %c %d %d %*d %*d %*d %*u %*u %*u %*u %*u %lu %lu %*d %*d %*d %d %*d %*d %lu %llu %llu %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*d %*d\n", &(proc_state_ptr->pid), ps_name, &s, &(proc_state_ptr->parent), &(proc_state_ptr->pgid), &utime, &stime, &(proc_state_ptr->nice), &starttime, &(proc_state_ptr->proc_size), &(proc_state_ptr->proc_resident));
+ 		/* +3 becuase man page says "Resident  Set Size: number of pages the process has in real memory, minus 3 for administrative purposes." */
+ 		proc_state_ptr->proc_resident = (proc_state_ptr->proc_resident + 3) * getpagesize();
+@@ -763,10 +763,6 @@ sg_process_stats *sg_get_process_stats(i
+ 	}
+ #endif
+ 
+-#ifdef CYGWIN
+-	sg_set_error(SG_ERROR_UNSUPPORTED, "Cygwin");
+-	return NULL;
+-#endif
+ #ifdef WIN32
+ 	/* FIXME The data needed for this is probably do able with the 
+ 	 * "performance registry". Although using this appears to be a black
