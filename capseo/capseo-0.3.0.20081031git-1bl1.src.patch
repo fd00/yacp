@@ -1,0 +1,83 @@
+--- origsrc/capseo/configure.ac	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/configure.ac	2010-05-23 20:57:52.589268500 +0900
+@@ -28,6 +28,7 @@ AC_ISC_POSIX
+ AC_PROG_INSTALL
+ AC_LANG_CPLUSPLUS
+ AC_PROG_CXX
++AC_LIBTOOL_WIN32_DLL
+ AM_PROG_LIBTOOL
+ 
+ PKG_PROG_PKG_CONFIG([0.17.2])
+--- origsrc/capseo/src/encode.cpp	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/src/encode.cpp	2010-05-23 21:30:19.636143500 +0900
+@@ -21,6 +21,10 @@
+ #include <assert.h>
+ #include <math.h>
+ 
++#if defined(__CYGWIN__)
++#define bzero(s,n) memset(s,0,n)
++#endif /* defined(__CYGWIN__) */
++
+ /*! \brief Encodes a stream header that represents given codec handle.
+  * \param cs the codec handle.
+  * \param buffer will point to buffer holding the encoded streamheader
+--- origsrc/capseo/src/global.cpp	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/src/global.cpp	2010-05-23 21:28:55.386143500 +0900
+@@ -20,6 +20,10 @@
+ 
+ #include <stdio.h>
+ 
++#if defined(__CYGWIN__)
++#define bzero(s,n) memset(s,0,n)
++#endif /* defined(__CYGWIN__) */
++
+ const int QUICKLZ_TAIL_SIZE = 36000;	//!< quicklz's buffer tail being used for compressing
+ 
+ int validateEncodeInfo(capseo_info_t *info) {//{{{
+--- origsrc/capseo/src/Makefile.am	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/src/Makefile.am	2010-05-23 20:58:20.964268500 +0900
+@@ -12,7 +12,7 @@ AM_CFLAGS = -std=c99
+ 
+ lib_LTLIBRARIES = libcapseo.la
+ 
+-libcapseo_la_LDFLAGS = -version-info $(CAPSEO_VERSION_INFO) -lm
++libcapseo_la_LDFLAGS = -version-info $(CAPSEO_VERSION_INFO) -lm -no-undefined
+ 
+ libcapseo_la_SOURCES = \
+ 	quicklz.c quicklz.h \
+--- origsrc/capseo/src/stream.cpp	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/src/stream.cpp	2010-05-23 21:30:59.745518500 +0900
+@@ -22,6 +22,10 @@
+ #include <fcntl.h>
+ #include <unistd.h>
+ 
++#if defined(__CYGWIN__)
++#define bzero(s,n) memset(s,0,n)
++#endif /* defined(__CYGWIN__) */
++
+ template<typename T>
+ inline T max(const T& a, const T& b) {
+ 	return a > b ? a : b;
+--- origsrc/capseo/tools/cpsinfo.cpp	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/tools/cpsinfo.cpp	2010-05-23 21:32:04.683018500 +0900
+@@ -16,6 +16,10 @@
+ #include <capseo.h>
+ #include <string.h>
+ 
++#if defined(__CYGWIN__)
++#define bzero(s,n) memset(s,0,n)
++#endif /* defined(__CYGWIN__) */
++
+ /* Requirements:
+  * - average FPS
+  * - MiB/s
+--- origsrc/capseo/tools/Makefile.am	2010-05-23 20:57:14.000000000 +0900
++++ src/capseo/tools/Makefile.am	2010-05-23 21:44:47.761143500 +0900
+@@ -1,6 +1,6 @@
+ INCLUDES = -I$(top_srcdir)/src
+ 
+-ANSI_CXXFLAGS = -ansi -pedantic -Wall -Wno-long-long -Wno-unknown-pragmas
++ANSI_CXXFLAGS = -std=c99 -pedantic -Wall -Wno-long-long -Wno-unknown-pragmas
+ AM_CXXFLAGS = $(ANSI_CXXFLAGS) $(CAPTURY_CFLAGS) -DVERSION="\"@CAPSEO_VERSION@\"" -DTHEORA=@THEORA@
+ 
+ if CAPSEO_TOOLS
