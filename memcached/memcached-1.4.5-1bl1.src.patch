@@ -1,0 +1,27 @@
+--- origsrc/memcached-1.4.5/configure.ac	2010-04-03 16:07:16.000000000 +0900
++++ src/memcached-1.4.5/configure.ac	2010-07-25 22:28:54.595968800 +0900
+@@ -501,7 +501,7 @@ then
+ elif test "$GCC" = "yes"
+ then
+   GCC_VERSION=`$CC -dumpversion`
+-  CFLAGS="$CFLAGS -Wall -Werror -pedantic -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls"
++  CFLAGS="$CFLAGS -Wall -pedantic -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls"
+   case $GCC_VERSION in
+     4.4.*)
+     CFLAGS="$CFLAGS -fno-strict-aliasing"
+--- origsrc/memcached-1.4.5/testapp.c	2010-04-03 16:07:16.000000000 +0900
++++ src/memcached-1.4.5/testapp.c	2010-07-25 22:28:54.611593800 +0900
+@@ -122,7 +122,13 @@ static enum test_return cache_redzone_te
+ 
+     /* Ignore SIGABORT */
+     struct sigaction old_action;
++#if defined(__CYGWIN__)
++    struct sigaction action;
++    action.sa_handler = SIG_IGN;
++    action.sa_flags = 0;
++#else /* defined(__CYGWIN__) */
+     struct sigaction action = { .sa_handler = SIG_IGN, .sa_flags = 0};
++#endif /* defined(__CYGWIN__) */
+     sigemptyset(&action.sa_mask);
+     sigaction(SIGABRT, &action, &old_action);
+ 
