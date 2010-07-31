@@ -1,0 +1,43 @@
+DESCRIPTION="C++ physics analysis tool for function minimization"
+HOMEPAGE="http://seal.web.cern.ch/seal/MathLibs/Minuit2/html/"
+SRC_URI="http://seal.web.cern.ch/seal/MathLibs/Minuit2/Minuit2-${PV}.tar.gz "
+PATCH_URI="
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sci-libs/${PN}/files/minuit-5.27.02-asneeded.patch?view=co
+"
+SRC_DIR="Minuit2-${PV}"
+
+CYGCONF_ARGS="--includedir=/usr/include/Minuit2/"
+
+src_compile()
+{
+	cd ${S}
+	rm -f config/m4/ac_openmp.m4
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}
+	cygtest
+	cp ${S}/test/MnSim/*.txt ${B}/test/MnSim/
+	for mndir in test/Mn*
+	do
+		pushd ${mndir}
+		for exe in test_*.exe
+		do
+			./${exe}
+		done
+		popd
+	done
+	rm -f ${B}/test/MnSim/*.txt
+}
+
+PKG_NAMES="${PN} libMinuit2_0 libMinuit2-devel"
+#minuit_CONTENTS=""
+libMinuit2_0_CONTENTS="usr/bin usr/share"
+libMinuit2_devel_CONTENTS="usr/include usr/lib"
+
+DIFF_EXCLUDES="ac_openmp.m4"
