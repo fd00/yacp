@@ -1,0 +1,99 @@
+--- origsrc/commoncpp2-1.8.0/Makefile.am	2010-02-24 20:08:18.000000000 +0900
++++ src/commoncpp2-1.8.0/Makefile.am	2010-08-08 18:43:44.850809300 +0900
+@@ -25,7 +25,7 @@ else
+ if MSWIN32
+ SUBDIRS = inc w32 doc
+ else
+-SUBDIRS = inc src doc
++SUBDIRS = inc src doc tests
+ endif
+ endif
+ 
+--- origsrc/commoncpp2-1.8.0/configure.ac	2010-02-24 20:08:18.000000000 +0900
++++ src/commoncpp2-1.8.0/configure.ac	2010-08-08 17:07:16.788309300 +0900
+@@ -89,8 +89,7 @@ AC_PROG_CXXCPP
+ AC_PROG_CXX
+ OST_PROG_CC_POSIX
+ NP_PROG_MSC
+-AC_LIBTOOL_WIN32_DLL
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AM_INIT_AUTOMAKE(commoncpp2, [$VERSION])
+ AM_CONFIG_HEADER(config.h)
+ 
+--- origsrc/commoncpp2-1.8.0/src/Makefile.am	2010-02-24 20:08:17.000000000 +0900
++++ src/commoncpp2-1.8.0/src/Makefile.am	2010-08-08 17:40:57.397684300 +0900
+@@ -16,7 +16,7 @@ LT_VERSION=@LT_CCXX_VERSION@
+ AM_CXXFLAGS = -I../src -DCCXX_EXPORT_LIBRARY $(THREAD_FLAGS) \
+         $(COMMON_FLAGS) -I$(CCXX_DIR) $(DEBUG_FLAGS)
+ AM_CFLAGS = $(THREAD_FLAGS)
+-INCLUDES = -I$(top_srcdir)/inc 
++INCLUDES = -I$(top_srcdir)/inc -I$(top_builddir)/inc
+ RELEASE = $(LT_VERSION) -release $(LT_RELEASE)
+ 
+ if EXTRAS
+--- origsrc/commoncpp2-1.8.0/src/in6addr.cpp	2010-02-24 20:08:17.000000000 +0900
++++ src/commoncpp2-1.8.0/src/in6addr.cpp	2010-08-08 18:33:54.178934300 +0900
+@@ -358,6 +358,10 @@ void IPV6Address::setAddress(const char
+ 		hp = gethostbyname(host);
+ #elif defined(WIN32)
+ 		hp = gethostbyname2(host, AF_INET6);
++#elif defined(__CYGWIN__)
++		mutex.enterMutex();
++		hp = gethostbyname(host);
++		mutex.leaveMutex();
+ #else
+ 		mutex.enterMutex();
+ 		hp = gethostbyname2(host, AF_INET6);
+--- origsrc/commoncpp2-1.8.0/src/socket.cpp	2010-02-24 20:08:17.000000000 +0900
++++ src/commoncpp2-1.8.0/src/socket.cpp	2010-08-08 18:18:45.272684300 +0900
+@@ -1542,7 +1542,7 @@ Socket::Error UDPSocket::join(const IPV4
+ 	int retval = setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
+ 	return errSuccess;
+ 
+-#elif defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__)
++#elif defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__) && !defined(__CYGWIN__)
+ 
+ 		struct ip_mreqn      group;
+ 	struct sockaddr_in   myaddr;
+@@ -1582,7 +1582,7 @@ Socket::Error UDPSocket::join(const IPV4
+ Socket::Error UDPSocket::getInterfaceIndex(const char *DeviceName,int& InterfaceIndex)
+ {
+ #ifndef WIN32
+-#if defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__)
++#if defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__) & !defined(__CYGWIN__)
+ 
+   struct ip_mreqn  mreqn;
+   struct ifreq     m_ifreq;
+--- origsrc/commoncpp2-1.8.0/src/timer.cpp	2010-02-24 20:08:17.000000000 +0900
++++ src/commoncpp2-1.8.0/src/timer.cpp	2010-08-08 18:16:50.678934300 +0900
+@@ -118,7 +118,7 @@ void TimerPort::decTimer(timeout_t timeo
+ 	active = true;
+ }
+ 
+-#ifdef	HAVE_HIRES_TIMER
++#if defined(HAVE_HIRES_TIMER) && !defined(__CYGWIN__)
+ void TimerPort::sleepTimer(void)
+ {
+ 	struct timespec ts;
+--- origsrc/commoncpp2-1.8.0/tests/Makefile.am	2010-02-24 20:08:18.000000000 +0900
++++ src/commoncpp2-1.8.0/tests/Makefile.am	2010-08-08 20:40:42.203197300 +0900
+@@ -13,7 +13,7 @@ MAINTAINERCLEANFILES = Makefile.in Makef
+ 
+ EXTRA_DIST = README dotests.sh test.sh output.txt vc6.mak Makefile.bcc
+ AM_CXXFLAGS = $(THREAD_FLAGS) @WARN_FLAGS@
+-INCLUDES = -I$(top_srcdir)/inc
++INCLUDES = -I$(top_srcdir)/inc -I$(top_builddir)/inc
+ LDADD = ../src/libccgnu2.la $(THREAD_LIBS) $(DYN_LOADER)
+ Z_LIBS = -lz
+ 
+--- origsrc/commoncpp2-1.8.0/tests/Test_Date.h	2010-02-24 20:08:18.000000000 +0900
++++ src/commoncpp2-1.8.0/tests/Test_Date.h	2010-08-08 22:30:28.243085300 +0900
+@@ -43,6 +43,7 @@
+ #include <cc++/numbers.h> // includes Date
+ #include <iostream>
+ #include <iomanip>
++#include <cstdlib>
+ 
+ using namespace ost;
+ using std::string;
