@@ -1,0 +1,55 @@
+--- origsrc/CBLAS/Makefile.am	2010-08-29 13:04:24.210001700 +0900
++++ src/CBLAS/Makefile.am	2010-08-29 13:05:05.178751700 +0900
+@@ -1,6 +1,6 @@
+ SUBDIRS = src testing
+ 
+-pkgconfigdir = $(libdir)
++pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = cblas.pc
+ 
+ EXTRA = cblas.pc
+--- origsrc/CBLAS/configure.ac	2010-08-29 13:04:24.210001700 +0900
++++ src/CBLAS/configure.ac	2010-08-29 13:05:35.225626700 +0900
+@@ -8,7 +8,7 @@ AC_LANG(C)
+ AC_PROG_CC
+ AC_PROG_F77
+ AC_F77_LIBRARY_LDFLAGS
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ sinclude(acx_blas.m4)
+ ACX_BLAS
+--- origsrc/CBLAS/src/Makefile.am	2010-08-29 13:04:24.241251700 +0900
++++ src/CBLAS/src/Makefile.am	2010-08-29 13:05:05.178751700 +0900
+@@ -229,4 +229,4 @@ libcblas_la_SOURCES = \
+ 	$(ZLEV3_SOURCES)
+ 
+ libcblas_la_LIBADD = @BLAS_LIBS@
+-
++libcblas_la_LDFLAGS = -no-undefined
+--- origsrc/CBLAS/testing/Makefile.am	2010-08-29 13:04:24.241251700 +0900
++++ src/CBLAS/testing/Makefile.am	2010-08-29 15:07:44.703014700 +0900
+@@ -1,7 +1,7 @@
+ TESTS = cblas_tests
+ 
+ cblas_tests:
+-	@install -m0755 cblas_tests.sh cblas_tests
++	@install -m0755 $(top_srcdir)/testing/cblas_tests.sh cblas_tests
+ 
+ check_PROGRAMS = \
+ 	xscblat1 xdcblat1 xccblat1 xzcblat1 \
+--- origsrc/CBLAS/testing/cblas_tests.sh	2010-08-29 13:04:24.241251700 +0900
++++ src/CBLAS/testing/cblas_tests.sh	2010-08-29 16:17:28.093639700 +0900
+@@ -1,8 +1,7 @@
+ #!/bin/sh
+-
+-for t in x*blat1; do
+-    ./${t}
++for t in x*blat1.exe; do
++	PATH=${PATH}:/usr/lib/lapack ./${t}
+ done
+-for t in x*blat{2,3}; do
+-    ./${t} < ${t:1:1}in${t:7:1}
++for t in x*blat{2,3}.exe; do
++	PATH=${PATH}:/usr/lib/lapack ./${t} < ${t:1:1}in${t:7:1}
+ done
