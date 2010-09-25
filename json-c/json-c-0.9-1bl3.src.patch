@@ -1,0 +1,44 @@
+--- origsrc/json-c-0.9/Makefile.am	2009-07-31 11:57:29.000000000 +0900
++++ src/json-c-0.9/Makefile.am	2010-09-25 11:04:01.733812200 +0900
+@@ -20,7 +20,7 @@ libjsoninclude_HEADERS = \
+         json_object_private.h \
+ 	json_tokener.h
+ 
+-libjson_la_LDFLAGS = -version-info 0:1:0
++libjson_la_LDFLAGS = -version-info 0:1:0 -no-undefined
+ 
+ libjson_la_SOURCES = \
+ 	arraylist.c \
+@@ -31,6 +31,7 @@ libjson_la_SOURCES = \
+ 	linkhash.c \
+ 	printbuf.c
+ 
++TESTS = test1 test2
+ check_PROGRAMS = test1 test2 test3
+ 
+ test1_SOURCES = test1.c
+--- origsrc/json-c-0.9/configure.in	2009-01-07 07:55:33.000000000 +0900
++++ src/json-c-0.9/configure.in	2010-09-25 11:03:23.921312200 +0900
+@@ -25,7 +25,7 @@ AC_FUNC_MALLOC
+ AC_FUNC_REALLOC
+ AC_CHECK_FUNCS(strndup strerror vsnprintf vasprintf open vsyslog strncasecmp)
+ 
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ AC_OUTPUT([
+ Makefile
+--- origsrc/json-c-0.9/json_tokener.c	2009-07-31 11:10:16.000000000 +0900
++++ src/json-c-0.9/json_tokener.c	2010-09-25 11:02:49.655687200 +0900
+@@ -195,7 +195,11 @@ struct json_object* json_tokener_parse_e
+ 
+     case json_tokener_state_eatws:
+       /* Advance until we change state */
++#if defined(__CYGWIN__)
++      while (isspace((int)c)) {
++#else /* defined(__CYGWIN__) */
+       while (isspace(c)) {
++#endif /* defined(__CYGWIN__) */
+ 	if ((!ADVANCE_CHAR(str, tok)) || (!POP_CHAR(c, tok)))
+ 	  goto out;
+       }
