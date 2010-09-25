@@ -1,0 +1,132 @@
+--- origsrc/libmemcache-1.4.0.rc2/configure.ac	2006-02-21 17:01:41.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/configure.ac	2010-09-25 18:30:25.645884000 +0900
+@@ -37,14 +37,14 @@ AC_SUBST(MEMCACHE_VERSION_NUMBER)
+ 
+ AM_INIT_AUTOMAKE(libmemcache,${MEMCACHE_VERSION})
+ 
+-dnl AM_PATH_CHECK()
++PKG_CHECK_MODULES([CHECK], [check >= 0.9.4])
+ 
+ dnl Checks for programs.
+ AC_C_CONST
+ AC_EXEEXT
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PROG_LN_S
+ AC_PATH_PROG(BIN_KILLALL, killall)
+ AC_PATH_PROG(BIN_MEMCACHED, memcached)
+--- origsrc/libmemcache-1.4.0.rc2/src/Makefile.am	2006-02-21 16:58:59.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/Makefile.am	2010-09-25 18:00:20.208384000 +0900
+@@ -1,5 +1,5 @@
+ INCLUDES = -I${top_srcdir}/include
+ lib_LTLIBRARIES = libmemcache.la
+ libmemcache_la_SOURCES = memcache.c buffer.c
+-libmemcache_la_LDFLAGS = -version-info @MEMCACHE_VERSION_INFO@
++libmemcache_la_LDFLAGS = -version-info @MEMCACHE_VERSION_INFO@ -no-undefined
+ noinst_HEADERS = crc32_table.h
+--- origsrc/libmemcache-1.4.0.rc2/src/buffer.c	2006-02-21 16:58:59.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/buffer.c	2010-09-25 18:00:20.208384000 +0900
+@@ -259,7 +259,7 @@ mcm_buf_free(struct memcache_ctxt *ctxt,
+ }
+ 
+ 
+-inline u_int32_t
++extern inline u_int32_t
+ mcm_buf_len(const struct memcache_ctxt *ctxt, const struct memcache_buf *s) {
+   return s->len;
+ }
+@@ -425,13 +425,13 @@ mcm_buf_realloc(struct memcache_ctxt *ct
+ }
+ 
+ 
+-inline size_t
++extern inline size_t
+ mcm_buf_remain(const struct memcache_ctxt *ctxt, const struct memcache_buf *buf) {
+   return mcm_buf_size(ctxt, buf) - mcm_buf_len(ctxt, buf);
+ }
+ 
+ 
+-inline size_t
++extern inline size_t
+ mcm_buf_remain_off(const struct memcache_ctxt *ctxt, const struct memcache_buf *buf) {
+   return mcm_buf_len(ctxt, buf) - buf->off;
+ }
+--- origsrc/libmemcache-1.4.0.rc2/src/memcache.c	2006-02-21 16:58:58.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/memcache.c	2010-09-25 18:00:20.208384000 +0900
+@@ -278,7 +278,7 @@ mc_get(struct memcache *mc, struct memca
+ }
+ 
+ 
+-inline struct memcache_ctxt *
++extern inline struct memcache_ctxt *
+ mc_global_ctxt(void) {
+   return &mcGlobalCtxt;
+ }
+--- origsrc/libmemcache-1.4.0.rc2/test/benchmark/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/benchmark/Makefile.am	2010-09-25 18:00:20.224009000 +0900
+@@ -1,5 +1,5 @@
+ check_PROGRAMS = benchmark
+ benchmark_SOURCES = benchmark.c
+ benchmark_LDADD = -lmemcache
+-benchmark_LDFLAGS = -L${top_srcdir}/src
++benchmark_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/buffer_recycle/Makefile.am	2006-02-21 16:58:54.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/buffer_recycle/Makefile.am	2010-09-25 18:00:20.224009000 +0900
+@@ -1,5 +1,5 @@
+ check_PROGRAMS = buffer_recycle
+ buffer_recycle_SOURCES = buffer_recycle.c
+ buffer_recycle_LDADD = -lmemcache
+-buffer_recycle_LDFLAGS = -L${top_srcdir}/src
++buffer_recycle_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/long_val/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/long_val/Makefile.am	2010-09-25 18:00:20.224009000 +0900
+@@ -1,5 +1,5 @@
+ check_PROGRAMS = long_val
+ long_val_SOURCES = long_val.c
+ long_val_LDADD = -lmemcache
+-long_val_LDFLAGS = -L${top_srcdir}/src
++long_val_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/redundant_server/Makefile.am	2006-02-21 16:58:56.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/redundant_server/Makefile.am	2010-09-25 18:00:20.239634000 +0900
+@@ -1,5 +1,5 @@
+ check_PROGRAMS = redundant_server
+ redundant_server_SOURCES = redundant_server.c
+ redundant_server_LDADD = -lmemcache
+-redundant_server_LDFLAGS = -L${top_srcdir}/src
++redundant_server_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/regress/Makefile.am	2006-02-21 16:58:56.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/regress/Makefile.am	2010-09-25 18:00:20.239634000 +0900
+@@ -1,5 +1,5 @@
+ check_PROGRAMS = regress
+ regress_SOURCES = regress.c
+ regress_LDADD = -lmemcache
+-regress_LDFLAGS = -L${top_srcdir}/src
++regress_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/unit/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/unit/Makefile.am	2010-09-25 18:00:20.239634000 +0900
+@@ -3,6 +3,6 @@ check_buffer_SOURCES=  check_buffer.c
+ check_buffer_INCLUDES= @CHECK_CFLAGS@
+ check_buffer_LIBS= @CHECK_LIBS@
+ check_buffer_LDADD = -lmemcache
+-check_buffer_LDFLAGS = -L${top_srcdir}/src
++check_buffer_LDFLAGS = -L${top_builddir}/src
+ INCLUDES = -I${top_srcdir}/include @CHECK_CFLAGS@
+ LIBS = @CHECK_LIBS@
+--- origsrc/libmemcache-1.4.0.rc2/test/unit/check_buffer.c	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/unit/check_buffer.c	2010-09-25 18:00:20.239634000 +0900
+@@ -2,7 +2,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "buffer.h"
++#include "memcache/buffer.h"
+ #include "memcache.h"
+ 
+ Suite *buffer_suite(void);
