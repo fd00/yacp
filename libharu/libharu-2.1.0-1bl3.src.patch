@@ -1,0 +1,88 @@
+--- origsrc/libharu-2.1.0/configure.in	2008-05-28 03:23:31.000000000 +0900
++++ src/libharu-2.1.0/configure.in	2010-09-26 13:50:07.782325500 +0900
+@@ -12,7 +12,7 @@ AM_MAINTAINER_MODE
+ dnl Check for programs
+ AC_PROG_CC
+ AC_PROG_LD
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PROG_INSTALL
+ 
+ dnl Check for size_t
+@@ -160,54 +160,9 @@ else
+ fi
+ dnl }}}
+ 
+-dnl {{{ --with-png
+-AC_ARG_WITH(png,
+-  [AS_HELP_STRING([--with-png],[specify libpng install prefix])
+-  ],
+-  [ ],
+-  [with_png=yes]
+-)
+-
+-if test "x$with_png" = "xno"; then
+-  AC_DEFINE([HPDF_NOPNGLIB], [], [libpng is not available])
+-else
+-
+-  if test "x$HAVE_ZLIB" != "xyes"; then
+-    AC_MSG_ERROR([PNG support requires Zlib, but it's not enabled. Either enable Zlib or disable PNG support.]);
+-  fi
+-
+-  AC_MSG_CHECKING([libpng install prefix])
+-
+-  if test "x$with_png" = "xyes"; then
+-    for i in `echo "$STANDARD_PREFIXES"`; do
+-      if test -f "$i/include/png.h"; then
+-        LIBPNG_DIR="$i"
+-        break;
+-      fi
+-    done
+-  else
+-    if test -f "$with_png/include/png.h"; then
+-      LIBPNG_DIR="$with_png"
+-      break;
+-    else
+-      AC_MSG_ERROR([Can't find libpng headers under $with_png directory]);
+-    fi
+-  fi
+-
+-  if test "x$LIBPNG_DIR" = "x"; then
+-    AC_MSG_ERROR([Unable to locate libpng headers, please use --with-png=<DIR>]);
+-  fi
+-
+-  AC_MSG_RESULT([$LIBPNG_DIR])
+-  LDFLAGS="$LDFLAGS -L$LIBPNG_DIR/$LIBDIR"
+-  CFLAGS="$CFLAGS -I$LIBPNG_DIR/include"
+-  LIBS="$LIBS -lpng"
+-
+-  AC_CHECK_LIB([png], [png_init_io], [], [
+-    AC_MSG_ERROR([png_init_io() is missing, check config.log for more details])
+-  ])
+-fi
+-dnl }}}
++PKG_CHECK_MODULES(LIBPNG, libpng12)
++AC_SUBST(LIBPNG_CFLAGS)
++AC_SUBST(LIBPNG_LIBS)
+ 
+ dnl link against libm
+ LIBS="$LIBS -lm"
+--- origsrc/libharu-2.1.0/src/Makefile.am	2008-05-28 03:23:31.000000000 +0900
++++ src/libharu-2.1.0/src/Makefile.am	2010-09-26 15:36:30.853463500 +0900
+@@ -1,5 +1,7 @@
+ AUTOMAKE_OPTIONS = foreign no-dependencies
+ 
++INCLUDES = -I$(top_srcdir)/include @LIBPNG_CFLAGS@
++
+ lib_LTLIBRARIES = libhpdf.la
+ 
+ libhpdf_la_SOURCES =	hpdf_annotation.c hpdf_array.c hpdf_binary.c hpdf_boolean.c \
+@@ -16,6 +18,5 @@ libhpdf_la_SOURCES =	hpdf_annotation.c h
+ 						hpdf_page_label.c hpdf_page_operator.c hpdf_pages.c hpdf_real.c \
+ 						hpdf_streams.c hpdf_string.c hpdf_u3d.c hpdf_utils.c hpdf_xref.c 
+ 
+-libhpdf_la_LIBADD = @LTLIBOBJS@
+-libhpdf_la_LDFLAGS = -release @VERSION@
+-
++libhpdf_la_LIBADD = @LTLIBOBJS@ @LIBPNG_LIBS@
++libhpdf_la_LDFLAGS = -release @VERSION@ -no-undefined
