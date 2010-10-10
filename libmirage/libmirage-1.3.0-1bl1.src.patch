@@ -1,0 +1,273 @@
+--- origsrc/libmirage-1.3.0/configure.ac	2010-08-12 22:31:04.000000000 +0900
++++ src/libmirage-1.3.0/configure.ac	2010-10-09 22:40:58.529706500 +0900
+@@ -47,7 +47,7 @@ AM_MAINTAINER_MODE
+ # Programs
+ AC_PROG_CC_STDC
+ AC_PROG_INSTALL
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PROG_MAKE_SET
+ 
+ # Standard C headers
+@@ -114,6 +114,8 @@ else
+ fi
+ AC_SUBST(MIRAGE_PLUGIN_DIR)
+ 
++AC_DEFINE_UNQUOTED(SHARED_LIB_SUFFIX, "$shrext_cmds", [Suffix for shared objects])
++
+ # Output files
+ AC_CONFIG_FILES([
+     Makefile
+--- origsrc/libmirage-1.3.0/src/fragments/fragment-binary/Makefile.am	2010-05-29 02:43:59.000000000 +0900
++++ src/libmirage-1.3.0/src/fragments/fragment-binary/Makefile.am	2010-10-09 22:39:55.045331500 +0900
+@@ -17,8 +17,8 @@ fragment_binary_la_SOURCES = \
+     
+ fragment_binary_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ fragment_binary_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+--- origsrc/libmirage-1.3.0/src/fragments/fragment-null/Makefile.am	2010-05-29 02:43:59.000000000 +0900
++++ src/libmirage-1.3.0/src/fragments/fragment-null/Makefile.am	2010-10-09 22:39:55.045331500 +0900
+@@ -17,8 +17,8 @@ fragment_null_la_SOURCES = \
+     
+ fragment_null_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ fragment_null_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+--- origsrc/libmirage-1.3.0/src/fragments/fragment-sndfile/Makefile.am	2010-05-29 02:43:59.000000000 +0900
++++ src/libmirage-1.3.0/src/fragments/fragment-sndfile/Makefile.am	2010-10-09 22:39:55.045331500 +0900
+@@ -19,8 +19,8 @@ fragment_sndfile_la_SOURCES = \
+ fragment_sndfile_la_LIBADD = \
+     $(glib_LIBS) \
+     $(gobject_LIBS) \
+-    $(sndfile_LIBS)
++    $(sndfile_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ fragment_sndfile_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+--- origsrc/libmirage-1.3.0/src/libmirage/Makefile.am	2010-05-29 02:44:00.000000000 +0900
++++ src/libmirage-1.3.0/src/libmirage/Makefile.am	2010-10-09 22:39:55.045331500 +0900
+@@ -30,7 +30,7 @@ libmirage_la_LIBADD = \
+     $(gmodule_LIBS)
+ 
+ libmirage_la_LDFLAGS = \
+-	$(LT_VERSION_INFO)
++	$(LT_VERSION_INFO) -no-undefined
+     
+ libmirageincludedir=$(includedir)/libmirage
+ libmirageinclude_HEADERS = \
+--- origsrc/libmirage-1.3.0/src/libmirage/mirage.c	2010-05-29 02:44:00.000000000 +0900
++++ src/libmirage-1.3.0/src/libmirage/mirage.c	2010-10-09 22:39:55.060956500 +0900
+@@ -81,7 +81,7 @@ gboolean libmirage_init (GError **error)
+     
+     /* Check every file in the plugin dir */
+     while ((plugin_file = g_dir_read_name(plugins_dir))) {
+-        if (g_str_has_suffix(plugin_file, ".so")) {
++        if (g_str_has_suffix(plugin_file, SHARED_LIB_SUFFIX)) {
+             MIRAGE_Plugin *plugin = NULL;
+             gchar *fullpath = NULL;
+             
+--- origsrc/libmirage-1.3.0/src/parsers/image-b6t/Makefile.am	2010-05-29 02:43:58.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-b6t/Makefile.am	2010-10-09 22:39:55.060956500 +0900
+@@ -17,11 +17,11 @@ image_b6t_la_SOURCES = \
+ 
+ image_b6t_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+     
+ image_b6t_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-c2d/Makefile.am	2010-05-29 02:43:56.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-c2d/Makefile.am	2010-10-09 22:39:55.060956500 +0900
+@@ -17,11 +17,11 @@ image_c2d_la_SOURCES = \
+ 
+ image_c2d_la_LIBADD = \
+      $(glib_LIBS) \
+-     $(gobject_LIBS)
++     $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_c2d_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-ccd/Makefile.am	2010-05-29 02:43:58.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-ccd/Makefile.am	2010-10-09 22:39:55.076581500 +0900
+@@ -17,11 +17,11 @@ image_ccd_la_SOURCES = \
+     
+ image_ccd_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_ccd_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-cdi/Makefile.am	2010-05-29 02:43:59.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-cdi/Makefile.am	2010-10-09 22:39:55.076581500 +0900
+@@ -17,11 +17,11 @@ image_cdi_la_SOURCES = \
+ 
+ image_cdi_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_cdi_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-cif/Makefile.am	2010-05-29 02:43:56.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-cif/Makefile.am	2010-10-09 22:39:55.076581500 +0900
+@@ -17,11 +17,11 @@ image_cif_la_SOURCES = \
+ 
+ image_cif_la_LIBADD = \
+      $(glib_LIBS) \
+-     $(gobject_LIBS)
++     $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_cif_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-cue/Makefile.am	2010-05-29 02:43:55.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-cue/Makefile.am	2010-10-09 22:39:55.076581500 +0900
+@@ -17,11 +17,11 @@ image_cue_la_SOURCES = \
+    
+ image_cue_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_cue_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-daa/Makefile.am	2010-05-29 02:43:57.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-daa/Makefile.am	2010-10-09 22:39:55.076581500 +0900
+@@ -24,11 +24,11 @@ image_daa_la_LIBADD = \
+     $(glib_LIBS) \
+     $(gobject_LIBS) \
+     $(zlib_LIBS) \
+-    $(builddir)/lzma-sdk/liblzma-sdk.la
++    $(builddir)/lzma-sdk/liblzma-sdk.la $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_daa_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-iso/Makefile.am	2010-05-29 02:43:59.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-iso/Makefile.am	2010-10-09 22:39:55.092206500 +0900
+@@ -17,11 +17,11 @@ image_iso_la_SOURCES = \
+ 
+ image_iso_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_iso_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-mds/Makefile.am	2010-05-29 02:43:58.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-mds/Makefile.am	2010-10-09 22:39:55.092206500 +0900
+@@ -17,11 +17,11 @@ image_mds_la_SOURCES = \
+ 
+ image_mds_la_LIBADD = \
+      $(glib_LIBS) \
+-     $(gobject_LIBS)
++     $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_mds_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-nrg/Makefile.am	2010-05-29 02:43:56.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-nrg/Makefile.am	2010-10-09 22:39:55.092206500 +0900
+@@ -17,11 +17,11 @@ image_nrg_la_SOURCES = \
+ 
+ image_nrg_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+     
+ image_nrg_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-toc/Makefile.am	2010-05-29 02:43:58.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-toc/Makefile.am	2010-10-09 22:39:55.092206500 +0900
+@@ -17,11 +17,11 @@ image_toc_la_SOURCES = \
+     
+ image_toc_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_toc_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
+--- origsrc/libmirage-1.3.0/src/parsers/image-xcdroast/Makefile.am	2010-05-29 02:43:56.000000000 +0900
++++ src/libmirage-1.3.0/src/parsers/image-xcdroast/Makefile.am	2010-10-09 23:18:27.914219000 +0900
+@@ -17,11 +17,11 @@ image_xcdroast_la_SOURCES = \
+     
+ image_xcdroast_la_LIBADD = \
+     $(glib_LIBS) \
+-    $(gobject_LIBS)
++    $(gobject_LIBS) $(top_builddir)/src/libmirage/libmirage.la
+ 
+ image_xcdroast_la_LDFLAGS = \
+     -module \
+-    -avoid-version
++    -avoid-version -no-undefined
+ 
+ 
+ mimedir = $(datadir)/mime/packages
