@@ -1,0 +1,44 @@
+--- origsrc/libredblack-1.3/Makefile.am	2003-10-23 13:40:19.000000000 +0900
++++ src/libredblack-1.3/Makefile.am	2010-10-10 14:58:40.949875000 +0900
+@@ -1,7 +1,7 @@
+ lib_LTLIBRARIES=libredblack.la
+ include_HEADERS=redblack.h
+ libredblack_la_SOURCES=redblack.c
+-libredblack_la_LDFLAGS= -version-info @REDBLACK_LIB_CURRENT@:@REDBLACK_LIB_REVISION@:@REDBLACK_LIB_AGE@
++libredblack_la_LDFLAGS= -version-info @REDBLACK_LIB_CURRENT@:@REDBLACK_LIB_REVISION@:@REDBLACK_LIB_AGE@ -no-undefined
+ man_MANS=rbdelete.3 rbdestroy.3 rbfind.3 rbinit.3 rbsearch.3 rblookup.3 \
+ 	rbwalk.3 rbopenlist.3 rbreadlist.3 rbcloselist.3 rbgen.1
+ EXTRA_DIST=autogen.sh @PACKAGE@.spec @PACKAGE@.spec.in $(man_MANS) example4.rb
+@@ -56,7 +56,9 @@ example4.c: example4.rb
+ 	## Create a dummy example4.c in case rbgen isn't present
+ 	echo 'int main() { return(0); }' > example4.c
+ if USE_RBGEN
+-	./rbgen $<
++	sed -e 's:"/share/redblack"]:"/share/redblack", "../src/libredblack-1.3"]:' rbgen > rbgen.py
++	chmod u+x rbgen.py
++	./rbgen.py $<
+ endif
+ 
+ writelock:
+--- origsrc/libredblack-1.3/configure.in	2003-10-23 13:18:47.000000000 +0900
++++ src/libredblack-1.3/configure.in	2010-10-10 15:30:59.661638000 +0900
+@@ -61,7 +61,7 @@ if test "$with_rbgen" = "yes"; then
+ fi
+ 
+ dnl Initialize libtool
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ dnl Checks for libraries.
+ 
+--- origsrc/libredblack-1.3/rbgen.in	2003-10-24 10:31:21.000000000 +0900
++++ src/libredblack-1.3/rbgen.in	2010-10-10 14:58:41.153000000 +0900
+@@ -6,7 +6,7 @@
+ #
+ # $Log: rbgen.in,v $
+ # Revision 1.3  2003/10/24 01:31:21  damo
+-# Patches from Eric Raymond: %prefix is implemented.  Various other small
++# Patches from Eric Raymond: %prefix is implemented. Various other small
+ # changes avoid stepping on global namespaces and improve the documentation.
+ #
+ # Revision 1.2  2003/10/23 04:18:47  damo
