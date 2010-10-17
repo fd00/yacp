@@ -1,0 +1,145 @@
+--- origsrc/cpmtools-2.13/Makefile.in	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/Makefile.in	2010-10-17 14:03:32.899662200 +0900
+@@ -21,7 +21,7 @@ EXEEXT =        @EXEEXT@
+ OBJEXT =        .@OBJEXT@
+ LIBS=           @LIBS@ @LDLIBS@
+ LDDEPS=		@LDDEPS@
+-CPPFLAGS=	@CPPFLAGS@ -DDISKDEFS=\"$(DISKDEFS)\" -DFORMAT=\"$(DEFFORMAT)\"
++CPPFLAGS=	-I . @CPPFLAGS@ -DDISKDEFS=\"$(DISKDEFS)\" -DFORMAT=\"$(DEFFORMAT)\"
+ #
+ # I'm only a novice and I haven't worked out how to autoconf this one
+ #
+@@ -111,4 +111,4 @@ tar:		distclean
+ depend:
+ 		$(MAKEDEPEND) $(CPPFLAGS) *.c >.depend
+ 
+-include .depend
++include @srcdir@/.depend
+--- origsrc/cpmtools-2.13/configure.in	2010-03-31 03:06:02.000000000 +0900
++++ src/cpmtools-2.13/configure.in	2010-10-17 13:43:29.196537200 +0900
+@@ -37,11 +37,11 @@ DEVICE="posix"
+ 
+ DISKDEFS='${datarootdir}/diskdefs'
+ 
+-if test "$CYGWIN" = "yes"
+-then
+-  DEVICE="win32"
++#if test "$CYGWIN" = "yes"
++#then
++#  DEVICE="win32"
+ #  DISKDEFS='%USERPROFILE%/diskdefs'
+-fi
++#fi
+ if test "$MINGW32" = "yes"
+ then
+   DEVICE="win32"
+@@ -58,7 +58,7 @@ AC_ARG_WITH(dmalloc,  [  --with-dmalloc
+ 		[CPPFLAGS="$CPPFLAGS -I$with_dmalloc/include"
+                  LDFLAGS="$LDFLAGS -L$with_dmalloc/lib"
+                  LIBS="$LIBS -ldmalloc"
+-                 AC_DEFINE(USE_DMALLOC)])
++                 AC_DEFINE(USE_DMALLOC,,[use dmalloc])])
+ 
+ dnl Check for curses. If not found, don't build fsed.cpm
+ dnl Try both curses and ncurses
+@@ -66,6 +66,9 @@ AC_CHECK_LIB(curses, printw, FSED_CPM=fs
+ if test x"$FSED_CPM" = x""; then
+   AC_CHECK_LIB(ncurses, printw, FSED_CPM=fsed.cpm LIBS="-lncurses $LIBS", FSED_CPM=)
+ fi
++if test x"$FSED_CPM" = x"fsed.cpm"; then
++  CPPFLAGS="$CPPFLAGS -I/usr/include/ncurses"
++fi
+ 
+ dnl If using libdsk, check it's available. 
+ if test "$LIBDSK" != ""; then
+--- origsrc/cpmtools-2.13/cpmchattr.c	2010-04-02 21:47:50.000000000 +0900
++++ src/cpmtools-2.13/cpmchattr.c	2010-10-17 13:36:19.727787200 +0900
+@@ -5,6 +5,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.13/cpmchmod.c	2010-04-02 21:48:11.000000000 +0900
++++ src/cpmtools-2.13/cpmchmod.c	2010-10-17 13:35:57.368412200 +0900
+@@ -6,6 +6,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.13/cpmfs.c	2010-04-02 21:51:13.000000000 +0900
++++ src/cpmtools-2.13/cpmfs.c	2010-10-17 13:34:14.446537200 +0900
+@@ -9,6 +9,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <time.h>
++#include <fcntl.h>
+ 
+ #include "cpmdir.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.13/cpmls.c	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/cpmls.c	2010-10-17 13:33:50.165287200 +0900
+@@ -6,6 +6,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.13/cpmrm.c	2010-04-02 21:48:36.000000000 +0900
++++ src/cpmtools-2.13/cpmrm.c	2010-10-17 13:35:33.665287200 +0900
+@@ -6,6 +6,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.13/device_posix.c	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/device_posix.c	2010-10-17 13:35:12.587162200 +0900
+@@ -3,6 +3,7 @@
+ 
+ #include <assert.h>
+ #include <errno.h>
++#include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ 
+--- origsrc/cpmtools-2.13/fsck.cpm.c	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/fsck.cpm.c	2010-10-17 13:37:06.118412200 +0900
+@@ -7,6 +7,7 @@
+ #include <string.h>
+ #include <stdlib.h>
+ #include <errno.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmdir.h"
+--- origsrc/cpmtools-2.13/fsed.cpm.c	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/fsed.cpm.c	2010-10-17 13:50:34.524662200 +0900
+@@ -8,6 +8,8 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <fcntl.h>
++#include <unistd.h>
+ 
+ #include "cpmfs.h"
+ 
+--- origsrc/cpmtools-2.13/mkfs.cpm.c	2010-03-31 02:53:11.000000000 +0900
++++ src/cpmtools-2.13/mkfs.cpm.c	2010-10-17 13:36:42.743412200 +0900
+@@ -6,6 +6,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <fcntl.h>
+ 
+ #include "getopt_.h"
+ #include "cpmfs.h"
