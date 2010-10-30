@@ -1,0 +1,49 @@
+DESCRIPTION="Logging for C Library"
+HOMEPAGE="http://${PN}.sourceforge.net/"
+SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+
+# http://pkgs.fedoraproject.org/gitweb/?p=log4c.git
+PATCH_URI="
+	507427-Fix-M4-file.patch
+"
+
+CYGCONF_ARGS="
+	--enable-doc
+	--enable-test
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}3
+	lib${PN}-devel
+"
+
+log4c_CONTENTS="
+	usr/share/doc/Cygwin
+	usr/share/doc/${PN}
+"
+liblog4c3_CONTENTS="
+	etc
+	usr/bin/*.dll
+"
+liblog4c_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+	usr/share/aclocal
+	usr/share/doc/${P}/html
+	usr/share/man
+"
+
+src_test()
+{
+	cd ${B}/tests/log4c
+	cygmake
+	for i in test_category test_rc
+	do
+		./$i
+		test -f ${S}/tests/log4c/$i.ref && 
+			diff .libs/$i.out ${S}/tests/log4c/$i.ref ||
+			exit 1
+	done
+}
