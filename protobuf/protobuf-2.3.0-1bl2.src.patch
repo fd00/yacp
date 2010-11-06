@@ -1,0 +1,61 @@
+--- origsrc/protobuf-2.3.0/configure.ac	2010-01-09 04:20:15.000000000 +0900
++++ src/protobuf-2.3.0/configure.ac	2010-11-06 17:49:41.711613900 +0900
+@@ -71,7 +71,7 @@ ACX_CHECK_SUNCC
+ 
+ # Have to do libtool after SUNCC, other wise it "helpfully" adds Crun Cstd
+ # to the link
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ # Checks for header files.
+ AC_HEADER_STDC
+@@ -143,7 +143,6 @@ AC_CXX_STL_HASH
+ #   too.
+ export CFLAGS
+ export CXXFLAGS
+-AC_CONFIG_SUBDIRS([gtest])
+ 
+ AC_CONFIG_FILES([Makefile src/Makefile protobuf.pc protobuf-lite.pc])
+ AC_OUTPUT
+--- origsrc/protobuf-2.3.0/gtest/Makefile.am	2010-01-09 04:19:25.000000000 +0900
++++ src/protobuf-2.3.0/gtest/Makefile.am	2010-11-06 17:48:49.136013900 +0900
+@@ -91,6 +91,8 @@ lib_libgtest_la_SOURCES = src/gtest.cc \
+                           src/gtest-test-part.cc \
+                           src/gtest-typed-test.cc
+ 
++lib_libgtest_la_LDFLAGS = -no-undefined
++
+ pkginclude_HEADERS = include/gtest/gtest.h \
+                      include/gtest/gtest-death-test.h \
+                      include/gtest/gtest-message.h \
+@@ -116,6 +118,7 @@ pkginclude_internal_HEADERS = \
+ 
+ lib_libgtest_main_la_SOURCES = src/gtest_main.cc
+ lib_libgtest_main_la_LIBADD = lib/libgtest.la
++lib_libgtest_main_la_LDFLAGS = -no-undefined
+ 
+ # Bulid rules for samples and tests. Automake's naming for some of
+ # these variables isn't terribly obvious, so this is a brief
+@@ -134,6 +137,8 @@ samples_libsamples_la_SOURCES = samples/
+                                 samples/sample4.cc \
+                                 samples/sample4.h
+ 
++samples_libsamples_la_LDFLAGS = -no-undefined
++
+ TESTS=
+ TESTS_ENVIRONMENT = GTEST_SOURCE_DIR="$(srcdir)/test" \
+                     GTEST_BUILD_DIR="$(top_builddir)/test"
+--- origsrc/protobuf-2.3.0/src/Makefile.am	2010-11-06 17:48:13.234389900 +0900
++++ src/protobuf-2.3.0/src/Makefile.am	2010-11-06 17:48:49.146028300 +0900
+@@ -336,9 +336,8 @@ nodist_protobuf_lite_test_SOURCES = $(pr
+ 
+ # Test plugin binary.
+ test_plugin_LDADD = $(PTHREAD_LIBS) libprotobuf.la libprotoc.la \
+-                    $(top_builddir)/gtest/lib/libgtest.la
+-test_plugin_CPPFLAGS = -I$(top_srcdir)/gtest/include         \
+-                       -I$(top_builddir)/gtest/include
++                    -lgtest -lgtest_main
++test_plugin_CPPFLAGS =
+ test_plugin_SOURCES =                                          \
+   google/protobuf/compiler/mock_code_generator.cc              \
+   google/protobuf/testing/file.cc                              \
