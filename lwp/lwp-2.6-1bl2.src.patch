@@ -1,0 +1,86 @@
+--- origsrc/lwp-2.6/configure.in	2010-03-18 05:32:51.000000000 +0900
++++ src/lwp-2.6/configure.in	2010-11-09 00:23:45.931585900 +0900
+@@ -30,7 +30,7 @@ AC_PROG_CPP
+ AM_PROG_AS
+ AC_PROG_INSTALL
+ AC_PROG_MAKE_SET
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ dnl pkg-config stuff
+ CODA_PKG_CONFIG
+--- origsrc/lwp-2.6/src/Makefile.am	2008-08-09 04:35:28.000000000 +0900
++++ src/lwp-2.6/src/Makefile.am	2010-11-09 00:23:28.253441900 +0900
+@@ -10,7 +10,7 @@ liblwp_la_SOURCES = fasttime.c iomgr.c l
+ 		    lwp_ucontext.c lwp_ucontext.h lwp_stacktrace.c \
+ 		    lwp_stacktrace.h lwp.private.h valgrind.h
+ liblwp_la_CPPFLAGS = $(AM_CPPFLAGS) -DLWPDEBUG
+-liblwp_la_LDFLAGS = $(LIBTOOL_LDFLAGS)
++liblwp_la_LDFLAGS = $(LIBTOOL_LDFLAGS) -no-undefined
+ 
+ testlwp_static_SOURCES = testlwp.c
+ testlwp_static_LDFLAGS = -static
+--- origsrc/lwp-2.6/src-pt/Makefile.am	2007-12-12 02:29:05.000000000 +0900
++++ src/lwp-2.6/src-pt/Makefile.am	2010-11-09 01:04:53.004655200 +0900
+@@ -14,7 +14,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -D
+ liblwp_pt_la_SOURCES = iomgr_pt.c lock_pt.c lwp_pt.c preempt_pt.c \
+     lwp.private_pt.h dllist.h
+ liblwp_pt_la_LIBADD = fasttime_pt.lo timer_pt.lo
+-liblwp_pt_la_LDFLAGS = -version-info $(LIBTOOL_VERSION) $(LIBPTHREAD)
++liblwp_pt_la_LDFLAGS = $(LIBTOOL_LDFLAGS) $(LIBPTHREAD) -no-undefined
+ 
+ noinst_PROGRAMS = $(BUILD_BIN)
+ cswitch_pt_SOURCES =
+--- origsrc/lwp-2.6/src-pt/lwp_pt.c	2005-03-04 03:53:51.000000000 +0900
++++ src/lwp-2.6/src-pt/lwp_pt.c	2010-11-09 01:02:40.013423200 +0900
+@@ -48,7 +48,7 @@ static struct list_head lwp_list;    /*
+ struct lwp_forkinfo {
+     void  (*func)(void *);
+     char   *parm; 
+-    char   *name;
++    const char   *name;
+     int     prio;
+     PROCESS pid;
+ };
+@@ -295,7 +295,7 @@ static void *lwp_newprocess(void *arg)
+ }
+ 
+ int LWP_CreateProcess(void (*ep)(void *), int stacksize, int priority,
+-		      void *parm, char *name, PROCESS *ret)
++		      void *parm, const char *name, PROCESS *ret)
+ {
+     PROCESS             pid;
+     struct lwp_forkinfo newproc;
+@@ -420,7 +420,7 @@ int LWP_QWait()
+     return LWP_SUCCESS;
+ }
+ 
+-int LWP_INTERNALSIGNAL(void *event, int yield)
++int LWP_INTERNALSIGNAL(const void *event, int yield)
+ {
+     struct list_head *ptr;
+     PROCESS           this, pid;
+@@ -460,7 +460,7 @@ int LWP_INTERNALSIGNAL(void *event, int
+  * cleanup handler if we get cancelled while waiting on the condition
+  * variable. (cleanup needs to lock the run_mutex to removing us from the
+  * list of threads, but we're already sort of `joined') */
+-int LWP_MwaitProcess (int wcount, char *evlist[])
++int LWP_MwaitProcess (int wcount, const void *evlist[])
+ {
+     PROCESS pid;
+     int     entries, i;
+@@ -496,12 +496,12 @@ int LWP_MwaitProcess (int wcount, char *
+     return LWP_SUCCESS;
+ }
+ 
+-int LWP_WaitProcess (void *event)
++int LWP_WaitProcess (const void *event)
+ {
+     void *evlist[2];
+ 
+     evlist[0] = event; evlist[1] = NULL;
+-    return LWP_MwaitProcess(1, (char**)evlist);
++    return LWP_MwaitProcess(1, (const void**)evlist);
+ }
+ 
+ int LWP_NewRock (int Tag, char *Value)
