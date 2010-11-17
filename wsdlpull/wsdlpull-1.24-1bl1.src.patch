@@ -1,0 +1,143 @@
+--- origsrc/wsdlpull-1.24/configure.in	2010-07-19 06:16:59.000000000 +0900
++++ src/wsdlpull-1.24/configure.in	2010-11-15 23:01:20.745441900 +0900
+@@ -31,10 +31,14 @@ AC_SUBST(GENERIC_LIBRARY_VERSION)
+ # Check for host and disable building a shared library in Windows
+ AC_CANONICAL_HOST
+ case $host in
+-  *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*) 
++  *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-windows*) 
+     AC_DISABLE_SHARED
+     AC_ENABLE_STATIC
+     ;;
++  *-*-cygwin*)
++    AC_ENABLE_SHARED
++    AC_ENABLE_STATIC
++    ;;
+   *)  
+     AC_ENABLE_SHARED
+     AC_DISABLE_STATIC
+@@ -53,7 +57,7 @@ CXXFLAGS="$save_CXXFLAGS"
+ CFLAGS="$save_CFLAGS"
+ AC_PROG_LN_S
+ AC_PROG_INSTALL
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PROG_MAKE_SET 
+ 
+ # Set default language to C++
+--- origsrc/wsdlpull-1.24/examples/print/Makefile.am	2010-07-19 06:16:58.000000000 +0900
++++ src/wsdlpull-1.24/examples/print/Makefile.am	2010-11-15 22:18:25.171949100 +0900
+@@ -3,6 +3,8 @@
+ 
+ MAINTAINERCLEANFILES = Makefile.in
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ #
+ bin_PROGRAMS = print
+ 
+--- origsrc/wsdlpull-1.24/examples/stocks/Makefile.am	2010-07-19 06:16:58.000000000 +0900
++++ src/wsdlpull-1.24/examples/stocks/Makefile.am	2010-11-15 22:29:50.237024300 +0900
+@@ -3,6 +3,8 @@
+ 
+ MAINTAINERCLEANFILES = Makefile.in
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ #
+ bin_PROGRAMS = stocks
+ 
+--- origsrc/wsdlpull-1.24/examples/xml/Makefile.am	2010-07-19 06:16:58.000000000 +0900
++++ src/wsdlpull-1.24/examples/xml/Makefile.am	2010-11-15 22:24:32.089550700 +0900
+@@ -3,6 +3,8 @@
+ 
+ MAINTAINERCLEANFILES = Makefile.in
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ #
+ bin_PROGRAMS = roundtrip
+ 
+--- origsrc/wsdlpull-1.24/src/schemaparser/Makefile.am	2010-07-19 06:16:48.000000000 +0900
++++ src/wsdlpull-1.24/src/schemaparser/Makefile.am	2010-11-15 21:52:41.081656300 +0900
+@@ -5,13 +5,15 @@ MAINTAINERCLEANFILES = Makefile.in
+ # src/schemaparser
+ include $(srcdir)/sources.mk
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ #
+ lib_LTLIBRARIES = libwsdlpullschema.la
+ 
+ libwsdlpullschema_la_SOURCES = $(schema_h_sources) $(schema_cc_sources)
+ libwsdlpullschema_la_CPPFLAGS = -DSCHEMADIR=\"$(datadir)/wsdlpull/\"
+ libwsdlpullschema_la_LDFLAGS = $(top_builddir)/src/xmlpull/libwsdlpullxml.la \
+-	-version-info $(GENERIC_LIBRARY_VERSION)
++	-version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ 
+ #
+ pkginclude_HEADERS = $(schema_h_sources)
+--- origsrc/wsdlpull-1.24/src/tools/Makefile.am	2010-07-19 06:16:45.000000000 +0900
++++ src/wsdlpull-1.24/src/tools/Makefile.am	2010-11-15 22:10:53.282163500 +0900
+@@ -4,6 +4,8 @@ include $(srcdir)/sources.mk
+ 
+ MAINTAINERCLEANFILES = Makefile.in
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ ## WSDL Invocation stuff
+ bin_PROGRAMS = wsdlpull wsdlpull-schema
+ 
+--- origsrc/wsdlpull-1.24/src/wsdlparser/Makefile.am	2010-07-19 06:16:47.000000000 +0900
++++ src/wsdlpull-1.24/src/wsdlparser/Makefile.am	2010-11-16 07:57:51.591089400 +0900
+@@ -7,13 +7,15 @@ MAINTAINERCLEANFILES = Makefile.in
+ # Libraries to be exported
+ lib_LTLIBRARIES = libwsdlpull.la
+ 
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src -I.
++
+ #
+ libwsdlpull_la_SOURCES = $(wsdl_h_sources) $(wsdl_cc_sources)
+ libwsdlpull_la_CPPFLAGS = -DSCHEMADIR=\"$(datadir)/wsdlpull/\"
+ libwsdlpull_la_LDFLAGS = $(top_builddir)/src/xmlpull/libwsdlpullxml.la \
+ 	$(top_builddir)/src/schemaparser/libwsdlpullschema.la \
+-	-version-info $(GENERIC_LIBRARY_VERSION)
++	-version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ 
+ # Header files to be exported
+-pkginclude_HEADERS = $(schema_h_sources)
++pkginclude_HEADERS = $(wsdl_h_sources)
+ pkgincludedir= $(includedir)/wsdlpull/wsdlparser
+--- origsrc/wsdlpull-1.24/src/wsdlparser/sources.mk	2010-07-19 06:16:47.000000000 +0900
++++ src/wsdlpull-1.24/src/wsdlparser/sources.mk	2010-11-16 07:31:33.416326400 +0900
+@@ -1,11 +1,11 @@
+-wsdl_h_sources = \
++wsdl_cc_sources = \
+ 	$(top_srcdir)/src/wsdlparser/WsdlParser.cpp \
+ 	$(top_srcdir)/src/wsdlparser/WsdlDebug.cpp \
+ 	$(top_srcdir)/src/wsdlparser/Message.cpp \
+ 	$(top_srcdir)/src/wsdlparser/WsdlElement.cpp \
+ 	$(top_srcdir)/src/wsdlparser/WsdlInvoker.cpp \
+ 	$(top_srcdir)/src/wsdlparser/Soap.cpp
+-wsdl_cc_sources = \
++wsdl_h_sources = \
+ 	$(top_srcdir)/src/wsdlparser/WsdlParser.h \
+ 	$(top_srcdir)/src/wsdlparser/WsdlException.h \
+ 	$(top_srcdir)/src/wsdlparser/WsdlExtension.h \
+--- origsrc/wsdlpull-1.24/src/xmlpull/Makefile.am	2010-07-19 06:16:48.000000000 +0900
++++ src/wsdlpull-1.24/src/xmlpull/Makefile.am	2010-11-15 21:46:29.447272300 +0900
+@@ -5,12 +5,12 @@ MAINTAINERCLEANFILES = Makefile.in
+ # src/xmlpull
+ include $(srcdir)/sources.mk
+ 
+-INCLUDES = -I$(top_builddir) -I$(top_builddir)/src  -I.
++INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src  -I.
+ 
+ lib_LTLIBRARIES = libwsdlpullxml.la
+ 
+ libwsdlpullxml_la_SOURCES = $(xmlpull_h_sources) $(xmlpull_cc_sources)
+-libwsdlpullxml_la_LDFLAGS = -lpthread -version-info $(GENERIC_LIBRARY_VERSION)
++libwsdlpullxml_la_LDFLAGS = -lpthread -version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ 
+ pkginclude_HEADERS = $(xmlpull_h_sources)
+ pkgincludedir= $(includedir)/wsdlpull/xml
