@@ -1,0 +1,61 @@
+--- origsrc/libmetalink-0.0.3/configure.ac	2008-11-09 18:21:25.000000000 +0900
++++ src/libmetalink-0.0.3/configure.ac	2010-11-21 13:14:57.283648900 +0900
+@@ -8,8 +8,7 @@ AC_ARG_WITH([libxml2], [  --with-libxml2
+ 
+ # Checks for programs
+ AC_PROG_CC
+-AM_PROG_LIBTOOL
+-AC_PROG_RANLIB
++LT_INIT(win32-dll)
+ 
+ # Checks for libraries.
+ 
+--- origsrc/libmetalink-0.0.3/lib/Makefile.am	2008-11-09 18:21:25.000000000 +0900
++++ src/libmetalink-0.0.3/lib/Makefile.am	2010-11-21 13:15:34.527202500 +0900
+@@ -4,7 +4,7 @@ libmetalink_la_SOURCES =
+ libmetalink_la_LIBADD = \
+ 	metalink/libmetalinkcore.la\
+ 	@XML_LIBS@ @LIBEXPAT_LIBS@
+-libmetalink_la_LDFLAGS = -version-info 1:0:0
++libmetalink_la_LDFLAGS = -version-info 1:0:0 -no-undefined
+ nobase_include_HEADERS = \
+ 	metalink/metalink_parser.h\
+ 	metalink/metalink_types.h\
+--- origsrc/libmetalink-0.0.3/lib/metalink/libexpat_metalink_parser.c	2008-11-09 18:21:25.000000000 +0900
++++ src/libmetalink-0.0.3/lib/metalink/libexpat_metalink_parser.c	2010-11-21 20:26:04.018755200 +0900
+@@ -39,6 +39,16 @@
+ #include "metalink_stack.h"
+ #include "metalink_string_buffer.h"
+ 
++#ifndef TEMP_FAILURE_RETRY
++#define TEMP_FAILURE_RETRY(expression) \
++    ({ \
++        long int _result; \
++        do _result = (long int) (expression); \
++        while (_result == -1L && errno == EINTR); \
++        _result; \
++    })
++#endif
++
+ static void start_element_handler(void* user_data,
+ 				  const char* name,
+ 				  const char** attrs)
+--- origsrc/libmetalink-0.0.3/test/metalink_parser_test.c	2008-11-09 18:21:25.000000000 +0900
++++ src/libmetalink-0.0.3/test/metalink_parser_test.c	2010-11-21 20:30:11.389843200 +0900
+@@ -31,6 +31,16 @@
+ #include "metalink_parser_test.h"
+ #include "metalink/metalink_parser.h"
+ 
++#ifndef TEMP_FAILURE_RETRY
++#define TEMP_FAILURE_RETRY(expression) \
++    ({ \
++        long int _result; \
++        do _result = (long int) (expression); \
++        while (_result == -1L && errno == EINTR); \
++        _result; \
++    })
++#endif
++
+ static size_t count_array(void** array)
+ {
+   size_t count = 0;
