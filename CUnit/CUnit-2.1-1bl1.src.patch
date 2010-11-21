@@ -1,0 +1,167 @@
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Automated/Makefile.am	2006-03-21 10:30:50.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Automated/Makefile.am	2010-11-21 15:26:58.727184200 +0900
+@@ -1,5 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++INCLUDES = -I$(top_srcdir)/CUnit/Headers
++
+ noinst_LTLIBRARIES = libcunitautomated.la
+ libcunitautomated_la_SOURCES = \
+ 	Automated.c
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Basic/Makefile.am	2006-03-21 10:30:52.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Basic/Makefile.am	2010-11-21 15:31:50.807174600 +0900
+@@ -1,5 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++INCLUDES = -I$(top_srcdir)/CUnit/Headers
++
+ noinst_LTLIBRARIES = libcunitbasic.la
+ libcunitbasic_la_SOURCES = \
+ 	Basic.c
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Console/Makefile.am	2006-03-21 10:30:53.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Console/Makefile.am	2010-11-21 15:32:15.032008200 +0900
+@@ -1,5 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++INCLUDES = -I$(top_srcdir)/CUnit/Headers
++
+ noinst_LTLIBRARIES = libcunitconsole.la
+ libcunitconsole_la_SOURCES = \
+ 	Console.c
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Curses/Curses.c	2006-05-20 22:19:14.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Curses/Curses.c	2010-11-21 17:16:25.790157000 +0900
+@@ -256,10 +256,10 @@ static bool initialize_windows(void)
+ 
+   start_color();
+ 
+-  f_nLeft = application_windows.pMainWin->_begx;
+-  f_nTop = application_windows.pMainWin->_begy;
+-  f_nWidth = application_windows.pMainWin->_maxx;
+-  f_nHeight = application_windows.pMainWin->_maxy;
++  f_nLeft = getbegx(application_windows.pMainWin);
++  f_nTop = getbegy(application_windows.pMainWin);
++  f_nWidth = getmaxx(application_windows.pMainWin);
++  f_nHeight = getmaxy(application_windows.pMainWin);
+ 
+   if (NULL == (application_windows.pTitleWin = newwin(3, f_nWidth, 0, 0))) {
+     goto title_fail;
+@@ -358,10 +358,10 @@ static void refresh_windows(void)
+ {
+   refresh();
+ 
+-  f_nLeft = application_windows.pMainWin->_begx;
+-  f_nTop = application_windows.pMainWin->_begy;
+-  f_nWidth = application_windows.pMainWin->_maxx;
+-  f_nHeight = application_windows.pMainWin->_maxy;
++  f_nLeft = getbegx(application_windows.pMainWin);
++  f_nTop = getbegy(application_windows.pMainWin);
++  f_nWidth = getmaxx(application_windows.pMainWin);
++  f_nHeight = getmaxy(application_windows.pMainWin);
+ 
+   refresh_title_window();
+   refresh_progress_window();
+@@ -907,10 +907,10 @@ static bool create_pad(APPPAD* pPad, WIN
+   pPad->uiColumns = uiCols;
+   pPad->uiPadRow = 0;
+   pPad->uiPadCol = 0;
+-  pPad->uiWinLeft = application_windows.pDetailsWin->_begx + 1;
+-  pPad->uiWinTop = application_windows.pDetailsWin->_begy + 1;
+-  pPad->uiWinColumns = application_windows.pDetailsWin->_maxx - 2;
+-  pPad->uiWinRows = application_windows.pDetailsWin->_maxy - 2;
++  pPad->uiWinLeft = getbegx(application_windows.pDetailsWin) + 1;
++  pPad->uiWinTop = getbegy(application_windows.pDetailsWin) + 1;
++  pPad->uiWinColumns = getmaxx(application_windows.pDetailsWin) - 2;
++  pPad->uiWinRows = getmaxy(application_windows.pDetailsWin) - 2;
+ 
+   bStatus = true;
+ 
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Curses/Makefile.am	2006-03-21 10:30:53.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Curses/Makefile.am	2010-11-21 16:35:50.027702600 +0900
+@@ -1,5 +1,9 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++INCLUDES = -I$(top_srcdir)/CUnit/Headers -I/usr/include/@CURSES_LIB@
++
+ noinst_LTLIBRARIES = libcunitcurses.la
+ libcunitcurses_la_SOURCES = \
+ 	Curses.c
++
++libcunitcurses_la_LIBADD = -l@CURSES_LIB@
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Framework/Makefile.am	2006-03-21 10:30:53.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Framework/Makefile.am	2010-11-21 14:42:04.232691400 +0900
+@@ -1,5 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++INCLUDES = -I$(top_srcdir)/CUnit/Headers
++
+ SHARED_SOURCES = \
+ 	CUError.c \
+ 	MyMem.c \
+--- origsrc/CUnit-2.1-2/CUnit/Sources/Makefile.am	2006-03-21 10:30:53.000000000 +0900
++++ src/CUnit-2.1-2/CUnit/Sources/Makefile.am	2010-11-21 17:18:21.586664200 +0900
+@@ -3,7 +3,7 @@
+ BASIC_OBJECTS_SHARED = Basic/Basic.lo
+ AUTOMATED_OBJECTS_SHARED = Automated/Automated.lo
+ CONSOLE_OBJECTS_SHARED = Console/Console.lo
+-CURSES_OBJECTS_SHARED = Curses/Curses.lo
++CURSES_OBJECTS_SHARED = Curses/Curses.lo -l@CURSES_LIB@
+ FRAMEWORK_OBJECTS_SHARED = \
+ 	Framework/CUError.lo \
+ 	Framework/MyMem.lo \
+@@ -67,7 +67,7 @@ SUBDIRS = $(COMPILE_DIRS)
+ lib_LTLIBRARIES = libcunit.la
+ libcunit_la_SOURCES = 
+ libcunit_la_LIBADD = $(OBJECT_FILES_SHARED)
+-libcunit_la_LDFLAGS = -version-info @LIBTOOL_CURRENT@:@LIBTOOL_REVISION@:@LIBTOOL_AGE@
++libcunit_la_LDFLAGS = -version-info @LIBTOOL_CURRENT@:@LIBTOOL_REVISION@:@LIBTOOL_AGE@ -no-undefined
+ 
+ 
+ if ENABLE_TEST
+--- origsrc/CUnit-2.1-2/configure.in	2010-10-16 00:11:32.000000000 +0900
++++ src/CUnit-2.1-2/configure.in	2010-11-21 16:41:58.978227400 +0900
+@@ -26,7 +26,7 @@ LIBTOOL_SUFFIX=${LIBTOOL_SUFFIX1}.${LIBT
+ 
+ TOPDIR=`pwd`
+ 
+-CFLAGS="$CFLAGS -DRELEASE=@RELEASE@ -Wall -W -pedantic -Wshadow -ansi -I${PWD}/CUnit/Headers"
++CFLAGS="$CFLAGS -DRELEASE=${RELEASE} -Wall -W -pedantic -Wshadow -I${PWD}/CUnit/Headers"
+ LDFLAGS="$LDFLAGS -L${PWD}/CUnit/Sources"
+ 
+ AC_ARG_ENABLE(debug,
+@@ -158,7 +158,7 @@ dnl Check for programs.
+ AC_PROG_CC
+ AC_PROG_INSTALL
+ AC_PROG_MAKE_SET
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ dnl Check for libraries
+ AC_CHECK_LIB(c, main)
+--- origsrc/CUnit-2.1-2/doc/Makefile.am	2006-03-21 10:30:57.000000000 +0900
++++ src/CUnit-2.1-2/doc/Makefile.am	2010-11-21 20:06:31.500164000 +0900
+@@ -1,7 +1,5 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-docdir = $(prefix)/doc/@PACKAGE@
+-
+ doc_DATA = \
+ 	CUnit_doc.css \
+ 	error_handling.html \
+@@ -13,4 +11,4 @@ doc_DATA = \
+ 	test_registry.html \
+ 	writing_tests.html
+ 
+-SUBDIRS = headers
+\ No newline at end of file
++SUBDIRS = headers
+--- origsrc/CUnit-2.1-2/doc/headers/Makefile.am	2010-10-14 18:22:01.000000000 +0900
++++ src/CUnit-2.1-2/doc/headers/Makefile.am	2010-11-21 17:33:33.998648200 +0900
+@@ -22,6 +22,6 @@ CLEANFILES = $(INCLUDE_FILES)
+ $(INCLUDE_FILES) : copy_headers
+ 
+ copy_headers:
+-	cp -f ../../CUnit/Headers/*.h .
+-	cp -f ../../CUnit/Sources/Win/Win.h .
++	cp -f $(top_srcdir)/CUnit/Headers/*.h .
++	cp -f $(top_srcdir)/CUnit/Sources/Win/Win.h .
+ 
