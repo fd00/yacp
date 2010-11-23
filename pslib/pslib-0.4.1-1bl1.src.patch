@@ -1,0 +1,100 @@
+--- origsrc/pslib-0.4.1/configure.in	2007-10-30 16:38:30.000000000 +0900
++++ src/pslib-0.4.1/configure.in	2010-11-24 01:15:45.283053400 +0900
+@@ -5,7 +5,6 @@ AC_CONFIG_SRCDIR(src/pslib.c)
+ AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+ 
+ AM_CONFIG_HEADER(config.h)
+-AM_MAINTAINER_MODE
+ 
+ AC_PROG_INTLTOOL
+ 
+@@ -40,7 +39,7 @@ GETTEXT_PACKAGE=pslib
+ AC_SUBST(GETTEXT_PACKAGE)
+ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", GETTEXT_PACKAGE)
+ 
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+ AC_C_CONST
+@@ -188,6 +187,8 @@ case "${withval}" in
+ 			fi
+  		done ;;
+ esac
++
++AC_CHECK_LIB(ghthash, ght_create, [GHTHASH_LIBS=-lghthash])
+  
+ if test "${TIFF_PREFIX}" != "no" ; then
+ 	AC_CHECK_LIB(tiff, TIFFOpen,
+@@ -245,6 +246,8 @@ AC_SUBST(TIFF_LIBDIR)
+ AC_SUBST(TIFF_LIBS)
+ AC_SUBST(TIFF_INCLUDEDIR)
+ 
++AC_SUBST(GHTHASH_LIBS)
++
+ AC_SUBST(HTML_DIR)
+ dnl AC_SUBST(HAVE_ISNAN)
+ dnl AC_SUBST(HAVE_ISINF)
+--- origsrc/pslib-0.4.1/src/Makefile.am	2007-09-12 00:14:31.000000000 +0900
++++ src/pslib-0.4.1/src/Makefile.am	2010-11-24 01:16:25.380711000 +0900
+@@ -7,7 +7,6 @@ noinst_HEADERS = \
+ 	ps_intern.h \
+ 	ps_memory.h \
+ 	ps_error.h \
+-	ght_hash_table.h \
+ 	hyphen.h \
+ 	hnjalloc.h \
+ 	bmp.h \
+@@ -17,7 +16,7 @@ noinst_HEADERS = \
+ 
+ lib_LTLIBRARIES = libps.la
+ 
+-libps_la_LDFLAGS = -version-info @LIBPS_VERSION_INFO@ $(LIBHNJ_LIBS) $(PNG_LIBDIR) $(JPEG_LIBDIR) $(GIF_LIBDIR) $(TIFF_LIBDIR)
++libps_la_LDFLAGS = -version-info @LIBPS_VERSION_INFO@ $(LIBHNJ_LIBS) $(PNG_LIBDIR) $(JPEG_LIBDIR) $(GIF_LIBDIR) $(TIFF_LIBDIR) -no-undefined
+ 
+ libps_la_SOURCES = \
+ 	pslib.c \
+@@ -27,8 +26,6 @@ libps_la_SOURCES = \
+ 	ps_afm.c \
+ 	ps_list.c \
+ 	ps_util.c \
+-	hash_table.c \
+-	hash_functions.c \
+ 	hyphen.c \
+ 	hnjalloc.c \
+ 	bmp.c \
+@@ -36,7 +33,7 @@ libps_la_SOURCES = \
+ 	ps_fontenc.c \
+ 	ps_strbuf.c
+ 
+-libps_la_LIBADD = $(LIBHNJ_LIBS) $(PNG_LIBS) $(JPEG_LIBS) $(GIF_LIBS) $(TIFF_LIBS)
++libps_la_LIBADD = $(LIBHNJ_LIBS) $(PNG_LIBS) $(JPEG_LIBS) $(GIF_LIBS) $(TIFF_LIBS) @INTLLIBS@ @GHTHASH_LIBS@
+ 
+ BUILD_LIBS = -lm
+ 
+--- origsrc/pslib-0.4.1/src/ps_afm.c	2007-07-12 03:18:00.000000000 +0900
++++ src/pslib-0.4.1/src/ps_afm.c	2010-11-24 02:15:22.039081800 +0900
+@@ -39,6 +39,10 @@ extern char ascii2ebcdic[] ;
+ #if (defined(MSDOS) && defined(__TURBOC__)) || (defined(OS2) && defined(_MSC_VER))
+ #define SMALLMALLOC
+ #endif
++
++#if defined(__CYGWIN__)
++#define getline(f) getline_(f)
++#endif
+ 	 
+ /* Ligatures {{{
+  *
+--- origsrc/pslib-0.4.1/src/pslib.c	2007-10-30 16:33:59.000000000 +0900
++++ src/pslib-0.4.1/src/pslib.c	2010-11-24 02:11:14.885507800 +0900
+@@ -70,6 +70,10 @@
+ #	include "bmp.h"
+ #endif
+ 
++#if defined(__CYGWIN__)
++#define png_set_gray_1_2_4_to_8(p) png_set_expand_gray_1_2_4_to_8(p)
++#endif
++
+ /* ps_writeproc_file() {{{
+  * Default output function
+  */
