@@ -1,0 +1,91 @@
+--- origsrc/ta-lib/configure.in	2007-09-15 12:42:09.000000000 +0900
++++ src/ta-lib/configure.in	2010-11-27 13:17:42.822611000 +0900
+@@ -10,7 +10,7 @@ AM_INIT_AUTOMAKE([ta-lib], [0.4.0])
+ 
+ # Checks for programs.
+ AC_PROG_CC
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ # Checks for libraries.
+ AC_CHECK_LIB([dl], [dlopen])
+--- origsrc/ta-lib/src/Makefile.am	2007-09-15 12:41:59.000000000 +0900
++++ src/ta-lib/src/Makefile.am	2010-11-27 13:17:22.329167800 +0900
+@@ -10,5 +10,5 @@ libta_lib_la_LIBADD = \
+   ta_func/libta_func.la \
+   ta_common/libta_common.la
+ 
+-libta_lib_la_LDFLAGS = -version-info $(TALIB_LIBRARY_VERSION)
++libta_lib_la_LDFLAGS = -version-info $(TALIB_LIBRARY_VERSION) -no-undefined
+ 
+--- origsrc/ta-lib/src/ta_abstract/Makefile.am	2007-09-15 12:41:59.000000000 +0900
++++ src/ta-lib/src/ta_abstract/Makefile.am	2010-11-27 13:17:22.338884800 +0900
+@@ -38,7 +38,7 @@ libta_abstract_gc_la_SOURCES = $(libta_a
+ libta_abstract_la_LDFLAGS = -version-info $(TALIB_LIBRARY_VERSION)
+ libta_abstract_gc_la_LDFLAGS = $(libta_abstract_la_LDFLAGS)
+ 
+-libta_abstract_la_CPPFLAGS = -I../ta_common/ -Iframes/
++libta_abstract_la_CPPFLAGS = -I$(top_srcdir)/src/ta_common/ -I$(top_srcdir)/src/ta_abstract/frames/ -I$(top_srcdir)/include
+ 
+ # The 'gc' version is a minimal version used to just to compile gen_code
+ libta_abstract_gc_la_CPPFLAGS = -DTA_GEN_CODE $(libta_abstract_la_CPPFLAGS)
+--- origsrc/ta-lib/src/ta_common/Makefile.am	2007-09-15 12:41:59.000000000 +0900
++++ src/ta-lib/src/ta_common/Makefile.am	2010-11-27 13:17:22.338884800 +0900
+@@ -1,6 +1,6 @@
+ 
+ noinst_LTLIBRARIES = libta_common.la
+-AM_CPPFLAGS = -I../ta_common/
++AM_CPPFLAGS = -I$(top_srcdir)/src/ta_common/ -I$(top_srcdir)/include
+ 
+ libta_common_la_SOURCES = ta_global.c \
+ 	ta_retcode.c \
+--- origsrc/ta-lib/src/ta_func/Makefile.am	2007-09-15 12:41:56.000000000 +0900
++++ src/ta-lib/src/ta_func/Makefile.am	2010-11-27 13:17:22.348601800 +0900
+@@ -1,6 +1,6 @@
+ 
+ noinst_LTLIBRARIES = libta_func.la
+-AM_CPPFLAGS = -I../ta_common/
++AM_CPPFLAGS = -I$(top_srcdir)/src/ta_common -I$(top_srcdir)/include
+ 
+ libta_func_la_SOURCES = ta_utility.c \
+ 	ta_ACOS.c \
+--- origsrc/ta-lib/src/tools/gen_code/Makefile.am	2007-09-15 12:41:58.000000000 +0900
++++ src/ta-lib/src/tools/gen_code/Makefile.am	2010-11-27 13:17:22.348601800 +0900
+@@ -5,7 +5,7 @@ noinst_PROGRAMS = gen_code
+ 
+ gen_code_SOURCES = gen_code.c
+ 
+-gen_code_CPPFLAGS = -I../../ta_common
++gen_code_CPPFLAGS = -I$(top_srcdir)/src/ta_common -I$(top_srcdir)/include
+ gen_code_LDFLAGS = -L../../ta_common -L../../ta_abstract -L../../ta_func
+ gen_code_LDADD = -lta_common -lta_abstract_gc -lta_func -lm
+ 
+--- origsrc/ta-lib/src/tools/ta_regtest/Makefile.am	2007-09-15 12:41:57.000000000 +0900
++++ src/ta-lib/src/tools/ta_regtest/Makefile.am	2010-11-27 17:54:54.412235300 +0900
+@@ -1,7 +1,8 @@
+ 
+ # ta_regrest is used for testing and should
+ # not be installed.
+-noinst_PROGRAMS = ta_regtest
++TESTS = ta_regtest
++check_PROGRAMS = ta_regtest
+ 
+ ta_regtest_SOURCES = ta_regtest.c \
+ 	test_data.c \
+@@ -29,10 +30,11 @@ ta_regtest_SOURCES = ta_regtest.c \
+ 	ta_test_func/test_trange.c \
+ 	test_internals.c
+ 
+-ta_regtest_CPPFLAGS = -I../../ta_func \
+-		      -I../../ta_common/trio \
+-		      -I../../ta_common/mt \
+-		      -I../../ta_common \
+-		      -I../../ta_abstract
++ta_regtest_CPPFLAGS = -I$(top_srcdir)/src/ta_func \
++		      -I$(top_srcdir)/src/ta_common/trio \
++		      -I$(top_srcdir)/src/ta_common/mt \
++		      -I$(top_srcdir)/src/ta_common \
++		      -I$(top_srcdir)/src/ta_abstract \
++		      -I$(top_srcdir)/include 
+ ta_regtest_LDFLAGS = -L../.. -lta_lib \
+ 		     -lm
