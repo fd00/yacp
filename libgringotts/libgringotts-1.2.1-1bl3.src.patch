@@ -1,0 +1,45 @@
+--- origsrc/libgringotts-1.2.1/Makefile.am	2003-04-24 20:26:09.000000000 +0900
++++ src/libgringotts-1.2.1/Makefile.am	2010-11-28 14:51:44.168410700 +0900
+@@ -18,6 +18,8 @@ install-exec-local:
+ 	@echo
+ 	@md5sum $(DESTDIR)$(libdir)/libgringotts.so|(read A B; echo $$B ":"; echo $$A)
+ 	@echo
++	@md5sum $(DESTDIR)$(bindir)/cyggringotts*.dll|(read A B; echo $$B ":"; echo $$A)
++	@echo
+ 	@md5sum $(DESTDIR)$(includedir)/libgringotts.h|(read A B; echo $$B ":"; echo $$A)
+ 	@echo
+ 	@echo use these values to check library integrity at any time
+--- origsrc/libgringotts-1.2.1/configure.in	2003-04-24 20:27:59.000000000 +0900
++++ src/libgringotts-1.2.1/configure.in	2010-11-28 14:52:03.676461900 +0900
+@@ -10,7 +10,7 @@ LIBGRG_RELEASE=7
+ LIBGRG_AGE=0
+ 
+ AM_INIT_AUTOMAKE($LIBGRG_NAME, $LIBGRG_VERSION)
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ AC_CONFIG_SRCDIR(src/libgrg_crypt.c)
+ AM_CONFIG_HEADER(config.h)
+--- origsrc/libgringotts-1.2.1/src/Makefile.am	2003-04-24 20:38:17.000000000 +0900
++++ src/libgringotts-1.2.1/src/Makefile.am	2010-11-28 15:26:39.187513400 +0900
+@@ -8,14 +8,13 @@ include_HEADERS = libgringotts.h
+ 
+ libgringotts_la_SOURCES = libgrg_crypt.c libgrg_structs.c libgrg_utils.c libgrg_tmp.c 
+ 
+-libgringotts_la_LDFLAGS = -version-info @LIBGRG_INTERFACE@:@LIBGRG_RELEASE@:@LIBGRG_AGE@
++libgringotts_la_LDFLAGS = -version-info @LIBGRG_INTERFACE@:@LIBGRG_RELEASE@:@LIBGRG_AGE@ -no-undefined
+ 
+ libgringotts_la_LIBADD = @LIBZ@ @LIBBZ2@ @MCRYPT_LIBS@ @MHASH@ -lm
+ 
+-EXTRA_DIST = test.c
++TESTS = libgrgtest
++check_PROGRAMS = libgrgtest
++libgrgtest_SOURCES = test.c
++libgrgtest_LDADD = $(top_builddir)/src/libgringotts.la
+ 
+-check-local: libgringotts.la
+-	@gcc test.c .libs/libgringotts.a -g @DEFS@ @MCRYPT_CFLAGS@ -Wall \
+-		-Wpointer-arith @LIBZ@ @LIBBZ2@ @MCRYPT_LIBS@ @MHASH@ -lm -o libgrgtest
+-	@./libgrgtest
+-	@rm -f libgrgtest test.o
++EXTRA_DIST = test.c
