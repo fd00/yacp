@@ -1,0 +1,153 @@
+--- origsrc/tqsllib-2.2/Makefile.am	2005-03-03 21:12:46.000000000 +0900
++++ src/tqsllib-2.2/Makefile.am	2010-12-05 15:30:46.975305600 +0900
+@@ -8,10 +8,10 @@ datadir = @datadir@/tqsl
+ docdir = @datadir@/doc
+ 
+ DLLVER=@DLLVER@
+-INCLUDES = -I$(OPENSSL)/include -I$(EXPAT)/include -I$(ZLIB)/include
++INCLUDES = @LIBCRYPTO_CFLAGS@ @ZLIB_CFLAGS@
+ 
+ AM_CXXFLAGS = -g3 -O -Wall $(LOTW_SERVER) $(PLATFORM) -DCONFDIR=\"$(datadir)\"
+-AM_LDFLAGS = @ldflags@ -L$(OPENSSL)/lib -L$(EXPAT)/lib -L$(ZLIB)/lib
++AM_LDFLAGS = @ldflags@ @LIBCRYPTO_LIBS@ @ZLIB_LIBS@
+ 
+ EXTRA_LIBRARIES = libtqsllibd.a
+ lib_LIBRARIES = @add_libraries@
+@@ -20,7 +20,7 @@ libtqsllib_la_SOURCES = tqsllib.cpp open
+ 	tqslconvert.cpp cabrillo.cpp location.h tqsllib-doc.h xml.h \
+ 	openssl_cert.h tqslexc.h
+ include_HEADERS = tqsllib.h tqslerrno.h cabrillo.h adif.h tqslconvert.h
+-libtqsllib_la_LDFLAGS = -version-info @SHLIBVER@:@TQSLLIB_VERSION_MINOR@:0
++libtqsllib_la_LDFLAGS = -version-info @SHLIBVER@:@TQSLLIB_VERSION_MINOR@:0 -no-undefined
+ 
+ EXTRA_PROGRAMS = gen_crq load_cert station_loc converter
+ noinst_PROGRAMS = $(make_extra)
+--- origsrc/tqsllib-2.2/configure.in	2010-09-30 00:09:55.000000000 +0900
++++ src/tqsllib-2.2/configure.in	2010-12-05 14:59:34.663052800 +0900
+@@ -42,7 +42,7 @@ dnl Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CPP
+ AC_PROG_CXX
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ AC_MSG_CHECKING([for --enable-docs])
+ AC_ARG_ENABLE(docs,
+@@ -55,14 +55,6 @@ AC_ARG_ENABLE(docs,
+ AC_MSG_RESULT($docok)
+ AM_CONDITIONAL(NODOC, test x$docok = xno)
+ 
+-checkssldir(){
+-  if test -z "$OPENSSL"; then
+-    if test -e "$1/lib/libcrypto.a" || test -e "$1/lib/libcrypto$dyn_lib_suf"; then
+-      OPENSSL="$1"
+-    fi
+-  fi
+-}
+-
+ checkexpatdir(){
+   if test -z "$EXPAT"; then
+     if test -e "$1/lib/libexpat.a" || test -e "$1/lib/libexpat$dyn_lib_suf"; then
+@@ -71,100 +63,15 @@ checkexpatdir(){
+   fi
+ }
+ 
+-checkzlibdir(){
+-  if test -z "$ZLIB"; then
+-    if test -e "$1/lib/libz.a" || test -e "$1/lib/libz$dyn_lib_suf"; then
+-      ZLIB="$1"
+-    fi
+-  fi
+-}
+-
+ dnl Check for OpenSSL
+-AC_MSG_CHECKING([for OpenSSL library (libcrypto.a)])
+-AC_ARG_WITH(openssl,
+-  [AC_HELP_STRING([--with-openssl=DIR], [location of OpenSSL files])],
+-  [ checkssldir "$withval" ],
+-  [ checkssldir "$HOME/openssl"; checkssldir "/usr"; checkssldir "/usr/local";
+-    checkssldir "/usr/local/ssl"; checkssldir "../../openssl" ]
+-)
+-if test -z "$OPENSSL"; then
+-  AC_MSG_RESULT(Not found)
+-  echo
+-  echo "OpenSSL not found"
+-  echo "Use --with-openssl option to fix this problem"
+-  echo
+-  exit 1
+-fi
+-AC_MSG_RESULT($OPENSSL)
+-AC_SUBST(OPENSSL)
+-
+-dnl Check for an openssl header file
+-AC_MSG_CHECKING([for OpenSSL headers in $OPENSSL/include])
+-if test ! -r "$OPENSSL/include/openssl/opensslv.h"; then
+-  AC_MSG_RESULT(Not found)
+-  echo
+-  echo OpenSSL headers appear to be mising
+-  echo
+-  exit 1
+-fi
+-AC_MSG_RESULT(yes)
+-
+-dnl Check for expat
+-AC_MSG_CHECKING([for expat library (libexpat.a)])
+-AC_ARG_WITH(expat,
+-  [AC_HELP_STRING([--with-expat=DIR], [location of expat library files])],
+-  [ checkexpatdir "$withval" ],
+-  [ checkexpatdir "$HOME/expat"; checkexpatdir "/usr"; checkexpatdir "/usr/local";
+-    checkexpatdir "../../expat" ]
+-)
+-if test -z "$EXPAT"; then
+-  AC_MSG_RESULT(Not found)
+-  echo
+-  echo "expat not found"
+-  echo "Use --with-expat option to fix this problem"
+-  echo
+-  exit 1
+-fi
+-AC_MSG_RESULT($EXPAT)
+-AC_SUBST(EXPAT)
++PKG_CHECK_MODULES(LIBCRYPTO, libcrypto)
+ 
+ dnl Check for zlib
+-AC_MSG_CHECKING([for zlib library (libz.a)])
+-AC_ARG_WITH(zlib,
+-  [AC_HELP_STRING([--with-zlib=DIR], [location of zlib library files])],
+-  [ checkzlibdir "$withval" ],
+-  [ checkzlibdir "$HOME/zlib"; checkzlibdir "/usr"; checkzlibdir "/usr/local";
+-    checkzlibdir "../../zlib" ]
+-)
+-if test -z "$ZLIB"; then
+-  AC_MSG_RESULT(Not found)
+-  echo
+-  echo "zlib not found"
+-  echo "Use --with-zlib option to fix this problem"
+-  echo
+-  exit 1
+-fi
+-AC_MSG_RESULT($ZLIB)
+-AC_SUBST(ZLIB)
+-
+-dnl Check for an expat header file
+-AC_MSG_CHECKING([for expat headers in $EXPAT/include])
+-if test ! -r "$EXPAT/include/expat.h"; then
+-  AC_MSG_RESULT(Not found)
+-  echo
+-  echo expat headers appear to be mising
+-  echo
+-  exit 1
+-fi
+-AC_MSG_RESULT(yes)
+-
+-export LIBRARY_PATH="$OPENSSL/lib:$EXPAT/lib:$ZLIB/lib"
++PKG_CHECK_MODULES(ZLIB, zlib)
+ 
+ dnl Checks for libraries.
+ AC_CHECK_LIB(gdi32, main)
+-AC_CHECK_LIB(crypto, MD5_Init)
+ AC_CHECK_LIB(expat, XML_ParserCreate)
+-AC_CHECK_LIB(z, gzopen)
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+ AC_C_CONST
