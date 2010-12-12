@@ -1,0 +1,43 @@
+--- origsrc/groonga-1.0.4/Makefile.am	2010-11-24 21:22:00.000000000 +0900
++++ src/groonga-1.0.4/Makefile.am	2010-12-12 10:24:35.838773400 +0900
+@@ -1,4 +1,4 @@
+-ACLOCAL_AMFLAGS = $$ACLOCAL_ARGS -I .
++#ACLOCAL_AMFLAGS = $$ACLOCAL_ARGS -I .
+ AUTOMAKE_OPTIONS = 1.9.7
+ SUBDIRS = include lib plugins src examples test apt rpm yum data resource doc
+ #dist_data_DATA =
+--- origsrc/groonga-1.0.4/configure.ac	2010-11-24 21:34:21.000000000 +0900
++++ src/groonga-1.0.4/configure.ac	2010-12-12 10:18:39.882856000 +0900
+@@ -82,8 +82,7 @@ if test "$GCC" = "yes"; then
+ #  CHECK_CFLAG([-Wwrite-strings])
+ #  CHECK_CFLAG([-Winline])
+ fi
+-AC_LIBTOOL_WIN32_DLL
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ m4_ifdef([LT_OUTPUT], [LT_OUTPUT])
+ 
+ AC_CONFIG_FILES([Makefile
+--- origsrc/groonga-1.0.4/lib/ctx.c	2010-11-22 23:44:38.000000000 +0900
++++ src/groonga-1.0.4/lib/ctx.c	2010-12-12 10:18:39.902884800 +0900
+@@ -2453,6 +2453,9 @@ grn_set_segv_handler(void)
+ 
+   sigemptyset(&action.sa_mask);
+   action.sa_sigaction = segv_handler;
++#if !defined(SA_ONSTACK)
++#define SA_ONSTACK 0
++#endif
+   action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+ 
+   if (sigaction(SIGSEGV, &action, NULL)) {
+--- origsrc/groonga-1.0.4/src/Makefile.am	2010-11-21 10:55:48.000000000 +0900
++++ src/groonga-1.0.4/src/Makefile.am	2010-12-12 12:02:11.769558600 +0900
+@@ -6,7 +6,7 @@ DEFS += $(GRN_DEFS)
+ 
+ AM_LDFLAGS = -no-undefined
+ 
+-DEFAULT_INCLUDES = -I$(top_builddir) -I$(srcdir) -I$(top_srcdir)/include $(GROONGA_INCLUDEDIR)
++DEFAULT_INCLUDES = -I$(top_builddir) -I$(srcdir) -I$(top_srcdir)/include $(GROONGA_INCLUDEDIR) -I$(top_srcdir)
+ 
+ groonga_SOURCES = groonga.c
+ groonga_CFLAGS = $(AM_CFLAGS) $(LIBEDIT_CFLAGS)
