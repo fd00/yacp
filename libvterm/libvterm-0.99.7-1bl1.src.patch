@@ -1,0 +1,71 @@
+--- origsrc/libvterm/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libvterm/Makefile.am	2010-12-12 23:02:42.844970200 +0900
+@@ -0,0 +1,21 @@
++lib_LTLIBRARIES = libvterm.la
++
++libvterm_la_SOURCES = \
++vterm.c          vterm_colors.c          vterm_csi.c          vterm_csi_CUP.c \
++vterm_csi_CUx.c  vterm_csi_DCH.c         vterm_csi_DECSTBM.c  vterm_csi_DL.c  \
++vterm_csi_ECH.c  vterm_csi_ED.c          vterm_csi_EL.c       vterm_csi_ICH.c \
++vterm_csi_IL.c   vterm_csi_RESTORECUR.c  vterm_csi_SAVECUR.c  vterm_csi_SGR.c \
++vterm_dec_RM.c   vterm_dec_SM.c          vterm_erase.c        vterm_escape.c  \
++vterm_misc.c     vterm_read.c            vterm_render.c       vterm_resize.c  \
++vterm_scroll.c   vterm_wnd.c             vterm_write.c
++
++libvterm_la_CPPFLAGS = -Wall -std=gnu99 -D_REENTRANT @GLIB2_CFLAGS@ @NCURSES_CFLAGS@
++libvterm_la_LIBADD = @GLIB2_LIBS@ @NCURSES_LIBS@
++libvterm_la_LDFLAGS = -no-undefined
++
++include_HEADERS = vterm.h
++
++check_PROGRAMS = vshell
++vshell_SOURCES = demo/vshell.c
++vshell_CPPFLAGS = @GLIB2_CFLAGS@ @NCURSES_CFLAGS@
++vshell_LDADD = @GLIB2_LIBS@ @NCURSES_LIBS@ libvterm.la
+--- origsrc/libvterm/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libvterm/configure.ac	2010-12-12 22:28:30.914439000 +0900
+@@ -0,0 +1,33 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.67])
++AC_INIT([libvterm], [0.99.7], [])
++AC_CONFIG_SRCDIR([vterm.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE([foreign])
++
++# Checks for programs.
++AC_PROG_CC
++AM_PROG_CC_C_O
++LT_INIT(win32-dll)
++
++# Checks for libraries.
++PKG_CHECK_MODULES([GLIB2], [glib-2.0])
++PKG_CHECK_MODULES([NCURSES], [ncurses])
++
++# Checks for header files.
++AC_CHECK_HEADERS([fcntl.h locale.h stdlib.h string.h sys/ioctl.h termios.h unistd.h utmp.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_HEADER_STDBOOL
++AC_TYPE_PID_T
++AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++
++# Checks for library functions.
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([memset setenv setlocale strchr])
++
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
+--- origsrc/libvterm/vterm_read.c	2009-10-20 03:53:44.000000000 +0900
++++ src/libvterm/vterm_read.c	2010-12-12 23:13:09.616223000 +0900
+@@ -77,7 +77,7 @@ ssize_t vterm_read_pipe(vterm_t *vterm)
+ #ifdef FIONREAD
+ 	retval=ioctl(vterm->pty_fd,FIONREAD,&bytes_peek);
+ #else
+-	retval=ioclt(vterm->pty_fd,TIOCINQ,&bytes_peek);
++	retval=ioctl(vterm->pty_fd,TIOCINQ,&bytes_peek);
+ #endif
+ 
+    if(retval == -1) return 0;
