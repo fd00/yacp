@@ -1,0 +1,99 @@
+--- origsrc/rtmpdump-2.3/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/rtmpdump-2.3/Makefile.am	2010-12-12 13:36:20.523117700 +0900
+@@ -0,0 +1,20 @@
++SUBDIRS = librtmp
++
++AM_CPPFLAGS = -DRTMPDUMP_VERSION=\"v$(PACKAGE_VERSION)\" 
++
++bin_PROGRAMS = rtmpdump
++sbin_PROGRAMS = rtmpgw rtmpsrv rtmpsuck
++
++rtmpdump_SOURCES = rtmpdump.c
++rtmpdump_LDADD = $(top_builddir)/librtmp/librtmp.la
++
++rtmpsrv_SOURCES = rtmpsrv.c thread.c
++rtmpsrv_LDADD = $(top_builddir)/librtmp/librtmp.la
++
++rtmpsuck_SOURCES = rtmpsuck.c thread.c
++rtmpsuck_LDADD = $(top_builddir)/librtmp/librtmp.la
++
++rtmpgw_SOURCES = rtmpgw.c thread.c
++rtmpgw_LDADD = $(top_builddir)/librtmp/librtmp.la
++
++man_MANS = rtmpdump.1 rtmpgw.8
+--- origsrc/rtmpdump-2.3/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/rtmpdump-2.3/configure.ac	2010-12-12 13:06:58.457259300 +0900
+@@ -0,0 +1,45 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.67])
++AC_INIT([rtmpdump], [2.3], [projects@mplayerhq.hu])
++AC_CONFIG_SRCDIR([rtmpdump.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++AC_PROG_LN_S
++LT_INIT(win32-dll)
++
++# Checks for libraries.
++PKG_CHECK_MODULES(OPENSSL, openssl)
++
++# Checks for header files.
++AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/param.h sys/socket.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_C_INLINE
++AC_TYPE_INT16_T
++AC_TYPE_INT32_T
++AC_TYPE_INT8_T
++AC_TYPE_OFF_T
++AC_TYPE_SIZE_T
++AC_HEADER_STDBOOL
++AC_TYPE_UINT32_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_FORK
++AC_FUNC_FSEEKO
++AC_FUNC_MALLOC
++AC_FUNC_MKTIME
++AC_FUNC_REALLOC
++AC_FUNC_STRTOD
++AC_CHECK_FUNCS([gethostbyname inet_ntoa memchr memset select socket strcasecmp strchr strdup strerror strncasecmp strrchr strstr strtol])
++
++AC_CONFIG_FILES([Makefile
++                 librtmp/Makefile
++                 librtmp/librtmp.pc])
++AC_OUTPUT
+--- origsrc/rtmpdump-2.3/librtmp/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/rtmpdump-2.3/librtmp/Makefile.am	2010-12-12 12:58:30.530706500 +0900
+@@ -0,0 +1,14 @@
++lib_LTLIBRARIES = librtmp.la
++
++librtmp_la_SOURCES = rtmp.c log.c amf.c hashswf.c parseurl.c
++librtmp_la_CFLAGS = @OPENSSL_CFLAGS@
++librtmp_la_LIBADD = @OPENSSL_LIBS@
++librtmp_la_LDFLAGS = -no-undefined
++
++librtmp_includedir = $(includedir)/librtmp
++librtmp_include_HEADERS = amf.h http.h log.h rtmp.h
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = librtmp.pc
++
++man_MANS = librtmp.3
+--- origsrc/rtmpdump-2.3/librtmp/librtmp.pc.in	2010-07-01 04:58:34.000000000 +0900
++++ src/rtmpdump-2.3/librtmp/librtmp.pc.in	2010-12-12 13:04:57.360089700 +0900
+@@ -6,7 +6,7 @@ incdir=${prefix}/include
+ Name: librtmp
+ Description: RTMP implementation
+ Version: @VERSION@
+-Requires: @CRYPTO_REQ@
++Requires: openssl
+ URL: http://rtmpdump.mplayerhq.hu
+ Libs: -L${libdir} -lrtmp -lz
+ Cflags: -I${incdir}
