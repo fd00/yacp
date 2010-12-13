@@ -1,0 +1,84 @@
+--- origsrc/libmorph-0.1.2/configure.in	1999-12-06 23:22:57.000000000 +0900
++++ src/libmorph-0.1.2/configure.in	2010-12-13 10:12:01.104798700 +0900
+@@ -8,7 +8,7 @@ AM_INIT_AUTOMAKE(libmorph, $VERSION)
+ 
+ AC_PROG_CC
+ AC_PROG_CPP
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ LIBMORPH_LIBDIR='-L${libdir}'
+ LIBMORPH_INCLUDEDIR='-I${includedir}'
+@@ -18,6 +18,8 @@ AC_SUBST(LIBMORPH_LIBDIR)
+ AC_SUBST(LIBMORPH_INCLUDEDIR)
+ AC_SUBST(LIBMORPH_LIBS)
+ 
++AC_DEFINE_UNQUOTED(SHARED_LIB_SUFFIX, "$shrext_cmds", [Suffix for shared objects])
++
+ AC_C_BIGENDIAN
+ 
+ AC_OUTPUT([
+--- origsrc/libmorph-0.1.2/src/Makefile.am	1999-10-31 04:10:49.000000000 +0900
++++ src/libmorph-0.1.2/src/Makefile.am	2010-12-13 10:41:37.750825900 +0900
+@@ -2,18 +2,18 @@
+ lib_LTLIBRARIES = 		\
+ 	libmorph.la
+ 
+-libexecdir = $(libdir)/morph/loaders
++loaderdir = $(libdir)/morph/loaders
+ 
+ LWOB_LIB =	libmorph-lwob.la
+ A3DS_LIB =	libmorph-a3ds.la
+ 
+-libexec_LTLIBRARIES =		\
++loader_LTLIBRARIES =		\
+ 	$(LWOB_LIB) $(A3DS_LIB)
+ 
+ #noinst_PROGRAMS = testmorph
+ DEPS = libmorph.la
+ #INCLUDES = $(GNOME_INCLUDEDIR)
+-AM_CPPFLAGS = "-DMORPH_LIBDIR=\"$(libexecdir)\""
++AM_CPPFLAGS = "-DMORPH_LIBDIR=\"$(loaderdir)\""
+ 
+ LDADDS = libmorph.la
+ 
+@@ -28,6 +28,8 @@ libmorph_la_SOURCES = 	\
+ 	morph.c		\
+ 	morph-io.c
+ 
++libmorph_la_LDFLAGS = -no-undefined
++
+ libmorphinclude_HEADERS =	\
+ 	morph.h		\
+ 	morph-io.h
+@@ -36,11 +38,13 @@ libmorphinclude_HEADERS =	\
+ # LWOB loader
+ #
+ libmorph_lwob_la_SOURCES = io-lwob.c
+-libmorph_lwob_la_LDFLAGS = -avoid-version -module
++libmorph_lwob_la_LDFLAGS = -avoid-version -module -no-undefined
++libmorph_lwob_la_LIBADD  = libmorph.la
+ 
+ #
+ # 3DS loader
+ #
+ libmorph_a3ds_la_SOURCES = io-a3ds.c
+-libmorph_a3ds_la_LDFLAGS = -avoid-version -module
++libmorph_a3ds_la_LDFLAGS = -avoid-version -module -no-undefined
++libmorph_a3ds_la_LIBADD  = libmorph.la
+ 
+--- origsrc/libmorph-0.1.2/src/morph-io.c	1999-10-31 04:10:49.000000000 +0900
++++ src/libmorph-0.1.2/src/morph-io.c	2010-12-13 11:11:22.341239900 +0900
+@@ -96,7 +96,11 @@ morph_model_handler_load( int idx )
+ 
+ 	sprintf(
+ 		module_name,
+-		"%s/libmorph-%s.so",
++#if defined(__CYGWIN__)
++		"%s/cygmorph-%s" SHARED_LIB_SUFFIX,
++#else
++		"%s/libmorph-%s" SHARED_LIB_SUFFIX,
++#endif
+ 		MORPH_LIBDIR,
+ 		morph_file_formats[ idx ].module_name
+ 	);
