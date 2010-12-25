@@ -1,0 +1,78 @@
+--- origsrc/libmatchbox-1.9/configure.ac	2006-08-04 19:32:31.000000000 +0900
++++ src/libmatchbox-1.9/configure.ac	2010-12-26 00:15:50.183937200 +0900
+@@ -9,7 +9,7 @@ AM_CONFIG_HEADER([config.h])
+ # Checks for programs.
+ AC_GNU_SOURCE
+ AC_PROG_CC
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ SUPPORTS_PNG=0
+ SUPPORTS_JPEG=0
+@@ -25,11 +25,11 @@ AC_ARG_ENABLE(xft,
+ 
+ AC_ARG_ENABLE(pango,
+   [  --enable-pango          enable Pango support.],
+-  enable_pango=$enableval, enable_pango=no)
++  enable_pango=$enableval, enable_pango=yes)
+ 
+ AC_ARG_ENABLE(jpeg,
+   [  --enable-jpeg           enable jpeg image support.],
+-  enable_jpeg=$enableval, enable_jpeg=no)
++  enable_jpeg=$enableval, enable_jpeg=yes)
+ 
+ AC_ARG_ENABLE(png,
+   [  --disable-png           disable png support [default=no]],
+@@ -66,7 +66,7 @@ AC_ARG_ENABLE(gprof,
+ 
+ AC_ARG_ENABLE(unit-tests,
+   [  --enable-unit-tests          enable unit tests ( Requires check )],
+-     enable_unit_tests=$enableval, enable_unit_tests=no )
++     enable_unit_tests=$enableval, enable_unit_tests=yes )
+ 
+ 
+ 
+@@ -155,14 +155,14 @@ fi
+ dnl ------ Check for PNG ---------------------------------------------------
+ 
+ if test x$enable_png != xno; then
+-  AC_MSG_CHECKING(for libpng12)
+-  if test x$PKG_CONFIG != xno && $PKG_CONFIG --exists libpng12; then 
++  AC_MSG_CHECKING(for libpng14)
++  if test x$PKG_CONFIG != xno && $PKG_CONFIG --exists libpng14; then 
+         AC_MSG_RESULT(yes)
+-        PNG_LIBS=`$PKG_CONFIG --libs libpng12`
+-	PNG_CFLAGS=`$PKG_CONFIG --cflags libpng12`
++        PNG_LIBS=`$PKG_CONFIG --libs libpng14`
++	PNG_CFLAGS=`$PKG_CONFIG --cflags libpng14`
+         AC_DEFINE(USE_PNG, [1], [Use Png])
+ 	SUPPORTS_PNG=1
+-	PNG_REQUIRED="libpng12"
++	PNG_REQUIRED="libpng14"
+   else
+ 	AC_MSG_RESULT(no)
+         # AC_CHECK_HEADERS(png.h, [ have_png_h="yes" ], [ have_png_h="no" ] )
+--- origsrc/libmatchbox-1.9/libmb/Makefile.am	2006-08-04 19:32:45.000000000 +0900
++++ src/libmatchbox-1.9/libmb/Makefile.am	2010-12-26 00:50:43.614142000 +0900
+@@ -27,7 +27,9 @@ libmb_la_LIBADD      = @XLIBS_LIBS@ @PAN
+ # http://sources.redhat.com/autobook/autobook/autobook_91.html#SEC91
+ # current : revision : age
+ 
+-libmb_la_LDFLAGS = -version-info 1:9:0
++libmb_la_LDFLAGS = -version-info 1:9:0 -no-undefined
++
++INCLUDES = -I$(top_srcdir)
+ 
+ libmbheadersdir = $(includedir)/libmb
+ libmbheaders_DATA = $(source_h)
+--- origsrc/libmatchbox-1.9/tests/Makefile.am	2010-12-26 00:12:17.528153200 +0900
++++ src/libmatchbox-1.9/tests/Makefile.am	2010-12-26 00:59:08.970809200 +0900
+@@ -17,6 +17,8 @@ pixbuf_LDADD= @CHECK_LIBS@
+ 
+ endif
+ 
++INCLUDES = -I$(top_srcdir)
++
+ noinst_PROGRAMS = dump-image
+ dump_image_SOURCES=dump-image.c
+ 
