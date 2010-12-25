@@ -1,0 +1,57 @@
+--- origsrc/thrift-0.5.0/configure.ac	2010-09-29 02:34:55.000000000 +0900
++++ src/thrift-0.5.0/configure.ac	2010-12-25 14:20:46.972036000 +0900
+@@ -71,7 +71,7 @@ AC_PROG_CC
+ AC_PROG_CPP
+ AC_PROG_CXX
+ AC_PROG_INSTALL
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PROG_MAKE_SET
+ AC_PROG_YACC
+ AC_PROG_LEX
+--- origsrc/thrift-0.5.0/lib/cpp/Makefile.am	2010-09-29 01:07:20.000000000 +0900
++++ src/thrift-0.5.0/lib/cpp/Makefile.am	2010-12-25 16:46:03.248580300 +0900
+@@ -81,6 +81,11 @@ libthriftz_la_SOURCES = src/transport/TZ
+ libthriftnb_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBEVENT_CPPFLAGS)
+ libthriftz_la_CPPFLAGS  = $(AM_CPPFLAGS) $(ZLIB_CPPFLAGS)
+ 
++libthrift_la_LDFLAGS = -no-undefined
++libthriftnb_la_LDFLAGS = -no-undefined
++libthriftnb_la_LIBADD = libthrift.la @LIBEVENT_LIBS@
++libthriftz_la_LDFLAGS = -no-undefined
++libthriftz_la_LIBADD = libthrift.la @ZLIB_LIBS@
+ 
+ include_thriftdir = $(includedir)/thrift
+ include_thrift_HEADERS = \
+--- origsrc/thrift-0.5.0/lib/cpp/src/concurrency/Mutex.cpp	2010-09-29 01:07:17.000000000 +0900
++++ src/thrift-0.5.0/lib/cpp/src/concurrency/Mutex.cpp	2010-12-25 16:25:45.427439500 +0900
+@@ -215,12 +215,18 @@ void Mutex::ADAPTIVE_INITIALIZER(void* a
+   // context switches but may cause a thread to 'starve forever' while
+   // waiting for the mutex (not likely if the code within the mutex is
+   // short).
++#if !defined(PTHREAD_MUTEX_ADAPTIVE_NP)
++#define PTHREAD_MUTEX_ADAPTIVE_NP PTHREAD_MUTEX_ADAPTIVE
++#endif
+   init_with_kind((pthread_mutex_t*)arg, PTHREAD_MUTEX_ADAPTIVE_NP);
+ }
+ #endif
+ 
+ #ifdef PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
+ void Mutex::RECURSIVE_INITIALIZER(void* arg) {
++#if !defined(PTHREAD_MUTEX_RECURSIVE_NP)
++#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
++#endif
+   init_with_kind((pthread_mutex_t*)arg, PTHREAD_MUTEX_RECURSIVE_NP);
+ }
+ #endif
+--- origsrc/thrift-0.5.0/lib/cpp/test/Makefile.am	2010-09-29 01:07:15.000000000 +0900
++++ src/thrift-0.5.0/lib/cpp/test/Makefile.am	2010-12-25 18:12:48.989002800 +0900
+@@ -58,7 +58,7 @@ UnitTests_SOURCES = \
+ 	TMemoryBufferTest.cpp \
+ 	TBufferBaseTest.cpp
+ 
+-UnitTests_LDADD = libtestgencpp.la -lboost_unit_test_framework
++UnitTests_LDADD = libtestgencpp.la -lboost_unit_test_framework-mt
+ 
+ #
+ # TFDTransportTest
