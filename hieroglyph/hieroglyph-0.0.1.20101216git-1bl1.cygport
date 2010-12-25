@@ -1,0 +1,39 @@
+GIT_URI="git://anongit.freedesktop.org/${PN}"
+inherit git
+
+DESCRIPTION="PostScript rendering library"
+HOMEPAGE="http://cgit.freedesktop.org/${PN}/"
+
+src_compile()
+{
+	cd ${S}
+	intltoolize --force
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}
+	pushd lib
+	cp ${S}/lib/*.ps .
+	popd
+	pushd tests
+	cp ${S}/tests/run.sh .
+	pushd ps
+	cp ${S}/tests/ps/*.ps .
+	cp ${S}/tests/ps/*.sh .
+	popd
+	popd
+	cygtest
+	rm -f lib/*.ps tests/run.sh tests/ps/*.ps tests/ps/*.sh
+}
+
+PKG_NAMES="${PN} lib${PN}0 lib${PN}-devel"
+hieroglyph_CONTENTS="usr/bin/*.exe usr/share"
+libhieroglyph0_CONTENTS="usr/bin/*.dll usr/lib/${PN}/*/plugins/*.dll"
+libhieroglyph_devel_CONTENTS="usr/include usr/lib/lib${PN}.* usr/lib/pkgconfig"
+
+DIFF_EXCLUDES="Makefile.in.in"
