@@ -1,0 +1,75 @@
+--- origsrc/libnatspec-0.2.6/configure.ac	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/configure.ac	2010-12-29 11:32:39.107457100 +0900
+@@ -10,9 +10,6 @@ dnl AS_LIBTOOL(COMEDILIB, 0, 7, 18, yes)
+ AC_CONFIG_HEADER(config.h)
+ CFLAGS="$CFLAGS -Wall -funsigned-char"
+ 
+-dnl Initialize maintainer mode
+-AM_MAINTAINER_MODE
+-
+ dnl Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CXX
+@@ -24,10 +21,7 @@ AC_PROG_MAKE_SET
+ #AC_PROG_LIBTOOL
+ 
+ dnl Initialize libtool
+-AC_DISABLE_STATIC
+-AC_ENABLE_SHARED(yes)
+-AC_ENABLE_STATIC(no)
+-AM_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AM_PROG_CC_C_O
+ 
+ dnl Checks for libraries.
+--- origsrc/libnatspec-0.2.6/lib/Makefile.am	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/lib/Makefile.am	2010-12-29 11:46:59.886725600 +0900
+@@ -2,6 +2,8 @@ lib_LTLIBRARIES 		= libnatspec.la
+ libnatspec_la_SOURCES	= get_charset.c get_locale.c enrich_fs_options.c convert.c \
+ 	filesystem.c detect.c \
+ 	natspec.h data/get_charset_data.h unicode/uni_7b.h
++libnatspec_la_LDFLAGS	= -no-undefined
++libnatspec_la_LIBADD	= -liconv
+ #libdir 					= /lib
+ #-version-info 0:0:1
+ #-release 1
+--- origsrc/libnatspec-0.2.6/libhi/Makefile.am	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/libhi/Makefile.am	2010-12-29 11:33:51.551626700 +0900
+@@ -2,6 +2,7 @@ lib_LTLIBRARIES 		= libnatspechi.la
+ libnatspechi_la_SOURCES	= language.c natspechi.h
+ libnatspechi_la_LIBADD 		= $(top_srcdir)/lib/libnatspec.la
+ libnatspechi_la_CFLAGS		= -I$(top_srcdir)/lib
++libnatspechi_la_LDFLAGS		= -no-undefined
+ #libdir 					= /lib
+ #-version-info 0:0:1
+ #-release 1
+--- origsrc/libnatspec-0.2.6/src/Makefile.am	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/src/Makefile.am	2010-12-29 11:49:15.882695800 +0900
+@@ -4,5 +4,5 @@ endif
+ 
+ bin_PROGRAMS 	= natspec
+ natspec_SOURCES = natspec.c
+-natspec_LDADD 	= $(top_srcdir)/lib/libnatspec.la $(POPT_LIBS)
++natspec_LDADD 	= $(top_builddir)/lib/libnatspec.la $(POPT_LIBS)
+ natspec_CFLAGS	= -I$(top_srcdir)/lib -I$(top_srcdir)/libhi
+--- origsrc/libnatspec-0.2.6/src/python/Makefile.am	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/src/python/Makefile.am	2010-12-29 11:34:15.666301900 +0900
+@@ -7,7 +7,7 @@ endif
+ 
+ _natspec_la_SOURCES = natspec_wrap.c
+ _natspec_la_CFLAGS = $(LIBNATSPEC_CFLAGS) $(PYTHON_INCLUDES) $(PYTHON_QUIET)
+-_natspec_la_LDFLAGS = -module -avoid-version $(LIBNATSPEC)
++_natspec_la_LDFLAGS = -module -avoid-version $(LIBNATSPEC) -no-undefined
+ 
+ pyexec_SCRIPTS = natspec.py
+ 
+--- origsrc/libnatspec-0.2.6/tests/Makefile.am	2010-01-11 08:19:58.000000000 +0900
++++ src/libnatspec-0.2.6/tests/Makefile.am	2010-12-29 11:55:11.509263900 +0900
+@@ -1,4 +1,5 @@
+-noinst_PROGRAMS				= test_get_charset
++TESTS = test_get_charset
++check_PROGRAMS				= test_get_charset
+ test_get_charset_SOURCES 	= test_get_charset.c
+-test_get_charset_LDADD 		= $(top_srcdir)/lib/libnatspec.la
++test_get_charset_LDADD 		= $(top_builddir)/lib/libnatspec.la
+ test_get_charset_CFLAGS		= -I$(top_srcdir)/lib -pedantic
