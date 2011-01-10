@@ -1,0 +1,111 @@
+--- origsrc/libassa-3.5.0/Makefile.am	2008-02-10 22:48:12.000000000 +0900
++++ src/libassa-3.5.0/Makefile.am	2011-01-10 21:23:31.534494400 +0900
+@@ -1,5 +1,7 @@
+ ## $Id: Makefile.am,v 1.14 2007/08/09 02:19:19 vlg Exp $
+ 
++ACLOCAL_AMFLAGS = -I macros
++
+ SUBDIRS = . assa utils doc tests examples
+ 
+ DIST_SUBDIRS = assa utils doc tests examples 
+--- origsrc/libassa-3.5.0/assa/Makefile.am	2008-02-10 22:48:30.000000000 +0900
++++ src/libassa-3.5.0/assa/Makefile.am	2011-01-10 22:23:08.551031300 +0900
+@@ -105,7 +105,7 @@ lib_LTLIBRARIES = libassa-3.5.la
+ libassa_3_5_la_SOURCES = $(h_sources) $(cpp_sources)
+ 
+ libassa_3_5_la_LDFLAGS = @WIN32_EXTRA_LDFLAGS@ \
+-						 -version-info @LIBASSA_SO_VERSION@ 
++			-no-undefined -version-info @LIBASSA_SO_VERSION@ 
+ 
+ # Disable autoheader.
+ AUTOHEADER=echo
+--- origsrc/libassa-3.5.0/assa/Socket.cpp	2006-09-25 02:35:33.000000000 +0900
++++ src/libassa-3.5.0/assa/Socket.cpp	2011-01-10 22:11:09.388575800 +0900
+@@ -735,9 +735,11 @@ decode_fcntl_flags (long mask_)
+ 		answer += "O_SYNC|";	// 010000
+ 	}
+ 
++#if defined(_O_ASYNC)
+ 	if (mask_ & O_ASYNC) {		// 020000
+ 		answer += "O_ASYNC|";
+ 	}
++#endif
+ 
+ 	answer.erase (answer.end () - 1);
+ 
+--- origsrc/libassa-3.5.0/configure.in	2007-05-15 04:19:50.000000000 +0900
++++ src/libassa-3.5.0/configure.in	2011-01-10 21:37:00.748086400 +0900
+@@ -9,7 +9,6 @@ dnl Initialization
+ dnl ----------------------------------------------------------------------------
+ 
+ AC_INIT(assa/GenServer.cpp)
+-AM_ACLOCAL_INCLUDE(macros)
+ AM_CONFIG_HEADER(config.h)
+ 
+ dnl ----------------------------------------------------------------------------
+@@ -121,8 +120,7 @@ dnl ------------------------------------
+ AC_PROG_CC
+ AC_PROG_CXX
+ AC_PROG_CXXCPP
+-AC_LIBTOOL_WIN32_DLL
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AM_SANITY_CHECK
+ 
+ AC_LANG_CPLUSPLUS
+@@ -140,7 +138,7 @@ AC_MSG_CHECKING([for win32 environment..
+ case "$host_os" in
+ 	cygwin*)
+ 		WIN32_EXTRA_LDFLAGS="--no-undefined"
+-		WIN32_EXTRA_LIBADD="$LIBRPC"
++		WIN32_EXTRA_LIBADD="-lportablexdr"
+ 		AC_MSG_RESULT([found cygwin: added -no-undefined to LDFLAGS])
+ 		;;
+ 	*mingw*)
+--- origsrc/libassa-3.5.0/doc/Makefile.am	2007-08-09 11:19:43.000000000 +0900
++++ src/libassa-3.5.0/doc/Makefile.am	2011-01-10 23:25:01.196438500 +0900
+@@ -28,9 +28,9 @@ install-reference: html/index.html
+ 			basefile=`echo $$file | sed -e 's,^.*/,,'`; \
+ 			${INSTALL_DATA} $$file ${DESTDIR}${docdir}/html/$$basefile; \
+ 		done ; \
+-		${INSTALL_DATA} assa_reference.html ${DESTDIR}${docdir} ;\
+-		${INSTALL_DATA} RELEASE-NOTES-v340.html ${DESTDIR}${docdir} ;\
+-		${INSTALL_DATA} RELEASE-NOTES-v350.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/assa_reference.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/RELEASE-NOTES-v340.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/RELEASE-NOTES-v350.html ${DESTDIR}${docdir} ;\
+ 	fi
+ 
+ uninstall-reference: html/index.html
+--- origsrc/libassa-3.5.0/tests/Makefile.am	2006-07-20 11:30:55.000000000 +0900
++++ src/libassa-3.5.0/tests/Makefile.am	2011-01-10 22:24:10.154612900 +0900
+@@ -15,7 +15,7 @@ EXTRA_DIST = \
+ 
+ TESTS_ENVIRONMENT = top_builddir=$(top_builddir)
+ CPPFLAGS = -I$(top_srcdir)
+-LDFLAGS = -static @WIN32_EXTRA_LDFLAGS@
++LDFLAGS = @WIN32_EXTRA_LDFLAGS@
+ LDADD = $(top_builddir)/assa/libassa-@ASSA_RELEASE@.la @WIN32_EXTRA_LIBADD@
+ 
+ testsubdir = testSubDir
+--- origsrc/libassa-3.5.0/tests/sighand_test.cpp	2006-07-20 11:30:56.000000000 +0900
++++ src/libassa-3.5.0/tests/sighand_test.cpp	2011-01-10 22:26:31.305171900 +0900
+@@ -19,6 +19,7 @@
+ //
+ //-----------------------------------------------------------------------
+ 
++#include <cstdlib>
+ #include <iostream>
+ using namespace std;
+ 
+--- origsrc/libassa-3.5.0/tests/ttcp_assa.cpp	2006-07-20 11:30:56.000000000 +0900
++++ src/libassa-3.5.0/tests/ttcp_assa.cpp	2011-01-10 22:13:36.288157700 +0900
+@@ -38,6 +38,8 @@
+  *      Public Domain.  Distribution Unlimited.
+  */
+ 
++#include <cstdlib>
++
+ #if !defined (WIN32)
+ 
+ #define BSD43
