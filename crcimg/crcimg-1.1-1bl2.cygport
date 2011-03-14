@@ -1,0 +1,32 @@
+DESCRIPTION="Construct .crc files"
+HOMEPAGE="http://dev.laptop.org/git/users/mstone/${PN}"
+SRC_URI="http://dev.laptop.org/git/users/mstone/${PN}/snapshot/${P}.tar.bz2"
+
+DISTCLEANFILES="Makefile"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake -f Makefile.build
+}
+
+src_test()
+{
+	set -x
+	cd ${B}
+	dd if=/dev/zero of=test.img bs=128K count=1
+	./crcimg.exe test.img
+	TEST_CRC=`cat test.crc`
+	if [ "`cat test.crc`" != "7ee8cdcd" ]
+	then
+		error "crc unmatch!"
+	fi
+	rm -f test.img test.crc
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ./${PN}.exe
+}
