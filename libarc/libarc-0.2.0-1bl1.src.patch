@@ -1,0 +1,42 @@
+--- origsrc/libarc-0.2.0/configure.ac	2004-05-29 14:47:30.000000000 +0900
++++ src/libarc-0.2.0/configure.ac	2011-03-21 18:18:18.018833800 +0900
+@@ -64,7 +64,7 @@ fi
+ 
+ AM_INIT_AUTOMAKE
+ 
+-AC_PROG_RANLIB
++LT_INIT(win32-dll)
+ AC_PROG_CXX
+ AC_PROG_CC
+ 
+--- origsrc/libarc-0.2.0/src/Makefile.am	2004-05-25 11:33:50.000000000 +0900
++++ src/libarc-0.2.0/src/Makefile.am	2011-03-21 18:19:36.281369800 +0900
+@@ -3,13 +3,14 @@
+ # Distributed under the BSD License. See COPYING for details.
+ 
+ bin_PROGRAMS = arcdump
+-lib_LIBRARIES = libarc.a
++lib_LTLIBRARIES = libarc.la
+ include_HEADERS = libarc.h
+ 
+-libarc_a_SOURCES = rfc1952.cpp rfc1952.h arc_file.cpp arc_file.h arc_member.cpp arc_member.h url_record.cpp url_record.h misc.cpp misc.h member_iterator.cpp member_iterator.h
++libarc_la_SOURCES = rfc1952.cpp rfc1952.h arc_file.cpp arc_file.h arc_member.cpp arc_member.h url_record.cpp url_record.h misc.cpp misc.h member_iterator.cpp member_iterator.h
++libarc_la_LDFLAGS = -no-undefined
+ 
+ arcdump_SOURCES = arcdump.cpp
+-arcdump_LDADD = -larc -lz
++arcdump_LDADD = libarc.la -lz
+ arcdump_LDFLAGS = -L.
+ 
+ 
+--- origsrc/libarc-0.2.0/src/misc.h	2004-05-24 11:50:48.000000000 +0900
++++ src/libarc-0.2.0/src/misc.h	2011-03-21 18:44:54.784870600 +0900
+@@ -29,7 +29,7 @@ public:
+     errno_exception(int errn0 = errno) throw() :
+             m_Errno(errn0)
+         {
+-#if HAVE_STRERROR_R && !STRERROR_R_CHAR_P
++#if HAVE_STRERROR_R && !STRERROR_R_CHAR_P && !defined(__CYGWIN__)
+             int Errno = strerror_r(m_Errno, m_Message, sizeof(m_Message));
+             if (Errno != 0 && Errno != ERANGE) {
+                 strcpy(m_Message, "Unknown error");
