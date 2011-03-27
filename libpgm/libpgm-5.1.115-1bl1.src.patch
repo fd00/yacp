@@ -1,0 +1,61 @@
+--- origsrc/libpgm-5.1.115~dfsg/openpgm/pgm/Makefile.am	2011-03-23 15:43:15.000000000 +0900
++++ src/libpgm-5.1.115~dfsg/openpgm/pgm/Makefile.am	2011-03-27 20:32:37.557349900 +0900
+@@ -77,11 +77,11 @@ libinclude_HEADERS = \
+ 	include/pgm/zinttypes.h
+ 
+ # nb: Solaris make does not understand $<
+-version.c: version_generator.py
+-	$(AM_V_GEN)$(PYTHON) version_generator.py > $@
++version.c: $(top_srcdir)/version_generator.py
++	$(AM_V_GEN)$(PYTHON) $(top_srcdir)/version_generator.py > $@
+ 
+-galois_tables.c: galois_generator.pl
+-	$(AM_V_GEN)$(PERL) galois_generator.pl > $@
++galois_tables.c: $(top_srcdir)/galois_generator.pl
++	$(AM_V_GEN)$(PERL) $(top_srcdir)/galois_generator.pl > $@
+ 
+ libpgm_noinst_la_CFLAGS = \
+ 	-I$(top_srcdir)/include \
+@@ -92,7 +92,7 @@ libpgm_noinst_la_CFLAGS = \
+ lib_LTLIBRARIES   = libpgm.la
+ libpgm_la_SOURCES =
+ libpgm_la_CFLAGS  = $(libpgm_noinst_la_CFLAGS)
+-libpgm_la_LDFLAGS = -release @RELEASE_INFO@ -version-info @VERSION_INFO@
++libpgm_la_LDFLAGS = -release @RELEASE_INFO@ -version-info @VERSION_INFO@ -no-undefined
+ libpgm_la_LIBADD  = libpgm_noinst.la
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/libpgm-5.1.115~dfsg/openpgm/pgm/configure.ac	2011-03-23 15:43:14.000000000 +0900
++++ src/libpgm-5.1.115~dfsg/openpgm/pgm/configure.ac	2011-03-27 19:54:03.875178600 +0900
+@@ -21,7 +21,7 @@ AC_SUBST([VERSION_INFO], [m4_esyscmd([pe
+ # Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CC_C99
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ AC_PATH_PROG(PERL, perl)
+ AC_PATH_PROG(PYTHON, python)
+ 
+--- origsrc/libpgm-5.1.115~dfsg/openpgm/pgm/getifaddrs.c	2011-03-23 15:43:15.000000000 +0900
++++ src/libpgm-5.1.115~dfsg/openpgm/pgm/getifaddrs.c	2011-03-27 21:00:51.209707400 +0900
+@@ -34,6 +34,7 @@
+ #include <impl/i18n.h>
+ #include <impl/framework.h>
+ 
++#include <sys/ioctl.h>
+ 
+ //#define GETIFADDRS_DEBUG
+ 
+--- origsrc/libpgm-5.1.115~dfsg/openpgm/pgm/time.c	2011-03-23 15:43:14.000000000 +0900
++++ src/libpgm-5.1.115~dfsg/openpgm/pgm/time.c	2011-03-27 20:24:28.889237600 +0900
+@@ -21,6 +21,10 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#if defined(HAVE_GETTIMEOFDAY)
++#define CONFIG_HAVE_GETTIMEOFDAY
++#endif
++
+ #include <errno.h>
+ #include <stdlib.h>
+ #ifdef _WIN32
