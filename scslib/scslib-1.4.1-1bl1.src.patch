@@ -1,0 +1,71 @@
+--- origsrc/scslib-1.4.1/Makefile.am	2003-05-29 00:57:25.000000000 +0900
++++ src/scslib-1.4.1/Makefile.am	2011-03-27 22:22:38.287854400 +0900
+@@ -1,13 +1,13 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+ 
+-lib_LIBRARIES = libscs.a
++lib_LTLIBRARIES = libscs.la
+ 
+ 
+ # shared libraries need libtool. We'll do it later.
+ #lib_LTLIBRARIES = libscs.la
+ 
+-libscs_a_SOURCES = scs.h scs_private.h \
++libscs_la_SOURCES = scs.h scs_private.h \
+ 	double2scs.c print_scs.c \
+ 	addition_scs.c multiplication_scs.c division_scs.c\
+ 	rand_scs.c poly_fct.c\
+@@ -15,6 +15,7 @@ libscs_a_SOURCES = scs.h scs_private.h \
+ 	scs2mpf.c scs2mpfr.c \
+ 	wrapper_scs.h
+ 
++libscs_la_LDFLAGS = -no-undefined
+ 
+ include_HEADERS = scs.h scs_config.h
+ 
+--- origsrc/scslib-1.4.1/configure.in	2003-05-05 18:54:03.000000000 +0900
++++ src/scslib-1.4.1/configure.in	2011-03-27 21:27:33.444630500 +0900
+@@ -39,7 +39,7 @@ dnl Checks for programs.
+ AC_PROG_CC(gcc-3.2 gcc-3.0 gcc cc)
+ AC_PROG_CXX
+ AC_PROG_INSTALL
+-AC_PROG_RANLIB
++LT_INIT(win32-dll)
+ 
+ dnl Checks for header files.
+ AC_HEADER_STDC
+--- origsrc/scslib-1.4.1/tests/Makefile.am	2003-05-05 18:54:03.000000000 +0900
++++ src/scslib-1.4.1/tests/Makefile.am	2011-03-27 21:28:39.141913700 +0900
+@@ -2,12 +2,12 @@
+ 
+ bin_PROGRAMS =  scs_test_timing scs_test_accuracy
+ 
+-LDADD= $(top_builddir)/libscs.a
++LDADD= $(top_builddir)/libscs.la
+ INCLUDES=-I$(top_srcdir)
+ 
+-../libscs.a:
+-	cd $(top_srcdir); make libscs.a 
++$(top_builddir)/libscs.la:
++	cd $(top_srcdir); make libscs.la 
+ 
+ scs_test_timing_SOURCES = test_timing.c tbx_timing.h
+ 
+-scs_test_accuracy_SOURCES = test_accuracy.c
+\ No newline at end of file
++scs_test_accuracy_SOURCES = test_accuracy.c
+--- origsrc/scslib-1.4.1/tests/test_accuracy.c	2003-06-16 22:49:42.000000000 +0900
++++ src/scslib-1.4.1/tests/test_accuracy.c	2011-03-27 22:20:01.521718200 +0900
+@@ -37,6 +37,11 @@ Copyright (C) 2002  David Defour and Flo
+ 
+ #include <mpfr.h>
+ 
++#if defined(__CYGWIN__)
++#define mpfr_out_str __gmpfr_out_str
++__MPFR_DECLSPEC size_t mpfr_out_str _MPFR_PROTO ((FILE*, int, size_t,
++                                                  mpfr_srcptr, mpfr_rnd_t));
++#endif
+ 
+ void (* test_scs_fct) () = NULL;
+ int (* test_mpfr_fct) () = NULL;
