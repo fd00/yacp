@@ -1,0 +1,36 @@
+DESCRIPTION="Correctly Rounded mathematical library"
+HOMEPAGE="http://lipforge.ens-lyon.fr/www/${PN}/"
+SRC_URI="http://lipforge.ens-lyon.fr/frs/download.php/162/${P}.tar.gz"
+
+# http://pkgs.fedoraproject.org/gitweb/?p=crlibm.git
+PATCH_URI="crlibm-1.0beta4-shared.patch"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -rf scs_lib
+}
+
+CYGCONF_ARGS="
+	--disable-static
+	--enable-sse2
+	--enable-mpfr
+	--enable-gmp
+"
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+	cp ${S}/tests/*.testdata .
+	popd
+	cygtest
+}
+
+PKG_NAMES="${PN} lib${PN}0 lib${PN}-devel"
+crlibm_CONTENTS="usr/share"
+libcrlibm0_CONTENTS="usr/bin/*.dll"
+libcrlibm_devel_CONTENTS="usr/include usr/lib"
+
+DIFF_EXCLUDES="crlibm_config.h"

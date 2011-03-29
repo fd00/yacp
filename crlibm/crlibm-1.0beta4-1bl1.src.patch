@@ -1,0 +1,41 @@
+--- origsrc/crlibm-1.0beta4/Makefile.am	2011-03-29 10:06:18.673215000 +0900
++++ src/crlibm-1.0beta4/Makefile.am	2011-03-29 10:06:50.550415600 +0900
+@@ -43,6 +43,8 @@ endif
+ 
+ libcrlibm_la_LIBADD = -lscs
+ 
++libcrlibm_la_LDFLAGS = -no-undefined
++
+ include_HEADERS = crlibm.h
+ 
+ SUBDIRS = $(MAYBE_SCS) . tests
+--- origsrc/crlibm-1.0beta4/configure.ac	2011-03-29 10:06:18.663200600 +0900
++++ src/crlibm-1.0beta4/configure.ac	2011-03-29 10:07:39.634699700 +0900
+@@ -50,7 +50,7 @@ AC_PROG_MAKE_SET
+ dnl Check for compiler
+ 
+ AC_PROG_CC(gcc icc cc)
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ # Try to set compiler flags to get floating point arithmetics 
+ # to work. This is an old heritage and should become useless within 30 years
+@@ -108,7 +108,6 @@ AM_CONDITIONAL(COMPILER_ICC, test x$CC =
+ 
+ dnl Checks for programs.
+ AC_PROG_INSTALL
+-AC_PROG_RANLIB
+ AC_PROG_LN_S
+ 
+ dnl Checks for standard C stuff.
+--- origsrc/crlibm-1.0beta4/crlibm_private.c	2010-03-05 03:10:34.000000000 +0900
++++ src/crlibm-1.0beta4/crlibm_private.c	2011-03-29 10:28:40.190726500 +0900
+@@ -101,7 +101,7 @@ unsigned long long crlibm_init() {
+ /* An exit function which sets FPU flags to initial value */
+ void crlibm_exit(unsigned long long int oldcw) {
+ #ifndef CRLIBM_TYPEOS_BSD
+-#if (defined(CRLIBM_TYPECPU_X86) || defined(CRLIBM_TYPECPU_AMD64))
++#if defined(CRLIBM_HAS_FPU_CONTROL) && (defined(CRLIBM_TYPECPU_X86) || defined(CRLIBM_TYPECPU_AMD64))
+   /* Set FPU flags to use double, not double extended, 
+      with rounding to nearest */
+   unsigned short t = (unsigned short)oldcw;
