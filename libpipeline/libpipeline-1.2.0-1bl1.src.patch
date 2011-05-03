@@ -1,0 +1,53 @@
+--- origsrc/libpipeline-1.2.0/configure.ac	2011-03-19 07:21:53.000000000 +0900
++++ src/libpipeline-1.2.0/configure.ac	2011-05-03 14:18:36.465813500 +0900
+@@ -30,7 +30,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_R
+ AC_PREREQ([2.59])
+ AC_CONFIG_SRCDIR([lib/pipeline.c])
+ AC_GNU_SOURCE
+-LT_INIT([disable-static])
++LT_INIT([win32-dll disable-static])
+ 
+ AC_CONFIG_HEADER([config.h])
+ AC_CANONICAL_HOST
+--- origsrc/libpipeline-1.2.0/gnulib/lib/error.c	2011-03-18 20:50:55.000000000 +0900
++++ src/libpipeline-1.2.0/gnulib/lib/error.c	2011-05-03 14:53:42.814782900 +0900
+@@ -57,10 +57,13 @@ void (*error_print_progname) (void);
+ /* This variable is incremented each time `error' is called.  */
+ unsigned int error_message_count;
+ 
++#if defined(__CYGWIN__) || defined(_LIBC)
++#define program_name program_invocation_name
++#endif
++
+ #ifdef _LIBC
+ /* In the GNU C library, there is a predefined variable for this.  */
+ 
+-# define program_name program_invocation_name
+ # include <errno.h>
+ # include <limits.h>
+ # include <libio/libioP.h>
+--- origsrc/libpipeline-1.2.0/lib/Makefile.am	2011-03-19 07:21:53.000000000 +0900
++++ src/libpipeline-1.2.0/lib/Makefile.am	2011-05-03 14:19:27.358994300 +0900
+@@ -37,7 +37,7 @@ libpipeline_la_LIBADD = ../gnulib/lib/li
+ 
+ libpipeline_la_LDFLAGS = \
+ 	-export-symbols-regex '^(pipecmd|pipeline)_' \
+-	-version-info 3:0:2
++	-version-info 3:0:2 -no-undefined
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libpipeline.pc
+--- origsrc/libpipeline-1.2.0/lib/pipeline.c	2011-03-08 19:40:49.000000000 +0900
++++ src/libpipeline-1.2.0/lib/pipeline.c	2011-05-03 14:58:37.661651700 +0900
+@@ -702,7 +702,11 @@ void pipecmd_exec (pipecmd *cmd)
+ 			else
+ 				unsetenv (cmd->env[i].name);
+ 		} else
++#if defined(__CYGWIN__)
++			environ = NULL;
++#else
+ 			clearenv ();
++#endif
+ 	}
+ 
+ 	switch (cmd->tag) {
