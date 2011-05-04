@@ -1,0 +1,72 @@
+--- origsrc/libctl-3.1/configure.ac	2009-06-06 01:20:52.000000000 +0900
++++ src/libctl-3.1/configure.ac	2011-05-04 13:40:41.050743200 +0900
+@@ -10,8 +10,7 @@ SHARED_VERSION_INFO="4:0:1" # CURRENT:RE
+ 
+ AM_INIT_AUTOMAKE(1.6)
+ AC_SUBST(SHARED_VERSION_INFO)
+-AM_ENABLE_SHARED(no) dnl shared libs cause too many headaches to be default
+-AC_PROG_LIBTOOL
++LT_INIT([win32-dll disable-static])
+ 
+ ###########################################################################
+ 
+@@ -32,6 +31,7 @@ AC_DEFINE_UNQUOTED(LIBCTL_BUGFIX_VERSION
+ 
+ # Checks for programs.
+ AC_PROG_CC
++AM_PROG_CC_C_O
+ 
+ AC_CHECK_PROGS(INDENT, indent gindent, echo)
+ AC_SUBST(INDENT)
+@@ -145,6 +145,7 @@ AC_MSG_RESULT($ok)
+ 
+ # Find Fortran name-mangling routines, for wrapper functions
+ 
++AC_PROG_F77
+ AC_F77_DUMMY_MAIN([], [AC_MSG_WARN([Fortran wrapper functions will not be included])])
+ AC_F77_WRAPPERS
+ 
+--- origsrc/libctl-3.1/examples/Makefile.am	2006-04-02 11:58:45.000000000 +0900
++++ src/libctl-3.1/examples/Makefile.am	2011-05-04 14:18:35.682095300 +0900
+@@ -25,11 +25,11 @@ EXTRA_DIST = example.scm.in README run.c
+ noinst_PROGRAMS = example
+ # pkgdata_DATA = $(SPECIFICATION_FILE)
+ 
+-MY_SOURCES = example.c # plus any other .c/.h files you need
++my_sources = example.c # plus any other .c/.h files you need
+ 
+ MY_LIBS    =         # extra libs you need go here
+-MY_LDFLAGS =         # extra -L flags go here
+-MY_CPPFLAGS =        # extra -I include flags go here
++my_ldflags =         # extra -L flags go here
++my_cppflags =        # extra -I include flags go here
+ MY_DEFS =            # extra -D define flags go here
+ 
+ # what is printed out when invoking your program with --version:
+@@ -56,12 +56,12 @@ CTL_DEFS = -DCTL_SCM='"'$(LIBCTL_DIR)/ba
+           -DSPEC_SCM='"'$(pkgdatadir)/$(SPECIFICATION_FILE)'"' \
+     -DVERSION_STRING='"'$(VERSION_STRING)'"'
+ 
+-example_SOURCES = $(MY_SOURCES)
++example_SOURCES = $(my_sources)
+ nodist_example_SOURCES = main.c geom.c ctl-io.h ctl-io.c
+ BUILT_SOURCES = $(nodist_example_SOURCES)
+ example_LDADD = $(MY_LIBS) $(LIBCTL)
+-example_LDFLAGS = $(MY_LDFLAGS)
+-example_CPPFLAGS = $(MY_CPPFLAGS) $(MY_DEFS) $(CTL_DEFS) $(LIBCTL_CPPFLAGS)
++example_LDFLAGS = $(my_ldflags)
++example_CPPFLAGS = $(my_cppflags) $(MY_DEFS) $(CTL_DEFS) $(LIBCTL_CPPFLAGS)
+ 
+ main.c: $(LIBCTL_DIR)/base/main.c
+ 	cp -f $(LIBCTL_DIR)/base/main.c $@
+--- origsrc/libctl-3.1/utils/Makefile.am	2008-04-12 13:49:25.000000000 +0900
++++ src/libctl-3.1/utils/Makefile.am	2011-05-04 13:16:39.690330400 +0900
+@@ -10,7 +10,7 @@ BUILT_SOURCES = gen-ctl-io geom-ctl-io.c
+ 
+ libctlgeom_la_SOURCES = geom.c 
+ nodist_libctlgeom_la_SOURCES = geom-ctl-io.c ctl-io.h
+-libctlgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ $(top_builddir)/src/libctl.la
++libctlgeom_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ $(top_builddir)/src/libctl.la -no-undefined
+ 
+ geomtst_SOURCES = geomtst.c
+ geomtst_LDADD = libctlgeom.la $(top_builddir)/src/libctl.la
