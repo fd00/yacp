@@ -1,37 +1,39 @@
---- origsrc/accounts-glib/configure.ac	2011-01-06 01:44:51.000000000 +0900
-+++ src/accounts-glib/configure.ac	2011-01-06 01:52:03.069874700 +0900
+--- origsrc/accounts-glib/configure.ac	2011-05-26 01:14:58.000000000 +0900
++++ src/accounts-glib/configure.ac	2011-05-26 01:15:50.672084500 +0900
 @@ -22,7 +22,7 @@ AC_ISC_POSIX
  AC_PROG_CC
  AM_PROG_CC_STDC
  AC_HEADER_STDC
 -AC_PROG_LIBTOOL
-+LT_INIT(win32-dll)
++LT_INIT
  
  GTK_DOC_CHECK([1.3])
  
---- origsrc/accounts-glib/libaccounts-glib/Makefile.am	2011-01-06 01:44:51.000000000 +0900
-+++ src/accounts-glib/libaccounts-glib/Makefile.am	2011-01-06 02:01:40.196888800 +0900
-@@ -1,10 +1,10 @@
+--- origsrc/accounts-glib/libaccounts-glib/Makefile.am	2011-05-26 01:14:58.000000000 +0900
++++ src/accounts-glib/libaccounts-glib/Makefile.am	2011-05-26 01:16:55.124762900 +0900
+@@ -1,9 +1,9 @@
  lib_LTLIBRARIES = \
  	libaccounts-glib.la
  
 -libaccounts_glib_la_CFLAGS = $(LIBACCOUNTS_CFLAGS) -Wall -Werror
--libaccounts_glib_la_LIBADD = $(LIBACCOUNTS_LIBS) -lrt
 +libaccounts_glib_la_CFLAGS = $(LIBACCOUNTS_CFLAGS) -Wall
-+libaccounts_glib_la_LIBADD = $(LIBACCOUNTS_LIBS)
- libaccounts_glib_la_LDFLAGS = \
--	-version-info 1:3:1 \
-+	-version-info 1:3:1 -no-undefined \
+ libaccounts_glib_la_LIBADD = $(LIBACCOUNTS_LIBS) -lrt
+-libaccounts_glib_la_LDFLAGS = \
++libaccounts_glib_la_LDFLAGS = -no-undefined \
+ 	-version-info 1:3:1 \
  	-export-symbols-regex '^ag_'
  
- BUILT_SOURCES = \
-@@ -50,3 +50,4 @@ libaccounts_glib_include_HEADERS = \
+@@ -13,6 +13,8 @@ BUILT_SOURCES = \
  
- EXTRA_DIST = ag-marshal.list
+ CLEANFILES = $(BUILT_SOURCES)
  
 +INCLUDES = -I$(top_srcdir)
---- origsrc/accounts-glib/tests/check_ag.c	2011-01-06 01:44:52.000000000 +0900
-+++ src/accounts-glib/tests/check_ag.c	2011-01-06 02:11:22.717902000 +0900
++
+ libaccounts_glib_la_SOURCES = \
+ 	ag-account.h \
+ 	ag-account.c \
+--- origsrc/accounts-glib/tests/check_ag.c	2011-05-26 01:14:59.000000000 +0900
++++ src/accounts-glib/tests/check_ag.c	2011-05-26 01:17:52.613163700 +0900
 @@ -1089,7 +1089,7 @@ START_TEST(test_concurrency)
                        G_CALLBACK (on_account_created), &account_id);
  
@@ -77,7 +79,7 @@
               timeout_ms, lock_filename);
      system (command);
  
-@@ -1778,7 +1778,7 @@ START_TEST(test_manager_enabled_event)
+@@ -1782,7 +1782,7 @@ START_TEST(test_manager_enabled_event)
                        G_CALLBACK (on_enabled_event), &account_id);
  
      /* this command will enable MyService (which is of type e-mail) */
@@ -86,7 +88,7 @@
      system (command);
  
      source_id = g_timeout_add_seconds (2, enabled_event_test_failed, NULL);
-@@ -1791,7 +1791,7 @@ START_TEST(test_manager_enabled_event)
+@@ -1795,7 +1795,7 @@ START_TEST(test_manager_enabled_event)
      account_id = 0;
  
      /* now disable the account. This also should trigger the enabled-event. */
@@ -95,25 +97,7 @@
      system (command);
  
      source_id = g_timeout_add_seconds (2, enabled_event_test_failed, NULL);
-@@ -2013,7 +2013,7 @@ START_TEST(test_open_locked)
-     timeout_ms =
-         MAX_SQLITE_BUSY_LOOP_TIME_MS + MAX_SQLITE_BUSY_LOOP_TIME_MS / 2;
- 
--    sprintf (command, "test-process lock_db %d %s &",
-+    sprintf (command, "./test-process lock_db %d %s &",
-              timeout_ms, lock_filename);
-     system (command);
- 
-@@ -2078,7 +2078,7 @@ START_TEST(test_read_locked)
-     timeout_ms =
-         MAX_SQLITE_BUSY_LOOP_TIME_MS + MAX_SQLITE_BUSY_LOOP_TIME_MS / 2;
- 
--    sprintf (command, "test-process lock_db %d %s &",
-+    sprintf (command, "./test-process lock_db %d %s &",
-              timeout_ms, lock_filename);
-     system (command);
- 
-@@ -2208,10 +2208,10 @@ START_TEST(test_db_access)
+@@ -2093,10 +2093,10 @@ START_TEST(test_db_access)
                        G_CALLBACK (on_account_created_with_db_locked), NULL);
  
      /* create an account with the e-mail service type enabled */
