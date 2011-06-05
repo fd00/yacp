@@ -1,0 +1,60 @@
+--- origsrc/ekhtml-0.3.2/configure.in	2002-11-11 08:53:25.000000000 +0900
++++ src/ekhtml-0.3.2/configure.in	2011-06-05 12:43:40.797498400 +0900
+@@ -10,9 +10,7 @@ AM_CONFIG_HEADER(include/ekhtml_config.h
+ 
+ AC_PROG_CC
+ AC_C_INLINE
+-AM_PROG_LIBTOOL
+-
+-EK_MAINTAINER_MODE
++LT_INIT
+ 
+ AC_OUTPUT(
+         Makefile 
+--- origsrc/ekhtml-0.3.2/src/Makefile.am	2002-09-18 05:15:10.000000000 +0900
++++ src/ekhtml-0.3.2/src/Makefile.am	2011-06-05 13:16:01.382854000 +0900
+@@ -9,14 +9,16 @@ libekhtml_la_SOURCES = 		\
+ 	hash.c
+ 
+ libekhtml_la_DEPENDENCIES = ekhtml_tables.h
++libekhtml_la_LDFLAGS = -no-undefined
+ lib_LTLIBRARIES = libekhtml.la
+ noinst_PROGRAMS = ekhtml_mktables
+ 
+ ekhtml_mktables_SOURCES = ekhtml_mktables.c
+ 
+-ekhtml.c: ekhtml_tables.h
++$(srcdir)/ekhtml.c: ekhtml_tables.h
+ 
+-ekhtml_tables.h: ekhtml_mktables
++ekhtml_tables.h: ekhtml_mktables$(EXEEXT)
+ 	./ekhtml_mktables > $@
+ 
+ CLEANFILES = ekhtml_tables.h
++INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
+--- origsrc/ekhtml-0.3.2/testsuite/Makefile.am	2002-09-22 03:30:53.000000000 +0900
++++ src/ekhtml-0.3.2/testsuite/Makefile.am	2011-06-05 13:34:31.829504600 +0900
+@@ -1,4 +1,4 @@
+-EKHTML_LIB = $(top_srcdir)/src/libekhtml.la
++EKHTML_LIB = $(top_builddir)/src/libekhtml.la
+ 
+ EXTRA_DIST = \
+ 	ek_sgmllib.py \
+@@ -14,13 +14,15 @@ noinst_PROGRAMS = tester
+ 
+ tester_SOURCES      = tester.c
+ tester_LDADD        = $(EKHTML_LIB) 
+-tester_LDFLAGS      = -static
++tester_LDFLAGS      = 
+ tester_DEPENDENCIES = $(EKHTML_LIB)
+ 
+ $(EKHTML_LIB):
+-	cd $(top_srcdir)/src && $(MAKE)
++	cd $(top_builddir)/src && $(MAKE)
+ 
+ TESTS = test_basic.sh test_crazypage.sh test_bogus_feedsize.sh
+ 
++INCLUDES = -I$(top_srcdir)/include
++
+ dist-hook:
+ 	rm -rf `find $(distdir)/tstpages -name CVS`

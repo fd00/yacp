@@ -1,0 +1,34 @@
+DESCRIPTION="Speedy, yet forgiving, SAX-stylee HTML parser"
+HOMEPAGE="http://${PN}.sourceforge.net/"
+SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -f aclocal.m4 configure
+	find . -name Makefile.in | xargs rm -f
+}
+
+CYGCONF_ARGS="--disable-static"
+
+MAKEOPTS="-j1"
+
+src_test()
+{
+	cd ${B}
+	pushd testsuite
+	for f in ek_sgmllib.py gen_html.py plparser.pl pyparser.py test_basic.sh test_bogus_feedsize.sh test_crazypage.sh tstpages
+	do
+		ln -s ${S}/testsuite/${f} .
+	done
+	popd
+	cygtest
+}
+
+PKG_NAMES="${PN} lib${PN}0 lib${PN}-devel"
+ekhtml_CONTENTS="usr/share"
+libekhtml0_CONTENTS="usr/bin"
+libekhtml_devel_CONTENTS="usr/include usr/lib"
+
+DIFF_EXCLUDES="config.in"
