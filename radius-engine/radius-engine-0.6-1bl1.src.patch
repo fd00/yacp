@@ -1,0 +1,66 @@
+--- origsrc/radius-engine-0.6/Makefile.am	2010-12-13 03:58:16.000000000 +0900
++++ src/radius-engine-0.6/Makefile.am	2011-06-19 15:26:39.623657500 +0900
+@@ -1,7 +1,7 @@
+ include_HEADERS = radius.h
+ 
+-lib_LIBRARIES = libradius-engine.a
+-libradius_engine_a_SOURCES = \
++lib_LTLIBRARIES = libradius-engine.la
++libradius_engine_la_SOURCES = \
+                              r_assert.h \
+                              r_audio.c \
+                              r_audio.h \
+@@ -78,6 +78,8 @@ libradius_engine_a_SOURCES = \
+                              radius.c \
+                              radius.h
+ 
++libradius_engine_la_LDFLAGS = -version-info $(LIBRADIUSENGINE_LIBRARY_VERSION) -no-undefined
++
+ dist_noinst_HEADERS = r_platform_defs_windows.h \
+                       r_platform_windows.h
+ 
+--- origsrc/radius-engine-0.6/acinclude.m4	2010-12-13 03:58:16.000000000 +0900
++++ src/radius-engine-0.6/acinclude.m4	2011-06-19 19:00:03.514128700 +0900
+@@ -279,7 +279,10 @@ esac
+   exec 8>&AC_FD_MSG
+ 
+ case "$target" in
+-	*-*-cygwin* | *-*-mingw32*)
++	*-*-cygwin*)
++		PKG_CHECK_MODULES([GL], [glu], [HAVE_GL=yes])
++		;;
++	*-*-mingw32*)
+ 		GL_CFLAGS=""
+ 		GL_LIBS="-lopengl32 -lglu32"
+ 		HAVE_GL=yes
+@@ -393,7 +396,7 @@ AC_DEFUN([AM_PATH_LUA],
+   LUA_CFLAGS=''
+   LUA_LIBS=''
+ 
+-  PKG_CHECK_MODULES([LUA], [lua5.1], [HAVE_LUA=yes])
++  PKG_CHECK_MODULES([LUA], [lua], [HAVE_LUA=yes])
+ 
+   AC_LANG_PUSH([C])
+   AC_LANG_POP()
+--- origsrc/radius-engine-0.6/configure.in	2010-12-13 03:58:16.000000000 +0900
++++ src/radius-engine-0.6/configure.in	2011-06-19 15:25:56.668865600 +0900
+@@ -1,13 +1,16 @@
+ AC_INIT([Radius Engine], [0.6], [deraj@users.sourceforge.net], [radius-engine], [http://radius-engine.sourceforge.net/])
+-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AC_CANONICAL_TARGET
++AM_INIT_AUTOMAKE([-Wall foreign])
+ 
+ AC_CANONICAL_BUILD
+-AC_CANONICAL_TARGET
+ AC_CANONICAL_HOST
+ 
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-AC_PROG_RANLIB
++LT_INIT([disable-static])
++
++LIBRADIUSENGINE_LIBRARY_VERSION=0:0:0
++AC_SUBST(LIBRADIUSENGINE_LIBRARY_VERSION)
+ 
+ dnl Check for dependencies
+ AM_PATH_OPENGL(:, [AC_MSG_ERROR([*** OpenGL not found! ***])])
