@@ -1,0 +1,119 @@
+--- origsrc/libGenome/configure.ac	2011-06-26 20:16:52.000000000 +0900
++++ src/libGenome/configure.ac	2011-06-26 20:17:34.928753500 +0900
+@@ -67,10 +67,9 @@ AC_PREFIX_DEFAULT(/usr/local)
+ dnl Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CXX
+-AC_PROG_LIBTOOL
+ AC_PROG_INSTALL
+ AC_PROG_LN_S 
+-AM_PROG_LIBTOOL
++LT_INIT
+ AC_SYS_LARGEFILE
+ 
+ dnl Checks for header files.
+--- origsrc/libGenome/libGenome/Makefile.am	2011-06-26 20:16:50.000000000 +0900
++++ src/libGenome/libGenome/Makefile.am	2011-06-26 20:19:17.023411800 +0900
+@@ -37,7 +37,7 @@ library_include_HEADERS = $(LIBGENOME_H)
+ 
+ lib_LTLIBRARIES = libGenome-1.3.la
+ libGenome_1_3_la_SOURCES = $(LIBGENOME_SRC)
+-libGenome_1_3_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) 
++libGenome_1_3_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ 
+ 
+ 
+@@ -45,21 +45,21 @@ INCLUDES = -I$(top_srcdir)
+ 
+ check_PROGRAMS = TestRevComp
+ TestRevComp_SOURCES = TestRevComp.cpp
+-TestRevComp_LDADD = $(top_builddir)/src/libGenome.a
++TestRevComp_LDADD = libGenome-1.3.la
+ 
+ EXTRA_PROGRAMS = test_o_matic testSource testSourceFactory testSourceSeq testTests testgnSequence coordMapper
+ test_o_matic_SOURCES = test-o-matic.cpp
+-test_o_matic_LDADD = $(top_builddir)/src/libGenome.a
++test_o_matic_LDADD = libGenome-1.3.la
+ test_o_matic_LDFLAGS = @STATIC_FLAG@
+ testSource_SOURCES = testSource.cpp
+-testSource_LDADD = $(top_builddir)/src/libGenome.a
++testSource_LDADD = libGenome-1.3.la
+ testSourceFactory_SOURCES = testSourceFactory.cpp
+-testSourceFactory_LDADD = $(top_builddir)/src/libGenome.a
++testSourceFactory_LDADD = libGenome-1.3.la
+ testSourceSeq_SOURCES = testSourceSeq.cpp
+-testSourceSeq_LDADD = $(top_builddir)/src/libGenome.a
++testSourceSeq_LDADD = libGenome-1.3.la
+ testTests_SOURCES = testTests.cpp
+-testTests_LDADD = $(top_builddir)/src/libGenome.a
++testTests_LDADD = libGenome-1.3.la
+ testgnSequence_SOURCES = testgnSequence.cpp
+-testgnSequence_LDADD = $(top_builddir)/src/libGenome.a
++testgnSequence_LDADD = libGenome-1.3.la
+ coordMapper_SOURCES = coordMapper.cpp
+-coordMapper_LDADD = $(top_builddir)/src/libGenome.a
++coordMapper_LDADD = libGenome-1.3.la
+--- origsrc/libGenome/libGenome/TestRevComp.cpp	2011-06-26 20:16:49.000000000 +0900
++++ src/libGenome/libGenome/TestRevComp.cpp	2011-06-26 20:45:57.934304000 +0900
+@@ -4,7 +4,6 @@
+ 
+ #include "libGenome/gnSourceFactory.h"
+ #include "libGenome/gnFASSource.h"
+-#include "libGenome/gnDNXSource.h"
+ #include "libGenome/gnSEQSource.h"
+ #include "libGenome/gnSequence.h"
+ #include <iostream>
+@@ -17,34 +16,34 @@ int main( int32 argc, char* argv[])
+ 
+ 	argc; argv;
+ 
+-	string filename;
+-	cout << "Enter a filename to read bases from.\n";
+-	cin >> filename;
+-	cout << "Opening " + filename + "\n";
+-	gnSequence gnseq, smallseq;
++	std::string filename;
++	std::cout << "Enter a filename to read bases from.\n";
++	std::cin >> filename;
++	std::cout << "Opening " + filename + "\n";
++	genome::gnSequence gnseq, smallseq;
+ 	if(gnseq.LoadSource(filename))
+-		cout << "Sequence has " << gnseq.length() << " base pairs.\n";
++		std::cout << "Sequence has " << gnseq.length() << " base pairs.\n";
+ 	
+ 	smallseq = gnseq.subseq(3836480, 10);
+-	cout << smallseq;
+-	string dump;
+-	cin >> dump;
+-
+-	cout << "Give a file name to output reverse complement data: ";
+-	string outfilename;
+-	cin >> outfilename;
+-	cout << "Bases are:\n";
++	std::cout << smallseq;
++	std::string dump;
++	std::cin >> dump;
++
++	std::cout << "Give a file name to output reverse complement data: ";
++	std::string outfilename;
++	std::cin >> outfilename;
++	std::cout << "Bases are:\n";
+ //	cout << gpseq;
+-	cout << "\nComplement Bases are:\n";
+-	gnBaseSpec* gpbs = gnseq.GetSpec();
++	std::cout << "\nComplement Bases are:\n";
++	genome::gnBaseSpec* gpbs = gnseq.GetSpec();
+ 	gpbs->SetReverseComplement(true);
+ //	cout << gpseq << "\n";
+ 	
+-	gnFASSource::Write(gnseq, outfilename);
++	genome::gnFASSource::Write(gnseq, outfilename);
+ //	gnGBKSource::Write(gpbs, "testfile.seq");
+ //	gnDNXSource::Write(gpbs, "testfile.dnx");
+ 	
+-	cout << "All done.  RevComp is in " << outfilename << "\n";
++	std::cout << "All done.  RevComp is in " << outfilename << "\n";
+ 	char bubba[50];
+-	cin >> bubba;
++	std::cin >> bubba;
+ }
