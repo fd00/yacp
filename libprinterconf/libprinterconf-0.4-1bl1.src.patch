@@ -1,0 +1,112 @@
+--- origsrc/libprinterconf-0.4/configure.in	2001-04-07 10:10:21.000000000 +0900
++++ src/libprinterconf-0.4/configure.in	2011-06-27 01:09:20.727145600 +0900
+@@ -26,7 +26,7 @@ dnl Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CPP
+ AC_PROG_INSTALL
+-AC_PROG_LIBTOOL
++LT_INIT
+ AC_PROG_LN_S
+ 
+ AM_PATH_GLIB(1.2.0, [], [
+--- origsrc/libprinterconf-0.4/src/Makefile.am	2001-06-01 10:42:18.000000000 +0900
++++ src/libprinterconf-0.4/src/Makefile.am	2011-06-27 01:41:41.541602000 +0900
+@@ -1,14 +1,13 @@
+-CFLAGS=@CFLAGS@ @SNMPKIT_INCLUDES@
+ SUBDIRS = parport tests
+ 
+ sbin_PROGRAMS = pconf_detect
+ 
+-INCLUDES=$(GLIB_CFLAGS) @SNMPKIT_INCLUDES@
+-LDFLAGS=$(GLIB_LIBS)
++AM_CFLAGS=$(GLIB_CFLAGS) @SNMPKIT_INCLUDES@
+ 
+ lib_LTLIBRARIES=libprinterconf.la
+-libprinterconf_la_LDFLAGS = -version-info 1:0:1
++libprinterconf_la_LDFLAGS = -version-info 1:0:1 -no-undefined
+ libprinterconf_la_SOURCES=printerconf.c snmpinter.C
++libprinterconf_la_LIBADD = $(GLIB_LIBS) parport/libparport.la
+ 
+ include_HEADERS=printerconf.h snmpinter.h
+ 
+--- origsrc/libprinterconf-0.4/src/pconf_detect.c	2001-07-18 06:32:56.000000000 +0900
++++ src/libprinterconf-0.4/src/pconf_detect.c	2011-06-27 01:35:32.851451600 +0900
+@@ -5,6 +5,8 @@
+ #include <sys/resource.h>
+ #include <sys/utsname.h>
+ #include <sys/wait.h>
++#include <stdlib.h>
++#include <string.h>
+ 
+ #include "config.h"
+ #include "printerconf.h"
+--- origsrc/libprinterconf-0.4/src/snmpinter.C	2001-07-12 03:01:49.000000000 +0900
++++ src/libprinterconf-0.4/src/snmpinter.C	2011-06-27 01:31:15.602040100 +0900
+@@ -5,8 +5,11 @@
+ #include <stdio.h>
+ 
+ #include <string.h>
+-#include <iostream.h>
++#include <iostream>
+ #include <string>
++#include <cstdlib>
++
++using namespace std;
+ 
+ const string HPSTR("JETDIRECT");
+ const string LEXMARKSTR("Lexmark");
+@@ -79,11 +82,11 @@ void *do_req(SNMP_session *printer){
+ 	end=model_begin+strlen(model_begin);
+       prinfo.model=string(model_begin,end-model_begin);
+     /* ------- Lexmark ------- */
+-    }else if(! prinfo.sysDesc.compare(LEXMARKSTR,0, LEXMARKSTR.length())){
++    }else if(! prinfo.sysDesc.compare(LEXMARKSTR)){
+       prinfo.vendor="Lexmark";
+       prinfo.model=prinfo.sysDesc.substr(8,prinfo.sysDesc.find("  "));
+     /* ------- Tektronix ------- */
+-    }else if(! prinfo.sysDesc.compare(TEKTRONIXSTR, 0, TEKTRONIXSTR.length())){
++    }else if(! prinfo.sysDesc.compare(TEKTRONIXSTR)){
+       prinfo.vendor="Tektronix";
+       table.append_string(HRDEVICEDESC,printer_info_insert_info);
+       try{
+@@ -100,31 +103,31 @@ void *do_req(SNMP_session *printer){
+       }else
+ 	throw PrinterException();
+     /* ------- Xerox Desktop ------- */
+-    }else if(! prinfo.sysDesc.compare(XEROXSTR, 0, XEROXSTR.length())){
++    }else if(! prinfo.sysDesc.compare(XEROXSTR)){
+       prinfo.vendor="Xerox";
+       if(prinfo.sysDesc.find("???")!=string::npos)
+ 	prinfo.model="???";
+       else
+ 	prinfo.model=prinfo.sysDesc.substr(prinfo.sysDesc.find(' ')+1);      
+-    }else if(! prinfo.sysDesc.compare (XEROXDC230STR, 0, XEROXDC230STR.length()) ||
+-	     ! prinfo.sysDesc.compare (XEROXDC230STR2, 0, XEROXDC230STR2.length())
++    }else if(! prinfo.sysDesc.compare (XEROXDC230STR) ||
++	     ! prinfo.sysDesc.compare (XEROXDC230STR2)
+ 	     ){
+       prinfo.vendor="Xerox";
+       prinfo.model="Document Centre 230ST";
+-    }else if(! prinfo.sysDesc.compare (XEROXDC265STR, 0, XEROXDC265STR.length())){
++    }else if(! prinfo.sysDesc.compare (XEROXDC265STR)){
+       prinfo.vendor="Xerox";
+       prinfo.model="Document Centre 265";
+-    }else if(! prinfo.sysDesc.compare (EFISTR, 0, EFISTR.length()) || 
+-	     ! prinfo.sysDesc.compare (EFISTR2, 0, EFISTR2.length())){
++    }else if(! prinfo.sysDesc.compare (EFISTR) || 
++	     ! prinfo.sysDesc.compare (EFISTR2)){
+       prinfo.vendor="EFI";
+       prinfo.model="???";
+-    }else if(! prinfo.sysDesc.compare(QMSSTR, 0, QMSSTR.length())){
++    }else if(! prinfo.sysDesc.compare(QMSSTR)){
+       prinfo.vendor="QMS";
+       prinfo.model=prinfo.sysDesc.substr(4);
+-    }else if(! prinfo.sysDesc.compare(IBMSTR, 0, IBMSTR.length())){
++    }else if(! prinfo.sysDesc.compare(IBMSTR)){
+       prinfo.vendor="IBM";
+       prinfo.model=prinfo.sysDesc.substr(4);
+-    }else if(! prinfo.sysDesc.compare(FUJISTR, 0, FUJISTR.length())){
++    }else if(! prinfo.sysDesc.compare(FUJISTR)){
+       prinfo.vendor="Fuji";
+       prinfo.model="Able PRII";
+     }else
