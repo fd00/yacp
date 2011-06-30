@@ -1,0 +1,68 @@
+--- origsrc/libcomplearn-1.1.7/configure.ac	2010-11-25 06:26:29.000000000 +0900
++++ src/libcomplearn-1.1.7/configure.ac	2011-06-30 01:18:19.959269100 +0900
+@@ -3,7 +3,7 @@ AC_CONFIG_SRCDIR(src/ncd.c)
+ AC_GNU_SOURCE
+ AM_INIT_AUTOMAKE
+ AC_CANONICAL_HOST
+-AC_PROG_LIBTOOL
++LT_INIT
+ AM_PROG_CC_C_O
+ AM_MAINTAINER_MODE
+ 
+@@ -114,7 +114,7 @@ else
+   GOMPFLAGS=""
+ fi
+ 
+-if (uname) | grep -i darwin 2>/dev/null 1>/dev/null ; then
++if (uname) | grep -i -e darwin -e cygwin 2>/dev/null 1>/dev/null ; then
+   SONAMEOPTS=""
+ else
+   SONAMEOPTS="-Wl,-soname -Wl,libcomplearn${GOMPSTR}-1.0${shrext_cmds}.0"
+--- origsrc/libcomplearn-1.1.7/src/Makefile.am	2010-01-11 10:14:37.000000000 +0900
++++ src/libcomplearn-1.1.7/src/Makefile.am	2011-06-30 01:41:12.939943500 +0900
+@@ -2,10 +2,10 @@
+ bin_PROGRAMS = ncd anycompress anydecompress complearn-config
+ 
+ if USING_GOMP
+-EXELDFLAGS = -lcomplearn-gomp @PRIVATELIBS@
++EXELDFLAGS = libcomplearn-gomp.la @PRIVATELIBS@
+ lib_LTLIBRARIES   = libcomplearn-gomp.la
+ else
+-EXELDFLAGS = -lcomplearn @PRIVATELIBS@
++EXELDFLAGS = libcomplearn.la @PRIVATELIBS@
+ lib_LTLIBRARIES   = libcomplearn.la
+ endif
+ 
+@@ -119,11 +119,12 @@ complearn/util.h
+ 
+ if USING_GOMP
+ libcomplearn_gomp_la_SOURCES = $(GOBCS) $(BASESOURCEC)
+-libcomplearn_gomp_la_LDFLAGS= -version-info @libcomplearn_version@ @SONAMEOPTS@ @PRIVATELIBS@
++libcomplearn_gomp_la_LDFLAGS= -version-info @libcomplearn_version@ @SONAMEOPTS@ @PRIVATELIBS@ -no-undefined
+ libcomplearn_gomp_la_CPPFLAGS = $(GLOBCPPFLAGS)
++libcomplearn_gomp_la_LIBADD = -lgomp
+ else
+ libcomplearn_la_SOURCES = $(GOBCS) $(BASESOURCEC)
+-libcomplearn_la_LDFLAGS= -version-info @libcomplearn_version@ @SONAMEOPTS@ @PRIVATELIBS@
++libcomplearn_la_LDFLAGS= -version-info @libcomplearn_version@ @SONAMEOPTS@ @PRIVATELIBS@ -no-undefined
+ libcomplearn_la_CPPFLAGS = $(GLOBCPPFLAGS)
+ endif
+ 
+--- origsrc/libcomplearn-1.1.7/tests/Makefile.am	2010-01-11 09:03:47.000000000 +0900
++++ src/libcomplearn-1.1.7/tests/Makefile.am	2011-06-30 01:50:13.657919100 +0900
+@@ -2,8 +2,14 @@
+ if FOUND_CHECK
+ TESTS = check_complearn
+ 
++if USING_GOMP
++COMPLEARN_LIBS = -lcomplearn-gomp
++else
++COMPLEARN_LIBS = -lcomplearn
++endif
++
+ check_PROGRAMS = check_complearn
+ check_complearn_SOURCES = check_complearn.c check_ncd.c check_environment.c check_util.c check_cloutput.c suite.h
+ check_complearn_CFLAGS = @CHECK_CFLAGS@ -I../src
+-check_complearn_LDADD = @CHECK_LIBS@ -lcomplearn -L../src
++check_complearn_LDADD = @CHECK_LIBS@ $(COMPLEARN_LIBS) -L../src
+ endif
