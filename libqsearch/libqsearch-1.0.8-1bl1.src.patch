@@ -1,0 +1,73 @@
+--- origsrc/libqsearch-1.0.8/configure.ac	2008-02-19 02:17:40.000000000 +0900
++++ src/libqsearch-1.0.8/configure.ac	2011-07-01 00:03:37.661854600 +0900
+@@ -4,7 +4,7 @@ AC_INIT(libqsearch,1.0.8,cilibrar@cilibr
+ AC_CONFIG_SRCDIR(src/qsearch-tree.c)
+ AM_INIT_AUTOMAKE
+ AC_CANONICAL_HOST
+-AC_PROG_LIBTOOL
++LT_INIT
+ 
+ # to prevent extra -g -O2 being added
+ AM_PROG_CC_C_O
+@@ -116,7 +116,7 @@ else
+   GOMPFLAGS=""
+ fi
+ 
+-if (uname) | grep -i darwin 2>/dev/null 1>/dev/null ; then
++if (uname) | grep -i -e darwin -e cygwin 2>/dev/null 1>/dev/null ; then
+   SONAMEOPTS=""
+ else
+   SONAMEOPTS="-Wl,-soname -Wl,libqsearch${GOMPSTR}-1.0${shrext_cmds}.0"
+--- origsrc/libqsearch-1.0.8/src/Makefile.am	2008-01-11 13:56:10.000000000 +0900
++++ src/libqsearch-1.0.8/src/Makefile.am	2011-06-30 23:53:10.064531400 +0900
+@@ -3,10 +3,10 @@ bin_PROGRAMS=maketree improvetree qsearc
+ GLOBCPPFLAGS= -I@abs_srcdir@ -I@abs_srcdir@/qsearch
+ 
+ if USING_GOMP
+-EXELDFLAGS = -lqsearch-gomp
++EXELDFLAGS = libqsearch-gomp.la
+ lib_LTLIBRARIES   = libqsearch-gomp.la
+ else
+-EXELDFLAGS = -lqsearch
++EXELDFLAGS = libqsearch.la
+ lib_LTLIBRARIES   = libqsearch.la
+ endif
+ 
+@@ -21,11 +21,11 @@ endif
+ if USING_GOMP
+ libqsearch_gomp_la_SOURCES=qsearch-neighborlist.c qsearch-tree.c qsearch-treemaster.c qsearch-maketree.c qsearch-tree-to-dot.c qsearch-fulltree.c qsconfig.c $(BASEHEADERS)
+ libqsearch_gomp_la_CPPFLAGS= @EXTCPPFLAGS@ @EXTCFLAGS@ $(GLOBCPPFLAGS)
+-libqsearch_gomp_la_LDFLAGS= -version-info @libqsearch_version@ @SONAMEOPTS@ @LIBS@
++libqsearch_gomp_la_LDFLAGS= -version-info @libqsearch_version@ @SONAMEOPTS@ @LIBS@ -no-undefined
+ else
+ libqsearch_la_SOURCES=qsearch-neighborlist.c qsearch-tree.c qsearch-treemaster.c qsearch-maketree.c qsearch-tree-to-dot.c qsearch-fulltree.c qsconfig.c $(BASEHEADERS)
+ libqsearch_la_CPPFLAGS= @EXTCPPFLAGS@ @EXTCFLAGS@ $(GLOBCPPFLAGS)
+-libqsearch_la_LDFLAGS= -version-info @libqsearch_version@ @SONAMEOPTS@ @LIBS@
++libqsearch_la_LDFLAGS= -version-info @libqsearch_version@ @SONAMEOPTS@ @LIBS@ -no-undefined
+ endif
+ 
+ improvetree_SOURCES = improvetree.c
+--- origsrc/libqsearch-1.0.8/src/qsearch-config.c.in	2007-12-04 11:12:01.000000000 +0900
++++ src/libqsearch-1.0.8/src/qsearch-config.c.in	2011-07-02 23:50:08.888734100 +0900
+@@ -41,6 +41,12 @@ SUCH DAMAGE.
+ 
+ #define _(O) gettext(O)
+ 
++#if OPENMP_ENABLED
++#define LIBQSEARCH "qsearch-gomp"
++#else
++#define LIBQSEARCH "qsearch"
++#endif
++
+ static void print_help_and_exit(void)
+ {
+   printf(_("Usage: qsearch-config [options]\n"));
+@@ -93,7 +99,7 @@ int main(int argc, char **argv)
+         print_help_and_exit();
+         break;
+       case 'l':
+-        printf("-L%s/lib -lqsearch\n", fixup("@exec_prefix@"));
++        printf("-L%s/lib -l%s\n", fixup("@exec_prefix@"), LIBQSEARCH);
+         break;
+       case 'c':
+         printf("-I%s/include/qsearch-1.0\n", "@prefix@");
