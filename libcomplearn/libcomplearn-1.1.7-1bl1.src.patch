@@ -1,5 +1,5 @@
 --- origsrc/libcomplearn-1.1.7/configure.ac	2010-11-25 06:26:29.000000000 +0900
-+++ src/libcomplearn-1.1.7/configure.ac	2011-06-30 01:18:19.959269100 +0900
++++ src/libcomplearn-1.1.7/configure.ac	2011-07-02 09:53:14.081080700 +0900
 @@ -3,7 +3,7 @@ AC_CONFIG_SRCDIR(src/ncd.c)
  AC_GNU_SOURCE
  AM_INIT_AUTOMAKE
@@ -19,7 +19,7 @@
  else
    SONAMEOPTS="-Wl,-soname -Wl,libcomplearn${GOMPSTR}-1.0${shrext_cmds}.0"
 --- origsrc/libcomplearn-1.1.7/src/Makefile.am	2010-01-11 10:14:37.000000000 +0900
-+++ src/libcomplearn-1.1.7/src/Makefile.am	2011-06-30 01:41:12.939943500 +0900
++++ src/libcomplearn-1.1.7/src/Makefile.am	2011-07-02 09:53:14.135326200 +0900
 @@ -2,10 +2,10 @@
  bin_PROGRAMS = ncd anycompress anydecompress complearn-config
  
@@ -48,8 +48,36 @@
  libcomplearn_la_CPPFLAGS = $(GLOBCPPFLAGS)
  endif
  
+--- origsrc/libcomplearn-1.1.7/src/complearn-config.c.in	2010-01-11 09:03:47.000000000 +0900
++++ src/libcomplearn-1.1.7/src/complearn-config.c.in	2011-07-02 10:18:06.049994300 +0900
+@@ -12,6 +12,12 @@
+ 
+ #define _(O) gettext(O)
+ 
++#if OPENMP_ENABLED
++#define LIBCOMPLEARN "complearn-gomp"
++#else
++#define LIBCOMPLEARN "complearn"
++#endif
++
+ static void print_help_and_exit(void)
+ {
+   printf(_("Usage: complearn-config [options]\n"));
+@@ -75,10 +81,10 @@ int main(int argc, char **argv)
+         print_help_and_exit();
+         break;
+       case 's':
+-        printf("%s -L%s/lib -lcomplearn\n", "@PRIVATELIBS@", fixup("@exec_prefix@"));
++        printf("%s -L%s/lib -l%s\n", "@PRIVATELIBS@", fixup("@exec_prefix@"), LIBCOMPLEARN);
+         break;
+       case 'l':
+-        printf("-L%s/lib -lcomplearn\n", fixup("@exec_prefix@"));
++        printf("-L%s/lib -l%s\n", fixup("@exec_prefix@"), LIBCOMPLEARN);
+         break;
+       case 'c':
+         printf("-I%s/include/complearn-1.0 %s\n", "@prefix@", "@PRIVATECFLAGS@");
 --- origsrc/libcomplearn-1.1.7/tests/Makefile.am	2010-01-11 09:03:47.000000000 +0900
-+++ src/libcomplearn-1.1.7/tests/Makefile.am	2011-06-30 01:50:13.657919100 +0900
++++ src/libcomplearn-1.1.7/tests/Makefile.am	2011-07-02 09:53:14.146175300 +0900
 @@ -2,8 +2,14 @@
  if FOUND_CHECK
  TESTS = check_complearn
