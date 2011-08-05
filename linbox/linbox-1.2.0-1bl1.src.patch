@@ -1,0 +1,106 @@
+--- origsrc/linbox-1.2.0/interfaces/driver/Makefile.am	2011-05-12 01:05:50.000000000 +0900
++++ src/linbox-1.2.0/interfaces/driver/Makefile.am	2011-08-04 09:13:46.552714300 +0900
+@@ -29,7 +29,7 @@ liblbdriver_la_SOURCES= lb-element.C 	\
+ 			lb-charpoly.C   \
+ 			lb-solve.C
+ 
+-liblbdriver_la_LDFLAGS=$(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(top_srcdir)/linbox/liblinbox.la -Wl,-zmuldefs
++liblbdriver_la_LDFLAGS=$(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(top_srcdir)/linbox/liblinbox.la -Wl,-zmuldefs -no-undefined
+ 
+ pkginclude_HEADERS=\
+ 		lb-driver.h              \
+--- origsrc/linbox-1.2.0/interfaces/maple/Makefile.am	2011-05-12 01:05:49.000000000 +0900
++++ src/linbox-1.2.0/interfaces/maple/Makefile.am	2011-08-04 09:13:59.931952700 +0900
+@@ -12,7 +12,7 @@ lib_LTLIBRARIES=liblbmaple.la
+ 
+ liblbmaple_la_SOURCES= lb-maple.C
+ 
+-liblbmaple_la_LDFLAGS=$(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(MAPLE_LIBS) $(top_srcdir)/interfaces/driver/liblbdriver.la -Wl,-zmuldefs
++liblbmaple_la_LDFLAGS=$(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(MAPLE_LIBS) $(top_srcdir)/interfaces/driver/liblbdriver.la -Wl,-zmuldefs -no-undefined
+ 
+ pkginclude_HEADERS =lb-maple.h lb-maple-utilities.h
+ 
+--- origsrc/linbox-1.2.0/interfaces/sage/Makefile.am	2011-05-12 01:05:48.000000000 +0900
++++ src/linbox-1.2.0/interfaces/sage/Makefile.am	2011-08-04 09:14:16.235395900 +0900
+@@ -15,5 +15,5 @@ pkginclude_HEADERS = linbox-sage.h
+ 
+ #liblinboxsage_la_LIBADD = -llinbox $(BLAS_LIBS)
+ 
+-liblinboxsage_la_LDFLAGS =  $(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(MAPLE_LIBS)  -version-info 0:0:0 #-Wl,-zmuldefs
++liblinboxsage_la_LDFLAGS =  $(GIVARO_LIBS) $(GMP_LIBS) $(NTL_LIBS) $(BLAS_LIBS) $(MAPLE_LIBS)  -version-info 0:0:0 -no-undefined #-Wl,-zmuldefs
+ endif
+--- origsrc/linbox-1.2.0/linbox/Makefile.am	2011-05-12 01:06:21.000000000 +0900
++++ src/linbox-1.2.0/linbox/Makefile.am	2011-08-04 09:40:45.488877300 +0900
+@@ -47,4 +47,7 @@ liblinbox_la_SOURCES = dummy.C
+ liblinbox_la_LIBADD =           \
+     util/libutil.la             \
+     randiter/libranditer.la     \
+-    algorithms/libalgorithms.la
++    algorithms/libalgorithms.la	\
++    $(BLAS_LIBS)
++
++liblinbox_la_LDFLAGS = -no-undefined
+--- origsrc/linbox-1.2.0/linbox/algorithms/Makefile.am	2011-05-12 01:06:19.000000000 +0900
++++ src/linbox-1.2.0/linbox/algorithms/Makefile.am	2011-08-04 09:36:46.936096500 +0900
+@@ -8,6 +8,7 @@ noinst_LTLIBRARIES=libalgorithms.la
+ libalgorithms_la_SOURCES= diophantine-solver.C
+ 
+ #  AM_CPPFLAGS= $(CBLAS_FLAG) $(GMP_CFLAGS) $(NTL_CFLAGS) $(GIVARO_CFLAGS) $(LIDIA_CFLAGS)
++AM_CPPFLAGS = -I$(top_srcdir)
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@ -DDISABLE_COMMENTATOR $(CBLAS_FLAG) $(FFLAFLAS_CFLAGS) $(GMP_CFLAGS) $(NTL_CFLAGS) $(ATLAS_CFLAGS) $(GIVARO_CFLAGS) $(LIDIA_CFLAGS)
+ 
+--- origsrc/linbox-1.2.0/linbox/algorithms/rational-solver-sn.h	2011-05-12 01:06:19.000000000 +0900
++++ src/linbox-1.2.0/linbox/algorithms/rational-solver-sn.h	2011-08-05 01:12:21.473052700 +0900
+@@ -19,11 +19,15 @@
+ #include <linbox/util/timer.h>
+ #include <linbox/field/PID-integer.h>
+ 
++#if defined(__CYGWIN__) && defined(_S)
++#undef _S
++#endif
++
+ namespace LinBox {
+ 
+ 	// bsd and mac problem
+ #undef _R
+-	
++
+ 	/** \brief define the possible return status of the solver's computation. 
+ 	 */
+ 	enum SNSolverReturnStatus {
+--- origsrc/linbox-1.2.0/linbox/randiter/Makefile.am	2011-05-12 01:06:21.000000000 +0900
++++ src/linbox-1.2.0/linbox/randiter/Makefile.am	2011-08-04 09:34:17.621982600 +0900
+@@ -1,7 +1,7 @@
+ # Copyright (c) 2010 the LinBox group
+ # This file is part of LinBox
+ # see COPYING for licence
+-AM_CPPFLAGS=-I$(top_srcdir)/linbox
++AM_CPPFLAGS=-I$(top_srcdir)/linbox -I$(top_srcdir)
+ pkgincludesubdir=$(pkgincludedir)/randiter
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@ -DDISABLE_COMMENTATOR $(GMP_CFLAGS) $(NTL_CFLAGS) $(ATLAS_CFLAGS) $(GIVARO_CFLAGS)  $(FFLAFLAS_CFLAGS)
+--- origsrc/linbox-1.2.0/tests/Makefile.am	2011-05-12 01:06:01.000000000 +0900
++++ src/linbox-1.2.0/tests/Makefile.am	2011-08-04 09:46:07.179359100 +0900
+@@ -4,7 +4,7 @@
+ 
+ AM_CPPFLAGS=-I$(top_srcdir) -I$(top_srcdir)/linbox
+ # AM_LDFLAGS = -llapack -lcblas -latlas
+-AM_LDFLAGS = $(top_srcdir)/linbox/.libs/liblinbox.a
++AM_LDFLAGS = $(top_builddir)/linbox/liblinbox.la
+ #  SAFER_FLAGS = -g -Wall -Wextra -Wno-unused-parameter
+ # bds: no need to optimize for unit/regression tests, and opt adds a lot to compilation time
+ AM_CXXFLAGS = @TESTS_CFLAGS@ -DLinBoxSrcOnly
+--- origsrc/linbox-1.2.0/tests/test-cradomain.C	2011-05-12 01:06:03.000000000 +0900
++++ src/linbox-1.2.0/tests/test-cradomain.C	2011-08-05 01:12:36.815113500 +0900
+@@ -37,6 +37,10 @@
+ #include "linbox/randiter/random-prime.h"
+ #include "linbox/integer.h"
+ 
++#if defined(__CYGWIN__) && defined(_C)
++#undef _C
++#endif
++
+ using namespace LinBox;
+ 
+ struct Interator {
