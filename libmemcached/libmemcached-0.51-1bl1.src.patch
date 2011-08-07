@@ -1,0 +1,127 @@
+--- origsrc/libmemcached-0.51/tests/mem_functions.cc	2011-07-22 15:43:10.000000000 +0900
++++ src/libmemcached-0.51/tests/mem_functions.cc	2011-08-07 00:52:01.825022800 +0900
+@@ -3629,7 +3629,7 @@ static test_return_t pre_nonblock_binary
+     memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_NO_BLOCK, 0);
+     test_compare(MEMCACHED_SUCCESS,
+                  memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1));
+-    test_compare(1UL, memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL));
++    test_compare((uint64_t)1UL, memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL));
+   }
+   else
+   {
+@@ -4401,7 +4401,7 @@ static test_return_t connection_pool_tes
+     uint64_t number_value;
+     test_compare(MEMCACHED_SUCCESS,
+                  memcached_increment(mmc[x], key, keylen, 1, &number_value));
+-    test_compare(number_value, (x+1));
++    test_compare((size_t)number_value, (x+1));
+   }
+ 
+   // Release them..
+@@ -4951,7 +4951,7 @@ static test_return_t ketama_compatibilit
+   test_compare(MEMCACHED_SUCCESS,
+                memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED, 1));
+ 
+-  test_compare(1UL, memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED));
++  test_compare((uint64_t)1UL, memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED));
+ 
+   test_compare(MEMCACHED_SUCCESS, memcached_behavior_set_distribution(memc, MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA));
+   test_compare(MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA, memcached_behavior_get_distribution(memc));
+@@ -5882,7 +5882,7 @@ static test_return_t regression_bug_6554
+ 
+     test_compare(MEMCACHED_SUCCESS, rc);
+     test_true(value);
+-    test_compare(100UL, value_length);
++    test_compare((size_t)100UL, value_length);
+     free(value);
+   }
+ 
+--- origsrc/libmemcached-0.51/tests/namespace.cc	2011-07-20 16:06:30.000000000 +0900
++++ src/libmemcached-0.51/tests/namespace.cc	2011-08-07 00:53:37.539145100 +0900
+@@ -58,13 +58,13 @@ test_return_t memcached_increment_namesp
+                memcached_increment(memc,
+                                    test_literal_param("number"),
+                                    1, &new_number));
+-  test_compare(1UL, new_number);
++  test_compare((uint64_t)1UL, new_number);
+ 
+   test_compare(MEMCACHED_SUCCESS, 
+                memcached_increment(memc,
+                                    test_literal_param("number"),
+                                    1, &new_number));
+-  test_compare(2UL, new_number);
++  test_compare((uint64_t)2UL, new_number);
+ 
+   memcached_st *clone= memcached_clone(NULL, memc);
+ 
+@@ -86,7 +86,7 @@ test_return_t memcached_increment_namesp
+                              test_literal_param("number"),
+                              0, 0, 0);
+   test_true(value);
+-  test_compare(2UL, strlen(value));
++  test_compare((size_t)2UL, strlen(value));
+   test_strcmp("10", value);
+   free(value);
+ 
+@@ -94,13 +94,13 @@ test_return_t memcached_increment_namesp
+                memcached_increment(clone,
+                                    test_literal_param("number"),
+                                    1, &new_number));
+-  test_compare(11UL, new_number);
++  test_compare((uint64_t)11UL, new_number);
+ 
+   test_compare(MEMCACHED_SUCCESS, 
+                memcached_increment(memc,
+                                    test_literal_param("number"),
+                                    1, &new_number));
+-  test_compare(3UL, new_number);
++  test_compare((uint64_t)3UL, new_number);
+ 
+   memcached_free(clone);
+ 
+--- origsrc/libmemcached-0.51/tests/plus.cpp	2011-07-20 16:06:30.000000000 +0900
++++ src/libmemcached-0.51/tests/plus.cpp	2011-08-07 00:57:20.652693200 +0900
+@@ -128,13 +128,13 @@ test_return_t increment_test(memcached_s
+   test_compare(int_inc_value, int_ret_value);
+ 
+   test_true(mcach.increment(key, 1, &int_ret_value));
+-  test_compare(2UL, int_ret_value);
++  test_compare((uint64_t)2UL, int_ret_value);
+ 
+   test_true(mcach.increment(key, 1, &int_ret_value));
+-  test_compare(3UL, int_ret_value);
++  test_compare((uint64_t)3UL, int_ret_value);
+ 
+   test_true(mcach.increment(key, 5, &int_ret_value));
+-  test_compare(8UL, int_ret_value);
++  test_compare((uint64_t)8UL, int_ret_value);
+ 
+   return TEST_SUCCESS;
+ }
+--- origsrc/libmemcached-0.51/tests/replication.cc	2011-07-20 16:06:30.000000000 +0900
++++ src/libmemcached-0.51/tests/replication.cc	2011-08-07 00:55:26.016173100 +0900
+@@ -249,10 +249,10 @@ test_return_t replication_delete_test(me
+ 
+   // Make one copy
+   test_compare(MEMCACHED_SUCCESS, memcached_behavior_set(memc_replicated, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, 1UL));
+-  test_compare(1UL, memcached_behavior_get(memc_replicated, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS));
++  test_compare((uint64_t)1UL, memcached_behavior_get(memc_replicated, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS));
+ 
+   test_compare(MEMCACHED_SUCCESS, memcached_behavior_set(memc_not_replicate, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS, 0UL));
+-  test_compare(0UL, memcached_behavior_get(memc_not_replicate, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS));
++  test_compare((uint64_t)0UL, memcached_behavior_get(memc_not_replicate, MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS));
+ 
+   for (size_t x= 0; x < test_array_length(keys); ++x)
+   {
+--- origsrc/libmemcached-0.51/win32/include.am	2011-03-30 01:45:48.000000000 +0900
++++ src/libmemcached-0.51/win32/include.am	2011-08-06 23:46:39.599717700 +0900
+@@ -3,9 +3,7 @@
+ # All paths should be given relative to the root
+ noinst_HEADERS+= win32/wrappers.h
+ 
+-if BUILD_WIN32_WRAPPERS
+ libmemcached_libmemcached_la_LDFLAGS+=-no-undefined
+ libmemcached_libmemcachedprotocol_la_LDFLAGS+=-no-undefined
+ libmemcached_libmemcachedutil_la_LDFLAGS+=-no-undefined
+ libhashkit_libhashkit_la_LDFLAGS+=-no-undefined
+-endif
