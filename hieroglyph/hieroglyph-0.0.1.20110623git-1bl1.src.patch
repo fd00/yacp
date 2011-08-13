@@ -1,0 +1,204 @@
+--- origsrc/hieroglyph/configure.ac	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/configure.ac	2011-08-13 13:45:04.230576100 +0900
+@@ -1,7 +1,7 @@
+ dnl Process this file with autoconf to produce a configure script.
+ AC_INIT([hieroglyph], 0.0.1, [https://bugs.freedesktop.org/enter_bug.cgi?product=Hieroglyph])
+ 
+-. ./requires
++. ${srcdir}/requires
+ 
+ # Support silent build rules, requires at least automake-1.11. Enable
+ # by either passing --enable-silent-rules to configure or passing V=0
+--- origsrc/hieroglyph/devices/cairo/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/devices/cairo/Makefile.am	2011-08-13 16:38:20.314743400 +0900
+@@ -6,6 +6,7 @@ INCLUDES =						\
+ 	$(CAIRO_CFLAGS)					\
+ 	-I$(top_srcdir)					\
+ 	-I$(top_srcdir)/hieroglyph			\
++	-I$(top_builddir)/hieroglyph			\
+ 	-DHG_COMPILATION				\
+ 	$(NULL)
+ LIBS =							\
+@@ -41,7 +42,7 @@ libhgdev_cairo_la_CFLAGS =				\
+ 	$(CFLAGS)					\
+ 	$(NULL)
+ libhgdev_cairo_la_LDFLAGS =				\
+-	-avoid-version					\
++	-avoid-version -no-undefined			\
+ 	-module						\
+ 	$(LDFLAGS)					\
+ 	$(NULL)
+--- origsrc/hieroglyph/hieroglyph/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/hieroglyph/Makefile.am	2011-08-13 13:47:03.457083200 +0900
+@@ -128,7 +128,7 @@ hg_proto_files =						\
+ stamp_files =							\
+ 	$(NULL)
+ #
+-LEX_OUTPUT_ROOT=lex.$(basename $<)
++LEX_OUTPUT_ROOT=lex.$(basename $(<F))
+ 
+ ##
+ # Local Rules
+@@ -171,6 +171,6 @@ libhieroglyph_la_CFLAGS =					\
+ 	-DG_LOG_DOMAIN="\"Hieroglyph\""				\
+ 	$(NULL)
+ libhieroglyph_la_LDFLAGS =					\
+-	$(LDFLAGS)						\
++	$(LDFLAGS) -no-undefined				\
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)	\
+ 	$(NULL)
+--- origsrc/hieroglyph/hieroglyph/hgallocator.c	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgallocator.c	2011-08-13 16:24:36.558536400 +0900
+@@ -29,6 +29,7 @@
+ #include <string.h>
+ /* GLib is still needed for the mutex lock */
+ #include <glib.h>
++#include "hgobject.h"
+ #include "hgerror.h"
+ #include "hgmessages.h"
+ #include "hgquark.h"
+--- origsrc/hieroglyph/hieroglyph/hgmessages.c	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgmessages.c	2011-08-13 16:34:42.238388000 +0900
+@@ -25,7 +25,9 @@
+ #include "config.h"
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -117,6 +119,7 @@ _hg_message_get_prefix(hg_message_type_t
+ static void
+ _hg_message_stacktrace(void)
+ {
++#if !defined(__CYGWIN__)
+ 	void *traces[1024];
+ 	char **strings;
+ 	int size, i;
+@@ -138,6 +141,7 @@ _hg_message_stacktrace(void)
+ 		}
+ 		free(strings);
+ 	}
++#endif
+ }
+ 
+ static void
+--- origsrc/hieroglyph/hieroglyph/hgoperator.c	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgoperator.c	2011-08-13 16:28:48.109042000 +0900
+@@ -5306,7 +5306,7 @@ DEFUNC_OPER (pop)
+ DEFUNC_OPER (print)
+ {
+ 	hg_quark_t arg0, qstdout;
+-	hg_file_t *stdout;
++	hg_file_t *stdout_;
+ 	hg_char_t *cstr;
+ 
+ 	CHECK_STACK (ostack, 1);
+@@ -5317,12 +5317,12 @@ DEFUNC_OPER (print)
+ 		return FALSE;
+ 	}
+ 	qstdout = hg_vm_get_io(vm, HG_FILE_IO_STDOUT);
+-	stdout = HG_VM_LOCK (vm, qstdout);
+-	if (stdout == NULL) {
++	stdout_ = HG_VM_LOCK (vm, qstdout);
++	if (stdout_ == NULL) {
+ 		goto error;
+ 	}
+ 
+-	hg_file_write(stdout, cstr,
++	hg_file_write(stdout_, cstr,
+ 		      sizeof (hg_char_t),
+ 		      hg_vm_string_length(vm, arg0));
+ 	if (HG_ERROR_IS_SUCCESS0 ()) {
+--- origsrc/hieroglyph/hieroglyph/hgplugin.c	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgplugin.c	2011-08-13 13:50:07.061092800 +0900
+@@ -98,10 +98,18 @@ hg_plugin_open(hg_mem_t         *mem,
+ 	realname = g_path_get_basename(name);
+ 	switch (type) {
+ 	    case HG_PLUGIN_EXTENSION:
++#if defined(__CYGWIN__)
++		    modulename = g_strdup_printf("cygext-%s.dll", realname);
++#else
+ 		    modulename = hg_strdup_printf("libext-%s.so", realname);
++#endif
+ 		    break;
+ 	    case HG_PLUGIN_DEVICE:
++#if defined(__CYGWIN__)
++		    modulename = g_strdup_printf("cygdevice-%s.dll", realname);
++#else
+ 		    modulename = hg_strdup_printf("libdevice-%s.so", realname);
++#endif
+ 		    break;
+ 	    default:
+ 		    hg_warning("Unknown plugin type: %d", type);
+--- origsrc/hieroglyph/plugins/libedit/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/plugins/libedit/Makefile.am	2011-08-13 16:44:20.783484300 +0900
+@@ -6,6 +6,7 @@ INCLUDES =							\
+ 	$(LIBEDIT_CFLAGS)					\
+ 	-I$(top_srcdir)						\
+ 	-I$(top_srcdir)/hieroglyph				\
++	-I$(top_builddir)/hieroglyph				\
+ 	$(NULL)
+ LIBS =								\
+ 	@LDFLAGS@						\
+@@ -44,7 +45,7 @@ libext_libedit_la_CFLAGS =					\
+ 	$(CFLAGS)						\
+ 	$(NULL)
+ libext_libedit_la_LDFLAGS =					\
+-	-avoid-version						\
++	-avoid-version -no-undefined				\
+ 	-module							\
+ 	$(LDFLAGS)						\
+ 	$(NULL)
+--- origsrc/hieroglyph/plugins/unittest/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/plugins/unittest/Makefile.am	2011-08-13 16:44:07.481137800 +0900
+@@ -5,6 +5,7 @@ INCLUDES =							\
+ 	$(GLIB_CFLAGS)						\
+ 	-I$(top_srcdir)						\
+ 	-I$(top_srcdir)/hieroglyph				\
++	-I$(top_builddir)/hieroglyph				\
+ 	$(NULL)
+ LIBS =								\
+ 	@LDFLAGS@						\
+@@ -47,7 +48,7 @@ libext_unittest_la_CFLAGS =					\
+ 	$(CFLAGS)						\
+ 	$(NULL)
+ libext_unittest_la_LDFLAGS =					\
+-	-avoid-version						\
++	-avoid-version -no-undefined				\
+ 	-module							\
+ 	$(LDFLAGS)						\
+ 	$(NULL)
+--- origsrc/hieroglyph/src/hgs/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/src/hgs/Makefile.am	2011-08-13 16:41:40.184840000 +0900
+@@ -5,6 +5,7 @@ INCLUDES =							\
+ 	$(GLIB_CFLAGS)						\
+ 	-I$(top_srcdir)						\
+ 	-I$(top_srcdir)/hieroglyph				\
++	-I$(top_builddir)/hieroglyph				\
+ 	-DHG_COMPILATION					\
+ 	$(NULL)
+ LIBS =								\
+--- origsrc/hieroglyph/tests/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/tests/Makefile.am	2011-08-13 16:48:51.700640100 +0900
+@@ -8,6 +8,7 @@ INCLUDES =						\
+ 	$(CHECK_CFLAGS)					\
+ 	-I$(top_srcdir)					\
+ 	-I$(top_srcdir)/hieroglyph			\
++	-I$(top_builddir)/hieroglyph			\
+ 	-DHG_COMPILATION				\
+ 	$(NULL)
+ DEPS =							\
+--- origsrc/hieroglyph/tests/ps/Makefile.am	2011-08-13 13:44:09.000000000 +0900
++++ src/hieroglyph/tests/ps/Makefile.am	2011-08-13 13:52:40.072911000 +0900
+@@ -15,7 +15,7 @@ EXTRA_DIST =						\
+ ##
+ # Local Rules
+ check:
+-	$(srcdir)/test-ps.sh
++	$(builddir)/test-ps.sh
+ 
+ ##
+ # Target platform
