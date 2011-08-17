@@ -1,0 +1,73 @@
+--- origsrc/libva-1.0.14/va/Makefile.am	2011-07-28 09:38:03.000000000 +0900
++++ src/libva-1.0.14/va/Makefile.am	2011-08-17 10:09:01.179787000 +0900
+@@ -71,7 +71,7 @@ libva_tpi_la_LIBADD		= $(libvacorelib) -
+ SUBDIRS				+= x11
+ lib_LTLIBRARIES			+= libva-x11.la
+ libva_x11_la_SOURCES		= 
+-libva_x11_la_LDFLAGS		= $(LDADD)
++libva_x11_la_LDFLAGS		= $(LDADD) -no-undefined
+ libva_x11_la_DEPENDENCIES	= $(libvacorelib) x11/libva_x11.la
+ libva_x11_la_LIBADD		= $(libvacorelib) x11/libva_x11.la \
+ 	$(LIBVA_LIBS) $(X11_LIBS) $(XEXT_LIBS) $(DRM_LIBS) $(XFIXES_LIBS) -ldl
+@@ -80,7 +80,7 @@ if USE_GLX
+ SUBDIRS				+= glx
+ lib_LTLIBRARIES			+= libva-glx.la
+ libva_glx_la_SOURCES		=
+-libva_glx_la_LDFLAGS		= $(LDADD)
++libva_glx_la_LDFLAGS		= $(LDADD) -no-undefined
+ libva_glx_la_DEPENDENCIES	= $(libvacorelib) glx/libva_glx.la libva-x11.la
+ libva_glx_la_LIBADD		= $(libvacorelib) glx/libva_glx.la libva-x11.la \
+ 	$(GL_DEPS_LIBS) -ldl
+@@ -90,7 +90,7 @@ if USE_EGL
+ SUBDIRS				+= egl
+ lib_LTLIBRARIES			+= libva-egl.la
+ libva_egl_la_SOURCES		=
+-libva_egl_la_LDFLAGS		= $(LDADD)
++libva_egl_la_LDFLAGS		= $(LDADD) -no-undefined
+ libva_egl_la_DEPENDENCIES	= $(libvacorelib) egl/libva_egl.la libva-x11.la
+ libva_egl_la_LIBADD		= $(libvacorelib) egl/libva_egl.la libva-x11.la \
+ 	$(GL_DEPS_LIBS) -ldl
+@@ -100,7 +100,7 @@ if BUILD_DUMMY_BACKEND
+ SUBDIRS				+= dummy
+ lib_LTLIBRARIES			+= libva-dummy.la
+ libva_dummy_la_SOURCES		= 
+-libva_dummy_la_LDFLAGS		= $(LDADD)
++libva_dummy_la_LDFLAGS		= $(LDADD) -no-undefined
+ libva_dummy_la_DEPENDENCIES	= $(libvacorelib) dummy/libva_dummy.la
+ libva_dummy_la_LIBADD		= $(libvacorelib) dummy/libva_dummy.la \
+ 	$(LIBVA_LIBS) $(DRM_LIBS)
+--- origsrc/libva-1.0.14/va/va.c	2011-07-28 09:38:03.000000000 +0900
++++ src/libva-1.0.14/va/va.c	2011-08-17 10:04:55.263601100 +0900
+@@ -205,7 +205,7 @@ static VAStatus va_openDriver(VADisplay
+         strncat( driver_path, DRIVER_EXTENSION, strlen(DRIVER_EXTENSION) );
+         
+         va_infoMessage("Trying to open %s\n", driver_path);
+-#ifndef ANDROID
++#if !defined(ANDROID) && !defined(__CYGWIN__)
+         handle = dlopen( driver_path, RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE );
+ #else
+         handle = dlopen( driver_path, RTLD_NOW| RTLD_GLOBAL);
+--- origsrc/libva-1.0.14/va/va_backend.h	2011-07-28 09:38:03.000000000 +0900
++++ src/libva-1.0.14/va/va_backend.h	2011-08-17 09:43:14.485629600 +0900
+@@ -33,7 +33,9 @@
+ #ifndef ANDROID
+ #include <X11/Xlib.h>
+ #endif
++#if defined(__linux__)
+ #include <linux/videodev2.h>
++#endif
+ 
+ typedef struct VADriverContext *VADriverContextP;
+ typedef struct VADisplayContext *VADisplayContextP;
+--- origsrc/libva-1.0.14/va/va_backend_tpi.h	2011-07-28 09:38:03.000000000 +0900
++++ src/libva-1.0.14/va/va_backend_tpi.h	2011-08-17 10:06:37.981285100 +0900
+@@ -32,7 +32,9 @@
+ #include <va/va.h>
+ #include <va/va_backend.h>
+ 
++#if defined(__linux__)
+ #include <linux/videodev2.h>
++#endif
+ 
+ struct VADriverVTableTPI
+ {
