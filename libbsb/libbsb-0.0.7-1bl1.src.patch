@@ -1,0 +1,53 @@
+--- origsrc/libbsb-0.0.7/Makefile.am	2004-12-22 22:01:19.000000000 +0900
++++ src/libbsb-0.0.7/Makefile.am	2011-08-19 00:55:13.426157800 +0900
+@@ -9,8 +9,9 @@ SUBDIRS = . tests
+ valgrind-check:
+ 	cd tests && $(MAKE) $(AM_MAKEFLAGS) $@
+ 
+-lib_LIBRARIES = libbsb.a
+-libbsb_a_SOURCES = bsb_io.c
++lib_LTLIBRARIES = libbsb.la
++libbsb_la_SOURCES = bsb_io.c
++libbsb_la_LDFLAGS = -no-undefined
+ INCLUDES = -I$(top_builddir)
+ include_HEADERS = bsb.h
+ 
+@@ -22,13 +23,14 @@ if HAVE_LIBPNG
+ bin_PROGRAMS += bsb2png
+ endif
+ 
+-LDADD = libbsb.a
+-
+-bsb2tif_LDADD = libbsb.a -ltiff -lm
+-tif2bsb_LDADD = libbsb.a -ltiff -lm
++bsb2ppm_LDADD = libbsb.la
++ppm2bsb_LDADD = libbsb.la
++bsbfix_LDADD = libbsb.la
++bsb2tif_LDADD = libbsb.la -ltiff -lm
++tif2bsb_LDADD = libbsb.la -ltiff -lm
+ 
+ # Under MinGW libpng needs -lz (doesn't hurt under other platforms)
+-bsb2png_LDADD = libbsb.a -lpng -lz -lm
++bsb2png_LDADD = libbsb.la -lpng -lz -lm
+ 
+ if USE_MSVC
+ # The '; true' is necessary to throw away the remaining arguments from the
+--- origsrc/libbsb-0.0.7/configure.ac	2004-12-22 22:11:36.000000000 +0900
++++ src/libbsb-0.0.7/configure.ac	2011-08-19 00:33:27.897803100 +0900
+@@ -8,7 +8,6 @@ dnl AC_PROG_CC finds CC and defaults CFL
+ orig_cflags=$CFLAGS
+ AC_PROG_CC
+ 
+-
+ dnl Default CFLAGS for developer's convenience and avoid ranlib with MSVC
+ use_msvc=no
+ case "$CC" in
+@@ -24,7 +23,7 @@ case "$CC" in
+ 		if test x"$orig_cflags" != x"$CFLAGS" ; then
+ 			CFLAGS="-g -O2 -W -Wall -Werror"
+ 		fi
+-		AC_PROG_RANLIB
++		LT_INIT([disable-static])
+ 		;;
+ esac
+ AM_CONDITIONAL(USE_MSVC, test x"$use_msvc" = "xyes")
