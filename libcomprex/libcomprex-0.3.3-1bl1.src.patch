@@ -1,0 +1,213 @@
+--- origsrc/libcomprex-0.3.3/Makefile.am	2002-10-20 16:47:09.000000000 +0900
++++ src/libcomprex-0.3.3/Makefile.am	2011-08-31 01:35:52.860451100 +0900
+@@ -1,10 +1,6 @@
+ # $Id: Makefile.am,v 1.10 2002/10/20 07:47:09 chipx86 Exp $
+ 
+-if DYNAMIC_MODS
+-LIBLTDLDIR = libltdl
+-endif
+-
+-SUBDIRS = debian docs intl $(LIBLTDLDIR) modules libcomprex po tests
++SUBDIRS = debian docs intl libcomprex modules po tests
+ 
+ bin_SCRIPTS = comprex-config
+ 
+--- origsrc/libcomprex-0.3.3/acinclude.m4	2002-10-31 19:40:46.000000000 +0900
++++ src/libcomprex-0.3.3/acinclude.m4	2011-09-01 02:00:59.046601100 +0900
+@@ -229,7 +229,7 @@ fi
+ 
+ if test "x$enable_scheme_mods" = "xyes" -o \
+         "x$static_scheme_curl" = "xyes"; then
+-	AC_CHECK_LIB(curl, curl_formparse, ac_curl_support=yes)
++	AC_CHECK_LIB(curl, curl_formadd, ac_curl_support=yes)
+ fi
+ 
+ if test "x$static_scheme_curl" = "xyes"; then
+--- origsrc/libcomprex-0.3.3/configure.ac	2003-03-06 13:29:23.000000000 +0900
++++ src/libcomprex-0.3.3/configure.ac	2011-09-02 01:00:37.879818000 +0900
+@@ -79,9 +79,11 @@ AC_PATH_PROG(sedpath, sed)
+ dnl ################################################################
+ dnl # Setup gettext
+ dnl ################################################################
++IT_PROG_INTLTOOL
++GETTEXT_PACKAGE=$PACKAGE
++AC_SUBST(GETTEXT_PACKAGE)
+ ALL_LINGUAS="it nl"
+ AM_GNU_GETTEXT
+-AM_GNU_GETTEXT_VERSION(0.10.40)
+ 
+ dnl Set PACKAGE_LOCALE_DIR in config.h.
+ if test "x${prefix}" = "xNONE"; then
+@@ -131,8 +133,6 @@ dnl ####################################
+ modlibdir='${libdir}'/comprex
+ AC_SUBST(modlibdir)
+ 
+-AC_LIBLTDL_CONVENIENCE
+-
+ if test "x$enable_dynamic_mods" != "xyes"; then
+ 	INCLTDL=
+ 	LIBLTDL=
+@@ -145,8 +145,7 @@ AM_ENABLE_SHARED
+ AC_LIBTOOL_DLOPEN
+ 
+ AM_PROG_LIBTOOL
+-
+-AC_CONFIG_SUBDIRS(libltdl)
++LTDL_INIT
+ 
+ if test x"$enable_shared" = xyes; then
+ 	DLLDFLAGS=-export-dynamic
+--- origsrc/libcomprex-0.3.3/libcomprex/Makefile.am	2003-02-17 14:11:40.000000000 +0900
++++ src/libcomprex-0.3.3/libcomprex/Makefile.am	2011-08-31 02:17:04.090449900 +0900
+@@ -33,10 +33,10 @@ libcomprex_la_SOURCES = \
+ 	module.c \
+ 	utils.c
+ 
+-libcomprex_la_LIBADD = @DLLDFLAGS@ $(LIBLTDL) $(STATIC_LINK_LIBS)
++libcomprex_la_LIBADD = @DLLDFLAGS@ $(LIBLTDL) $(LTLIBINTL) $(STATIC_LINK_LIBS)
+ 
+ libcomprex_la_LDFLAGS = \
+-	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
++	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) -no-undefined
+ 
+ INCLUDES = \
+ 	-I$(top_srcdir) \
+--- origsrc/libcomprex-0.3.3/libcomprex/module.c	2003-01-01 15:22:36.000000000 +0900
++++ src/libcomprex-0.3.3/libcomprex/module.c	2011-09-02 02:11:10.353854600 +0900
+@@ -128,9 +128,11 @@ __ltdlInit(void)
+ 	{
+ 		errors = lt_dlinit();
+ 
++#if !defined(__CYGWIN__)
+ 		/* Initialize libltdl's memory management. */
+ 		lt_dlmalloc = malloc;
+ 		lt_dlfree   = free;
++#endif
+ 	}
+ 
+ 	if (errors != 0)
+@@ -291,8 +293,11 @@ __scanModulesInDir(char ***list, int *nu
+ 	int i;
+ 	
+ 	/* Get the files in the directory */
++#if defined(__CYGWIN__)
++	files = cxListDir(dir, &num, "cyg");
++#else
+ 	files = cxListDir(dir, &num, "lib");
+-
++#endif
+ 	if (num > 0)
+ 	{
+ 		/* The directory is not empty. */
+--- origsrc/libcomprex-0.3.3/modules/archive/ar/Makefile.am	2003-01-01 19:02:15.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/ar/Makefile.am	2011-08-31 02:21:28.611524400 +0900
+@@ -24,6 +24,7 @@ st =
+ 
+ archive_LTLIBRARIES = libar.la
+ libar_la_SOURCES = $(ARCSOURCES)
++libar_la_LIBADD = $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/archive/bzip2/Makefile.am	2003-01-01 19:02:15.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/bzip2/Makefile.am	2011-08-31 02:23:50.322710400 +0900
+@@ -22,7 +22,7 @@ st =
+ 
+ archive_LTLIBRARIES = libbzip2.la
+ libbzip2_la_SOURCES = $(ARCSOURCES)
+-libbzip2_la_LIBADD  = $(ARCLIBS)
++libbzip2_la_LIBADD  = $(ARCLIBS) $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/archive/cab/Makefile.am	2003-01-01 19:02:15.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/cab/Makefile.am	2011-09-01 01:27:13.706547000 +0900
+@@ -25,6 +25,7 @@ st =
+ 
+ archive_LTLIBRARIES = libcab.la
+ libcab_la_SOURCES   = $(ARCSOURCES)
++libcab_la_LIBADD = $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/archive/cpio/Makefile.am	2003-01-01 19:02:16.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/cpio/Makefile.am	2011-09-01 01:27:58.352241500 +0900
+@@ -24,6 +24,7 @@ st =
+ 
+ archive_LTLIBRARIES = libcpio.la
+ libcpio_la_SOURCES   = $(ARCSOURCES)
++libcpio_la_LIBADD = $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/archive/tar/Makefile.am	2003-01-01 19:02:16.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/tar/Makefile.am	2011-09-01 01:28:14.953462500 +0900
+@@ -26,6 +26,7 @@ st =
+ 
+ archive_LTLIBRARIES = libtar.la
+ libtar_la_SOURCES   = $(ARCSOURCES)
++libtar_la_LIBADD = $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/archive/zip/Makefile.am	2003-01-01 19:02:16.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/zip/Makefile.am	2011-09-01 02:35:19.242008500 +0900
+@@ -34,6 +34,7 @@ st =
+ 
+ archive_LTLIBRARIES = libzip.la
+ libzip_la_SOURCES   = $(ARCSOURCES)
++libzip_la_LIBADD = $(ARCLIBS) $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ 
+--- origsrc/libcomprex-0.3.3/modules/archive/zip/header.h	2003-01-01 15:22:34.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/zip/header.h	2011-09-01 02:39:39.652403200 +0900
+@@ -77,7 +77,7 @@ typedef enum
+ } ZipStatus;
+ 
+ 
+-CxStatus cxZipReadLocalHeader(ZipLocalHeader *header, CxFP *fp);
++ZipStatus cxZipReadLocalHeader(ZipLocalHeader *header, CxFP *fp);
+ 
+ 
+ #endif  /* _MOD_HEADER_H_ */
+--- origsrc/libcomprex-0.3.3/modules/archive/zlib/Makefile.am	2003-01-01 19:02:17.000000000 +0900
++++ src/libcomprex-0.3.3/modules/archive/zlib/Makefile.am	2011-09-01 01:28:44.470180900 +0900
+@@ -25,7 +25,7 @@ st =
+ 
+ archive_LTLIBRARIES = libzlib.la
+ libzlib_la_SOURCES  = $(ARCSOURCES)
+-libzlib_la_LIBADD   = $(ARCLIBS)
++libzlib_la_LIBADD   = $(ARCLIBS) $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/scheme/curl/Makefile.am	2003-01-01 19:02:17.000000000 +0900
++++ src/libcomprex-0.3.3/modules/scheme/curl/Makefile.am	2011-09-01 02:44:32.924393300 +0900
+@@ -22,7 +22,7 @@ st =
+ 
+ scheme_LTLIBRARIES = libcurlscm.la
+ libcurlscm_la_SOURCES = $(SCMSOURCES)
+-libcurlscm_la_LIBADD  = $(SCMLIBS)
++libcurlscm_la_LIBADD  = $(SCMLIBS) $(top_builddir)/libcomprex/libcomprex.la $(LTLIBINTL)
+ endif
+ 
+ INCLUDES = \
+--- origsrc/libcomprex-0.3.3/modules/scheme/curl/curl.c	2003-01-01 15:22:34.000000000 +0900
++++ src/libcomprex-0.3.3/modules/scheme/curl/curl.c	2011-09-01 02:42:46.071546400 +0900
+@@ -23,7 +23,6 @@
+ #include <libcomprex/internal.h>
+ 
+ #include <curl/curl.h>
+-#include <curl/types.h>
+ #include <curl/easy.h>
+ 
+ static CxStatus
+@@ -51,7 +50,6 @@ schemeGet(const char *scheme, const char
+ 
+ 	curl_easy_setopt(curl, CURLOPT_URL, url);
+ 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1);
+-	curl_easy_setopt(curl, CURLOPT_MUTE, 1);
+ 	curl_easy_setopt(curl, CURLOPT_FILE, fp);
+ 	
+ 	res = curl_easy_perform(curl);
