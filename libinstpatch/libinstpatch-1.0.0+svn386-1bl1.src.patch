@@ -1,0 +1,104 @@
+--- origsrc/libinstpatch/configure.ac	2011-09-06 00:33:42.000000000 +0900
++++ src/libinstpatch/configure.ac	2011-09-06 01:35:19.059361300 +0900
+@@ -53,6 +53,8 @@ AC_PROG_CC
+ CFLAGS="$CFLAGS -Wall"
+ 
+ # International language support
++GETTEXT_PACKAGE=$PACKAGE
++AC_SUBST(GETTEXT_PACKAGE)
+ AM_GNU_GETTEXT([external])
+ 
+ AC_PROG_INTLTOOL
+@@ -81,7 +83,7 @@ AM_CONDITIONAL(OS_WIN32, test "$native_w
+ 
+ AC_MSG_CHECKING([for Win32 platform in general])
+ case "$host" in
+-  *-*-mingw*|*-*-cygwin*)
++  *-*-mingw*)
+     platform_win32=yes
+     ;;
+   *)
+--- origsrc/libinstpatch/examples/Makefile.am	2011-09-06 00:33:42.000000000 +0900
++++ src/libinstpatch/examples/Makefile.am	2011-09-06 01:22:48.083599100 +0900
+@@ -4,7 +4,7 @@ EXTRA_DIST = create_sf2.py
+ noinst_PROGRAMS = create_sf2
+ 
+ create_sf2_SOURCES = create_sf2.c
+-create_sf2_LDADD = $(top_srcdir)/libinstpatch/libinstpatch-1.0.la @GOBJECT_LIBS@
++create_sf2_LDADD = $(top_builddir)/libinstpatch/libinstpatch-1.0.la @GOBJECT_LIBS@
+ 
+ INCLUDES = -I$(top_srcdir) @GOBJECT_CFLAGS@
+ 
+--- origsrc/libinstpatch/libinstpatch/Makefile.am	2011-09-06 00:33:33.000000000 +0900
++++ src/libinstpatch/libinstpatch/Makefile.am	2011-09-06 01:04:11.474390600 +0900
+@@ -1,8 +1,9 @@
+ ## Process this file with automake to produce Makefile.in
+ lib_LTLIBRARIES = libinstpatch-1.0.la
+ 
++no_undefined = -no-undefined
+ if PLATFORM_WIN32
+-no_undefined = -no-undefined -export-symbols
++no_undefined += -export-symbols
+ libinstpatch_la_def = libinstpatch.def
+ endif
+ 
+@@ -113,7 +114,7 @@ ipatch_public_h_sources = \
+ 	misc.h \
+ 	sample.h \
+ 	util.h \
+-	version.h
++	$(abs_builddir)/version.h
+ 
+ ipatch_sources = \
+ 	$(BUILT_SOURCES) \
+@@ -216,7 +217,7 @@ libinstpatch_1_0_la_LIBADD = @SNDFILE_LI
+ ipatchincdir = $(includedir)/libinstpatch-1.0/libinstpatch
+ ipatchinc_HEADERS = $(ipatch_public_h_sources) builtin_enums.h libinstpatch.h
+ 
+-INCLUDES = @GOBJECT_CFLAGS@ @SNDFILE_CFLAGS@ -I.. -DLIBINSTPATCH_COMPILATION \
++INCLUDES = @GOBJECT_CFLAGS@ @SNDFILE_CFLAGS@ -I.. -I$(top_srcdir) -DLIBINSTPATCH_COMPILATION \
+    -DG_LOG_DOMAIN=\"libInstPatch\" -DLOCALEDIR=\"$(datadir)/locale\"
+ 
+ marshals.c: marshals.list
+@@ -240,7 +241,7 @@ s-builtin-enums-c: $(ipatch_public_h_sou
+ 	  --vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
+ 	  $(ipatch_public_h_sources) ) \
+         | sed 's/dl_s2/dls2/g;s/DL_S2/DLS2/g' \
+-        > xgen-enumc && cp xgen-enumc $(srcdir)/builtin_enums.c  \
++        > xgen-enumc && cp xgen-enumc $(builddir)/builtin_enums.c  \
+ 	&& rm -f xgen-enumc
+ 
+ builtin_enums.h: s-builtin-enums-h
+@@ -253,8 +254,8 @@ s-builtin-enums-h: $(ipatch_public_h_sou
+ 	  --ftail "G_END_DECLS\n\n#endif /* __IPATCH_BUILTIN_ENUMS_H__ */" \
+ 	  $(ipatch_public_h_sources) ) \
+         | sed 's/dl_s2/dls2/g;s/DL_S2/DLS2/g' \
+-	> xgen-enumh && (cmp -s xgen-enumh $(srcdir)/builtin_enums.h \
+-                         || cp xgen-enumh $(srcdir)/builtin_enums.h ) \
++	> xgen-enumh && (cmp -s xgen-enumh $(builddir)/builtin_enums.h \
++                         || cp xgen-enumh $(builddir)/builtin_enums.h ) \
+ 	&& rm -f xgen-enumh
+ 
+ install-data-local: install-libtool-import-lib
+--- origsrc/libinstpatch/python/Makefile.am	2011-09-06 00:33:17.000000000 +0900
++++ src/libinstpatch/python/Makefile.am	2011-09-06 00:36:25.970717400 +0900
+@@ -16,7 +16,7 @@ endif
+ EXTRA_DIST = ipatch.override ipatch.defs ipatch-types.defs ipatchmodule.c
+ 
+ pyexec_LTLIBRARIES = $(ipatchmodule_cond)
+-ipatchmodule_la_LDFLAGS = -module -avoid-version -export-symbols-regex \
++ipatchmodule_la_LDFLAGS = -module -avoid-version -no-undefined -export-symbols-regex \
+     initipatch
+ ipatchmodule_la_LIBADD = ../libinstpatch/libinstpatch-1.0.la @PYGTK_LIBS@ \
+     @GOBJECT_LIBS@ @PYTHON_LIBS@
+--- origsrc/libinstpatch/utils/Makefile.am	2011-09-06 00:33:41.000000000 +0900
++++ src/libinstpatch/utils/Makefile.am	2011-09-06 01:18:02.311185200 +0900
+@@ -3,7 +3,7 @@ bin_PROGRAMS = riff_dump
+ 
+ riff_dump_SOURCES = riff_dump.c
+ riff_dump_LDADD = @GOBJECT_LIBS@ \
+-  $(top_srcdir)/libinstpatch/libinstpatch-1.0.la -lm
++  $(top_builddir)/libinstpatch/libinstpatch-1.0.la -lm
+ 
+ INCLUDES = -I$(top_srcdir) @GOBJECT_CFLAGS@
+ 
