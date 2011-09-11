@@ -1,15 +1,5 @@
---- origsrc/libstatgrab-0.17/configure.in	2010-02-21 19:08:51.000000000 +0900
-+++ src/libstatgrab-0.17/configure.in	2010-05-05 09:49:07.558760700 +0900
-@@ -21,6 +21,7 @@ AM_CONFIG_HEADER([config.h])
- # Checks for programs
- AC_PROG_CC
- AC_PROG_INSTALL
-+AC_LIBTOOL_WIN32_DLL
- AC_PROG_LIBTOOL
- 
- # Checks for header files
 --- origsrc/libstatgrab-0.17/src/libstatgrab/Makefile.am	2010-02-21 03:17:04.000000000 +0900
-+++ src/libstatgrab-0.17/src/libstatgrab/Makefile.am	2010-05-05 09:49:42.105635700 +0900
++++ src/libstatgrab-0.17/src/libstatgrab/Makefile.am	2011-09-12 05:06:28.707883200 +0900
 @@ -8,7 +8,7 @@ endif
  include_HEADERS = statgrab.h $(include_DEPRECATEDHEADERS)
  lib_LTLIBRARIES = libstatgrab.la
@@ -19,8 +9,49 @@
  
  if DEPRECATED
  libstatgrab_la_DEPRECATEDSOURCES = statgrab_deprecated.c
+--- origsrc/libstatgrab-0.17/src/libstatgrab/disk_stats.c	2009-12-05 07:09:30.000000000 +0900
++++ src/libstatgrab-0.17/src/libstatgrab/disk_stats.c	2011-09-12 05:21:06.152715200 +0900
+@@ -406,7 +406,7 @@ static void diskio_stat_destroy(sg_disk_
+ VECTOR_DECLARE_STATIC(diskio_stats, sg_disk_io_stats, 10,
+ 		      diskio_stat_init, diskio_stat_destroy);
+ 
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ typedef struct {
+ 	int major;
+ 	int minor;
+@@ -435,7 +435,7 @@ sg_disk_io_stats *sg_get_disk_io_stats(i
+ 	kstat_t *ksp;
+ 	kstat_io_t kios;
+ #endif
+-#ifdef LINUX
++#if defined(LINUX) || defined(__CYGWIN__)
+ 	FILE *f;
+ 	char *line_ptr;
+ 	int major, minor;
+@@ -795,7 +795,7 @@ sg_disk_io_stats *sg_get_disk_io_stats(i
+ 	kstat_close(kc);
+ #endif
+ 
+-#ifdef LINUX
++#if defined(LINU) || defined(__CYGWIN__)
+ 	num_diskio = 0;
+ 	n = 0;
+ 
+@@ -943,11 +943,6 @@ out:
+ 	if (f != NULL) fclose(f);
+ #endif
+ 
+-#ifdef CYGWIN
+-	sg_set_error(SG_ERROR_UNSUPPORTED, "Cygwin");
+-	return NULL;
+-#endif
+-
+ #ifdef WIN32
+ 	sg_set_error(SG_ERROR_NONE, NULL);
+ 
 --- origsrc/libstatgrab-0.17/src/libstatgrab/process_stats.c	2006-10-09 23:47:58.000000000 +0900
-+++ src/libstatgrab-0.17/src/libstatgrab/process_stats.c	2010-05-05 11:15:29.386885700 +0900
++++ src/libstatgrab-0.17/src/libstatgrab/process_stats.c	2011-09-12 05:06:28.717897600 +0900
 @@ -28,7 +28,7 @@
  #include "statgrab.h"
  #include "tools.h"
