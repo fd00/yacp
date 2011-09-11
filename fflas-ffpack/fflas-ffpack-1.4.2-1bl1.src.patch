@@ -1,0 +1,61 @@
+--- origsrc/fflas-ffpack-1.4.2/configure.ac	2011-07-13 23:52:18.000000000 +0900
++++ src/fflas-ffpack-1.4.2/configure.ac	2011-09-12 00:19:39.192813200 +0900
+@@ -218,38 +218,13 @@ echo ' option --with-givaro=<prefix> whe
+ echo '*******************************************************************************'
+ ])
+ 
+-BLAS_FOUND=false
++BLAS_PATH=/usr/lib
++AC_SUBST(BLAS_PATH)
++PKG_CHECK_MODULES(BLAS, blas)
++PKG_CHECK_MODULES(LAPACK, lapack)
+ 
+-FF_CHECK_BLAS
+-
+-FF_CHECK_GOTOBLAS
+-
+-FF_CHECK_GSL
+-
+-if test "$BLAS_FOUND" = "false" ; then
+-	FF_CHECK_CBLAS
+-fi
+-
+-if test "$BLAS_FOUND" = "false" ; then
+-	FF_CHECK_OTHERBLAS
+-fi
+-
+-if test "$BLAS_FOUND" = "false" ; then
+-	echo ''
+-	echo '*******************************************************************************'
+-	echo ' ERROR: BLAS not found!'
+-	echo
+-	echo ' BLAS routines are required for this library to compile. Please'
+-	echo ' make sure BLAS are installed and specify its location with the option'
+-	echo ' --with-blas=<lib> when running configure (or --with-cblas for atlas,...).'
+-	echo '*******************************************************************************'
+-	exit 1
+-fi
+-
+-FF_CHECK_LAPACK
+-
+-BLAS_LIBS="${BLAS_LIBS} ${LAPACK_LIBS}"
+-AC_SUBST(BLAS_LIBS)
++CBLAS_FLAG="-D__FFLAFLAS_HAVE_CBLAS"
++AC_SUBST(CBLAS_FLAG)
+ 
+ # AM_CONDITIONAL(FFLASFFPACK_HAVE_BLAS,  test "x$BLAS_FOUND" != "xfalse")
+ 
+--- origsrc/fflas-ffpack-1.4.2/tests/Makefile.am	2011-07-13 22:52:58.000000000 +0900
++++ src/fflas-ffpack-1.4.2/tests/Makefile.am	2011-09-12 00:29:50.077091600 +0900
+@@ -12,10 +12,9 @@ AM_CPPFLAGS=-I$(top_srcdir)
+ AM_CXXFLAGS = @TESTS_CFLAGS@
+ AM_CPPFLAGS += $(OPTFLAGS) -I$(top_srcdir)/fflas-ffpack/utils/ -I$(top_srcdir)/fflas-ffpack/fflas/  -I$(top_srcdir)/fflas-ffpack/ffpack  -I$(top_srcdir)/fflas-ffpack/field  $(CBLAS_FLAG) $(GMP_CFLAGS)  $(GIVARO_CFLAGS)
+ LDADD = $(BLAS_LIBS) $(GIVARO_LIBS) $(GMP_LIBS)
+-AM_LDFLAGS=-static
++AM_LDFLAGS=
+ 
+ BASIC_TESTS =              \
+-		test-lqup              \
+ 		test-compressQ
+ 
+ NOT_A_TEST =  \
