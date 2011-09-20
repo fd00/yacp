@@ -1,0 +1,33 @@
+DESCRIPTION="Library for Project Athena's service name resolution protocol"
+HOMEPAGE="ftp://athena-dist.mit.edu/pub/ATHENA/${PN}/"
+SRC_URI="ftp://athena-dist.mit.edu/pub/ATHENA/${PN}/${P}.tar.gz"
+
+# http://pkgs.fedoraproject.org/gitweb/?p=hesiod.git
+PATCH_URI="
+	${P}-env.patch
+	${P}-str.patch
+	${P}-dnsparse.patch
+	${P}-libresolv.patch
+	${P}-perms.patch
+"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -f aclocal.m4
+}
+
+CYGCONF_ARGS="--disable-static"
+
+src_test()
+{
+	cd ${B}
+	HESIOD_CONFIG=${S}/hesiod.config.sample \
+		./libtool --mode=execute ./hestest ${S}/hestest.conf
+}
+
+PKG_NAMES="${PN} lib${PN}0 lib${PN}-devel"
+hesiod_CONTENTS="usr/share/doc usr/share/man/man5"
+libhesiod0_CONTENTS="usr/bin"
+libhesiod_devel_CONTENTS="usr/include usr/lib usr/share/man/man3"
