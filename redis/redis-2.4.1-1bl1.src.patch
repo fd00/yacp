@@ -1,0 +1,194 @@
+--- origsrc/redis-2.4.1/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/Makefile.am	2011-10-19 09:10:45.852839100 +0900
+@@ -0,0 +1 @@
++SUBDIRS = deps src
+--- origsrc/redis-2.4.1/autoscan-2.68.log	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/autoscan-2.68.log	2011-10-19 10:04:03.810053200 +0900
+@@ -0,0 +1,20 @@
++autoscan-2.68: warning: missing AC_CHECK_FUNCS([bzero]) wanted by: 
++	src/t_zset.c:1258
++autoscan-2.68: warning: missing AC_PROG_CXX wanted by: 
++	ltmain.sh:964
++	ltmain.sh:1379
++	ltmain.sh:1382
++	ltmain.sh:1387
++	ltmain.sh:1387
++	ltmain.sh:1397
++	ltmain.sh:1401
++	ltmain.sh:1404
++	ltmain.sh:1404
++	ltmain.sh:2441
++autoscan-2.68: warning: missing AC_PROG_RANLIB wanted by: 
++	ltmain.sh:2454
++autoscan-2.68: warning: missing AC_TYPE_MODE_T wanted by: 
++	src/anet.c:295
++	src/anet.h:49
++	src/config.c:78
++	src/redis.h:381
+--- origsrc/redis-2.4.1/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/configure.ac	2011-10-19 10:05:54.068597200 +0900
+@@ -0,0 +1,60 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.68])
++AC_INIT([redis], [2.4.1], [http://redis.io/])
++AC_CONFIG_SRCDIR([config.h.in])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_AWK
++AC_PROG_CC
++AC_PROG_CPP
++AC_PROG_INSTALL
++LT_INIT([disable-static])
++AC_PROG_LN_S
++AC_PROG_MAKE_SET
++
++# Checks for libraries.
++PKG_CHECK_MODULES(LIBEVENT, libevent)
++
++# Checks for header files.
++AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h inttypes.h limits.h netdb.h netinet/in.h stdint.h stdlib.h string.h strings.h sys/ioctl.h sys/socket.h sys/time.h syslog.h termios.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_C_INLINE
++AC_TYPE_INT16_T
++AC_TYPE_INT32_T
++AC_TYPE_INT64_T
++AC_TYPE_INT8_T
++AC_TYPE_MODE_T
++AC_TYPE_OFF_T
++AC_TYPE_PID_T
++AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT64_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_ERROR_AT_LINE
++AC_FUNC_FORK
++AC_FUNC_FSEEKO
++AC_FUNC_MALLOC
++AC_FUNC_MMAP
++AC_FUNC_REALLOC
++AC_FUNC_STRCOLL
++AC_FUNC_STRTOD
++AC_FUNC_WAIT3
++AC_CHECK_FUNCS([atexit bzero dup2 ftruncate getcwd gethostbyname gettimeofday inet_ntoa memmove memset munmap select socket strcasecmp strchr strdup strerror strncasecmp strstr strtol])
++
++AC_CONFIG_FILES([Makefile
++                 deps/Makefile
++                 deps/hiredis/Makefile
++                 deps/hiredis/adapters/Makefile
++                 deps/linenoise/Makefile
++                 src/Makefile])
++AC_OUTPUT
+--- origsrc/redis-2.4.1/deps/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/deps/Makefile.am	2011-10-19 09:10:45.862853500 +0900
+@@ -0,0 +1 @@
++SUBDIRS = hiredis linenoise
+--- origsrc/redis-2.4.1/deps/hiredis/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/deps/hiredis/Makefile.am	2011-10-19 09:10:45.862853500 +0900
+@@ -0,0 +1,19 @@
++SUBDIRS = adapters
++
++lib_LTLIBRARIES = libhiredis.la
++
++hiredis_includedir = $(includedir)/hiredis
++hiredis_include_HEADERS = hiredis.h async.h
++
++bin_PROGRAMS = hiredis-example-libevent hiredis-test
++
++TESTS = hiredis-test
++
++hiredis_example_libevent_SOURCES = example-libevent.c
++hiredis_example_libevent_LDADD = libhiredis.la $(LIBEVENT_LIBS)
++
++hiredis_test_SOURCES = test.c
++hiredis_test_LDADD = libhiredis.la
++
++libhiredis_la_SOURCES = net.c hiredis.c sds.c async.c
++libhiredis_la_LDFLAGS = -no-undefined
+--- origsrc/redis-2.4.1/deps/hiredis/adapters/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/deps/hiredis/adapters/Makefile.am	2011-10-19 09:10:45.882882300 +0900
+@@ -0,0 +1,2 @@
++hiredis_adapters_includedir = $(includedir)/hiredis/adapters
++hiredis_adapters_include_HEADERS = ae.h libev.h libevent.h
+--- origsrc/redis-2.4.1/deps/hiredis/adapters/libevent.h	2011-10-17 17:46:00.000000000 +0900
++++ src/redis-2.4.1/deps/hiredis/adapters/libevent.h	2011-10-19 09:25:58.894924900 +0900
+@@ -52,7 +52,7 @@ int redisLibeventAttach(redisAsyncContex
+     redisLibeventEvents *e;
+ 
+     /* Nothing should be attached when something is already attached */
+-    if (ac->_adapter_data != NULL)
++    if (ac->ev.data != NULL)
+         return REDIS_ERR;
+ 
+     /* Create container for context and r/w events */
+@@ -60,12 +60,12 @@ int redisLibeventAttach(redisAsyncContex
+     e->context = ac;
+ 
+     /* Register functions to start/stop listening for events */
+-    ac->evAddRead = redisLibeventAddRead;
+-    ac->evDelRead = redisLibeventDelRead;
+-    ac->evAddWrite = redisLibeventAddWrite;
+-    ac->evDelWrite = redisLibeventDelWrite;
+-    ac->evCleanup = redisLibeventCleanup;
+-    ac->_adapter_data = e;
++    ac->ev.addRead = redisLibeventAddRead;
++    ac->ev.delRead = redisLibeventDelRead;
++    ac->ev.addWrite = redisLibeventAddWrite;
++    ac->ev.delWrite = redisLibeventDelWrite;
++    ac->ev.cleanup = redisLibeventCleanup;
++    ac->ev.data = e;
+ 
+     /* Initialize and install read/write events */
+     event_set(&e->rev,c->fd,EV_READ,redisLibeventReadEvent,e);
+--- origsrc/redis-2.4.1/deps/linenoise/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/deps/linenoise/Makefile.am	2011-10-19 09:10:45.892896700 +0900
+@@ -0,0 +1,2 @@
++noinst_LTLIBRARIES = liblinenoise.la
++liblinenoise_la_SOURCES = linenoise.c
+\ No newline at end of file
+--- origsrc/redis-2.4.1/src/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/src/Makefile.am	2011-10-19 09:27:44.446841700 +0900
+@@ -0,0 +1,16 @@
++INCLUDES = -I$(top_srcdir)/deps/hiredis -I$(top_srcdir)/deps/linenoise
++
++bin_PROGRAMS = redis-server redis-benchmark redis-cli redis-check-dump redis-check-aof
++
++redis_server_SOURCES = adlist.c ae.c anet.c dict.c redis.c sds.c zmalloc.c lzf_c.c lzf_d.c pqsort.c zipmap.c sha1.c ziplist.c release.c networking.c util.c object.c db.c replication.c rdb.c t_string.c t_list.c t_set.c t_zset.c t_hash.c config.c aof.c vm.c pubsub.c multi.c debug.c sort.c intset.c syncio.c slowlog.c bio.c
++
++redis_benchmark_SOURCES = ae.c anet.c redis-benchmark.c sds.c adlist.c zmalloc.c
++redis_benchmark_LDADD = $(top_builddir)/deps/hiredis/libhiredis.la
++
++redis_cli_SOURCES = anet.c sds.c adlist.c redis-cli.c zmalloc.c release.c
++redis_cli_LDADD = $(top_builddir)/deps/hiredis/libhiredis.la $(top_builddir)/deps/linenoise/liblinenoise.la
++
++redis_check_dump_SOURCES = redis-check-dump.c lzf_c.c lzf_d.c
++
++redis_check_aof_SOURCES = redis-check-aof.c
++
+--- origsrc/redis-2.4.1/src/redis.c	2011-10-17 17:46:00.000000000 +0900
++++ src/redis-2.4.1/src/redis.c	2011-10-19 09:10:45.912925500 +0900
+@@ -55,6 +55,10 @@
+ #include <pthread.h>
+ #include <sys/resource.h>
+ 
++#if !defined(SA_ONSTACK)
++#define SA_ONSTACK 0x00000000
++#endif
++
+ /* Our shared "common" objects */
+ 
+ struct sharedObjectsStruct shared;
+--- origsrc/redis-2.4.1/src/release.h	1970-01-01 09:00:00.000000000 +0900
++++ src/redis-2.4.1/src/release.h	2011-10-19 09:10:45.922939900 +0900
+@@ -0,0 +1,2 @@
++#define REDIS_GIT_SHA1 "00000000"
++#define REDIS_GIT_DIRTY "0"
