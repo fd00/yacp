@@ -1,7 +1,7 @@
 DESCRIPTION="Library for decoding WMO FM-92 GRIB messages"
 HOMEPAGE="http://www.ecmwf.int/products/data/software/${PN}.html"
-SRC_URI="http://www.ecmwf.int/products/data/software/download/software_files/${P}.tar.gz"
-PATCH_URI="http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sci-libs/${PN}/files/${P}-autotools.patch"
+SRC_URI="http://www.ecmwf.int/products/data/software/download/software_files/${P}_libtool.tar.gz"
+SRC_DIR="${P}_libtool"
 
 CYGPORT_USE_UNSTABLE_API=1
 src_patch_hook()
@@ -11,18 +11,33 @@ src_patch_hook()
 }
 
 CYGCONF_ARGS="
+	--datadir=/usr/share/${PN}
+	--disable-static
 	--enable-pthread
 	--enable-install-system-perl
+	--with-ifs-samples=/usr/share/${PN}/ifs_samples
+	--with-netcdf=/usr
+	--with-png-support
 "
 
-PKG_NAMES="${PN} lib${PN}0 lib${PN}-devel"
+src_test()
+{
+	cd ${B}
+	cp ${S}/tests/*.sh tests/
+	rm tests/include.sh
+	touch tests/include.sh
+	cygtest
+	rm ${B}/tests/*.sh
+}
+
+PKG_NAMES="${PN} lib${PN}1.9.9 lib${PN}-devel"
 grib_api_CONTENTS="
 	usr/bin/[bgpt]*
 	usr/share/doc/Cygwin
 	usr/share/doc/${PN}/[A-Z]*
 	usr/share/${PN}
 "
-libgrib_api0_CONTENTS="
+libgrib_api1_9_9_CONTENTS="
 	usr/bin/*.dll
 "
 libgrib_api_devel_CONTENTS="
@@ -33,4 +48,4 @@ libgrib_api_devel_CONTENTS="
 
 HTMLDOCS="html/*"
 
-DIFF_EXCLUDES="Makefile.PL"
+DIFF_EXCLUDES="data"
