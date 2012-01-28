@@ -1,0 +1,212 @@
+--- origsrc/thrift-0.8.0/lib/c_glib/Makefile.am	2011-11-27 04:00:36.000000000 +0900
++++ src/thrift-0.8.0/lib/c_glib/Makefile.am	2012-01-28 13:34:54.671954400 +0900
+@@ -24,12 +24,13 @@ pkgconfigdir = $(libdir)/pkgconfig
+ lib_LTLIBRARIES = libthrift_c_glib.la
+ pkgconfig_DATA = thrift_c_glib.pc
+ 
+-common_cflags = -g -Wall -W -Werror -Isrc $(GLIB_CFLAGS)
++common_cflags = -g -Wall -W -I$(srcdir)/src $(GLIB_CFLAGS)
+ common_ldflags = -g -Wall -W $(GLIB_LDFLAGS) @GCOV_LDFLAGS@
+-
+ # this removes optimizations and adds coverage flags
+ CFLAGS = @GCOV_CFLAGS@
+ 
++AM_LDFLAGS = $(common_ldflags) -no-undefined
++
+ # Define the source files for the module
+ 
+ libthrift_c_glib_la_SOURCES = src/thrift.c \
+@@ -52,6 +53,7 @@ libthrift_c_glib_la_SOURCES = src/thrift
+                               src/server/thrift_simple_server.c
+ 
+ libthrift_c_glib_la_CFLAGS = $(common_cflags)
++libthrift_c_glib_la_LIBADD = $(GOBJECT_LIBS)
+ 
+ include_thriftdir = $(includedir)/thrift
+ include_thrift_HEADERS = \
+--- origsrc/thrift-0.8.0/lib/c_glib/test/Makefile.am	2011-11-27 04:00:36.000000000 +0900
++++ src/thrift-0.8.0/lib/c_glib/test/Makefile.am	2012-01-28 14:22:55.760450400 +0900
+@@ -19,7 +19,7 @@
+ 
+ SUBDIRS =
+ 
+-AM_CPPFLAGS = -g -Wall -I../src $(GLIB_CFLAGS)
++AM_CPPFLAGS = -g -Wall -I$(srcdir)/../src $(GLIB_CFLAGS)
+ AM_LDFLAGS = $(GLIB_LIBS) $(GOBJECT_LIBS) @GCOV_LDFLAGS@
+ 
+ CFLAGS = @GCOV_CFLAGS@
+@@ -42,63 +42,31 @@ if WITH_CPP
+ endif
+ 
+ testtransportsocket_SOURCES = testtransportsocket.c
+-testtransportsocket_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testtransportsocket_LDADD = ../libthrift_c_glib.la
+ 
+ testbinaryprotocol_SOURCES = testbinaryprotocol.c
+-testbinaryprotocol_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testbinaryprotocol_LDADD = ../libthrift_c_glib.la
+ 
+ testbufferedtransport_SOURCES = testbufferedtransport.c
+-testbufferedtransport_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testbufferedtransport_LDADD = ../libthrift_c_glib.la
+ 
+ testframedtransport_SOURCES = testframedtransport.c
+-testframedtransport_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testframedtransport_LDADD = ../libthrift_c_glib.la
+ 
+ testmemorybuffer_SOURCES = testmemorybuffer.c
+-testmemorybuffer_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o
++testmemorybuffer_LDADD = ../libthrift_c_glib.la
+ 
+ teststruct_SOURCES = teststruct.c
+-teststruct_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o
++teststruct_LDADD = ../libthrift_c_glib.la
+ 
+ testsimpleserver_SOURCES = testsimpleserver.c
+-testsimpleserver_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_transport_factory.o \
+-    ../libthrift_c_glib_la-thrift_processor.o \
+-    ../libthrift_c_glib_la-thrift_protocol_factory.o \
+-    ../libthrift_c_glib_la-thrift_binary_protocol.o \
+-    ../libthrift_c_glib_la-thrift_binary_protocol_factory.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o \
+-    ../libthrift_c_glib_la-thrift_server.o
++testsimpleserver_LDADD = ../libthrift_c_glib.la
+ 
+ testdebugproto_SOURCES = testdebugproto.c
+ testdebugproto_LDADD = libtestgenc.la
+ 
+ testoptionalrequired_SOURCES = testoptionalrequired.c
+-testoptionalrequired_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
++testoptionalrequired_LDADD = ../libthrift_c_glib.la \
+     libtestgenc.la
+ 
+ testthrifttest_SOURCES = testthrifttest.c
+@@ -137,6 +105,7 @@ nodist_libtestgenc_la_SOURCES = \
+         gen-c_glib/t_test_thrift_test.h \
+         gen-c_glib/t_test_thrift_test_types.h
+ libtestgenc_la_LIBADD = $(top_builddir)/lib/c_glib/libthrift_c_glib.la
++libtestgenc_la_LDFLAGS = -no-undefined
+ 
+ nodist_libtestgencpp_la_SOURCES = \
+         gen-cpp/ThriftTest.cpp \
+@@ -146,6 +115,7 @@ nodist_libtestgencpp_la_SOURCES = \
+         gen-cpp/ThriftTest_constants.h \
+         gen-cpp/ThriftTest_types.h
+ libtestgencpp_la_CPPFLAGS = -I../../cpp/src $(BOOST_CPPFLAGS) -I./gen-cpp
++libtestgencpp_la_LDFLAGS = -no-undefined
+ 
+ THRIFT = $(top_builddir)/compiler/cpp/thrift
+ 
+--- origsrc/thrift-0.8.0/lib/cpp/Makefile.am	2011-11-27 04:00:42.000000000 +0900
++++ src/thrift-0.8.0/lib/cpp/Makefile.am	2012-01-28 14:03:12.215204000 +0900
+@@ -27,7 +27,7 @@ pkgconfigdir = $(libdir)/pkgconfig
+ 
+ lib_LTLIBRARIES = libthrift.la
+ pkgconfig_DATA = thrift.pc
+-libthrift_la_LDFLAGS = -release $(VERSION) $(BOOST_LDFLAGS)
++libthrift_la_LDFLAGS = -release $(VERSION) $(BOOST_LDFLAGS) -no-undefined
+ 
+ ## We only build the extra libraries if we have the dependencies,
+ ## but we install all of the headers unconditionally.
+@@ -99,8 +99,10 @@ libthriftnb_la_CPPFLAGS = $(AM_CPPFLAGS)
+ libthriftz_la_CPPFLAGS  = $(AM_CPPFLAGS) $(ZLIB_CPPFLAGS)
+ libthriftnb_la_CXXFLAGS = $(AM_CXXFLAGS)
+ libthriftz_la_CXXFLAGS  = $(AM_CXXFLAGS)
+-libthriftnb_la_LDFLAGS  = -release $(VERSION) $(BOOST_LDFLAGS)
+-libthriftz_la_LDFLAGS   = -release $(VERSION) $(BOOST_LDFLAGS)
++libthriftnb_la_LDFLAGS  = -release $(VERSION) $(BOOST_LDFLAGS) -no-undefined
++libthriftz_la_LDFLAGS   = -release $(VERSION) $(BOOST_LDFLAGS) -no-undefined
++libthriftnb_la_LIBADD = libthrift.la $(LIBEVENT_LIBS)
++libthriftz_la_LIBADD = libthrift.la $(ZLIB_LIBS)
+ 
+ include_thriftdir = $(includedir)/thrift
+ include_thrift_HEADERS = \
+--- origsrc/thrift-0.8.0/lib/cpp/src/concurrency/Mutex.cpp	2011-11-27 04:00:41.000000000 +0900
++++ src/thrift-0.8.0/lib/cpp/src/concurrency/Mutex.cpp	2012-01-28 13:25:24.578861600 +0900
+@@ -228,6 +228,9 @@ void Mutex::ADAPTIVE_INITIALIZER(void* a
+ 
+ #ifdef PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
+ void Mutex::RECURSIVE_INITIALIZER(void* arg) {
++#if !defined(PTHREAD_MUTEX_RECURSIVE_NP)
++#define PTHREAD_MUTEX_RECURSIVE_NP PTHREAD_MUTEX_RECURSIVE
++#endif
+   init_with_kind((pthread_mutex_t*)arg, PTHREAD_MUTEX_RECURSIVE_NP);
+ }
+ #endif
+--- origsrc/thrift-0.8.0/lib/cpp/test/Makefile.am	2011-11-27 04:00:39.000000000 +0900
++++ src/thrift-0.8.0/lib/cpp/test/Makefile.am	2012-01-28 14:19:51.462085600 +0900
+@@ -48,11 +48,7 @@ check_PROGRAMS = \
+ 	JSONProtoTest \
+ 	OptionalRequiredTest \
+ 	SpecializationTest \
+-	AllProtocolsTest \
+-	TransportTest \
+-	ZlibTest \
+-	TFileTransportTest \
+-	UnitTests
++	AllProtocolsTest
+ 
+ TESTS_ENVIRONMENT= \
+ 	BOOST_TEST_LOG_SINK=tests.xml \
+@@ -69,7 +65,7 @@ UnitTests_SOURCES = \
+ 
+ UnitTests_LDADD = \
+   libtestgencpp.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a
++  -lboost_unit_test_framework-mt
+ 
+ TransportTest_SOURCES = \
+ 	TransportTest.cpp
+@@ -77,7 +73,7 @@ TransportTest_SOURCES = \
+ TransportTest_LDADD = \
+   libtestgencpp.la \
+   $(top_builddir)/lib/cpp/libthriftz.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a \
++  -lboost_unit_test_framework-mt \
+   -lz
+ 
+ ZlibTest_SOURCES = \
+@@ -86,7 +82,7 @@ ZlibTest_SOURCES = \
+ ZlibTest_LDADD = \
+   libtestgencpp.la \
+   $(top_builddir)/lib/cpp/libthriftz.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a \
++  -lboost_unit_test_framework-mt \
+   -lz
+ 
+ TFileTransportTest_SOURCES = \
+@@ -94,7 +90,7 @@ TFileTransportTest_SOURCES = \
+ 
+ TFileTransportTest_LDADD = \
+   libtestgencpp.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a
++  -lboost_unit_test_framework-mt
+ 
+ #
+ # TFDTransportTest
