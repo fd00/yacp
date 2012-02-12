@@ -1,0 +1,102 @@
+--- origsrc/libclaw-1.7.0/CMakeLists.txt	2011-08-24 06:10:55.000000000 +0900
++++ src/libclaw-1.7.0/CMakeLists.txt	2012-02-12 11:35:42.154995000 +0900
+@@ -85,7 +85,6 @@ set( CLAW_APPLICATION_SOURCES
+   ${CLAW_CODE_DIR}arguments_table.cpp
+ )
+ add_library( claw_application SHARED ${CLAW_APPLICATION_SOURCES} )
+-add_library( claw_application-static STATIC ${CLAW_APPLICATION_SOURCES} )
+ target_link_libraries( claw_application claw_logger )
+ 
+ if( NOT WIN32 )
+@@ -94,11 +93,6 @@ if( NOT WIN32 )
+     PROPERTIES
+     COMPILE_DEFINITIONS "CLAW_TEXT_DOMAIN_PATH=${CMAKE_INSTALL_PREFIX}/${CLAW_TRANSLATIONS_INSTALL_DIR}"
+     )
+-  set_target_properties(
+-    claw_application-static
+-    PROPERTIES
+-    COMPILE_DEFINITIONS "CLAW_TEXT_DOMAIN_PATH=${CMAKE_INSTALL_PREFIX}/${CLAW_TRANSLATIONS_INSTALL_DIR}"
+-    )
+ endif( NOT WIN32 )
+ 
+ # configuration file
+@@ -106,20 +100,12 @@ set( CLAW_CONFIGURATION_FILE_SOURCES
+   ${CLAW_CODE_DIR}configuration_file.cpp
+ )
+ add_library( claw_configuration_file SHARED ${CLAW_CONFIGURATION_FILE_SOURCES} )
+-add_library(
+-  claw_configuration_file-static
+-  STATIC ${CLAW_CONFIGURATION_FILE_SOURCES}
+-)
+ 
+ # dynamic libraries
+ set( CLAW_DYNAMIC_LIBRARY_SOURCES
+   ${CLAW_CODE_DIR}dynamic_library.cpp
+ )
+ add_library( claw_dynamic_library SHARED ${CLAW_DYNAMIC_LIBRARY_SOURCES} )
+-add_library(
+-  claw_dynamic_library-static
+-  STATIC ${CLAW_DYNAMIC_LIBRARY_SOURCES}
+-)
+ target_link_libraries( claw_dynamic_library ${CMAKE_DL_LIBS} )
+ 
+ # log system
+@@ -131,10 +117,9 @@ set( CLAW_LOGGER_SOURCES
+   ${CLAW_CODE_DIR}log_level.cpp
+ )
+ add_library( claw_logger SHARED ${CLAW_LOGGER_SOURCES} )
+-add_library( claw_logger-static STATIC ${CLAW_LOGGER_SOURCES} )
++target_link_libraries( claw_logger intl )
+ 
+ if( WIN32 )
+-  target_link_libraries( claw_logger intl )
+   set_target_properties( claw_logger-static
+     PROPERTIES COMPILE_FLAGS
+     "-DCLAW_LOGGER_NO_EXPORT" )
+@@ -146,7 +131,6 @@ set( CLAW_NET_SOURCES
+   ${CLAW_CODE_DIR}socket_server.cpp
+ )
+ add_library( claw_net SHARED ${CLAW_NET_SOURCES} )
+-add_library( claw_net-static STATIC ${CLAW_NET_SOURCES} )
+ 
+ if( WIN32 )
+   target_link_libraries( claw_net wsock32 )
+@@ -201,7 +185,6 @@ else( PNG_FOUND )
+ endif( PNG_FOUND )
+ 
+ add_library( claw_graphic SHARED ${CLAW_GRAPHIC_SOURCES} )
+-add_library( claw_graphic-static STATIC ${CLAW_GRAPHIC_SOURCES} )
+ target_link_libraries(claw_graphic ${CLAW_GRAPHIC_LIBRARIES})
+ 
+ # tween
+@@ -239,10 +222,6 @@ include_directories(
+   )
+ 
+ add_library( claw_tween SHARED ${CLAW_TWEEN_SOURCES} )
+-add_library(
+-  claw_tween-static
+-  STATIC ${CLAW_TWEEN_SOURCES}
+-)
+ 
+ # extra flags for the link
+ set_target_properties(
+@@ -265,8 +244,7 @@ foreach( lib ${CLAW_LIBRARIES} )
+     SOVERSION ${CLAW_VERSION_MAJOR}
+   )
+ 
+-  install( TARGETS ${lib} DESTINATION ${CLAW_INSTALLDIR_LIB}  )
+-  install( TARGETS ${lib}-static DESTINATION ${CLAW_INSTALLDIR_LIB}  )
++  install( TARGETS ${lib} RUNTIME DESTINATION ${CLAW_EXECUTABLE_DIR} ARCHIVE DESTINATION ${CLAW_INSTALLDIR_LIB}  )
+ endforeach( lib )
+ 
+ install( FILES COPYING DESTINATION ${CLAW_INSTALLDIR_DOC} )
+--- origsrc/libclaw-1.7.0/claw/jpeg.hpp	2011-06-12 19:01:53.000000000 +0900
++++ src/libclaw-1.7.0/claw/jpeg.hpp	2012-02-12 11:38:02.549139000 +0900
+@@ -34,6 +34,7 @@
+ #include <setjmp.h>
+ #include <iostream>
+ #include <string>
++#include <cstdio>
+ 
+ extern "C"
+ {
