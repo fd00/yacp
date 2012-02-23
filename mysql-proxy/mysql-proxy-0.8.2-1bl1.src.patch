@@ -1,0 +1,95 @@
+--- origsrc/mysql-proxy-0.8.2/CMakeLists.txt	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/CMakeLists.txt	2012-02-23 12:36:56.776330700 +0900
+@@ -186,7 +186,7 @@ CHECK_FUNCTION_EXISTS(srandom    HAVE_SR
+ CHECK_FUNCTION_EXISTS(writev     HAVE_WRITEV)
+ CHECK_FUNCTION_EXISTS(getaddrinfo     HAVE_GETADDRINFO)
+ # check for gthread actually being present
+-CHECK_LIBRARY_EXISTS(gthread-2.0 g_thread_init ${GTHREAD_LIBRARY_DIRS} HAVE_GTHREAD)
++#CHECK_LIBRARY_EXISTS(gthread-2.0 g_thread_init ${GTHREAD_LIBRARY_DIRS} HAVE_GTHREAD)
+ #SET(OLD_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+ #SET(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ${GTHREAD_LIBRARIES})
+ # fails for some reason use check_library_exists instead and hope it's better
+--- origsrc/mysql-proxy-0.8.2/lib/CMakeLists.txt	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/lib/CMakeLists.txt	2012-02-23 12:50:50.691652800 +0900
+@@ -105,17 +105,11 @@ ADD_LIBRARY(lpeg    SHARED ${LUA_LPEG_SO
+ ## if possible don't link them against liblua.a, the caller will provide all the symbols
+ ## on win32 we have to link against it, but they have a .dll by default
+ 
+-IF(WIN32)
+-	## win32 is the only platform that needs reference to the lua.dll at linktime
+-	SET(LUA_SHARED_LIBRARIES ${LUA_LIBRARIES})
+-
+-	TARGET_LINK_LIBRARIES(lfs
+-		${LUA_SHARED_LIBRARIES})
+-	TARGET_LINK_LIBRARIES(lpeg
+-		${LUA_SHARED_LIBRARIES})
+-ELSE(WIN32)
+-	SET(LUA_SHARED_LIBRARIES )
+-ENDIF(WIN32)
++SET(LUA_SHARED_LIBRARIES ${LUA_LIBRARIES})
++TARGET_LINK_LIBRARIES(lfs
++	${LUA_SHARED_LIBRARIES})
++TARGET_LINK_LIBRARIES(lpeg
++	${LUA_SHARED_LIBRARIES})
+ 
+ IF(APPLE)
+ 	## MacOSX may have a static liblua and we don't want to link that in
+--- origsrc/mysql-proxy-0.8.2/mysql-chassis.pc.cmake	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/mysql-chassis.pc.cmake	2012-02-23 12:55:12.922958400 +0900
+@@ -1,7 +1,7 @@
+ prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=@CMAKE_INSTALL_PREFIX@
+ libdir=@CMAKE_INSTALL_PREFIX@/lib
+-includedir=@CMAKE_INSTALL_PREFIX@/include
++includedir=@CMAKE_INSTALL_PREFIX@/include/mysql-proxy
+ 
+ Name: mysql-chassis
+ Version: @PACKAGE_VERSION_STRING@
+--- origsrc/mysql-proxy-0.8.2/src/CMakeLists.txt	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/src/CMakeLists.txt	2012-02-23 12:55:27.644126400 +0900
+@@ -252,5 +252,5 @@ INSTALL(FILES
+ 	chassis-unix-daemon.h
+ 	chassis-win32-service.h
+ 	my_rdtsc.h
+-	DESTINATION include/
++	DESTINATION include/mysql-proxy
+ 	)
+--- origsrc/mysql-proxy-0.8.2/src/chassis-mainloop.h	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/src/chassis-mainloop.h	2012-02-23 12:40:24.059726500 +0900
+@@ -38,6 +38,7 @@
+ #include <winsock2.h>
+ #endif
+ #include <event.h>     /* struct event_base */
++#include <event2/event-config.h>
+ 
+ #include "chassis-exports.h"
+ #include "chassis-log.h"
+--- origsrc/mysql-proxy-0.8.2/src/my_rdtsc.h	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/src/my_rdtsc.h	2012-02-23 12:44:13.700508800 +0900
+@@ -31,6 +31,7 @@
+ #define C_MODE_END G_END_DECLS
+ typedef guint64 ulonglong;
+ 
++#if !defined(__CYGWIN__)
+ #ifndef HAVE_ULONG
+ #ifdef HAVE_ULONG_T
+ typedef ulong_t	ulong;
+@@ -38,6 +39,7 @@ typedef ulong_t	ulong;
+ typedef guint32 ulong;
+ #endif /* HAVE_ULONG_T */
+ #endif /* HAVE_ULONG */
++#endif // !defined(__CYGWIN__)
+ 
+ /**
+   This structure contains the characteristics of all the supported timers.
+--- origsrc/mysql-proxy-0.8.2/tests/unit/lua/CMakeLists.txt	2011-08-17 23:50:54.000000000 +0900
++++ src/mysql-proxy-0.8.2/tests/unit/lua/CMakeLists.txt	2012-02-23 12:38:39.962381300 +0900
+@@ -1,7 +1,7 @@
+ ## only run the tests if we have lua somewhere 
+ #
+ # for now this is unix specific as we use env-vars and shell-scripts
+-IF(LUA_EXECUTABLE AND NOT WIN32)
++IF(LUA_EXECUTABLE AND NOT WIN32 AND NOT CYGWIN)
+ 	CONFIGURE_FILE(
+ 		${CMAKE_CURRENT_SOURCE_DIR}/lua-tests-wrapper.sh.in 
+ 		${CMAKE_CURRENT_BINARY_DIR}/lua-tests-wrapper.sh
