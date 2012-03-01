@@ -1,0 +1,36 @@
+DESCRIPTION="Free server software for streaming multimedia"
+HOMEPAGE="http://www.${PN}.org/"
+
+# http://pkgs.fedoraproject.org/gitweb/?p=icecast.git
+SRC_URI="
+	http://downloads.xiph.org/releases/${PN}/${P}.tar.gz
+	icecast.logrotate
+	icecast.xml
+	status3.xsl
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+
+	sed -e 's/icecast2/icecast/g' ${S}/debian/icecast2.1 > icecast.1
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+	doman ${PN}.1
+
+	cd ${S}
+	insinto /usr/share/icecast/web/
+	doins status3.xsl
+	insinto /etc/logrotate.d/
+	newins ${PN}.logrotate ${PN}
+	insinto /etc
+	doins ${PN}.xml
+}
