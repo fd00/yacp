@@ -1,0 +1,49 @@
+--- origsrc/libeap-ikev2-0.2.1/acinclude.m4	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/acinclude.m4	2012-03-20 21:49:31.406653500 +0900
+@@ -8,7 +8,7 @@ dnl #    Defines the variable MYSQLLIB_D
+ dnl #    which the file libmysqlclient.a is to be found.
+ dnl #
+ dnl #
+-AC_DEFUN(AC_LOCATE_DIR,
++AC_DEFUN([AC_LOCATE_DIR],
+ [
+ dnl # If we have the program 'locate', then the problem of finding a
+ dnl # particular file becomes MUCH easier.
+--- origsrc/libeap-ikev2-0.2.1/configure.in	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/configure.in	2012-03-20 21:48:33.287512800 +0900
+@@ -28,9 +28,14 @@ dnl Checks for header files.
+ AC_HEADER_STDC
+ 
+ AC_CHECK_HEADERS(netinet/in.h)
+-AC_CHECK_HEADERS(winsock.h)
+ AC_CHECK_HEADERS(stdint.h)
+ AC_CHECK_HEADERS(pthread.h)
++case "$host_os" in
++  cygwin*) ;;
++  *) AC_CHECK_HEADERS(winsock.h) ;;
++esac
++
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+ dnl #
+ dnl # extra argument: --openssl-includes=dir
+@@ -57,7 +62,7 @@ AC_ARG_WITH(openssl-libraries,
+ )
+ 
+ old_LIBS=$LIBS
+-LIBS=-lssl
++LIBS=-ssl
+ if test  "x$OPENSSL_LIBS" != "x"; then
+     LIBS="$OPENSSL_LIBS $LIBS"
+ fi    
+--- origsrc/libeap-ikev2-0.2.1/src/Makefile.am	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/src/Makefile.am	2012-03-20 21:48:04.584387800 +0900
+@@ -44,6 +44,7 @@ libeap_ikev2_la_SOURCES= auth.c \
+ 			 utils.c \
+ 			 tiger.c
+ 
+-
++libeap_ikev2_la_LDFLAGS = -no-undefined
++libeap_ikev2_la_LIBADD = $(OPENSSL_LIBS)
+ 
+ MAINTAINERCLEANFILES=Makefile.in
