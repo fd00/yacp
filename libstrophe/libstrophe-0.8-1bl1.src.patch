@@ -1,0 +1,51 @@
+--- origsrc/libstrophe-0.8-snapshot/Makefile.am	2012-02-08 15:30:11.000000000 +0900
++++ src/libstrophe-0.8-snapshot/Makefile.am	2012-03-20 23:43:58.382890500 +0900
+@@ -6,24 +6,26 @@ PARSER_CFLAGS=@PARSER_CFLAGS@
+ PARSER_LIBS=@PARSER_LIBS@
+ 
+ STROPHE_FLAGS = -I$(top_srcdir)
+-STROPHE_LIBS = libstrophe.a $(PARSER_LIBS) -lssl -lresolv
++STROPHE_LIBS = libstrophe.la $(PARSER_LIBS) $(OPENSSL_LIBS) -lresolv
+ 
+ ## Main build targets
+-lib_LIBRARIES = libstrophe.a
++lib_LTLIBRARIES = libstrophe.la
+ 
+-libstrophe_a_CFLAGS=$(STROPHE_FLAGS) $(PARSER_CFLAGS)
+-libstrophe_a_SOURCES = src/auth.c src/conn.c src/ctx.c \
++libstrophe_la_CFLAGS=$(STROPHE_FLAGS) $(PARSER_CFLAGS)
++libstrophe_la_SOURCES = src/auth.c src/conn.c src/ctx.c \
+ 	src/event.c src/handler.c src/hash.c \
+ 	src/jid.c src/md5.c src/sasl.c src/sha1.c \
+ 	src/snprintf.c src/sock.c src/stanza.c src/thread.c \
+ 	src/tls_openssl.c src/util.c \
+ 	src/common.h src/hash.h src/md5.h src/ostypes.h src/parser.h \
+ 	src/sasl.h src/sha1.h src/sock.h src/thread.h src/tls.h src/util.h
++libstrophe_la_LIBADD = $(PARSER_LIBS) $(OPENSSL_LIBS)
++libstrophe_la_LDFLAGS = -no-undefined
+ 
+ if PARSER_EXPAT
+-libstrophe_a_SOURCES += src/parser_expat.c
++libstrophe_la_SOURCES += src/parser_expat.c
+ else
+-libstrophe_a_SOURCES += src/parser_libxml2.c
++libstrophe_la_SOURCES += src/parser_libxml2.c
+ endif
+ 
+ include_HEADERS = strophe.h
+--- origsrc/libstrophe-0.8-snapshot/configure.ac	2012-02-08 15:09:13.000000000 +0900
++++ src/libstrophe-0.8-snapshot/configure.ac	2012-03-20 23:40:42.375078000 +0900
+@@ -2,11 +2,12 @@ AC_INIT([libstrophe], [0.8-snapshot], [j
+ AM_INIT_AUTOMAKE
+ 
+ AC_PROG_CC
+-AC_PROG_RANLIB
++LT_INIT
+ AM_PROG_CC_C_O
+ 
+ AC_CHECK_HEADER(openssl/ssl.h, [], [AC_MSG_ERROR([couldn't find openssl headers, openssl required])])
+ PKG_CHECK_MODULES([check], [check >= 0.9.4], [], [AC_MSG_WARN([libcheck not found; unit tests will not be compilable])])
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+ AC_ARG_WITH([libxml2], 
+             [AS_HELP_STRING([--with-libxml2], [use libxml2 for XML parsing])],
