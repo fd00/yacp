@@ -1,6 +1,6 @@
---- origsrc/grib_api-1.9.9_libtool/configure.ac	2011-03-18 00:54:36.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/configure.ac	2012-03-03 11:20:46.698464600 +0900
-@@ -39,6 +39,7 @@ fi
+--- origsrc/grib_api-1.9.16_libtool/configure.ac	2012-02-06 23:01:50.000000000 +0900
++++ src/grib_api-1.9.16_libtool/configure.ac	2012-03-20 15:25:58.997774400 +0900
+@@ -43,6 +43,7 @@ fi
  
  if test "$datadir" != '${datarootdir}' ; then
     definition_files_path=$datadir/definitions
@@ -8,16 +8,16 @@
  fi
  
  
---- origsrc/grib_api-1.9.9_libtool/definitions/Makefile.am	2011-03-21 22:40:53.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/definitions/Makefile.am	2012-03-03 11:20:46.718493400 +0900
-@@ -1975,4 +1975,4 @@ dist_definitionstide_DATA = \
+--- origsrc/grib_api-1.9.16_libtool/definitions/Makefile.am	2012-01-31 01:01:04.000000000 +0900
++++ src/grib_api-1.9.16_libtool/definitions/Makefile.am	2012-03-20 15:25:58.997774400 +0900
+@@ -1983,4 +1983,4 @@ dist_definitionstide_DATA = \
  	tide/section.1.def\
  	tide/section.4.def
  
 -include $(DEVEL_RULES)
 +include $(srcdir)/$(DEVEL_RULES)
---- origsrc/grib_api-1.9.9_libtool/examples/C/Makefile.am	2011-02-22 23:25:28.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/examples/C/Makefile.am	2012-03-03 11:20:46.738522200 +0900
+--- origsrc/grib_api-1.9.16_libtool/examples/C/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/examples/C/Makefile.am	2012-03-20 16:53:56.549907600 +0900
 @@ -6,7 +6,7 @@ TESTS = iterator.sh get.sh print_data.sh
  
  noinst_PROGRAMS        =  nearest set_bitmap iterator get print_data set set_missing keys_iterator \
@@ -27,7 +27,7 @@
  
  box_SOURCES               =   box.c
  set_data_SOURCES               =   set_data.c
-@@ -24,11 +24,11 @@ multi_SOURCES             =   multi.c
+@@ -24,14 +24,21 @@ multi_SOURCES             =   multi.c
  keys_iterator_SOURCES     =   keys_iterator.c
  iterator_SOURCES          =   iterator.c
  set_pv_SOURCES          =   set_pv.c
@@ -41,8 +41,41 @@
  
  LDADD = $(top_builddir)/src/libgrib_api.la
  DEPENDENCIES = $(LDADD)
---- origsrc/grib_api-1.9.9_libtool/fortran/Makefile.am	2011-02-22 23:25:28.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/fortran/Makefile.am	2012-03-03 11:20:46.748536600 +0900
+ 
+ EXTRA_DIST =$(TESTS) include.sh
+ 
++TESTS_ENVIRONMENT = \
++	GRIB_DEFINITION_PATH=${top_srcdir}/definitions \
++	GRIB_TEMPLATES_PATH=${top_srcdir}/templates \
++	tools_dir=${abs_top_builddir}/tools/ \
++	examples_dir=${abs_top_builddir}/examples/C/ \
++	tigge_dir=${top_srcdir}/tigge/ \
++	data_dir=${top_srcdir}/data
+--- origsrc/grib_api-1.9.16_libtool/examples/C/print_data.sh	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/examples/C/print_data.sh	2012-03-20 16:51:07.661235700 +0900
+@@ -2,6 +2,7 @@
+ 
+ . ./include.sh
+ 
++numberOfValues=0
+ numberOfValues=`${examples_dir}print_data ../../data/constant_field.grib1 | grep values | awk '{print $1}'`
+ 
+ if [ $numberOfValues -ne 99200 ]
+--- origsrc/grib_api-1.9.16_libtool/examples/F90/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/examples/F90/Makefile.am	2012-03-20 16:54:46.458110700 +0900
+@@ -42,3 +42,10 @@ DEPENDENCIES = $(LDADD)
+ 
+ EXTRA_DIST =$(TESTS) include.sh
+ 
++TESTS_ENVIRONMENT = \
++	GRIB_DEFINITION_PATH=${top_srcdir}/definitions \
++	GRIB_SAMPLES_PATH=${top_srcdir}/samples \
++	tools_dir=${abs_top_builddir}/tools/ \
++	examples_dir=${abs_top_builddir}/examples/F90/ \
++	tigge_dir=${top_srcdir}/tigge/ \
++	data_dir=${top_srcdir}/data
+--- origsrc/grib_api-1.9.16_libtool/fortran/Makefile.am	2012-02-02 02:35:49.000000000 +0900
++++ src/grib_api-1.9.16_libtool/fortran/Makefile.am	2012-03-20 15:25:58.997774400 +0900
 @@ -7,11 +7,13 @@ include_HEADERS = grib_api_f77.h
  
  libgrib_api_f77_la_SOURCES= grib_fortran.c grib_f77.c 
@@ -79,8 +112,8 @@
  
  grib_f90.o : grib_kinds.h
  
---- origsrc/grib_api-1.9.9_libtool/ifs_samples/grib1/Makefile.am	2011-03-18 00:56:21.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/ifs_samples/grib1/Makefile.am	2012-03-03 11:20:46.778579800 +0900
+--- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/ifs_samples/grib1/Makefile.am	2012-03-20 15:25:59.016202100 +0900
 @@ -64,164 +64,164 @@ nodist_grib1_DATA = \
  	sh_pl_grib1.tmpl \
  	sh_pl_grib2.tmpl 
@@ -352,8 +385,8 @@
  
  
  
---- origsrc/grib_api-1.9.9_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2011-03-18 00:56:21.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2012-03-03 11:20:46.788594200 +0900
+--- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2012-03-20 15:25:59.034629800 +0900
 @@ -64,164 +64,164 @@ nodist_grib1_mlgrib2_DATA = \
  	sh_pl_grib1.tmpl \
  	sh_pl_grib2.tmpl 
@@ -625,8 +658,8 @@
  
  
  
---- origsrc/grib_api-1.9.9_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2011-03-18 00:56:22.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-03-03 11:20:46.828651800 +0900
+--- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-03-20 15:25:59.034629800 +0900
 @@ -64,164 +64,164 @@ nodist_grib1_mlgrib2_ieee64_DATA = \
  	sh_pl_grib1.tmpl \
  	sh_pl_grib2.tmpl 
@@ -898,8 +931,8 @@
  
  
  
---- origsrc/grib_api-1.9.9_libtool/src/Makefile.am	2011-03-21 22:40:53.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/src/Makefile.am	2012-03-03 11:20:46.828651800 +0900
+--- origsrc/grib_api-1.9.16_libtool/src/Makefile.am	2012-02-02 02:30:47.000000000 +0900
++++ src/grib_api-1.9.16_libtool/src/Makefile.am	2012-03-20 15:25:59.053057500 +0900
 @@ -289,7 +289,7 @@ libgrib_api_la_SOURCES = $(libgrib_api_l
  
  libgrib_api_la_LIBADD = @LIBOBJS@
@@ -917,8 +950,8 @@
 +include $(srcdir)/$(DEVEL_RULES)
  
  
---- origsrc/grib_api-1.9.9_libtool/tests/Makefile.am	2011-02-22 23:25:30.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/tests/Makefile.am	2012-03-03 11:20:46.858695000 +0900
+--- origsrc/grib_api-1.9.16_libtool/tests/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/tests/Makefile.am	2012-03-20 15:25:59.053057500 +0900
 @@ -33,7 +33,15 @@
  
       LDADD = $(top_builddir)/src/libgrib_api.la $(EMOS_LIB)
@@ -936,8 +969,18 @@
 +	data_dir=${top_srcdir}/data \
 +	test_dir=${abs_top_builddir}/tests \
 +	def_dir=${top_srcdir}/definitions
---- origsrc/grib_api-1.9.9_libtool/tigge/Makefile.am	2011-02-22 23:25:30.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/tigge/Makefile.am	2012-03-03 11:20:46.858695000 +0900
+--- origsrc/grib_api-1.9.16_libtool/tests/definitions.sh	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/tests/definitions.sh	2012-03-20 16:01:55.004296400 +0900
+@@ -15,6 +15,6 @@ REDIRECT=/dev/null
+ 
+ for file in `find $GRIB_DEFINITION_PATH -name '*.def' -print`
+ do
+-  ${tools_dir}parser $file > $REDIRECT
++  ${tools_dir}grib_parser $file > $REDIRECT
+ done
+ 
+--- origsrc/grib_api-1.9.16_libtool/tigge/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/tigge/Makefile.am	2012-03-20 15:25:59.071485200 +0900
 @@ -10,7 +10,7 @@ tigge_name_SOURCES      =  tigge_name.c
  tigge_split_SOURCES      =  tigge_split.c
  tigge_accumulations_SOURCES      =  tigge_accumulations.c
@@ -947,8 +990,8 @@
  
  LDADD = $(top_builddir)/src/libgrib_api.la
  DEPENDENCIES = $(LDADD)
---- origsrc/grib_api-1.9.9_libtool/tools/Makefile.am	2011-02-22 23:25:30.000000000 +0900
-+++ src/grib_api-1.9.9_libtool/tools/Makefile.am	2012-03-03 11:20:46.878723800 +0900
+--- origsrc/grib_api-1.9.16_libtool/tools/Makefile.am	2012-01-31 01:01:06.000000000 +0900
++++ src/grib_api-1.9.16_libtool/tools/Makefile.am	2012-03-20 15:25:59.071485200 +0900
 @@ -13,7 +13,7 @@ bin_PROGRAMS = grib_keys grib_histogram
                 grib_debug grib_info grib_filter grib_ls grib_dump \
  			   grib2ppm grib_set grib_get grib_get_data grib_copy grib_repair \
