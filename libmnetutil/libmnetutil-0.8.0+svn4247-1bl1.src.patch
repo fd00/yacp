@@ -1,0 +1,181 @@
+--- origsrc/libmnetutil/Makefile.am	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/Makefile.am	2012-03-21 20:04:07.070955800 +0900
+@@ -1,17 +1,17 @@
+ pkgconfigdir = $(libdir)/pkgconfig
+ 
+-SUBDIRS = udns win32 . examples include m4 tests debian
++SUBDIRS = win32 . include m4 tests debian
+ DIST_SUBDIRS = $(SUBDIRS)
+ EXTRA_DIST = libmnetutil.spec
+ 
+-AM_CPPFLAGS = $(MINISIP_CFLAGS) -I$(srcdir)/include -I$(srcdir)/udns/source
++AM_CPPFLAGS = $(MINISIP_CFLAGS) -I$(srcdir)/include
+ 
+ pkgconfig_DATA = libmnetutil.pc
+ 
+ lib_LTLIBRARIES = libmnetutil.la
+ # libmnetutil_la_CPPFLAGS = 
+ libmnetutil_la_LDFLAGS = $(MINISIP_LIBRARY_LDFLAGS)
+-libmnetutil_la_LIBADD = udns/libudns.la  $(LTLIBOBJS) $(MINISIP_LIBS) $(LDAP_LIBS)
++libmnetutil_la_LIBADD = $(UDNS_LIBS) $(LTLIBOBJS) $(MINISIP_LIBS) $(LDAP_LIBS)
+ libmnetutil_la_DEPENDENCIES = $(LTLIBOBJS)
+ 
+ libmnetutil_la_SOURCES = $(mnetutil_src)
+@@ -74,7 +74,7 @@ mnetutil_src = \
+ 		    source/DirectorySetItem.cxx
+ 
+ # maintainer rules
+-ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
++ACLOCAL_AMFLAGS = -I m4
+ MAINTAINERCLEANFILES = \
+ 		$(srcdir)/Makefile.in \
+ 		$(srcdir)/aclocal.m4 \
+--- origsrc/libmnetutil/configure.ac	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/configure.ac	2012-03-21 19:12:16.183411600 +0900
+@@ -27,9 +27,6 @@ AC_CHECK_HEADERS([netinet/in.h ws2tcpip.
+ AC_CHECK_HEADERS([ifaddrs.h netdb.h sys/socket.h])
+ AM_MINISIP_CHECK_IPV6
+ 
+-CPPFLAGS="${CPPFLAGS} -std=c++0x"
+-
+-
+ AC_ARG_ENABLE(ldap,
+     AS_HELP_STRING([--enable-ldap],
+         [enables LDAP support]),
+@@ -101,6 +98,8 @@ dnl Checks for typedefs, structures, and
+ AC_C_CONST
+ AC_HEADER_TIME
+ 
++AC_CHECK_LIB([udns], [dns_init], [UDNS_LIBS=-ludns AC_SUBST(UDNS_LIBS)])
++
+ AC_CONFIG_FILES([
+ 		Makefile 
+ 		libmnetutil.pc 
+@@ -108,7 +107,6 @@ AC_CONFIG_FILES([
+ 		include/Makefile 
+ 		m4/Makefile 
+ 		tests/Makefile
+-		udns/Makefile
+ 		debian/Makefile
+ 		win32/Makefile 
+ 		win32/libmnetutil-res.rc
+--- origsrc/libmnetutil/examples/build-examples.sh.in	2012-03-21 19:07:46.000000000 +0900
++++ src/libmnetutil/examples/build-examples.sh.in	2012-03-21 19:39:09.404114700 +0900
+@@ -1,5 +1,5 @@
+ #!/bin/bash -x
+ 
+ for i in @EXAMPLES@; do
+-	gcc @MINISIP_CFLAGS@ @MINISIP_LIBS@ -o ${i%.cpp} $i
++	g++ @MINISIP_CFLAGS@ @MINISIP_LIBS@ -o ${i%.cpp} $i
+ done
+--- origsrc/libmnetutil/examples/tcpclient.cxx	2012-03-21 19:07:46.000000000 +0900
++++ src/libmnetutil/examples/tcpclient.cxx	2012-03-21 20:06:30.402010500 +0900
+@@ -1,7 +1,8 @@
+ /* tcpclient - distributed with @PACKAGE@-@PACKAGE_VERSION@ */
++#include<iostream>
+ #include<libmnetutil/TCPSocket.h> 
+ #include<libmnetutil/NetworkException.h> //ConnectFailed && HostNotFound
+-#include<libmutil/trim.h>  //removes whitespace from start and end of strings
++#include<libmutil/stringutils.h> //removes whitespace from start and end of strings
+ 
+ using namespace std;
+ 
+@@ -15,9 +16,11 @@ int main(int argc, char **argv){
+ 
+ 	TCPSocket *sock;
+ 	try{
++		string argv1(argv[1]);
++		int32_t argv2 = atoi(argv[2]);
+ 		//Create a TCP connection to the server (address and port given
+ 		//as arguments to the application).
+-		sock = new TCPSocket(argv[1], atoi(argv[2]));
++		sock = new TCPSocket(argv1, argv2);
+ 	}catch(ConnectFailed &){
+ 		cerr << "Sorry, I could not connect to port "<< argv[2] << " on the server." << endl;
+ 		return -3;
+--- origsrc/libmnetutil/examples/tcpserver.cxx	2012-03-21 19:07:46.000000000 +0900
++++ src/libmnetutil/examples/tcpserver.cxx	2012-03-21 19:49:26.844544400 +0900
+@@ -1,6 +1,6 @@
+ /* tcpclient - distributed with @PACKAGE@-@PACKAGE_VERSION@ */
+ #include<libmnetutil/IP4ServerSocket.h> 
+-#include<libmutil/trim.h>  //removes whitespace from start and end of strings
++#include<libmutil/stringutils.h>  //removes whitespace from start and end of strings
+ 
+ #define SERVER_PORT 3333   //This defines the port number that the server will open
+ 
+--- origsrc/libmnetutil/source/TCPSocket.cxx	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/source/TCPSocket.cxx	2012-03-21 19:29:43.327942800 +0900
+@@ -141,10 +141,15 @@ void TCPSocket::useNoDelay(bool noDelay)
+ 
+ bool TCPSocket::setIPv6DSCP(const std::bitset<6> &dscp)
+ {
++#if !defined(IPV6_TCLASS)
++	cerr << "UDPSocket::setDSCP() not implemented."<< endl;
++	return false;
++#else
+ 	int trafficClass = dscp.to_ulong() << 2;
+ 	if(setsockopt(fd, IPPROTO_IPV6, IPV6_TCLASS, &trafficClass, sizeof(trafficClass))) {
+ 		cerr << "UDPSocket::setDSCP() error, could not set DSCP."<< endl;
+ 		return false;
+ 	}
+ 	return true;
++#endif
+ }
+--- origsrc/libmnetutil/source/TcpServerSocket.cxx	2012-03-21 19:07:44.000000000 +0900
++++ src/libmnetutil/source/TcpServerSocket.cxx	2012-03-21 19:28:45.984192800 +0900
+@@ -73,10 +73,15 @@ MRef<StreamSocket *> TcpServerSocket::cr
+ 
+ bool TcpServerSocket::setIPv6DSCP(const std::bitset<6> &dscp)
+ {
++#if !defined(IPV6_TCLASS)
++	cerr << "UDPSocket::setDSCP() not implemented."<< endl;
++	return false;
++#else
+ 	int trafficClass = dscp.to_ulong() << 2;
+ 	if(setsockopt(fd, IPPROTO_IPV6, IPV6_TCLASS, &trafficClass, sizeof(trafficClass))) {
+ 		cerr << "UDPSocket::setDSCP() error, could not set DSCP."<< endl;
+ 		return false;
+ 	}
+ 	return true;
++#endif
+ }
+--- origsrc/libmnetutil/source/UDPSocket.cxx	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/source/UDPSocket.cxx	2012-03-21 19:33:48.312317800 +0900
+@@ -207,10 +207,15 @@ UDPSocket& operator<<(UDPSocket& sock, s
+ 
+ bool UDPSocket::setIPv6DSCP(const std::bitset<6> &dscp)
+ {
++#if !defined(IPV6_TCLASS)
++	cerr << "UDPSocket::setDSCP() not implemented."<< endl;
++	return false;
++#else
+ 	int trafficClass = dscp.to_ulong() << 2;
+ 	if(setsockopt(fd, IPPROTO_IPV6, IPV6_TCLASS, &trafficClass, sizeof(trafficClass))) {
+ 		cerr << "UDPSocket::setDSCP() error, could not set DSCP."<< endl;
+ 		return false;
+ 	}
+ 	return true;
++#endif
+ }
+--- origsrc/libmnetutil/source/init.cxx	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/source/init.cxx	2012-03-21 19:18:52.156067800 +0900
+@@ -34,7 +34,7 @@ LIBMNETUTIL_API void libmnetutilInit()
+ 	if( g_initialized++ > 0 )
+ 		return;
+ 
+-	if( dns_init(0) < 0 ) {
++	if( dns_init(0, 0) < 0 ) {
+ 		g_initialized--;
+ 		throw Exception( "libmnetutil udns initialization failed" );
+ 	}
+--- origsrc/libmnetutil/tests/Makefile.am	2012-03-21 19:07:45.000000000 +0900
++++ src/libmnetutil/tests/Makefile.am	2012-03-21 20:05:04.603182400 +0900
+@@ -13,7 +13,7 @@ MINISIP_TESTS += \
+ endif
+ 
+ 
+-TESTS = $(MINISIP_TESTS)
++TESTS = 000_compile
+ noinst_PROGRAMS = $(MINISIP_TESTS)
+ 
+ 000_compile_SOURCES = 000_compile.cxx
