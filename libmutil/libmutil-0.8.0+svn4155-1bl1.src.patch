@@ -1,0 +1,70 @@
+--- origsrc/libmutil/Makefile.am	2012-03-21 17:16:27.000000000 +0900
++++ src/libmutil/Makefile.am	2012-03-21 18:47:30.477508000 +0900
+@@ -70,7 +70,7 @@ mutil_src = \
+ 		$(thread_src)
+ 
+ # maintainer rules
+-ACLOCAL_AMFLAGS = -I m4 $(ACLOCAL_FLAGS)
++ACLOCAL_AMFLAGS = -I m4
+ MAINTAINERCLEANFILES = \
+ 		$(srcdir)/configure \
+ 		$(srcdir)/Makefile.in \
+--- origsrc/libmutil/configure.ac	2012-03-21 17:16:27.000000000 +0900
++++ src/libmutil/configure.ac	2012-03-21 18:49:13.399383000 +0900
+@@ -14,7 +14,7 @@ AC_CONFIG_MACRO_DIR(m4)
+ AM_MINISIP_PACKAGE_INIT
+ AM_CONFIG_HEADER(include/compilation_config.h)
+ 
+-AC_LIBLTDL_CONVENIENCE
++LTDL_INIT([installable])
+ AM_MINISIP_LIBTOOL_EXTRAS
+ AC_PROG_LIBTOOL
+ AC_SUBST(LIBLTDL)
+@@ -22,8 +22,6 @@ AC_SUBST(LTDLINCL)
+ 
+ AM_MINISIP_ENABLE_DEBUG
+ 
+-CPPFLAGS="${CPPFLAGS} -std=c++0x"
+-
+ dnl debug flag
+ AC_ARG_ENABLE(memdebug,
+     AS_HELP_STRING([--enable-memdebug],
+@@ -156,8 +154,5 @@ AC_CONFIG_FILES([
+ 		libmutil.pc
+ 	])
+ 
+-dnl Configure libltdl
+-AC_CONFIG_SUBDIRS(libltdl)
+-
+ AC_OUTPUT
+ 
+--- origsrc/libmutil/source/ThreadPosix.cxx	2012-03-21 17:16:26.000000000 +0900
++++ src/libmutil/source/ThreadPosix.cxx	2012-03-21 18:53:54.232239700 +0900
+@@ -60,7 +60,7 @@
+ #include<sys/time.h>
+ 
+ #include<sys/types.h>
+-#ifndef DARWIN
++#if defined(__LINUX__)
+ #include<linux/unistd.h>
+ #endif
+ 
+@@ -70,7 +70,7 @@ using namespace std;
+ #ifdef DEBUG_OUTPUT
+ 
+ pid_t gettid(void ){
+-#ifdef DARWIN
++#if !defined(__LINUX__)
+ 	//return mach_thread_self();
+ 	return 0;
+ #else
+@@ -538,6 +538,9 @@ Thread::Thread(MRef<Runnable *> runnable
+ 	pthread_attr_init(&attr);
+ 	if(_priority != normalPriority) {
+ 		sched_param scheduleParameter;
++#if defined(__CYGWIN__)
++#define __sched_priority sched_priority
++#endif
+ 		scheduleParameter.__sched_priority = sched_get_priority_min(SCHED_RR);
+ 		if(_priority == highPriority)
+ 			scheduleParameter.__sched_priority = (sched_get_priority_max(SCHED_RR) + scheduleParameter.__sched_priority) / 2;
