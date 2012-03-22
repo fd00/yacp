@@ -1,5 +1,5 @@
 --- origsrc/tqsllib-2.2/Makefile.am	2005-03-03 21:12:46.000000000 +0900
-+++ src/tqsllib-2.2/Makefile.am	2010-12-05 15:30:46.975305600 +0900
++++ src/tqsllib-2.2/Makefile.am	2012-03-22 16:46:13.993435300 +0900
 @@ -8,10 +8,10 @@ datadir = @datadir@/tqsl
  docdir = @datadir@/doc
  
@@ -23,16 +23,7 @@
  EXTRA_PROGRAMS = gen_crq load_cert station_loc converter
  noinst_PROGRAMS = $(make_extra)
 --- origsrc/tqsllib-2.2/configure.in	2010-09-30 00:09:55.000000000 +0900
-+++ src/tqsllib-2.2/configure.in	2010-12-05 14:59:34.663052800 +0900
-@@ -42,7 +42,7 @@ dnl Checks for programs.
- AC_PROG_CC
- AC_PROG_CPP
- AC_PROG_CXX
--AC_PROG_LIBTOOL
-+LT_INIT(win32-dll)
- 
- AC_MSG_CHECKING([for --enable-docs])
- AC_ARG_ENABLE(docs,
++++ src/tqsllib-2.2/configure.in	2012-03-22 16:46:14.009060300 +0900
 @@ -55,14 +55,6 @@ AC_ARG_ENABLE(docs,
  AC_MSG_RESULT($docok)
  AM_CONDITIONAL(NODOC, test x$docok = xno)
@@ -151,3 +142,16 @@
  
  dnl Checks for typedefs, structures, and compiler characteristics.
  AC_C_CONST
+--- origsrc/tqsllib-2.2/openssl_cert.cpp	2010-09-30 00:09:56.000000000 +0900
++++ src/tqsllib-2.2/openssl_cert.cpp	2012-03-22 17:14:04.411827100 +0900
+@@ -1583,6 +1583,10 @@ tqsl_exportPKCS12File(tQSL_Cert cert, co
+ 
+ 	/* Form into PKCS12 data */
+ 	p12 = PKCS12_init(NID_pkcs7_data);
++#if defined(__CYGWIN__)
++#undef CHECKED_PTR_OF
++#define CHECKED_PTR_OF(type, p) ((STACK_OF(OPENSSL_BLOCK)*) (1 ? p : (type*)0))
++#endif
+ #if (OPENSSL_VERSION_NUMBER & 0xfffff000) >= 0x00908000
+ 	ASN1_seq_pack_PKCS7(safes, (int(*)(PKCS7*, unsigned char**))i2d_PKCS7, &(p12)->authsafes->d.data->data,
+ #else
