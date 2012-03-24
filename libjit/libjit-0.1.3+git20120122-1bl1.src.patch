@@ -1,0 +1,101 @@
+--- origsrc/libjit/configure.ac	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/configure.ac	2012-03-24 20:35:30.677453400 +0900
+@@ -39,16 +39,6 @@ AC_SUBST(JIT_INT64_INCLUDE)
+ case "$host" in
+ 	*-*-cygwin*)
+ 		platform_win32=yes
+-		if test "x$CC" = "x" ; then
+-			CC="gcc -mno-cygwin"
+-		fi
+-		if test "x$CXX" = "x" ; then
+-			if test "x$CC" = "xcl" ; then
+-				CXX="cl"
+-			else
+-				CXX="g++ -mno-cygwin"
+-			fi
+-		fi
+ 		suppress_libm=yes
+ 		JIT_INT64_INCLUDE='#include <stdlib.h>'
+ 		;;
+--- origsrc/libjit/dpas/Makefile.am	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/dpas/Makefile.am	2012-03-24 20:44:56.464560500 +0900
+@@ -20,7 +20,7 @@ dpas_LDADD = $(top_builddir)/jit/libjit.
+ dpas_DEPENDENCIES = $(top_builddir)/jit/libjit.la
+ 
+ AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir) \
+-			-DDPAS_INCLUDE_DIR=\"$(datadir)/dpas\"
++			-DDPAS_INCLUDE_DIR=\"$(datadir)/dpas\" -I$(top_srcdir)/include/jit
+ 
+ dpas-scanner.l: dpas-parser.c
+ 
+--- origsrc/libjit/jit/Makefile.am	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/jit/Makefile.am	2012-03-24 20:40:30.732138600 +0900
+@@ -89,17 +89,17 @@ EXTRA_DIST = \
+ 	jit-rules-x86.ins \
+ 	jit-rules-x86-64.ins
+ 
+-AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir)
++AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir) -I$(top_srcdir)/include/jit
+ 
+ libjit_la_LDFLAGS = -version-info $(LIBJIT_VERSION) -no-undefined
+ 
+ jit-interp.lo: jit-interp-labels.h
+ 
+-jit-interp-labels.h: $(top_srcdir)/include/jit/jit-opcode.h \
+-		$(top_srcdir)/jit/jit-interp-opcode.h $(srcdir)/mklabel.sh
++jit-interp-labels.h: $(top_builddir)/include/jit/jit-opcode.h \
++		$(top_builddir)/jit/jit-interp-opcode.h $(srcdir)/mklabel.sh
+ 	$(SHELL) $(srcdir)/mklabel.sh "$(AWK)" \
+-		$(top_srcdir)/include/jit/jit-opcode.h \
+-		$(top_srcdir)/jit/jit-interp-opcode.h >jit-interp-labels.h
++		$(top_builddir)/include/jit/jit-opcode.h \
++		$(top_builddir)/jit/jit-interp-opcode.h >jit-interp-labels.h
+ 
+ jit-rules-x86.lo: jit-rules-x86.inc
+ 
+--- origsrc/libjit/jitdynamic/Makefile.am	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/jitdynamic/Makefile.am	2012-03-24 20:43:09.890341800 +0900
+@@ -6,7 +6,7 @@ libjitdynamic_la_SOURCES = \
+ 		jit-cpp-mangle.c
+ 
+ AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include \
+-			-I. -I$(srcdir) -I$(top_srcdir)/jit -I$(top_builddir)/jit
++			-I. -I$(srcdir) -I$(top_srcdir)/jit -I$(top_builddir)/jit -I$(top_srcdir)/include/jit
+ 
+ libjitdynamic_la_LDFLAGS = \
+ 		-version-info $(LIBJIT_VERSION) \
+--- origsrc/libjit/jitdynamic/jit-dynlib.c	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/jitdynamic/jit-dynlib.c	2012-03-24 20:36:43.761435500 +0900
+@@ -396,7 +396,11 @@ void *jit_dynlib_get_symbol(jit_dynlib_h
+ 
+ const char *jit_dynlib_get_suffix(void)
+ {
++#if defined(__CYGWIN__)
++	return "dll";
++#else
+ 	return "so";
++#endif
+ }
+ 
+ #else	/* No dynamic library support */
+--- origsrc/libjit/jitplus/Makefile.am	2012-03-24 20:03:56.000000000 +0900
++++ src/libjit/jitplus/Makefile.am	2012-03-24 20:43:55.493857400 +0900
+@@ -7,7 +7,7 @@ libjitplus_la_SOURCES = \
+ 		jit-plus-value.cpp \
+ 		jit-plus-jump-table.cpp
+ 
+-AM_CXXFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir)
++AM_CXXFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir) -I$(top_srcdir)/include/jit
+ 
+ libjitplus_la_LDFLAGS = \
+ 		-version-info $(LIBJIT_VERSION) \
+--- origsrc/libjit/tutorial/Makefile.am	2012-03-24 20:03:57.000000000 +0900
++++ src/libjit/tutorial/Makefile.am	2012-03-24 20:46:18.997763600 +0900
+@@ -22,5 +22,5 @@ t5_SOURCES = t5.c
+ t5_LDADD = $(top_builddir)/jit/libjit.la
+ t5_DEPENDENCIES = $(top_builddir)/jit/libjit.la
+ 
+-AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir)
+-AM_CXXFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir)
++AM_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir) -I$(top_srcdir)/include/jit
++AM_CXXFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include -I. -I$(srcdir) -I$(top_srcdir)/include/jit
