@@ -1,0 +1,165 @@
+--- origsrc/hamsterdb-2.0.1/samples/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/samples/Makefile.am	2012-03-24 16:01:57.604068100 +0900
+@@ -1,5 +1,5 @@
+ 
+-INCLUDES		= -I$(top_builddir)/include
++INCLUDES		= -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ noinst_PROGRAMS	= db1 db2 db3 db4 db5 db6 env1 env2 env3
+ 
+--- origsrc/hamsterdb-2.0.1/src/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/Makefile.am	2012-03-24 15:55:12.492740000 +0900
+@@ -2,11 +2,11 @@
+ if ENABLE_REMOTE
+ SUBDIRS = protocol
+ if ENABLE_SERVER 
+-SUBDIRS += server
++SUBDIRS += . server
+ endif # ENABLE_SERVER
+ endif # ENABLE_REMOTE
+ 
+-AM_CPPFLAGS = -I../include -I$(top_builddir)/3rdparty/aes
++AM_CPPFLAGS = -I../include -I$(top_builddir)/3rdparty/aes -I$(top_srcdir)/include
+ 
+ lib_LTLIBRARIES = libhamsterdb.la
+ 
+@@ -44,7 +44,7 @@ libhamsterdb_la_SOURCES = log.cc \
+ 			changeset.cc \
+ 			device.cc
+ 
+-libhamsterdb_la_LDFLAGS = -version-info 3:0:0
++libhamsterdb_la_LDFLAGS = -version-info 3:0:0 -no-undefined
+ 
+ if ENABLE_ENCRYPTION
+ libhamsterdb_la_LDFLAGS += $(top_builddir)/3rdparty/aes/libaes.la
+--- origsrc/hamsterdb-2.0.1/src/cursor.cc	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/cursor.cc	2012-03-24 15:55:31.008365000 +0900
+@@ -22,6 +22,7 @@
+ #include "btree_cursor.h"
+ #include "btree_key.h"
+ 
++#include <ham/hamsterdb.h>
+ 
+ static ham_bool_t
+ __btree_cursor_is_nil(btree_cursor_t *btc)
+--- origsrc/hamsterdb-2.0.1/src/journal.cc	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/journal.cc	2012-03-24 15:59:06.133365000 +0900
+@@ -13,6 +13,9 @@
+ #include "config.h"
+ 
+ #include <string.h>
++#if defined(__CYGWIN__)
++#include <libgen.h>
++#endif
+ 
+ #include "db.h"
+ #include "device.h"
+@@ -777,7 +780,7 @@ Journal::get_path(int i)
+ 		path+=ext;
+ #else
+         path+="/";
+-        path+=::basename(m_env->get_filename().c_str());
++        path+=::basename(const_cast<char*>(m_env->get_filename().c_str()));
+ #endif
+     }
+     if (i==0)
+--- origsrc/hamsterdb-2.0.1/src/log.cc	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/log.cc	2012-03-24 15:52:34.592349400 +0900
+@@ -13,6 +13,9 @@
+ #include "config.h"
+ 
+ #include <string.h>
++#if defined(__CYGWIN__)
++#include <libgen.h>
++#endif
+ 
+ #include "db.h"
+ #include "device.h"
+@@ -412,7 +415,7 @@ Log::get_path()
+ 		path+=ext;
+ #else
+         path+="/";
+-		path+=::basename(m_env->get_filename().c_str());
++		path+=::basename(const_cast<char*>(m_env->get_filename().c_str()));
+ #endif
+     }
+     path+=".log0";
+--- origsrc/hamsterdb-2.0.1/src/protocol/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/protocol/Makefile.am	2012-03-24 16:26:46.315005600 +0900
+@@ -7,7 +7,7 @@ AM_CXXFLAGS     = $(CFLAGS)
+ CXXFLAGS        = $(CFLAGS)
+ AM_CPPFLAGS 	= -I$(top_builddir)/include
+ 
+-# INCLUDES = 
++INCLUDES = -I$(top_srcdir)/include
+ 
+ noinst_LTLIBRARIES     = libprotocol.la
+ 
+@@ -15,6 +15,6 @@ libprotocol_la_SOURCES = protocol.cc mes
+ libprotocol_la_LDFLAGS = -lprotobuf
+ 
+ messages.pb.cc proto: messages.proto
+-	protoc messages.proto --cpp_out=.
++	protoc -I$(srcdir) $(srcdir)/messages.proto --cpp_out=.
+ 	
+ 
+--- origsrc/hamsterdb-2.0.1/src/server/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/src/server/Makefile.am	2012-03-24 15:47:04.514224400 +0900
+@@ -1,14 +1,15 @@
+ 
+-AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty
++AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty -I$(top_srcdir)/3rdparty -I$(top_srcdir)/include -I$(top_srcdir)/src
+ 
+ lib_LTLIBRARIES = libhamserver.la
+ 
+ libhamserver_la_SOURCES = hamserver.cc os.c
+ 
+-libhamserver_la_LDFLAGS = -version-info 0:0:0
++libhamserver_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+ 
+ libhamserver_la_LDFLAGS += $(top_builddir)/3rdparty/json/libjson.la \
+                            $(top_builddir)/3rdparty/mongoose/libmongoose.la \
+-                           $(top_builddir)/src/protocol/libprotocol.la
++                           $(top_builddir)/src/protocol/libprotocol.la \
++                           $(top_builddir)/src/libhamsterdb.la
+ 
+ 
+--- origsrc/hamsterdb-2.0.1/tools/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/tools/Makefile.am	2012-03-24 16:04:50.984927500 +0900
+@@ -1,6 +1,8 @@
+ 
+ INCLUDES		    = -I$(top_builddir)/include -I$(top_builddir)/src \
+-					  -I$(top_builddir)/3rdparty/json
++					  -I$(top_builddir)/3rdparty/json \
++				-I$(top_srcdir)/include \
++				-I$(top_srcdir)/3rdparty/json
+ 
+ hamzilla_SOURCES    = hamzilla.c getopts.c config.c
+ hamzilla_LDADD      = $(top_builddir)/src/libhamsterdb.la \
+--- origsrc/hamsterdb-2.0.1/tools/hamzilla.c	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/tools/hamzilla.c	2012-03-24 16:04:17.391177500 +0900
+@@ -248,11 +248,13 @@ daemonize(void)
+     /* disassociate from process group */
+     setpgrp();
+ 
++#if defined(TIOCNOTTY)
+     /* disassociate from control terminal */
+     if ((fd=open("dev/tty", O_RDWR)) >= 0) {
+         ioctl(fd, TIOCNOTTY, NULL);
+         close(fd);
+     }
++#endif
+ }
+ #endif
+ 
+--- origsrc/hamsterdb-2.0.1/unittests/Makefile.am	2012-02-19 21:11:19.000000000 +0900
++++ src/hamsterdb-2.0.1/unittests/Makefile.am	2012-03-24 16:29:59.965396300 +0900
+@@ -3,7 +3,7 @@ EXTRA_DIST      = valgrind.supp
+ 
+ noinst_PROGRAMS = test bfc_sample recovery
+ 
+-AM_CPPFLAGS     = -I$(top_builddir)/include
++AM_CPPFLAGS     = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ test_SOURCES    = log.cpp \
+                   journal.cpp \
