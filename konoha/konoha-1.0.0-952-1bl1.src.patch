@@ -1,0 +1,77 @@
+--- origsrc/konoha-1.0.0/CMakeLists.txt	2012-03-07 15:52:14.000000000 +0900
++++ src/konoha-1.0.0/CMakeLists.txt	2012-03-24 19:31:26.927717800 +0900
+@@ -233,6 +233,7 @@ if(HAVE_PTHREAD)
+ 	set(ExtraLibs ${ExtraLibs} ${HAVE_PTHREAD})
+ 	set(MessageLibs ${MessageLibs} pthread)
+ 	set(K_USING_THREAD 1)
++	set(K_USING_PTHREAD 1)
+ endif(HAVE_PTHREAD)
+ 
+ if(HAVE_LIBMEMCACHED)
+@@ -449,7 +450,7 @@ endif(DOXYGEN_FOUND)
+ 
+ install(TARGETS konoha1 konoha 
+ 		RUNTIME DESTINATION bin
+-		LIBRARY DESTINATION lib
++		ARCHIVE DESTINATION lib
+ 		)
+ 
+ install(DIRECTORY include/ DESTINATION include 
+--- origsrc/konoha-1.0.0/package/konoha.proc/proc.c	2012-03-07 15:52:14.000000000 +0900
++++ src/konoha-1.0.0/package/konoha.proc/proc.c	2012-03-24 19:02:24.404970900 +0900
+@@ -301,6 +301,9 @@ KMETHOD Proc_terminate(CTX ctx, ksfp_t *
+ 	knh_Proc_t *sp = (knh_Proc_t *)sfp[0].o;
+ 	struct sigaction sa;
+ 	sa.sa_handler = SIG_IGN;
++#if !defined(SA_NOCLDWAIT)
++#define SA_NOCLDWAIT (0)
++#endif
+ 	sa.sa_flags = SA_NOCLDWAIT;
+ 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+ 		// [TODO]
+--- origsrc/konoha-1.0.0/src/main/evidence.c	2012-03-07 15:52:15.000000000 +0900
++++ src/konoha-1.0.0/src/main/evidence.c	2012-03-24 18:46:25.631533400 +0900
+@@ -82,7 +82,7 @@ static const char* LOG__(int p)
+ static const char* knh_format_w3cdtf(char *buf, size_t bufsiz, struct tm *tmp)
+ {
+ 	// 2001-08-02T10:45:23+09:00
+-#if defined(K_USING_WINDOWS_)
++#if defined(K_USING_WINDOWS_) || defined(__CYGWIN__)
+ 	_tzset();
+ 	int gmtoff = (int)(_timezone / (60 * 60));
+ #else
+--- origsrc/konoha-1.0.0/src/main/os.c	2012-03-07 15:52:15.000000000 +0900
++++ src/konoha-1.0.0/src/main/os.c	2012-03-24 18:39:56.381533400 +0900
+@@ -36,7 +36,9 @@
+ #include <time.h>
+ #include <sys/time.h>
+ #include <sys/param.h>
++#if !defined(__CYGWIN__)
+ #include <sys/sysctl.h>
++#endif
+ #ifdef K_USING_MACOSX_
+ #include <mach-o/dyld.h>
+ #endif
+--- origsrc/konoha-1.0.0/src/main/security.c	2012-03-07 15:52:15.000000000 +0900
++++ src/konoha-1.0.0/src/main/security.c	2012-03-24 18:40:34.240908400 +0900
+@@ -51,7 +51,9 @@
+ #include <netinet/in.h>
+ #include <sys/param.h>
+ #include <sys/uio.h>
++#if !defined(__CYGWIN__)
+ #include <sys/sysctl.h>
++#endif
+ #include <unistd.h>
+ #endif
+ #ifdef K_USING_MACOSX_
+--- origsrc/konoha-1.0.0/src/main/struct.c	2012-03-07 15:52:15.000000000 +0900
++++ src/konoha-1.0.0/src/main/struct.c	2012-03-24 18:46:10.959658400 +0900
+@@ -769,7 +769,7 @@ static void Date_init(CTX ctx, kRawPtr *
+ 	dt->dt.hour  = (kshort_t)(tm.tm_hour);
+ 	dt->dt.min   = (kshort_t)(tm.tm_min);
+ 	dt->dt.sec   = (kshort_t)(tm.tm_sec);
+-#if defined(K_USING_MINGW_)
++#if defined(K_USING_MINGW_) || defined(__CYGWIN__)
+ 	_tzset();
+ 	dt->dt.gmtoff = (kshort_t)(_timezone / (60 * 60));
+ #else
