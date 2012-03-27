@@ -1,0 +1,98 @@
+--- origsrc/libccc-0.0.5/Makefile.am	2007-05-06 05:13:24.000000000 +0900
++++ src/libccc-0.0.5/Makefile.am	2012-03-27 22:53:06.840280500 +0900
+@@ -1,3 +1,5 @@
++ACLOCAL_AMFLAGS = -I macros
++
+ NULL=
+ all_time_subdirs=\
+ 	cdebug \
+--- origsrc/libccc-0.0.5/ccc/Makefile.am	2007-05-05 22:51:59.000000000 +0900
++++ src/libccc-0.0.5/ccc/Makefile.am	2012-03-27 23:12:16.598093000 +0900
+@@ -98,13 +98,16 @@ libccc_0_1_la_LIBADD=\
+ 	$(CCC_LIBS) \
+ 	$(top_builddir)/cdebug/libcdebug.la \
+ 	$(NULL)
++libccc_0_1_la_LDFLAGS =\
++	-no-undefined \
++	$(NULL)
+ 
+-cc-marshallers.h: $(srcdir)/marshallers.list $(srcdir)/Makefile
++cc-marshallers.h: $(srcdir)/marshallers.list $(builddir)/Makefile
+ 	@( $(GLIB_GENMARSHAL) --header --prefix=cc_marshal $< ) > xgen-cmh \
+ 	&& (cmp -s xgen-cmh $@ || (echo "Creating $@..."; cp xgen-cmh $@) ) \
+ 	&& rm -f xgen-cmh
+ 
+-cc-marshallers.c: $(srcdir)/marshallers.list $(srcdir)/Makefile
++cc-marshallers.c: $(srcdir)/marshallers.list $(builddir)/Makefile
+ 	@( echo "#include <ccc/cc-marshallers.h>"; \
+ 	$(GLIB_GENMARSHAL) --body --prefix=cc_marshal $< ) > xgen-cmc \
+ 	&& (cmp -s xgen-cmc $@ || (echo "Creating $@..."; cp xgen-cmc $@) ) \
+--- origsrc/libccc-0.0.5/ccc/cc-unit.c	2007-05-05 22:45:44.000000000 +0900
++++ src/libccc-0.0.5/ccc/cc-unit.c	2012-03-27 23:15:26.456491400 +0900
+@@ -38,7 +38,7 @@
+  * of sizes and positions.
+  */
+ 
+-G_DEFINE_BOXED_TYPE (CcDistance, cc_distance);
++G_DEFINE_BOXED_TYPE (CcDistance, cc_distance, cc_distance_copy, cc_distance_free);
+ 
+ /**
+  * CcDistance:
+--- origsrc/libccc-0.0.5/configure.in	2007-05-06 07:15:57.000000000 +0900
++++ src/libccc-0.0.5/configure.in	2012-03-27 23:06:10.878366400 +0900
+@@ -6,7 +6,7 @@ AC_INIT(ccc)
+ AM_CONFIG_HEADER(cc-config.h)
+ AM_INIT_AUTOMAKE(libccc,0.0.5)
+ AM_MAINTAINER_MODE
+-AM_ACLOCAL_INCLUDE(macros)
++AC_CONFIG_MACRO_DIR([macros])
+ 
+ MILESTONE=0.1
+ AC_SUBST(MILESTONE)
+@@ -23,7 +23,15 @@ GCJ=no
+ AC_PROG_CC
+ AC_PROG_INTLTOOL
+ AC_PROG_LIBTOOL
+-HERZI_PROG_RUBY([have_ruby=yes],[have_ruby=no])
++
++AC_ARG_ENABLE([ruby],
++              AS_HELP_STRING([--enable-ruby],
++                             [Enable the ruby bindings (default: disabled)]),
++              [HERZI_PROG_RUBY([have_ruby=yes],[have_ruby=no])],
++              [AC_MSG_CHECKING([whether to build ruby bindings])
++               AC_MSG_RESULT([no (disabled)])
++               have_ruby="no"])
++
+ HERZI_PROG_GPROF
+ 
+ AM_CONDITIONAL(WITH_RUBY,[test "x$have_ruby" = "xyes"])
+@@ -139,8 +147,7 @@ m4_define(gtk_required_version,
+ AC_ARG_ENABLE([python],
+ 	      AS_HELP_STRING([--enable-python],
+ 			     [Enable the python bindings (default: disabled)]),
+-	      [AM_PATH_PYTHON(2.2)
+-	       AM_CHECK_PYTHON_HEADERS([have_python="yes"],[have_python="no"])],
++	      [AM_PATH_PYTHON([2.2],[have_python="yes"],[have_python="no"])],
+ 	      [AC_MSG_CHECKING([whether to build python bindings])
+ 	       AC_MSG_RESULT([no (disabled)])
+ 	       have_python="no"])
+--- origsrc/libccc-0.0.5/demo/layers.c	2007-05-06 00:10:02.000000000 +0900
++++ src/libccc-0.0.5/demo/layers.c	2012-03-27 23:18:37.316843000 +0900
+@@ -46,7 +46,7 @@ raise_to_top (GtkWidget *button, CcItem*
+ }
+ 
+ static void
+-raise (GtkWidget *button, CcItem* circle) 
++raise0 (GtkWidget *button, CcItem* circle) 
+ {
+ 	cc_item_raise(circle, layer_demo_root);
+ }
+@@ -120,7 +120,7 @@ layers_demo(void) {
+ 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(raise_to_top), circle);
+ 	gtk_box_pack_start_defaults(GTK_BOX(hbox), button);
+ 	button = gtk_button_new_with_label("Raise circle");
+-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(raise), circle);
++	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(raise0), circle);
+ 	gtk_box_pack_start_defaults(GTK_BOX(hbox), button);
+ 	button = gtk_button_new_with_label("Lower circle");
+ 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(lower), circle);
