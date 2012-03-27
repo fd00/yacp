@@ -1,0 +1,39 @@
+--- origsrc/libcouchbase/Makefile.am	2012-03-27 16:38:23.000000000 +0900
++++ src/libcouchbase/Makefile.am	2012-03-27 17:22:41.371337700 +0900
+@@ -25,6 +25,8 @@
+ #
+ ACLOCAL_AMFLAGS = -I m4 --force
+ 
++INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/src -I$(top_srcdir)/include
++
+ lib_LTLIBRARIES = libcouchbase.la
+ noinst_LTLIBRARIES =
+ if BUILD_TOOLS
+@@ -115,7 +117,7 @@ libcouchbase_la_CPPFLAGS += -DLIBCOUCHBA
+ else
+ lib_LTLIBRARIES += libcouchbase_libevent.la
+ libcouchbase_libevent_la_SOURCES = src/plugin-libevent.c
+-libcouchbase_libevent_la_LDFLAGS=-version-info 1:0:0
++libcouchbase_libevent_la_LDFLAGS=-version-info 1:0:0 -no-undefined
+ libcouchbase_libevent_la_LIBADD=-levent
+ libcouchbase_libevent_la_CPPFLAGS=$(AM_CPPFLAGS) $(CPPFLAGS) -DLIBCOUCHBASE_INTERNAL=1
+ endif
+--- origsrc/libcouchbase/configure.ac	2012-03-27 16:38:23.000000000 +0900
++++ src/libcouchbase/configure.ac	2012-03-27 17:03:01.227783000 +0900
+@@ -131,7 +131,10 @@ AC_CACHE_CHECK([for winsock2], [ac_cv_ha
+       ])
+     LIBS="$saved_libs"
+   ])
+-AM_CONDITIONAL(HAVE_WINSOCK2, [test "$ac_cv_have_winsock2" = "yes"])
++case "$host_os" in
++  cygwin*) AM_CONDITIONAL(HAVE_WINSOCK2, [test "no" = "yes"]) ;;
++  *) AM_CONDITIONAL(HAVE_WINSOCK2, [test "$ac_cv_have_winsock2" = "yes"]) ;;
++esac
+ 
+ dnl Check that we've got a usable libevent
+ AC_CACHE_CHECK([for libevent], [ac_cv_have_libevent],
+--- origsrc/libcouchbase/m4/version.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libcouchbase/m4/version.m4	2012-03-27 16:41:44.250395000 +0900
+@@ -0,0 +1,2 @@
++m4_define([VERSION_NUMBER], [1.0.2])
++m4_define([GIT_CHANGESET],[e40c66fb174a1748f68a5064845bc2dde7b03982])
