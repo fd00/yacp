@@ -1,0 +1,65 @@
+--- origsrc/libqb-0.11.1/configure.ac	2012-03-07 19:09:15.000000000 +0900
++++ src/libqb-0.11.1/configure.ac	2012-03-28 19:42:28.953189900 +0900
+@@ -264,6 +264,11 @@ case "$host_os" in
+ 		CP=rsync
+ 		AC_MSG_RESULT([Solaris])
+ 	;;
++	*cygwin*)
++		AC_DEFINE_UNQUOTED([QB_CYGWIN], [1],
++				   [Compiling for Cygwin platform])
++		AC_MSG_RESULT([Cygwin])
++	;;
+ 	*)
+ 		AC_MSG_ERROR([Unsupported OS? hmmmm])
+ 	;;
+--- origsrc/libqb-0.11.1/lib/Makefile.am	2012-03-11 20:17:32.000000000 +0900
++++ src/libqb-0.11.1/lib/Makefile.am	2012-03-28 19:49:04.047916400 +0900
+@@ -37,7 +37,7 @@ AM_CPPFLAGS             = -I$(top_buildd
+ 
+ lib_LTLIBRARIES		= libqb.la
+ 
+-libqb_la_LDFLAGS	= -version-info 11:1:11
++libqb_la_LDFLAGS	= -version-info 11:1:11 -no-undefined
+ source_to_lint		= util.c hdb.c ringbuffer.c ringbuffer_helper.c array.c \
+ 			  loop.c loop_poll.c loop_job.c loop_timerlist.c \
+ 			  ipcc.c ipcs.c ipc_shm.c ipc_us.c \
+--- origsrc/libqb-0.11.1/lib/log.c	2012-03-07 19:09:15.000000000 +0900
++++ src/libqb-0.11.1/lib/log.c	2012-03-28 19:58:51.108463300 +0900
+@@ -659,6 +659,7 @@ qb_log_filter_ctl(int32_t t, enum qb_log
+ }
+ 
+ #ifdef QB_HAVE_ATTRIBUTE_SECTION
++#if !defined(QB_CYGWIN)
+ static int32_t
+ _log_so_walk_callback(struct dl_phdr_info *info, size_t size, void *data)
+ {
+@@ -697,6 +698,7 @@ done:
+ 	}
+ 	return 0;
+ }
++#endif
+ #endif /* QB_HAVE_ATTRIBUTE_SECTION */
+ 
+ static void
+@@ -739,8 +741,10 @@ qb_log_init(const char *name, int32_t fa
+ 
+ 	qb_log_dcs_init();
+ #ifdef QB_HAVE_ATTRIBUTE_SECTION
++#if !defined(QB_CYGWIN)
+ 	qb_log_callsites_register(__start___verbose, __stop___verbose);
+ 	dl_iterate_phdr(_log_so_walk_callback, NULL);
++#endif
+ #endif /* QB_HAVE_ATTRIBUTE_SECTION */
+ 
+ 	conf[QB_LOG_STDERR].state = QB_LOG_STATE_DISABLED;
+--- origsrc/libqb-0.11.1/lib/log_thread.c	2012-03-07 19:09:15.000000000 +0900
++++ src/libqb-0.11.1/lib/log_thread.c	2012-03-28 19:59:52.632877400 +0900
+@@ -121,7 +121,7 @@ qb_log_thread_priority_set(int32_t polic
+ #ifdef SCHED_IDLE
+ 	    || policy == SCHED_IDLE
+ #endif
+-#ifndef QB_DARWIN
++#if !defined(QB_DARWIN) && !defined(QB_CYGWIN)
+ 	    || policy == SCHED_BATCH
+ #endif
+ 	    ) {
