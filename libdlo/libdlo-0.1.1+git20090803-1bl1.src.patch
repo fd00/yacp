@@ -1,0 +1,45 @@
+--- origsrc/libdlo/Makefile.am	2012-03-28 22:36:30.000000000 +0900
++++ src/libdlo/Makefile.am	2012-03-28 22:43:15.150307300 +0900
+@@ -12,7 +12,6 @@ EXTRA_DIST = \
+ 	Guide-v104.pdf \
+ 	mkdox.sh
+ 
+-TESTS_ENVIRONMENT = sudo
+ TESTS = test/test1
+ 
+ MAINTAINERCLEANFILES = depcomp INSTALL install-sh missing aclocal.m4 config.guess config.sub configure
+--- origsrc/libdlo/configure.ac	2012-03-28 22:36:30.000000000 +0900
++++ src/libdlo/configure.ac	2012-03-28 22:38:04.802651000 +0900
+@@ -39,9 +39,7 @@ AC_TYPE_UINT64_T
+ AC_TYPE_UINT8_T
+ 
+ # Checks for library functions.
+-AC_CHECK_LIB(usb,usb_open)
+-AC_CHECK_FUNC([usb_get_driver_np],,[AC_MSG_ERROR([Can't find libusb. On ubuntu, try sudo apt-get install libusb-dev])])
+-AC_CHECK_FUNC([usb_get_configuration],[AC_MSG_ERROR([libdlo currently uses libusb-0.12 or 0.13. You appear to have 1.0])]) 
++PKG_CHECK_MODULES([LIBUSB], [libusb])
+ AC_FUNC_MALLOC
+ AC_FUNC_REALLOC
+ AC_CHECK_FUNCS([gettimeofday strchr])
+--- origsrc/libdlo/src/Makefile.am	2012-03-28 22:36:30.000000000 +0900
++++ src/libdlo/src/Makefile.am	2012-03-28 22:38:55.570229100 +0900
+@@ -20,7 +20,7 @@ libdlo_la_SOURCES = \
+ 	libdlo.c
+ 
+ libdlo_la_CFLAGS = 
+-libdlo_la_LDFLAGS = \
+-	-lusb \
++libdlo_la_LDFLAGS = -no-undefined \
++	$(LIBUSB_LIBS) \
+ 	-version-info $(LIBDLO_LT_CURRENT):$(LIBDLO_LT_REVISION):$(LIBDLO_LT_AGE)
+ 
+--- origsrc/libdlo/test/Makefile.am	2012-03-28 22:36:30.000000000 +0900
++++ src/libdlo/test/Makefile.am	2012-03-28 22:43:55.761635400 +0900
+@@ -1,3 +1,3 @@
+-bin_PROGRAMS = test1
++noinst_PROGRAMS = test1
+ test1_SOURCES = test1.c
+-test1_LDADD = ../src/libdlo.la -lusb
+\ No newline at end of file
++test1_LDADD = ../src/libdlo.la $(LIBUSB_LIBS)
+\ No newline at end of file
