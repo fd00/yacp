@@ -1,0 +1,34 @@
+--- origsrc/libevthr/CMakeLists.txt	2012-03-29 22:13:54.000000000 +0900
++++ src/libevthr/CMakeLists.txt	2012-03-29 22:19:01.207165600 +0900
+@@ -3,8 +3,16 @@ project(libevthr)
+ 
+ include_directories(${CMAKE_INCLUDE_PATH})
+ 
+-add_library(libevthr STATIC evthr.c)
+-set_target_properties(libevthr PROPERTIES OUTPUT_NAME "evthr")
++include(FindPkgConfig)
+ 
+-install (TARGETS libevthr DESTINATION lib)
++pkg_check_modules(LIBEVENT REQUIRED libevent)
++
++include_directories(${LIBEVENT_INCLUDE_DIRS})
++link_directories(${LIBEVENT_LIBRARY_DIRS})
++link_libraries(${LIBEVENT_LIBRARIES})
++
++add_library(libevthr SHARED evthr.c)
++set_target_properties(libevthr PROPERTIES OUTPUT_NAME "evthr" SOVERSION 0)
++
++install (TARGETS libevthr RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install (FILES evthr.h DESTINATION include)
+--- origsrc/libevthr/evthr.c	2012-03-29 22:13:54.000000000 +0900
++++ src/libevthr/evthr.c	2012-03-29 22:14:46.534314100 +0900
+@@ -7,7 +7,9 @@
+ #include <limits.h>
+ #include <errno.h>
+ #include <fcntl.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/ioctl.h>
+ #include <sys/queue.h>
+ #include <unistd.h>
