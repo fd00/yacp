@@ -1,47 +1,36 @@
---- origsrc/lwp-2.6/configure.in	2010-03-18 05:32:51.000000000 +0900
-+++ src/lwp-2.6/configure.in	2010-11-09 00:23:45.931585900 +0900
-@@ -30,7 +30,7 @@ AC_PROG_CPP
- AM_PROG_AS
- AC_PROG_INSTALL
- AC_PROG_MAKE_SET
--AC_PROG_LIBTOOL
-+LT_INIT(win32-dll)
- 
- dnl pkg-config stuff
- CODA_PKG_CONFIG
 --- origsrc/lwp-2.6/src/Makefile.am	2008-08-09 04:35:28.000000000 +0900
-+++ src/lwp-2.6/src/Makefile.am	2010-11-09 00:23:28.253441900 +0900
-@@ -10,7 +10,7 @@ liblwp_la_SOURCES = fasttime.c iomgr.c l
- 		    lwp_ucontext.c lwp_ucontext.h lwp_stacktrace.c \
- 		    lwp_stacktrace.h lwp.private.h valgrind.h
- liblwp_la_CPPFLAGS = $(AM_CPPFLAGS) -DLWPDEBUG
--liblwp_la_LDFLAGS = $(LIBTOOL_LDFLAGS)
-+liblwp_la_LDFLAGS = $(LIBTOOL_LDFLAGS) -no-undefined
++++ src/lwp-2.6/src/Makefile.am	2012-03-30 22:23:22.690555900 +0900
+@@ -1,7 +1,7 @@
+ ## Process this file with automake to produce Makefile.in
  
- testlwp_static_SOURCES = testlwp.c
- testlwp_static_LDFLAGS = -static
+ lib_LTLIBRARIES = liblwp.la
+-noinst_PROGRAMS = cswitch testlwp testlwp-static tdb rw
++noinst_PROGRAMS = cswitch testlwp tdb rw
+ 
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ LDADD = liblwp.la
 --- origsrc/lwp-2.6/src-pt/Makefile.am	2007-12-12 02:29:05.000000000 +0900
-+++ src/lwp-2.6/src-pt/Makefile.am	2010-11-09 01:04:53.004655200 +0900
++++ src/lwp-2.6/src-pt/Makefile.am	2012-03-30 22:25:17.083134000 +0900
+@@ -4,7 +4,7 @@ VPATH=$(srcdir):$(top_srcdir)/src
+ 
+ if build_pthread
+ BUILD_LIB = liblwp_pt.la
+-BUILD_BIN = cswitch_pt testlwp_pt testlwp-static_pt tdb_pt rw_pt
++BUILD_BIN = cswitch_pt testlwp_pt tdb_pt rw_pt
+ endif
+ 
+ lib_LTLIBRARIES = $(BUILD_LIB)
 @@ -14,7 +14,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -D
  liblwp_pt_la_SOURCES = iomgr_pt.c lock_pt.c lwp_pt.c preempt_pt.c \
      lwp.private_pt.h dllist.h
  liblwp_pt_la_LIBADD = fasttime_pt.lo timer_pt.lo
 -liblwp_pt_la_LDFLAGS = -version-info $(LIBTOOL_VERSION) $(LIBPTHREAD)
-+liblwp_pt_la_LDFLAGS = $(LIBTOOL_LDFLAGS) $(LIBPTHREAD) -no-undefined
++liblwp_pt_la_LDFLAGS = $(LIBTOOL_LDFLAGS) $(LIBPTHREAD)
  
  noinst_PROGRAMS = $(BUILD_BIN)
  cswitch_pt_SOURCES =
 --- origsrc/lwp-2.6/src-pt/lwp_pt.c	2005-03-04 03:53:51.000000000 +0900
-+++ src/lwp-2.6/src-pt/lwp_pt.c	2010-11-09 01:02:40.013423200 +0900
-@@ -48,7 +48,7 @@ static struct list_head lwp_list;    /*
- struct lwp_forkinfo {
-     void  (*func)(void *);
-     char   *parm; 
--    char   *name;
-+    const char   *name;
-     int     prio;
-     PROCESS pid;
- };
++++ src/lwp-2.6/src-pt/lwp_pt.c	2012-03-30 22:21:22.540165300 +0900
 @@ -295,7 +295,7 @@ static void *lwp_newprocess(void *arg)
  }
  
