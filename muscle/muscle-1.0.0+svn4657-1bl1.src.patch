@@ -1,0 +1,35 @@
+--- origsrc/muscle/configure.ac	2012-04-03 01:16:17.000000000 +0900
++++ src/muscle/configure.ac	2012-04-03 01:17:05.919243500 +0900
+@@ -87,12 +87,14 @@ fi
+ AC_SUBST(STATIC_FLAG)
+ 
+ dnl Check for OpenMP
+-#AX_OPENMP()
++AX_OPENMP()
+ AC_SUBST(OPENMP_CFLAGS)
+ dnl OpenMP checker only defines for C when compiling both C and C++
+ OPENMP_CXXFLAGS=$OPENMP_CFLAGS
+ AC_SUBST(OPENMP_CXXFLAGS)
+ 
++AM_CONDITIONAL(WITH_OPENMP, test x$OPENMP_CFLAGS != x)
++
+ dnl Make doxygen docs
+ DX_INIT_DOXYGEN( "libMUSCLE", "projects/libmuscle.doxygen", "doc" )
+ 
+--- origsrc/muscle/libMUSCLE/Makefile.am	2012-04-03 01:16:16.000000000 +0900
++++ src/muscle/libMUSCLE/Makefile.am	2012-04-03 01:17:48.662407500 +0900
+@@ -29,9 +29,13 @@ INCLUDES = -I$(top_srcdir)
+ 
+ lib_LTLIBRARIES = libMUSCLE-3.7.la
+ libMUSCLE_3_7_la_SOURCES = $(LIBMUSCLE_SRC)
+-libMUSCLE_3_7_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) 
++libMUSCLE_3_7_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ libMUSCLE_3_7_la_CXXFLAGS= -D_LIB $(AM_CXXFLAGS)
+ 
++if WITH_OPENMP
++libMUSCLE_3_7_la_LIBADD=-lgomp
++endif
++
+ bin_PROGRAMS = muscle 
+ 
+ 
