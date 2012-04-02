@@ -1,0 +1,82 @@
+--- origsrc/libGenome/configure.ac	2012-04-03 00:45:42.000000000 +0900
++++ src/libGenome/configure.ac	2012-04-03 01:04:01.108297000 +0900
+@@ -99,12 +99,14 @@ AM_CONDITIONAL(DEBUG, test x$debug = xtr
+ AM_CONFIG_HEADER(config.h)
+ 
+ dnl Check for OpenMP
+-#AX_OPENMP()
++AX_OPENMP()
+ AC_SUBST(OPENMP_CFLAGS)
+ dnl OpenMP checker only defines for C when compiling both C and C++
+ dnl OPENMP_CXXFLAGS=$OPENMP_CFLAGS
+ AC_SUBST(OPENMP_CXXFLAGS)
+ 
++AM_CONDITIONAL(WITH_OPENMP, test x$OPENMP_CFLAGS != x)
++
+ dnl Make doxygen docs
+ DX_INIT_DOXYGEN( "libGenome", "projects/libGenome.doxygen", "doc" )
+ 
+--- origsrc/libGenome/libGenome/Makefile.am	2012-04-03 00:45:41.000000000 +0900
++++ src/libGenome/libGenome/Makefile.am	2012-04-03 01:04:26.530172000 +0900
+@@ -37,29 +37,31 @@ library_include_HEADERS = $(LIBGENOME_H)
+ 
+ lib_LTLIBRARIES = libGenome-1.3.la
+ libGenome_1_3_la_SOURCES = $(LIBGENOME_SRC)
+-libGenome_1_3_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) 
++libGenome_1_3_la_LDFLAGS= -version-info $(GENERIC_LIBRARY_VERSION) -no-undefined
+ 
++if WITH_OPENMP
++libGenome_1_3_la_LDFLAGS+=-lgomp
++endif
+ 
+ 
+ INCLUDES = -I$(top_srcdir)
+ 
+ check_PROGRAMS = TestRevComp
+ TestRevComp_SOURCES = TestRevComp.cpp
+-TestRevComp_LDADD = $(top_builddir)/src/libGenome.a
++TestRevComp_LDADD = libGenome-1.3.la
+ 
+ EXTRA_PROGRAMS = test_o_matic testSource testSourceFactory testSourceSeq testTests testgnSequence coordMapper
+ test_o_matic_SOURCES = test-o-matic.cpp
+-test_o_matic_LDADD = $(top_builddir)/src/libGenome.a
+-test_o_matic_LDFLAGS = @STATIC_FLAG@
++test_o_matic_LDADD = libGenome-1.3.la
+ testSource_SOURCES = testSource.cpp
+-testSource_LDADD = $(top_builddir)/src/libGenome.a
++testSource_LDADD = libGenome-1.3.la
+ testSourceFactory_SOURCES = testSourceFactory.cpp
+-testSourceFactory_LDADD = $(top_builddir)/src/libGenome.a
++testSourceFactory_LDADD = libGenome-1.3.la
+ testSourceSeq_SOURCES = testSourceSeq.cpp
+-testSourceSeq_LDADD = $(top_builddir)/src/libGenome.a
++testSourceSeq_LDADD = libGenome-1.3.la
+ testTests_SOURCES = testTests.cpp
+-testTests_LDADD = $(top_builddir)/src/libGenome.a
++testTests_LDADD = libGenome-1.3.la
+ testgnSequence_SOURCES = testgnSequence.cpp
+-testgnSequence_LDADD = $(top_builddir)/src/libGenome.a
++testgnSequence_LDADD = libGenome-1.3.la
+ coordMapper_SOURCES = coordMapper.cpp
+-coordMapper_LDADD = $(top_builddir)/src/libGenome.a
++coordMapper_LDADD = libGenome-1.3.la
+--- origsrc/libGenome/libGenome/TestRevComp.cpp	2012-04-03 00:45:41.000000000 +0900
++++ src/libGenome/libGenome/TestRevComp.cpp	2012-04-03 01:07:02.616109500 +0900
+@@ -4,7 +4,6 @@
+ 
+ #include "libGenome/gnSourceFactory.h"
+ #include "libGenome/gnFASSource.h"
+-#include "libGenome/gnDNXSource.h"
+ #include "libGenome/gnSEQSource.h"
+ #include "libGenome/gnSequence.h"
+ #include <iostream>
+@@ -12,6 +11,9 @@
+ 
+ #include "libGenome/gnFilter.h"
+ 
++using namespace std;
++using namespace genome;
++
+ int main( int32 argc, char* argv[])
+ {
+ 
