@@ -1,0 +1,73 @@
+--- origsrc/libtagedit-1.1.1/flacTag/Makefile.am	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/flacTag/Makefile.am	2012-04-03 00:01:14.941663400 +0900
+@@ -4,5 +4,5 @@ lib_LTLIBRARIES = flacTag.la
+ flacTag_la_SOURCES = flactag.cpp flac_if.cpp flactag.hpp
+ flacTag_la_CPPFLAGS = -I$(top_srcdir)/include
+ flacTag_la_LIBADD = @LIBFLAC_LIBS@ @LIBFLACPP_LIBS@ @TAGEDIT_LIBS@ -lvcomment
+-flacTag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs -L$(top_builddir)/vorbisComment 
++flacTag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs -L$(top_builddir)/vorbisComment -no-undefined
+ 
+--- origsrc/libtagedit-1.1.1/id3Tag/Makefile.am	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/id3Tag/Makefile.am	2012-04-03 00:01:29.769788400 +0900
+@@ -4,6 +4,6 @@ lib_LTLIBRARIES = id3Tag.la
+ id3Tag_la_SOURCES = id3tag.cpp framedesc.cpp id3_if.cpp id3frames.cpp id3base.hpp id3tag.hpp framedesc.hpp id3frames.hpp
+ id3Tag_la_CPPFLAGS = -I$(top_srcdir)/include
+ id3Tag_la_LIBADD = @TAGEDIT_LIBS@
+-id3Tag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs 
++id3Tag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs -no-undefined
+ 
+ 
+--- origsrc/libtagedit-1.1.1/id3Tag/framedesc.cpp	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/id3Tag/framedesc.cpp	2012-04-03 00:09:01.197522800 +0900
+@@ -26,6 +26,8 @@
+ #include "libtagedit/tageditor.hpp"
+ #include "framedesc.hpp"
+ 
++#include <cstring>
++
+ frameDesc frdesc;
+ 
+ char* frameDesc::id3Genres[] =	{
+--- origsrc/libtagedit-1.1.1/oggTag/Makefile.am	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/oggTag/Makefile.am	2012-04-03 00:01:41.707288400 +0900
+@@ -4,4 +4,4 @@ lib_LTLIBRARIES = oggTag.la
+ oggTag_la_SOURCES = oggtag.cpp ogg_if.cpp oggtag.hpp
+ oggTag_la_CPPFLAGS = -I$(top_srcdir)/include
+ oggTag_la_LIBADD = @VORBISFILE_LIBS@ @TAGEDIT_LIBS@ -lvcomment
+-oggTag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs -L$(top_builddir)/vorbisComment/
++oggTag_la_LDFLAGS = -avoid-version -module -L$(top_builddir)/src/.libs -L$(top_builddir)/vorbisComment/ -no-undefined
+--- origsrc/libtagedit-1.1.1/src/Makefile.am	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/src/Makefile.am	2012-04-03 00:08:15.844007200 +0900
+@@ -2,5 +2,5 @@ lib_LTLIBRARIES = libtagedit.la
+ libtagedit_la_SOURCES = libtagedit.cpp utf8converter.cpp tageditor.cpp
+ libtagedit_la_CPPFLAGS = -I$(top_srcdir)/include
+ libtagedit_la_CXXFLAGS = -DPLUGDIR=\"@PLUGINDIR@\"
+-libtagedit_la_LIBADD = -ldl -lstdc++
+-libtagedit_la_LDFLAGS = -version-info 5:0:0
++libtagedit_la_LIBADD = -ldl -lstdc++ -liconv
++libtagedit_la_LDFLAGS = -version-info 5:0:0 -no-undefined
+--- origsrc/libtagedit-1.1.1/src/libtagedit.cpp	2004-11-01 03:30:33.000000000 +0900
++++ src/libtagedit-1.1.1/src/libtagedit.cpp	2012-04-03 00:03:31.640882200 +0900
+@@ -41,7 +41,11 @@ static int getSO(const dirent *test)
+ 	string e = test->d_name;
+ 	int dot = e.find_last_of('.');
+ 	string ext = e.substr(dot, 3);
++#if defined(__CYGWIN__)
++	if(dot > -1 && e.substr(dot, 4) == ".dll")
++#else
+ 	if(dot > -1 && e.substr(dot, 3) == ".so")
++#endif
+ 		return 1;
+ 	else
+ 		return 0;
+--- origsrc/libtagedit-1.1.1/vorbisComment/Makefile.am	2004-04-23 06:33:59.000000000 +0900
++++ src/libtagedit-1.1.1/vorbisComment/Makefile.am	2012-04-03 00:10:34.898694700 +0900
+@@ -1,5 +1,5 @@
+-noinst_LIBRARIES = libvcomment.a
++noinst_LTLIBRARIES = libvcomment.la
+ 
+-libvcomment_a_SOURCES = vcomment.cpp
+-libvcomment_a_CPPFLAGS = -I$(top_srcdir)/include
++libvcomment_la_SOURCES = vcomment.cpp
++libvcomment_la_CPPFLAGS = -I$(top_srcdir)/include
+ 
