@@ -1,5 +1,5 @@
---- origsrc/libfep-0.0.6/lib/Makefile.am	2012-02-20 12:49:09.000000000 +0900
-+++ src/libfep-0.0.6/lib/Makefile.am	2012-03-23 01:19:20.800332000 +0900
+--- origsrc/libfep-0.0.8/lib/Makefile.am	2012-03-29 10:17:38.000000000 +0900
++++ src/libfep-0.0.8/lib/Makefile.am	2012-04-11 22:47:03.181147000 +0900
 @@ -21,7 +21,7 @@
  # the same distribution terms as the rest of that program.
  #
@@ -9,7 +9,58 @@
  
  AUTOMAKE_OPTIONS = 1.5 gnits subdir-objects
  
-@@ -565,6 +565,15 @@ EXTRA_libgnu_la_SOURCES += memmem.c
+@@ -511,6 +511,50 @@ EXTRA_DIST += config.charset ref-add.sin
+ 
+ ## end   gnulib module localcharset
+ 
++## begin gnulib module locale
++
++BUILT_SOURCES += locale.h
++
++# We need the following in order to create <locale.h> when the system
++# doesn't have one that provides all definitions.
++locale.h: locale.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
++	$(AM_V_GEN)rm -f $@-t $@ && \
++	{ echo '/* DO NOT EDIT! GENERATED AUTOMATICALLY! */' && \
++	  sed -e 's|@''GUARD_PREFIX''@|GL|g' \
++	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++	      -e 's|@''NEXT_LOCALE_H''@|$(NEXT_LOCALE_H)|g' \
++	      -e 's/@''GNULIB_LOCALECONV''@/$(GNULIB_LOCALECONV)/g' \
++	      -e 's/@''GNULIB_SETLOCALE''@/$(GNULIB_SETLOCALE)/g' \
++	      -e 's/@''GNULIB_DUPLOCALE''@/$(GNULIB_DUPLOCALE)/g' \
++	      -e 's|@''HAVE_DUPLOCALE''@|$(HAVE_DUPLOCALE)|g' \
++	      -e 's|@''HAVE_XLOCALE_H''@|$(HAVE_XLOCALE_H)|g' \
++	      -e 's|@''REPLACE_LOCALECONV''@|$(REPLACE_LOCALECONV)|g' \
++	      -e 's|@''REPLACE_SETLOCALE''@|$(REPLACE_SETLOCALE)|g' \
++	      -e 's|@''REPLACE_DUPLOCALE''@|$(REPLACE_DUPLOCALE)|g' \
++	      -e 's|@''REPLACE_STRUCT_LCONV''@|$(REPLACE_STRUCT_LCONV)|g' \
++	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
++	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++	      < $(srcdir)/locale.in.h; \
++	} > $@-t && \
++	mv $@-t $@
++MOSTLYCLEANFILES += locale.h locale.h-t
++
++EXTRA_DIST += locale.in.h
++
++## end   gnulib module locale
++
++## begin gnulib module localeconv
++
++
++EXTRA_DIST += localeconv.c
++
++EXTRA_libgnu_la_SOURCES += localeconv.c
++
++## end   gnulib module localeconv
++
+ ## begin gnulib module login_tty
+ 
+ 
+@@ -565,6 +609,15 @@ EXTRA_libgnu_la_SOURCES += memmem.c
  
  ## end   gnulib module memmem-simple
  
@@ -25,7 +76,15 @@
  ## begin gnulib module minmax
  
  libgnu_la_SOURCES += minmax.h
-@@ -1536,6 +1545,7 @@ sys/time.h: sys_time.in.h $(top_builddir
+@@ -1049,7 +1102,6 @@ stdio.h: stdio.in.h $(top_builddir)/conf
+ 	      -e 's/@''GNULIB_GETCHAR''@/$(GNULIB_GETCHAR)/g' \
+ 	      -e 's/@''GNULIB_GETDELIM''@/$(GNULIB_GETDELIM)/g' \
+ 	      -e 's/@''GNULIB_GETLINE''@/$(GNULIB_GETLINE)/g' \
+-	      -e 's/@''GNULIB_GETS''@/$(GNULIB_GETS)/g' \
+ 	      -e 's/@''GNULIB_OBSTACK_PRINTF''@/$(GNULIB_OBSTACK_PRINTF)/g' \
+ 	      -e 's/@''GNULIB_OBSTACK_PRINTF_POSIX''@/$(GNULIB_OBSTACK_PRINTF_POSIX)/g' \
+ 	      -e 's/@''GNULIB_PCLOSE''@/$(GNULIB_PCLOSE)/g' \
+@@ -1536,6 +1588,7 @@ sys/time.h: sys_time.in.h $(top_builddir
  	      -e 's/@''HAVE_GETTIMEOFDAY''@/$(HAVE_GETTIMEOFDAY)/g' \
  	      -e 's/@''HAVE_STRUCT_TIMEVAL''@/$(HAVE_STRUCT_TIMEVAL)/g' \
  	      -e 's/@''REPLACE_GETTIMEOFDAY''@/$(REPLACE_GETTIMEOFDAY)/g' \
@@ -33,8 +92,8 @@
  	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
  	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
  	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
---- origsrc/libfep-0.0.6/lib/alloca.in.h	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/alloca.in.h	2012-03-23 01:17:42.003457000 +0900
+--- origsrc/libfep-0.0.8/lib/alloca.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/alloca.in.h	2012-04-11 22:45:23.103022000 +0900
 @@ -14,9 +14,9 @@
     General Public License for more details.
  
@@ -48,8 +107,8 @@
  
  /* Avoid using the symbol _ALLOCA_H here, as Bison assumes _ALLOCA_H
     means there is a real alloca function.  */
---- origsrc/libfep-0.0.6/lib/asnprintf.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/asnprintf.c	2012-03-23 01:17:42.175332000 +0900
+--- origsrc/libfep-0.0.8/lib/asnprintf.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/asnprintf.c	2012-04-11 22:45:23.290522000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -60,8 +119,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/asprintf.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/asprintf.c	2012-03-23 01:17:42.347207000 +0900
+--- origsrc/libfep-0.0.8/lib/asprintf.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/asprintf.c	2012-04-11 22:45:23.493647000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -72,8 +131,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/c-ctype.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/c-ctype.c	2012-03-23 01:17:42.597207000 +0900
+--- origsrc/libfep-0.0.8/lib/c-ctype.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/c-ctype.c	2012-04-11 22:45:23.806147000 +0900
 @@ -13,8 +13,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICU
  GNU General Public License for more details.
  
@@ -84,8 +143,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/c-ctype.h	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/c-ctype.h	2012-03-23 01:17:42.753457000 +0900
+--- origsrc/libfep-0.0.8/lib/c-ctype.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/c-ctype.h	2012-04-11 22:45:23.993647000 +0900
 @@ -18,8 +18,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICU
  GNU General Public License for more details.
  
@@ -96,8 +155,8 @@
  
  #ifndef C_CTYPE_H
  #define C_CTYPE_H
---- origsrc/libfep-0.0.6/lib/c-strcase.h	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/c-strcase.h	2012-03-23 01:17:42.925332000 +0900
+--- origsrc/libfep-0.0.8/lib/c-strcase.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/c-strcase.h	2012-04-11 22:45:24.181147000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -108,8 +167,8 @@
  
  #ifndef C_STRCASE_H
  #define C_STRCASE_H
---- origsrc/libfep-0.0.6/lib/c-strcasecmp.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/c-strcasecmp.c	2012-03-23 01:17:43.081582000 +0900
+--- origsrc/libfep-0.0.8/lib/c-strcasecmp.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/c-strcasecmp.c	2012-04-11 22:45:24.353022000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -120,8 +179,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/c-strncasecmp.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/c-strncasecmp.c	2012-03-23 01:17:43.237832000 +0900
+--- origsrc/libfep-0.0.8/lib/c-strncasecmp.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/c-strncasecmp.c	2012-04-11 22:45:24.540522000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -132,8 +191,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/config.charset	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/config.charset	2012-03-23 01:17:43.409707000 +0900
+--- origsrc/libfep-0.0.8/lib/config.charset	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/config.charset	2012-04-11 22:45:24.728022000 +0900
 @@ -14,8 +14,7 @@
  #   GNU General Public License for more details.
  #
@@ -144,8 +203,8 @@
  #
  # The table consists of lines of the form
  #    ALIAS  CANONICAL
---- origsrc/libfep-0.0.6/lib/errno.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/errno.in.h	2012-03-23 01:17:43.581582000 +0900
+--- origsrc/libfep-0.0.8/lib/errno.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/errno.in.h	2012-04-11 22:45:24.962397000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -156,8 +215,8 @@
  
  #ifndef _@GUARD_PREFIX@_ERRNO_H
  
---- origsrc/libfep-0.0.6/lib/float+.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/float+.h	2012-03-23 01:17:44.487832000 +0900
+--- origsrc/libfep-0.0.8/lib/float+.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/float+.h	2012-04-11 22:45:26.009272000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -168,8 +227,8 @@
  
  #ifndef _FLOATPLUS_H
  #define _FLOATPLUS_H
---- origsrc/libfep-0.0.6/lib/gettext.h	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/gettext.h	2012-03-23 01:17:45.112832000 +0900
+--- origsrc/libfep-0.0.8/lib/gettext.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/gettext.h	2012-04-11 22:45:26.571772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -180,8 +239,8 @@
  
  #ifndef _LIBGETTEXT_H
  #define _LIBGETTEXT_H 1
---- origsrc/libfep-0.0.6/lib/glthread/threadlib.c	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/glthread/threadlib.c	2012-03-23 01:17:45.315957000 +0900
+--- origsrc/libfep-0.0.8/lib/glthread/threadlib.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/glthread/threadlib.c	2012-04-11 22:45:26.743647000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -192,8 +251,8 @@
  
  /* Written by Bruno Haible <bruno@clisp.org>, 2005.  */
  
---- origsrc/libfep-0.0.6/lib/iconv.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/iconv.c	2012-03-23 01:17:45.487832000 +0900
+--- origsrc/libfep-0.0.8/lib/iconv.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/iconv.c	2012-04-11 22:45:26.962397000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -204,8 +263,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/iconv.in.h	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/iconv.in.h	2012-03-23 01:17:45.644082000 +0900
+--- origsrc/libfep-0.0.8/lib/iconv.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/iconv.in.h	2012-04-11 22:45:27.149897000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -216,8 +275,8 @@
  
  #ifndef _@GUARD_PREFIX@_ICONV_H
  
---- origsrc/libfep-0.0.6/lib/iconv_close.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/iconv_close.c	2012-03-23 01:17:45.815957000 +0900
+--- origsrc/libfep-0.0.8/lib/iconv_close.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/iconv_close.c	2012-04-11 22:45:27.321772000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -228,8 +287,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/iconv_open.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/iconv_open.c	2012-03-23 01:17:46.487832000 +0900
+--- origsrc/libfep-0.0.8/lib/iconv_open.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/iconv_open.c	2012-04-11 22:45:28.071772000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -249,8 +308,8 @@
       The _ICONV_* constants are chosen to be disjoint from any iconv_t
       returned by the system's iconv_open() functions.  Recall that iconv_t
       is a scalar type.  */
---- origsrc/libfep-0.0.6/lib/ioctl.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/ioctl.c	2012-03-23 01:17:46.769082000 +0900
+--- origsrc/libfep-0.0.8/lib/ioctl.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/ioctl.c	2012-04-11 22:45:28.399897000 +0900
 @@ -47,6 +47,8 @@ rpl_ioctl (int fd, int request, ... /* {
  # include <errno.h>
  
@@ -272,8 +331,8 @@
    return -1;
  }
  
---- origsrc/libfep-0.0.6/lib/langinfo.in.h	2012-02-07 15:09:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/langinfo.in.h	2012-03-23 01:17:47.050332000 +0900
+--- origsrc/libfep-0.0.8/lib/langinfo.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/langinfo.in.h	2012-04-11 22:45:28.696772000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -284,8 +343,8 @@
  
  /*
   * POSIX <langinfo.h> for platforms that lack it or have an incomplete one.
---- origsrc/libfep-0.0.6/lib/localcharset.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/localcharset.c	2012-03-23 01:17:47.222207000 +0900
+--- origsrc/libfep-0.0.8/lib/localcharset.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/localcharset.c	2012-04-11 22:45:28.899897000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -296,8 +355,8 @@
  
  /* Written by Bruno Haible <bruno@clisp.org>.  */
  
---- origsrc/libfep-0.0.6/lib/localcharset.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/localcharset.h	2012-03-23 01:17:47.425332000 +0900
+--- origsrc/libfep-0.0.8/lib/localcharset.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/localcharset.h	2012-04-11 22:45:29.103022000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -308,8 +367,318 @@
  
  #ifndef _LOCALCHARSET_H
  #define _LOCALCHARSET_H
---- origsrc/libfep-0.0.6/lib/mbrtowc.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/mbrtowc.c	2012-03-23 01:17:47.769082000 +0900
+--- origsrc/libfep-0.0.8/lib/locale.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/lib/locale.in.h	2012-04-11 22:45:21.196772000 +0900
+@@ -0,0 +1,201 @@
++/* A POSIX <locale.h>.
++   Copyright (C) 2007-2012 Free Software Foundation, Inc.
++
++   This program is free software: you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++#ifndef _@GUARD_PREFIX@_LOCALE_H
++
++#if __GNUC__ >= 3
++@PRAGMA_SYSTEM_HEADER@
++#endif
++@PRAGMA_COLUMNS@
++
++/* The include_next requires a split double-inclusion guard.  */
++#@INCLUDE_NEXT@ @NEXT_LOCALE_H@
++
++#ifndef _@GUARD_PREFIX@_LOCALE_H
++#define _@GUARD_PREFIX@_LOCALE_H
++
++/* NetBSD 5.0 mis-defines NULL.  */
++#include <stddef.h>
++
++/* MacOS X 10.5 defines the locale_t type in <xlocale.h>.  */
++#if @HAVE_XLOCALE_H@
++# include <xlocale.h>
++#endif
++
++/* The definitions of _GL_FUNCDECL_RPL etc. are copied here.  */
++
++/* The definition of _GL_ARG_NONNULL is copied here.  */
++
++/* The definition of _GL_WARN_ON_USE is copied here.  */
++
++/* The LC_MESSAGES locale category is specified in POSIX, but not in ISO C.
++   On systems that don't define it, use the same value as GNU libintl.  */
++#if !defined LC_MESSAGES
++# define LC_MESSAGES 1729
++#endif
++
++/* Bionic libc's 'struct lconv' is just a dummy.  */
++#if @REPLACE_STRUCT_LCONV@
++# define lconv rpl_lconv
++struct lconv
++{
++  /* All 'char *' are actually 'const char *'.  */
++
++  /* Members that depend on the LC_NUMERIC category of the locale.  See
++     <http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap07.html#tag_07_03_04> */
++
++  /* Symbol used as decimal point.  */
++  char *decimal_point;
++  /* Symbol used to separate groups of digits to the left of the decimal
++     point.  */
++  char *thousands_sep;
++  /* Definition of the size of groups of digits to the left of the decimal
++     point.  */
++  char *grouping;
++
++  /* Members that depend on the LC_MONETARY category of the locale.  See
++     <http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap07.html#tag_07_03_03> */
++
++  /* Symbol used as decimal point.  */
++  char *mon_decimal_point;
++  /* Symbol used to separate groups of digits to the left of the decimal
++     point.  */
++  char *mon_thousands_sep;
++  /* Definition of the size of groups of digits to the left of the decimal
++     point.  */
++  char *mon_grouping;
++  /* Sign used to indicate a value >= 0.  */
++  char *positive_sign;
++  /* Sign used to indicate a value < 0.  */
++  char *negative_sign;
++
++  /* For formatting local currency.  */
++  /* Currency symbol (3 characters) followed by separator (1 character).  */
++  char *currency_symbol;
++  /* Number of digits after the decimal point.  */
++  char frac_digits;
++  /* For values >= 0: 1 if the currency symbol precedes the number, 0 if it
++     comes after the number.  */
++  char p_cs_precedes;
++  /* For values >= 0: Position of the sign.  */
++  char p_sign_posn;
++  /* For values >= 0: Placement of spaces between currency symbol, sign, and
++     number.  */
++  char p_sep_by_space;
++  /* For values < 0: 1 if the currency symbol precedes the number, 0 if it
++     comes after the number.  */
++  char n_cs_precedes;
++  /* For values < 0: Position of the sign.  */
++  char n_sign_posn;
++  /* For values < 0: Placement of spaces between currency symbol, sign, and
++     number.  */
++  char n_sep_by_space;
++
++  /* For formatting international currency.  */
++  /* Currency symbol (3 characters) followed by separator (1 character).  */
++  char *int_curr_symbol;
++  /* Number of digits after the decimal point.  */
++  char int_frac_digits;
++  /* For values >= 0: 1 if the currency symbol precedes the number, 0 if it
++     comes after the number.  */
++  char int_p_cs_precedes;
++  /* For values >= 0: Position of the sign.  */
++  char int_p_sign_posn;
++  /* For values >= 0: Placement of spaces between currency symbol, sign, and
++     number.  */
++  char int_p_sep_by_space;
++  /* For values < 0: 1 if the currency symbol precedes the number, 0 if it
++     comes after the number.  */
++  char int_n_cs_precedes;
++  /* For values < 0: Position of the sign.  */
++  char int_n_sign_posn;
++  /* For values < 0: Placement of spaces between currency symbol, sign, and
++     number.  */
++  char int_n_sep_by_space;
++};
++#endif
++
++#if @GNULIB_LOCALECONV@
++# if @REPLACE_LOCALECONV@
++#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
++#   undef localeconv
++#   define localeconv rpl_localeconv
++#  endif
++_GL_FUNCDECL_RPL (localeconv, struct lconv *, (void));
++_GL_CXXALIAS_RPL (localeconv, struct lconv *, (void));
++# else
++_GL_CXXALIAS_SYS (localeconv, struct lconv *, (void));
++# endif
++_GL_CXXALIASWARN (localeconv);
++#elif @REPLACE_STRUCT_LCONV@
++# undef localeconv
++# define localeconv localeconv_used_without_requesting_gnulib_module_localeconv
++#elif defined GNULIB_POSIXCHECK
++# undef localeconv
++# if HAVE_RAW_DECL_LOCALECONV
++_GL_WARN_ON_USE (localeconv,
++                 "localeconv returns too few information on some platforms - "
++                 "use gnulib module localeconv for portability");
++# endif
++#endif
++
++#if @GNULIB_SETLOCALE@
++# if @REPLACE_SETLOCALE@
++#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
++#   undef setlocale
++#   define setlocale rpl_setlocale
++#   define GNULIB_defined_setlocale 1
++#  endif
++_GL_FUNCDECL_RPL (setlocale, char *, (int category, const char *locale));
++_GL_CXXALIAS_RPL (setlocale, char *, (int category, const char *locale));
++# else
++_GL_CXXALIAS_SYS (setlocale, char *, (int category, const char *locale));
++# endif
++_GL_CXXALIASWARN (setlocale);
++#elif defined GNULIB_POSIXCHECK
++# undef setlocale
++# if HAVE_RAW_DECL_SETLOCALE
++_GL_WARN_ON_USE (setlocale, "setlocale works differently on native Windows - "
++                 "use gnulib module setlocale for portability");
++# endif
++#endif
++
++#if @GNULIB_DUPLOCALE@
++# if @REPLACE_DUPLOCALE@
++#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
++#   undef duplocale
++#   define duplocale rpl_duplocale
++#  endif
++_GL_FUNCDECL_RPL (duplocale, locale_t, (locale_t locale) _GL_ARG_NONNULL ((1)));
++_GL_CXXALIAS_RPL (duplocale, locale_t, (locale_t locale));
++# else
++#  if @HAVE_DUPLOCALE@
++_GL_CXXALIAS_SYS (duplocale, locale_t, (locale_t locale));
++#  endif
++# endif
++# if @HAVE_DUPLOCALE@
++_GL_CXXALIASWARN (duplocale);
++# endif
++#elif defined GNULIB_POSIXCHECK
++# undef duplocale
++# if HAVE_RAW_DECL_DUPLOCALE
++_GL_WARN_ON_USE (duplocale, "duplocale is buggy on some glibc systems - "
++                 "use gnulib module duplocale for portability");
++# endif
++#endif
++
++#endif /* _@GUARD_PREFIX@_LOCALE_H */
++#endif /* _@GUARD_PREFIX@_LOCALE_H */
+--- origsrc/libfep-0.0.8/lib/localeconv.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/lib/localeconv.c	2012-04-11 22:45:21.321772000 +0900
+@@ -0,0 +1,103 @@
++/* Query locale dependent information for formatting numbers.
++   Copyright (C) 2012 Free Software Foundation, Inc.
++
++   This program is free software: you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; either version 3 of the License, or
++   (at your option) any later version.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
++
++#include <config.h>
++
++/* Specification.  */
++#include <locale.h>
++
++#if HAVE_STRUCT_LCONV_DECIMAL_POINT
++
++/* Override for platforms where 'struct lconv' lacks the int_p_*, int_n_*
++   members.  */
++
++struct lconv *
++localeconv (void)
++{
++  static struct lconv result;
++# undef lconv
++# undef localeconv
++  struct lconv *sys_result = localeconv ();
++
++  result.decimal_point = sys_result->decimal_point;
++  result.thousands_sep = sys_result->thousands_sep;
++  result.grouping = sys_result->grouping;
++  result.mon_decimal_point = sys_result->mon_decimal_point;
++  result.mon_thousands_sep = sys_result->mon_thousands_sep;
++  result.mon_grouping = sys_result->mon_grouping;
++  result.positive_sign = sys_result->positive_sign;
++  result.negative_sign = sys_result->negative_sign;
++  result.currency_symbol = sys_result->currency_symbol;
++  result.frac_digits = sys_result->frac_digits;
++  result.p_cs_precedes = sys_result->p_cs_precedes;
++  result.p_sign_posn = sys_result->p_sign_posn;
++  result.p_sep_by_space = sys_result->p_sep_by_space;
++  result.n_cs_precedes = sys_result->n_cs_precedes;
++  result.n_sign_posn = sys_result->n_sign_posn;
++  result.n_sep_by_space = sys_result->n_sep_by_space;
++  result.int_curr_symbol = sys_result->int_curr_symbol;
++  result.int_frac_digits = sys_result->int_frac_digits;
++  result.int_p_cs_precedes = sys_result->p_cs_precedes;
++  result.int_p_sign_posn = sys_result->p_sign_posn;
++  result.int_p_sep_by_space = sys_result->p_sep_by_space;
++  result.int_n_cs_precedes = sys_result->n_cs_precedes;
++  result.int_n_sign_posn = sys_result->n_sign_posn;
++  result.int_n_sep_by_space = sys_result->n_sep_by_space;
++
++  return &result;
++}
++
++#else
++
++/* Override for platforms where 'struct lconv' is a dummy.  */
++
++# include <limits.h>
++
++struct lconv *
++localeconv (void)
++{
++  static /*const*/ struct lconv result =
++    {
++      /* decimal_point */ ".",
++      /* thousands_sep */ "",
++      /* grouping */ "",
++      /* mon_decimal_point */ "",
++      /* mon_thousands_sep */ "",
++      /* mon_grouping */ "",
++      /* positive_sign */ "",
++      /* negative_sign */ "",
++      /* currency_symbol */ "",
++      /* frac_digits */ CHAR_MAX,
++      /* p_cs_precedes */ CHAR_MAX,
++      /* p_sign_posn */ CHAR_MAX,
++      /* p_sep_by_space */ CHAR_MAX,
++      /* n_cs_precedes */ CHAR_MAX,
++      /* n_sign_posn */ CHAR_MAX,
++      /* n_sep_by_space */ CHAR_MAX,
++      /* int_curr_symbol */ "",
++      /* int_frac_digits */ CHAR_MAX,
++      /* int_p_cs_precedes */ CHAR_MAX,
++      /* int_p_sign_posn */ CHAR_MAX,
++      /* int_p_sep_by_space */ CHAR_MAX,
++      /* int_n_cs_precedes */ CHAR_MAX,
++      /* int_n_sign_posn */ CHAR_MAX,
++      /* int_n_sep_by_space */ CHAR_MAX
++    };
++
++  return &result;
++}
++
++#endif
+--- origsrc/libfep-0.0.8/lib/mbrtowc.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/mbrtowc.c	2012-04-11 22:45:29.399897000 +0900
 @@ -128,7 +128,7 @@ mbrtowc (wchar_t *pwc, const char *s, si
        {
          const char *encoding = locale_charset ();
@@ -374,8 +743,8 @@
            {
              if (m == 1)
                {
---- origsrc/libfep-0.0.6/lib/memmem.c	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/memmem.c	2012-03-23 01:17:48.659707000 +0900
+--- origsrc/libfep-0.0.8/lib/memmem.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/memmem.c	2012-04-11 22:45:30.212397000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -386,8 +755,8 @@
  
  /* This particular implementation was written by Eric Blake, 2008.  */
  
---- origsrc/libfep-0.0.6/lib/memrchr.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfep-0.0.6/lib/memrchr.c	2012-03-23 01:17:40.769082000 +0900
+--- origsrc/libfep-0.0.8/lib/memrchr.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/lib/memrchr.c	2012-04-11 22:45:21.478022000 +0900
 @@ -0,0 +1,161 @@
 +/* memrchr -- find the last occurrence of a byte in a memory block
 +
@@ -550,8 +919,8 @@
 +#ifdef weak_alias
 +weak_alias (__memrchr, memrchr)
 +#endif
---- origsrc/libfep-0.0.6/lib/minmax.h	2012-02-20 12:49:06.000000000 +0900
-+++ src/libfep-0.0.6/lib/minmax.h	2012-03-23 01:17:48.847207000 +0900
+--- origsrc/libfep-0.0.8/lib/minmax.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/minmax.h	2012-04-11 22:45:30.399897000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -562,8 +931,8 @@
  
  #ifndef _MINMAX_H
  #define _MINMAX_H
---- origsrc/libfep-0.0.6/lib/msvc-inval.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/msvc-inval.c	2012-03-23 01:17:49.050332000 +0900
+--- origsrc/libfep-0.0.8/lib/msvc-inval.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/msvc-inval.c	2012-04-11 22:45:30.571772000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -574,8 +943,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/msvc-inval.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/msvc-inval.h	2012-03-23 01:17:49.237832000 +0900
+--- origsrc/libfep-0.0.8/lib/msvc-inval.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/msvc-inval.h	2012-04-11 22:45:30.728022000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -586,8 +955,8 @@
  
  #ifndef _MSVC_INVAL_H
  #define _MSVC_INVAL_H
---- origsrc/libfep-0.0.6/lib/msvc-nothrow.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/msvc-nothrow.c	2012-03-23 01:17:49.440957000 +0900
+--- origsrc/libfep-0.0.8/lib/msvc-nothrow.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/msvc-nothrow.c	2012-04-11 22:45:30.915522000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -598,8 +967,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/msvc-nothrow.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/msvc-nothrow.h	2012-03-23 01:17:49.659707000 +0900
+--- origsrc/libfep-0.0.8/lib/msvc-nothrow.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/msvc-nothrow.h	2012-04-11 22:45:31.071772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -610,8 +979,8 @@
  
  #ifndef _MSVC_NOTHROW_H
  #define _MSVC_NOTHROW_H
---- origsrc/libfep-0.0.6/lib/printf-args.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/printf-args.c	2012-03-23 01:17:50.222207000 +0900
+--- origsrc/libfep-0.0.8/lib/printf-args.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/printf-args.c	2012-04-11 22:45:31.540522000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -622,8 +991,8 @@
  
  /* This file can be parametrized with the following macros:
       ENABLE_UNISTDIO    Set to 1 to enable the unistdio extensions.
---- origsrc/libfep-0.0.6/lib/printf-args.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/printf-args.h	2012-03-23 01:17:50.425332000 +0900
+--- origsrc/libfep-0.0.8/lib/printf-args.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/printf-args.h	2012-04-11 22:45:31.696772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -634,8 +1003,8 @@
  
  #ifndef _PRINTF_ARGS_H
  #define _PRINTF_ARGS_H
---- origsrc/libfep-0.0.6/lib/printf-parse.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/printf-parse.c	2012-03-23 01:17:50.628457000 +0900
+--- origsrc/libfep-0.0.8/lib/printf-parse.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/printf-parse.c	2012-04-11 22:45:31.915522000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -646,8 +1015,8 @@
  
  /* This file can be parametrized with the following macros:
       CHAR_T             The element type of the format string.
---- origsrc/libfep-0.0.6/lib/printf-parse.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/printf-parse.h	2012-03-23 01:17:50.831582000 +0900
+--- origsrc/libfep-0.0.8/lib/printf-parse.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/printf-parse.h	2012-04-11 22:45:32.087397000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -658,8 +1027,8 @@
  
  #ifndef _PRINTF_PARSE_H
  #define _PRINTF_PARSE_H
---- origsrc/libfep-0.0.6/lib/pselect.c	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/pselect.c	2012-03-23 01:17:51.019082000 +0900
+--- origsrc/libfep-0.0.8/lib/pselect.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/pselect.c	2012-04-11 22:45:32.290522000 +0900
 @@ -15,8 +15,7 @@
     GNU General Public License for more details.
  
@@ -670,8 +1039,8 @@
  
  /* written by Paul Eggert */
  
---- origsrc/libfep-0.0.6/lib/pty.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/pty.in.h	2012-03-23 01:17:51.347207000 +0900
+--- origsrc/libfep-0.0.8/lib/pty.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/pty.in.h	2012-04-11 22:45:32.587397000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -682,8 +1051,8 @@
  
  #ifndef _@GUARD_PREFIX@_PTY_H
  
---- origsrc/libfep-0.0.6/lib/ref-add.sin	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/ref-add.sin	2012-03-23 01:17:51.659707000 +0900
+--- origsrc/libfep-0.0.8/lib/ref-add.sin	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/ref-add.sin	2012-04-11 22:45:32.853022000 +0900
 @@ -13,8 +13,7 @@
  #   GNU General Public License for more details.
  #
@@ -694,8 +1063,8 @@
  #
  # Written by Bruno Haible <haible@clisp.cons.org>.
  #
---- origsrc/libfep-0.0.6/lib/ref-del.sin	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/ref-del.sin	2012-03-23 01:17:51.878457000 +0900
+--- origsrc/libfep-0.0.8/lib/ref-del.sin	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/ref-del.sin	2012-04-11 22:45:33.024897000 +0900
 @@ -13,8 +13,7 @@
  #   GNU General Public License for more details.
  #
@@ -706,8 +1075,8 @@
  #
  # Written by Bruno Haible <haible@clisp.cons.org>.
  #
---- origsrc/libfep-0.0.6/lib/select.c	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/select.c	2012-03-23 01:17:52.097207000 +0900
+--- origsrc/libfep-0.0.8/lib/select.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/select.c	2012-04-11 22:45:33.196772000 +0900
 @@ -16,8 +16,7 @@
     GNU General Public License for more details.
  
@@ -749,8 +1118,8 @@
  {
    static struct timeval tv0;
    static HANDLE hEvent;
---- origsrc/libfep-0.0.6/lib/size_max.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/size_max.h	2012-03-23 01:17:52.581582000 +0900
+--- origsrc/libfep-0.0.8/lib/size_max.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/size_max.h	2012-04-11 22:45:33.556147000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -761,8 +1130,8 @@
  
  #ifndef GNULIB_SIZE_MAX_H
  #define GNULIB_SIZE_MAX_H
---- origsrc/libfep-0.0.6/lib/stdalign.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/stdalign.in.h	2012-03-23 01:17:53.065957000 +0900
+--- origsrc/libfep-0.0.8/lib/stdalign.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdalign.in.h	2012-04-11 22:45:33.946772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -773,8 +1142,8 @@
  
  /* Written by Paul Eggert and Bruno Haible.  */
  
---- origsrc/libfep-0.0.6/lib/stdarg.in.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/stdarg.in.h	2012-03-23 01:17:53.237832000 +0900
+--- origsrc/libfep-0.0.8/lib/stdarg.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdarg.in.h	2012-04-11 22:45:34.103022000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -785,8 +1154,8 @@
  
  #ifndef _@GUARD_PREFIX@_STDARG_H
  
---- origsrc/libfep-0.0.6/lib/stdbool.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/stdbool.in.h	2012-03-23 01:17:53.440957000 +0900
+--- origsrc/libfep-0.0.8/lib/stdbool.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdbool.in.h	2012-04-11 22:45:34.274897000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -797,8 +1166,8 @@
  
  #ifndef _GL_STDBOOL_H
  #define _GL_STDBOOL_H
---- origsrc/libfep-0.0.6/lib/stddef.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/stddef.in.h	2012-03-23 01:17:53.644082000 +0900
+--- origsrc/libfep-0.0.8/lib/stddef.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stddef.in.h	2012-04-11 22:45:34.431147000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -809,8 +1178,8 @@
  
  /* Written by Eric Blake.  */
  
---- origsrc/libfep-0.0.6/lib/stdint.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/stdint.in.h	2012-03-23 01:17:53.847207000 +0900
+--- origsrc/libfep-0.0.8/lib/stdint.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdint.in.h	2012-04-11 22:45:34.603022000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -844,8 +1213,8 @@
  #endif /* _@GUARD_PREFIX@_STDINT_H */
 +#endif /* !(defined __ANDROID__ && ...) */
  #endif /* !defined _@GUARD_PREFIX@_STDINT_H && !defined _GL_JUST_INCLUDE_SYSTEM_STDINT_H */
---- origsrc/libfep-0.0.6/lib/stdio.in.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/stdio.in.h	2012-03-23 01:17:54.065957000 +0900
+--- origsrc/libfep-0.0.8/lib/stdio.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdio.in.h	2012-04-11 22:45:34.790522000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -856,7 +1225,34 @@
  
  #if __GNUC__ >= 3
  @PRAGMA_SYSTEM_HEADER@
-@@ -779,7 +778,7 @@ _GL_CXXALIASWARN (pclose);
+@@ -699,22 +698,11 @@ _GL_WARN_ON_USE (getline, "getline is un
+ # endif
+ #endif
+ 
+-#if @GNULIB_GETS@
+-# if @REPLACE_STDIO_READ_FUNCS@ && @GNULIB_STDIO_H_NONBLOCKING@
+-#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+-#   undef gets
+-#   define gets rpl_gets
+-#  endif
+-_GL_FUNCDECL_RPL (gets, char *, (char *s) _GL_ARG_NONNULL ((1)));
+-_GL_CXXALIAS_RPL (gets, char *, (char *s));
+-# else
+-_GL_CXXALIAS_SYS (gets, char *, (char *s));
+-#  undef gets
+-# endif
+-_GL_CXXALIASWARN (gets);
+ /* It is very rare that the developer ever has full control of stdin,
+-   so any use of gets warrants an unconditional warning.  Assume it is
+-   always declared, since it is required by C89.  */
++   so any use of gets warrants an unconditional warning; besides, C11
++   removed it.  */
++#undef gets
++#if HAVE_RAW_DECL_GETS
+ _GL_WARN_ON_USE (gets, "gets is a security hole - use fgets instead");
+ #endif
+ 
+@@ -779,7 +767,7 @@ _GL_CXXALIASWARN (pclose);
  #elif defined GNULIB_POSIXCHECK
  # undef pclose
  # if HAVE_RAW_DECL_PCLOSE
@@ -865,8 +1261,49 @@
                   "use gnulib module pclose for more portability");
  # endif
  #endif
---- origsrc/libfep-0.0.6/lib/str-two-way.h	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/str-two-way.h	2012-03-23 01:17:54.394082000 +0900
+@@ -1054,9 +1042,9 @@ _GL_WARN_ON_USE (snprintf, "snprintf is
+ # endif
+ #endif
+ 
+-/* Some people would argue that sprintf should be handled like gets
+-   (for example, OpenBSD issues a link warning for both functions),
+-   since both can cause security holes due to buffer overruns.
++/* Some people would argue that all sprintf uses should be warned about
++   (for example, OpenBSD issues a link warning for it),
++   since it can cause security holes due to buffer overruns.
+    However, we believe that sprintf can be used safely, and is more
+    efficient than snprintf in those safe cases; and as proof of our
+    belief, we use sprintf in several gnulib modules.  So this header
+--- origsrc/libfep-0.0.8/lib/stdlib.in.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/stdlib.in.h	2012-04-11 22:45:34.962397000 +0900
+@@ -94,6 +94,14 @@ struct random_data
+ # include <unistd.h>
+ #endif
+ 
++/* The __attribute__ feature is available in gcc versions 2.5 and later.
++   The attribute __pure__ was added in gcc 2.96.  */
++#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
++# define _GL_ATTRIBUTE_PURE __attribute__ ((__pure__))
++#else
++# define _GL_ATTRIBUTE_PURE /* empty */
++#endif
++
+ /* The definition of _Noreturn is copied here.  */
+ 
+ /* The definitions of _GL_FUNCDECL_RPL etc. are copied here.  */
+@@ -138,7 +146,9 @@ _GL_WARN_ON_USE (_Exit, "_Exit is unport
+ /* Parse a signed decimal integer.
+    Returns the value of the integer.  Errors are not detected.  */
+ # if !@HAVE_ATOLL@
+-_GL_FUNCDECL_SYS (atoll, long long, (const char *string) _GL_ARG_NONNULL ((1)));
++_GL_FUNCDECL_SYS (atoll, long long, (const char *string)
++                                    _GL_ATTRIBUTE_PURE
++                                    _GL_ARG_NONNULL ((1)));
+ # endif
+ _GL_CXXALIAS_SYS (atoll, long long, (const char *string));
+ _GL_CXXALIASWARN (atoll);
+--- origsrc/libfep-0.0.8/lib/str-two-way.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/str-two-way.h	2012-04-11 22:45:35.134272000 +0900
 @@ -14,8 +14,7 @@
     GNU General Public License for more details.
  
@@ -877,8 +1314,8 @@
  
  /* Before including this file, you need to include <config.h> and
     <string.h>, and define:
---- origsrc/libfep-0.0.6/lib/streq.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/streq.h	2012-03-23 01:17:54.581582000 +0900
+--- origsrc/libfep-0.0.8/lib/streq.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/streq.h	2012-04-11 22:45:35.306147000 +0900
 @@ -21,8 +21,8 @@
  
  #include <string.h>
@@ -905,8 +1342,8 @@
    (strcmp (s1, s2) == 0)
  
  #endif
---- origsrc/libfep-0.0.6/lib/striconv.c	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/striconv.c	2012-03-23 01:17:55.159707000 +0900
+--- origsrc/libfep-0.0.8/lib/striconv.c	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/striconv.c	2012-04-11 22:45:35.774897000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -917,8 +1354,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/striconv.h	2012-02-07 15:01:11.000000000 +0900
-+++ src/libfep-0.0.6/lib/striconv.h	2012-03-23 01:17:55.362832000 +0900
+--- origsrc/libfep-0.0.8/lib/striconv.h	2012-03-29 10:17:35.000000000 +0900
++++ src/libfep-0.0.8/lib/striconv.h	2012-04-11 22:45:35.962397000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -929,8 +1366,8 @@
  
  #ifndef _STRICONV_H
  #define _STRICONV_H
---- origsrc/libfep-0.0.6/lib/string.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/string.in.h	2012-03-23 01:17:55.565957000 +0900
+--- origsrc/libfep-0.0.8/lib/string.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/string.in.h	2012-04-11 22:45:36.134272000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -941,8 +1378,136 @@
  
  #ifndef _@GUARD_PREFIX@_STRING_H
  
---- origsrc/libfep-0.0.6/lib/strndup.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/strndup.c	2012-03-23 01:17:55.800332000 +0900
+@@ -725,10 +724,14 @@ _GL_WARN_ON_USE (strtok_r, "strtok_r is
+ #  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+ #   define mbslen rpl_mbslen
+ #  endif
+-_GL_FUNCDECL_RPL (mbslen, size_t, (const char *string) _GL_ARG_NONNULL ((1)));
++_GL_FUNCDECL_RPL (mbslen, size_t, (const char *string)
++                                  _GL_ATTRIBUTE_PURE
++                                  _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_RPL (mbslen, size_t, (const char *string));
+ # else
+-_GL_FUNCDECL_SYS (mbslen, size_t, (const char *string) _GL_ARG_NONNULL ((1)));
++_GL_FUNCDECL_SYS (mbslen, size_t, (const char *string)
++                                  _GL_ATTRIBUTE_PURE
++                                  _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_SYS (mbslen, size_t, (const char *string));
+ # endif
+ _GL_CXXALIASWARN (mbslen);
+@@ -738,6 +741,7 @@ _GL_CXXALIASWARN (mbslen);
+ /* Return the number of multibyte characters in the character string starting
+    at STRING and ending at STRING + LEN.  */
+ _GL_EXTERN_C size_t mbsnlen (const char *string, size_t len)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1));
+ #endif
+ 
+@@ -751,10 +755,12 @@ _GL_EXTERN_C size_t mbsnlen (const char
+ #   define mbschr rpl_mbschr /* avoid collision with HP-UX function */
+ #  endif
+ _GL_FUNCDECL_RPL (mbschr, char *, (const char *string, int c)
++                                  _GL_ATTRIBUTE_PURE
+                                   _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_RPL (mbschr, char *, (const char *string, int c));
+ # else
+ _GL_FUNCDECL_SYS (mbschr, char *, (const char *string, int c)
++                                  _GL_ATTRIBUTE_PURE
+                                   _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_SYS (mbschr, char *, (const char *string, int c));
+ # endif
+@@ -771,10 +777,12 @@ _GL_CXXALIASWARN (mbschr);
+ #   define mbsrchr rpl_mbsrchr /* avoid collision with system function */
+ #  endif
+ _GL_FUNCDECL_RPL (mbsrchr, char *, (const char *string, int c)
++                                   _GL_ATTRIBUTE_PURE
+                                    _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_RPL (mbsrchr, char *, (const char *string, int c));
+ # else
+ _GL_FUNCDECL_SYS (mbsrchr, char *, (const char *string, int c)
++                                   _GL_ATTRIBUTE_PURE
+                                    _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_SYS (mbsrchr, char *, (const char *string, int c));
+ # endif
+@@ -787,6 +795,7 @@ _GL_CXXALIASWARN (mbsrchr);
+    Unlike strstr(), this function works correctly in multibyte locales with
+    encodings different from UTF-8.  */
+ _GL_EXTERN_C char * mbsstr (const char *haystack, const char *needle)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -798,6 +807,7 @@ _GL_EXTERN_C char * mbsstr (const char *
+    different lengths!
+    Unlike strcasecmp(), this function works correctly in multibyte locales.  */
+ _GL_EXTERN_C int mbscasecmp (const char *s1, const char *s2)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -812,6 +822,7 @@ _GL_EXTERN_C int mbscasecmp (const char
+    Unlike strncasecmp(), this function works correctly in multibyte locales.
+    But beware that N is not a byte count but a character count!  */
+ _GL_EXTERN_C int mbsncasecmp (const char *s1, const char *s2, size_t n)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -825,6 +836,7 @@ _GL_EXTERN_C int mbsncasecmp (const char
+    Unlike strncasecmp(), this function works correctly in multibyte
+    locales.  */
+ _GL_EXTERN_C char * mbspcasecmp (const char *string, const char *prefix)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -835,6 +847,7 @@ _GL_EXTERN_C char * mbspcasecmp (const c
+    strlen (haystack) < strlen (needle) !
+    Unlike strcasestr(), this function works correctly in multibyte locales.  */
+ _GL_EXTERN_C char * mbscasestr (const char *haystack, const char *needle)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -845,6 +858,7 @@ _GL_EXTERN_C char * mbscasestr (const ch
+    if none exists.
+    Unlike strcspn(), this function works correctly in multibyte locales.  */
+ _GL_EXTERN_C size_t mbscspn (const char *string, const char *accept)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -858,10 +872,12 @@ _GL_EXTERN_C size_t mbscspn (const char
+ #   define mbspbrk rpl_mbspbrk /* avoid collision with HP-UX function */
+ #  endif
+ _GL_FUNCDECL_RPL (mbspbrk, char *, (const char *string, const char *accept)
++                                   _GL_ATTRIBUTE_PURE
+                                    _GL_ARG_NONNULL ((1, 2)));
+ _GL_CXXALIAS_RPL (mbspbrk, char *, (const char *string, const char *accept));
+ # else
+ _GL_FUNCDECL_SYS (mbspbrk, char *, (const char *string, const char *accept)
++                                   _GL_ATTRIBUTE_PURE
+                                    _GL_ARG_NONNULL ((1, 2)));
+ _GL_CXXALIAS_SYS (mbspbrk, char *, (const char *string, const char *accept));
+ # endif
+@@ -875,6 +891,7 @@ _GL_CXXALIASWARN (mbspbrk);
+    if none exists.
+    Unlike strspn(), this function works correctly in multibyte locales.  */
+ _GL_EXTERN_C size_t mbsspn (const char *string, const char *reject)
++     _GL_ATTRIBUTE_PURE
+      _GL_ARG_NONNULL ((1, 2));
+ #endif
+ 
+@@ -994,6 +1011,7 @@ _GL_WARN_ON_USE (strsignal, "strsignal i
+ #if @GNULIB_STRVERSCMP@
+ # if !@HAVE_STRVERSCMP@
+ _GL_FUNCDECL_SYS (strverscmp, int, (const char *, const char *)
++                                   _GL_ATTRIBUTE_PURE
+                                    _GL_ARG_NONNULL ((1, 2)));
+ # endif
+ _GL_CXXALIAS_SYS (strverscmp, int, (const char *, const char *));
+--- origsrc/libfep-0.0.8/lib/strndup.c	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/strndup.c	2012-04-11 22:45:36.290522000 +0900
 @@ -14,8 +14,7 @@
     GNU General Public License for more details.
  
@@ -953,8 +1518,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/strnlen.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/strnlen.c	2012-03-23 01:17:55.987832000 +0900
+--- origsrc/libfep-0.0.8/lib/strnlen.c	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/strnlen.c	2012-04-11 22:45:36.446772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -965,8 +1530,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/sys_ioctl.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_ioctl.in.h	2012-03-23 01:17:56.394082000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_ioctl.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_ioctl.in.h	2012-04-11 22:45:36.821772000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -977,8 +1542,8 @@
  
  #ifndef _@GUARD_PREFIX@_SYS_IOCTL_H
  
---- origsrc/libfep-0.0.6/lib/sys_select.in.h	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_select.in.h	2012-03-23 01:17:56.612832000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_select.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_select.in.h	2012-04-11 22:45:36.978022000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1033,8 +1598,8 @@
  #ifndef _@GUARD_PREFIX@_SYS_SELECT_H
  #define _@GUARD_PREFIX@_SYS_SELECT_H
  
---- origsrc/libfep-0.0.6/lib/sys_socket.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_socket.in.h	2012-03-23 01:17:56.862832000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_socket.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_socket.in.h	2012-04-11 22:45:37.165522000 +0900
 @@ -14,8 +14,7 @@
     GNU General Public License for more details.
  
@@ -1054,8 +1619,8 @@
     adding AC_DEFINE(WINVER, 0x0501) to configure.ac.  Note that your
     code may not run on older Windows releases then.  My Windows 2000
     box was not able to run the code, for example.  The situation is
---- origsrc/libfep-0.0.6/lib/sys_time.in.h	2012-02-20 10:08:58.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_time.in.h	2012-03-23 01:17:57.097207000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_time.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_time.in.h	2012-04-11 22:45:37.321772000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -1094,8 +1659,8 @@
  
  #  if !GNULIB_defined_struct_timeval
  struct timeval
---- origsrc/libfep-0.0.6/lib/sys_types.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_types.in.h	2012-03-23 01:17:57.315957000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_types.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_types.in.h	2012-04-11 22:45:37.493647000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -1106,8 +1671,8 @@
  
  #if __GNUC__ >= 3
  @PRAGMA_SYSTEM_HEADER@
---- origsrc/libfep-0.0.6/lib/sys_uio.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/sys_uio.in.h	2012-03-23 01:17:57.503457000 +0900
+--- origsrc/libfep-0.0.8/lib/sys_uio.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/sys_uio.in.h	2012-04-11 22:45:37.649897000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1118,8 +1683,8 @@
  
  # if __GNUC__ >= 3
  @PRAGMA_SYSTEM_HEADER@
---- origsrc/libfep-0.0.6/lib/unistd.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/unistd.in.h	2012-03-23 01:17:57.722207000 +0900
+--- origsrc/libfep-0.0.8/lib/unistd.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/unistd.in.h	2012-04-11 22:45:37.837397000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1130,8 +1695,365 @@
  
  #if __GNUC__ >= 3
  @PRAGMA_SYSTEM_HEADER@
---- origsrc/libfep-0.0.6/lib/uniwidth/cjk.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/uniwidth/cjk.h	2012-03-23 01:17:58.722207000 +0900
+--- origsrc/libfep-0.0.8/lib/unistr.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/unistr.in.h	2012-04-11 22:45:38.009272000 +0900
+@@ -66,17 +66,20 @@ extern "C" {
+ /* Check whether an UTF-8 string is well-formed.
+    Return NULL if valid, or a pointer to the first invalid unit otherwise.  */
+ extern const uint8_t *
+-       u8_check (const uint8_t *s, size_t n);
++       u8_check (const uint8_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Check whether an UTF-16 string is well-formed.
+    Return NULL if valid, or a pointer to the first invalid unit otherwise.  */
+ extern const uint16_t *
+-       u16_check (const uint16_t *s, size_t n);
++       u16_check (const uint16_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Check whether an UCS-4 string is well-formed.
+    Return NULL if valid, or a pointer to the first invalid unit otherwise.  */
+ extern const uint32_t *
+-       u32_check (const uint32_t *s, size_t n);
++       u32_check (const uint32_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ 
+ /* Elementary string conversions.  */
+@@ -119,11 +122,14 @@ extern uint16_t *
+    failure.  */
+ /* Similar to mblen(), except that s must not be NULL.  */
+ extern int
+-       u8_mblen (const uint8_t *s, size_t n);
++       u8_mblen (const uint8_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_mblen (const uint16_t *s, size_t n);
++       u16_mblen (const uint16_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_mblen (const uint32_t *s, size_t n);
++       u32_mblen (const uint32_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Return the length (number of units) of the first character in S, putting
+    its 'ucs4_t' representation in *PUC.  Upon failure, *PUC is set to 0xfffd,
+@@ -400,38 +406,50 @@ extern uint32_t *
+ /* Compare S1 and S2, each of length N.  */
+ /* Similar to memcmp().  */
+ extern int
+-       u8_cmp (const uint8_t *s1, const uint8_t *s2, size_t n);
++       u8_cmp (const uint8_t *s1, const uint8_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_cmp (const uint16_t *s1, const uint16_t *s2, size_t n);
++       u16_cmp (const uint16_t *s1, const uint16_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_cmp (const uint32_t *s1, const uint32_t *s2, size_t n);
++       u32_cmp (const uint32_t *s1, const uint32_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Compare S1 and S2.  */
+ /* Similar to the gnulib function memcmp2().  */
+ extern int
+-       u8_cmp2 (const uint8_t *s1, size_t n1, const uint8_t *s2, size_t n2);
++       u8_cmp2 (const uint8_t *s1, size_t n1, const uint8_t *s2, size_t n2)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_cmp2 (const uint16_t *s1, size_t n1, const uint16_t *s2, size_t n2);
++       u16_cmp2 (const uint16_t *s1, size_t n1, const uint16_t *s2, size_t n2)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_cmp2 (const uint32_t *s1, size_t n1, const uint32_t *s2, size_t n2);
++       u32_cmp2 (const uint32_t *s1, size_t n1, const uint32_t *s2, size_t n2)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Search the string at S for UC.  */
+ /* Similar to memchr().  */
+ extern uint8_t *
+-       u8_chr (const uint8_t *s, size_t n, ucs4_t uc);
++       u8_chr (const uint8_t *s, size_t n, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint16_t *
+-       u16_chr (const uint16_t *s, size_t n, ucs4_t uc);
++       u16_chr (const uint16_t *s, size_t n, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint32_t *
+-       u32_chr (const uint32_t *s, size_t n, ucs4_t uc);
++       u32_chr (const uint32_t *s, size_t n, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Count the number of Unicode characters in the N units from S.  */
+ /* Similar to mbsnlen().  */
+ extern size_t
+-       u8_mbsnlen (const uint8_t *s, size_t n);
++       u8_mbsnlen (const uint8_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u16_mbsnlen (const uint16_t *s, size_t n);
++       u16_mbsnlen (const uint16_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u32_mbsnlen (const uint32_t *s, size_t n);
++       u32_mbsnlen (const uint32_t *s, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Elementary string functions with memory allocation.  */
+ 
+@@ -448,11 +466,14 @@ extern uint32_t *
+ /* Return the length (number of units) of the first character in S.
+    Return 0 if it is the NUL character.  Return -1 upon failure.  */
+ extern int
+-       u8_strmblen (const uint8_t *s);
++       u8_strmblen (const uint8_t *s)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_strmblen (const uint16_t *s);
++       u16_strmblen (const uint16_t *s)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_strmblen (const uint32_t *s);
++       u32_strmblen (const uint32_t *s)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Return the length (number of units) of the first character in S, putting
+    its 'ucs4_t' representation in *PUC.  Return 0 if it is the NUL
+@@ -487,20 +508,26 @@ extern const uint32_t *
+ /* Return the number of units in S.  */
+ /* Similar to strlen(), wcslen().  */
+ extern size_t
+-       u8_strlen (const uint8_t *s);
++       u8_strlen (const uint8_t *s)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u16_strlen (const uint16_t *s);
++       u16_strlen (const uint16_t *s)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u32_strlen (const uint32_t *s);
++       u32_strlen (const uint32_t *s)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Return the number of units in S, but at most MAXLEN.  */
+ /* Similar to strnlen(), wcsnlen().  */
+ extern size_t
+-       u8_strnlen (const uint8_t *s, size_t maxlen);
++       u8_strnlen (const uint8_t *s, size_t maxlen)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u16_strnlen (const uint16_t *s, size_t maxlen);
++       u16_strnlen (const uint16_t *s, size_t maxlen)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u32_strnlen (const uint32_t *s, size_t maxlen);
++       u32_strnlen (const uint32_t *s, size_t maxlen)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Copy SRC to DEST.  */
+ /* Similar to strcpy(), wcscpy().  */
+@@ -562,16 +589,20 @@ extern uint32_t *
+ #ifdef __sun
+ /* Avoid a collision with the u8_strcmp() function in Solaris 11 libc.  */
+ extern int
+-       u8_strcmp_gnu (const uint8_t *s1, const uint8_t *s2);
++       u8_strcmp_gnu (const uint8_t *s1, const uint8_t *s2)
++       _UC_ATTRIBUTE_PURE;
+ # define u8_strcmp u8_strcmp_gnu
+ #else
+ extern int
+-       u8_strcmp (const uint8_t *s1, const uint8_t *s2);
++       u8_strcmp (const uint8_t *s1, const uint8_t *s2)
++       _UC_ATTRIBUTE_PURE;
+ #endif
+ extern int
+-       u16_strcmp (const uint16_t *s1, const uint16_t *s2);
++       u16_strcmp (const uint16_t *s1, const uint16_t *s2)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_strcmp (const uint32_t *s1, const uint32_t *s2);
++       u32_strcmp (const uint32_t *s1, const uint32_t *s2)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Compare S1 and S2 using the collation rules of the current locale.
+    Return -1 if S1 < S2, 0 if S1 = S2, 1 if S1 > S2.
+@@ -587,11 +618,14 @@ extern int
+ /* Compare no more than N units of S1 and S2.  */
+ /* Similar to strncmp(), wcsncmp().  */
+ extern int
+-       u8_strncmp (const uint8_t *s1, const uint8_t *s2, size_t n);
++       u8_strncmp (const uint8_t *s1, const uint8_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_strncmp (const uint16_t *s1, const uint16_t *s2, size_t n);
++       u16_strncmp (const uint16_t *s1, const uint16_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_strncmp (const uint32_t *s1, const uint32_t *s2, size_t n);
++       u32_strncmp (const uint32_t *s1, const uint32_t *s2, size_t n)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Duplicate S, returning an identical malloc'd string.  */
+ /* Similar to strdup(), wcsdup().  */
+@@ -605,74 +639,98 @@ extern uint32_t *
+ /* Find the first occurrence of UC in STR.  */
+ /* Similar to strchr(), wcschr().  */
+ extern uint8_t *
+-       u8_strchr (const uint8_t *str, ucs4_t uc);
++       u8_strchr (const uint8_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint16_t *
+-       u16_strchr (const uint16_t *str, ucs4_t uc);
++       u16_strchr (const uint16_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint32_t *
+-       u32_strchr (const uint32_t *str, ucs4_t uc);
++       u32_strchr (const uint32_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Find the last occurrence of UC in STR.  */
+ /* Similar to strrchr(), wcsrchr().  */
+ extern uint8_t *
+-       u8_strrchr (const uint8_t *str, ucs4_t uc);
++       u8_strrchr (const uint8_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint16_t *
+-       u16_strrchr (const uint16_t *str, ucs4_t uc);
++       u16_strrchr (const uint16_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ extern uint32_t *
+-       u32_strrchr (const uint32_t *str, ucs4_t uc);
++       u32_strrchr (const uint32_t *str, ucs4_t uc)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Return the length of the initial segment of STR which consists entirely
+    of Unicode characters not in REJECT.  */
+ /* Similar to strcspn(), wcscspn().  */
+ extern size_t
+-       u8_strcspn (const uint8_t *str, const uint8_t *reject);
++       u8_strcspn (const uint8_t *str, const uint8_t *reject)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u16_strcspn (const uint16_t *str, const uint16_t *reject);
++       u16_strcspn (const uint16_t *str, const uint16_t *reject)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u32_strcspn (const uint32_t *str, const uint32_t *reject);
++       u32_strcspn (const uint32_t *str, const uint32_t *reject)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Return the length of the initial segment of STR which consists entirely
+    of Unicode characters in ACCEPT.  */
+ /* Similar to strspn(), wcsspn().  */
+ extern size_t
+-       u8_strspn (const uint8_t *str, const uint8_t *accept);
++       u8_strspn (const uint8_t *str, const uint8_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u16_strspn (const uint16_t *str, const uint16_t *accept);
++       u16_strspn (const uint16_t *str, const uint16_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ extern size_t
+-       u32_strspn (const uint32_t *str, const uint32_t *accept);
++       u32_strspn (const uint32_t *str, const uint32_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Find the first occurrence in STR of any character in ACCEPT.  */
+ /* Similar to strpbrk(), wcspbrk().  */
+ extern uint8_t *
+-       u8_strpbrk (const uint8_t *str, const uint8_t *accept);
++       u8_strpbrk (const uint8_t *str, const uint8_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ extern uint16_t *
+-       u16_strpbrk (const uint16_t *str, const uint16_t *accept);
++       u16_strpbrk (const uint16_t *str, const uint16_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ extern uint32_t *
+-       u32_strpbrk (const uint32_t *str, const uint32_t *accept);
++       u32_strpbrk (const uint32_t *str, const uint32_t *accept)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Find the first occurrence of NEEDLE in HAYSTACK.  */
+ /* Similar to strstr(), wcsstr().  */
+ extern uint8_t *
+-       u8_strstr (const uint8_t *haystack, const uint8_t *needle);
++       u8_strstr (const uint8_t *haystack, const uint8_t *needle)
++       _UC_ATTRIBUTE_PURE;
+ extern uint16_t *
+-       u16_strstr (const uint16_t *haystack, const uint16_t *needle);
++       u16_strstr (const uint16_t *haystack, const uint16_t *needle)
++       _UC_ATTRIBUTE_PURE;
+ extern uint32_t *
+-       u32_strstr (const uint32_t *haystack, const uint32_t *needle);
++       u32_strstr (const uint32_t *haystack, const uint32_t *needle)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Test whether STR starts with PREFIX.  */
+ extern bool
+-       u8_startswith (const uint8_t *str, const uint8_t *prefix);
++       u8_startswith (const uint8_t *str, const uint8_t *prefix)
++       _UC_ATTRIBUTE_PURE;
+ extern bool
+-       u16_startswith (const uint16_t *str, const uint16_t *prefix);
++       u16_startswith (const uint16_t *str, const uint16_t *prefix)
++       _UC_ATTRIBUTE_PURE;
+ extern bool
+-       u32_startswith (const uint32_t *str, const uint32_t *prefix);
++       u32_startswith (const uint32_t *str, const uint32_t *prefix)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Test whether STR ends with SUFFIX.  */
+ extern bool
+-       u8_endswith (const uint8_t *str, const uint8_t *suffix);
++       u8_endswith (const uint8_t *str, const uint8_t *suffix)
++       _UC_ATTRIBUTE_PURE;
+ extern bool
+-       u16_endswith (const uint16_t *str, const uint16_t *suffix);
++       u16_endswith (const uint16_t *str, const uint16_t *suffix)
++       _UC_ATTRIBUTE_PURE;
+ extern bool
+-       u32_endswith (const uint32_t *str, const uint32_t *suffix);
++       u32_endswith (const uint32_t *str, const uint32_t *suffix)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Divide STR into tokens separated by characters in DELIM.
+    This interface is actually more similar to wcstok than to strtok.  */
+--- origsrc/libfep-0.0.8/lib/unitypes.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/unitypes.in.h	2012-04-11 22:45:38.478022000 +0900
+@@ -1,4 +1,4 @@
+-/* Elementary types for the GNU UniString library.
++/* Elementary types and macros for the GNU UniString library.
+    Copyright (C) 2002, 2005-2006, 2009-2012 Free Software Foundation, Inc.
+ 
+    This program is free software: you can redistribute it and/or modify it
+@@ -23,4 +23,24 @@
+ /* Type representing a Unicode character.  */
+ typedef uint32_t ucs4_t;
+ 
++/* Attribute of a function whose result depends only on the arguments
++   (not pointers!) and which has no side effects.  */
++#ifndef _UC_ATTRIBUTE_CONST
++# if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
++#  define _UC_ATTRIBUTE_CONST __attribute__ ((__const__))
++# else
++#  define _UC_ATTRIBUTE_CONST
++# endif
++#endif
++
++/* Attribute of a function whose result depends only on the arguments
++   (possibly pointers) and global memory, and which has no side effects.  */
++#ifndef _UC_ATTRIBUTE_PURE
++# if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
++#  define _UC_ATTRIBUTE_PURE __attribute__ ((__pure__))
++# else
++#  define _UC_ATTRIBUTE_PURE
++# endif
++#endif
++
+ #endif /* _UNITYPES_H */
+--- origsrc/libfep-0.0.8/lib/uniwidth/cjk.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/uniwidth/cjk.h	2012-04-11 22:45:38.806147000 +0900
 @@ -22,16 +22,16 @@ is_cjk_encoding (const char *encoding)
  {
    if (0
@@ -1157,8 +2079,51 @@
      return 1;
    return 0;
  }
---- origsrc/libfep-0.0.6/lib/vasnprintf.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/vasnprintf.c	2012-03-23 01:17:59.097207000 +0900
+--- origsrc/libfep-0.0.8/lib/uniwidth.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/uniwidth.in.h	2012-04-11 22:45:38.649897000 +0900
+@@ -39,27 +39,30 @@ extern "C" {
+ /* Determine number of column positions required for UC.  */
+ extern int
+        uc_width (ucs4_t uc, const char *encoding)
+-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
+-       __attribute__ ((__pure__))
+-#endif
+-       ;
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Determine number of column positions required for first N units
+    (or fewer if S ends before this) in S.  */
+ extern int
+-       u8_width (const uint8_t *s, size_t n, const char *encoding);
++       u8_width (const uint8_t *s, size_t n, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_width (const uint16_t *s, size_t n, const char *encoding);
++       u16_width (const uint16_t *s, size_t n, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_width (const uint32_t *s, size_t n, const char *encoding);
++       u32_width (const uint32_t *s, size_t n, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ 
+ /* Determine number of column positions required for S.  */
+ extern int
+-       u8_strwidth (const uint8_t *s, const char *encoding);
++       u8_strwidth (const uint8_t *s, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u16_strwidth (const uint16_t *s, const char *encoding);
++       u16_strwidth (const uint16_t *s, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ extern int
+-       u32_strwidth (const uint32_t *s, const char *encoding);
++       u32_strwidth (const uint32_t *s, const char *encoding)
++       _UC_ATTRIBUTE_PURE;
+ 
+ 
+ #ifdef __cplusplus
+--- origsrc/libfep-0.0.8/lib/vasnprintf.c	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/vasnprintf.c	2012-04-11 22:45:39.134272000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1187,8 +2152,8 @@
                             against the number of _characters_ of the converted
                             value.  */
                          w = DCHAR_MBSNLEN (result + length, count);
---- origsrc/libfep-0.0.6/lib/vasnprintf.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/vasnprintf.h	2012-03-23 01:17:59.300332000 +0900
+--- origsrc/libfep-0.0.8/lib/vasnprintf.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/vasnprintf.h	2012-04-11 22:45:39.306147000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1199,8 +2164,8 @@
  
  #ifndef _VASNPRINTF_H
  #define _VASNPRINTF_H
---- origsrc/libfep-0.0.6/lib/vasprintf.c	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/vasprintf.c	2012-03-23 01:17:59.519082000 +0900
+--- origsrc/libfep-0.0.8/lib/vasprintf.c	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/vasprintf.c	2012-04-11 22:45:39.462397000 +0900
 @@ -12,8 +12,7 @@
     GNU General Public License for more details.
  
@@ -1211,8 +2176,8 @@
  
  #include <config.h>
  
---- origsrc/libfep-0.0.6/lib/w32sock.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/w32sock.h	2012-03-23 01:17:59.878457000 +0900
+--- origsrc/libfep-0.0.8/lib/w32sock.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/w32sock.h	2012-04-11 22:45:39.728022000 +0900
 @@ -1,4 +1,4 @@
 -/* w32sock.h --- internal auxilliary functions for Windows socket functions
 +/* w32sock.h --- internal auxiliary functions for Windows socket functions
@@ -1228,8 +2193,8 @@
  
  static inline void
  set_winsock_errno (void)
---- origsrc/libfep-0.0.6/lib/wchar.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/wchar.in.h	2012-03-23 01:18:00.112832000 +0900
+--- origsrc/libfep-0.0.8/lib/wchar.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/wchar.in.h	2012-04-11 22:45:39.915522000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -1240,8 +2205,222 @@
  
  /* Written by Eric Blake.  */
  
---- origsrc/libfep-0.0.6/lib/wctype.in.h	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/wctype.in.h	2012-03-23 01:18:01.112832000 +0900
+@@ -84,6 +83,14 @@
+ #ifndef _@GUARD_PREFIX@_WCHAR_H
+ #define _@GUARD_PREFIX@_WCHAR_H
+ 
++/* The __attribute__ feature is available in gcc versions 2.5 and later.
++   The attribute __pure__ was added in gcc 2.96.  */
++#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
++# define _GL_ATTRIBUTE_PURE __attribute__ ((__pure__))
++#else
++# define _GL_ATTRIBUTE_PURE /* empty */
++#endif
++
+ /* The definitions of _GL_FUNCDECL_RPL etc. are copied here.  */
+ 
+ /* The definition of _GL_ARG_NONNULL is copied here.  */
+@@ -136,11 +143,11 @@ typedef int rpl_mbstate_t;
+ #   undef btowc
+ #   define btowc rpl_btowc
+ #  endif
+-_GL_FUNCDECL_RPL (btowc, wint_t, (int c));
++_GL_FUNCDECL_RPL (btowc, wint_t, (int c) _GL_ATTRIBUTE_PURE);
+ _GL_CXXALIAS_RPL (btowc, wint_t, (int c));
+ # else
+ #  if !@HAVE_BTOWC@
+-_GL_FUNCDECL_SYS (btowc, wint_t, (int c));
++_GL_FUNCDECL_SYS (btowc, wint_t, (int c) _GL_ATTRIBUTE_PURE);
+ #  endif
+ _GL_CXXALIAS_SYS (btowc, wint_t, (int c));
+ # endif
+@@ -161,12 +168,12 @@ _GL_WARN_ON_USE (btowc, "btowc is unport
+ #   undef wctob
+ #   define wctob rpl_wctob
+ #  endif
+-_GL_FUNCDECL_RPL (wctob, int, (wint_t wc));
++_GL_FUNCDECL_RPL (wctob, int, (wint_t wc) _GL_ATTRIBUTE_PURE);
+ _GL_CXXALIAS_RPL (wctob, int, (wint_t wc));
+ # else
+ #  if !defined wctob && !@HAVE_DECL_WCTOB@
+ /* wctob is provided by gnulib, or wctob exists but is not declared.  */
+-_GL_FUNCDECL_SYS (wctob, int, (wint_t wc));
++_GL_FUNCDECL_SYS (wctob, int, (wint_t wc) _GL_ATTRIBUTE_PURE);
+ #  endif
+ _GL_CXXALIAS_SYS (wctob, int, (wint_t wc));
+ # endif
+@@ -427,12 +434,12 @@ _GL_WARN_ON_USE (wcsnrtombs, "wcsnrtombs
+ #   undef wcwidth
+ #   define wcwidth rpl_wcwidth
+ #  endif
+-_GL_FUNCDECL_RPL (wcwidth, int, (wchar_t));
++_GL_FUNCDECL_RPL (wcwidth, int, (wchar_t) _GL_ATTRIBUTE_PURE);
+ _GL_CXXALIAS_RPL (wcwidth, int, (wchar_t));
+ # else
+ #  if !@HAVE_DECL_WCWIDTH@
+ /* wcwidth exists but is not declared.  */
+-_GL_FUNCDECL_SYS (wcwidth, int, (wchar_t));
++_GL_FUNCDECL_SYS (wcwidth, int, (wchar_t) _GL_ATTRIBUTE_PURE);
+ #  endif
+ _GL_CXXALIAS_SYS (wcwidth, int, (wchar_t));
+ # endif
+@@ -449,7 +456,8 @@ _GL_WARN_ON_USE (wcwidth, "wcwidth is un
+ /* Search N wide characters of S for C.  */
+ #if @GNULIB_WMEMCHR@
+ # if !@HAVE_WMEMCHR@
+-_GL_FUNCDECL_SYS (wmemchr, wchar_t *, (const wchar_t *s, wchar_t c, size_t n));
++_GL_FUNCDECL_SYS (wmemchr, wchar_t *, (const wchar_t *s, wchar_t c, size_t n)
++                                      _GL_ATTRIBUTE_PURE);
+ # endif
+   /* On some systems, this function is defined as an overloaded function:
+        extern "C++" {
+@@ -480,7 +488,8 @@ _GL_WARN_ON_USE (wmemchr, "wmemchr is un
+ #if @GNULIB_WMEMCMP@
+ # if !@HAVE_WMEMCMP@
+ _GL_FUNCDECL_SYS (wmemcmp, int,
+-                  (const wchar_t *s1, const wchar_t *s2, size_t n));
++                  (const wchar_t *s1, const wchar_t *s2, size_t n)
++                  _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wmemcmp, int,
+                   (const wchar_t *s1, const wchar_t *s2, size_t n));
+@@ -550,7 +559,7 @@ _GL_WARN_ON_USE (wmemset, "wmemset is un
+ /* Return the number of wide characters in S.  */
+ #if @GNULIB_WCSLEN@
+ # if !@HAVE_WCSLEN@
+-_GL_FUNCDECL_SYS (wcslen, size_t, (const wchar_t *s));
++_GL_FUNCDECL_SYS (wcslen, size_t, (const wchar_t *s) _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcslen, size_t, (const wchar_t *s));
+ _GL_CXXALIASWARN (wcslen);
+@@ -566,7 +575,8 @@ _GL_WARN_ON_USE (wcslen, "wcslen is unpo
+ /* Return the number of wide characters in S, but at most MAXLEN.  */
+ #if @GNULIB_WCSNLEN@
+ # if !@HAVE_WCSNLEN@
+-_GL_FUNCDECL_SYS (wcsnlen, size_t, (const wchar_t *s, size_t maxlen));
++_GL_FUNCDECL_SYS (wcsnlen, size_t, (const wchar_t *s, size_t maxlen)
++                                   _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcsnlen, size_t, (const wchar_t *s, size_t maxlen));
+ _GL_CXXALIASWARN (wcsnlen);
+@@ -685,7 +695,8 @@ _GL_WARN_ON_USE (wcsncat, "wcsncat is un
+ /* Compare S1 and S2.  */
+ #if @GNULIB_WCSCMP@
+ # if !@HAVE_WCSCMP@
+-_GL_FUNCDECL_SYS (wcscmp, int, (const wchar_t *s1, const wchar_t *s2));
++_GL_FUNCDECL_SYS (wcscmp, int, (const wchar_t *s1, const wchar_t *s2)
++                               _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcscmp, int, (const wchar_t *s1, const wchar_t *s2));
+ _GL_CXXALIASWARN (wcscmp);
+@@ -702,7 +713,8 @@ _GL_WARN_ON_USE (wcscmp, "wcscmp is unpo
+ #if @GNULIB_WCSNCMP@
+ # if !@HAVE_WCSNCMP@
+ _GL_FUNCDECL_SYS (wcsncmp, int,
+-                  (const wchar_t *s1, const wchar_t *s2, size_t n));
++                  (const wchar_t *s1, const wchar_t *s2, size_t n)
++                  _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcsncmp, int,
+                   (const wchar_t *s1, const wchar_t *s2, size_t n));
+@@ -719,7 +731,8 @@ _GL_WARN_ON_USE (wcsncmp, "wcsncmp is un
+ /* Compare S1 and S2, ignoring case.  */
+ #if @GNULIB_WCSCASECMP@
+ # if !@HAVE_WCSCASECMP@
+-_GL_FUNCDECL_SYS (wcscasecmp, int, (const wchar_t *s1, const wchar_t *s2));
++_GL_FUNCDECL_SYS (wcscasecmp, int, (const wchar_t *s1, const wchar_t *s2)
++                                   _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcscasecmp, int, (const wchar_t *s1, const wchar_t *s2));
+ _GL_CXXALIASWARN (wcscasecmp);
+@@ -736,7 +749,8 @@ _GL_WARN_ON_USE (wcscasecmp, "wcscasecmp
+ #if @GNULIB_WCSNCASECMP@
+ # if !@HAVE_WCSNCASECMP@
+ _GL_FUNCDECL_SYS (wcsncasecmp, int,
+-                  (const wchar_t *s1, const wchar_t *s2, size_t n));
++                  (const wchar_t *s1, const wchar_t *s2, size_t n)
++                  _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcsncasecmp, int,
+                   (const wchar_t *s1, const wchar_t *s2, size_t n));
+@@ -804,7 +818,8 @@ _GL_WARN_ON_USE (wcsdup, "wcsdup is unpo
+ /* Find the first occurrence of WC in WCS.  */
+ #if @GNULIB_WCSCHR@
+ # if !@HAVE_WCSCHR@
+-_GL_FUNCDECL_SYS (wcschr, wchar_t *, (const wchar_t *wcs, wchar_t wc));
++_GL_FUNCDECL_SYS (wcschr, wchar_t *, (const wchar_t *wcs, wchar_t wc)
++                                     _GL_ATTRIBUTE_PURE);
+ # endif
+   /* On some systems, this function is defined as an overloaded function:
+        extern "C++" {
+@@ -833,7 +848,8 @@ _GL_WARN_ON_USE (wcschr, "wcschr is unpo
+ /* Find the last occurrence of WC in WCS.  */
+ #if @GNULIB_WCSRCHR@
+ # if !@HAVE_WCSRCHR@
+-_GL_FUNCDECL_SYS (wcsrchr, wchar_t *, (const wchar_t *wcs, wchar_t wc));
++_GL_FUNCDECL_SYS (wcsrchr, wchar_t *, (const wchar_t *wcs, wchar_t wc)
++                                      _GL_ATTRIBUTE_PURE);
+ # endif
+   /* On some systems, this function is defined as an overloaded function:
+        extern "C++" {
+@@ -863,7 +879,8 @@ _GL_WARN_ON_USE (wcsrchr, "wcsrchr is un
+    of wide characters not in REJECT.  */
+ #if @GNULIB_WCSCSPN@
+ # if !@HAVE_WCSCSPN@
+-_GL_FUNCDECL_SYS (wcscspn, size_t, (const wchar_t *wcs, const wchar_t *reject));
++_GL_FUNCDECL_SYS (wcscspn, size_t, (const wchar_t *wcs, const wchar_t *reject)
++                                   _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcscspn, size_t, (const wchar_t *wcs, const wchar_t *reject));
+ _GL_CXXALIASWARN (wcscspn);
+@@ -880,7 +897,8 @@ _GL_WARN_ON_USE (wcscspn, "wcscspn is un
+    of wide characters in ACCEPT.  */
+ #if @GNULIB_WCSSPN@
+ # if !@HAVE_WCSSPN@
+-_GL_FUNCDECL_SYS (wcsspn, size_t, (const wchar_t *wcs, const wchar_t *accept));
++_GL_FUNCDECL_SYS (wcsspn, size_t, (const wchar_t *wcs, const wchar_t *accept)
++                                  _GL_ATTRIBUTE_PURE);
+ # endif
+ _GL_CXXALIAS_SYS (wcsspn, size_t, (const wchar_t *wcs, const wchar_t *accept));
+ _GL_CXXALIASWARN (wcsspn);
+@@ -897,7 +915,8 @@ _GL_WARN_ON_USE (wcsspn, "wcsspn is unpo
+ #if @GNULIB_WCSPBRK@
+ # if !@HAVE_WCSPBRK@
+ _GL_FUNCDECL_SYS (wcspbrk, wchar_t *,
+-                  (const wchar_t *wcs, const wchar_t *accept));
++                  (const wchar_t *wcs, const wchar_t *accept)
++                  _GL_ATTRIBUTE_PURE);
+ # endif
+   /* On some systems, this function is defined as an overloaded function:
+        extern "C++" {
+@@ -929,7 +948,8 @@ _GL_WARN_ON_USE (wcspbrk, "wcspbrk is un
+ #if @GNULIB_WCSSTR@
+ # if !@HAVE_WCSSTR@
+ _GL_FUNCDECL_SYS (wcsstr, wchar_t *,
+-                  (const wchar_t *haystack, const wchar_t *needle));
++                  (const wchar_t *haystack, const wchar_t *needle)
++                  _GL_ATTRIBUTE_PURE);
+ # endif
+   /* On some systems, this function is defined as an overloaded function:
+        extern "C++" {
+@@ -983,11 +1003,13 @@ _GL_WARN_ON_USE (wcstok, "wcstok is unpo
+ #   undef wcswidth
+ #   define wcswidth rpl_wcswidth
+ #  endif
+-_GL_FUNCDECL_RPL (wcswidth, int, (const wchar_t *s, size_t n));
++_GL_FUNCDECL_RPL (wcswidth, int, (const wchar_t *s, size_t n)
++                                 _GL_ATTRIBUTE_PURE);
+ _GL_CXXALIAS_RPL (wcswidth, int, (const wchar_t *s, size_t n));
+ # else
+ #  if !@HAVE_WCSWIDTH@
+-_GL_FUNCDECL_SYS (wcswidth, int, (const wchar_t *s, size_t n));
++_GL_FUNCDECL_SYS (wcswidth, int, (const wchar_t *s, size_t n)
++                                 _GL_ATTRIBUTE_PURE);
+ #  endif
+ _GL_CXXALIAS_SYS (wcswidth, int, (const wchar_t *s, size_t n));
+ # endif
+--- origsrc/libfep-0.0.8/lib/wctype.in.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/wctype.in.h	2012-04-11 22:45:40.774897000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -1252,8 +2431,8 @@
  
  /* Written by Bruno Haible and Paul Eggert.  */
  
---- origsrc/libfep-0.0.6/lib/wcwidth.c	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/lib/wcwidth.c	2012-03-23 01:18:01.315957000 +0900
+--- origsrc/libfep-0.0.8/lib/wcwidth.c	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/wcwidth.c	2012-04-11 22:45:40.946772000 +0900
 @@ -32,7 +32,7 @@ wcwidth (wchar_t wc)
  {
    /* In UTF-8 locales, use a Unicode aware width function.  */
@@ -1263,8 +2442,8 @@
      {
        /* We assume that in a UTF-8 locale, a wide character is the same as a
           Unicode character.  */
---- origsrc/libfep-0.0.6/lib/xsize.h	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/lib/xsize.h	2012-03-23 01:18:02.081582000 +0900
+--- origsrc/libfep-0.0.8/lib/xsize.h	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/lib/xsize.h	2012-04-11 22:45:41.634272000 +0900
 @@ -13,8 +13,7 @@
     GNU General Public License for more details.
  
@@ -1275,28 +2454,30 @@
  
  #ifndef _XSIZE_H
  #define _XSIZE_H
---- origsrc/libfep-0.0.6/libfep/Makefile.am	2012-02-21 10:02:34.000000000 +0900
-+++ src/libfep-0.0.6/libfep/Makefile.am	2012-03-23 01:20:23.300332000 +0900
-@@ -21,6 +21,7 @@ libfep_la_LDFLAGS =							\
+--- origsrc/libfep-0.0.8/libfep/Makefile.am	2012-03-29 10:17:21.000000000 +0900
++++ src/libfep-0.0.8/libfep/Makefile.am	2012-04-11 22:36:43.821772000 +0900
+@@ -17,7 +17,7 @@
+ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/lib
+ 
+ lib_LTLIBRARIES = libfep.la
+-libfep_la_LDFLAGS =							\
++libfep_la_LDFLAGS = -no-undefined					\
  	-version-info "$(LT_CURRENT)":"$(LT_REVISION)":"$(LT_AGE)"	\
          -export-dynamic							\
          -export-symbols-regex "^(fep|_fep)"				\
-+	-no-undefined							\
- 	$(NULL)
+--- origsrc/libfep-0.0.8/libfep-glib/Makefile.am	2012-03-29 14:00:24.000000000 +0900
++++ src/libfep-0.0.8/libfep-glib/Makefile.am	2012-04-11 22:37:20.806147000 +0900
+@@ -21,7 +21,7 @@ libfep_glib_la_SOURCES = fepgmarshalers.
+ libfep_glib_la_CFLAGS = $(GIO_CFLAGS) -I$(top_srcdir)
+ libfep_glib_la_LIBADD = $(GIO_LIBS) $(top_builddir)/libfep/libfep.la
  
- libfep_la_SOURCES = string.c list.c control.c client.c logger.c
---- origsrc/libfep-0.0.6/libfep-glib/Makefile.am	2012-02-21 10:02:56.000000000 +0900
-+++ src/libfep-0.0.6/libfep-glib/Makefile.am	2012-03-23 01:20:39.034707000 +0900
-@@ -25,6 +25,7 @@ libfep_glib_la_LDFLAGS =						\
+-libfep_glib_la_LDFLAGS =						\
++libfep_glib_la_LDFLAGS = -no-undefined					\
  	-version-info "$(LT_CURRENT)":"$(LT_REVISION)":"$(LT_AGE)"	\
          -export-dynamic							\
          -export-symbols-regex "^fep_g"				\
-+	-no-undefined							\
- 	$(NULL)
- 
- libfepglibincludedir = $(includedir)/fep-@FEP_API_VERSION@/libfep-glib
---- origsrc/libfep-0.0.6/m4/exponentd.m4	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/m4/exponentd.m4	2012-03-23 01:18:03.112832000 +0900
+--- origsrc/libfep-0.0.8/m4/exponentd.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/exponentd.m4	2012-04-11 22:45:42.743647000 +0900
 @@ -1,4 +1,4 @@
 -# exponentd.m4 serial 2
 +# exponentd.m4 serial 3
@@ -1313,8 +2494,8 @@
            AC_EGREP_CPP([mixed_endianness], [
  #if defined arm || defined __arm || defined __arm__
    mixed_endianness
---- origsrc/libfep-0.0.6/m4/gnulib-cache.m4	2012-02-20 12:49:09.000000000 +0900
-+++ src/libfep-0.0.6/m4/gnulib-cache.m4	2012-03-23 01:19:20.972207000 +0900
+--- origsrc/libfep-0.0.8/m4/gnulib-cache.m4	2012-03-29 10:17:38.000000000 +0900
++++ src/libfep-0.0.8/m4/gnulib-cache.m4	2012-04-11 22:47:03.415522000 +0900
 @@ -27,7 +27,7 @@
  
  
@@ -1332,9 +2513,18 @@
    minmax
    nl_langinfo
    pselect
---- origsrc/libfep-0.0.6/m4/gnulib-comp.m4	2012-02-20 12:49:10.000000000 +0900
-+++ src/libfep-0.0.6/m4/gnulib-comp.m4	2012-03-23 01:19:43.237832000 +0900
-@@ -73,6 +73,7 @@ AC_DEFUN([gl_EARLY],
+--- origsrc/libfep-0.0.8/m4/gnulib-comp.m4	2012-03-29 10:17:39.000000000 +0900
++++ src/libfep-0.0.8/m4/gnulib-comp.m4	2012-04-11 22:47:26.478022000 +0900
+@@ -66,6 +66,8 @@ AC_DEFUN([gl_EARLY],
+   # Code from module ioctl:
+   # Code from module langinfo:
+   # Code from module localcharset:
++  # Code from module locale:
++  # Code from module localeconv:
+   # Code from module login_tty:
+   # Code from module mbrtowc:
+   # Code from module mbsinit:
+@@ -73,6 +75,7 @@ AC_DEFUN([gl_EARLY],
    # Code from module memchr:
    # Code from module memmem:
    # Code from module memmem-simple:
@@ -1342,7 +2532,21 @@
    # Code from module minmax:
    # Code from module msvc-inval:
    # Code from module msvc-nothrow:
-@@ -255,6 +256,12 @@ if test $HAVE_MEMMEM = 0 || test $REPLAC
+@@ -216,6 +219,13 @@ gl_LANGINFO_H
+ gl_LOCALCHARSET
+ LOCALCHARSET_TESTS_ENVIRONMENT="CHARSETALIASDIR=\"\$(abs_top_builddir)/$gl_source_base\""
+ AC_SUBST([LOCALCHARSET_TESTS_ENVIRONMENT])
++gl_LOCALE_H
++gl_FUNC_LOCALECONV
++if test $REPLACE_LOCALECONV = 1; then
++  AC_LIBOBJ([localeconv])
++  gl_PREREQ_LOCALECONV
++fi
++gl_LOCALE_MODULE_INDICATOR([localeconv])
+ gl_FUNC_LOGIN_TTY
+ if test $ac_cv_func_login_tty = no; then
+   AC_LIBOBJ([login_tty])
+@@ -255,6 +265,12 @@ if test $HAVE_MEMMEM = 0 || test $REPLAC
    AC_LIBOBJ([memmem])
  fi
  gl_STRING_MODULE_INDICATOR([memmem])
@@ -1355,7 +2559,16 @@
  gl_MINMAX
  gl_MSVC_INVAL
  if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
-@@ -600,6 +607,7 @@ AC_DEFUN([gl_FILE_LIST], [
+@@ -591,6 +607,8 @@ AC_DEFUN([gl_FILE_LIST], [
+   lib/langinfo.in.h
+   lib/localcharset.c
+   lib/localcharset.h
++  lib/locale.in.h
++  lib/localeconv.c
+   lib/login_tty.c
+   lib/mbrtowc.c
+   lib/mbsinit.c
+@@ -600,6 +618,7 @@ AC_DEFUN([gl_FILE_LIST], [
    lib/memchr.c
    lib/memchr.valgrind
    lib/memmem.c
@@ -1363,7 +2576,16 @@
    lib/minmax.h
    lib/msvc-inval.c
    lib/msvc-inval.h
-@@ -721,6 +729,7 @@ AC_DEFUN([gl_FILE_LIST], [
+@@ -713,6 +732,8 @@ AC_DEFUN([gl_FILE_LIST], [
+   m4/locale-fr.m4
+   m4/locale-ja.m4
+   m4/locale-zh.m4
++  m4/locale_h.m4
++  m4/localeconv.m4
+   m4/longlong.m4
+   m4/math_h.m4
+   m4/mbrtowc.m4
+@@ -721,6 +742,7 @@ AC_DEFUN([gl_FILE_LIST], [
    m4/mbstate_t.m4
    m4/memchr.m4
    m4/memmem.m4
@@ -1371,8 +2593,8 @@
    m4/minmax.m4
    m4/mmap-anon.m4
    m4/msvc-inval.m4
---- origsrc/libfep-0.0.6/m4/gnulib-tool.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfep-0.0.6/m4/gnulib-tool.m4	2012-03-23 01:17:40.862832000 +0900
+--- origsrc/libfep-0.0.8/m4/gnulib-tool.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/gnulib-tool.m4	2012-04-11 22:45:21.587397000 +0900
 @@ -0,0 +1,57 @@
 +# gnulib-tool.m4 serial 2
 +dnl Copyright (C) 2004-2005, 2009-2012 Free Software Foundation, Inc.
@@ -1431,8 +2653,8 @@
 +
 +dnl Usage: gl_VC_FILES([BOOLEAN])
 +AC_DEFUN([gl_VC_FILES], [])
---- origsrc/libfep-0.0.6/m4/locale-fr.m4	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/m4/locale-fr.m4	2012-03-23 01:18:04.800332000 +0900
+--- origsrc/libfep-0.0.8/m4/locale-fr.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/locale-fr.m4	2012-04-11 22:45:44.524897000 +0900
 @@ -1,4 +1,4 @@
 -# locale-fr.m4 serial 14
 +# locale-fr.m4 serial 16
@@ -1483,8 +2705,8 @@
    return 0;
  }
  changequote([,])dnl
---- origsrc/libfep-0.0.6/m4/locale-ja.m4	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/m4/locale-ja.m4	2012-03-23 01:18:04.925332000 +0900
+--- origsrc/libfep-0.0.8/m4/locale-ja.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/locale-ja.m4	2012-04-11 22:45:44.665522000 +0900
 @@ -1,4 +1,4 @@
 -# locale-ja.m4 serial 10
 +# locale-ja.m4 serial 11
@@ -1500,8 +2722,8 @@
       category of the locale to "C".  */
    if (setlocale (LC_ALL, getenv ("LC_ALL")) == NULL
        || strcmp (setlocale (LC_CTYPE, NULL), "C") == 0)
---- origsrc/libfep-0.0.6/m4/locale-zh.m4	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/m4/locale-zh.m4	2012-03-23 01:18:05.065957000 +0900
+--- origsrc/libfep-0.0.8/m4/locale-zh.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/locale-zh.m4	2012-04-11 22:45:44.821772000 +0900
 @@ -1,4 +1,4 @@
 -# locale-zh.m4 serial 10
 +# locale-zh.m4 serial 11
@@ -1517,10 +2739,160 @@
       category of the locale to "C".  */
    if (setlocale (LC_ALL, getenv ("LC_ALL")) == NULL
        || strcmp (setlocale (LC_CTYPE, NULL), "C") == 0)
---- origsrc/libfep-0.0.6/m4/math_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfep-0.0.6/m4/math_h.m4	2012-03-23 01:18:05.284707000 +0900
-@@ -0,0 +1,333 @@
-+# math_h.m4 serial 104
+--- origsrc/libfep-0.0.8/m4/locale_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/locale_h.m4	2012-04-11 22:45:21.728022000 +0900
+@@ -0,0 +1,122 @@
++# locale_h.m4 serial 18
++dnl Copyright (C) 2007, 2009-2012 Free Software Foundation, Inc.
++dnl This file is free software; the Free Software Foundation
++dnl gives unlimited permission to copy and/or distribute it,
++dnl with or without modifications, as long as this notice is preserved.
++
++AC_DEFUN([gl_LOCALE_H],
++[
++  dnl Use AC_REQUIRE here, so that the default behavior below is expanded
++  dnl once only, before all statements that occur in other macros.
++  AC_REQUIRE([gl_LOCALE_H_DEFAULTS])
++
++  dnl Persuade glibc <locale.h> to define locale_t and the int_p_*, int_n_*
++  dnl members of 'struct lconv'.
++  AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
++
++  dnl If <stddef.h> is replaced, then <locale.h> must also be replaced.
++  AC_REQUIRE([gl_STDDEF_H])
++
++  dnl Solaris 11 2011-11 defines the int_p_*, int_n_* members of 'struct lconv'
++  dnl only if _LCONV_C99 is defined.
++  AC_REQUIRE([AC_CANONICAL_HOST])
++  case "$host_os" in
++    solaris*)
++      AC_DEFINE([_LCONV_C99], [1], [Define to 1 on Solaris.])
++      ;;
++  esac
++
++  AC_CACHE_CHECK([whether locale.h conforms to POSIX:2001],
++    [gl_cv_header_locale_h_posix2001],
++    [AC_COMPILE_IFELSE(
++       [AC_LANG_PROGRAM(
++          [[#include <locale.h>
++            int x = LC_MESSAGES;
++            int y = sizeof (((struct lconv *) 0)->decimal_point);]],
++          [[]])],
++       [gl_cv_header_locale_h_posix2001=yes],
++       [gl_cv_header_locale_h_posix2001=no])])
++
++  dnl Check for <xlocale.h>.
++  AC_CHECK_HEADERS_ONCE([xlocale.h])
++  if test $ac_cv_header_xlocale_h = yes; then
++    HAVE_XLOCALE_H=1
++    dnl Check whether use of locale_t requires inclusion of <xlocale.h>,
++    dnl e.g. on MacOS X 10.5. If <locale.h> does not define locale_t by
++    dnl itself, we assume that <xlocale.h> will do so.
++    AC_CACHE_CHECK([whether locale.h defines locale_t],
++      [gl_cv_header_locale_has_locale_t],
++      [AC_COMPILE_IFELSE(
++         [AC_LANG_PROGRAM(
++            [[#include <locale.h>
++              locale_t x;]],
++            [[]])],
++         [gl_cv_header_locale_has_locale_t=yes],
++         [gl_cv_header_locale_has_locale_t=no])
++      ])
++    if test $gl_cv_header_locale_has_locale_t = yes; then
++      gl_cv_header_locale_h_needs_xlocale_h=no
++    else
++      gl_cv_header_locale_h_needs_xlocale_h=yes
++    fi
++  else
++    HAVE_XLOCALE_H=0
++    gl_cv_header_locale_h_needs_xlocale_h=no
++  fi
++  AC_SUBST([HAVE_XLOCALE_H])
++
++  dnl Check whether 'struct lconv' is complete.
++  dnl Bionic libc's 'struct lconv' is just a dummy.
++  dnl On OpenBSD 4.9, HP-UX 11, IRIX 6.5, OSF/1 5.1, Solaris 9, Cygwin 1.5.x,
++  dnl mingw, MSVC 9, it lacks the int_p_* and int_n_* members.
++  AC_CACHE_CHECK([whether struct lconv is properly defined],
++    [gl_cv_sys_struct_lconv_ok],
++    [AC_COMPILE_IFELSE(
++       [AC_LANG_PROGRAM(
++          [[#include <locale.h>
++            struct lconv l;
++            int x = sizeof (l.decimal_point);
++            int y = sizeof (l.int_p_cs_precedes);]],
++          [[]])],
++       [gl_cv_sys_struct_lconv_ok=yes],
++       [gl_cv_sys_struct_lconv_ok=no])
++    ])
++  if test $gl_cv_sys_struct_lconv_ok = no; then
++    REPLACE_STRUCT_LCONV=1
++  fi
++
++  dnl <locale.h> is always overridden, because of GNULIB_POSIXCHECK.
++  gl_NEXT_HEADERS([locale.h])
++
++  dnl Check for declarations of anything we want to poison if the
++  dnl corresponding gnulib module is not in use.
++  gl_WARN_ON_USE_PREPARE([[#include <locale.h>
++/* Some systems provide declarations in a non-standard header.  */
++#if HAVE_XLOCALE_H
++# include <xlocale.h>
++#endif
++    ]],
++    [setlocale duplocale])
++])
++
++AC_DEFUN([gl_LOCALE_MODULE_INDICATOR],
++[
++  dnl Use AC_REQUIRE here, so that the default settings are expanded once only.
++  AC_REQUIRE([gl_LOCALE_H_DEFAULTS])
++  gl_MODULE_INDICATOR_SET_VARIABLE([$1])
++  dnl Define it also as a C macro, for the benefit of the unit tests.
++  gl_MODULE_INDICATOR_FOR_TESTS([$1])
++])
++
++AC_DEFUN([gl_LOCALE_H_DEFAULTS],
++[
++  GNULIB_LOCALECONV=0; AC_SUBST([GNULIB_LOCALECONV])
++  GNULIB_SETLOCALE=0;  AC_SUBST([GNULIB_SETLOCALE])
++  GNULIB_DUPLOCALE=0;  AC_SUBST([GNULIB_DUPLOCALE])
++  dnl Assume proper GNU behavior unless another module says otherwise.
++  HAVE_DUPLOCALE=1;       AC_SUBST([HAVE_DUPLOCALE])
++  REPLACE_LOCALECONV=0;   AC_SUBST([REPLACE_LOCALECONV])
++  REPLACE_SETLOCALE=0;    AC_SUBST([REPLACE_SETLOCALE])
++  REPLACE_DUPLOCALE=0;    AC_SUBST([REPLACE_DUPLOCALE])
++  REPLACE_STRUCT_LCONV=0; AC_SUBST([REPLACE_STRUCT_LCONV])
++])
+--- origsrc/libfep-0.0.8/m4/localeconv.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/localeconv.m4	2012-04-11 22:45:21.853022000 +0900
+@@ -0,0 +1,22 @@
++# localeconv.m4 serial 1
++dnl Copyright (C) 2012 Free Software Foundation, Inc.
++dnl This file is free software; the Free Software Foundation
++dnl gives unlimited permission to copy and/or distribute it,
++dnl with or without modifications, as long as this notice is preserved.
++
++AC_DEFUN([gl_FUNC_LOCALECONV],
++[
++  AC_REQUIRE([gl_LOCALE_H_DEFAULTS])
++  AC_REQUIRE([gl_LOCALE_H])
++
++  if test $REPLACE_STRUCT_LCONV = 1; then
++    REPLACE_LOCALECONV=1
++  fi
++])
++
++# Prerequisites of lib/localeconv.c.
++AC_DEFUN([gl_PREREQ_LOCALECONV],
++[
++  AC_CHECK_MEMBERS([struct lconv.decimal_point], [], [],
++    [[#include <locale.h>]])
++])
+--- origsrc/libfep-0.0.8/m4/math_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/math_h.m4	2012-04-11 22:51:46.868647000 +0900
+@@ -0,0 +1,354 @@
++# math_h.m4 serial 113
 +dnl Copyright (C) 2007-2012 Free Software Foundation, Inc.
 +dnl This file is free software; the Free Software Foundation
 +dnl gives unlimited permission to copy and/or distribute it,
@@ -1566,8 +2938,10 @@
 +     expf expl exp2 exp2f exp2l expm1 expm1f expm1l
 +     fabsf fabsl floorf floorl fma fmaf fmal
 +     fmod fmodf fmodl frexpf frexpl hypotf hypotl
++     ilogb ilogbf ilogbl
 +     ldexpf ldexpl
-+     logb log logf logl log10f log10l log1p log1pf log1pl log2 log2f log2l
++     log logf logl log10 log10f log10l log1p log1pf log1pl log2 log2f log2l
++     logb logbf logbl
 +     modf modff modfl powf
 +     remainder remainderf remainderl
 +     rint rintf rintl round roundf roundl sinf sinl sinhf sqrtf sqrtl
@@ -1629,6 +3003,9 @@
 +  GNULIB_HYPOT=0;      AC_SUBST([GNULIB_HYPOT])
 +  GNULIB_HYPOTF=0;     AC_SUBST([GNULIB_HYPOTF])
 +  GNULIB_HYPOTL=0;     AC_SUBST([GNULIB_HYPOTL])
++  GNULIB_ILOGB=0;      AC_SUBST([GNULIB_ILOGB])
++  GNULIB_ILOGBF=0;     AC_SUBST([GNULIB_ILOGBF])
++  GNULIB_ILOGBL=0;     AC_SUBST([GNULIB_ILOGBL])
 +  GNULIB_ISFINITE=0;   AC_SUBST([GNULIB_ISFINITE])
 +  GNULIB_ISINF=0;      AC_SUBST([GNULIB_ISINF])
 +  GNULIB_ISNAN=0;      AC_SUBST([GNULIB_ISNAN])
@@ -1637,10 +3014,10 @@
 +  GNULIB_ISNANL=0;     AC_SUBST([GNULIB_ISNANL])
 +  GNULIB_LDEXPF=0;     AC_SUBST([GNULIB_LDEXPF])
 +  GNULIB_LDEXPL=0;     AC_SUBST([GNULIB_LDEXPL])
-+  GNULIB_LOGB=0;       AC_SUBST([GNULIB_LOGB])
 +  GNULIB_LOG=0;        AC_SUBST([GNULIB_LOG])
 +  GNULIB_LOGF=0;       AC_SUBST([GNULIB_LOGF])
 +  GNULIB_LOGL=0;       AC_SUBST([GNULIB_LOGL])
++  GNULIB_LOG10=0;      AC_SUBST([GNULIB_LOG10])
 +  GNULIB_LOG10F=0;     AC_SUBST([GNULIB_LOG10F])
 +  GNULIB_LOG10L=0;     AC_SUBST([GNULIB_LOG10L])
 +  GNULIB_LOG1P=0;      AC_SUBST([GNULIB_LOG1P])
@@ -1649,6 +3026,9 @@
 +  GNULIB_LOG2=0;       AC_SUBST([GNULIB_LOG2])
 +  GNULIB_LOG2F=0;      AC_SUBST([GNULIB_LOG2F])
 +  GNULIB_LOG2L=0;      AC_SUBST([GNULIB_LOG2L])
++  GNULIB_LOGB=0;       AC_SUBST([GNULIB_LOGB])
++  GNULIB_LOGBF=0;      AC_SUBST([GNULIB_LOGBF])
++  GNULIB_LOGBL=0;      AC_SUBST([GNULIB_LOGBL])
 +  GNULIB_MODF=0;       AC_SUBST([GNULIB_MODF])
 +  GNULIB_MODFF=0;      AC_SUBST([GNULIB_MODFF])
 +  GNULIB_MODFL=0;      AC_SUBST([GNULIB_MODFL])
@@ -1704,6 +3084,9 @@
 +  HAVE_FREXPF=1;               AC_SUBST([HAVE_FREXPF])
 +  HAVE_HYPOTF=1;               AC_SUBST([HAVE_HYPOTF])
 +  HAVE_HYPOTL=1;               AC_SUBST([HAVE_HYPOTL])
++  HAVE_ILOGB=1;                AC_SUBST([HAVE_ILOGB])
++  HAVE_ILOGBF=1;               AC_SUBST([HAVE_ILOGBF])
++  HAVE_ILOGBL=1;               AC_SUBST([HAVE_ILOGBL])
 +  HAVE_ISNANF=1;               AC_SUBST([HAVE_ISNANF])
 +  HAVE_ISNAND=1;               AC_SUBST([HAVE_ISNAND])
 +  HAVE_ISNANL=1;               AC_SUBST([HAVE_ISNANL])
@@ -1715,6 +3098,8 @@
 +  HAVE_LOG1P=1;                AC_SUBST([HAVE_LOG1P])
 +  HAVE_LOG1PF=1;               AC_SUBST([HAVE_LOG1PF])
 +  HAVE_LOG1PL=1;               AC_SUBST([HAVE_LOG1PL])
++  HAVE_LOGBF=1;                AC_SUBST([HAVE_LOGBF])
++  HAVE_LOGBL=1;                AC_SUBST([HAVE_LOGBL])
 +  HAVE_MODFF=1;                AC_SUBST([HAVE_MODFF])
 +  HAVE_MODFL=1;                AC_SUBST([HAVE_MODFL])
 +  HAVE_POWF=1;                 AC_SUBST([HAVE_POWF])
@@ -1748,12 +3133,12 @@
 +  HAVE_DECL_FLOORL=1;          AC_SUBST([HAVE_DECL_FLOORL])
 +  HAVE_DECL_FREXPL=1;          AC_SUBST([HAVE_DECL_FREXPL])
 +  HAVE_DECL_LDEXPL=1;          AC_SUBST([HAVE_DECL_LDEXPL])
-+  HAVE_DECL_LOGB=1;            AC_SUBST([HAVE_DECL_LOGB])
 +  HAVE_DECL_LOGL=1;            AC_SUBST([HAVE_DECL_LOGL])
 +  HAVE_DECL_LOG10L=1;          AC_SUBST([HAVE_DECL_LOG10L])
 +  HAVE_DECL_LOG2=1;            AC_SUBST([HAVE_DECL_LOG2])
 +  HAVE_DECL_LOG2F=1;           AC_SUBST([HAVE_DECL_LOG2F])
 +  HAVE_DECL_LOG2L=1;           AC_SUBST([HAVE_DECL_LOG2L])
++  HAVE_DECL_LOGB=1;            AC_SUBST([HAVE_DECL_LOGB])
 +  HAVE_DECL_REMAINDER=1;       AC_SUBST([HAVE_DECL_REMAINDER])
 +  HAVE_DECL_REMAINDERL=1;      AC_SUBST([HAVE_DECL_REMAINDERL])
 +  HAVE_DECL_RINTF=1;           AC_SUBST([HAVE_DECL_RINTF])
@@ -1792,6 +3177,8 @@
 +  REPLACE_HYPOT=0;             AC_SUBST([REPLACE_HYPOT])
 +  REPLACE_HYPOTF=0;            AC_SUBST([REPLACE_HYPOTF])
 +  REPLACE_HYPOTL=0;            AC_SUBST([REPLACE_HYPOTL])
++  REPLACE_ILOGB=0;             AC_SUBST([REPLACE_ILOGB])
++  REPLACE_ILOGBF=0;            AC_SUBST([REPLACE_ILOGBF])
 +  REPLACE_ISFINITE=0;          AC_SUBST([REPLACE_ISFINITE])
 +  REPLACE_ISINF=0;             AC_SUBST([REPLACE_ISINF])
 +  REPLACE_ISNAN=0;             AC_SUBST([REPLACE_ISNAN])
@@ -1799,12 +3186,18 @@
 +  REPLACE_LOG=0;               AC_SUBST([REPLACE_LOG])
 +  REPLACE_LOGF=0;              AC_SUBST([REPLACE_LOGF])
 +  REPLACE_LOGL=0;              AC_SUBST([REPLACE_LOGL])
++  REPLACE_LOG10=0;             AC_SUBST([REPLACE_LOG10])
++  REPLACE_LOG10F=0;            AC_SUBST([REPLACE_LOG10F])
++  REPLACE_LOG10L=0;            AC_SUBST([REPLACE_LOG10L])
 +  REPLACE_LOG1P=0;             AC_SUBST([REPLACE_LOG1P])
 +  REPLACE_LOG1PF=0;            AC_SUBST([REPLACE_LOG1PF])
 +  REPLACE_LOG1PL=0;            AC_SUBST([REPLACE_LOG1PL])
 +  REPLACE_LOG2=0;              AC_SUBST([REPLACE_LOG2])
 +  REPLACE_LOG2F=0;             AC_SUBST([REPLACE_LOG2F])
 +  REPLACE_LOG2L=0;             AC_SUBST([REPLACE_LOG2L])
++  REPLACE_LOGB=0;              AC_SUBST([REPLACE_LOGB])
++  REPLACE_LOGBF=0;             AC_SUBST([REPLACE_LOGBF])
++  REPLACE_LOGBL=0;             AC_SUBST([REPLACE_LOGBL])
 +  REPLACE_MODF=0;              AC_SUBST([REPLACE_MODF])
 +  REPLACE_MODFF=0;             AC_SUBST([REPLACE_MODFF])
 +  REPLACE_MODFL=0;             AC_SUBST([REPLACE_MODFL])
@@ -1853,8 +3246,8 @@
 +  fi
 +  AC_SUBST([HAVE_SAME_LONG_DOUBLE_AS_DOUBLE])
 +])
---- origsrc/libfep-0.0.6/m4/memrchr.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfep-0.0.6/m4/memrchr.m4	2012-03-23 01:17:40.956582000 +0900
+--- origsrc/libfep-0.0.8/m4/memrchr.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/memrchr.m4	2012-04-11 22:45:21.962397000 +0900
 @@ -0,0 +1,23 @@
 +# memrchr.m4 serial 10
 +dnl Copyright (C) 2002-2003, 2005-2007, 2009-2012 Free Software Foundation,
@@ -1879,8 +3272,8 @@
 +
 +# Prerequisites of lib/memrchr.c.
 +AC_DEFUN([gl_PREREQ_MEMRCHR], [:])
---- origsrc/libfep-0.0.6/m4/sockpfaf.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfep-0.0.6/m4/sockpfaf.m4	2012-03-23 01:18:07.378457000 +0900
+--- origsrc/libfep-0.0.8/m4/sockpfaf.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libfep-0.0.8/m4/sockpfaf.m4	2012-04-11 22:45:47.509272000 +0900
 @@ -0,0 +1,87 @@
 +# sockpfaf.m4 serial 8
 +dnl Copyright (C) 2004, 2006, 2009-2012 Free Software Foundation, Inc.
@@ -1969,8 +3362,8 @@
 +    AC_DEFINE([HAVE_UNIXSOCKET], [1], [Define to 1 if <sys/socket.h> defines AF_UNIX.])
 +  fi
 +])
---- origsrc/libfep-0.0.6/m4/stdalign.m4	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/m4/stdalign.m4	2012-03-23 01:18:07.550332000 +0900
+--- origsrc/libfep-0.0.8/m4/stdalign.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/stdalign.m4	2012-04-11 22:45:47.681147000 +0900
 @@ -14,13 +14,27 @@ AC_DEFUN([gl_STDALIGN_H],
      [AC_COMPILE_IFELSE(
         [AC_LANG_PROGRAM(
@@ -2000,8 +3393,46 @@
              #endif
            ]])],
         [gl_cv_header_working_stdalign_h=yes],
---- origsrc/libfep-0.0.6/m4/sys_time_h.m4	2012-02-20 10:08:59.000000000 +0900
-+++ src/libfep-0.0.6/m4/sys_time_h.m4	2012-03-23 01:18:08.737832000 +0900
+--- origsrc/libfep-0.0.8/m4/stdio_h.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/stdio_h.m4	2012-04-11 22:45:48.243647000 +0900
+@@ -1,4 +1,4 @@
+-# stdio_h.m4 serial 40
++# stdio_h.m4 serial 41
+ dnl Copyright (C) 2007-2012 Free Software Foundation, Inc.
+ dnl This file is free software; the Free Software Foundation
+ dnl gives unlimited permission to copy and/or distribute it,
+@@ -18,7 +18,6 @@ AC_DEFUN([gl_STDIO_H],
+   GNULIB_GETC=1
+   GNULIB_GETCHAR=1
+   GNULIB_FGETS=1
+-  GNULIB_GETS=1
+   GNULIB_FREAD=1
+   dnl This ifdef is necessary to avoid an error "missing file lib/stdio-read.c"
+   dnl "expected source file, required through AC_LIBSOURCES, not found". It is
+@@ -72,10 +71,10 @@ AC_DEFUN([gl_STDIO_H],
+ 
+   dnl Check for declarations of anything we want to poison if the
+   dnl corresponding gnulib module is not in use, and which is not
+-  dnl guaranteed by C89.
++  dnl guaranteed by both C89 and C11.
+   gl_WARN_ON_USE_PREPARE([[#include <stdio.h>
+-    ]], [dprintf fpurge fseeko ftello getdelim getline pclose popen renameat
+-    snprintf tmpfile vdprintf vsnprintf])
++    ]], [dprintf fpurge fseeko ftello getdelim getline gets pclose popen
++    renameat snprintf tmpfile vdprintf vsnprintf])
+ ])
+ 
+ AC_DEFUN([gl_STDIO_MODULE_INDICATOR],
+@@ -113,7 +112,6 @@ AC_DEFUN([gl_STDIO_H_DEFAULTS],
+   GNULIB_GETCHAR=0;              AC_SUBST([GNULIB_GETCHAR])
+   GNULIB_GETDELIM=0;             AC_SUBST([GNULIB_GETDELIM])
+   GNULIB_GETLINE=0;              AC_SUBST([GNULIB_GETLINE])
+-  GNULIB_GETS=0;                 AC_SUBST([GNULIB_GETS])
+   GNULIB_OBSTACK_PRINTF=0;       AC_SUBST([GNULIB_OBSTACK_PRINTF])
+   GNULIB_OBSTACK_PRINTF_POSIX=0; AC_SUBST([GNULIB_OBSTACK_PRINTF_POSIX])
+   GNULIB_PCLOSE=0;               AC_SUBST([GNULIB_PCLOSE])
+--- origsrc/libfep-0.0.8/m4/sys_time_h.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/sys_time_h.m4	2012-04-11 22:45:49.118647000 +0900
 @@ -1,5 +1,5 @@
  # Configure a replacement for <sys/time.h>.
 -# serial 7
@@ -2053,8 +3484,8 @@
    REPLACE_GETTIMEOFDAY=0;    AC_SUBST([REPLACE_GETTIMEOFDAY])
 +  REPLACE_STRUCT_TIMEVAL=0;  AC_SUBST([REPLACE_STRUCT_TIMEVAL])
  ])
---- origsrc/libfep-0.0.6/m4/vasnprintf.m4	2012-02-20 10:20:22.000000000 +0900
-+++ src/libfep-0.0.6/m4/vasnprintf.m4	2012-03-23 01:18:09.159707000 +0900
+--- origsrc/libfep-0.0.8/m4/vasnprintf.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/vasnprintf.m4	2012-04-11 22:45:49.649897000 +0900
 @@ -1,4 +1,4 @@
 -# vasnprintf.m4 serial 34
 +# vasnprintf.m4 serial 35
@@ -2079,8 +3510,27 @@
  AC_DEFUN([gl_PREREQ_PRINTF_PARSE],
  [
    AC_REQUIRE([gl_FEATURES_H])
---- origsrc/libfep-0.0.6/m4/wcwidth.m4	2012-01-30 17:44:16.000000000 +0900
-+++ src/libfep-0.0.6/m4/wcwidth.m4	2012-03-23 01:18:09.878457000 +0900
+--- origsrc/libfep-0.0.8/m4/warn-on-use.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/warn-on-use.m4	2012-04-11 22:45:49.915522000 +0900
+@@ -1,4 +1,4 @@
+-# warn-on-use.m4 serial 4
++# warn-on-use.m4 serial 5
+ dnl Copyright (C) 2010-2012 Free Software Foundation, Inc.
+ dnl This file is free software; the Free Software Foundation
+ dnl gives unlimited permission to copy and/or distribute it,
+@@ -18,8 +18,8 @@ dnl with or without modifications, as lo
+ # some systems declare functions in the wrong header, then INCLUDES
+ # should do likewise.
+ #
+-# If you assume C89, then it is generally safe to assume declarations
+-# for functions declared in that standard (such as gets) without
++# It is generally safe to assume declarations for functions declared
++# in the intersection of C89 and C11 (such as printf) without
+ # needing gl_WARN_ON_USE_PREPARE.
+ AC_DEFUN([gl_WARN_ON_USE_PREPARE],
+ [
+--- origsrc/libfep-0.0.8/m4/wcwidth.m4	2012-03-29 10:17:36.000000000 +0900
++++ src/libfep-0.0.8/m4/wcwidth.m4	2012-04-11 22:45:50.571772000 +0900
 @@ -1,4 +1,4 @@
 -# wcwidth.m4 serial 21
 +# wcwidth.m4 serial 22
