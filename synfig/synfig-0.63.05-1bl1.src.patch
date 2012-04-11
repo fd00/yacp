@@ -1,0 +1,35 @@
+--- origsrc/synfig-0.63.05/configure.ac	2012-04-11 23:44:29.294234200 +0900
++++ src/synfig-0.63.05/configure.ac	2012-04-11 23:44:34.856734200 +0900
+@@ -160,11 +160,11 @@ AC_ARG_WITH(magickpp,[
+ ])
+ if test $with_magickpp = "yes" ; then {
+   AC_CHECK_HEADER([Magick++.h],[
+-  	MAGICKPP_LIBS="-lMagick++"
++  	MAGICKPP_LIBS=`Magick++-config --libs`
+   	AC_DEFINE(HAVE_MAGICKPP,[], [ Define if Magick++ library is available ] )
+   	AC_SUBST(MAGICKPP_LIBS)
+   	AM_CONDITIONAL(HAVE_LIBMAGICKPP,true)
+-	AC_CHECK_LIB(Magick,OptimizeImageTransparency,[
++	AC_CHECK_LIB(MagickCore,OptimizeImageTransparency,[
+ 		AC_DEFINE(HAVE_MAGICK_OPTIMIZE,[], [ Define if Magick++ defines OptimizeImageTransparency() ] )
+ 		AM_CONDITIONAL(HAVE_MAGICK_OPTIMIZE,true)
+ 	],[
+@@ -549,7 +549,7 @@ AC_CHECK_HEADERS(signal.h termios.h sys/
+ 
+ 
+ case "$host" in
+-	*mingw* | *cygwin*)
++	*mingw*)
+ 		AM_CONDITIONAL(WIN32_PKG, true)
+ 		AM_CONDITIONAL(MACOSX_PKG, false)
+ 	;;
+--- origsrc/synfig-0.63.05/src/synfig/module.cpp	2012-04-10 04:35:05.000000000 +0900
++++ src/synfig-0.63.05/src/synfig/module.cpp	2012-04-11 23:44:34.856734200 +0900
+@@ -127,6 +127,7 @@ synfig::Module::Register(const String &m
+ 
+ 	module=lt_dlopenext((string("lib")+module_name).c_str());
+ 	if(!module)module=lt_dlopenext(module_name.c_str());
++	if(!module)module=lt_dlopenext((string("cyg")+module_name).c_str());
+ 
+ 	if(!module)
+ 	{
