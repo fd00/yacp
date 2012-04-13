@@ -1,0 +1,380 @@
+--- origsrc/elektra-0.7.0/configure.ac	2008-10-17 04:00:13.000000000 +0900
++++ src/elektra-0.7.0/configure.ac	2012-04-13 20:19:43.691575800 +0900
+@@ -54,6 +54,10 @@ case $host_os in
+ mingw* | pw32*)
+   # If compiling for windows we need HAVE_WIN32 defined
+ 	AC_DEFINE(HAVE_WIN32, 1, [Define if you are compiling for win32])
++;;
++cygwin*)
++	AM_CONDITIONAL(CYGWIN, [ test "xyes" = "xyes" ])
++;;
+ esac
+ 
+ # Disable libtool static lib
+@@ -377,14 +381,6 @@ if test "$with_libltdl" != "no"; then
+ 			using_libltdl=no
+ 			;;
+ 	esac
+-
+-	dnl Force off using libltdl on targets that are know to have
+-	dnl problems.
+-	case $target in
+-		*cygwin*)
+-			using_libltdl=no
+-			;;
+-	esac
+ fi
+ 
+ if test "$using_libltdl" != "no"; then
+--- origsrc/elektra-0.7.0/scripts/Makefile.am	2008-10-17 03:53:35.000000000 +0900
++++ src/elektra-0.7.0/scripts/Makefile.am	2012-04-13 20:28:29.829077000 +0900
+@@ -1,7 +1,11 @@
+ # $Id$
+ 
+ elektraenvdir = $(sysconfdir)/profile.d
++if CYGWIN
++elektrainitdir = $(sysconfdir)/rc.d/init.d
++else
+ elektrainitdir = $(sysconfdir)/init.d
++endif
+ elekscriptdir = $(docdir)/scripts
+ 
+ dist_elektraenv_SCRIPTS = elektraenv.sh
+--- origsrc/elektra-0.7.0/src/backends/Makefile.am	2008-10-17 03:53:35.000000000 +0900
++++ src/elektra-0.7.0/src/backends/Makefile.am	2012-04-13 20:24:05.527146800 +0900
+@@ -3,6 +3,21 @@ SUBDIRS = @BACKENDS@
+ 
+ EXTRA_DIST = winregistry doc/backend.c
+ 
++if CYGWIN
++install-exec-hook:
++	cd $(DESTDIR)$(backenddir) && \
++	test -L cygelektra-default.dll || \
++	$(LN_S) cygelektra-@default_backend@-0.dll cygelektra-default.dll
++	cd $(DESTDIR)$(backenddir) && \
++	test -L cygelektra-ddefault.dll || \
++	$(LN_S) cygelektra-@default_dbackend@-0.dll cygelektra-ddefault.dll
++
++uninstall-hook:
++	-cd $(DESTDIR)$(backenddir) && \
++	rm -f cygelektra-default.dll
++	-cd $(DESTDIR)$(backenddir) && \
++	rm -f cygelektra-ddefault.dll
++else
+ install-exec-hook:
+ 	cd $(DESTDIR)$(backenddir) && \
+ 	test -L libelektra-default.so || \
+@@ -16,4 +31,4 @@ uninstall-hook:
+ 	rm -f libelektra-default.so
+ 	-cd $(DESTDIR)$(backenddir) && \
+ 	rm -f libelektra-ddefault.so
+-
++endif
+--- origsrc/elektra-0.7.0/src/backends/filesys/Makefile.am	2008-10-17 03:53:37.000000000 +0900
++++ src/elektra-0.7.0/src/backends/filesys/Makefile.am	2012-04-13 19:52:18.314622700 +0900
+@@ -1,13 +1,8 @@
+ AM_CPPFLAGS = -I$(top_srcdir)/src/include
+ 
+-noinst_LIBRARIES = libelektra-filesys.a
+-libelektra_filesys_a_SOURCES = filesys.c filesys.h ../../include/kdb.h ../../include/kdbbackend.h
+-libelektra_filesys_a_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+-
+ backend_LTLIBRARIES = libelektra-filesys.la
+ libelektra_filesys_la_SOURCES = filesys.c filesys.h ../../include/kdb.h ../../include/kdbbackend.h
+-libelektra_filesys_la_LDFLAGS = -version-info $(BACKEND_VERSION_API) -module
++libelektra_filesys_la_LDFLAGS = -version-info $(BACKEND_VERSION_API) -module -no-undefined
+ libelektra_filesys_la_LIBADD = ../../libelektra/libelektra.la
+ libelektra_filesys_la_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+ 
+--- origsrc/elektra-0.7.0/src/backends/hosts/Makefile.am	2008-10-17 03:53:37.000000000 +0900
++++ src/elektra-0.7.0/src/backends/hosts/Makefile.am	2012-04-13 20:00:09.332200800 +0900
+@@ -4,14 +4,9 @@
+ 
+ AM_CPPFLAGS = -I$(top_srcdir)/src/include
+ 
+-noinst_LIBRARIES = libelektra-hosts.a
+-libelektra_hosts_a_SOURCES = hosts.c hosts.h ../../include/kdb.h ../../include/kdbbackend.h
+-libelektra_hosts_a_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+-
+ backend_LTLIBRARIES = libelektra-hosts.la
+ libelektra_hosts_la_SOURCES = hosts.c hosts.h ../../include/kdb.h ../../include/kdbbackend.h
+-libelektra_hosts_la_LDFLAGS = -version-info $(BACKEND_VERSION_API) -module
++libelektra_hosts_la_LDFLAGS = -version-info $(BACKEND_VERSION_API) -module -no-undefined
+ libelektra_hosts_la_LIBADD = ../../libelektra/libelektra.la
+ libelektra_hosts_la_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+ 
+--- origsrc/elektra-0.7.0/src/bindings/cpp/Makefile.am	2008-10-17 03:53:37.000000000 +0900
++++ src/elektra-0.7.0/src/bindings/cpp/Makefile.am	2012-04-13 19:00:12.748454500 +0900
+@@ -12,12 +12,6 @@ sources =  kdb.cpp key.cpp keyset.cpp in
+ 
+ objects = kdb.o key.o keyset.o
+ 
+-lib_LIBRARIES = libelektra-cpp.a
+-libelektra_cpp_a_SOURCES = $(sources)
+-libelektra_cpp_a_DEPENDENCIES =
+-libelektra_cpp_a_CXXFLAGS = $(cxxflags)
+-libelektra_cpp_a_CPPFLAGS = -DELEKTRA_STATIC $(cppflags)
+-libelektra_cpp_a_LIBADD =
+ BUILT_SOURCES =
+ 
+ lib_LTLIBRARIES = libelektra-cpp.la
+@@ -25,7 +19,7 @@ libelektra_cpp_la_SOURCES = $(sources)
+ libelektra_cpp_la_DEPENDENCIES =
+ libelektra_cpp_la_CXXFLAGS = $(cxxflags)
+ libelektra_cpp_la_CPPFLAGS = $(cppflags)
+-libelektra_cpp_la_LDFLAGS = -version-info 0:0:0
++libelektra_cpp_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+ libelektra_cpp_la_LIBADD = ../../libelektra/libelektra.la
+ 
+ clean-local:
+--- origsrc/elektra-0.7.0/src/bindings/cpp/tests/Makefile.am	2008-10-17 03:53:37.000000000 +0900
++++ src/elektra-0.7.0/src/bindings/cpp/tests/Makefile.am	2012-04-13 19:03:15.904704500 +0900
+@@ -10,13 +10,13 @@ TESTS_ENVIRONMENT = $(VALGRIND) --quiet
+ endif
+ 
+ test_key_SOURCES = test_key.cpp tests.h tests.cpp
+-test_key_LDADD = $(privatelibs) ../libelektra-cpp.a ../../../libelektra/libelektra.a
++test_key_LDADD = $(privatelibs) ../libelektra-cpp.la ../../../libelektra/libelektra.la
+ 
+ test_ks_SOURCES = test_ks.cpp tests.h tests.cpp
+-test_ks_LDADD = $(privatelibs) ../libelektra-cpp.a ../../../libelektra/libelektra.a
++test_ks_LDADD = $(privatelibs) ../libelektra-cpp.la ../../../libelektra/libelektra.la
+ 
+ test_kdb_SOURCES = test_kdb.cpp tests.h tests.cpp
+-test_kdb_LDADD = $(privatelibs) ../libelektra-cpp.a ../../../libelektra/libelektra.a
++test_kdb_LDADD = $(privatelibs) ../libelektra-cpp.la ../../../libelektra/libelektra.la
+ 
+ ../libelektra-cpp.a:
+ 	cd .. && $(MAKE) libelektra-cpp.a
+--- origsrc/elektra-0.7.0/src/bindings/cpp/tests/tests.h	2008-10-17 03:53:37.000000000 +0900
++++ src/elektra-0.7.0/src/bindings/cpp/tests/tests.h	2012-04-13 19:23:29.755052300 +0900
+@@ -13,6 +13,7 @@
+ #include <iostream>
+ #include <string>
+ #include <cstring>
++#include <cstdio>
+ 
+ using namespace std;
+ using namespace kdb;
+--- origsrc/elektra-0.7.0/src/kdb/Makefile.am	2008-10-17 03:53:38.000000000 +0900
++++ src/elektra-0.7.0/src/kdb/Makefile.am	2012-04-13 19:02:10.451579500 +0900
+@@ -5,15 +5,11 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/includ
+ 
+ kdb_source = kdb-tool.c kdb-tool.h help.c BSDgetopt.c BSDgetopt.h ../include/kdb.h ../include/kdbloader.h ../include/kdbtools.h
+ 
+-bin_PROGRAMS = kdb kdb_static
++bin_PROGRAMS = kdb
+ kdb_SOURCES = $(kdb_source)
+ kdb_LDADD = ../libelektra/libelektra.la $(LIBLTDL) $(LIBICONV)
+ kdb_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+ 
+-kdb_static_SOURCES =  $(kdb_source)
+-kdb_static_LDADD = $(privatelibs) ../libelektra/libelektra.a $(LIBICONV)
+-kdb_static_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+ ../libelektra/libelektra.a:
+ 	cd ../libelektra && $(MAKE) libelektra.a
+ 
+--- origsrc/elektra-0.7.0/src/libelektra/Makefile.am	2008-10-17 03:53:38.000000000 +0900
++++ src/elektra-0.7.0/src/libelektra/Makefile.am	2012-04-13 19:22:08.719896100 +0900
+@@ -11,20 +11,14 @@ elektra_dependencies = ../include/kdbpri
+ 	../include/kdbbackend.h \
+ 	../include/kdbloader.h
+ 
+-lib_LIBRARIES = libelektra.a
+-libelektra_a_SOURCES = $(elektra_sources) \
+-		exported_symbols.c
+-libelektra_a_DEPENDENCIES = $(elektra_dependencies) objects
+-libelektra_a_CFLAGS = -DELEKTRA_STATIC -DDEFAULT_BACKEND=\"$(default_backend)\" $(CSTDFLAGS) $(COPTFLAGS) $(CDBGFLAGS)
+-libelektra_a_LIBADD = `cat objects`
+ BUILT_SOURCES = exported_symbols.c
+ 
+ lib_LTLIBRARIES = libelektra.la
+ libelektra_la_SOURCES = $(elektra_sources)
+ libelektra_la_DEPENDENCIES = $(elektra_dependencies) ../libloader/libloader-dynamic.la ../libhelper/libhelper-dynamic.la
+ libelektra_la_CFLAGS = -DDEFAULT_BACKEND=\"default\" $(CSTDFLAGS) $(COPTFLAGS) $(CDBGFLAGS)
+-libelektra_la_LDFLAGS = -version-info $(ELEKTRA_VERSION_API)
+-libelektra_la_LIBADD = ../libloader/libloader-dynamic.la ../libhelper/libhelper-dynamic.la $(LIBICONV)
++libelektra_la_LDFLAGS = -version-info $(ELEKTRA_VERSION_API) -no-undefined
++libelektra_la_LIBADD = ../libloader/libloader-dynamic.la ../libhelper/libhelper-dynamic.la $(LTLIBICONV)
+ 
+ EXTRA_DIST = exportsymbols.sh
+ 
+--- origsrc/elektra-0.7.0/src/libelektra/kdb.c	2008-10-17 03:53:38.000000000 +0900
++++ src/elektra-0.7.0/src/libelektra/kdb.c	2012-04-13 20:12:05.551927300 +0900
+@@ -112,7 +112,11 @@ KDB* kdbOpenBackend(const char *backendn
+ 
+ 	backend_name = malloc(sizeof("libelektra-")+strlen(backendname));
+ 
++#if defined(__CYGWIN__)
++	strncpy(backend_name,"cygelektra-",sizeof("libelektra-"));
++#else
+ 	strncpy(backend_name,"libelektra-",sizeof("libelektra-"));
++#endif
+ 	strncat(backend_name,backendname,strlen(backendname));
+ 
+ 	dlhandle=kdbLibLoad(backend_name);
+--- origsrc/elektra-0.7.0/src/libelektratools/Makefile.am	2008-10-17 03:53:38.000000000 +0900
++++ src/elektra-0.7.0/src/libelektratools/Makefile.am	2012-04-13 19:01:12.935954500 +0900
+@@ -10,13 +10,9 @@ AM_CPPFLAGS = -DDATADIR=\"$(datadir)\" \
+ 
+ elektratools_sources = kdbtools.c stream.c ../include/kdbtools.h ../include/kdbprivate.h ../include/kdb.h
+ 
+-hlvlbackend_LIBRARIES = libelektratools.a
+-libelektratools_a_SOURCES = $(elektratools_sources)
+-libelektratools_a_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+ hlvlbackend_LTLIBRARIES = libelektratools.la
+ libelektratools_la_SOURCES = $(elektratools_sources)
+-libelektratools_la_LDFLAGS = -version-info $(ELEKTRATOOLS_VERSION_API)
++libelektratools_la_LDFLAGS = -version-info $(ELEKTRATOOLS_VERSION_API) -no-undefined
+ libelektratools_la_LIBADD = ../libelektra/libelektra.la $(XML_LIBS)
+ libelektratools_la_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+ 
+--- origsrc/elektra-0.7.0/src/libhelper/Makefile.am	2008-10-17 03:53:39.000000000 +0900
++++ src/elektra-0.7.0/src/libhelper/Makefile.am	2012-04-13 19:01:30.060954500 +0900
+@@ -2,11 +2,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/includ
+ 
+ sources = internal.c helper.c helper.h ../include/kdb.h ../include/kdbbackend.h
+ 
+-noinst_LIBRARIES = libhelper-static.a
+-libhelper_static_a_SOURCES = $(sources)
+-libhelper_static_a_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+-
+ noinst_LTLIBRARIES = libhelper-dynamic.la
+ libhelper_dynamic_la_SOURCES = $(sources)
+ libhelper_dynamic_la_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+--- origsrc/elektra-0.7.0/src/libloader/Makefile.am	2008-10-17 03:53:39.000000000 +0900
++++ src/elektra-0.7.0/src/libloader/Makefile.am	2012-04-13 19:01:42.857829500 +0900
+@@ -8,10 +8,6 @@ if HAVE_LIBLTDL
+ INCLUDES += $(INCLTDL)
+ endif
+ 
+-noinst_LIBRARIES = libloader-static.a
+-libloader_static_a_SOURCES = kdbLibLoader.c ../include/kdbloader.h ../include/ltdl.h
+-libloader_static_a_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+ noinst_LTLIBRARIES = libloader-dynamic.la
+ libloader_dynamic_la_SOURCES = kdbLibLoader.c ../include/kdbloader.h ../include/ltdl.h
+ libloader_dynamic_la_LIBADD = $(LIBLTDL)
+--- origsrc/elektra-0.7.0/src/preload/Makefile.am	2008-10-17 03:53:39.000000000 +0900
++++ src/elektra-0.7.0/src/preload/Makefile.am	2012-04-13 19:02:25.232829500 +0900
+@@ -3,15 +3,11 @@ AM_CPPFLAGS =  -DDATADIR=\"$(datadir)\"
+ 
+ preload_source = preload.c ../include/kdb.h
+ 
+-bin_PROGRAMS = preload preload_static
++bin_PROGRAMS = preload
+ preload_SOURCES = $(preload_source)
+ preload_LDADD = ../libelektra/libelektra.la $(LIBLTDL) $(LIBICONV)
+ preload_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+ 
+-preload_static_SOURCES =  $(preload_source)
+-preload_static_LDADD = $(privatelibs) ../libelektra/libelektra.a $(LIBICONV)
+-preload_static_CFLAGS = -DELEKTRA_STATIC $(COPTFLAGS) $(CDBGFLAGS)
+-
+ ../libelektra/libelektra.a:
+ 	cd ../libelektra && $(MAKE) libelektra.a
+ 
+--- origsrc/elektra-0.7.0/tests/Makefile.am	2008-10-17 03:53:39.000000000 +0900
++++ src/elektra-0.7.0/tests/Makefile.am	2012-04-13 19:47:12.314622700 +0900
+@@ -1,6 +1,8 @@
+ AM_CFLAGS = $(COPTFLAGS) $(CDBGFLAGS)
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(LTDLINCL)
++AM_CPPFLAGS = -I$(top_srcdir)/src/include $(LTDLINCL) -DBACKEND_LIBDIR="\"$(top_builddir)/src/libelektratools\""
+ 
++
++TESTS_ENVIRONMENT = PATH=${PATH}:$(top_builddir)/src/kdb
+ TESTS = test_key test_ks test_kdb test_xml test_validate.sh test_getset test_trie test_mount test_cap test_stream test_serialize test_split test_internals test_backendhelpers test_script.sh test_type
+ #TESTS = test_backendhelpers
+ 
+@@ -8,7 +10,7 @@ check_PROGRAMS    = test_key test_ks tes
+ #check_PROGRAMS    = test_backendhelpers
+ 
+ if VALGRINDTESTS
+-TESTS_ENVIRONMENT = $(VALGRIND) --quiet --show-reachable=yes --leak-check=yes
++TESTS_ENVIRONMENT += $(VALGRIND) --quiet --show-reachable=yes --leak-check=yes
+ endif
+ 
+ EXTRA_DIST = dbelow.c filesys.xml fstab.xml fstab-cmp.xml hosts.xml keyset.c keyset.xml key.xml key-cmp.xml others.c passwd.xml test_script.sh test_validate.sh test_script.sh tests.c tests.h
+@@ -19,49 +21,49 @@ clean-local:
+ 	rm -f *.gcno *.gcda *.gcno
+ 
+ test_key_SOURCES = test_key.c tests.h tests.c
+-test_key_LDADD = $(privatelibs) ../src/libelektra/libelektra.a 
++test_key_LDADD = $(privatelibs) ../src/libelektra/libelektra.la 
+ 
+ test_ks_SOURCES = test_ks.c tests.h tests.c
+-test_ks_LDADD = $(privatelibs) ../src/libelektra/libelektra.a 
++test_ks_LDADD = $(privatelibs) ../src/libelektra/libelektra.la 
+ 
+ test_kdb_SOURCES = test_kdb.c tests.h tests.c
+-test_kdb_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_kdb_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_xml_SOURCES = test_xml.c tests.h tests.c
+-test_xml_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_xml_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_getset_SOURCES = test_getset.c tests.h tests.c
+-test_getset_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_getset_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_trie_SOURCES = test_trie.c tests.h tests.c
+-test_trie_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_trie_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_mount_SOURCES = test_mount.c tests.h tests.c
+-test_mount_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_mount_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_cap_SOURCES = test_cap.c tests.h tests.c
+-test_cap_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_cap_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_stream_SOURCES = test_stream.c tests.h tests.c
+-test_stream_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_stream_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_serialize_SOURCES = test_serialize.c tests.h tests.c
+-test_serialize_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_serialize_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_split_SOURCES = test_split.c tests.h tests.c
+-test_split_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_split_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_internals_SOURCES = test_internals.c tests.h tests.c
+-test_internals_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_internals_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_backendhelpers_SOURCES = test_backendhelpers.c tests.h tests.c
+-test_backendhelpers_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_backendhelpers_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ test_type_SOURCES = test_type.c tests.h tests.c
+-test_type_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++test_type_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ print_info_SOURCES = print_info.c tests.h tests.c
+-print_info_LDADD = $(privatelibs) ../src/libelektra/libelektra.a
++print_info_LDADD = $(privatelibs) ../src/libelektra/libelektra.la
+ 
+ ../src/libelektra/libelektra.a:
+ 	cd ../src/libelektra && $(MAKE) libelektra.a
+--- origsrc/elektra-0.7.0/tests/tests.c	2008-10-17 03:53:40.000000000 +0900
++++ src/elektra-0.7.0/tests/tests.c	2012-04-13 19:47:28.736497700 +0900
+@@ -249,7 +249,10 @@ int loadToolsLib(void) {
+ 
+ 	kdbLibInit();
+ 
++	lt_dladdsearchdir(BACKEND_LIBDIR);
++
+ 	dlhandle=kdbLibLoad("libelektratools");
++
+ 	if (dlhandle == 0) {
+ 		return 1;
+ 	}
