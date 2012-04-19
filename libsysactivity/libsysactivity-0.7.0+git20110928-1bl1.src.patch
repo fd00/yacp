@@ -1,0 +1,230 @@
+--- origsrc/libsysactivity/CMakeLists.txt	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/CMakeLists.txt	2012-04-19 12:00:29.029173500 +0900
+@@ -43,4 +43,4 @@ endif (HAS_W_SHADOW_FLAG)
+ 
+ add_subdirectory(src)
+ add_subdirectory(cmake)
+-add_subdirectory(test EXCLUDE_FROM_ALL)
++add_subdirectory(test)
+--- origsrc/libsysactivity/src/CMakeLists.txt	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/CMakeLists.txt	2012-04-19 11:43:57.378782800 +0900
+@@ -1,6 +1,6 @@
+ 
+ 	# Checking the OS
+-if (${CMAKE_SYSTEM_NAME} MATCHES "^Linux$|^FreeBSD$|^SunOS$|^NetBSD$|^OpenBSD$|^kFreeBSD$|^DragonFly$|^Windows$")
++if (CMAKE_SYSTEM_NAME MATCHES "^Linux$|^FreeBSD$|^SunOS$|^NetBSD$|^OpenBSD$|^kFreeBSD$|^DragonFly$|^Windows$|^CYGWIN$")
+ 	message(STATUS "OS detected: ${CMAKE_SYSTEM_NAME}")
+ else ()
+ 	message(FATAL_ERROR "OS: ${CMAKE_SYSTEM_NAME} is not supported")
+@@ -22,8 +22,10 @@ add_subdirectory(common)
+ 	# Forcing to include the right libsysactivity.h through command line so it can compile any file
+ 	# from another operating system without any include conflict
+ if (CMAKE_COMPILER_IS_GNUCC)
+-	if (${CMAKE_SYSTEM_NAME} STREQUAL "kFreeBSD")
++	if ("${CMAKE_SYSTEM_NAME}" STREQUAL "kFreeBSD")
+ 		add_definitions(-include ${CMAKE_CURRENT_SOURCE_DIR}/FreeBSD/libsysactivity.h)
++	elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "CYGWIN")
++		add_definitions(-include ${CMAKE_CURRENT_SOURCE_DIR}/Linux/libsysactivity.h)
+ 	else ()
+ 		add_definitions(-include ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_SYSTEM_NAME}/libsysactivity.h)
+ 	endif ()
+@@ -33,8 +35,10 @@ endif (CMAKE_COMPILER_IS_GNUCC)
+ 
+ 	# Specific code
+ include_directories(common/)
+-if (${CMAKE_SYSTEM_NAME} STREQUAL "kFreeBSD")
++if ("${CMAKE_SYSTEM_NAME}" STREQUAL "kFreeBSD")
+ 	add_subdirectory("FreeBSD")
++elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "CYGWIN")
++	add_subdirectory("Linux")
+ else ()
+ 	add_subdirectory(${CMAKE_SYSTEM_NAME})
+ endif ()
+--- origsrc/libsysactivity/src/Linux/CMakeLists.txt	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/CMakeLists.txt	2012-04-19 11:52:29.041868800 +0900
+@@ -8,4 +8,4 @@ ADD_LIBRARY(sysactivity SHARED ${LIBSA_S
+ set_target_properties(sysactivity PROPERTIES VERSION ${LIBSA_VERSION} SOVERSION ${LIBSA_ABI_VERSION})
+ TARGET_LINK_LIBRARIES(sysactivity)
+ 
+-install(TARGETS sysactivity LIBRARY DESTINATION ${LIB_INSTALLATION_DIR})
++install(TARGETS sysactivity RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIB_INSTALLATION_DIR})
+--- origsrc/libsysactivity/src/Linux/cpu.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/cpu.c	2012-04-19 12:09:13.645384400 +0900
+@@ -49,8 +49,10 @@ int sa_open_cpu() {
+ 	fp = NULL;
+ 	cpus = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 24)
+ 		return ENOTSUP;
++#endif
+ 
+ 	number_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+ 	if (number_cpus < 0)
+--- origsrc/libsysactivity/src/Linux/disk.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/disk.c	2012-04-19 12:11:17.562376600 +0900
+@@ -39,8 +39,10 @@ __thread DIR* dir_sys_block;
+ int sa_open_disk() {
+ 	dir_sys_block = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 0)
+ 		return ENOTSUP;
++#endif
+ 
+ 	dir_sys_block = opendir("/sys/block/");
+ 	if (dir_sys_block == NULL)
+--- origsrc/libsysactivity/src/Linux/libsysactivity.h	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/libsysactivity.h	2012-04-19 12:03:40.619017200 +0900
+@@ -23,7 +23,11 @@
+ 
+ #include <stdint.h>
+ #include <unistd.h>
++#if defined(__CYGWIN__)
++#define DM_NAME_LEN (1024)
++#else
+ #include <linux/dm-ioctl.h>
++#endif
+ 
+ #ifdef __cplusplus
+ extern "C" {
+--- origsrc/libsysactivity/src/Linux/memory.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/memory.c	2012-04-19 12:10:31.671751600 +0900
+@@ -36,8 +36,10 @@ __thread char m_line_buffer[512];
+ int sa_open_memory() {
+ 	file_meminfo = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 11)
+ 		return ENOTSUP;
++#endif
+ 
+ 	file_meminfo = fopen("/proc/meminfo", "r");
+ 	if (file_meminfo == NULL)
+--- origsrc/libsysactivity/src/Linux/network.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/network.c	2012-04-19 12:11:01.984251600 +0900
+@@ -36,8 +36,10 @@ __thread long pos_useful_data;
+ int sa_open_net() {
+ 	file_net_dev = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 11)
+ 		return ENOTSUP;
++#endif
+ 
+ 	file_net_dev = fopen("/proc/net/dev", "r");
+ 	if (file_net_dev == NULL)
+--- origsrc/libsysactivity/src/Linux/process.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/process.c	2012-04-19 12:11:35.624876600 +0900
+@@ -38,8 +38,10 @@ __thread char path[32];
+ int sa_open_process() {
+ 	dir_proc = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 25)
+ 		return ENOTSUP;
++#endif
+ 
+ 	dir_proc = opendir("/proc/");
+ 	if (dir_proc == NULL)
+--- origsrc/libsysactivity/src/Linux/swap.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/swap.c	2012-04-19 12:11:57.406126600 +0900
+@@ -37,8 +37,10 @@ __thread char s_line_buffer[512];
+ int sa_open_swap() {
+ 	file_swaps = NULL;
+ 
++#if !defined(__CYGWIN__)
+ 	if (kernel_version < 11)
+ 		return ENOTSUP;
++#endif
+ 
+ 	file_swaps = fopen("/proc/swaps", "r");
+ 	if (file_swaps == NULL)
+--- origsrc/libsysactivity/src/Linux/utils.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/utils.c	2012-04-19 11:45:11.442259400 +0900
+@@ -53,8 +53,10 @@ char* skip_value(char* pos) {
+ 	return pos;
+ }
+ 
++#if !defined(__CYGWIN__)
+ SA_INLINE void strlcpy(char* __restrict__ dest, const char* __restrict__ src, const size_t n) {
+ 	strncpy(dest, src, n);
+ 	if (strlen(src) >= n)
+ 		dest[n] = '\0';
+ }
++#endif
+--- origsrc/libsysactivity/src/Linux/utils.h	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/src/Linux/utils.h	2012-04-19 11:45:36.973509400 +0900
+@@ -25,6 +25,9 @@ int kernel_version;
+ 
+ char* skip_values(char* pos, int number) SA_NONNULL;
+ char* skip_value(char* pos) SA_NONNULL SA_HOT;
++
++#if !defined(__CYGWIN__)
+ SA_INLINE void strlcpy(char* __restrict__ dest, const char* __restrict__ src, const size_t n) SA_NONNULL;
++#endif
+ 
+ #endif /* UTILS_H_ */
+--- origsrc/libsysactivity/test/CMakeLists.txt	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/test/CMakeLists.txt	2012-04-19 11:57:11.907103200 +0900
+@@ -1,6 +1,8 @@
+ 
+-if (${CMAKE_SYSTEM_NAME} STREQUAL "kFreeBSD")
++if ("${CMAKE_SYSTEM_NAME}" STREQUAL "kFreeBSD")
+ 	include_directories(../src/FreeBSD/)
++elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "CYGWIN")
++	include_directories(../src/Linux/)
+ else ()
+ 	include_directories(../src/${CMAKE_SYSTEM_NAME}/)
+ endif ()
+@@ -9,7 +11,7 @@ include_directories(../src/common/)
+ foreach(TEST_NAME cpu disk memory network process swap)
+ 	add_executable(${TEST_NAME} test_${TEST_NAME}.c utils.c)
+ 	add_dependencies(${TEST_NAME} sysactivity)
+-	if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
++	if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+ 		target_link_libraries(${TEST_NAME} sysactivity)
+ 	else ()
+ 		target_link_libraries(${TEST_NAME} sysactivity pthread m)
+--- origsrc/libsysactivity/test/test_memory.c	2012-04-19 11:04:32.000000000 +0900
++++ src/libsysactivity/test/test_memory.c	2012-04-19 12:25:40.867064100 +0900
+@@ -35,6 +35,10 @@
+ #include "libsysactivity.h"
+ #include "utils.h"
+ 
++#if defined(__CYGWIN__) && !defined(PRIu64)
++#define PRIu64 "llu"
++#endif
++
+ int error = 0;
+ 
+ void print_memory_info(struct sa_memory* memory) {
+@@ -101,17 +105,19 @@ void test_memory_info(struct sa_memory*
+ 		printf("%s:%d ERROR: Active memory is larger than total memory\n", __FILE__, __LINE__);
+ 		error = 1;
+ 	}
++#if !defined(__CYGWIN__)
+ 	if (memory->active < 1000) {
+ 		printf("%s:%d ERROR: Active memory is lower than 1 kb\n", __FILE__, __LINE__);
+ 		error = 1;
+ 	}
+ #endif
++#endif
+ #if defined(SA_MEMORY_TOTAL) && defined(SA_MEMORY_INACTIVE)
+ 	if (memory->inactive > memory->total) {
+ 		printf("%s:%d ERROR: Inactive memory is larger than total memory\n", __FILE__, __LINE__);
+ 		error = 1;
+ 	}
+-#if !defined(__NetBSD__) // In my NetBSD 5.1rc4 system vmstat -s gives 0 inactive pages so it seems to be ok
++#if !defined(__NetBSD__) && !defined(__CYGWIN__) // In my NetBSD 5.1rc4 system vmstat -s gives 0 inactive pages so it seems to be ok
+ 	if (memory->inactive < 1000) {
+ 		printf("%s:%d ERROR: Inactive memory is lower than 1 kb\n", __FILE__, __LINE__);
+ 		error = 1;
+@@ -155,6 +161,7 @@ void* get_memory_info(void* arg) {
+ 		print_error(ret, "sa_open_memory", __FILE__, __LINE__);
+ #endif
+ 
++	memset(&memory, 0, sizeof(struct sa_memory));
+ 	for (i = 0; i < 6; i++) {
+ 		ret = sa_get_memory(&memory);
+ 		if (ret != 0)
