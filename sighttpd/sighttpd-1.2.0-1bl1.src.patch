@@ -1,0 +1,84 @@
+--- origsrc/sighttpd/configure.ac	2012-04-26 12:14:06.000000000 +0900
++++ src/sighttpd/configure.ac	2012-04-26 12:34:01.029738000 +0900
+@@ -9,7 +9,7 @@ AC_CONFIG_HEADER([config.h])
+ # Checks for programs.
+ AC_PROG_CC
+ AM_PROG_CC_C_O
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ dnl Check for pkgconfig first
+ AC_CHECK_PROG(HAVE_PKGCONFIG, pkg-config, yes, no)
+--- origsrc/sighttpd/src/ogg-stdin.c	2012-04-26 12:14:06.000000000 +0900
++++ src/sighttpd/src/ogg-stdin.c	2012-04-26 12:30:43.498983700 +0900
+@@ -6,7 +6,11 @@
+ #include <string.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#if defined(__LINUX__)
+ #include <sys/sendfile.h>
++#else
++static ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
++#endif
+ #include <fcntl.h>
+ #include <pthread.h>
+ #include <oggz/oggz.h>
+@@ -258,3 +262,58 @@ oggstdin_resources (Dictionary * config)
+ 	return l;
+ }
+ 
++#if !defined(__LINUX__)
++#define BUF_SIZE (8192)
++#define min(x, y) ((x)<(y) ? (x):(y))
++ssize_t
++sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
++{
++    off_t orig;
++    char buf[BUF_SIZE];
++    size_t toRead, numRead, numSent, totSent;
++
++    if (offset != NULL) {
++
++        /* Save current file offset and set offset to value in '*offset' */
++
++        orig = lseek(in_fd, 0, SEEK_CUR);
++        if (orig == -1)
++            return -1;
++        if (lseek(in_fd, *offset, SEEK_SET) == -1)
++            return -1;
++    }
++
++    totSent = 0;
++
++    while (count > 0) {
++        toRead = min(BUF_SIZE, count);
++
++        numRead = read(in_fd, buf, toRead);
++        if (numRead == -1)
++            return -1;
++        if (numRead == 0)
++            break;                      /* EOF */
++
++        numSent = write(out_fd, buf, numRead);
++        if (numSent == -1)
++            return -1;
++
++        count -= numSent;
++        totSent += numSent;
++    }
++
++    if (offset != NULL) {
++
++        /* Return updated file offset in '*offset', and reset the file offset
++           to the value it had when we were called. */
++
++        *offset = lseek(in_fd, 0, SEEK_CUR);
++        if (*offset == -1)
++            return -1;
++        if (lseek(in_fd, orig, SEEK_SET) == -1)
++            return -1;
++    }
++
++    return totSent;
++}
++#endif
