@@ -1,0 +1,62 @@
+--- origsrc/lis-1.2.62/src/Makefile.am	2011-11-09 14:17:42.000000000 +0900
++++ src/lis-1.2.62/src/Makefile.am	2012-04-26 08:56:11.436323700 +0900
+@@ -17,10 +17,16 @@ liblis@LIBSUFFIX@_la_LIBADD = matrix/lib
+                    system/libsystem.la \
+                    precision/libprecision.la 
+ if ENABLE_FORTRAN
+-  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
++  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la -lgfortran
+ endif
+ if ENABLE_SAAMG
+   liblis@LIBSUFFIX@_la_LIBADD += fortran/amg/libsaamg.la
+-  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
++if !ENABLE_FORTRAN
++  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la -lgfortran
++endif
++endif
++if ENABLE_OMP
++  liblis@LIBSUFFIX@_la_LIBADD += -lgomp
+ endif
+ liblis@LIBSUFFIX@_la_SOURCES = 
++liblis@LIBSUFFIX@_la_LDFLAGS = -no-undefined
+--- origsrc/lis-1.2.62/test/test.sh	2010-07-29 18:40:55.000000000 +0900
++++ src/lis-1.2.62/test/test.sh	2012-04-26 09:12:10.432417500 +0900
+@@ -25,30 +25,30 @@ fi
+ 
+ echo ' '
+ echo 'checking solvers...'
+-$MPIRUN $srcdir/test1 $srcdir/testmat.mtx 0 $srcdir/sol.txt $srcdir/res.txt -omp_num_threads $OMPNUM
++$MPIRUN $top_builddir/test/test1 $srcdir/testmat.mtx 0 $top_builddir/test/sol.txt $top_builddir/test/res.txt -omp_num_threads $OMPNUM
+ 
+ echo 'checking eigensolvers...'
+-$MPIRUN $srcdir/etest1 $srcdir/testmat.mtx 0 $srcdir/sol.txt $srcdir/res.txt -omp_num_threads $OMPNUM
++$MPIRUN $top_builddir/test/etest1 $srcdir/testmat.mtx 0 $top_builddir/test/sol.txt $top_builddir/test/res.txt -omp_num_threads $OMPNUM
+ 
+ if test "$enable_fortran" = "yes"; then
+   echo 'checking Fortran interface...'
+-#  $MPIRUN $srcdir/test1f $srcdir/testmat.mtx 0 $srcdir/sol.txt $srcdir/res.txt -omp_num_threads $OMPNUM
+-  cd $srcdir; 
++#  $MPIRUN $srcdir/test1f $srcdir/testmat.mtx 0 $top_builddir/test/sol.txt $top_builddir/test/res.txt -omp_num_threads $OMPNUM
++  cd $top_builddir/test; 
+   $MPIRUN ./test4f
+ fi
+ 
+ if test "$enable_quad" = "yes"; then
+   echo ' '
+   echo 'cheking quad precision...'
+-  $MPIRUN $srcdir/test5 200 2.0 -f double -omp_num_threads $OMPNUM
+-  $MPIRUN $srcdir/test5 200 2.0 -f quad -omp_num_threads $OMPNUM
++  $MPIRUN $top_builddir/test/test5 200 2.0 -f double -omp_num_threads $OMPNUM
++  $MPIRUN $top_builddir/test/test5 200 2.0 -f quad -omp_num_threads $OMPNUM
+ fi
+ 
+ OMPNUM=1
+ if test "$enable_saamg" = "yes"; then
+   echo ' '
+   echo 'checking SAAMG preconditioner...'
+-  $MPIRUN $srcdir/test2 10 10 1 $srcdir/sol.txt $srcdir/res.txt -i cg -p saamg -omp_num_threads $OMPNUM
+-#  $MPIRUN $srcdir/test1 $srcdir/add32.mtx $srcdir/sol.txt $srcdir/res.txt -i bicgstab -p saamg -saamg_unsym true -omp_num_threads $OMPNUM
++  $MPIRUN $top_builddir/test/test2 10 10 1 $top_builddir/test/sol.txt $top_builddir/test/res.txt -i cg -p saamg -omp_num_threads $OMPNUM
++#  $MPIRUN $srcdir/test1 $srcdir/add32.mtx $top_builddir/test/sol.txt $top_builddir/test/res.txt -i bicgstab -p saamg -saamg_unsym true -omp_num_threads $OMPNUM
+ fi
+ 
