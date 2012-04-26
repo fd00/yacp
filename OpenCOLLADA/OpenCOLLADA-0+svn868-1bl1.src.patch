@@ -1,0 +1,94 @@
+--- origsrc/OpenCOLLADA/CMakeLists.txt	2012-04-26 14:58:19.919143500 +0900
++++ src/OpenCOLLADA/CMakeLists.txt	2012-04-26 15:54:04.995315400 +0900
+@@ -77,7 +77,8 @@ macro(opencollada_add_lib
+ 
+ 		install(
+ 			TARGETS ${name}_shared
+-			LIBRARY DESTINATION ${OPENCOLLADA_INST_LIBRARY}
++			RUNTIME DESTINATION bin
++			ARCHIVE DESTINATION ${OPENCOLLADA_INST_LIBRARY}
+ 		)
+ 	endif ()
+ endmacro()
+@@ -164,8 +165,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
+ #-----------------------------------------------------------------------------
+ # Install vars
+ 
+-set(OPENCOLLADA_INST_INCLUDE ${INCLUDE_INSTALL_DIR})
+-set(OPENCOLLADA_INST_LIBRARY ${LIB_INSTALL_DIR})
++set(OPENCOLLADA_INST_INCLUDE ${CMAKE_INSTALL_PREFIX}/include)
++set(OPENCOLLADA_INST_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib)
+ 
+ 
+ #-----------------------------------------------------------------------------
+--- origsrc/OpenCOLLADA/COLLADABaseUtils/src/COLLADABUNativeString.cpp	2012-04-26 14:53:44.000000000 +0900
++++ src/OpenCOLLADA/COLLADABaseUtils/src/COLLADABUNativeString.cpp	2012-04-26 15:12:04.356643500 +0900
+@@ -57,7 +57,7 @@ namespace COLLADABU
+ 		WideCharToMultiByte( CP_ACP, 0, (LPCWSTR)wideString.c_str(), -1, dest, multibyteLength, 0, 0 );
+ 		this->assign( dest );
+ 		delete[] dest;
+-#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC)
++#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC) || defined (__CYGWIN__)
+ //# error check if this really works on linux
+ 		size_t maxStringLength = wcstombs( 0, wideString.c_str(), 0 ) + 1; // wideString.length()*MB_CUR_MAX + 1;
+ 		char* dest = new char[ maxStringLength ];
+@@ -80,7 +80,7 @@ namespace COLLADABU
+ 		WideString returnValue( dest );
+ 		delete[] dest;
+ 		return returnValue;
+-#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC)
++#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC) || defined (__CYGWIN__)
+ //# error check if this really works on linux
+ 
+ 		size_t maxStringLength = length() + 1;
+--- origsrc/OpenCOLLADA/GeneratedSaxParser/include/GeneratedSaxParserPrerequisites.h	2012-04-26 14:52:15.000000000 +0900
++++ src/OpenCOLLADA/GeneratedSaxParser/include/GeneratedSaxParserPrerequisites.h	2012-04-26 15:13:33.257034100 +0900
+@@ -62,7 +62,7 @@ namespace GeneratedSaxParser
+     typedef unsigned int uint32;
+     typedef unsigned long long uint64;
+ 
+-#elif defined COLLADABU_OS_LINUX
++#elif defined COLLADABU_OS_LINUX || defined __CYGWIN__
+     typedef signed char sint8;
+     typedef signed short sint16;
+     typedef signed int sint32;
+--- origsrc/OpenCOLLADA/common/libBuffer/src/CommonFWriteBufferFlusher.cpp	2012-04-26 14:52:16.000000000 +0900
++++ src/OpenCOLLADA/common/libBuffer/src/CommonFWriteBufferFlusher.cpp	2012-04-26 15:48:06.569534100 +0900
+@@ -87,7 +87,7 @@ namespace Common
+ 		// store the current file position
+ #ifdef _WIN32
+ 		FilePosType currentPos = _ftelli64(mStream);
+-#elif defined (__APPLE__)
++#elif defined (__APPLE__) || defined (__CYGWIN__)
+ 		FilePosType currentPos = ftello(mStream);
+ #else
+ 		FilePosType currentPos = ftello64(mStream);
+@@ -110,7 +110,7 @@ namespace Common
+ 		{
+ #ifdef _WIN32
+ 			return (_fseeki64(mStream, 0, SEEK_END) == 0);
+-#elif defined (__APPLE__)
++#elif defined (__APPLE__) || defined (__CYGWIN__)
+ 			return (fseeko(mStream, 0, SEEK_END) == 0);
+ #else
+ 			return (fseeko64(mStream, 0, SEEK_END) == 0);
+@@ -128,7 +128,7 @@ namespace Common
+ 				FilePosType pos = markIdIt->second;
+ #ifdef _WIN32
+ 				bool success = (_fseeki64(mStream, pos, SEEK_SET) == 0);
+-#elif defined (__APPLE__)
++#elif defined (__APPLE__) || defined (__CYGWIN__)
+ 				bool success = (fseeko(mStream, pos, SEEK_SET) == 0);
+ #else
+ 				bool success = (fseeko64(mStream, pos, SEEK_SET) == 0);
+--- origsrc/OpenCOLLADA/common/libftoa/src/Commonftoa.cpp	2012-04-26 14:52:17.000000000 +0900
++++ src/OpenCOLLADA/common/libftoa/src/Commonftoa.cpp	2012-04-26 15:49:40.768752900 +0900
+@@ -11,7 +11,7 @@
+ #include "Commonftoa.h"
+ #include "Commonitoa.h"
+ #include <float.h>
+-
++#include <stdint.h>
+ #include <math.h>
+ 
+ 
