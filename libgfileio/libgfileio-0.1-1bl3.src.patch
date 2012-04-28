@@ -1,33 +1,21 @@
---- origsrc/libgfileio-0.1/configure.ac	2007-09-02 09:24:20.000000000 +0900
-+++ src/libgfileio-0.1/configure.ac	2010-12-12 23:34:11.301337400 +0900
-@@ -17,8 +17,7 @@ AC_PROG_INSTALL
- AC_PROG_LN_S
- AC_PROG_CXX([CC g++])
- AC_PROG_CXXCPP
--AC_PROG_RANLIB
--AC_PROG_LIBTOOL
-+LT_INIT(win32-dll)
- AC_ARG_VAR([DOXYGEN], [Path to doxygen])
- AC_CHECK_PROG([DOXYGEN],[doxygen],[doxygen],[:])
- 
 --- origsrc/libgfileio-0.1/src/Makefile.am	2007-08-16 06:17:24.000000000 +0900
-+++ src/libgfileio-0.1/src/Makefile.am	2010-12-12 23:33:09.271299000 +0900
++++ src/libgfileio-0.1/src/Makefile.am	2012-04-28 18:58:46.703043400 +0900
 @@ -4,3 +4,4 @@ lib_LTLIBRARIES = libgfileio.la
  
  libgfileio_la_SOURCES = gfexceptions.cc gfile.cc
  libgfileio_la_CXXFLAGS = -I$(top_srcdir)/gfileio $(AM_CXXFLAGS)
 +libgfileio_la_LDFLAGS = -no-undefined
 --- origsrc/libgfileio-0.1/tests/gfile_open.cc	2007-08-22 23:46:25.000000000 +0900
-+++ src/libgfileio-0.1/tests/gfile_open.cc	2010-12-12 23:33:09.301342200 +0900
++++ src/libgfileio-0.1/tests/gfile_open.cc	2012-04-28 18:58:46.703043400 +0900
 @@ -51,7 +51,11 @@ int main(int argc, char** argv) {
      passwd* pwd = getpwuid(getuid());
      
      try {
 +#if defined(__CYGWIN__)
 +	file.fchown(pwd->pw_name, "root");
-+#else // defined(__CYGWIN__)
++#else
  	file.fchown(pwd->pw_name, "sys");
-+#endif // defined(__CYGWIN__)
++#endif
      } catch (GFileIO::GFileIOException& e) {
  	std::cerr << e.what() << std::endl;
  	return 1;
