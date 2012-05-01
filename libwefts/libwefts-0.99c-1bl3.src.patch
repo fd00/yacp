@@ -1,34 +1,16 @@
 --- origsrc/libwefts-0.99c/configure.in	2004-04-11 05:04:09.000000000 +0900
-+++ src/libwefts-0.99c/configure.in	2010-12-14 23:05:24.199343800 +0900
++++ src/libwefts-0.99c/configure.in	2012-05-01 15:31:22.035930100 +0900
 @@ -9,7 +9,7 @@ dnl--------------------------------
  dnl Begin of script
  dnl
  
 -AC_INIT( src )
-+AC_INIT(libwefts, 0.99c)
++AC_INIT([libwefts], [0.99c])
  
  AC_REVISION($Revision: 1.18 $)
  AC_CANONICAL_HOST
-@@ -40,7 +40,6 @@ AC_CHECK_PROGS( SHELL, bash /bin/bash /b
- AC_CHECK_PROGS( DOXYGEN, doxygen /usr/bin/doxygen /usr/local/bin/doxygen,)
- 
- AC_PROG_AWK
--AC_PROG_RANLIB
- AC_PROG_CXX
- AC_PROG_INSTALL
- AC_PROG_LN_S
-@@ -49,8 +48,7 @@ AC_ISC_POSIX
- dnl
- dnl Provide shared libraries on demand
- dnl
--AC_DISABLE_SHARED       dnl have --enable-shared to build it
--AC_PROG_LIBTOOL
-+LT_INIT(win32-dll)
- AC_SUBST(LIBTOOL_DEPS)
- 
- dnl--------------------------------
 --- origsrc/libwefts-0.99c/include/wefts_ringbuffer.h	2004-03-29 06:45:40.000000000 +0900
-+++ src/libwefts-0.99c/include/wefts_ringbuffer.h	2010-12-14 23:05:08.967441400 +0900
++++ src/libwefts-0.99c/include/wefts_ringbuffer.h	2012-05-01 15:31:03.051555100 +0900
 @@ -226,9 +226,9 @@ public:
  
        m_mutex.lock();
@@ -42,7 +24,16 @@
  
        return ret;
 --- origsrc/libwefts-0.99c/ltlib/Makefile.am	2004-03-21 07:45:24.000000000 +0900
-+++ src/libwefts-0.99c/ltlib/Makefile.am	2010-12-14 23:05:08.967441400 +0900
++++ src/libwefts-0.99c/ltlib/Makefile.am	2012-05-01 15:31:41.578898900 +0900
+@@ -15,7 +15,7 @@ include_HEADERS = ../include/wefts.h ../
+ 
+ if BUILD_LT
+ lib_LTLIBRARIES = libwefts.la
+-libwefts_la_LDFLAGS = -version-info @VERSION_INFO@
++libwefts_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
+ libwefts_la_SOURCES = \
+    ../src/wefts_barrier.cpp \
+    ../src/wefts_coffee_unix.cpp \
 @@ -36,4 +36,4 @@ libwefts_la_CFLAGS = -DDYNAMIC
  
  endif
@@ -50,17 +41,16 @@
 -INCLUDES = -I../include
 +INCLUDES = -I$(top_srcdir)/include
 --- origsrc/libwefts-0.99c/src/Makefile.am	2004-03-28 06:11:57.000000000 +0900
-+++ src/libwefts-0.99c/src/Makefile.am	2010-12-14 23:05:08.977455800 +0900
-@@ -1,4 +1,5 @@
++++ src/libwefts-0.99c/src/Makefile.am	2012-05-01 15:32:15.885539500 +0900
+@@ -1,4 +1,6 @@
++if !BUILD_LT
  INCLUDES = -I$(top_srcdir)/include
  METASOURCES = AUTO
--lib_LIBRARIES =  libwefts.a
--libwefts_a_SOURCES = wefts_barrier.cpp wefts_cleancond.cpp wefts_coffee_unix.cpp wefts_coffee_win.cpp wefts_counter.cpp wefts_critical.cpp wefts_error.cpp wefts_moaning.cpp wefts_os_pthread.cpp wefts_os_windows.cpp wefts_proc_pthread.cpp wefts_rrwmutex.cpp wefts_rwmutex.cpp wefts_semaphore.cpp wefts_subscription.cpp wefts_thread.cpp wefts_xmutex.cpp
-+lib_LTLIBRARIES =  libwefts.la
-+libwefts_la_SOURCES = wefts_barrier.cpp wefts_cleancond.cpp wefts_coffee_unix.cpp wefts_coffee_win.cpp wefts_counter.cpp wefts_critical.cpp wefts_error.cpp wefts_moaning.cpp wefts_os_pthread.cpp wefts_os_windows.cpp wefts_proc_pthread.cpp wefts_rrwmutex.cpp wefts_rwmutex.cpp wefts_semaphore.cpp wefts_subscription.cpp wefts_thread.cpp wefts_xmutex.cpp
-+libwefts_la_LDFLAGS = -no-undefined
+ lib_LIBRARIES =  libwefts.a
+ libwefts_a_SOURCES = wefts_barrier.cpp wefts_cleancond.cpp wefts_coffee_unix.cpp wefts_coffee_win.cpp wefts_counter.cpp wefts_critical.cpp wefts_error.cpp wefts_moaning.cpp wefts_os_pthread.cpp wefts_os_windows.cpp wefts_proc_pthread.cpp wefts_rrwmutex.cpp wefts_rwmutex.cpp wefts_semaphore.cpp wefts_subscription.cpp wefts_thread.cpp wefts_xmutex.cpp
++endif
 --- origsrc/libwefts-0.99c/src/wefts_os_pthread.cpp	2004-03-29 06:45:40.000000000 +0900
-+++ src/libwefts-0.99c/src/wefts_os_pthread.cpp	2010-12-14 23:05:08.977455800 +0900
++++ src/libwefts-0.99c/src/wefts_os_pthread.cpp	2012-05-01 15:31:03.051555100 +0900
 @@ -20,6 +20,8 @@
  
  #include <wefts_os.h>
@@ -71,7 +61,7 @@
  /** \file
     Pthread OS layer implementation static routines.
 --- origsrc/libwefts-0.99c/src/wefts_proc_pthread.cpp	2004-04-01 14:05:26.000000000 +0900
-+++ src/libwefts-0.99c/src/wefts_proc_pthread.cpp	2010-12-14 23:05:08.987470200 +0900
++++ src/libwefts-0.99c/src/wefts_proc_pthread.cpp	2012-05-01 15:31:03.067180100 +0900
 @@ -30,6 +30,9 @@
  #include <errno.h>
  #include <sys/select.h>
@@ -83,8 +73,8 @@
  #include <wefts_thread.h>
  
 --- origsrc/libwefts-0.99c/tests/Makefile.am	2004-03-28 17:28:10.000000000 +0900
-+++ src/libwefts-0.99c/tests/Makefile.am	2010-12-14 23:05:08.987470200 +0900
-@@ -43,92 +43,92 @@ noinst_PROGRAMS = \
++++ src/libwefts-0.99c/tests/Makefile.am	2012-05-01 15:56:31.002575900 +0900
+@@ -43,94 +43,104 @@ noinst_PROGRAMS = \
     testxmutex
  
  test_SOURCES = test.cpp
@@ -198,9 +188,21 @@
 +testxmutex_LDADD = $(top_builddir)/ltlib/libwefts.la
  testxmutex_LDFLAGS=-lpthread
  
++TESTS = test testbarrier testcoffee2 testfence testopenbar testpromote \
++	testqueue testring testrlock testrwlock testsemaphore testspecific \
++	teststack testsubscr testtimesub
++# testcleanup.exe hang up
++# testcoffee.exe needs pressing enter
++# testcond.exe hang up
++# testcritical.exe hang up
++# testmoan.exe hang up
++# teststop.exe hang up
++# testxmutex.exe hang up
  endif
+ 
+ INCLUDES = -I$(top_srcdir)/include
 --- origsrc/libwefts-0.99c/tests/test.cpp	2003-12-14 18:19:14.000000000 +0900
-+++ src/libwefts-0.99c/tests/test.cpp	2010-12-14 23:05:08.997484600 +0900
++++ src/libwefts-0.99c/tests/test.cpp	2012-05-01 15:31:03.082805100 +0900
 @@ -20,6 +20,7 @@
  
  #include <iostream>
@@ -210,7 +212,7 @@
  
  using namespace Wefts;
 --- origsrc/libwefts-0.99c/tests/testcritical.cpp	2004-03-28 17:28:10.000000000 +0900
-+++ src/libwefts-0.99c/tests/testcritical.cpp	2010-12-14 23:05:08.997484600 +0900
++++ src/libwefts-0.99c/tests/testcritical.cpp	2012-05-01 15:31:03.082805100 +0900
 @@ -19,6 +19,7 @@
  ***************************************************************************/
  
@@ -220,7 +222,7 @@
  
  using namespace Wefts;
 --- origsrc/libwefts-0.99c/tests/testmoan.cpp	2004-03-13 23:31:24.000000000 +0900
-+++ src/libwefts-0.99c/tests/testmoan.cpp	2010-12-14 23:05:09.007499000 +0900
++++ src/libwefts-0.99c/tests/testmoan.cpp	2012-05-01 15:31:03.082805100 +0900
 @@ -18,6 +18,7 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
@@ -230,7 +232,7 @@
  #include <wefts.h>
  
 --- origsrc/libwefts-0.99c/tests/testpromote.cpp	2004-03-10 23:57:05.000000000 +0900
-+++ src/libwefts-0.99c/tests/testpromote.cpp	2010-12-14 23:05:09.007499000 +0900
++++ src/libwefts-0.99c/tests/testpromote.cpp	2012-05-01 15:31:03.082805100 +0900
 @@ -18,6 +18,7 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
@@ -240,7 +242,7 @@
  #include <wefts.h>
  
 --- origsrc/libwefts-0.99c/tests/testqueue.cpp	2004-03-10 23:57:05.000000000 +0900
-+++ src/libwefts-0.99c/tests/testqueue.cpp	2010-12-14 23:05:09.017513400 +0900
++++ src/libwefts-0.99c/tests/testqueue.cpp	2012-05-01 15:31:03.098430100 +0900
 @@ -18,6 +18,7 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
@@ -250,7 +252,7 @@
  #include <wefts.h>
  
 --- origsrc/libwefts-0.99c/tests/teststack.cpp	2004-03-10 23:57:05.000000000 +0900
-+++ src/libwefts-0.99c/tests/teststack.cpp	2010-12-14 23:05:09.017513400 +0900
++++ src/libwefts-0.99c/tests/teststack.cpp	2012-05-01 15:31:03.114055100 +0900
 @@ -18,6 +18,7 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
