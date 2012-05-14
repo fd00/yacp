@@ -1,0 +1,67 @@
+--- origsrc/neuro/configure.ac	2012-05-14 20:48:25.000000000 +0900
++++ src/neuro/configure.ac	2012-05-14 21:14:01.377242200 +0900
+@@ -9,7 +9,7 @@ AC_INIT(README)
+ # NEURO_MAJOR_VERSION += 1	when set goals for the whole projects are met, example when neuro will be done, we will raise that by 1. After it is 1, it only raise when most(like more than half) of the code was changes.
+ #
+ 
+-. ./version.mk
++. ${srcdir}/version.mk
+ 
+ NEURO_MAJOR_VERSION=$MAJOR
+ NEURO_MINOR_VERSION=$MINOR
+@@ -116,7 +116,18 @@ zlib_enable=no
+ # host related checkings
+ AC_MSG_CHECKING([if we need -no-undefined])
+ case $host in
+-	*-*-cygwin | *-*-mingw* | *-*-pw32*)
++	*-*-cygwin)
++		NEUROLDFLAGS="$NEUROLIBFLAGS -no-undefined"
++		need_no_undefined=yes
++		targ=unix
++		if test x$lowlib = xnothing; then
++			lowlib=sdl
++		fi
++		if test x$pollType = xnothing; then
++			pollType="select"
++		fi
++	;;
++	*-*-mingw* | *-*-pw32*)
+ 		NEUROFLAGS="$NEUROFLAGS -DWIN32"
+ 		NEUROLDFLAGS="$NEUROLIBFLAGS -no-undefined"
+ 		need_no_undefined=yes
+--- origsrc/neuro/libs/neuronet/Makefile.am	2012-05-14 20:48:25.000000000 +0900
++++ src/neuro/libs/neuronet/Makefile.am	2012-05-14 21:30:55.480757800 +0900
+@@ -32,9 +32,9 @@ libneuronet_la_SOURCES = \
+ srcdir = @srcdir@
+ VPATH = @srcdir@
+ libneuronet_la_LDFLAGS = \
+-		@NNETLDFLAGS@ \
++		@NEUROLDFLAGS@ \
+ 		-version-info $(INTERFACE):$(REVISION):$(BINARY)
+ 
+-libneuronet_la_LIBADD =
++libneuronet_la_LIBADD = $(top_builddir)/src/libneuro.la
+ 
+ AM_CFLAGS = @NNETFLAGS@
+--- origsrc/neuro/src/extlib/sdl.c	2012-05-14 20:48:26.000000000 +0900
++++ src/neuro/src/extlib/sdl.c	2012-05-14 21:25:24.601851600 +0900
+@@ -44,6 +44,8 @@
+ #include <extlib.h>
+ #include <other.h>
+ 
++#include <keymap.h>
++
+ /* SDL variable types used
+  * -- Graphics.c --
+  * SDL_Rect 	-> Rectan
+--- origsrc/neuro/src/misc/bitmap/io.c	2012-05-14 20:48:26.000000000 +0900
++++ src/neuro/src/misc/bitmap/io.c	2012-05-14 21:23:19.624312500 +0900
+@@ -56,7 +56,7 @@ Ngetc(nFILE *input)
+ 	
+ 	ret = gzread(input, &data, 1); */
+ 
+-	ret = gzgetc(input);
++	ret = gzgetc((gzFile)input);
+ 
+ 	if (ret < 0)
+ 	{
