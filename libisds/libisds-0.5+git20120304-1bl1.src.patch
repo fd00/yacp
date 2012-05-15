@@ -1,0 +1,75 @@
+--- origsrc/libisds/src/Makefile.am	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/Makefile.am	2012-05-15 19:44:01.216421300 +0900
+@@ -15,4 +15,4 @@ libisds_la_CPPFLAGS = @XML_CPPFLAGS@ @LI
+ 					  -DLOCALEDIR=\"$(localedir)\"
+ libisds_la_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@
+ libisds_la_LDFLAGS = -version-info 5:0:0 @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ \
+-	@GPGME_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@
++	@GPGME_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@ -no-undefined
+--- origsrc/libisds/src/crypto.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/crypto.c	2012-05-15 19:58:49.147846800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include "utils.h"
+ #include "gcrypt.h"
+--- origsrc/libisds/src/isds.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/isds.c	2012-05-15 19:59:04.991596800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include <stdlib.h>
+ #include <string.h>
+--- origsrc/libisds/src/physxml.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/physxml.c	2012-05-15 19:59:19.069721800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include "physxml.h"
+ #include "utils.h"
+--- origsrc/libisds/src/soap.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/soap.c	2012-05-15 20:00:54.866596800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include "soap.h"
+ #include "utils.h"
+--- origsrc/libisds/src/utils.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/utils.c	2012-05-15 19:59:32.210346800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include <string.h>
+ #include <stdlib.h>
+--- origsrc/libisds/src/validator.c	2012-05-15 19:41:54.000000000 +0900
++++ src/libisds/src/validator.c	2012-05-15 20:00:11.335346800 +0900
+@@ -1,3 +1,4 @@
++#include <sys/select.h>
+ #include "isds_priv.h"
+ #include "utils.h"
+ #include "validator.h"
+--- origsrc/libisds/test/simline/Makefile.am	2012-05-15 19:41:55.000000000 +0900
++++ src/libisds/test/simline/Makefile.am	2012-05-15 20:06:25.168354600 +0900
+@@ -5,9 +5,9 @@ libdirpath = src
+ LIBDIR = $(top_srcdir)/$(libdirpath)
+ localedir = $(datadir)/locale
+ 
+-AM_CPPFLAGS = @XML_CPPFLAGS@
++AM_CPPFLAGS = @XML_CPPFLAGS@ -I$(top_srcdir)/src
+ AM_CFLAGS = -I$(srcdir)/$(LIBDIR) -DSRCDIR=\"$(top_srcdir)\"
+-LDADD = $(LIBDIR)/libisds.la -L$(LIBDIR) @XML_LIBS@
++LDADD = $(top_builddir)/src/libisds.la -L$(LIBDIR) @XML_LIBS@
+ 
+ # To fake home dir for gnupg2
+ export HOME=@top_builddir@
+--- origsrc/libisds/test/simline/totp_authentication.c	2012-05-15 19:41:55.000000000 +0900
++++ src/libisds/test/simline/totp_authentication.c	2012-05-15 20:08:39.465229600 +0900
+@@ -14,6 +14,8 @@
+ #include "server.h"
+ #include "isds.h"
+ 
++#include <stdlib.h>
++
+ static const char *username = "douglas";
+ static const char *password = "42";
+ static const char *otp_code = "314";
