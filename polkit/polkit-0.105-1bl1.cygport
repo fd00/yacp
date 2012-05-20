@@ -1,26 +1,40 @@
 DESCRIPTION="PolicyKit Authorization Framework"
-HOMEPAGE="http://www.freedesktop.org/wiki/Software/PolicyKit"
-SRC_URI="http://hal.freedesktop.org/releases/${P}.tar.gz"
+HOMEPAGE="http://www.freedesktop.org/wiki/Software/${PN}"
+SRC_URI="http://cgit.freedesktop.org/polkit/snapshot/${P}.tar.gz"
 
-# http://pkgs.fedoraproject.org/gitweb/?p=polkit.git
-PATCH_URI="
-	0001-PolkitUnixSession-Set-error-if-we-cannot-find-a-sess.patch
-	0002-PolkitUnixSession-Actually-return-TRUE-if-a-session-.patch
-	0001-PolkitAgentSession-Don-t-leak-file-descriptors.patch
-"
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	ln -fs /usr/share/gtk-doc/data/gtk-doc.make .
+}
 
 CYGCONF_ARGS="
 	--enable-maintainer-mode
-	--disable-static
 	--disable-gtk-doc
 	--enable-examples
 "
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	intltoolize
+	cd ${B}
+	cygconf
+	cygmake
+}
 
 src_test()
 {
 	cd ${B}
 	cygmake check
 }
+
+DIFF_EXCLUDES="
+	config.h.in
+	Makefile.in.in
+"
 
 PKG_NAMES="
 	${PN}
@@ -53,7 +67,7 @@ libpolkit_agent1_devel_CONTENTS="
 libpolkit_backend1_0_CONTENTS="
 	etc/polkit-1
 	usr/bin/cygpolkit-backend-1-0.dll
-	usr/lib/polkit-1/extensions/cygnullbackend.dll
+	usr/lib/polkit-1/extensions
 "
 libpolkit_backend1_devel_CONTENTS="
 	usr/include/polkit-1/polkitbackend
