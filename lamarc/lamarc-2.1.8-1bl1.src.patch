@@ -1,0 +1,136 @@
+--- origsrc/lamarc-2.1.8/Makefile.am	2012-05-30 03:55:13.000000000 +0900
++++ src/lamarc-2.1.8/Makefile.am	2012-06-04 00:10:48.355960900 +0900
+@@ -69,18 +69,6 @@ lam_conv_rc.o   :       $(top_srcdir)/re
+ ## to this list
+ LDADD				=
+ 
+-noinst_LIBRARIES		= libtinyxml.a
+-
+-libtinyxml_a_CXXFLAGS	= -DTIXML_USE_STL
+-
+-libtinyxml_a_SOURCES	= \
+-			tinyxml/tinyxml.h \
+-			tinyxml/tinyxml.cpp \
+-			tinyxml/tinyxmlerror.cpp \
+-			tinyxml/tinyxmlparser.cpp \
+-			tinyxml/tinystr.h \
+-			tinyxml/tinystr.cpp
+-
+ ## ############################################################
+ ## setting up compiler flags
+ ## ############################################################
+@@ -110,9 +98,8 @@ lamarc_includes         = \
+ 			-I $(lamarc_srcdir)/ui_util \
+ 			-I $(lamarc_srcdir)/ui_vars \
+ 			-I $(lamarc_srcdir)/xml \
+-			-I $(top_srcdir)/boost \
+ 			-I $(top_srcdir)/resources \
+-			-I $(top_srcdir)/tinyxml
++			-I /usr/include/boost
+ 
+ 
+ ## include resource file if needed
+@@ -602,14 +589,6 @@ xml_sources     =   \
+ 		    src/xml/toxml.cpp \
+ 		    $(xml_core_sources)
+ 
+-tinyxml_sources =   \
+-		    tinyxml/tinyxml.h \
+-		    tinyxml/tinyxml.cpp \
+-		    tinyxml/tinyxmlerror.cpp \
+-		    tinyxml/tinyxmlparser.cpp \
+-		    tinyxml/tinystr.h \
+-		    tinyxml/tinystr.cpp
+-
+ config_sources  =   \
+ 		    config/conf.h
+ 
+@@ -632,7 +611,7 @@ lamarc_SOURCES  =   $(lamarcgcov_sources
+ 					$(lamarc_resources) \
+ 					$(config_sources)
+ 
+-lamarc_LDADD	= libtinyxml.a
++lamarc_LDADD	= -ltinyxml
+ 
+ old_lam_conv_core       = \
+ 			src/conversion/ConverterIf.cpp \
+@@ -940,9 +919,9 @@ lam_conv_SOURCES        = \
+ 			$(lam_conv_core) \
+ 			$(lam_conv_resources)
+ 
+-lam_conv_LDADD = @WX_LIBS@ libtinyxml.a
++lam_conv_LDADD = @WX_LIBS@ -ltinyxml
+ 
+-EXTRA_lam_conv_SOURCES  = $(tinyxml_suite) $(lam_conv_icons)
++EXTRA_lam_conv_SOURCES  = $(lam_conv_icons)
+ 
+ batch_lam_conv_core     = \
+ 			src/guiconv/batchconverter.h \
+@@ -959,9 +938,9 @@ batch_lam_conv_testable = \
+ batch_lam_conv_SOURCES	=	\
+ 			$(batch_lam_conv_testable)
+ 
+-batch_lam_conv_LDADD = @WX_LIBS@ libtinyxml.a
++batch_lam_conv_LDADD = @WX_LIBS@ -ltinyxml
+ 
+-EXTRA_batch_lam_conv_SOURCES = $(tinyxml_suite)
++EXTRA_batch_lam_conv_SOURCES =
+ 
+ ## ############################################################
+ ## To make OSX executables for wxWindows stuff
+@@ -1026,7 +1005,7 @@ lamarc.app:     lamarc
+ ## html documentation
+ ## ############################################################
+ 
+-htmldir = $(prefix)/html/lamarc
++htmldir = $(docdir)/html
+ 
+ html_DATA = \
+ 			doc/html/bayes.html \
+@@ -1077,7 +1056,7 @@ html_DATA = \
+ 			doc/html/viral_data.html \
+ 			doc/html/xmlinput.html
+ 
+-htmlimgdir = $(prefix)/html/lamarc/images
++htmlimgdir = $(docdir)/html/images
+ 
+ htmlimg_DATA = \
+ 			doc/html/images/LamarcAnalysisScreen.png \
+@@ -1102,7 +1081,7 @@ htmlimg_DATA = \
+ 			doc/html/images/uncorrelated.gif \
+ 			doc/html/images/variably_correlated.gif
+ 
+-htmlbconvdir = $(prefix)/html/lamarc/batch_converter
++htmlbconvdir = $(docdir)/html/batch_converter
+ 
+ htmlbconv_DATA = \
+ 			doc/html/batch_converter/README.txt \
+@@ -1119,7 +1098,7 @@ htmlbconv_DATA = \
+ 			doc/html/batch_converter/sample-conv-cmd.html \
+ 			doc/html/batch_converter/sample-conv-cmd.xml
+ 
+-htmlbconvimgdir = $(prefix)/html/lamarc/batch_converter/images
++htmlbconvimgdir = $(docdir)/html/batch_converter/images
+ 
+ htmlbconvimg_DATA = \
+ 			doc/html/batch_converter/images/CombinedPanels.png \
+@@ -1152,7 +1131,7 @@ htmlbconvimg_DATA = \
+ 			doc/html/batch_converter/images/lam_conv_export_file_mac_expanded.png
+ 
+ 
+-htmltraitdir = $(prefix)/html/lamarc/trait_mapping
++htmltraitdir = $(docdir)/html/trait_mapping
+ 
+ htmltrait_DATA  = \
+ 			doc/html/trait_mapping/README.txt \
+--- origsrc/lamarc-2.1.8/configure.ac	2012-05-25 08:42:32.000000000 +0900
++++ src/lamarc-2.1.8/configure.ac	2012-06-03 15:25:07.378350100 +0900
+@@ -66,7 +66,7 @@ case "$target_os" in
+             LAMARC_CODE_OSTYPE=LAMARC_COMPILE_MACOSX
+         fi
+         ;;
+-    freebsd*|linux*)
++    freebsd*|linux*|cygwin*)
+         if test "X${lamCONV}" = "Xyes" ; then
+             if test "X${lamGUI}" = "Xyes" ; then
+                 if test "X${GUI_TOOLKIT}" = "X" ; then
