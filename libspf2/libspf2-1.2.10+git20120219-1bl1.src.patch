@@ -1,0 +1,102 @@
+--- origsrc/libspf2/configure.ac	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/configure.ac	2012-06-16 11:46:01.767009400 +0900
+@@ -19,6 +19,7 @@ AC_SUBST([KV_MAJOR])
+ AC_SUBST([KV_MINOR])
+ AC_SUBST([KV_PATCH])
+ 
++mkdir -p src/include
+ cat >src/include/spf_lib_version.h <<_EOF_VERSION
+ /**
+  * @file
+@@ -34,7 +35,7 @@ cat >src/include/spf_lib_version.h <<_EO
+ #endif
+ _EOF_VERSION
+ 
+-AX_WITH_PERL
++AC_PATH_PROG([PERL], [perl])
+ PERL_SUBDIRS=""
+ AC_SUBST([PERL_SUBDIRS])
+ AC_ARG_ENABLE(perl,
+@@ -214,7 +215,7 @@ AC_CHECK_DECLS([res_ninit], [], [], [[
+ 	# include <resolv.h>
+ 	#endif
+ 	]])
+-AC_CHECK_DECLS([res_ndestroy], [], [], [[
++AC_CHECK_DECLS([res_nclose], [], [], [[
+ 	#ifdef HAVE_SYS_TYPES_H
+ 	# include <sys/types.h>
+ 	#endif
+--- origsrc/libspf2/src/libspf2/Makefile.am	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/src/libspf2/Makefile.am	2012-06-16 11:49:34.374929600 +0900
+@@ -2,7 +2,7 @@
+ 
+ AUTOMAKE_OPTIONS = foreign
+ 
+-INCLUDES = -I$(top_srcdir)/src/include -I$(top_srcdir)/src
++INCLUDES = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_srcdir)/src
+ 
+ lib_LTLIBRARIES	= libspf2.la
+ 
+@@ -38,7 +38,7 @@ libspf2_la_LIBADD	= $(top_builddir)/src/
+ 
+ 
+ 
+-libspf2_la_LDFLAGS	= -version-info 3:0:1
++libspf2_la_LDFLAGS	= -version-info 3:0:1 -no-undefined
+ 
+ # Copied from the libtool info file:
+ #
+--- origsrc/libspf2/src/spf_example/Makefile.am	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/src/spf_example/Makefile.am	2012-06-16 11:34:58.072867500 +0900
+@@ -5,7 +5,7 @@ INCLUDES	= -I$(top_builddir)/src/include
+ 
+ #LIBS = /usr/lib/libresolv.a
+ 
+-bin_PROGRAMS	= spf_example spf_example_static
++bin_PROGRAMS	= spf_example
+ 
+ spf_example_SOURCES = spf_example.c
+ spf_example_LDADD	= $(top_builddir)/src/libspf2/libspf2.la
+--- origsrc/libspf2/src/spfd/Makefile.am	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/src/spfd/Makefile.am	2012-06-16 11:53:14.594366900 +0900
+@@ -1,11 +1,11 @@
+ # Makefile prototype
+ 
+ AUTOMAKE_OPTIONS = foreign
+-INCLUDES	= -I$(top_srcdir)/src/include -I$(top_srcdir)/src
++INCLUDES	= -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_srcdir)/src
+ 
+ #LIBS = /usr/lib/libresolv.a
+ 
+-bin_PROGRAMS	= spfd spfd_static
++bin_PROGRAMS	= spfd
+ 
+ spfd_SOURCES = spfd.c
+ spfd_LDADD	= $(top_builddir)/src/libspf2/libspf2.la
+--- origsrc/libspf2/src/spfquery/Makefile.am	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/src/spfquery/Makefile.am	2012-06-16 11:52:41.325812200 +0900
+@@ -1,11 +1,11 @@
+ # Makefile prototype
+ 
+ AUTOMAKE_OPTIONS = foreign
+-INCLUDES	= -I$(top_srcdir)/src/include -I$(top_srcdir)/src
++INCLUDES	= -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_srcdir)/src
+ 
+ #LIBS = /usr/lib/libresolv.a
+ 
+-bin_PROGRAMS	= spfquery spfquery_static
++bin_PROGRAMS	= spfquery
+ 
+ spfquery_SOURCES = spfquery.c
+ spfquery_LDADD	= $(top_builddir)/src/libspf2/libspf2.la
+--- origsrc/libspf2/src/spftest/Makefile.am	2012-06-16 11:33:02.000000000 +0900
++++ src/libspf2/src/spftest/Makefile.am	2012-06-16 11:35:44.182242500 +0900
+@@ -5,7 +5,7 @@ INCLUDES	= -I$(top_builddir)/src/include
+ 
+ #LIBS = /usr/lib/libresolv.a
+ 
+-bin_PROGRAMS	= spftest spftest_static
++bin_PROGRAMS	= spftest
+ 
+ spftest_SOURCES = spftest.c
+ spftest_LDADD	= $(top_builddir)/src/libspf2/libspf2.la
