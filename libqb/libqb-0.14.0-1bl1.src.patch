@@ -1,0 +1,54 @@
+--- origsrc/libqb-0.14.0/configure.ac	2012-06-12 09:03:30.000000000 +0900
++++ src/libqb-0.14.0/configure.ac	2012-07-07 14:35:10.953674500 +0900
+@@ -259,6 +259,11 @@ LIB_RT=-lrt
+ ipc_needs_response_ack=yes
+ AC_MSG_CHECKING([for os in ${host_os}])
+ case "$host_os" in
++	*cygwin*)
++		AC_DEFINE_UNQUOTED([QB_CYGWIN], [1],
++				   [Compiling for Cygwin platform])
++		AC_MSG_RESULT([Cygwin])
++	;;
+ 	*linux*)
+ 		ipc_needs_response_ack=no
+ 		AC_DEFINE_UNQUOTED([QB_LINUX], [1],
+--- origsrc/libqb-0.14.0/lib/Makefile.am	2012-06-22 15:27:27.000000000 +0900
++++ src/libqb-0.14.0/lib/Makefile.am	2012-07-07 14:35:27.000549500 +0900
+@@ -59,7 +59,7 @@ lib_LTLIBRARIES		= libqb.la
+ #    it as -version-info 2:0:0. This release has a new, but backwards
+ #    incompatible interface.
+ #
+-libqb_la_LDFLAGS	= -version-info 14:0:14
++libqb_la_LDFLAGS	= -version-info 14:0:14 -no-undefined
+ 
+ source_to_lint		= util.c hdb.c ringbuffer.c ringbuffer_helper.c \
+ 			  array.c loop.c loop_poll.c loop_job.c \
+--- origsrc/libqb-0.14.0/lib/log.c	2012-06-22 15:20:35.000000000 +0900
++++ src/libqb-0.14.0/lib/log.c	2012-07-07 14:42:36.787658900 +0900
+@@ -659,6 +659,7 @@ qb_log_filter_ctl(int32_t t, enum qb_log
+ }
+ 
+ #ifdef QB_HAVE_ATTRIBUTE_SECTION
++#if !defined(__CYGWIN__)
+ static int32_t
+ _log_so_walk_callback(struct dl_phdr_info *info, size_t size, void *data)
+ {
+@@ -697,6 +698,7 @@ done:
+ 	}
+ 	return 0;
+ }
++#endif
+ #endif /* QB_HAVE_ATTRIBUTE_SECTION */
+ 
+ static void
+@@ -740,8 +742,10 @@ qb_log_init(const char *name, int32_t fa
+ 
+ 	qb_log_dcs_init();
+ #ifdef QB_HAVE_ATTRIBUTE_SECTION
++#if !defined(__CYGWIN__)
+ 	qb_log_callsites_register(__start___verbose, __stop___verbose);
+ 	dl_iterate_phdr(_log_so_walk_callback, NULL);
++#endif
+ #endif /* QB_HAVE_ATTRIBUTE_SECTION */
+ 
+ 	conf[QB_LOG_STDERR].state = QB_LOG_STATE_DISABLED;
