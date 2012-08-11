@@ -1,0 +1,140 @@
+--- origsrc/carve/common/Makefile.am	2012-08-11 09:13:59.000000000 +0900
++++ src/carve/common/Makefile.am	2012-08-11 09:16:16.339387800 +0900
+@@ -8,7 +8,7 @@ CPPFLAGS += -I$(top_srcdir)/external/GLO
+ 
+ 
+ libcarve_fileformats_la_SOURCES = read_ply.cpp write_ply.cpp
+-libcarve_fileformats_la_LIBADD = $(top_srcdir)/external/GLOOP/libgloop-model.la
++libcarve_fileformats_la_LIBADD = $(top_builddir)/external/GLOOP/libgloop-model.la
+ libcarve_fileformats_la_CPPFLAGS = -I$(top_srcdir)/external/GLOOP/include
+ 
+ 
+@@ -26,4 +26,4 @@ endif
+ 
+ 
+ libcarve_ui_la_SOURCES = geom_draw.cpp scene.cpp
+-libcarve_ui_la_LIBADD = $(top_srcdir)/external/GLUI/libglui.la
++libcarve_ui_la_LIBADD = $(top_builddir)/external/GLUI/libglui.la
+--- origsrc/carve/external/GLOOP/Makefile.am	2012-08-11 09:14:00.000000000 +0900
++++ src/carve/external/GLOOP/Makefile.am	2012-08-11 09:16:16.339387800 +0900
+@@ -1,19 +1,22 @@
+ noinst_LTLIBRARIES=libgloop-math.la libgloop-image.la libgloop-model.la
+ 
+-noinst_HEADERS= include/gloop/exceptions.hpp include/gloop/fbo.hpp	\
+-	include/gloop/gloop.hpp include/gloop/gloopgl.hpp		\
+-	include/gloop/gloopglu.hpp include/gloop/gloopglut.hpp		\
+-	include/gloop/matrix.hpp include/gloop/model/obj_format.hpp	\
++noinst_HEADERS= include/gloop/exceptions.hpp include/gloop/gl/fbo.hpp	\
++	include/gloop/gloop.hpp include/gloop/gloop-gl.hpp		\
++	include/gloop/glu.hpp include/gloop/glut.hpp			\
++	include/gloop/math/matrix.hpp					\
++	include/gloop/model/obj_format.hpp				\
+ 	include/gloop/model/ply_format.hpp				\
+ 	include/gloop/model/stream.hpp					\
+ 	include/gloop/model/vtk_format.hpp				\
+-	include/gloop/quaternion.hpp include/gloop/radiance.hpp		\
+-	include/gloop/ref.hpp include/gloop/shader.hpp			\
+-	include/gloop/stringfuncs.hpp include/gloop/surface.hpp		\
+-	include/gloop/texparam.hpp include/gloop/vbo.hpp		\
+-	include/gloop/vector.hpp include/gloop/vertexformat.hpp
++	include/gloop/math/quaternion.hpp				\
++	include/gloop/image/radiance.hpp				\
++	include/gloop/ref.hpp include/gloop/gl/shader.hpp		\
++	include/gloop/stringfuncs.hpp include/gloop/gl/surface.hpp	\
++	include/gloop/gl/texparam.hpp include/gloop/gl/vbo.hpp		\
++	include/gloop/math/vector.hpp include/gloop/gl/vertexformat.hpp
+ 
+-AM_CPPFLAGS=@CPPFLAGS@ -Iinclude -I@top_srcdir@/external/GLEW/include
++AM_CPPFLAGS=@CPPFLAGS@ -Iinclude -I@top_srcdir@/external/GLEW/include \
++	-I$(srcdir)/include
+ 
+ libgloop_math_la_SOURCES=src/matrix.cpp src/quaternion.cpp
+ 
+--- origsrc/carve/external/GLUI/Makefile.am	2012-08-11 09:14:00.000000000 +0900
++++ src/carve/external/GLUI/Makefile.am	2012-08-11 09:16:16.339387800 +0900
+@@ -5,7 +5,7 @@ if with_GUI
+ 	./src/glui_internal.h ./src/glui_internal_control.h		\
+ 	./src/quaternion.h ./src/viewmodel.h
+ 
+-  libglui_la_CPPFLAGS=-Iinclude
++  libglui_la_CPPFLAGS=-Iinclude -I$(srcdir)/include
+   libglui_la_CFLAGS=-Iinclude @GL_CFLAGS@ @GLUT_CFLAGS@
+ 
+   libglui_la_SOURCES= src/algebra3.cpp src/arcball.cpp src/arcball.h	\
+--- origsrc/carve/include/carve/geom.hpp	2012-08-11 09:14:06.000000000 +0900
++++ src/carve/include/carve/geom.hpp	2012-08-11 09:16:16.339387800 +0900
+@@ -249,8 +249,8 @@ namespace carve {
+       void negate();
+ 
+       plane();
+-      plane(const vector_t &_N, vector_t _p);
+-      plane(const vector_t &_N, double _d);
++      plane(const vector_t &N, vector_t _p);
++      plane(const vector_t &N, double _d);
+     };
+ 
+     template<unsigned ndim>
+@@ -278,7 +278,7 @@ namespace carve {
+       aabb<ndim> getAABB() const;
+ 
+       sphere();
+-      sphere(const vector_t &_C, double _r);
++      sphere(const vector_t &C, double _r);
+     };
+ 
+     template<unsigned ndim, typename val_t>
+--- origsrc/carve/include/carve/geom_impl.hpp	2012-08-11 09:14:06.000000000 +0900
++++ src/carve/include/carve/geom_impl.hpp	2012-08-11 09:16:16.350494100 +0900
+@@ -522,11 +522,11 @@ namespace carve {
+     }
+ 
+     template<unsigned ndim>
+-    plane<ndim>::plane(const vector_t &_N, vector_t _p) : N(_N), d(-dot(_p, _N)) {
++    plane<ndim>::plane(const vector_t &N, vector_t _p) : N(N), d(-dot(_p, N)) {
+     }
+ 
+     template<unsigned ndim>
+-    plane<ndim>::plane(const vector_t &_N, double _d) : N(_N), d(_d) {
++    plane<ndim>::plane(const vector_t &N, double _d) : N(N), d(_d) {
+     }
+ 
+ 
+@@ -567,7 +567,7 @@ namespace carve {
+     }
+ 
+     template<unsigned ndim>
+-    sphere<ndim>::sphere(const vector_t &_C, double _r) : C(_C), r(_r) {
++    sphere<ndim>::sphere(const vector_t &C, double _r) : C(C), r(_r) {
+     }
+ 
+ 
+--- origsrc/carve/lib/Makefile.am	2012-08-11 09:14:06.000000000 +0900
++++ src/carve/lib/Makefile.am	2012-08-11 09:16:16.350494100 +0900
+@@ -13,4 +13,5 @@ libintersect_la_SOURCES=aabb.cpp carve.c
+ 	intersect_half_classify_group.cpp intersect_face_division.cpp	\
+ 	intersect_classify_edge.cpp octree.cpp polyline.cpp math.cpp	\
+ 	edge.cpp face.cpp tag.cpp timing.cpp triangulator.cpp		\
+-	pointset.cpp
++	pointset.cpp mesh.cpp
++libintersect_la_LDFLAGS = -no-undefined
+--- origsrc/carve/src/Makefile.am	2012-08-11 09:14:06.000000000 +0900
++++ src/carve/src/Makefile.am	2012-08-11 09:16:16.361600400 +0900
+@@ -12,7 +12,7 @@ triangulate_SOURCES=triangulate.cpp
+ triangulate_LDADD=../common/libcarve_fileformats.la ../lib/libintersect.la @GL_LIBS@
+ 
+ cutgraph_SOURCES=cut.cpp
+-cutgraph_LDADD=../common/libcarve_misc.la ../lib/libintersect.la ../common/libcarve_fileformats.la
++cutgraph_LDADD=../common/libcarve_fileformats.la ../common/libcarve_misc.la ../lib/libintersect.la
+ 
+ convert_SOURCES=convert.cpp
+ convert_LDADD=../common/libcarve_fileformats.la ../common/libcarve_misc.la ../lib/libintersect.la
+--- origsrc/carve/src/glu_triangulator.hpp	2012-08-11 09:14:06.000000000 +0900
++++ src/carve/src/glu_triangulator.hpp	2012-08-11 09:16:16.361600400 +0900
+@@ -31,6 +31,7 @@
+ #endif
+ 
+ #include <carve/csg.hpp>
++#include <carve/poly.hpp>
+ 
+ class GLUTriangulator : public carve::csg::CSG::Hook {
+   GLUtesselator *tess;
