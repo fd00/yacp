@@ -1,6 +1,6 @@
---- origsrc/libvdpau-0.4.1/src/vdpau_wrapper.c	2010-09-08 02:21:32.000000000 +0900
-+++ src/libvdpau-0.4.1/src/vdpau_wrapper.c	2011-09-08 01:37:07.487321200 +0900
-@@ -55,7 +55,11 @@ static void _vdp_wrapper_error_breakpoin
+--- origsrc/libvdpau-0.5/src/vdpau_wrapper.c	2012-09-05 02:26:33.000000000 +0900
++++ src/libvdpau-0.5/src/vdpau_wrapper.c	2012-09-30 16:52:38.865591100 +0900
+@@ -66,7 +66,11 @@ static void _vdp_wrapper_error_breakpoin
  
  #endif
  
@@ -13,7 +13,7 @@
  
  static char * _vdp_get_driver_name_from_dri2(
      Display *             display,
-@@ -114,7 +118,7 @@ VdpStatus vdp_device_create_x11(
+@@ -118,7 +122,7 @@ static VdpStatus _vdp_open_driver(
      }
  
      if (snprintf(vdpau_driver_lib, sizeof(vdpau_driver_lib), DRIVER_LIB_FORMAT,
@@ -22,15 +22,17 @@
              sizeof(vdpau_driver_lib)) {
          fprintf(stderr, "Failed to construct driver path: path too long\n");
          if (vdpau_driver_dri2) {
-@@ -150,7 +154,11 @@ VdpStatus vdp_device_create_x11(
-         void *         trace_dll;
+@@ -155,8 +159,13 @@ static VdpStatus _vdp_open_driver(
+     if (vdpau_trace && atoi(vdpau_trace)) {
          SetDllHandle * set_dll_handle;
  
 +#if defined(__CYGWIN__)
-+        trace_dll = dlopen(VDPAU_MODULEDIR "/cygvdpau_trace-1.dll", RTLD_NOW | RTLD_GLOBAL);
++        _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/cygvdpau_trace-1.dll",
++                                RTLD_NOW | RTLD_GLOBAL);
 +#else
-         trace_dll = dlopen(VDPAU_MODULEDIR "/libvdpau_trace.so.1", RTLD_NOW | RTLD_GLOBAL);
+         _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/libvdpau_trace.so.1",
+                                 RTLD_NOW | RTLD_GLOBAL);
 +#endif
-         if (!trace_dll) {
+         if (!_vdp_trace_dll) {
              fprintf(stderr, "Failed to open VDPAU trace library %s\n", dlerror());
              _VDP_ERROR_BREAKPOINT();
