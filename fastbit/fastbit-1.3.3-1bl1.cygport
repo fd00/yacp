@@ -1,0 +1,62 @@
+DESCRIPTION="Minimalistic data warehousing engine designed to test ideas on bitmap indexes"
+HOMEPAGE="https://sdm.lbl.gov/${PN}/"
+SRC_URI="https://codeforge.lbl.gov/frs/download.php/399/${PN}-ibis${PV}.tar.gz"
+SRC_DIR="${PN}-ibis${PV}"
+
+CYGCONF_ARGS="
+	--includedir=/usr/include/${PN}
+	--enable-maintainer-mode
+	--with-java=no
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	rm -fr src
+	cp -R ${S}/src .
+	cygconf
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}
+	ln -fs ${S}/tests/scripts/hcompare.pl \
+		./tests/scripts/hcompare.pl
+	ln -fs ${S}/tests/scripts/jrf-check.pl \
+		./tests/scripts/jrf-check.pl
+	ln -fs ${S}/tests/scripts/matchCounts.pl \
+		./tests/scripts/matchCounts.pl
+	ln -fs ${S}/tests/scripts/printWarning.pl \
+		./tests/scripts/printWarning.pl
+	ln -fs ${S}/tests/vault \
+		./tests/vault
+	cygmake -j1 check
+}
+
+# cygfastbit*.dll is too large to strip
+_CYGPORT_RESTRICT_strip_=1
+
+DIFF_EXCLUDES="
+	${PN}-config.h
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+fastbit_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libfastbit0_CONTENTS="
+	usr/bin/*.dll
+"
+libfastbit_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+"
