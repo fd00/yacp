@@ -1,0 +1,199 @@
+--- origsrc/supersonic/Makefile.am	2012-10-31 22:42:51.000000000 +0900
++++ src/supersonic/Makefile.am	2012-11-03 18:14:49.012402200 +0900
+@@ -12,8 +12,8 @@ AM_CPPFLAGS = -Wno-deprecated \
+               -DNDEBUG \
+               -DSUPERSONIC_FORCE_FAILURE_CHECK=1
+ 
+-BOOST_SYSTEM_LIB = -lboost_system
+-BOOST_TIMER_LIB = -lboost_timer
++BOOST_SYSTEM_LIB = -lboost_system-mt
++BOOST_TIMER_LIB = -lboost_timer-mt
+ 
+ RE2_LIBS = -lre2
+ 
+@@ -36,18 +36,23 @@ EXEC_LIB_FLAGS = libsupersonic.la \
+     $(PROTO_LIBS) \
+     $(RE2_LIBS)
+ 
+-EXEC_TEST_FLAGS = $(EXEC_LIB_FLAGS) libtestutils.la
++EXEC_TEST_FLAGS = libtestutils.la $(EXEC_LIB_FLAGS) -lgmock -lgtest
+ 
+-TEST_FILES = gmock/gtest/src/gtest-all.cc \
+-    gmock/src/gmock-all.cc \
++TEST_FILES = \
+     test_utils/supersonic_test_main.cc
+ 
+ # Library
+ lib_LTLIBRARIES = libsupersonic.la
+ 
+ libsupersonic_la_CXXFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
+-libsupersonic_la_LDFLAGS =
+-libsupersonic_la_LIBADD = libbenchmark.la
++libsupersonic_la_LDFLAGS = -no-undefined
++libsupersonic_la_LIBADD = libbenchmark.la \
++    $(BOOST_SYSTEM_LIB) \
++    $(BOOST_TIMER_LIB) \
++    $(GFLAGS_LIBS) \
++    $(GLOG_LIBS) \
++    $(PROTO_LIBS) \
++    $(RE2_LIBS)
+ 
+ # Testing utils
+ noinst_LTLIBRARIES = libtestutils.la
+@@ -57,7 +62,7 @@ libtestutils_la_LDFLAGS =
+ libtestutils_la_LIBADD =
+ 
+ libtestutils_ladir = $(includedir)
+-libtestutils_la_HEADERS = \
++nobase_libtestutils_la_HEADERS = \
+     supersonic/testing/block_builder.h \
+     supersonic/testing/comparable_cursor.h \
+     supersonic/testing/comparable_tuple_schema.h \
+@@ -88,7 +93,7 @@ libtestutils_la_SOURCES = \
+ # Unit tests
+ supersonic_guidetest_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
+ supersonic_guidetest_LDFLAGS =
+-supersonic_guidetest_LDADD = $(EXEC_LIB_FLAGS)
++supersonic_guidetest_LDADD = $(EXEC_LIB_FLAGS) -lgtest -lgmock
+ 
+ supersonic_guidetest_SOURCES = $(TEST_FILES) \
+     test/smoke_test.cc \
+@@ -133,15 +138,14 @@ test_base_memory_SOURCES = $(TEST_FILES)
+ TESTS += test_base_memory
+ 
+ ## benchmark
+-test_benchmark_dot_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS) -std=c++0x
++test_benchmark_dot_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
+ test_benchmark_dot_LDADD = $(EXEC_TEST_FLAGS)
+ test_benchmark_dot_SOURCES = $(TEST_FILES) \
+     supersonic/benchmark/dot/dot_drawer_test.cc
+ TESTS += test_benchmark_dot
+ 
+ test_benchmark_infrastructure_CPPFLAGS = $(COMPILER_FLAGS) \
+-                                         $(TEST_FLAGS) \
+-                                         -std=c++0x
++                                         $(TEST_FLAGS)
+ test_benchmark_infrastructure_LDADD = $(EXEC_TEST_FLAGS)
+ test_benchmark_infrastructure_SOURCES = $(TEST_FILES) \
+     supersonic/benchmark/infrastructure/benchmark_listener_test.cc \
+@@ -149,7 +153,7 @@ test_benchmark_infrastructure_SOURCES =
+     supersonic/benchmark/infrastructure/node_test.cc
+ TESTS += test_benchmark_infrastructure
+ 
+-test_benchmark_manager_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS) -std=c++0x
++test_benchmark_manager_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
+ test_benchmark_manager_LDADD = $(EXEC_TEST_FLAGS)
+ test_benchmark_manager_SOURCES = $(TEST_FILES) \
+     supersonic/benchmark/manager/benchmark_manager_test.cc
+@@ -257,7 +261,7 @@ libbenchmark_la_LDFLAGS =
+ libbenchmark_la_LIBADD =
+ 
+ libbenchmark_ladir = $(includedir)
+-libbenchmark_la_HEADERS = \
++nobase_libbenchmark_la_HEADERS = \
+     supersonic/benchmark/base/benchmark_types.h \
+     supersonic/benchmark/dot/dot_drawer.h \
+     supersonic/benchmark/examples/common_utils.h \
+@@ -285,7 +289,7 @@ BENCHMARK_EXAMPLES = operation_example
+ 
+ ## simple operation example
+ operation_example_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS) -std=c++0x
+-operation_example_LDADD = $(EXEC_LIB_FLAGS) libtestutils.la
++operation_example_LDADD = $(EXEC_TEST_FLAGS)
+ operation_example_SOURCES = supersonic/benchmark/examples/operation_example.cc
+ 
+ 
+--- origsrc/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2012-10-31 22:42:51.000000000 +0900
++++ src/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2012-11-03 17:53:40.620800600 +0900
+@@ -89,7 +89,7 @@ class CursorTransformerWithHistoryTest :
+     return ExtractCursor<T>(entry);
+   }
+ 
+-  scoped_ptr<CursorTransformerWithVectorHistory<T>> transformer_;
++  scoped_ptr<CursorTransformerWithVectorHistory<T> > transformer_;
+   TupleSchema schema_;
+ };
+ 
+@@ -155,7 +155,7 @@ TYPED_TEST(CursorTransformerWithHistoryT
+ 
+   ASSERT_EQ(3, transformer->GetHistoryLength());
+ 
+-  scoped_ptr<PointerVector<TypeParam>> history(transformer->ReleaseHistory());
++  scoped_ptr<PointerVector<TypeParam> > history(transformer->ReleaseHistory());
+   ASSERT_EQ(cursor_p1, this->Extract((*history)[0].get()));
+   ASSERT_EQ(cursor_p2, this->Extract((*history)[1].get()));
+   ASSERT_EQ(cursor_p3, this->Extract((*history)[2].get()));
+--- origsrc/supersonic/supersonic/utils/file_util.cc	2012-10-31 22:42:52.000000000 +0900
++++ src/supersonic/supersonic/utils/file_util.cc	2012-10-31 23:32:33.294794200 +0900
+@@ -66,7 +66,7 @@ File* TempFile::Create(const char *direc
+ // Creates a temporary file name using standard library utilities.
+ static inline void TempFilenameInDir(const char *directory_prefix,
+                                      string *filename) {
+-  int32 tid = static_cast<int32>(pthread_self());
++  int32 tid = reinterpret_cast<int32>(pthread_self());
+   int32 pid = static_cast<int32>(getpid());
+   int64 now = CycleClock::Now();
+   int64 now_usec = GetCurrentTimeMicros();
+--- origsrc/supersonic/supersonic/utils/mutex.h	2012-10-31 22:42:52.000000000 +0900
++++ src/supersonic/supersonic/utils/mutex.h	2012-10-31 23:12:15.701044200 +0900
+@@ -110,7 +110,7 @@
+ 
+ #if defined(NO_THREADS)
+   typedef int MutexType;      // to keep a lock-count
+-#elif defined(_WIN32) || defined(__CYGWIN32__) || defined(__CYGWIN64__)
++#elif defined(_WIN32)
+ # ifndef WIN32_LEAN_AND_MEAN
+ #   define WIN32_LEAN_AND_MEAN  // We only need minimal includes
+ # endif
+@@ -224,7 +224,7 @@ bool Mutex::TryLock()      { if (mutex_)
+ void Mutex::ReaderLock()   { assert(++mutex_ > 0); }
+ void Mutex::ReaderUnlock() { assert(mutex_-- > 0); }
+ 
+-#elif defined(_WIN32) || defined(__CYGWIN32__) || defined(__CYGWIN64__)
++#elif defined(_WIN32)
+ 
+ Mutex::Mutex() : destroy_(true) {
+   InitializeCriticalSection(&mutex_);
+--- origsrc/supersonic/supersonic/utils/port.h	2012-10-31 22:42:52.000000000 +0900
++++ src/supersonic/supersonic/utils/port.h	2012-11-01 23:51:32.594694300 +0900
+@@ -34,7 +34,7 @@
+ /* We use SIGPWR since that seems unlikely to be used for other reasons. */
+ #define GOOGLE_OBSCURE_SIGNAL  SIGPWR
+ 
+-#if defined OS_LINUX || defined OS_CYGWIN
++#if defined OS_LINUX || defined (__CYGWIN__)
+ 
+ // _BIG_ENDIAN
+ #include <endian.h>
+@@ -116,7 +116,7 @@ typedef uint16_t u_int16_t;
+ #define bswap_32(x) OSSwapInt32(x)
+ #define bswap_64(x) OSSwapInt64(x)
+ 
+-#elif defined(__GLIBC__)
++#elif defined(__GLIBC__) || defined(__CYGWIN__)
+ #include <byteswap.h>  // IWYU pragma: export
+ 
+ #else
+--- origsrc/supersonic/supersonic/utils/random.cc	2012-10-31 22:42:52.000000000 +0900
++++ src/supersonic/supersonic/utils/random.cc	2012-10-31 23:29:12.076044200 +0900
+@@ -16,7 +16,11 @@
+ //
+ #include "supersonic/utils/random.h"
+ 
++#if defined(__CYGWIN__)
++#include <ieeefp.h>
++#else
+ #include <ieee754.h>
++#endif
+ #include <sys/time.h>
+ 
+ #include <string.h>
+@@ -96,7 +100,7 @@ static inline uint32 mix30(uint32 a) {
+ }
+ 
+ double RandomBase::RandDouble() {
+-#ifdef OS_CYGWIN
++#if defined(__CYGWIN__)
+   __ieee_double_shape_type v;
+   v.number.sign = 0;
+   v.number.fraction0 = Rand32();  // Lower 20 bits
