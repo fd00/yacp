@@ -1,76 +1,25 @@
---- origsrc/libmemcached-1.0.7/Makefile.am	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/Makefile.am	2012-05-14 22:28:37.336709800 +0900
-@@ -19,7 +19,7 @@ nobase_include_HEADERS =
+--- origsrc/libmemcached-1.0.13/Makefile.am	2012-10-19 10:55:45.000000000 +0900
++++ src/libmemcached-1.0.13/Makefile.am	2012-11-04 18:00:05.794257800 +0900
+@@ -2,6 +2,8 @@
+ 
+ ACLOCAL_AMFLAGS = -I m4 -I libtest/m4
+ 
++SUBDIRS = lib
++
+ # includes append to these:
+ SUFFIXES =
+ .PHONY =
+@@ -19,7 +21,7 @@ nobase_include_HEADERS =
  check_PROGRAMS =
  EXTRA_HEADERS =
  BUILT_SOURCES=
 -EXTRA_DIST=
 +EXTRA_DIST=m4/gnulib-cache.m4
+ dist_man_MANS=
+ MAINTAINERCLEANFILES=
  
- EXTRA_DIST+= ${srcdir}/m4/pandora_*.m4
- EXTRA_DIST+= .quickly
-@@ -29,9 +29,12 @@ EXTRA_DIST+= config/autorun.sh
- EXTRA_DIST+= config/pandora-plugin
- EXTRA_DIST+= config/uncrustify.cfg
- 
-+AM_CPPFLAGS = -I$(top_builddir)/lib
-+AM_LDFLAGS = $(top_builddir)/lib/libgnu.la
-+
- include libtest/include.am
- 
--libtest_libtest_la_DEPENDENCIES+= memcached/memcached
-+libtest_libtest_la_DEPENDENCIES+= memcached/memcached$(EXEEXT)
- 
- include libhashkit-1.0/include.am
- include libmemcached-1.0/include.am
-@@ -120,3 +123,5 @@ lcov-clean: clean
- 	@find . -name '*.gcda' | xargs rm -f
- 
- DISTCLEANFILES+= config/top.h
-+
-+SUBDIRS = lib
---- origsrc/libmemcached-1.0.7/clients/include.am	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/clients/include.am	2012-05-14 22:29:33.368936400 +0900
-@@ -98,7 +98,7 @@ clients_memaslap_SOURCES= \
- 			  clients/ms_task.c \
- 			  clients/ms_thread.c
- clients_memaslap_SOURCES+= clients/generator.cc clients/execute.cc
--clients_memaslap_LDADD= $(LTLIBEVENT) $(CLIENTS_LDADDS)
-+clients_memaslap_LDADD= $(LTLIBEVENT) $(CLIENTS_LDADDS) $(LIBEVENT_LDFLAGS)
- 
- clients_memcapable_SOURCES= \
- 			    clients/memcapable.cc \
---- origsrc/libmemcached-1.0.7/clients/ms_setting.c	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/clients/ms_setting.c	2012-05-14 22:30:13.681436400 +0900
-@@ -70,6 +70,7 @@ static void ms_print_setting(void);
- static void ms_setting_slapmode_init_pre(void);
- static void ms_setting_slapmode_init_post(void);
- 
-+#if !defined(__CYGWIN__)
- #if !defined(HAVE_GETLINE)
- #include <limits.h>
- static ssize_t getline (char **line, size_t *line_size, FILE *fp)
-@@ -146,6 +147,7 @@ static ssize_t getline (char **line, siz
-   return result;
- }
- #endif
-+#endif
- 
- /**
-  * parse the server list string, and build the servers
---- origsrc/libmemcached-1.0.7/clients/ms_setting.h	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/clients/ms_setting.h	2012-05-14 22:30:35.493936400 +0900
-@@ -11,6 +11,8 @@
- #ifndef MS_SETTING_H
- #define MS_SETTING_H
- 
-+#include <sys/time.h>
-+
- #include "ms_memslap.h"
- 
- #ifdef __cplusplus
---- origsrc/libmemcached-1.0.7/config/snippet/arg-nonnull.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/config/snippet/arg-nonnull.h	2012-05-14 22:22:37.868936400 +0900
+--- origsrc/libmemcached-1.0.13/build-aux/snippet/arg-nonnull.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/build-aux/snippet/arg-nonnull.h	2012-11-04 17:43:20.998359400 +0900
 @@ -0,0 +1,26 @@
 +/* A C macro for declaring that specific arguments must not be NULL.
 +   Copyright (C) 2009-2012 Free Software Foundation, Inc.
@@ -98,8 +47,8 @@
 +#  define _GL_ARG_NONNULL(params)
 +# endif
 +#endif
---- origsrc/libmemcached-1.0.7/config/snippet/c++defs.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/config/snippet/c++defs.h	2012-05-14 22:22:37.993936400 +0900
+--- origsrc/libmemcached-1.0.13/build-aux/snippet/c++defs.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/build-aux/snippet/c++defs.h	2012-11-04 17:43:21.107734400 +0900
 @@ -0,0 +1,271 @@
 +/* C++ compatible function declaration macros.
 +   Copyright (C) 2010-2012 Free Software Foundation, Inc.
@@ -372,8 +321,8 @@
 +#endif
 +
 +#endif /* _GL_CXXDEFS_H */
---- origsrc/libmemcached-1.0.7/config/snippet/warn-on-use.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/config/snippet/warn-on-use.h	2012-05-14 22:22:38.118936400 +0900
+--- origsrc/libmemcached-1.0.13/build-aux/snippet/warn-on-use.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/build-aux/snippet/warn-on-use.h	2012-11-04 17:43:21.201484400 +0900
 @@ -0,0 +1,109 @@
 +/* A C macro for emitting warnings if a function is used.
 +   Copyright (C) 2010-2012 Free Software Foundation, Inc.
@@ -484,8 +433,47 @@
 +#  define _GL_WARN_EXTERN_C extern
 +# endif
 +#endif
---- origsrc/libmemcached-1.0.7/config.in	2012-04-29 03:19:38.000000000 +0900
-+++ src/libmemcached-1.0.7/config.in	2012-05-14 22:54:25.089586300 +0900
+--- origsrc/libmemcached-1.0.13/clients/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/clients/include.am	2012-11-04 19:51:19.165177700 +0900
+@@ -54,12 +54,14 @@ clients_memcat_LDADD= $(CLIENTS_LDADDS)
+ clients_memparse_SOURCES= clients/memparse.cc
+ clients_memparse_LDADD= $(CLIENTS_LDADDS)
+ 
++clients_memcp_CPPFLAGS= -I$(top_builddir)/lib
+ clients_memcp_SOURCES= clients/memcp.cc
+ clients_memcp_LDADD= $(CLIENTS_LDADDS)
+ 
+ clients_memdump_SOURCES= clients/memdump.cc
+ clients_memdump_LDADD= $(CLIENTS_LDADDS)
+ 
++clients_memstat_CPPFLAGS= -I$(top_builddir)/lib
+ clients_memstat_SOURCES= clients/memstat.cc
+ clients_memstat_LDADD= $(CLIENTS_LDADDS)
+ 
+@@ -97,8 +99,9 @@ clients_memaslap_SOURCES+= clients/ms_ta
+ clients_memaslap_SOURCES+= clients/ms_thread.c
+ 
+ clients_memaslap_SOURCES+= clients/generator.cc clients/execute.cc
+-clients_memaslap_LDADD= $(LTLIBEVENT) $(CLIENTS_LDADDS)
++clients_memaslap_LDADD= $(LIBEVENT_LDFLAGS) $(CLIENTS_LDADDS)
+ 
++clients_memcapable_CPPFLAGS= -I$(top_builddir)
+ clients_memcapable_SOURCES=
+ clients_memcapable_SOURCES+= clients/memcapable.cc
+ clients_memcapable_SOURCES+= libmemcached/byteorder.cc
+--- origsrc/libmemcached-1.0.13/clients/ms_setting.h	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/clients/ms_setting.h	2012-11-04 18:23:54.053046900 +0900
+@@ -11,6 +11,8 @@
+ #ifndef MS_SETTING_H
+ #define MS_SETTING_H
+ 
++#include <sys/time.h>
++
+ #include "ms_memslap.h"
+ 
+ #ifdef __cplusplus
+--- origsrc/libmemcached-1.0.13/config.in	2012-10-20 01:10:40.000000000 +0900
++++ src/libmemcached-1.0.13/config.in	2012-11-04 19:55:02.953748500 +0900
 @@ -16,15 +16,15 @@
  /* the location of <cinttypes> */
  #undef CINTTYPES_H
@@ -567,7 +555,7 @@
  /* Define to 1 if you have the `alarm' function. */
  #undef HAVE_ALARM
  
-@@ -73,9 +128,18 @@
+@@ -70,9 +125,18 @@
  /* Define to 1 if you have the <atomic.h> header file. */
  #undef HAVE_ATOMIC_H
  
@@ -577,16 +565,22 @@
 +/* Define to 1 if you have the `backtrace_symbols_fd' function. */
 +#undef HAVE_BACKTRACE_SYMBOLS_FD
 +
- /* Have a working clock_gettime function */
+ /* Have clock_gettime */
  #undef HAVE_CLOCK_GETTIME
  
 +/* Define to 1 if you have the `confstr' function. */
 +#undef HAVE_CONFSTR
 +
- /* Define to 1 if you have the <cxxabi.h> header file. */
- #undef HAVE_CXXABI_H
+ /* Define to 1 if you have the declaration of `strerror_r', and to 0 if you
+    don't. */
+ #undef HAVE_DECL_STRERROR_R
+@@ -113,9 +177,15 @@
+ /* define if the compiler supports GCC C++ ABI name demangling */
+ #undef HAVE_GCC_ABI_DEMANGLE
  
-@@ -125,6 +189,9 @@
++/* Define to 1 if compiler provides atomic builtins. */
++#undef HAVE_GCC_ATOMIC_BUILTINS
++
  /* If Gearmand binary is available */
  #undef HAVE_GEARMAND_BINARY
  
@@ -596,7 +590,7 @@
  /* Define to 1 if you have the `getline' function. */
  #undef HAVE_GETLINE
  
-@@ -198,6 +265,9 @@
+@@ -167,6 +237,9 @@
  /* Define to 1 if you have the <limits.h> header file. */
  #undef HAVE_LIMITS_H
  
@@ -606,7 +600,7 @@
  /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
     to 0 otherwise. */
  #undef HAVE_MALLOC
-@@ -238,6 +308,10 @@
+@@ -207,6 +280,10 @@
  /* Define to 1 if you have a MSG_NOSIGNAL */
  #undef HAVE_MSG_NOSIGNAL
  
@@ -617,9 +611,9 @@
  /* Enables murmur hashing support */
  #undef HAVE_MURMUR_HASH
  
-@@ -247,12 +321,27 @@
- /* Define to 1 if you have the <netinet/in.h> header file. */
- #undef HAVE_NETINET_IN_H
+@@ -225,12 +302,27 @@
+ /* Define to 1 if you have the <netinet/tcp.h> header file. */
+ #undef HAVE_NETINET_TCP_H
  
 +/* Define to 1 if you have the <paths.h> header file. */
 +#undef HAVE_PATHS_H
@@ -645,9 +639,9 @@
  /* Define if you have POSIX threads libraries and header files. */
  #undef HAVE_PTHREAD
  
-@@ -262,6 +351,331 @@
- /* Have PTHREAD_PRIO_INHERIT. */
- #undef HAVE_PTHREAD_PRIO_INHERIT
+@@ -243,6 +335,331 @@
+ /* Define if pthread_timedjoin_np is present in pthread.h. */
+ #undef HAVE_PTHREAD_TIMEDJOIN_NP
  
 +/* Define to 1 if you have the `rawmemchr' function. */
 +#undef HAVE_RAWMEMCHR
@@ -977,7 +971,7 @@
  /* Define to 1 if you have a working SO_RCVTIMEO */
  #undef HAVE_RCVTIMEO
  
-@@ -269,12 +683,27 @@
+@@ -250,12 +667,27 @@
     and to 0 otherwise. */
  #undef HAVE_REALLOC
  
@@ -1005,7 +999,7 @@
  /* Define to 1 if you have the `setppriv' function. */
  #undef HAVE_SETPPRIV
  
-@@ -287,6 +716,9 @@
+@@ -268,6 +700,9 @@
  /* Define to 1 if you have the `socket' function. */
  #undef HAVE_SOCKET
  
@@ -1015,7 +1009,7 @@
  /* Define to 1 if you have the `sqrt' function. */
  #undef HAVE_SQRT
  
-@@ -311,6 +743,9 @@
+@@ -295,6 +730,9 @@
  /* Define to 1 if you have the `strchr' function. */
  #undef HAVE_STRCHR
  
@@ -1025,7 +1019,7 @@
  /* Define to 1 if you have the `strdup' function. */
  #undef HAVE_STRDUP
  
-@@ -335,6 +770,12 @@
+@@ -319,6 +757,12 @@
  /* Define to 1 if you have the `strtoull' function. */
  #undef HAVE_STRTOULL
  
@@ -1038,9 +1032,9 @@
  /* Define to 1 if you have the <sys/sdt.h> header file. */
  #undef HAVE_SYS_SDT_H
  
-@@ -356,6 +797,9 @@
- /* Define to 1 if you have the <sys/wait.h> header file. */
- #undef HAVE_SYS_WAIT_H
+@@ -343,6 +787,9 @@
+ /* Define to 1 if you have the <time.h> header file. */
+ #undef HAVE_TIME_H
  
 +/* Define to 1 if you have the <ucontext.h> header file. */
 +#undef HAVE_UCONTEXT_H
@@ -1048,7 +1042,7 @@
  /* Define this if you have umem.h */
  #undef HAVE_UMEM_H
  
-@@ -372,18 +816,34 @@
+@@ -365,18 +812,34 @@
     declarations. */
  #undef HAVE_VISIBILITY
  
@@ -1083,9 +1077,9 @@
  /* CPU of Build System */
  #undef HOST_CPU
  
-@@ -412,6 +872,9 @@
- /* Define to 1 if your C compiler doesn't accept -c and -o together. */
- #undef NO_MINUS_C_MINUS_O
+@@ -405,6 +868,9 @@
+ /* Define to 1 to enable assert'ing code. */
+ #undef NDEBUG
  
 +/* Define to 1 if open() fails to recognize a trailing slash. */
 +#undef OPEN_TRAILING_SLASH_BUG
@@ -1093,9 +1087,9 @@
  /* Name of package */
  #undef PACKAGE
  
-@@ -436,10 +899,22 @@
- /* Version of the software */
- #undef PANDORA_RELEASE_VERSION
+@@ -426,18 +892,33 @@
+ /* Define to the version of this package. */
+ #undef PACKAGE_VERSION
  
 +/* Define to the type that is the result of default argument promotions of
 +   type mode_t. */
@@ -1113,10 +1107,6 @@
 +   slash */
 +#undef REPLACE_FUNC_STAT_FILE
 +
- /* Size of long long as computed by sizeof() */
- #undef SIZEOF_LONG_LONG
- 
-@@ -452,11 +927,14 @@
  /* If using the C implementation of alloca, define if you know the
     direction of stack growth for your system; otherwise it will be
     automatically deduced at runtime.
@@ -1134,7 +1124,7 @@
  /* Define if ISO C++ 1998 header files are present. */
  #undef STDCXX_98_HEADERS
  
-@@ -502,28 +980,6 @@
+@@ -477,28 +958,6 @@
  /* Define to true if you want to use functions from atomic.h */
  #undef USE_ATOMIC_H
  
@@ -1163,25 +1153,25 @@
  /* Version number of package */
  #undef VERSION
  
-@@ -542,20 +998,43 @@
- # endif
- #endif
+@@ -508,14 +967,43 @@
+ /* machine is big-endian */
+ #undef WORDS_BIGENDIAN
  
 +/* Enable large inode numbers on Mac OS X.  */
 +#ifndef _DARWIN_USE_64_BIT_INODE
 +# define _DARWIN_USE_64_BIT_INODE 1
 +#endif
 +
- /* Number of bits in a file offset, on hosts where this is settable. */
- #undef _FILE_OFFSET_BITS
- 
++/* Number of bits in a file offset, on hosts where this is settable. */
++#undef _FILE_OFFSET_BITS
++
 +/* Define to 1 if Gnulib overrides 'struct stat' on Windows so that struct
 +   stat.st_size becomes 64-bit. */
 +#undef _GL_WINDOWS_64_BIT_ST_SIZE
 +
- /* Define for large files, on AIX-style hosts. */
- #undef _LARGE_FILES
- 
++/* Define for large files, on AIX-style hosts. */
++#undef _LARGE_FILES
++
  /* Define to 1 if on MINIX. */
  #undef _MINIX
  
@@ -1207,8 +1197,8 @@
 +/* Define to 1 if you need to in order for 'stat' and other things to work. */
  #undef _POSIX_SOURCE
  
- /* Cause Sun Studio to not be quite so strict with standards conflicts */
-@@ -579,9 +1058,38 @@
+ /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
+@@ -536,9 +1024,38 @@
  /* Magical number to make things work */
  #undef _WIN32_WINNT
  
@@ -1222,7 +1212,7 @@
 +#ifndef _ALL_SOURCE
 +# undef _ALL_SOURCE
 +#endif
-+/* Enable general extensions on MacOS X.  */
++/* Enable general extensions on Mac OS X.  */
 +#ifndef _DARWIN_C_SOURCE
 +# undef _DARWIN_C_SOURCE
 +#endif
@@ -1247,14 +1237,14 @@
  /* Use STDC Limit Macros in C++ */
  #undef __STDC_LIMIT_MACROS
  
-@@ -610,9 +1118,25 @@
+@@ -567,9 +1084,25 @@
     a type exists and the standard includes do not define it. */
  #undef int8_t
  
 +/* Work around a bug in Apple GCC 4.0.1 build 5465: In C99 mode, it supports
 +   the ISO C 99 semantics of 'extern inline' (unlike the GNU C semantics of
 +   earlier versions), but does not display it by setting __GNUC_STDC_INLINE__.
-+   __APPLE__ && __MACH__ test for MacOS X.
++   __APPLE__ && __MACH__ test for Mac OS X.
 +   __APPLE_CC__ tests for the Apple compiler and its version.
 +   __STDC_VERSION__ tests for the C99 mode.  */
 +#if defined __APPLE__ && defined __MACH__ && __APPLE_CC__ >= 5465 && !defined __cplusplus && __STDC_VERSION__ >= 199901L && !defined __GNUC_STDC_INLINE__
@@ -1273,7 +1263,7 @@
  /* Define to `long int' if <sys/types.h> does not define. */
  #undef off_t
  
-@@ -658,6 +1182,33 @@
+@@ -615,6 +1148,33 @@
     such a type exists and the standard includes do not define it. */
  #undef uint8_t
  
@@ -1307,9 +1297,9 @@
  /* Define as `fork' if `vfork' does not work. */
  #undef vfork
  
-@@ -693,3 +1244,45 @@ typedef unsigned long int ulong;
- #define RVERSION "1.4.13"
-  
+@@ -648,3 +1208,45 @@ typedef unsigned long int ulong;
+ #endif 
+ 
  
 +
 +
@@ -1353,36 +1343,66 @@
 +      "Stackdump not supported for this platform\n");
 +#endif
 +  
---- origsrc/libmemcached-1.0.7/configure.ac	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/configure.ac	2012-05-14 22:52:22.933336300 +0900
-@@ -56,6 +56,8 @@ LT_PREREQ([2.2])
- LT_INIT()
- LT_LANG([C++])
- LT_LANG([C])
+--- origsrc/libmemcached-1.0.13/configure.ac	2012-10-19 13:09:43.000000000 +0900
++++ src/libmemcached-1.0.13/configure.ac	2012-11-04 19:53:33.890833700 +0900
+@@ -21,6 +21,9 @@ AC_PREREQ([2.61])
+ AC_CONFIG_HEADERS([config.h:config.in])dnl Keep filename to 8.3 for MS-DOS.
+ AC_CONFIG_SRCDIR([libmemcached/memcached.cc])
+ 
 +gl_EARLY
 +gl_INIT
- gl_VISIBILITY
- 
- AX_CXX_HEADER_STDCXX_98
-@@ -101,6 +103,8 @@ ENABLE_MEMASLAP
- PROTOCOL_BINARY_TEST
- ENABLE_DEPRECATED
- 
-+PANDORA_PRINT_CALLSTACK
 +
- AC_CHECK_FUNCS([alarm])
- AC_CHECK_FUNCS([dup2])
- AC_CHECK_FUNCS([getline])
-@@ -295,6 +299,7 @@ AC_C_ENDIAN
+ #shared library versioning
+ MEMCACHED_UTIL_LIBRARY_VERSION=2:0:0
+ MEMCACHED_PROTOCAL_LIBRARY_VERSION=0:0:0
+@@ -263,6 +266,8 @@ AX_PTHREAD(, [AC_MSG_ERROR([could not fi
+ AX_PTHREAD_TIMEDJOIN_NP
+ 
+ PANDORA_ENABLE_DTRACE
++PANDORA_HAVE_GCC_ATOMICS
++PANDORA_PRINT_CALLSTACK
+ AX_ENDIAN
+ AX_ASSERT
+ AX_CXX_COMPILER_VERSION
+@@ -272,6 +277,7 @@ AX_AM_JOBSERVER([yes])
  
  AC_CONFIG_FILES([
    Makefile
 +  lib/Makefile
    docs/conf.py
-   libhashkit-1.0/configure.h
    libmemcached-1.0/configure.h
---- origsrc/libmemcached-1.0.7/lib/Makefile.am	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/Makefile.am	2012-05-14 22:23:21.712686400 +0900
+   support/libmemcached.pc
+--- origsrc/libmemcached-1.0.13/example/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/example/include.am	2012-11-04 19:06:39.996232400 +0900
+@@ -10,6 +10,7 @@ noinst_HEADERS+= example/byteorder.h
+ noinst_HEADERS+= example/memcached_light.h
+ noinst_HEADERS+= example/storage.h
+ 
++example_memcached_light_CPPFLAGS=-I$(top_builddir)
+ example_memcached_light_SOURCES=
+ example_memcached_light_LDADD= 
+ example_memcached_light_LDFLAGS=
+--- origsrc/libmemcached-1.0.13/example/t/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/example/t/include.am	2012-11-04 19:07:31.145646400 +0900
+@@ -13,6 +13,7 @@ MEMCACHED_LIGHT_TESTS_LDADDS= \
+                               libmemcached/libmemcachedutil.la \
+                               libtest/libtest.la
+ 
++example_t_memcached_light_CPPFLAGS=-I$(top_builddir)/lib
+ example_t_memcached_light_CXXFLAGS=
+ example_t_memcached_light_DEPENDENCIES=
+ example_t_memcached_light_LDADD=
+@@ -24,7 +25,7 @@ example_t_memcached_light_SOURCES+= test
+ example_t_memcached_light_SOURCES+= tests/libmemcached-1.0/setup_and_teardowns.cc
+ example_t_memcached_light_CXXFLAGS+= $(AM_CXXFLAGS)
+ example_t_memcached_light_DEPENDENCIES+= $(MEMCACHED_LIGHT_TESTS_LDADDS)
+-example_t_memcached_light_DEPENDENCIES+= example/memcached_light
++example_t_memcached_light_DEPENDENCIES+= example/memcached_light$(EXEEXT)
+ example_t_memcached_light_LDADD+= $(MEMCACHED_LIGHT_TESTS_LDADDS)
+ example_t_memcached_light_LDADD+= $(LIBUUID_LDFLAGS)
+ check_PROGRAMS+= example/t/memcached_light
+--- origsrc/libmemcached-1.0.13/lib/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/Makefile.am	2012-11-04 17:43:56.638984400 +0900
 @@ -0,0 +1,936 @@
 +## DO NOT EDIT! GENERATED AUTOMATICALLY!
 +## Process this file with automake to produce Makefile.in.
@@ -1407,7 +1427,7 @@
 +# the same distribution terms as the rest of that program.
 +#
 +# Generated by gnulib-tool.
-+# Reproduce by: gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=config --no-conditional-dependencies --libtool --macro-prefix=gl posix_spawn posix_spawn_file_actions_addclose posix_spawn_file_actions_adddup2 posix_spawn_file_actions_destroy posix_spawn_file_actions_init posix_spawnattr_destroy posix_spawnattr_init posix_spawnattr_setsigmask posix_spawnp
++# Reproduce by: gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl posix_spawn posix_spawn_file_actions_addclose posix_spawn_file_actions_adddup2 posix_spawn_file_actions_destroy posix_spawn_file_actions_init posix_spawnattr_destroy posix_spawnattr_init posix_spawnattr_setsigmask posix_spawnp
 +
 +AUTOMAKE_OPTIONS = 1.5 gnits
 +
@@ -1736,17 +1756,17 @@
 +# The arg-nonnull.h that gets inserted into generated .h files is the same as
 +# build-aux/snippet/arg-nonnull.h, except that it has the copyright header cut
 +# off.
-+arg-nonnull.h: $(top_srcdir)/config/snippet/arg-nonnull.h
++arg-nonnull.h: $(top_srcdir)/build-aux/snippet/arg-nonnull.h
 +	$(AM_V_GEN)rm -f $@-t $@ && \
 +	sed -n -e '/GL_ARG_NONNULL/,$$p' \
-+	  < $(top_srcdir)/config/snippet/arg-nonnull.h \
++	  < $(top_srcdir)/build-aux/snippet/arg-nonnull.h \
 +	  > $@-t && \
 +	mv $@-t $@
 +MOSTLYCLEANFILES += arg-nonnull.h arg-nonnull.h-t
 +
 +ARG_NONNULL_H=arg-nonnull.h
 +
-+EXTRA_DIST += $(top_srcdir)/config/snippet/arg-nonnull.h
++EXTRA_DIST += $(top_srcdir)/build-aux/snippet/arg-nonnull.h
 +
 +## end   gnulib module snippet/arg-nonnull
 +
@@ -1760,17 +1780,17 @@
 +BUILT_SOURCES += c++defs.h
 +# The c++defs.h that gets inserted into generated .h files is the same as
 +# build-aux/snippet/c++defs.h, except that it has the copyright header cut off.
-+c++defs.h: $(top_srcdir)/config/snippet/c++defs.h
++c++defs.h: $(top_srcdir)/build-aux/snippet/c++defs.h
 +	$(AM_V_GEN)rm -f $@-t $@ && \
 +	sed -n -e '/_GL_CXXDEFS/,$$p' \
-+	  < $(top_srcdir)/config/snippet/c++defs.h \
++	  < $(top_srcdir)/build-aux/snippet/c++defs.h \
 +	  > $@-t && \
 +	mv $@-t $@
 +MOSTLYCLEANFILES += c++defs.h c++defs.h-t
 +
 +CXXDEFS_H=c++defs.h
 +
-+EXTRA_DIST += $(top_srcdir)/config/snippet/c++defs.h
++EXTRA_DIST += $(top_srcdir)/build-aux/snippet/c++defs.h
 +
 +## end   gnulib module snippet/c++defs
 +
@@ -1780,17 +1800,17 @@
 +# The warn-on-use.h that gets inserted into generated .h files is the same as
 +# build-aux/snippet/warn-on-use.h, except that it has the copyright header cut
 +# off.
-+warn-on-use.h: $(top_srcdir)/config/snippet/warn-on-use.h
++warn-on-use.h: $(top_srcdir)/build-aux/snippet/warn-on-use.h
 +	$(AM_V_GEN)rm -f $@-t $@ && \
 +	sed -n -e '/^.ifndef/,$$p' \
-+	  < $(top_srcdir)/config/snippet/warn-on-use.h \
++	  < $(top_srcdir)/build-aux/snippet/warn-on-use.h \
 +	  > $@-t && \
 +	mv $@-t $@
 +MOSTLYCLEANFILES += warn-on-use.h warn-on-use.h-t
 +
 +WARN_ON_USE_H=warn-on-use.h
 +
-+EXTRA_DIST += $(top_srcdir)/config/snippet/warn-on-use.h
++EXTRA_DIST += $(top_srcdir)/build-aux/snippet/warn-on-use.h
 +
 +## end   gnulib module snippet/warn-on-use
 +
@@ -2320,9 +2340,9 @@
 +	  fi; \
 +	done; \
 +	:
---- origsrc/libmemcached-1.0.7/lib/alloca.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/alloca.in.h	2012-05-14 22:22:38.259561400 +0900
-@@ -0,0 +1,56 @@
+--- origsrc/libmemcached-1.0.13/lib/alloca.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/alloca.in.h	2012-11-04 17:43:21.310859400 +0900
+@@ -0,0 +1,63 @@
 +/* Memory allocation on the stack.
 +
 +   Copyright (C) 1995, 1999, 2001-2004, 2006-2012 Free Software Foundation,
@@ -2369,6 +2389,13 @@
 +#  define alloca _alloca
 +# elif defined __DECC && defined __VMS
 +#  define alloca __ALLOCA
++# elif defined __TANDEM && defined _TNS_E_TARGET
++#  ifdef  __cplusplus
++extern "C"
++#  endif
++void *_alloca (unsigned short);
++#  pragma intrinsic (_alloca)
++#  define alloca _alloca
 +# else
 +#  include <stddef.h>
 +#  ifdef  __cplusplus
@@ -2379,8 +2406,8 @@
 +#endif
 +
 +#endif /* _GL_ALLOCA_H */
---- origsrc/libmemcached-1.0.7/lib/dosname.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/dosname.h	2012-05-14 22:22:38.384561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/dosname.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/dosname.h	2012-11-04 17:43:21.404609400 +0900
 @@ -0,0 +1,53 @@
 +/* File names on MS-DOS/Windows systems.
 +
@@ -2435,8 +2462,8 @@
 +#define IS_RELATIVE_FILE_NAME(F) (! IS_ABSOLUTE_FILE_NAME (F))
 +
 +#endif /* DOSNAME_H_ */
---- origsrc/libmemcached-1.0.7/lib/dummy.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/dummy.c	2012-05-14 22:22:38.493936400 +0900
+--- origsrc/libmemcached-1.0.13/lib/dummy.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/dummy.c	2012-11-04 17:43:21.498359400 +0900
 @@ -0,0 +1,42 @@
 +/* A dummy file, to prevent empty libraries from breaking builds.
 +   Copyright (C) 2004, 2007, 2009-2012 Free Software Foundation, Inc.
@@ -2480,8 +2507,8 @@
 +   this file is never empty.  */
 +typedef int dummy;
 +#endif
---- origsrc/libmemcached-1.0.7/lib/dup2.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/dup2.c	2012-05-14 22:22:38.618936400 +0900
+--- origsrc/libmemcached-1.0.13/lib/dup2.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/dup2.c	2012-11-04 17:43:21.623359400 +0900
 @@ -0,0 +1,157 @@
 +/* Duplicate an open file descriptor to a specified file descriptor.
 +
@@ -2640,9 +2667,9 @@
 +  return result;
 +}
 +#endif /* !HAVE_DUP2 */
---- origsrc/libmemcached-1.0.7/lib/errno.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/errno.in.h	2012-05-14 22:22:38.759561400 +0900
-@@ -0,0 +1,232 @@
+--- origsrc/libmemcached-1.0.13/lib/errno.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/errno.in.h	2012-11-04 17:43:21.763984400 +0900
+@@ -0,0 +1,274 @@
 +/* A POSIX-like <errno.h>.
 +
 +   Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -2729,6 +2756,16 @@
 +#   define GNULIB_defined_ECANCELED 1
 +#  endif
 +
++#  ifndef EOWNERDEAD
++#   define EOWNERDEAD 133
++#   define GNULIB_defined_EOWNERDEAD 1
++#  endif
++
++#  ifndef ENOTRECOVERABLE
++#   define ENOTRECOVERABLE 127
++#   define GNULIB_defined_ENOTRECOVERABLE 1
++#  endif
++
 +#  ifndef EINPROGRESS
 +#   define EINPROGRESS     112
 +#   define EALREADY        103
@@ -2753,15 +2790,17 @@
 +#   define ELOOP           114
 +#   define EHOSTUNREACH    110
 +#   define EWOULDBLOCK     140
++#   define GNULIB_defined_ESOCK 1
++#  endif
++
++#  ifndef ETXTBSY
 +#   define ETXTBSY         139
 +#   define ENODATA         120  /* not required by POSIX */
 +#   define ENOSR           124  /* not required by POSIX */
 +#   define ENOSTR          125  /* not required by POSIX */
-+#   define ENOTRECOVERABLE 127  /* not required by POSIX */
-+#   define EOWNERDEAD      133  /* not required by POSIX */
 +#   define ETIME           137  /* not required by POSIX */
 +#   define EOTHER          131  /* not required by POSIX */
-+#   define GNULIB_defined_ESOCK 1
++#   define GNULIB_defined_ESTREAMS 1
 +#  endif
 +
 +/* These are intentionally the same values as the WSA* error numbers, defined
@@ -2872,12 +2911,42 @@
 +#  define GNULIB_defined_ECANCELED 1
 +# endif
 +
++/* On many platforms, the macros EOWNERDEAD and ENOTRECOVERABLE are not
++   defined.  */
++
++# ifndef EOWNERDEAD
++#  if defined __sun
++    /* Use the same values as defined for Solaris >= 8, for
++       interoperability.  */
++#   define EOWNERDEAD      58
++#   define ENOTRECOVERABLE 59
++#  elif (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
++    /* We have a conflict here: pthreads-win32 defines these values
++       differently than MSVC 10.  It's hairy to decide which one to use.  */
++#   if defined __MINGW32__ && !defined USE_WINDOWS_THREADS
++     /* Use the same values as defined by pthreads-win32, for
++        interoperability.  */
++#    define EOWNERDEAD      43
++#    define ENOTRECOVERABLE 44
++#   else
++     /* Use the same values as defined by MSVC 10, for
++        interoperability.  */
++#    define EOWNERDEAD      133
++#    define ENOTRECOVERABLE 127
++#   endif
++#  else
++#   define EOWNERDEAD      2013
++#   define ENOTRECOVERABLE 2014
++#  endif
++#  define GNULIB_defined_EOWNERDEAD 1
++#  define GNULIB_defined_ENOTRECOVERABLE 1
++# endif
 +
 +#endif /* _@GUARD_PREFIX@_ERRNO_H */
 +#endif /* _@GUARD_PREFIX@_ERRNO_H */
---- origsrc/libmemcached-1.0.7/lib/fcntl.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/fcntl.in.h	2012-05-14 22:22:38.915811400 +0900
-@@ -0,0 +1,335 @@
+--- origsrc/libmemcached-1.0.13/lib/fcntl.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/fcntl.in.h	2012-11-04 17:43:21.935859400 +0900
+@@ -0,0 +1,347 @@
 +/* Like <fcntl.h>, but with non-working flags defined to 0.
 +
 +   Copyright (C) 2006-2012 Free Software Foundation, Inc.
@@ -3096,6 +3165,10 @@
 +# define O_EXEC O_RDONLY /* This is often close enough in older systems.  */
 +#endif
 +
++#ifndef O_IGNORE_CTTY
++# define O_IGNORE_CTTY 0
++#endif
++
 +#ifndef O_NDELAY
 +# define O_NDELAY 0
 +#endif
@@ -3129,8 +3202,16 @@
 +# define O_NOFOLLOW 0
 +#endif
 +
++#ifndef O_NOLINK
++# define O_NOLINK 0
++#endif
++
 +#ifndef O_NOLINKS
 +# define O_NOLINKS 0
++#endif
++
++#ifndef O_NOTRANS
++# define O_NOTRANS 0
 +#endif
 +
 +#ifndef O_RSYNC
@@ -3213,9 +3294,9 @@
 +#endif /* _@GUARD_PREFIX@_FCNTL_H */
 +#endif /* _@GUARD_PREFIX@_FCNTL_H */
 +#endif
---- origsrc/libmemcached-1.0.7/lib/fstat.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/fstat.c	2012-05-14 22:22:39.072061400 +0900
-@@ -0,0 +1,86 @@
+--- origsrc/libmemcached-1.0.13/lib/fstat.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/fstat.c	2012-11-04 17:43:22.107734400 +0900
+@@ -0,0 +1,88 @@
 +/* fstat() replacement.
 +   Copyright (C) 2011-2012 Free Software Foundation, Inc.
 +
@@ -3242,7 +3323,9 @@
 +#include <sys/types.h>
 +#include <sys/stat.h>
 +#if _GL_WINDOWS_64_BIT_ST_SIZE
++# undef stat /* avoid warning on mingw64 with _FILE_OFFSET_BITS=64 */
 +# define stat _stati64
++# undef fstat /* avoid warning on mingw64 with _FILE_OFFSET_BITS=64 */
 +# define fstat _fstati64
 +#endif
 +#undef __need_system_sys_stat_h
@@ -3302,8 +3385,8 @@
 +
 +  return fstat_nothrow (fd, buf);
 +}
---- origsrc/libmemcached-1.0.7/lib/getdtablesize.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/getdtablesize.c	2012-05-14 22:22:39.212686400 +0900
+--- origsrc/libmemcached-1.0.13/lib/getdtablesize.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/getdtablesize.c	2012-11-04 17:43:22.263984400 +0900
 @@ -0,0 +1,86 @@
 +/* getdtablesize() function for platforms that don't have it.
 +   Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -3391,8 +3474,8 @@
 +}
 +
 +#endif
---- origsrc/libmemcached-1.0.7/lib/msvc-inval.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/msvc-inval.c	2012-05-14 22:22:39.337686400 +0900
+--- origsrc/libmemcached-1.0.13/lib/msvc-inval.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/msvc-inval.c	2012-11-04 17:43:22.373359400 +0900
 @@ -0,0 +1,129 @@
 +/* Invalid parameter handler for MSVC runtime libraries.
 +   Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -3523,8 +3606,8 @@
 +}
 +
 +#endif
---- origsrc/libmemcached-1.0.7/lib/msvc-inval.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/msvc-inval.h	2012-05-14 22:22:39.478311400 +0900
+--- origsrc/libmemcached-1.0.13/lib/msvc-inval.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/msvc-inval.h	2012-11-04 17:43:22.498359400 +0900
 @@ -0,0 +1,222 @@
 +/* Invalid parameter handler for MSVC runtime libraries.
 +   Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -3748,8 +3831,8 @@
 +#endif
 +
 +#endif /* _MSVC_INVAL_H */
---- origsrc/libmemcached-1.0.7/lib/msvc-nothrow.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/msvc-nothrow.c	2012-05-14 22:22:39.603311400 +0900
+--- origsrc/libmemcached-1.0.13/lib/msvc-nothrow.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/msvc-nothrow.c	2012-11-04 17:43:22.638984400 +0900
 @@ -0,0 +1,49 @@
 +/* Wrappers that don't throw invalid parameter notifications
 +   with MSVC runtime libraries.
@@ -3800,8 +3883,8 @@
 +  return result;
 +}
 +#endif
---- origsrc/libmemcached-1.0.7/lib/msvc-nothrow.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/msvc-nothrow.h	2012-05-14 22:22:39.743936400 +0900
+--- origsrc/libmemcached-1.0.13/lib/msvc-nothrow.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/msvc-nothrow.h	2012-11-04 17:43:22.748359400 +0900
 @@ -0,0 +1,43 @@
 +/* Wrappers that don't throw invalid parameter notifications
 +   with MSVC runtime libraries.
@@ -3846,8 +3929,8 @@
 +#endif
 +
 +#endif /* _MSVC_NOTHROW_H */
---- origsrc/libmemcached-1.0.7/lib/open.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/open.c	2012-05-14 22:22:39.853311400 +0900
+--- origsrc/libmemcached-1.0.13/lib/open.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/open.c	2012-11-04 17:43:22.873359400 +0900
 @@ -0,0 +1,181 @@
 +/* Open a descriptor to a file.
 +   Copyright (C) 2007-2012 Free Software Foundation, Inc.
@@ -4030,8 +4113,8 @@
 +
 +  return fd;
 +}
---- origsrc/libmemcached-1.0.7/lib/pathmax.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/pathmax.h	2012-05-14 22:22:39.993936400 +0900
+--- origsrc/libmemcached-1.0.13/lib/pathmax.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/pathmax.h	2012-11-04 17:43:22.982734400 +0900
 @@ -0,0 +1,83 @@
 +/* Define PATH_MAX somehow.  Requires sys/types.h.
 +   Copyright (C) 1992, 1999, 2001, 2003, 2005, 2009-2012 Free Software
@@ -4116,8 +4199,8 @@
 +# endif
 +
 +#endif /* _PATHMAX_H */
---- origsrc/libmemcached-1.0.7/lib/rawmemchr.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/rawmemchr.c	2012-05-14 22:22:40.134561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/rawmemchr.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/rawmemchr.c	2012-11-04 17:43:23.107734400 +0900
 @@ -0,0 +1,136 @@
 +/* Searching in a string.
 +   Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -4255,8 +4338,8 @@
 +    char_ptr++;
 +  return (void *) char_ptr;
 +}
---- origsrc/libmemcached-1.0.7/lib/rawmemchr.valgrind	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/rawmemchr.valgrind	2012-05-14 22:22:40.259561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/rawmemchr.valgrind	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/rawmemchr.valgrind	2012-11-04 17:43:23.232734400 +0900
 @@ -0,0 +1,12 @@
 +# Suppress a valgrind message about use of uninitialized memory in rawmemchr().
 +# This use is OK because it provides only a speedup.
@@ -4270,8 +4353,8 @@
 +    Memcheck:Value8
 +    fun:rawmemchr
 +}
---- origsrc/libmemcached-1.0.7/lib/sched.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/sched.in.h	2012-05-14 22:22:40.384561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/sched.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/sched.in.h	2012-11-04 17:43:23.357734400 +0900
 @@ -0,0 +1,57 @@
 +/* Replacement <sched.h> for platforms that lack it.
 +   Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -4307,7 +4390,7 @@
 +/* Get pid_t.
 +   This is needed on glibc 2.11 (see
 +   glibc bug <http://sourceware.org/bugzilla/show_bug.cgi?id=13198>)
-+   and MacOS X 10.5.  */
++   and Mac OS X 10.5.  */
 +#include <sys/types.h>
 +
 +#if !@HAVE_STRUCT_SCHED_PARAM@
@@ -4330,8 +4413,8 @@
 +
 +#endif /* _@GUARD_PREFIX@_SCHED_H */
 +#endif /* _@GUARD_PREFIX@_SCHED_H */
---- origsrc/libmemcached-1.0.7/lib/spawn.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn.c	2012-05-14 22:22:40.493936400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn.c	2012-11-04 17:43:23.482734400 +0900
 @@ -0,0 +1,33 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -4366,8 +4449,8 @@
 +{
 +  return __spawni (pid, path, file_actions, attrp, argv, envp, 0);
 +}
---- origsrc/libmemcached-1.0.7/lib/spawn.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn.in.h	2012-05-14 22:22:40.634561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn.in.h	2012-11-04 17:43:23.607734400 +0900
 @@ -0,0 +1,881 @@
 +/* Definitions for POSIX spawn interface.
 +   Copyright (C) 2000, 2003-2004, 2008-2012 Free Software Foundation, Inc.
@@ -5250,8 +5333,8 @@
 +
 +#endif /* _@GUARD_PREFIX@_SPAWN_H */
 +#endif /* _@GUARD_PREFIX@_SPAWN_H */
---- origsrc/libmemcached-1.0.7/lib/spawn_faction_addclose.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn_faction_addclose.c	2012-05-14 22:22:40.759561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn_faction_addclose.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn_faction_addclose.c	2012-11-04 17:43:23.763984400 +0900
 @@ -0,0 +1,69 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5322,8 +5405,8 @@
 +  }
 +#endif
 +}
---- origsrc/libmemcached-1.0.7/lib/spawn_faction_adddup2.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn_faction_adddup2.c	2012-05-14 22:22:40.884561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn_faction_adddup2.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn_faction_adddup2.c	2012-11-04 17:43:23.888984400 +0900
 @@ -0,0 +1,70 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5395,8 +5478,8 @@
 +  }
 +#endif
 +}
---- origsrc/libmemcached-1.0.7/lib/spawn_faction_destroy.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn_faction_destroy.c	2012-05-14 22:22:41.009561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn_faction_destroy.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn_faction_destroy.c	2012-11-04 17:43:24.029609400 +0900
 @@ -0,0 +1,31 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5429,8 +5512,8 @@
 +  free (file_actions->_actions);
 +  return 0;
 +}
---- origsrc/libmemcached-1.0.7/lib/spawn_faction_init.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn_faction_init.c	2012-05-14 22:22:41.134561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn_faction_init.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn_faction_init.c	2012-11-04 17:43:24.154609400 +0900
 @@ -0,0 +1,56 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5488,8 +5571,8 @@
 +  memset (file_actions, '\0', sizeof (*file_actions));
 +  return 0;
 +}
---- origsrc/libmemcached-1.0.7/lib/spawn_int.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawn_int.h	2012-05-14 22:22:41.259561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawn_int.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawn_int.h	2012-11-04 17:43:24.279609400 +0900
 @@ -0,0 +1,62 @@
 +/* Copyright (C) 2000, 2008-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5553,8 +5636,8 @@
 +                     const posix_spawn_file_actions_t *file_actions,
 +                     const posix_spawnattr_t *attrp, char *const argv[],
 +                     char *const envp[], int use_path);
---- origsrc/libmemcached-1.0.7/lib/spawnattr_destroy.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawnattr_destroy.c	2012-05-14 22:22:41.400186400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawnattr_destroy.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawnattr_destroy.c	2012-11-04 17:43:24.388984400 +0900
 @@ -0,0 +1,28 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5584,8 +5667,8 @@
 +  /* Nothing to do in the moment.  */
 +  return 0;
 +}
---- origsrc/libmemcached-1.0.7/lib/spawnattr_init.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawnattr_init.c	2012-05-14 22:22:41.509561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawnattr_init.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawnattr_init.c	2012-11-04 17:43:24.498359400 +0900
 @@ -0,0 +1,33 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5620,8 +5703,8 @@
 +
 +  return 0;
 +}
---- origsrc/libmemcached-1.0.7/lib/spawnattr_setsigmask.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawnattr_setsigmask.c	2012-05-14 22:22:41.634561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawnattr_setsigmask.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawnattr_setsigmask.c	2012-11-04 17:43:24.623359400 +0900
 @@ -0,0 +1,33 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -5656,8 +5739,8 @@
 +
 +  return 0;
 +}
---- origsrc/libmemcached-1.0.7/lib/spawni.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawni.c	2012-05-14 22:22:41.759561400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawni.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawni.c	2012-11-04 17:43:24.748359400 +0900
 @@ -0,0 +1,374 @@
 +/* Guts of POSIX spawn interface.  Generic POSIX.1 version.
 +   Copyright (C) 2000-2006, 2008-2012 Free Software Foundation, Inc.
@@ -6033,8 +6116,8 @@
 +}
 +
 +#endif
---- origsrc/libmemcached-1.0.7/lib/spawnp.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/spawnp.c	2012-05-14 22:22:41.900186400 +0900
+--- origsrc/libmemcached-1.0.13/lib/spawnp.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/spawnp.c	2012-11-04 17:43:24.857734400 +0900
 @@ -0,0 +1,33 @@
 +/* Copyright (C) 2000, 2009-2012 Free Software Foundation, Inc.
 +   This file is part of the GNU C Library.
@@ -6069,9 +6152,9 @@
 +{
 +  return __spawni (pid, file, file_actions, attrp, argv, envp, 1);
 +}
---- origsrc/libmemcached-1.0.7/lib/stat.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/stat.c	2012-05-14 22:22:42.056436400 +0900
-@@ -0,0 +1,137 @@
+--- origsrc/libmemcached-1.0.13/lib/stat.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/stat.c	2012-11-04 17:43:24.998359400 +0900
+@@ -0,0 +1,138 @@
 +/* Work around platform bugs in stat.
 +   Copyright (C) 2009-2012 Free Software Foundation, Inc.
 +
@@ -6103,6 +6186,7 @@
 +
 +#if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
 +# if _GL_WINDOWS_64_BIT_ST_SIZE
++#  undef stat /* avoid warning on mingw64 with _FILE_OFFSET_BITS=64 */
 +#  define stat _stati64
 +#  define REPLACE_FUNC_STAT_DIR 1
 +#  undef REPLACE_FUNC_STAT_FILE
@@ -6209,9 +6293,9 @@
 +#endif /* REPLACE_FUNC_STAT_DIR */
 +  return result;
 +}
---- origsrc/libmemcached-1.0.7/lib/stdbool.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/stdbool.in.h	2012-05-14 22:22:42.181436400 +0900
-@@ -0,0 +1,121 @@
+--- origsrc/libmemcached-1.0.13/lib/stdbool.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/stdbool.in.h	2012-11-04 17:43:25.123359400 +0900
+@@ -0,0 +1,132 @@
 +/* Copyright (C) 2001-2003, 2006-2012 Free Software Foundation, Inc.
 +   Written by Bruno Haible <haible@clisp.cons.org>, 2001.
 +
@@ -6280,24 +6364,19 @@
 +# undef true
 +#endif
 +
-+/* For the sake of symbolic names in gdb, we define true and false as
-+   enum constants, not only as macros.
-+   It is tempting to write
-+      typedef enum { false = 0, true = 1 } _Bool;
-+   so that gdb prints values of type 'bool' symbolically. But if we do
-+   this, values of type '_Bool' may promote to 'int' or 'unsigned int'
-+   (see ISO C 99 6.7.2.2.(4)); however, '_Bool' must promote to 'int'
-+   (see ISO C 99 6.3.1.1.(2)).  So we add a negative value to the
-+   enum; this ensures that '_Bool' promotes to 'int'.  */
-+#if defined __cplusplus || (defined __BEOS__ && !defined __HAIKU__)
++#ifdef __cplusplus
++# define _Bool bool
++# define bool bool
++#else
++# if defined __BEOS__ && !defined __HAIKU__
 +  /* A compiler known to have 'bool'.  */
 +  /* If the compiler already has both 'bool' and '_Bool', we can assume they
 +     are the same types.  */
-+# if !@HAVE__BOOL@
++#  if !@HAVE__BOOL@
 +typedef bool _Bool;
-+# endif
-+#else
-+# if !defined __GNUC__
++#  endif
++# else
++#  if !defined __GNUC__
 +   /* If @HAVE__BOOL@:
 +        Some HP-UX cc and AIX IBM C compiler versions have compiler bugs when
 +        the built-in _Bool type is used.  See
@@ -6317,24 +6396,40 @@
 +          "Invalid enumerator. (badenum)" with HP-UX cc on Tru64.
 +        The only benefit of the enum, debuggability, is not important
 +        with these compilers.  So use 'signed char' and no enum.  */
-+#  define _Bool signed char
-+# else
++#   define _Bool signed char
++#  else
 +   /* With this compiler, trust the _Bool type if the compiler has it.  */
-+#  if !@HAVE__BOOL@
++#   if !@HAVE__BOOL@
++   /* For the sake of symbolic names in gdb, define true and false as
++      enum constants, not only as macros.
++      It is tempting to write
++         typedef enum { false = 0, true = 1 } _Bool;
++      so that gdb prints values of type 'bool' symbolically.  But then
++      values of type '_Bool' might promote to 'int' or 'unsigned int'
++      (see ISO C 99 6.7.2.2.(4)); however, '_Bool' must promote to 'int'
++      (see ISO C 99 6.3.1.1.(2)).  So add a negative value to the
++      enum; this ensures that '_Bool' promotes to 'int'.  */
 +typedef enum { _Bool_must_promote_to_int = -1, false = 0, true = 1 } _Bool;
++#   endif
 +#  endif
 +# endif
++# define bool _Bool
 +#endif
-+#define bool _Bool
 +
 +/* The other macros must be usable in preprocessor directives.  */
-+#define false 0
-+#define true 1
++#ifdef __cplusplus
++# define false false
++# define true true
++#else
++# define false 0
++# define true 1
++#endif
++
 +#define __bool_true_false_are_defined 1
 +
 +#endif /* _GL_STDBOOL_H */
---- origsrc/libmemcached-1.0.7/lib/stddef.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/stddef.in.h	2012-05-14 22:22:42.306436400 +0900
+--- origsrc/libmemcached-1.0.13/lib/stddef.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/stddef.in.h	2012-11-04 17:43:25.248359400 +0900
 @@ -0,0 +1,86 @@
 +/* A substitute for POSIX 2008 <stddef.h>, for platforms that have issues.
 +
@@ -6422,8 +6517,8 @@
 +#  endif /* _@GUARD_PREFIX@_STDDEF_H */
 +# endif /* _@GUARD_PREFIX@_STDDEF_H */
 +#endif /* __need_XXX */
---- origsrc/libmemcached-1.0.7/lib/strchrnul.c	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/strchrnul.c	2012-05-14 22:22:42.431436400 +0900
+--- origsrc/libmemcached-1.0.13/lib/strchrnul.c	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/strchrnul.c	2012-11-04 17:43:25.373359400 +0900
 @@ -0,0 +1,142 @@
 +/* Searching in a string.
 +   Copyright (C) 2003, 2007-2012 Free Software Foundation, Inc.
@@ -6567,8 +6662,8 @@
 +    char_ptr++;
 +  return (char *) char_ptr;
 +}
---- origsrc/libmemcached-1.0.7/lib/strchrnul.valgrind	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/strchrnul.valgrind	2012-05-14 22:22:42.540811400 +0900
+--- origsrc/libmemcached-1.0.13/lib/strchrnul.valgrind	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/strchrnul.valgrind	2012-11-04 17:43:25.482734400 +0900
 @@ -0,0 +1,12 @@
 +# Suppress a valgrind message about use of uninitialized memory in strchrnul().
 +# This use is OK because it provides only a speedup.
@@ -6582,8 +6677,8 @@
 +    Memcheck:Value8
 +    fun:strchrnul
 +}
---- origsrc/libmemcached-1.0.7/lib/string.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/string.in.h	2012-05-14 22:22:42.681436400 +0900
+--- origsrc/libmemcached-1.0.13/lib/string.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/string.in.h	2012-11-04 17:43:25.654609400 +0900
 @@ -0,0 +1,1029 @@
 +/* A GNU-like <string.h>.
 +
@@ -7614,8 +7709,8 @@
 +
 +#endif /* _@GUARD_PREFIX@_STRING_H */
 +#endif /* _@GUARD_PREFIX@_STRING_H */
---- origsrc/libmemcached-1.0.7/lib/sys_stat.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/sys_stat.in.h	2012-05-14 22:22:42.806436400 +0900
+--- origsrc/libmemcached-1.0.13/lib/sys_stat.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/sys_stat.in.h	2012-11-04 17:43:25.810859400 +0900
 @@ -0,0 +1,728 @@
 +/* Provide a more complete sys/stat header file.
 +   Copyright (C) 2005-2012 Free Software Foundation, Inc.
@@ -8345,8 +8440,8 @@
 +#endif /* _@GUARD_PREFIX@_SYS_STAT_H */
 +#endif /* _@GUARD_PREFIX@_SYS_STAT_H */
 +#endif
---- origsrc/libmemcached-1.0.7/lib/sys_types.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/sys_types.in.h	2012-05-14 22:22:42.931436400 +0900
+--- origsrc/libmemcached-1.0.13/lib/sys_types.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/sys_types.in.h	2012-11-04 17:43:25.951484400 +0900
 @@ -0,0 +1,51 @@
 +/* Provide a more complete sys/types.h.
 +
@@ -8399,8 +8494,8 @@
 +
 +#endif /* _@GUARD_PREFIX@_SYS_TYPES_H */
 +#endif /* _@GUARD_PREFIX@_SYS_TYPES_H */
---- origsrc/libmemcached-1.0.7/lib/time.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/time.in.h	2012-05-14 22:22:43.072061400 +0900
+--- origsrc/libmemcached-1.0.13/lib/time.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/time.in.h	2012-11-04 17:43:26.092109400 +0900
 @@ -0,0 +1,248 @@
 +/* A more-standard <time.h>.
 +
@@ -8650,8 +8745,8 @@
 +# endif
 +
 +#endif
---- origsrc/libmemcached-1.0.7/lib/unistd.in.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/unistd.in.h	2012-05-14 22:22:43.212686400 +0900
+--- origsrc/libmemcached-1.0.13/lib/unistd.in.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/unistd.in.h	2012-11-04 17:43:26.232734400 +0900
 @@ -0,0 +1,1535 @@
 +/* Substitute for and wrapper around <unistd.h>.
 +   Copyright (C) 2003-2012 Free Software Foundation, Inc.
@@ -9973,7 +10068,7 @@
 +_GL_FUNCDECL_SYS (sethostname, int, (const char *name, size_t len)
 +                                    _GL_ARG_NONNULL ((1)));
 +# endif
-+/* Need to cast, because on Solaris 11 2011-10, MacOS X 10.5, IRIX 6.5
++/* Need to cast, because on Solaris 11 2011-10, Mac OS X 10.5, IRIX 6.5
 +   and FreeBSD 6.4 the second parameter is int.  On Solaris 11
 +   2011-10, the first parameter is not const.  */
 +_GL_CXXALIAS_SYS_CAST (sethostname, int, (const char *name, size_t len));
@@ -10188,9 +10283,9 @@
 +
 +#endif /* _@GUARD_PREFIX@_UNISTD_H */
 +#endif /* _@GUARD_PREFIX@_UNISTD_H */
---- origsrc/libmemcached-1.0.7/lib/verify.h	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/lib/verify.h	2012-05-14 22:22:43.337686400 +0900
-@@ -0,0 +1,241 @@
+--- origsrc/libmemcached-1.0.13/lib/verify.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/lib/verify.h	2012-11-04 17:43:26.373359400 +0900
+@@ -0,0 +1,245 @@
 +/* Compile-time assert-like macros.
 +
 +   Copyright (C) 2005-2006, 2009-2012 Free Software Foundation, Inc.
@@ -10318,13 +10413,17 @@
 +       extern int (*dummy (void)) [sizeof (struct {...})];
 +
 +   * GCC warns about duplicate declarations of the dummy function if
-+     -Wredundant_decls is used.  GCC 4.3 and later have a builtin
++     -Wredundant-decls is used.  GCC 4.3 and later have a builtin
 +     __COUNTER__ macro that can let us generate unique identifiers for
 +     each dummy function, to suppress this warning.
 +
 +   * This implementation exploits the fact that older versions of GCC,
 +     which do not support _Static_assert, also do not warn about the
 +     last declaration mentioned above.
++
++   * GCC warns if -Wnested-externs is enabled and verify() is used
++     within a function body; but inside a function, you can always
++     arrange to use verify_expr() instead.
 +
 +   * In C++, any struct definition inside sizeof is invalid.
 +     Use a template type to work around the problem.  */
@@ -10432,11 +10531,52 @@
 +/* @assert.h omit end@  */
 +
 +#endif
---- origsrc/libmemcached-1.0.7/libtest/cmdline.cc	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/libtest/cmdline.cc	2012-05-14 22:45:06.498766000 +0900
-@@ -53,9 +53,11 @@ using namespace libtest;
- #include <sys/types.h>
- #include <unistd.h>
+--- origsrc/libmemcached-1.0.13/libhashkit/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/libhashkit/include.am	2012-11-04 17:48:04.947578100 +0900
+@@ -53,7 +53,7 @@ endif
+ libhashkit_libhashkit_la_CXXFLAGS+= -DBUILDING_HASHKIT
+ 
+ libhashkit_libhashkit_la_LIBADD=
+-libhashkit_libhashkit_la_LDFLAGS= -version-info $(HASHKIT_LIBRARY_VERSION)
++libhashkit_libhashkit_la_LDFLAGS= -version-info $(HASHKIT_LIBRARY_VERSION) -no-undefined
+ 
+ # library used for testing
+ noinst_LTLIBRARIES+= libhashkit/libhashkitinc.la
+--- origsrc/libmemcached-1.0.13/libmemcached/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/libmemcached/include.am	2012-11-04 17:48:40.277656300 +0900
+@@ -113,7 +113,7 @@ libmemcached/options.cc: libmemcached/cs
+ 
+ libmemcached_libmemcached_la_DEPENDENCIES=
+ libmemcached_libmemcached_la_LIBADD=
+-libmemcached_libmemcached_la_LDFLAGS=
++libmemcached_libmemcached_la_LDFLAGS= -no-undefined
+ libmemcached_libmemcached_la_LDFLAGS+= -version-info ${MEMCACHED_LIBRARY_VERSION}
+ libmemcached_libmemcached_la_LDFLAGS+= $(DL_LIB)
+ 
+--- origsrc/libmemcached-1.0.13/libmemcachedprotocol/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/libmemcachedprotocol/include.am	2012-11-04 17:49:11.296211000 +0900
+@@ -30,5 +30,5 @@ libmemcached_libmemcachedprotocol_la_CXX
+ libmemcached_libmemcachedprotocol_la_CXXFLAGS+= ${PTHREAD_CFLAGS}
+ 
+ libmemcached_libmemcachedprotocol_la_LIBADD= ${PTHREAD_LIBS}
+-libmemcached_libmemcachedprotocol_la_LDFLAGS= ${AM_LDFLAGS}
++libmemcached_libmemcachedprotocol_la_LDFLAGS= ${AM_LDFLAGS} -no-undefined
+ libmemcached_libmemcachedprotocol_la_LDFLAGS+= -version-info ${MEMCACHED_PROTOCAL_LIBRARY_VERSION}
+--- origsrc/libmemcached-1.0.13/libmemcachedutil/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/libmemcachedutil/include.am	2012-11-04 17:49:30.657539100 +0900
+@@ -21,6 +21,6 @@ libmemcached_libmemcachedutil_la_CXXFLAG
+ libmemcached_libmemcachedutil_la_CXXFLAGS+= ${PTHREAD_CFLAGS}
+ libmemcached_libmemcachedutil_la_LIBADD= libmemcached/libmemcached.la
+ libmemcached_libmemcachedutil_la_LIBADD+= ${PTHREAD_LIBS}
+-libmemcached_libmemcachedutil_la_LDFLAGS= ${AM_LDFLAGS} -version-info ${MEMCACHED_UTIL_LIBRARY_VERSION}
++libmemcached_libmemcachedutil_la_LDFLAGS= ${AM_LDFLAGS} -version-info ${MEMCACHED_UTIL_LIBRARY_VERSION} -no-undefined
+ libmemcached_libmemcachedutil_la_DEPENDENCIES= libmemcached/libmemcached.la
+ 
+--- origsrc/libmemcached-1.0.13/libtest/cmdline.cc	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/libtest/cmdline.cc	2012-11-04 18:05:16.857734400 +0900
+@@ -55,9 +55,11 @@ using namespace libtest;
+ 
+ #include <algorithm>
  
 +#if !defined(__CYGWIN__)
  #ifndef __USE_GNU
@@ -10446,21 +10586,54 @@
  
  extern "C" {
    static int exited_successfully(int status)
---- origsrc/libmemcached-1.0.7/libtest/include.am	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/libtest/include.am	2012-05-14 22:42:01.804430000 +0900
-@@ -125,8 +125,8 @@ libtest_libtest_la_LIBADD+= $(PTHREAD_LI
- libtest_libtest_la_LIBADD+= $(CURL_LIBS)
+--- origsrc/libmemcached-1.0.13/libtest/include.am	2012-10-19 10:55:45.000000000 +0900
++++ src/libmemcached-1.0.13/libtest/include.am	2012-11-04 20:14:09.957503700 +0900
+@@ -96,7 +96,7 @@ noinst_HEADERS+= libtest/wait.h
+ 
+ noinst_LTLIBRARIES+= libtest/libtest.la
+ 
+-libtest_libtest_la_CXXFLAGS=
++libtest_libtest_la_CXXFLAGS=-I$(top_builddir)/lib
+ libtest_libtest_la_DEPENDENCIES=
+ libtest_libtest_la_LIBADD=
+ libtest_libtest_la_SOURCES=
+@@ -141,9 +141,10 @@ libtest_libtest_la_LIBADD+= $(RT_LIB)
  
  libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
--libtest_libtest_la_DEPENDENCIES+=libtest/abort
+ libtest_libtest_la_DEPENDENCIES+=libtest/abort
 -libtest_libtest_la_DEPENDENCIES+=libtest/wait
-+libtest_libtest_la_DEPENDENCIES+=libtest/abort$(EXEEXT)
 +libtest_libtest_la_DEPENDENCIES+=libtest/wait$(EXEEXT)
  
  # Declare unittest so that we can append to it
++libtest_unittest_CPPFLAGS=-I$(top_builddir)/lib
  libtest_unittest_CXXFLAGS=
---- origsrc/libmemcached-1.0.7/m4/00gnulib.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/00gnulib.m4	2012-05-14 22:22:43.447061400 +0900
+ libtest_unittest_LDADD=
+ libtest_unittest_DEPENDENCIES=
+@@ -154,6 +155,7 @@ libtest_libtest_la_DEPENDENCIES+= libmem
+ libtest_libtest_la_DEPENDENCIES+= libmemcached/libmemcachedutil.la
+ libtest_libtest_la_LIBADD+= libmemcached/libmemcached.la
+ libtest_libtest_la_LIBADD+= libmemcached/libmemcachedutil.la
++libtest_libtest_la_LIBADD+= $(top_builddir)/lib/libgnu.la
+ libtest_libtest_la_SOURCES+= libtest/memcached.cc
+ libtest_libtest_la_CXXFLAGS+= -DHAVE_LIBMEMCACHED
+ 
+@@ -245,11 +247,13 @@ helgrind-unittest: libtest/unittest
+ drd-unittest: libtest/unittest
+ 	@$(DRD_COMMAND) libtest/unittest
+ 
+-libtest_skiptest_LDADD= libtest/libtest.la
++libtest_skiptest_CPPFLAGS=-I$(top_builddir)/lib
++libtest_skiptest_LDADD= libtest/libtest.la $(top_builddir)/lib/libgnu.la
+ libtest_skiptest_SOURCES= libtest/skiptest.cc
+ check_PROGRAMS+= libtest/skiptest
+ noinst_PROGRAMS+= libtest/skiptest
+ 
++libtest_wait_CXXFLAGS=-I$(top_builddir)/lib
+ libtest_wait_SOURCES=
+ libtest_wait_SOURCES+= libtest/wait.cc
+ libtest_wait_SOURCES+= libtest/dream.cc
+--- origsrc/libmemcached-1.0.13/m4/00gnulib.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/00gnulib.m4	2012-11-04 17:43:26.482734400 +0900
 @@ -0,0 +1,30 @@
 +# 00gnulib.m4 serial 2
 +dnl Copyright (C) 2009-2012 Free Software Foundation, Inc.
@@ -10492,8 +10665,8 @@
 +# Witness macro that this file has been included.  Needed to force
 +# Automake to include this file prior to all other gnulib .m4 files.
 +AC_DEFUN([gl_00GNULIB])
---- origsrc/libmemcached-1.0.7/m4/alloca.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/alloca.m4	2012-05-14 22:22:43.540811400 +0900
+--- origsrc/libmemcached-1.0.13/m4/alloca.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/alloca.m4	2012-11-04 17:43:26.576484400 +0900
 @@ -0,0 +1,121 @@
 +# alloca.m4 serial 14
 +dnl Copyright (C) 2002-2004, 2006-2007, 2009-2012 Free Software Foundation,
@@ -10616,8 +10789,8 @@
 +AC_DEFINE_UNQUOTED(STACK_DIRECTION, $ac_cv_c_stack_direction)
 +])# _AC_LIBOBJ_ALLOCA
 +])
---- origsrc/libmemcached-1.0.7/m4/dup2.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/dup2.m4	2012-05-14 22:22:43.650186400 +0900
+--- origsrc/libmemcached-1.0.13/m4/dup2.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/dup2.m4	2012-11-04 17:43:26.670234400 +0900
 @@ -0,0 +1,81 @@
 +#serial 18
 +dnl Copyright (C) 2002, 2005, 2007, 2009-2012 Free Software Foundation, Inc.
@@ -10700,10 +10873,10 @@
 +
 +# Prerequisites of lib/dup2.c.
 +AC_DEFUN([gl_PREREQ_DUP2], [])
---- origsrc/libmemcached-1.0.7/m4/errno_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/errno_h.m4	2012-05-14 22:22:43.743936400 +0900
-@@ -0,0 +1,125 @@
-+# errno_h.m4 serial 10
+--- origsrc/libmemcached-1.0.13/m4/errno_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/errno_h.m4	2012-11-04 17:43:26.779609400 +0900
+@@ -0,0 +1,134 @@
++# errno_h.m4 serial 11
 +dnl Copyright (C) 2004, 2006, 2008-2012 Free Software Foundation, Inc.
 +dnl This file is free software; the Free Software Foundation
 +dnl gives unlimited permission to copy and/or distribute it,
@@ -10715,6 +10888,9 @@
 +  AC_CACHE_CHECK([for complete errno.h], [gl_cv_header_errno_h_complete], [
 +    AC_EGREP_CPP([booboo],[
 +#include <errno.h>
++#if !defined ETXTBSY
++booboo
++#endif
 +#if !defined ENOMSG
 +booboo
 +#endif
@@ -10752,6 +10928,12 @@
 +booboo
 +#endif
 +#if !defined ECANCELED
++booboo
++#endif
++#if !defined EOWNERDEAD
++booboo
++#endif
++#if !defined ENOTRECOVERABLE
 +booboo
 +#endif
 +      ],
@@ -10828,10 +11010,10 @@
 +m4_ifdef([AC_COMPUTE_INT], [], [
 +  AC_DEFUN([AC_COMPUTE_INT], [_AC_COMPUTE_INT([$2],[$1],[$3],[$4])])
 +])
---- origsrc/libmemcached-1.0.7/m4/extensions.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/extensions.m4	2012-05-14 22:22:43.837686400 +0900
+--- origsrc/libmemcached-1.0.13/m4/extensions.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/extensions.m4	2012-11-04 17:43:26.873359400 +0900
 @@ -0,0 +1,123 @@
-+# serial 11  -*- Autoconf -*-
++# serial 12  -*- Autoconf -*-
 +# Enable extensions on systems that normally disable them.
 +
 +# Copyright (C) 2003, 2006-2012 Free Software Foundation, Inc.
@@ -10900,7 +11082,7 @@
 +#ifndef _ALL_SOURCE
 +# undef _ALL_SOURCE
 +#endif
-+/* Enable general extensions on MacOS X.  */
++/* Enable general extensions on Mac OS X.  */
 +#ifndef _DARWIN_C_SOURCE
 +# undef _DARWIN_C_SOURCE
 +#endif
@@ -10954,9 +11136,9 @@
 +
 +  AC_REQUIRE([AC_USE_SYSTEM_EXTENSIONS])
 +])
---- origsrc/libmemcached-1.0.7/m4/fcntl-o.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/fcntl-o.m4	2012-05-14 22:22:43.947061400 +0900
-@@ -0,0 +1,123 @@
+--- origsrc/libmemcached-1.0.13/m4/fcntl-o.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/fcntl-o.m4	2012-11-04 17:43:26.967109400 +0900
+@@ -0,0 +1,134 @@
 +# fcntl-o.m4 serial 4
 +dnl Copyright (C) 2006, 2009-2012 Free Software Foundation, Inc.
 +dnl This file is free software; the Free Software Foundation
@@ -11009,7 +11191,18 @@
 +            #if HAVE_SYMLINK
 +            {
 +              static char const sym[] = "conftest.sym";
-+              if (symlink (".", sym) != 0)
++              if (symlink ("/dev/null", sym) != 0)
++                result |= 2;
++              else
++                {
++                  int fd = open (sym, O_WRONLY | O_NOFOLLOW | O_CREAT, 0);
++                  if (fd >= 0)
++                    {
++                      close (fd);
++                      result |= 4;
++                    }
++                }
++              if (unlink (sym) != 0 || symlink (".", sym) != 0)
 +                result |= 2;
 +              else
 +                {
@@ -11080,8 +11273,8 @@
 +  AC_DEFINE_UNQUOTED([HAVE_WORKING_O_NOFOLLOW], [$ac_val],
 +    [Define to 1 if O_NOFOLLOW works.])
 +])
---- origsrc/libmemcached-1.0.7/m4/fcntl_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/fcntl_h.m4	2012-05-14 22:22:44.056436400 +0900
+--- origsrc/libmemcached-1.0.13/m4/fcntl_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/fcntl_h.m4	2012-11-04 17:43:27.060859400 +0900
 @@ -0,0 +1,50 @@
 +# serial 15
 +# Configure fcntl.h.
@@ -11133,8 +11326,8 @@
 +  REPLACE_OPEN=0;        AC_SUBST([REPLACE_OPEN])
 +  REPLACE_OPENAT=0;      AC_SUBST([REPLACE_OPENAT])
 +])
---- origsrc/libmemcached-1.0.7/m4/fstat.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/fstat.m4	2012-05-14 22:22:44.150186400 +0900
+--- origsrc/libmemcached-1.0.13/m4/fstat.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/fstat.m4	2012-11-04 17:43:27.154609400 +0900
 @@ -0,0 +1,39 @@
 +# fstat.m4 serial 3
 +dnl Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -11175,8 +11368,8 @@
 +[
 +  AC_REQUIRE([AC_C_INLINE])
 +])
---- origsrc/libmemcached-1.0.7/m4/getdtablesize.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/getdtablesize.m4	2012-05-14 22:22:44.275186400 +0900
+--- origsrc/libmemcached-1.0.13/m4/getdtablesize.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/getdtablesize.m4	2012-11-04 17:43:27.248359400 +0900
 @@ -0,0 +1,19 @@
 +# getdtablesize.m4 serial 3
 +dnl Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -11197,8 +11390,8 @@
 +AC_DEFUN([gl_PREREQ_GETDTABLESIZE], [
 +  AC_REQUIRE([AC_C_INLINE])
 +])
---- origsrc/libmemcached-1.0.7/m4/gnulib-cache.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/gnulib-cache.m4	2012-05-14 22:23:21.853311400 +0900
+--- origsrc/libmemcached-1.0.13/m4/gnulib-cache.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/gnulib-cache.m4	2012-11-04 17:43:56.763984400 +0900
 @@ -0,0 +1,56 @@
 +# Copyright (C) 2002-2012 Free Software Foundation, Inc.
 +#
@@ -11229,7 +11422,7 @@
 +
 +
 +# Specification in the form of a command-line invocation:
-+#   gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=config --no-conditional-dependencies --libtool --macro-prefix=gl posix_spawn posix_spawn_file_actions_addclose posix_spawn_file_actions_adddup2 posix_spawn_file_actions_destroy posix_spawn_file_actions_init posix_spawnattr_destroy posix_spawnattr_init posix_spawnattr_setsigmask posix_spawnp
++#   gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl posix_spawn posix_spawn_file_actions_addclose posix_spawn_file_actions_adddup2 posix_spawn_file_actions_destroy posix_spawn_file_actions_init posix_spawnattr_destroy posix_spawnattr_init posix_spawnattr_setsigmask posix_spawnp
 +
 +# Specification in the form of a few gnulib-tool.m4 macro invocations:
 +gl_LOCAL_DIR([])
@@ -11255,11 +11448,11 @@
 +gl_LIBTOOL
 +gl_MACRO_PREFIX([gl])
 +gl_PO_DOMAIN([])
-+gl_WITNESS_C_DOMAIN([])
---- origsrc/libmemcached-1.0.7/m4/gnulib-common.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/gnulib-common.m4	2012-05-14 22:22:44.368936400 +0900
++gl_WITNESS_C_MACRO([])
+--- origsrc/libmemcached-1.0.13/m4/gnulib-common.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/gnulib-common.m4	2012-11-04 17:43:27.326484400 +0900
 @@ -0,0 +1,373 @@
-+# gnulib-common.m4 serial 32
++# gnulib-common.m4 serial 33
 +dnl Copyright (C) 2007-2012 Free Software Foundation, Inc.
 +dnl This file is free software; the Free Software Foundation
 +dnl gives unlimited permission to copy and/or distribute it,
@@ -11291,7 +11484,7 @@
 +[/* Work around a bug in Apple GCC 4.0.1 build 5465: In C99 mode, it supports
 +   the ISO C 99 semantics of 'extern inline' (unlike the GNU C semantics of
 +   earlier versions), but does not display it by setting __GNUC_STDC_INLINE__.
-+   __APPLE__ && __MACH__ test for MacOS X.
++   __APPLE__ && __MACH__ test for Mac OS X.
 +   __APPLE_CC__ tests for the Apple compiler and its version.
 +   __STDC_VERSION__ tests for the C99 mode.  */
 +#if defined __APPLE__ && defined __MACH__ && __APPLE_CC__ >= 5465 && !defined __cplusplus && __STDC_VERSION__ >= 199901L && !defined __GNUC_STDC_INLINE__
@@ -11632,8 +11825,8 @@
 +  AC_CACHE_VAL([$1], [$2])
 +  as_echo_n="$saved_as_echo_n"
 +])
---- origsrc/libmemcached-1.0.7/m4/gnulib-comp.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/gnulib-comp.m4	2012-05-14 22:23:33.259561400 +0900
+--- origsrc/libmemcached-1.0.13/m4/gnulib-comp.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/gnulib-comp.m4	2012-11-04 17:44:06.420234400 +0900
 @@ -0,0 +1,429 @@
 +# DO NOT EDIT! GENERATED AUTOMATICALLY!
 +# Copyright (C) 2002-2012 Free Software Foundation, Inc.
@@ -11734,122 +11927,122 @@
 +  m4_pushdef([gl_LIBSOURCES_DIR], [])
 +  gl_COMMON
 +  gl_source_base='lib'
-+gl_FUNC_ALLOCA
-+gl_FUNC_DUP2
-+if test $HAVE_DUP2 = 0 || test $REPLACE_DUP2 = 1; then
-+  AC_LIBOBJ([dup2])
-+  gl_PREREQ_DUP2
-+fi
-+gl_UNISTD_MODULE_INDICATOR([dup2])
-+gl_HEADER_ERRNO_H
-+gl_FCNTL_H
-+gl_FUNC_FSTAT
-+if test $REPLACE_FSTAT = 1; then
-+  AC_LIBOBJ([fstat])
-+  gl_PREREQ_FSTAT
-+fi
-+gl_SYS_STAT_MODULE_INDICATOR([fstat])
-+gl_FUNC_GETDTABLESIZE
-+if test $HAVE_GETDTABLESIZE = 0; then
-+  AC_LIBOBJ([getdtablesize])
-+  gl_PREREQ_GETDTABLESIZE
-+fi
-+gl_UNISTD_MODULE_INDICATOR([getdtablesize])
-+AC_REQUIRE([gl_LARGEFILE])
-+gl_MSVC_INVAL
-+if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
-+  AC_LIBOBJ([msvc-inval])
-+fi
-+gl_MSVC_NOTHROW
-+if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
-+  AC_LIBOBJ([msvc-nothrow])
-+fi
-+gl_FUNC_OPEN
-+if test $REPLACE_OPEN = 1; then
-+  AC_LIBOBJ([open])
-+  gl_PREREQ_OPEN
-+fi
-+gl_FCNTL_MODULE_INDICATOR([open])
-+gl_PATHMAX
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawn])
-+  AC_LIBOBJ([spawni])
-+  gl_PREREQ_POSIX_SPAWN_INTERNAL
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawn])
-+gl_FUNC_POSIX_SPAWN_FILE_ACTIONS_ADDCLOSE
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDCLOSE = 1; then
-+  AC_LIBOBJ([spawn_faction_addclose])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_addclose])
-+gl_FUNC_POSIX_SPAWN_FILE_ACTIONS_ADDDUP2
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDDUP2 = 1; then
-+  AC_LIBOBJ([spawn_faction_adddup2])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_adddup2])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawn_faction_destroy])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_destroy])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawn_faction_init])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_init])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawnattr_destroy])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_destroy])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawnattr_init])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_init])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawnattr_setsigmask])
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_setsigmask])
-+gl_POSIX_SPAWN
-+if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
-+  AC_LIBOBJ([spawnp])
-+  AC_LIBOBJ([spawni])
-+  gl_PREREQ_POSIX_SPAWN_INTERNAL
-+fi
-+gl_SPAWN_MODULE_INDICATOR([posix_spawnp])
-+gl_FUNC_RAWMEMCHR
-+if test $HAVE_RAWMEMCHR = 0; then
-+  AC_LIBOBJ([rawmemchr])
-+  gl_PREREQ_RAWMEMCHR
-+fi
-+gl_STRING_MODULE_INDICATOR([rawmemchr])
-+gl_SCHED_H
-+gl_SPAWN_H
-+gt_TYPE_SSIZE_T
-+gl_FUNC_STAT
-+if test $REPLACE_STAT = 1; then
-+  AC_LIBOBJ([stat])
-+  gl_PREREQ_STAT
-+fi
-+gl_SYS_STAT_MODULE_INDICATOR([stat])
-+AM_STDBOOL_H
-+gl_STDDEF_H
-+gl_FUNC_STRCHRNUL
-+if test $HAVE_STRCHRNUL = 0 || test $REPLACE_STRCHRNUL = 1; then
-+  AC_LIBOBJ([strchrnul])
-+  gl_PREREQ_STRCHRNUL
-+fi
-+gl_STRING_MODULE_INDICATOR([strchrnul])
-+gl_HEADER_STRING_H
-+gl_HEADER_SYS_STAT_H
-+AC_PROG_MKDIR_P
-+gl_SYS_TYPES_H
-+AC_PROG_MKDIR_P
-+gl_HEADER_TIME_H
-+gl_UNISTD_H
++  gl_FUNC_ALLOCA
++  gl_FUNC_DUP2
++  if test $HAVE_DUP2 = 0 || test $REPLACE_DUP2 = 1; then
++    AC_LIBOBJ([dup2])
++    gl_PREREQ_DUP2
++  fi
++  gl_UNISTD_MODULE_INDICATOR([dup2])
++  gl_HEADER_ERRNO_H
++  gl_FCNTL_H
++  gl_FUNC_FSTAT
++  if test $REPLACE_FSTAT = 1; then
++    AC_LIBOBJ([fstat])
++    gl_PREREQ_FSTAT
++  fi
++  gl_SYS_STAT_MODULE_INDICATOR([fstat])
++  gl_FUNC_GETDTABLESIZE
++  if test $HAVE_GETDTABLESIZE = 0; then
++    AC_LIBOBJ([getdtablesize])
++    gl_PREREQ_GETDTABLESIZE
++  fi
++  gl_UNISTD_MODULE_INDICATOR([getdtablesize])
++  AC_REQUIRE([gl_LARGEFILE])
++  gl_MSVC_INVAL
++  if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
++    AC_LIBOBJ([msvc-inval])
++  fi
++  gl_MSVC_NOTHROW
++  if test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1; then
++    AC_LIBOBJ([msvc-nothrow])
++  fi
++  gl_FUNC_OPEN
++  if test $REPLACE_OPEN = 1; then
++    AC_LIBOBJ([open])
++    gl_PREREQ_OPEN
++  fi
++  gl_FCNTL_MODULE_INDICATOR([open])
++  gl_PATHMAX
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawn])
++    AC_LIBOBJ([spawni])
++    gl_PREREQ_POSIX_SPAWN_INTERNAL
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawn])
++  gl_FUNC_POSIX_SPAWN_FILE_ACTIONS_ADDCLOSE
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDCLOSE = 1; then
++    AC_LIBOBJ([spawn_faction_addclose])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_addclose])
++  gl_FUNC_POSIX_SPAWN_FILE_ACTIONS_ADDDUP2
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDDUP2 = 1; then
++    AC_LIBOBJ([spawn_faction_adddup2])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_adddup2])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawn_faction_destroy])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_destroy])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawn_faction_init])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawn_file_actions_init])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawnattr_destroy])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_destroy])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawnattr_init])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_init])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawnattr_setsigmask])
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawnattr_setsigmask])
++  gl_POSIX_SPAWN
++  if test $HAVE_POSIX_SPAWN = 0 || test $REPLACE_POSIX_SPAWN = 1; then
++    AC_LIBOBJ([spawnp])
++    AC_LIBOBJ([spawni])
++    gl_PREREQ_POSIX_SPAWN_INTERNAL
++  fi
++  gl_SPAWN_MODULE_INDICATOR([posix_spawnp])
++  gl_FUNC_RAWMEMCHR
++  if test $HAVE_RAWMEMCHR = 0; then
++    AC_LIBOBJ([rawmemchr])
++    gl_PREREQ_RAWMEMCHR
++  fi
++  gl_STRING_MODULE_INDICATOR([rawmemchr])
++  gl_SCHED_H
++  gl_SPAWN_H
++  gt_TYPE_SSIZE_T
++  gl_FUNC_STAT
++  if test $REPLACE_STAT = 1; then
++    AC_LIBOBJ([stat])
++    gl_PREREQ_STAT
++  fi
++  gl_SYS_STAT_MODULE_INDICATOR([stat])
++  AM_STDBOOL_H
++  gl_STDDEF_H
++  gl_FUNC_STRCHRNUL
++  if test $HAVE_STRCHRNUL = 0 || test $REPLACE_STRCHRNUL = 1; then
++    AC_LIBOBJ([strchrnul])
++    gl_PREREQ_STRCHRNUL
++  fi
++  gl_STRING_MODULE_INDICATOR([strchrnul])
++  gl_HEADER_STRING_H
++  gl_HEADER_SYS_STAT_H
++  AC_PROG_MKDIR_P
++  gl_SYS_TYPES_H
++  AC_PROG_MKDIR_P
++  gl_HEADER_TIME_H
++  gl_UNISTD_H
 +  # End of code from modules
 +  m4_ifval(gl_LIBSOURCES_LIST, [
 +    m4_syscmd([test ! -d ]m4_defn([gl_LIBSOURCES_DIR])[ ||
@@ -12064,8 +12257,8 @@
 +  m4/warn-on-use.m4
 +  m4/wchar_t.m4
 +])
---- origsrc/libmemcached-1.0.7/m4/gnulib-tool.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/gnulib-tool.m4	2012-05-14 22:22:44.478311400 +0900
+--- origsrc/libmemcached-1.0.13/m4/gnulib-tool.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/gnulib-tool.m4	2012-11-04 17:43:27.435859400 +0900
 @@ -0,0 +1,57 @@
 +# gnulib-tool.m4 serial 2
 +dnl Copyright (C) 2004-2005, 2009-2012 Free Software Foundation, Inc.
@@ -12124,8 +12317,8 @@
 +
 +dnl Usage: gl_VC_FILES([BOOLEAN])
 +AC_DEFUN([gl_VC_FILES], [])
---- origsrc/libmemcached-1.0.7/m4/include_next.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/include_next.m4	2012-05-14 22:22:44.572061400 +0900
+--- origsrc/libmemcached-1.0.13/m4/include_next.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/include_next.m4	2012-11-04 17:43:27.545234400 +0900
 @@ -0,0 +1,270 @@
 +# include_next.m4 serial 23
 +dnl Copyright (C) 2006-2012 Free Software Foundation, Inc.
@@ -12397,8 +12590,8 @@
 +# Autoconf 2.68 added warnings for our use of AC_COMPILE_IFELSE;
 +# this fallback is safe for all earlier autoconf versions.
 +m4_define_default([AC_LANG_DEFINES_PROVIDED])
---- origsrc/libmemcached-1.0.7/m4/largefile.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/largefile.m4	2012-05-14 22:22:44.665811400 +0900
+--- origsrc/libmemcached-1.0.13/m4/largefile.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/largefile.m4	2012-11-04 17:43:27.638984400 +0900
 @@ -0,0 +1,149 @@
 +# Enable large files on systems where this is not the default.
 +
@@ -12538,7 +12731,7 @@
 +    *)
 +      dnl Nothing to do on gnulib's side.
 +      dnl A 64-bit off_t is
-+      dnl   - already the default on MacOS X, FreeBSD, NetBSD, OpenBSD, IRIX,
++      dnl   - already the default on Mac OS X, FreeBSD, NetBSD, OpenBSD, IRIX,
 +      dnl     OSF/1, Cygwin,
 +      dnl   - enabled by _FILE_OFFSET_BITS=64 (ensured by AC_SYS_LARGEFILE) on
 +      dnl     glibc, HP-UX, Solaris,
@@ -12549,8 +12742,8 @@
 +      ;;
 +  esac
 +])
---- origsrc/libmemcached-1.0.7/m4/mode_t.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/mode_t.m4	2012-05-14 22:22:44.759561400 +0900
+--- origsrc/libmemcached-1.0.13/m4/mode_t.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/mode_t.m4	2012-11-04 17:43:27.732734400 +0900
 @@ -0,0 +1,26 @@
 +# mode_t.m4 serial 2
 +dnl Copyright (C) 2009-2012 Free Software Foundation, Inc.
@@ -12578,8 +12771,8 @@
 +  AC_DEFINE_UNQUOTED([PROMOTED_MODE_T], [$gl_cv_promoted_mode_t],
 +    [Define to the type that is the result of default argument promotions of type mode_t.])
 +])
---- origsrc/libmemcached-1.0.7/m4/msvc-inval.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/msvc-inval.m4	2012-05-14 22:22:44.868936400 +0900
+--- origsrc/libmemcached-1.0.13/m4/msvc-inval.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/msvc-inval.m4	2012-11-04 17:43:27.826484400 +0900
 @@ -0,0 +1,19 @@
 +# msvc-inval.m4 serial 1
 +dnl Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -12600,8 +12793,8 @@
 +  fi
 +  AC_SUBST([HAVE_MSVC_INVALID_PARAMETER_HANDLER])
 +])
---- origsrc/libmemcached-1.0.7/m4/msvc-nothrow.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/msvc-nothrow.m4	2012-05-14 22:22:44.962686400 +0900
+--- origsrc/libmemcached-1.0.13/m4/msvc-nothrow.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/msvc-nothrow.m4	2012-11-04 17:43:27.935859400 +0900
 @@ -0,0 +1,10 @@
 +# msvc-nothrow.m4 serial 1
 +dnl Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -12613,8 +12806,8 @@
 +[
 +  AC_REQUIRE([gl_MSVC_INVAL])
 +])
---- origsrc/libmemcached-1.0.7/m4/off_t.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/off_t.m4	2012-05-14 22:22:45.072061400 +0900
+--- origsrc/libmemcached-1.0.13/m4/off_t.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/off_t.m4	2012-11-04 17:43:28.029609400 +0900
 @@ -0,0 +1,18 @@
 +# off_t.m4 serial 1
 +dnl Copyright (C) 2012 Free Software Foundation, Inc.
@@ -12634,8 +12827,8 @@
 +  ])
 +  AC_SUBST([WINDOWS_64_BIT_OFF_T])
 +])
---- origsrc/libmemcached-1.0.7/m4/open.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/open.m4	2012-05-14 22:22:45.197061400 +0900
+--- origsrc/libmemcached-1.0.13/m4/open.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/open.m4	2012-11-04 17:43:28.123359400 +0900
 @@ -0,0 +1,92 @@
 +# open.m4 serial 13
 +dnl Copyright (C) 2007-2012 Free Software Foundation, Inc.
@@ -12729,8 +12922,8 @@
 +  AC_REQUIRE([gl_PROMOTED_TYPE_MODE_T])
 +  :
 +])
---- origsrc/libmemcached-1.0.7/m4/pathmax.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/pathmax.m4	2012-05-14 22:22:45.290811400 +0900
+--- origsrc/libmemcached-1.0.13/m4/pathmax.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/pathmax.m4	2012-11-04 17:43:28.217109400 +0900
 @@ -0,0 +1,42 @@
 +# pathmax.m4 serial 10
 +dnl Copyright (C) 2002-2003, 2005-2006, 2009-2012 Free Software Foundation,
@@ -12774,8 +12967,8 @@
 +[
 +  AC_CHECK_HEADERS_ONCE([unistd.h sys/param.h])
 +])
---- origsrc/libmemcached-1.0.7/m4/posix_spawn.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/posix_spawn.m4	2012-05-14 22:22:45.384561400 +0900
+--- origsrc/libmemcached-1.0.13/m4/posix_spawn.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/posix_spawn.m4	2012-11-04 17:43:28.310859400 +0900
 @@ -0,0 +1,527 @@
 +# posix_spawn.m4 serial 11
 +dnl Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -13304,8 +13497,8 @@
 +    esac
 +  fi
 +])
---- origsrc/libmemcached-1.0.7/m4/rawmemchr.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/rawmemchr.m4	2012-05-14 22:22:45.493936400 +0900
+--- origsrc/libmemcached-1.0.13/m4/rawmemchr.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/rawmemchr.m4	2012-11-04 17:43:28.420234400 +0900
 @@ -0,0 +1,20 @@
 +# rawmemchr.m4 serial 2
 +dnl Copyright (C) 2003, 2007-2012 Free Software Foundation, Inc.
@@ -13327,8 +13520,8 @@
 +
 +# Prerequisites of lib/strchrnul.c.
 +AC_DEFUN([gl_PREREQ_RAWMEMCHR], [:])
---- origsrc/libmemcached-1.0.7/m4/sched_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/sched_h.m4	2012-05-14 22:22:45.587686400 +0900
+--- origsrc/libmemcached-1.0.13/m4/sched_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/sched_h.m4	2012-11-04 17:43:28.513984400 +0900
 @@ -0,0 +1,40 @@
 +# sched_h.m4 serial 6
 +dnl Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -13370,8 +13563,8 @@
 +  AC_SUBST([SCHED_H])
 +  AM_CONDITIONAL([GL_GENERATE_SCHED_H], [test -n "$SCHED_H"])
 +])
---- origsrc/libmemcached-1.0.7/m4/spawn_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/spawn_h.m4	2012-05-14 22:22:45.681436400 +0900
+--- origsrc/libmemcached-1.0.13/m4/spawn_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/spawn_h.m4	2012-11-04 17:43:28.623359400 +0900
 @@ -0,0 +1,117 @@
 +# spawn_h.m4 serial 16
 +dnl Copyright (C) 2008-2012 Free Software Foundation, Inc.
@@ -13490,8 +13683,8 @@
 +  REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDOPEN=0;
 +                             AC_SUBST([REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDOPEN])
 +])
---- origsrc/libmemcached-1.0.7/m4/ssize_t.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/ssize_t.m4	2012-05-14 22:22:45.775186400 +0900
+--- origsrc/libmemcached-1.0.13/m4/ssize_t.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/ssize_t.m4	2012-11-04 17:43:28.717109400 +0900
 @@ -0,0 +1,23 @@
 +# ssize_t.m4 serial 5 (gettext-0.18.2)
 +dnl Copyright (C) 2001-2003, 2006, 2010-2012 Free Software Foundation, Inc.
@@ -13516,8 +13709,8 @@
 +              [Define as a signed type of the same size as size_t.])
 +  fi
 +])
---- origsrc/libmemcached-1.0.7/m4/stat.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/stat.m4	2012-05-14 22:22:45.868936400 +0900
+--- origsrc/libmemcached-1.0.13/m4/stat.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/stat.m4	2012-11-04 17:43:28.795234400 +0900
 @@ -0,0 +1,75 @@
 +# serial 10
 +
@@ -13594,8 +13787,8 @@
 +  AC_REQUIRE([AC_C_INLINE])
 +  :
 +])
---- origsrc/libmemcached-1.0.7/m4/stdbool.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/stdbool.m4	2012-05-14 22:22:45.962686400 +0900
+--- origsrc/libmemcached-1.0.13/m4/stdbool.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/stdbool.m4	2012-11-04 17:43:28.888984400 +0900
 @@ -0,0 +1,100 @@
 +# Check for stdbool.h that conforms to C99.
 +
@@ -13697,8 +13890,8 @@
 +        [ac_cv_header_stdbool_h=no])])
 +   AC_CHECK_TYPES([_Bool])
 +])
---- origsrc/libmemcached-1.0.7/m4/stddef_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/stddef_h.m4	2012-05-14 22:22:46.056436400 +0900
+--- origsrc/libmemcached-1.0.13/m4/stddef_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/stddef_h.m4	2012-11-04 17:43:28.982734400 +0900
 @@ -0,0 +1,47 @@
 +dnl A placeholder for POSIX 2008 <stddef.h>, for platforms that have issues.
 +# stddef_h.m4 serial 4
@@ -13747,8 +13940,8 @@
 +  REPLACE_NULL=0;                AC_SUBST([REPLACE_NULL])
 +  HAVE_WCHAR_T=1;                AC_SUBST([HAVE_WCHAR_T])
 +])
---- origsrc/libmemcached-1.0.7/m4/strchrnul.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/strchrnul.m4	2012-05-14 22:22:46.150186400 +0900
+--- origsrc/libmemcached-1.0.13/m4/strchrnul.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/strchrnul.m4	2012-11-04 17:43:29.092109400 +0900
 @@ -0,0 +1,50 @@
 +# strchrnul.m4 serial 9
 +dnl Copyright (C) 2003, 2007, 2009-2012 Free Software Foundation, Inc.
@@ -13800,8 +13993,8 @@
 +
 +# Prerequisites of lib/strchrnul.c.
 +AC_DEFUN([gl_PREREQ_STRCHRNUL], [:])
---- origsrc/libmemcached-1.0.7/m4/string_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/string_h.m4	2012-05-14 22:22:46.259561400 +0900
+--- origsrc/libmemcached-1.0.13/m4/string_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/string_h.m4	2012-11-04 17:43:29.185859400 +0900
 @@ -0,0 +1,120 @@
 +# Configure a GNU-like replacement for <string.h>.
 +
@@ -13923,8 +14116,8 @@
 +  REPLACE_STRTOK_R=0;           AC_SUBST([REPLACE_STRTOK_R])
 +  UNDEFINE_STRTOK_R=0;          AC_SUBST([UNDEFINE_STRTOK_R])
 +])
---- origsrc/libmemcached-1.0.7/m4/sys_stat_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/sys_stat_h.m4	2012-05-14 22:22:46.353311400 +0900
+--- origsrc/libmemcached-1.0.13/m4/sys_stat_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/sys_stat_h.m4	2012-11-04 17:43:29.295234400 +0900
 @@ -0,0 +1,99 @@
 +# sys_stat_h.m4 serial 27   -*- Autoconf -*-
 +dnl Copyright (C) 2006-2012 Free Software Foundation, Inc.
@@ -14025,8 +14218,8 @@
 +  REPLACE_STAT=0;       AC_SUBST([REPLACE_STAT])
 +  REPLACE_UTIMENSAT=0;  AC_SUBST([REPLACE_UTIMENSAT])
 +])
---- origsrc/libmemcached-1.0.7/m4/sys_types_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/sys_types_h.m4	2012-05-14 22:22:46.431436400 +0900
+--- origsrc/libmemcached-1.0.13/m4/sys_types_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/sys_types_h.m4	2012-11-04 17:43:29.404609400 +0900
 @@ -0,0 +1,24 @@
 +# sys_types_h.m4 serial 4
 +dnl Copyright (C) 2011-2012 Free Software Foundation, Inc.
@@ -14052,14 +14245,14 @@
 +AC_DEFUN([gl_SYS_TYPES_H_DEFAULTS],
 +[
 +])
---- origsrc/libmemcached-1.0.7/m4/time_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/time_h.m4	2012-05-14 22:22:46.540811400 +0900
+--- origsrc/libmemcached-1.0.13/m4/time_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/time_h.m4	2012-11-04 17:43:29.498359400 +0900
 @@ -0,0 +1,109 @@
 +# Configure a more-standard replacement for <time.h>.
 +
 +# Copyright (C) 2000-2001, 2003-2007, 2009-2012 Free Software Foundation, Inc.
 +
-+# serial 6
++# serial 7
 +
 +# This file is free software; the Free Software Foundation
 +# gives unlimited permission to copy and/or distribute it,
@@ -14082,7 +14275,7 @@
 +  AC_REQUIRE([gl_CHECK_TYPE_STRUCT_TIMESPEC])
 +])
 +
-+dnl Define HAVE_STRUCT_TIMESPEC if 'struct timespec' is declared
++dnl Check whether 'struct timespec' is declared
 +dnl in time.h, sys/time.h, or pthread.h.
 +
 +AC_DEFUN([gl_CHECK_TYPE_STRUCT_TIMESPEC],
@@ -14164,8 +14357,8 @@
 +  REPLACE_NANOSLEEP=GNULIB_PORTCHECK;    AC_SUBST([REPLACE_NANOSLEEP])
 +  REPLACE_TIMEGM=GNULIB_PORTCHECK;       AC_SUBST([REPLACE_TIMEGM])
 +])
---- origsrc/libmemcached-1.0.7/m4/unistd_h.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/unistd_h.m4	2012-05-14 22:22:46.634561400 +0900
+--- origsrc/libmemcached-1.0.13/m4/unistd_h.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/unistd_h.m4	2012-11-04 17:43:29.623359400 +0900
 @@ -0,0 +1,187 @@
 +# unistd_h.m4 serial 65
 +dnl Copyright (C) 2006-2012 Free Software Foundation, Inc.
@@ -14354,8 +14547,8 @@
 +  UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS=0;
 +                           AC_SUBST([UNISTD_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS])
 +])
---- origsrc/libmemcached-1.0.7/m4/warn-on-use.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/warn-on-use.m4	2012-05-14 22:22:46.728311400 +0900
+--- origsrc/libmemcached-1.0.13/m4/warn-on-use.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/warn-on-use.m4	2012-11-04 17:43:29.732734400 +0900
 @@ -0,0 +1,47 @@
 +# warn-on-use.m4 serial 5
 +dnl Copyright (C) 2010-2012 Free Software Foundation, Inc.
@@ -14404,8 +14597,8 @@
 +    AS_VAR_POPDEF([gl_Symbol])dnl
 +  done
 +])
---- origsrc/libmemcached-1.0.7/m4/wchar_t.m4	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmemcached-1.0.7/m4/wchar_t.m4	2012-05-14 22:22:46.822061400 +0900
+--- origsrc/libmemcached-1.0.13/m4/wchar_t.m4	1970-01-01 09:00:00.000000000 +0900
++++ src/libmemcached-1.0.13/m4/wchar_t.m4	2012-11-04 17:43:29.826484400 +0900
 @@ -0,0 +1,24 @@
 +# wchar_t.m4 serial 4 (gettext-0.18.2)
 +dnl Copyright (C) 2002-2003, 2008-2012 Free Software Foundation, Inc.
@@ -14431,26 +14624,341 @@
 +    AC_DEFINE([HAVE_WCHAR_T], [1], [Define if you have the 'wchar_t' type.])
 +  fi
 +])
---- origsrc/libmemcached-1.0.7/memcached/include.am	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/memcached/include.am	2012-05-14 22:27:52.491983200 +0900
-@@ -30,7 +30,7 @@ memcached_memcached_SOURCES+= memcached/
- memcached_memcached_SOURCES+= memcached/util.c 
+--- origsrc/libmemcached-1.0.13/man/include.am	2012-10-19 10:55:45.000000000 +0900
++++ src/libmemcached-1.0.13/man/include.am	2012-11-04 21:06:35.944808400 +0900
+@@ -134,4 +134,125 @@ dist_man_MANS+= man/memcached_touch_by_k
+ dist_man_MANS+= man/memcached_verbosity.3
+ dist_man_MANS+= man/memcached_version.3
  
- memcached_memcached_CFLAGS+= ${PTHREAD_CFLAGS}
--memcached_memcached_CFLAGS+= -DHAVE_CONFIG_H -std=c99
-+memcached_memcached_CFLAGS+= -DHAVE_CONFIG_H -std=gnu99
- 
- memcached_memcached_LDADD+= $(LIBEVENT_LDFLAGS)
- memcached_memcached_LDADD+= ${PTHREAD_LIBS}
---- origsrc/libmemcached-1.0.7/win32/include.am	2012-04-29 03:18:02.000000000 +0900
-+++ src/libmemcached-1.0.7/win32/include.am	2012-05-14 22:27:11.427530100 +0900
-@@ -3,9 +3,7 @@
++else
++
++man_MANS+= man/memaslap.1
++man_MANS+= man/memcapable.1
++man_MANS+= man/memcat.1
++man_MANS+= man/memcp.1
++man_MANS+= man/memdump.1
++man_MANS+= man/memerror.1
++man_MANS+= man/memexist.1
++man_MANS+= man/memflush.1
++man_MANS+= man/memparse.1
++man_MANS+= man/memping.1
++man_MANS+= man/memrm.1
++man_MANS+= man/memslap.1
++man_MANS+= man/memstat.1
++man_MANS+= man/memtouch.1
++
++man_MANS+= man/hashkit_clone.3
++man_MANS+= man/hashkit_crc32.3
++man_MANS+= man/hashkit_create.3
++man_MANS+= man/hashkit_fnv1_32.3
++man_MANS+= man/hashkit_fnv1_64.3
++man_MANS+= man/hashkit_fnv1a_32.3
++man_MANS+= man/hashkit_fnv1a_64.3
++man_MANS+= man/hashkit_free.3
++man_MANS+= man/hashkit_functions.3
++man_MANS+= man/hashkit_hsieh.3
++man_MANS+= man/hashkit_is_allocated.3
++man_MANS+= man/hashkit_jenkins.3
++man_MANS+= man/hashkit_md5.3
++man_MANS+= man/hashkit_murmur.3
++man_MANS+= man/hashkit_value.3
++man_MANS+= man/libhashkit.3
++man_MANS+= man/libmemcached.3
++man_MANS+= man/libmemcached_check_configuration.3
++man_MANS+= man/libmemcached_configuration.3
++man_MANS+= man/libmemcached_examples.3
++man_MANS+= man/libmemcachedutil.3
++man_MANS+= man/memcached.3
++man_MANS+= man/memcached_add.3
++man_MANS+= man/memcached_add_by_key.3
++man_MANS+= man/memcached_analyze.3
++man_MANS+= man/memcached_append.3
++man_MANS+= man/memcached_append_by_key.3
++man_MANS+= man/memcached_behavior_get.3
++man_MANS+= man/memcached_behavior_set.3
++man_MANS+= man/memcached_callback_get.3
++man_MANS+= man/memcached_callback_set.3
++man_MANS+= man/memcached_cas.3
++man_MANS+= man/memcached_cas_by_key.3
++man_MANS+= man/memcached_clone.3
++man_MANS+= man/memcached_create.3
++man_MANS+= man/memcached_decrement.3
++man_MANS+= man/memcached_decrement_with_initial.3
++man_MANS+= man/memcached_delete.3
++man_MANS+= man/memcached_delete_by_key.3
++man_MANS+= man/memcached_destroy_sasl_auth_data.3
++man_MANS+= man/memcached_dump.3
++man_MANS+= man/memcached_exist.3
++man_MANS+= man/memcached_exist_by_key.3
++man_MANS+= man/memcached_fetch.3
++man_MANS+= man/memcached_fetch_execute.3
++man_MANS+= man/memcached_fetch_result.3
++man_MANS+= man/memcached_flush_buffers.3
++man_MANS+= man/memcached_free.3
++man_MANS+= man/memcached_generate_hash.3
++man_MANS+= man/memcached_generate_hash_value.3
++man_MANS+= man/memcached_get.3
++man_MANS+= man/memcached_get_by_key.3
++man_MANS+= man/memcached_get_memory_allocators.3
++man_MANS+= man/memcached_get_sasl_callbacks.3
++man_MANS+= man/memcached_get_user_data.3
++man_MANS+= man/memcached_increment.3
++man_MANS+= man/memcached_increment_with_initial.3
++man_MANS+= man/memcached_last_error_message.3
++man_MANS+= man/memcached_lib_version.3
++man_MANS+= man/memcached_mget.3
++man_MANS+= man/memcached_mget_by_key.3
++man_MANS+= man/memcached_mget_execute.3 
++man_MANS+= man/memcached_mget_execute_by_key.3 
++man_MANS+= man/memcached_pool.3
++man_MANS+= man/memcached_pool_behavior_get.3
++man_MANS+= man/memcached_pool_behavior_set.3
++man_MANS+= man/memcached_pool_create.3
++man_MANS+= man/memcached_pool_destroy.3
++man_MANS+= man/memcached_pool_fetch.3
++man_MANS+= man/memcached_pool_pop.3
++man_MANS+= man/memcached_pool_push.3
++man_MANS+= man/memcached_pool_release.3
++man_MANS+= man/memcached_pool_st.3
++man_MANS+= man/memcached_prepend.3
++man_MANS+= man/memcached_prepend_by_key.3
++man_MANS+= man/memcached_quit.3
++man_MANS+= man/memcached_replace.3
++man_MANS+= man/memcached_replace_by_key.3
++man_MANS+= man/memcached_sasl_set_auth_data.3
++man_MANS+= man/memcached_server_add.3
++man_MANS+= man/memcached_server_count.3
++man_MANS+= man/memcached_server_cursor.3
++man_MANS+= man/memcached_server_list.3
++man_MANS+= man/memcached_server_list_append.3
++man_MANS+= man/memcached_server_list_count.3
++man_MANS+= man/memcached_server_list_free.3
++man_MANS+= man/memcached_server_push.3
++man_MANS+= man/memcached_servers_parse.3
++man_MANS+= man/memcached_set.3
++man_MANS+= man/memcached_set_by_key.3
++man_MANS+= man/memcached_set_memory_allocators.3
++man_MANS+= man/memcached_set_sasl_callbacks.3
++man_MANS+= man/memcached_set_user_data.3
++man_MANS+= man/memcached_stat.3
++man_MANS+= man/memcached_stat_execute.3
++man_MANS+= man/memcached_stat_get_keys.3
++man_MANS+= man/memcached_stat_get_value.3
++man_MANS+= man/memcached_stat_servername.3
++man_MANS+= man/memcached_strerror.3
++man_MANS+= man/memcached_touch.3
++man_MANS+= man/memcached_touch_by_key.3
++man_MANS+= man/memcached_verbosity.3
++man_MANS+= man/memcached_version.3
++
+ endif
+--- origsrc/libmemcached-1.0.13/tests/cli.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/tests/cli.am	2012-11-04 19:48:34.868302700 +0900
+@@ -8,80 +8,90 @@
+ # included from Top Level Makefile.am
  # All paths should be given relative to the root
- noinst_HEADERS+= win32/wrappers.h
  
--if BUILD_WIN32_WRAPPERS
- libhashkit_libhashkit_la_LDFLAGS+=-no-undefined
- libmemcached_libmemcached_la_LDFLAGS+=-no-undefined
- libmemcached_libmemcachedprotocol_la_LDFLAGS+=-no-undefined
- libmemcached_libmemcachedutil_la_LDFLAGS+=-no-undefined
--endif
+-
++tests_memcapable_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memcapable_SOURCES= tests/memcapable.cc
+ tests_memcapable_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memcapable_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcapable
++tests_memcapable_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcapable$(EXEEXT)
+ tests_memcapable_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcapable
+ noinst_PROGRAMS+= tests/memcapable
+ 
++tests_memstat_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memstat_SOURCES= tests/memstat.cc
+ tests_memstat_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memstat_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memstat
++tests_memstat_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memstat$(EXEEXT)
+ tests_memstat_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memstat
+ noinst_PROGRAMS+= tests/memstat
+ 
++tests_memcp_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memcp_SOURCES= tests/memcp.cc
+ tests_memcp_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memcp_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcp
++tests_memcp_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcp$(EXEEXT)
+ tests_memcp_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcp
+ noinst_PROGRAMS+= tests/memcp
+ 
++tests_memflush_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memflush_SOURCES= tests/memflush.cc
+ tests_memflush_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memflush_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memflush
++tests_memflush_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memflush$(EXEEXT)
+ tests_memflush_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memflush
+ noinst_PROGRAMS+= tests/memflush
+ 
++tests_memrm_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memrm_SOURCES= tests/memrm.cc
+ tests_memrm_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memrm_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memrm
++tests_memrm_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memrm$(EXEEXT)
+ tests_memrm_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memrm
+ noinst_PROGRAMS+= tests/memrm
+ 
++tests_memexist_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memexist_SOURCES= tests/memexist.cc
+ tests_memexist_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memexist_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memexist
++tests_memexist_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memexist$(EXEEXT)
+ tests_memexist_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memexist
+ noinst_PROGRAMS+= tests/memexist
+ 
++tests_memtouch_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memtouch_SOURCES= tests/memtouch.cc
+ tests_memtouch_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memtouch_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memtouch
++tests_memtouch_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memtouch$(EXEEXT)
+ tests_memtouch_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memtouch
+ noinst_PROGRAMS+= tests/memtouch
+ 
++tests_memcat_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memcat_SOURCES= tests/memcat.cc
+ tests_memcat_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memcat_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcat
++tests_memcat_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memcat$(EXEEXT)
+ tests_memcat_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcat
+ noinst_PROGRAMS+= tests/memcat
+ 
++tests_memerror_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memerror_SOURCES= tests/memerror.cc
+ tests_memerror_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memerror_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memerror
++tests_memerror_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memerror$(EXEEXT)
+ tests_memerror_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memerror
+ noinst_PROGRAMS+= tests/memerror
+ 
++tests_memslap_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memslap_SOURCES= tests/memslap.cc
+ tests_memslap_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memslap_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memslap
++tests_memslap_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memslap$(EXEEXT)
+ tests_memslap_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memslap
+ noinst_PROGRAMS+= tests/memslap
+ 
++tests_memdump_CPPFLAGS= -I$(top_builddir) -I$(top_builddir)/lib
+ tests_memdump_SOURCES= tests/memdump.cc
+ tests_memdump_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-tests_memdump_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memdump
++tests_memdump_DEPENDENCIES= libtest/libtest.la $(TESTS_LDADDS) clients/memdump$(EXEEXT)
+ tests_memdump_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memdump
+ noinst_PROGRAMS+= tests/memdump
+--- origsrc/libmemcached-1.0.13/tests/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/tests/include.am	2012-11-04 19:31:11.081193300 +0900
+@@ -29,6 +29,7 @@ noinst_HEADERS+= tests/memc.h
+ noinst_HEADERS+= tests/runner.h
+ 
+ # Cycle should always run first
++tests_cycle_CPPFLAGS= -I$(top_builddir)/lib
+ tests_cycle_CFLAGS= $(AM_CFLAGS) $(NO_CONVERSION) $(NO_STRICT_ALIASING)
+ tests_cycle_CXXFLAGS= $(AM_CXXFLAGS)
+ tests_cycle_CXXFLAGS+= ${PTHREAD_CFLAGS}
+@@ -52,6 +53,7 @@ tests_failure_SOURCES+= tests/libmemcach
+ tests_failure_SOURCES+= tests/libmemcached-1.0/generate.cc
+ tests_failure_SOURCES+= tests/libmemcached-1.0/print.cc
+ 
++tests_failure_CPPFLAGS= -I$(top_builddir)/lib
+ tests_failure_CXXFLAGS = $(AM_CXXFLAGS)
+ tests_failure_DEPENDENCIES= $(TESTS_LDADDS)
+ tests_failure_LDADD= $(tests_failure_DEPENDENCIES)
+@@ -64,7 +66,7 @@ test-failure: tests/failure
+ gdb-failure: tests/failure
+ 	@$(DEBUG_COMMAND) tests/failure
+ 
+-
++tests_testhashkit_CPPFLAGS= -I$(top_builddir)/lib
+ tests_testhashkit_SOURCES= tests/hashkit_functions.cc
+ tests_testhashkit_DEPENDENCIES= libtest/libtest.la libhashkit/libhashkit.la $(TESTS_LDADDS)
+ tests_testhashkit_LDADD= $(tests_testhashkit_DEPENDENCIES)
+@@ -74,7 +76,7 @@ noinst_PROGRAMS+= tests/testhashkit
+ test-hash: tests/testhashkit
+ 	@tests/testhashkit
+ 
+-
++tests_hash_plus_CPPFLAGS= -I$(top_builddir)/lib
+ tests_hash_plus_SOURCES= tests/hash_plus.cc
+ tests_hash_plus_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+ tests_hash_plus_DEPENDENCIES= $(tests_testhashkit_DEPENDENCIES)
+--- origsrc/libmemcached-1.0.13/tests/libmemcached-1.0/include.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/tests/libmemcached-1.0/include.am	2012-11-04 19:24:02.367326100 +0900
+@@ -39,6 +39,7 @@ noinst_HEADERS+= tests/touch.h
+ noinst_HEADERS+= tests/virtual_buckets.h
+ 
+ # Test internals
++tests_libmemcached_1_0_internals_CPPFLAGS= -I$(top_builddir)/lib
+ tests_libmemcached_1_0_internals_CXXFLAGS=
+ tests_libmemcached_1_0_internals_DEPENDENCIES=
+ tests_libmemcached_1_0_internals_LDADD=
+@@ -58,7 +59,7 @@ tests_libmemcached_1_0_internals_LDADD+=
+ check_PROGRAMS+= tests/libmemcached-1.0/internals
+ noinst_PROGRAMS+= tests/libmemcached-1.0/internals
+ 
+-
++tests_libmemcached_1_0_testapp_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_testapp_CXXFLAGS=
+ tests_libmemcached_1_0_testapp_CFLAGS=
+ tests_libmemcached_1_0_testapp_SOURCES=
+@@ -112,6 +113,7 @@ tests_libmemcached_1_0_testapp_LDADD+= l
+ check_PROGRAMS+= tests/libmemcached-1.0/testapp
+ noinst_PROGRAMS+= tests/libmemcached-1.0/testapp
+ 
++tests_libmemcached_1_0_testsocket_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_testsocket_CXXFLAGS=
+ tests_libmemcached_1_0_testsocket_CFLAGS=
+ tests_libmemcached_1_0_testsocket_SOURCES=
+@@ -171,6 +173,7 @@ noinst_PROGRAMS+= tests/libmemcached-1.0
+ test-socket: tests/libmemcached-1.0/testsocket
+ 	@tests/libmemcached-1.0/testsocket
+ 
++tests_libmemcached_1_0_sasl_CPPFLAGS= -I$(top_builddir)/lib
+ tests_libmemcached_1_0_sasl_SOURCES=
+ tests_libmemcached_1_0_sasl_DEPENDENCIES=
+ tests_libmemcached_1_0_sasl_LDADD=
+@@ -212,6 +215,7 @@ tests_libmemcached_1_0_sasl_LDADD+= libh
+ check_PROGRAMS+= tests/libmemcached-1.0/sasl
+ noinst_PROGRAMS+= tests/libmemcached-1.0/sasl
+ 
++tests_atomsmasher_CPPFLAGS= -I$(top_builddir)/lib
+ tests_atomsmasher_SOURCES=
+ tests_atomsmasher_DEPENDENCIES=
+ tests_atomsmasher_LDADD=
+@@ -228,6 +232,7 @@ tests_atomsmasher_SOURCES+= tests/libmem
+ tests_atomsmasher_SOURCES+= tests/libmemcached-1.0/print.cc
+ noinst_PROGRAMS+= tests/atomsmasher
+ 
++tests_testudp_CPPFLAGS= -I$(top_builddir)/lib
+ tests_testudp_CFLAGS=
+ tests_testudp_SOURCES=
+ tests_testudp_DEPENDENCIES=
+@@ -249,6 +254,7 @@ noinst_PROGRAMS+= tests/testudp
+ test-udp: tests/testudp
+ 	@tests/testudp
+ 
++tests_testplus_CPPFLAGS= -I$(top_builddir)/lib
+ tests_testplus_SOURCES=
+ tests_testplus_CXXFLAGS=
+ tests_testplus_DEPENDENCIES=
+--- origsrc/libmemcached-1.0.13/tests/parser.am	2012-10-19 10:55:09.000000000 +0900
++++ src/libmemcached-1.0.13/tests/parser.am	2012-11-04 19:27:32.860490200 +0900
+@@ -10,6 +10,7 @@
+ 
+ noinst_HEADERS+= tests/libmemcached-1.0/parser.h
+ 
++tests_parser_CPPFLAGS= -I$(top_builddir)/lib
+ tests_parser_SOURCES=
+ tests_parser_CXXFLAGS=
+ tests_parser_DEPENDENCIES=
