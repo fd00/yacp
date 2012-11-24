@@ -1,0 +1,103 @@
+--- origsrc/ccaudio2-2.0.5/src/friends.cpp	2011-03-21 16:16:40.000000000 +0900
++++ src/ccaudio2-2.0.5/src/friends.cpp	2012-11-24 20:19:55.632274700 +0900
+@@ -1179,23 +1179,23 @@ void Audio::init(void)
+ {
+ #ifndef BUILD_STATIC
+     char path[256];
+-    fsys dir;
++    dir_t dir;
+     const char *dp = getPluginPath();
+     char filename[65];
+ 
+     if(!dp)
+         return;
+ 
+-    fsys::open(dir, dp, fsys::ACCESS_DIRECTORY);
++    dir.open(dp);
+ 
+-    while(is(dir) && fsys::read(dir, filename, sizeof(filename)) > 0) {
++    while(is(dir) && dir.read(filename, sizeof(filename)) > 0) {
+         if(filename[0] == '.')
+             continue;
+ 
+         snprintf(path, sizeof(path), "%s/%s", dp, filename);
+         fsys::load(path);
+     }
+-    fsys::close(dir);
++    dir.close();
+ #endif
+ }
+ 
+--- origsrc/ccaudio2-2.0.5/src/oss.cpp	2011-03-18 08:43:54.000000000 +0900
++++ src/ccaudio2-2.0.5/src/oss.cpp	2012-11-24 20:02:36.581493400 +0900
+@@ -25,6 +25,8 @@ int _oss_ccaudio_dummy = 0;
+ 
+ #ifdef  HAVE_SYS_SOUNDCARD_H
+ 
++#include <fcntl.h>
++
+ #include <sys/ioctl.h>
+ #include <sys/fcntl.h>
+ #include <unistd.h>
+--- origsrc/ccaudio2-2.0.5/utils/audiotool.cpp	2011-03-21 16:16:40.000000000 +0900
++++ src/ccaudio2-2.0.5/utils/audiotool.cpp	2012-11-24 20:25:29.495555900 +0900
+@@ -401,12 +401,12 @@ skip:
+         framing = 20;
+ 
+     while(*argv) {
+-        if(!fsys::isfile(*argv)) {
++        if(!fsys::is_file(*argv)) {
+             printf("%s: %s\n",
+                 fname(*(argv++)), _TEXT("invalid"));
+             continue;
+         }
+-        if(fsys::access(*argv, R_OK)) {
++        if(fsys::is_readable(*argv)) {
+             printf("%s: %s\n",
+                 fname(*(argv++)), _TEXT("inaccessable"));
+             continue;
+@@ -530,12 +530,12 @@ static void info(char **argv)
+     }
+ 
+     while(*argv) {
+-        if(!fsys::isfile(*argv)) {
++        if(!fsys::is_file(*argv)) {
+             printf("audiotool: %s: %s\n",
+                 fname(*(argv++)), _TEXT("invalid"));
+             continue;
+         }
+-        if(fsys::access(*argv, R_OK)) {
++        if(fsys::is_readable(*argv)) {
+             printf("audiotool: %s: %s\n",
+                 fname(*(argv++)), _TEXT("inaccessable"));
+             continue;
+@@ -682,12 +682,12 @@ skip:
+         framing = 20;
+ 
+     while(*argv) {
+-        if(!fsys::isfile(*argv)) {
++        if(!fsys::is_file(*argv)) {
+             printf("%s: %s\n",
+                 *(argv++), _TEXT("invalid"));
+             continue;
+         }
+-        if(fsys::access(*argv, R_OK)) {
++        if(fsys::is_readable(*argv)) {
+             printf("%s: %s\n",
+                 *(argv++), _TEXT("inaccessable"));
+             continue;
+@@ -881,12 +881,12 @@ skip:
+         framing = 20;
+ 
+     while(*argv) {
+-        if(!fsys::isfile(*argv)) {
++        if(!fsys::is_file(*argv)) {
+             printf("%s: %s\n",
+                 *(argv++), _TEXT("invalid"));
+             continue;
+         }
+-        if(fsys::access(*argv, R_OK)) {
++        if(fsys::is_readable(*argv)) {
+             printf("%s: %s\n",
+                 *(argv++), _TEXT("inaccessable"));
+             continue;
