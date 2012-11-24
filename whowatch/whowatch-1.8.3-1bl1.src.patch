@@ -1,0 +1,116 @@
+--- origsrc/whowatch-1.8.3/configure.in	2001-05-14 00:25:40.000000000 +0900
++++ src/whowatch-1.8.3/configure.in	2012-11-24 16:38:33.897394000 +0900
+@@ -1,11 +1,5 @@
+ dnl Process this file with autoconf to produce a configure script.
+-AC_INIT(src/whowatch.c)
+-
+-VERSION="1.5.5"
+-PACKAGGE=whowatch
+-AC_SUBST(VERSION)
+-AC_SUBST(PACKAGE)
+-AC_CONFIG_HEADER(src/config.h)
++AC_INIT([whowatch], [1.8.3])
+ AC_CONFIG_HEADER(src/config.h)
+ 
+ dnl Checks for programs.
+@@ -19,14 +13,10 @@ dnl Checks for libraries.
+ dnl Replace `main' with a function in -lkvm:
+ AC_CHECK_LIB(kvm, kvm_openfiles)
+ dnl Replace `main' with a function in -lncurses:
+-CURS=0
+-AC_CHECK_LIB(ncurses, scrollok, [CURS=1 ; LIBS="$LIBS -lncurses"])
+-if test "$CURS" !=  "1"; then
+-	AC_CHECK_LIB(curses, scrollok, [CURS=1 ; LIBS="$LIBS -lcurses"])
+-fi
+-if test "$CURS" != "1"; then
+-	AC_MSG_ERROR([Could not find proper curses library])
+-fi
++PKG_CHECK_MODULES([NCURSES], [ncurses])
++CPPFLAGS="$CPPFLAGS $NCURSES_CFLAGS"
++LIBS="$LIBS $NCURSES_LIBS"
++
+ AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl"])
+ 
+ dnl Checks for header files.
+@@ -49,7 +39,7 @@ AC_TRY_COMPILE([
+ #include <utmp.h>
+ ],
+ [int i=USER_PROCESS;],[AC_MSG_RESULT(yes)
+-	AC_DEFINE(HAVE_USER_PROCESS)], AC_MSG_RESULT(no))
++	AC_DEFINE([HAVE_USER_PROCESS],[],[utmp has USER_PROCESS type])], AC_MSG_RESULT(no))
+ 
+ AC_MSG_CHECKING([whether utmp has DEAD_PROCESS type])
+ AC_TRY_COMPILE([
+@@ -57,7 +47,7 @@ AC_TRY_COMPILE([
+ #include <utmp.h>
+ ],
+ [int i=DEAD_PROCESS;],[AC_MSG_RESULT(yes)
+-	AC_DEFINE(HAVE_DEAD_PROCESS)], AC_MSG_RESULT(no))
++	AC_DEFINE([HAVE_DEAD_PROCESS],[],[utmp has DEAD_PROCESS type])], AC_MSG_RESULT(no))
+ 
+ AC_MSG_CHECKING([whether utmp struct has ut_pid member])
+ AC_TRY_COMPILE([
+@@ -65,7 +55,7 @@ AC_TRY_COMPILE([
+ #include <utmp.h>
+ ],
+ [struct utmp u;int i=u.ut_pid;],[AC_MSG_RESULT(yes)
+-	AC_DEFINE(HAVE_UTPID)], AC_MSG_RESULT(no))
++	AC_DEFINE([HAVE_UTPID],[],[utmp struct has ut_pid member])], AC_MSG_RESULT(no))
+ 
+ AC_MSG_CHECKING([whether utmp struct has ut_name member])
+ AC_TRY_COMPILE([
+@@ -73,7 +63,7 @@ AC_TRY_COMPILE([
+ #include <utmp.h>
+ ],
+ [struct utmp u;char *c=u.ut_name;],[AC_MSG_RESULT(yes)
+-	AC_DEFINE(HAVE_UT_NAME)], AC_MSG_RESULT(no))
++	AC_DEFINE([HAVE_UT_NAME],[],[utmp struct has ut_name member])], AC_MSG_RESULT(no))
+ 
+ dnl Checks for library functions.
+ AC_PROG_GCC_TRADITIONAL
+@@ -97,7 +87,7 @@ if(tv.tv_sec == 0) exit(0);
+ else exit(1);
+ }
+ ],
+-[AC_MSG_RESULT(yes); AC_DEFINE(RETURN_TV_IN_SELECT)],
++[AC_MSG_RESULT(yes); AC_DEFINE([RETURN_TV_IN_SELECT],[],[select() modifies the time value])],
+ AC_MSG_RESULT(no), AC_MSG_RESULT(no))
+ 
+ AC_MSG_CHECKING([whether sysctl() can be used])
+@@ -109,7 +99,7 @@ int mib[]={CTL_KERN,KERN_PROC,KERN_PROC_
+ int len;
+ sysctl(mib, 4, 0, &len, 0, 0);
+ ],
+-[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_PROCESS_SYSCTL)],
++[AC_MSG_RESULT(yes); AC_DEFINE([HAVE_PROCESS_SYSCTL],[],[sysctl() can be used])],
+ AC_MSG_RESULT(no))
+ 
+ dnl Make symbolic links according to choosen unix dialect
+--- origsrc/whowatch-1.8.3/src/dialects/linux/proc_plugin.c	2006-03-15 03:41:40.000000000 +0900
++++ src/whowatch-1.8.3/src/dialects/linux/proc_plugin.c	2012-11-24 16:45:37.645440900 +0900
+@@ -382,7 +382,11 @@ FOUND:
+        	return boot_time;
+ }		
+ 
++#if defined(__CYGWIN__)
++#include <sys/param.h>
++#else
+ #include <asm/param.h>	// for HZ
++#endif
+ 
+ static void proc_starttime(int pid, char *name)
+ {
+--- origsrc/whowatch-1.8.3/src/proc_plugin.c	2006-03-15 03:41:40.000000000 +0900
++++ src/whowatch-1.8.3/src/proc_plugin.c	2012-11-24 16:45:37.645440900 +0900
+@@ -382,7 +382,11 @@ FOUND:
+        	return boot_time;
+ }		
+ 
++#if defined(__CYGWIN__)
++#include <sys/param.h>
++#else
+ #include <asm/param.h>	// for HZ
++#endif
+ 
+ static void proc_starttime(int pid, char *name)
+ {
