@@ -1,0 +1,55 @@
+DESCRIPTION="WorldForge server suitable running small games"
+HOMEPAGE="http://worldforge.org/dev/eng/servers/${PN}"
+SRC_URI="
+	mirror://sourceforge/worldforge/${P}.tar.bz2
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/logwatch.logconf.cyphesis
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/logwatch.script.cyphesis
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/logwatch.serviceconf.cyphesis
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/logwatch.shared.applycyphesisdate
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/cyphesis-tmpfiles.conf
+"
+
+PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/cyphesis-0.5.19-init.patch
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/cyphesis-0.5.11-logdir.patch
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/cyphesis-0.5.21-dso-linking.patch
+	http://pkgs.fedoraproject.org/cgit/cyphesis.git/plain/cyphesis-socketdir.patch
+"
+
+KEEPDIRS="
+	/var/run/${PN}
+"
+
+src_install()
+{
+	cd ${D}
+	mkdir -p var/run/${PN}
+
+	cd ${B}
+	cyginstall
+
+	cd ${S}
+	insinto /etc/rc.d/init.d
+	newins ${PN}.init ${PN}
+	insinto /etc/sysconfig
+	newins ${PN}.sysconfig ${PN}
+
+	insinto /usr/share/logwatch/dist.conf/logfiles
+	newins logwatch.logconf.${PN} ${PN}.conf
+	insinto /usr/share/logwatch/scripts/services
+	newins logwatch.script.${PN} ${PN}
+	insinto /usr/share/logwatch/dist.conf/services
+	newins logwatch.serviceconf.${PN} ${PN}.conf
+	insinto /usr/share/logwatch/scripts/shared
+	newins logwatch.shared.apply${PN}date apply${PN}date
+
+	insinto /etc/tmpfile.d
+	newins ${PN}-tmpfiles.conf ${PN}.conf
+
+	cd ${D}
+	rm -f usr/share/doc/${P}/[A-Z]*
+}
+
+DOCS="
+	FIXME
+"

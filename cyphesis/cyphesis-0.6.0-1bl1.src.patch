@@ -1,0 +1,76 @@
+--- origsrc/cyphesis-0.6.0/configure.ac	2012-11-10 06:39:13.000000000 +0900
++++ src/cyphesis-0.6.0/configure.ac	2012-11-25 08:59:45.828840700 +0900
+@@ -161,8 +161,11 @@ AC_COMPILE_IFELSE(
+ 
+ dnl General header checks
+ AC_CHECK_HEADERS(termios.h signal.h syslog.h sys/utsname.h sys/wait.h)
+-AC_CHECK_HEADERS(winsock.h arpa/inet.h sys/un.h dirent.h io.h sys/ucred.h)
+-AC_CHECK_HEADERS(windows.h getopt.h)
++AC_CHECK_HEADERS(arpa/inet.h sys/un.h dirent.h io.h sys/ucred.h)
++AC_CHECK_HEADERS(getopt.h)
++if test "$host_os" != "cygwin"; then
++    AC_CHECK_HEADERS(winsock.h windows.h)
++fi 
+ 
+ dnl then check for the header file Python.h and set
+ dnl python_include_path and python_version
+--- origsrc/cyphesis-0.6.0/tests/Makefile.am	2012-11-25 08:52:34.256575100 +0900
++++ src/cyphesis-0.6.0/tests/Makefile.am	2012-11-25 15:29:06.754669900 +0900
+@@ -23,11 +23,12 @@ PHYSICS_TESTS = BBoxtest Vector3Dtest Qu
+ MODULE_TESTS = Locationtest WorldTimetest EntityReftest DateTimetest \
+                TerrainContexttest
+ 
++# skip : AllPropertytest
+ RULESETS_TESTS = LocatedEntitytest Entitytest Planttest \
+                  Stackabletest Thingtest Worldtest \
+                  Charactertest Creatortest ThingupdatePropertiestest \
+                  Containertest Tasktest EntityPropertytest \
+-                 AllPropertytest Scripttest Motiontest AreaPropertytest \
++                 Scripttest Motiontest AreaPropertytest \
+                  BBoxPropertytest CalendarPropertytest \
+                  LinePropertytest MindPropertytest \
+                  OutfitPropertytest SolidPropertytest \
+@@ -61,9 +62,10 @@ CLIENT_TESTS = Py_CreatorClienttest Py_O
+                ClientConnectiontest BaseClienttest \
+                ClientPropertyManagertest
+ 
++# skip : EntityFactorytest TaskFactorytest SystemAccounttest
+ SERVER_TESTS = Rulesettest EntityBuildertest PropertyFlagtest \
+                CommServertest Accounttest Admintest Playertest buildidtest \
+-               EntityFactorytest TaskFactorytest Connectiontest \
++               Connectiontest \
+                TrustedConnectiontest WorldRoutertest Peertest Lobbytest \
+                Spawntest SpawnEntitytest ArithmeticBuildertest \
+                CommClientFactorytest ServerRoutingtest Idletest \
+@@ -75,7 +77,7 @@ SERVER_TESTS = Rulesettest EntityBuilder
+                IdleConnectortest CommPSQLSockettest \
+                CommPythonClientFactorytest \
+                ExternalPropertytest Persistencetest \
+-               SystemAccounttest TCPListenFactorytest \
++               TCPListenFactorytest \
+                Linktest
+ 
+ SERVER_COMM_TESTS = CommSockettest CommStreamClienttest CommClienttest \
+@@ -83,9 +85,10 @@ SERVER_COMM_TESTS = CommSockettest CommS
+                     CommMDNSPublishertest CommClientKittest \
+                     CommHttpClientFactorytest
+ 
++# skip : EntityFactoryTypeNodeintegration
+ SERVER_INTEGRATION_TESTS = WorldRouterintegration Rulesetintegration \
+                            Accountintegration \
+-                           EntityFactoryTypeNodeintegration \
++                           \
+                            AccountConnectionintegration \
+                            AccountServerLobbyintegration
+ 
+--- origsrc/cyphesis-0.6.0/tools/cypython.cpp	2011-07-29 20:51:40.000000000 +0900
++++ src/cyphesis-0.6.0/tools/cypython.cpp	2012-11-25 09:59:34.822004800 +0900
+@@ -28,6 +28,8 @@
+ #include "common/log.h"
+ #include "common/sockets.h"
+ 
++#include <cstdio>
++
+ #include <skstream/skstream_unix.h>
+ 
+ #include <varconf/config.h>
