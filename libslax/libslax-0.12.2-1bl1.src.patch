@@ -1,0 +1,169 @@
+--- origsrc/libslax-0.12.2/extensions/bit/Makefile.am	2012-09-29 06:00:43.000000000 +0900
++++ src/libslax-0.12.2/extensions/bit/Makefile.am	2012-12-03 13:09:58.894386500 +0900
+@@ -28,7 +28,8 @@ AM_CFLAGS = \
+ AM_CFLAGS += \
+  -DSLAX_EXTDIR=\"${SLAX_EXTDIR}\"
+ 
+-lib_LTLIBRARIES = libext_bit.la
++moduledir = ${SLAX_EXTDIR}
++module_LTLIBRARIES = libext_bit.la
+ LIBS = \
+     ${LIBXSLT_LIBS} -lexslt ${LIBXML_LIBS} \
+     -L../../libslax -L${SLAX_LIBDIR} -lslax
+@@ -42,15 +43,16 @@ LIBS += -ledit
+ endif
+ libext_bit_la_SOURCES = \
+     ext_bit.c
++libext_bit_la_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libdir = ${SLAX_EXTDIR}
+ 
+ UGLY_NAME = http%3A%2F%2Fxml.libslax.org%2Fbit.ext
+ 
+ install-exec-hook:
+-	@DLNAME=`sh -c '. ${libdir}/libext_bit.la ; echo $$dlname'` \
++	@DLNAME=`sh -c '. ./libext_bit.la ; echo $$dlname'` \
+ 		&& echo Install link $$DLNAME "->" ${UGLY_NAME} "..." \
+-		&& cd ${SLAX_EXTDIR} \
++		&& cd ${DESTDIR}${SLAX_EXTDIR} \
+ 		&& chmod +w . \
+ 		&& rm -f ${UGLY_NAME} \
+ 		&& ${LN_S} $$DLNAME ${UGLY_NAME}
+--- origsrc/libslax-0.12.2/extensions/curl/Makefile.am	2012-09-29 06:00:57.000000000 +0900
++++ src/libslax-0.12.2/extensions/curl/Makefile.am	2012-12-03 13:10:50.722511500 +0900
+@@ -31,7 +31,8 @@ AM_CFLAGS = \
+ AM_CFLAGS += \
+  -DSLAX_EXTDIR=\"${SLAX_EXTDIR}\"
+ 
+-lib_LTLIBRARIES = libext_curl.la
++moduledir = ${SLAX_EXTDIR}
++module_LTLIBRARIES = libext_curl.la
+ LIBS = \
+     ${LIBXSLT_LIBS} \
+     -lexslt \
+@@ -50,6 +51,7 @@ endif
+ 
+ libext_curl_la_SOURCES = \
+     ext_curl.c
++libext_curl_la_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ noinst_HEADERS = \
+     ext_curl.h
+@@ -59,9 +61,9 @@ libdir = ${SLAX_EXTDIR}
+ UGLY_NAME = http%3A%2F%2Fxml.libslax.org%2Fcurl.ext
+ 
+ install-exec-hook:
+-	@DLNAME=`sh -c '. ${libdir}/libext_curl.la ; echo $$dlname'`; \
++	@DLNAME=`sh -c '. ./libext_curl.la ; echo $$dlname'`; \
+                     echo Install link $$DLNAME "->" ${UGLY_NAME} "..." \
+-                    && cd ${SLAX_EXTDIR} \
++                    && cd ${DESTDIR}${SLAX_EXTDIR} \
+                     && chmod +w . \
+ 	            && rm -f ${UGLY_NAME} \
+ 		    && ${LN_S} $$DLNAME ${UGLY_NAME}
+--- origsrc/libslax-0.12.2/extensions/os/Makefile.am	2012-11-15 04:48:17.000000000 +0900
++++ src/libslax-0.12.2/extensions/os/Makefile.am	2012-12-03 13:10:55.285011500 +0900
+@@ -26,7 +26,8 @@ AM_CFLAGS = \
+ AM_CFLAGS += \
+  -DSLAX_EXTDIR=\"${SLAX_EXTDIR}\"
+ 
+-lib_LTLIBRARIES = libext_os.la
++moduledir = ${SLAX_EXTDIR}
++module_LTLIBRARIES = libext_os.la
+ LIBS = \
+     ${LIBXSLT_LIBS} -lexslt ${LIBXML_LIBS} \
+     -L../../libslax -L${SLAX_LIBDIR} -lslax
+@@ -40,15 +41,16 @@ LIBS += -ledit
+ endif
+ libext_os_la_SOURCES = \
+     ext_os.c
++libext_os_la_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libdir = ${SLAX_EXTDIR}
+ 
+ UGLY_NAME = http%3A%2F%2Fxml.libslax.org%2Fos.ext
+ 
+ install-exec-hook:
+-	@DLNAME=`sh -c '. ${libdir}/libext_os.la ; echo $$dlname'` \
++	@DLNAME=`sh -c '. ./libext_os.la ; echo $$dlname'` \
+ 		&& echo Install link $$DLNAME "->" ${UGLY_NAME} "..." \
+-		&& cd ${SLAX_EXTDIR} \
++		&& cd ${DESTDIR}${SLAX_EXTDIR} \
+ 		&& chmod +w . \
+ 		&& rm -f ${UGLY_NAME} \
+ 		&& ${LN_S} $$DLNAME ${UGLY_NAME}
+--- origsrc/libslax-0.12.2/extensions/os/ext_os.c	2012-11-28 04:31:19.000000000 +0900
++++ src/libslax-0.12.2/extensions/os/ext_os.c	2012-12-03 11:56:05.176887500 +0900
+@@ -710,6 +710,9 @@ extOsStatInfo (xmlNodeSet *results, xmlD
+ 	snprintf(buf, sizeof(buf), "%llu", stp->st_size);
+ 	slaxMakeNode(docp, parent, ELT_SIZE, buf, NULL, NULL);
+ 
++#if defined(__CYGWIN__)
++#define st_mtimespec st_mtim
++#endif
+ 	extOsStatTime(buf, sizeof(buf), &stp->st_mtimespec);
+ 	snprintf(buf2, sizeof(buf2), "%ld", (long) stp->st_mtimespec.tv_sec);
+ 	slaxMakeNode(docp, parent, ELT_DATE, buf2, ATT_DATE, buf);
+--- origsrc/libslax-0.12.2/extensions/xutil/Makefile.am	2012-09-29 06:00:10.000000000 +0900
++++ src/libslax-0.12.2/extensions/xutil/Makefile.am	2012-12-03 13:10:59.566261500 +0900
+@@ -29,7 +29,8 @@ AM_CFLAGS = \
+ AM_CFLAGS += \
+  -DSLAX_EXTDIR=\"${SLAX_EXTDIR}\"
+ 
+-lib_LTLIBRARIES = libext_xutil.la
++moduledir = ${SLAX_EXTDIR}
++module_LTLIBRARIES = libext_xutil.la
+ LIBS = \
+     ${LIBXSLT_LIBS} \
+     -lexslt \
+@@ -53,6 +54,7 @@ XUTILHEADERS = jsonparser.h
+ 
+ libext_xutil_la_SOURCES = \
+     ext_xutil.c
++libext_xutil_la_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libext_xutil_la_SOURCES_one_day = \
+     jsonparser.c \
+@@ -81,9 +83,9 @@ CLEANFILES = jsonparser.h jsonparser.c j
+ UGLY_NAME = http%3A%2F%2Fxml.libslax.org%2Fxutil.ext
+ 
+ install-exec-hook:
+-	@DLNAME=`sh -c '. ${libdir}/libext_xutil.la ; echo $$dlname'`; \
++	@DLNAME=`sh -c '. ./libext_xutil.la ; echo $$dlname'`; \
+                     echo Install link $$DLNAME "->" ${UGLY_NAME} "..." \
+-                    && cd ${SLAX_EXTDIR} \
++                    && cd ${DESTDIR}${SLAX_EXTDIR} \
+                     && chmod +w . \
+ 	            && rm -f ${UGLY_NAME} \
+ 		    && ${LN_S} $$DLNAME ${UGLY_NAME}
+--- origsrc/libslax-0.12.2/libslax/Makefile.am	2012-09-29 06:01:15.000000000 +0900
++++ src/libslax-0.12.2/libslax/Makefile.am	2012-12-01 19:08:00.648578900 +0900
+@@ -28,6 +28,7 @@ AM_CFLAGS += \
+ 
+ lib_LTLIBRARIES = libslax.la
+ libslax_la_LIBADD = ${LIBXSLT_LIBS} -lexslt ${LIBXML_LIBS}
++libslax_la_LDFLAGS = -no-undefined
+ 
+ slaxinc_HEADERS = \
+      slax.h \
+--- origsrc/libslax-0.12.2/slaxproc/Makefile.am	2012-09-29 06:01:20.000000000 +0900
++++ src/libslax-0.12.2/slaxproc/Makefile.am	2012-12-01 19:09:20.867328900 +0900
+@@ -42,7 +42,6 @@ bin_PROGRAMS = slaxproc
+ 
+ slaxproc_SOURCES = slaxproc.c
+ slaxproc_LDADD = ../libslax/libslax.la
+-slaxproc_LDFLAGS = -static
+ 
+ man_MANS = slaxproc.1x slaxdebugger.1x
+ 
+--- origsrc/libslax-0.12.2/warnings.mk	2012-05-23 00:22:07.000000000 +0900
++++ src/libslax-0.12.2/warnings.mk	2012-12-03 11:47:23.711067200 +0900
+@@ -18,7 +18,7 @@ LOW_WARNINGS?= ${MIN_WARNINGS} \
+     -Wmissing-prototypes \
+     -Wpointer-arith
+ 
+-MEDIUM_WARNINGS?= ${LOW_WARNINGS} -Werror
++MEDIUM_WARNINGS?= ${LOW_WARNINGS}
+ 
+ HIGH_WARNINGS?= ${MEDIUM_WARNINGS} \
+     -Waggregate-return \
