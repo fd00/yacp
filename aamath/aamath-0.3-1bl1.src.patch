@@ -1,0 +1,60 @@
+--- origsrc/aamath/Makefile	2005-06-23 05:12:18.000000000 +0900
++++ src/aamath/Makefile	2012-12-04 19:35:47.116882800 +0900
+@@ -5,7 +5,7 @@ OBJS		= $(CXXFILES:.cc=.o)
+ TARGET		= aamath
+ CFLAGS		= -Wall -O2 -g -DUSE_READLINE
+ LFLAGS		= -g
+-LIBS		= -lreadline -ltermcap
++LIBS		= -lreadline
+ 
+ $(TARGET): $(OBJS)
+ 	$(LD) $(LFLAGS) $(OBJS) -o $@ $(LIBS)
+@@ -14,7 +14,7 @@ parser.cc parser.h: parser.y
+ 	yacc -d parser.y && mv y.tab.c parser.cc && mv y.tab.h parser.h
+ 
+ lexer.cc: lexer.l parser.h
+-	lex lexer.l && mv lex.yy.c lexer.cc
++	flex lexer.l && mv lex.yy.c lexer.cc
+ 
+ .cc.o:
+ 	$(CXX) $(CFLAGS) -c $<
+--- origsrc/aamath/expr.cc	2005-03-08 11:00:02.000000000 +0900
++++ src/aamath/expr.cc	2012-12-04 19:35:27.257507800 +0900
+@@ -1192,7 +1192,7 @@ IntegralOnInterval::render_head() const
+ 
+ class SumSymbol : public OpSymbol {
+   public:
+-	void render(Canvas& c, int r, int c) const;
++	void render(Canvas& canvas, int r, int c) const;
+ };
+ 
+ void
+@@ -1208,7 +1208,7 @@ SumSymbol::render(Canvas& canvas, int r,
+ 
+ class ProductSymbol : public OpSymbol {
+   public:
+-	void render(Canvas& c, int r, int c) const;
++	void render(Canvas& canvas, int r, int c) const;
+ };
+ 
+ void
+--- origsrc/aamath/expr.h	2005-03-08 10:56:12.000000000 +0900
++++ src/aamath/expr.h	2012-12-04 19:35:06.085632800 +0900
+@@ -451,7 +451,7 @@ class Integral : public OpOnFunction {
+ 
+ 	virtual CanvasPtr render_head() const;
+ 
+-	void render_symbol(Canvas& c, int r, int c, int h) const;
++	void render_symbol(Canvas& canvas, int r, int c, int h) const;
+ 
+ 	virtual CanvasPtr render() const;
+ };
+@@ -467,7 +467,7 @@ class IntegralOnInterval : public Integr
+ 
+ class OpSymbol {
+   public:
+-	virtual void render(Canvas& c, int r, int c) const = 0;
++	virtual void render(Canvas& canvas, int r, int c) const = 0;
+ };
+ 
+ class SumOrProduct : public OpOnFunction {
