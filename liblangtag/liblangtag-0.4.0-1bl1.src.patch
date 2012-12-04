@@ -1,0 +1,123 @@
+--- origsrc/liblangtag-0.4.0/configure.ac	2012-10-22 12:46:38.000000000 +0900
++++ src/liblangtag-0.4.0/configure.ac	2012-12-04 13:01:09.450039000 +0900
+@@ -63,6 +63,8 @@ AC_SUBST(LT_G_CURRENT)
+ AC_SUBST(LT_G_REVISION)
+ AC_SUBST(LT_G_AGE)
+ 
++AC_CHECK_HEADERS(execinfo.h)
++
+ dnl ======================================================================
+ dnl define variables
+ dnl ======================================================================
+--- origsrc/liblangtag-0.4.0/extensions/Makefile.am	2012-10-12 11:09:13.000000000 +0900
++++ src/liblangtag-0.4.0/extensions/Makefile.am	2012-12-04 10:05:01.703527300 +0900
+@@ -61,7 +61,7 @@ liblangtag_ext_ldml_t_la_CFLAGS =		\
+ liblangtag_ext_ldml_t_la_LDFLAGS =		\
+ 	-avoid-version				\
+ 	-module					\
+-	$(NULL)
++	-no-undefined $(NULL)
+ #
+ liblangtag_ext_ldml_u_la_SOURCES =	\
+ 	lt-ext-ldml-u.c			\
+@@ -72,6 +72,6 @@ liblangtag_ext_ldml_u_la_CFLAGS =		\
+ liblangtag_ext_ldml_u_la_LDFLAGS =		\
+ 	-avoid-version				\
+ 	-module					\
+-	$(NULL)
++	-no-undefined $(NULL)
+ 
+ -include $(top_srcdir)/git.mk
+--- origsrc/liblangtag-0.4.0/liblangtag/Makefile.am	2012-10-12 11:07:20.000000000 +0900
++++ src/liblangtag-0.4.0/liblangtag/Makefile.am	2012-12-04 10:04:21.422277300 +0900
+@@ -1,7 +1,7 @@
+ ##
+ # Global definitions
+ NULL =
+-SUBDIRS =
++SUBDIRS = .
+ INCLUDES =							\
+ 	-I$(top_srcdir)/liblangtag/				\
+ 	-I$(top_srcdir)						\
+@@ -184,6 +184,6 @@ liblangtag_la_DEPENDENCIES =					\
+ liblangtag_la_LDFLAGS =						\
+ 	$(LDFLAGS)						\
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)	\
+-	$(NULL)
++	-no-undefined $(NULL)
+ 
+ -include $(top_srcdir)/git.mk
+--- origsrc/liblangtag-0.4.0/liblangtag/lt-error.c	2012-10-16 15:40:24.000000000 +0900
++++ src/liblangtag-0.4.0/liblangtag/lt-error.c	2012-12-04 13:01:55.293789000 +0900
+@@ -14,7 +14,9 @@
+ #include "config.h"
+ #endif
+ 
++#if HAVE_EXECINFO_H
+ #include <execinfo.h>
++#endif
+ #include <stdlib.h>
+ #include "lt-list.h"
+ #include "lt-mem.h"
+@@ -117,9 +119,11 @@ lt_error_set(lt_error_t      **error,
+ 	d->message = lt_strdup_vprintf(message, ap);
+ 	va_end(ap);
+ 
++#if HAVE_EXECINFO_H
+ 	size = backtrace(traces, 1024);
+ 	if (size > 0)
+ 		d->traces = backtrace_symbols(traces, size);
++#endif
+ 	d->stack_size = size;
+ 
+ 	lt_mem_add_ref(&d->parent, d->message, free);
+--- origsrc/liblangtag-0.4.0/liblangtag/lt-messages.c	2012-10-16 11:03:22.000000000 +0900
++++ src/liblangtag-0.4.0/liblangtag/lt-messages.c	2012-12-04 13:05:17.841640600 +0900
+@@ -17,7 +17,9 @@
+ #include "config.h"
+ #endif
+ 
++#if HAVE_EXECINFO_H
+ #include <execinfo.h>
++#endif
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -102,6 +104,7 @@ _lt_message_stacktrace(void)
+ 	char **strings;
+ 	int size, i;
+ 
++#if HAVE_EXECINFO_H
+ 	size = backtrace(traces, 1024);
+ 	if (size > 0) {
+ 		strings = backtrace_symbols(traces, size);
+@@ -119,6 +122,7 @@ _lt_message_stacktrace(void)
+ 		}
+ 		free(strings);
+ 	}
++#endif
+ }
+ 
+ static void
+--- origsrc/liblangtag-0.4.0/liblangtag-gobject/Makefile.am	2012-10-22 12:35:13.000000000 +0900
++++ src/liblangtag-0.4.0/liblangtag-gobject/Makefile.am	2012-12-04 10:05:29.344152300 +0900
+@@ -145,7 +145,7 @@ liblangtag_gobject_la_CFLAGS =				\
+ liblangtag_gobject_la_LDFLAGS =						\
+ 	$(LDFLAGS)							\
+ 	-version-info $(LT_G_CURRENT):$(LT_G_REVISION):$(LT_G_AGE)	\
+-	$(NULL)
++	-no-undefined $(NULL)
+ #
+ if HAVE_INTROSPECTION
+ lt_headers = $(liblangtag_gobject_built_private_headers:.gir.h=.h)
+--- origsrc/liblangtag-0.4.0/tests/Makefile.am	2012-10-09 20:33:23.000000000 +0900
++++ src/liblangtag-0.4.0/tests/Makefile.am	2012-12-04 13:53:26.015468700 +0900
+@@ -5,7 +5,7 @@ SUBDIRS =
+ INCLUDES =								\
+ 	-I$(top_srcdir)/liblangtag					\
+ 	-I$(top_srcdir)							\
+-	-DTEST_DATADIR="\"$(abs_top_builddir)/data\""			\
++	-DTEST_DATADIR="\"$(abs_top_srcdir)/data\""			\
+ 	-DTEST_MODDIR="\"$(abs_top_builddir)/extensions/.libs\""	\
+ 	-D__LANGTAG_COMPILATION						\
+ 	$(CHECK_CFLAGS)							\
