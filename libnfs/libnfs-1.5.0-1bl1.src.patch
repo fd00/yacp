@@ -1,0 +1,90 @@
+--- origsrc/libnfs-1.5.0/examples/Makefile.am	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/examples/Makefile.am	2012-12-09 21:20:18.231498200 +0900
+@@ -3,10 +3,10 @@ noinst_PROGRAMS = nfsclient-async nfscli
+ AM_CPPFLAGS = \
+ 	-I$(abs_top_srcdir)/include \
+ 	-I$(abs_top_srcdir)/include/nfsc \
+-	-I../mount \
+-	-I../nfs \
+-	-I../rquota \
+-	-I../portmap \
++	-I$(top_srcdir)/mount \
++	-I$(top_srcdir)/nfs \
++	-I$(top_srcdir)/rquota \
++	-I$(top_srcdir)/portmap \
+ 	"-D_U_=__attribute__((unused))"
+ 
+ AM_LDFLAGS = ../lib/.libs/libnfs.la -lpopt
+--- origsrc/libnfs-1.5.0/examples/nfsclient-sync.c	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/examples/nfsclient-sync.c	2012-12-09 21:22:41.249076300 +0900
+@@ -47,7 +47,9 @@ WSADATA wsaData;
+ #include <fcntl.h>
+ #include "libnfs-zdr.h"
+ #include "libnfs.h"
++#if !defined(__CYGWIN__)
+ #include <rpc/rpc.h>            /* for authunix_create() */
++#endif
+ #include <popt.h>
+ #include "libnfs-raw.h"
+ #include "libnfs-raw-mount.h"
+--- origsrc/libnfs-1.5.0/include/nfsc/libnfs.h	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/include/nfsc/libnfs.h	2012-12-09 21:15:28.822318500 +0900
+@@ -18,7 +18,7 @@
+  * This is the highlevel interface to access NFS resources using a posix-like interface
+  */
+ #include <stdint.h>
+-#if defined(ANDROID)
++#if defined(ANDROID) || defined(__CYGWIN__)
+ #include <sys/time.h>
+ #endif
+ 
+--- origsrc/libnfs-1.5.0/lib/Makefile.am	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/lib/Makefile.am	2012-12-09 21:19:28.932670100 +0900
+@@ -2,11 +2,11 @@ lib_LTLIBRARIES = libnfs.la
+ 
+ libnfs_la_CPPFLAGS = -I$(abs_top_srcdir)/include \
+ 		     -I$(abs_top_srcdir)/include/nfsc \
+-		     -I../mount \
+-		     -I../nfs \
+-		     -I../nlm \
+-		     -I../portmap \
+-		     -I../rquota \
++		     -I$(top_srcdir)/mount \
++		     -I$(top_srcdir)/nfs \
++		     -I$(top_srcdir)/nlm \
++		     -I$(top_srcdir)/portmap \
++		     -I$(top_srcdir)/rquota \
+ 		     "-D_U_=__attribute__((unused))"
+ 
+ libnfs_la_SOURCES = \
+@@ -17,7 +17,7 @@ libnfs_la_SOURCES = \
+ 	pdu.c \
+ 	socket.c
+ 
+-libnfs_la_LDFLAGS = -version-info 1:5:0
++libnfs_la_LDFLAGS = -version-info 1:5:0 -no-undefined
+ libnfs_la_LIBADD = \
+ 	../mount/libmount.la \
+ 	../nfs/libnfs.la \
+--- origsrc/libnfs-1.5.0/nfs/libnfs-raw-nfs.h	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/nfs/libnfs-raw-nfs.h	2012-12-09 21:16:55.683646600 +0900
+@@ -17,7 +17,7 @@ extern "C" {
+ #define NFS3_CREATEVERFSIZE 8
+ #define NFS3_COOKIEVERFSIZE 8
+ 
+-#if defined(ANDROID)
++#if defined(ANDROID) || defined(__CYGWIN__)
+ typedef long long int quad_t;
+ typedef long long unsigned u_quad_t;
+ #endif
+--- origsrc/libnfs-1.5.0/nlm/libnfs-raw-nlm.h	2012-12-03 23:38:18.000000000 +0900
++++ src/libnfs-1.5.0/nlm/libnfs-raw-nlm.h	2012-12-09 21:17:32.029349700 +0900
+@@ -12,7 +12,7 @@
+ extern "C" {
+ #endif
+ 
+-#if defined(ANDROID)
++#if defined(ANDROID) || defined(__CYGWIN__)
+ typedef long long int quad_t;
+ typedef long long unsigned u_quad_t;
+ #endif
