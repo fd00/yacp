@@ -1,0 +1,48 @@
+--- origsrc/afflib-3.7.1/lib/Makefile.am	2012-05-22 03:25:42.000000000 +0900
++++ src/afflib-3.7.1/lib/Makefile.am	2012-12-08 11:07:38.820265800 +0900
+@@ -113,3 +113,4 @@ LZMA_SOURCES =  \
+ # Unfortunately, when we specify lib_, things don't build. I can't figure it out.
+ lib_LTLIBRARIES = libafflib.la
+ libafflib_la_SOURCES += $(LZMA_SOURCES)
++libafflib_la_LDFLAGS = -no-undefined
+--- origsrc/afflib-3.7.1/pyaff/Makefile.am	2012-05-22 03:25:42.000000000 +0900
++++ src/afflib-3.7.1/pyaff/Makefile.am	2012-12-08 13:41:10.463149200 +0900
+@@ -8,7 +8,7 @@ pyexec_LTLIBRARIES 	= pyaff.la
+ 
+ pyaff_la_SOURCES	= pyaff.c
+ pyaff_la_LIBADD		= ../lib/libafflib.la
+-pyaff_la_CPPFLAGS 	= $(PYTHON_CPPFLAGS)
++pyaff_la_CPPFLAGS 	= $(PYTHON_CPPFLAGS) -I$(top_srcdir)
+ pyaff_la_CFLAGS                = -fno-strict-aliasing
+-pyaff_la_LDFLAGS 	= -module -avoid-version $(PYTHON_LDFLAGS)
++pyaff_la_LDFLAGS 	= -module -avoid-version $(PYTHON_LDFLAGS) -no-undefined
+ endif
+--- origsrc/afflib-3.7.1/tools/Makefile.am	2012-05-22 03:25:42.000000000 +0900
++++ src/afflib-3.7.1/tools/Makefile.am	2012-12-08 11:09:05.726515800 +0900
+@@ -8,8 +8,6 @@ TESTS = test_signing.sh test_recovery.sh
+ 
+ # See http://www.gnu.org/software/libtool/manual.html		# Using-Automake
+ 
+-AM_LDFLAGS = -static		# staticly link our tools (easier debugging)
+-
+ affcat_SOURCES = affcat.cpp 
+ 
+ affcrypto_SOURCES = affcrypto.cpp
+--- origsrc/afflib-3.7.1/tools/affinfo.cpp	2012-05-22 03:25:42.000000000 +0900
++++ src/afflib-3.7.1/tools/affinfo.cpp	2012-12-08 13:36:23.625258600 +0900
+@@ -758,6 +758,7 @@ int main(int argc,char **argv)
+     const char *infile;
+ 
+     /* Figure out how many cols the screen has... */
++#if !defined(__CYGWIN__)
+ #ifdef HAVE_LIBNCURSES
+     term = getenv("TERM");
+     if(term){
+@@ -766,6 +767,7 @@ int main(int argc,char **argv)
+ 	cols = tgetnum((char *)"co");
+     }
+ #endif
++#endif
+ 
+     while ((ch = getopt(argc, argv, "abh?s:SmiIwj:p:xvVX5dAl")) != -1) {
+ 	switch (ch) {
