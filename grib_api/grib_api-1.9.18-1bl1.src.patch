@@ -1,23 +1,23 @@
---- origsrc/grib_api-1.9.16_libtool/configure.ac	2012-02-06 23:01:50.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/configure.ac	2012-03-20 15:25:58.997774400 +0900
-@@ -43,6 +43,7 @@ fi
+--- origsrc/grib_api-1.9.18/configure.ac	2012-10-17 22:57:15.000000000 +0900
++++ src/grib_api-1.9.18/configure.ac	2012-12-15 09:57:01.009475600 +0900
+@@ -45,6 +45,7 @@ fi
  
  if test "$datadir" != '${datarootdir}' ; then
-    definition_files_path=$datadir/definitions
+    definition_files_path=$datadir/grib_api/definitions
 +   samples_files_path=$datadir/samples
  fi
  
  
---- origsrc/grib_api-1.9.16_libtool/definitions/Makefile.am	2012-01-31 01:01:04.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/definitions/Makefile.am	2012-03-20 15:25:58.997774400 +0900
-@@ -1983,4 +1983,4 @@ dist_definitionstide_DATA = \
+--- origsrc/grib_api-1.9.18/definitions/Makefile.am	2012-10-12 02:00:58.000000000 +0900
++++ src/grib_api-1.9.18/definitions/Makefile.am	2012-12-15 09:57:26.718468200 +0900
+@@ -2045,4 +2045,4 @@ dist_definitionstide_DATA = \
  	tide/section.1.def\
  	tide/section.4.def
  
 -include $(DEVEL_RULES)
 +include $(srcdir)/$(DEVEL_RULES)
---- origsrc/grib_api-1.9.16_libtool/examples/C/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/examples/C/Makefile.am	2012-03-20 16:53:56.549907600 +0900
+--- origsrc/grib_api-1.9.18/examples/C/Makefile.am	2012-10-12 02:12:50.000000000 +0900
++++ src/grib_api-1.9.18/examples/C/Makefile.am	2012-12-15 09:59:16.489721600 +0900
 @@ -6,7 +6,7 @@ TESTS = iterator.sh get.sh print_data.sh
  
  noinst_PROGRAMS        =  nearest set_bitmap iterator get print_data set set_missing keys_iterator \
@@ -51,18 +51,19 @@
 +	examples_dir=${abs_top_builddir}/examples/C/ \
 +	tigge_dir=${top_srcdir}/tigge/ \
 +	data_dir=${top_srcdir}/data
---- origsrc/grib_api-1.9.16_libtool/examples/C/print_data.sh	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/examples/C/print_data.sh	2012-03-20 16:51:07.661235700 +0900
-@@ -2,6 +2,7 @@
+--- origsrc/grib_api-1.9.18/examples/C/print_data.sh	2012-10-12 02:00:59.000000000 +0900
++++ src/grib_api-1.9.18/examples/C/print_data.sh	2012-12-15 10:00:13.163909400 +0900
+@@ -2,7 +2,7 @@
  
  . ./include.sh
  
+-numberOfValues=`${examples_dir}print_data ../../data/constant_field.grib1 | grep values | awk '{print $1}'`
 +numberOfValues=0
- numberOfValues=`${examples_dir}print_data ../../data/constant_field.grib1 | grep values | awk '{print $1}'`
  
  if [ $numberOfValues -ne 99200 ]
---- origsrc/grib_api-1.9.16_libtool/examples/F90/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/examples/F90/Makefile.am	2012-03-20 16:54:46.458110700 +0900
+ then
+--- origsrc/grib_api-1.9.18/examples/F90/Makefile.am	2012-10-12 02:13:49.000000000 +0900
++++ src/grib_api-1.9.18/examples/F90/Makefile.am	2012-12-15 10:00:45.117034400 +0900
 @@ -42,3 +42,10 @@ DEPENDENCIES = $(LDADD)
  
  EXTRA_DIST =$(TESTS) include.sh
@@ -74,8 +75,8 @@
 +	examples_dir=${abs_top_builddir}/examples/F90/ \
 +	tigge_dir=${top_srcdir}/tigge/ \
 +	data_dir=${top_srcdir}/data
---- origsrc/grib_api-1.9.16_libtool/fortran/Makefile.am	2012-02-02 02:35:49.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/fortran/Makefile.am	2012-03-20 15:25:58.997774400 +0900
+--- origsrc/grib_api-1.9.18/fortran/Makefile.am	2012-10-12 02:18:43.000000000 +0900
++++ src/grib_api-1.9.18/fortran/Makefile.am	2012-12-15 10:02:17.367034400 +0900
 @@ -7,11 +7,13 @@ include_HEADERS = grib_api_f77.h
  
  libgrib_api_f77_la_SOURCES= grib_fortran.c grib_f77.c 
@@ -102,837 +103,918 @@
  
  ## Make sure these will be cleaned even when they're not built by
  ## default.
-@@ -38,7 +41,8 @@ EXTRA_DIST= grib_fortran_prototypes.h gr
+@@ -38,7 +41,9 @@ EXTRA_DIST= grib_fortran_prototypes.h gr
  			same_int_long.f90 grib_fortran_kinds.c
  
  grib_f90.f90: grib_f90.f90.head grib_f90.f90.tail same_int_long grib_kinds.h
 -	./create_grib_f90.sh 
 +	if [ `./same_int_long` -eq 1 ]; then i=$(srcdir)/grib_f90_int.f90; else i=$(srcdir)/grib_f90_long_int.f90; fi; \
 +	cat $(srcdir)/grib_f90.f90.head $$i $(srcdir)/grib_f90.f90.tail > grib_f90.f90
++ 
  
  grib_f90.o : grib_kinds.h
  
---- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/ifs_samples/grib1/Makefile.am	2012-03-20 15:25:59.016202100 +0900
-@@ -64,164 +64,164 @@ nodist_grib1_DATA = \
- 	sh_pl_grib1.tmpl \
- 	sh_pl_grib2.tmpl 
+--- origsrc/grib_api-1.9.18/ifs_samples/grib1/Makefile.am	2012-10-12 02:01:00.000000000 +0900
++++ src/grib_api-1.9.18/ifs_samples/grib1/Makefile.am	2012-12-15 10:03:11.783973600 +0900
+@@ -68,176 +68,176 @@ nodist_grib1_DATA = \
+ 	sh_sfc_grib1.tmpl \
+ 	sh_sfc_grib2.tmpl 
  
 -GRIB1.tmpl: ../../samples/GRIB1.tmpl
--	cp ../../samples/GRIB1.tmpl .
+-	cp -f ../../samples/GRIB1.tmpl .
 +GRIB1.tmpl: $(top_srcdir)/samples/GRIB1.tmpl
-+	cp $(top_srcdir)/samples/GRIB1.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB1.tmpl .
  
 -GRIB2.tmpl: ../../samples/GRIB2.tmpl
--	cp ../../samples/GRIB2.tmpl .
+-	cp -f ../../samples/GRIB2.tmpl .
 +GRIB2.tmpl: $(top_srcdir)/samples/GRIB2.tmpl
-+	cp $(top_srcdir)/samples/GRIB2.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB2.tmpl .
+ 
+-gg_sfc_grib1.tmpl: ../../samples/gg_sfc_grib1.tmpl
+-	cp -f ../../samples/gg_sfc_grib1.tmpl .
++gg_sfc_grib1.tmpl: $(top_srcdir)/samples/gg_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib1.tmpl .
+ 
+-gg_sfc_grib2.tmpl: ../../samples/gg_sfc_grib2.tmpl
+-	cp -f ../../samples/gg_sfc_grib2.tmpl .
++gg_sfc_grib2.tmpl: $(top_srcdir)/samples/gg_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib2.tmpl .
  
 -polar_stereographic_pl_grib1.tmpl: ../../samples/polar_stereographic_pl_grib1.tmpl
--	cp ../../samples/polar_stereographic_pl_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib1.tmpl .
 +polar_stereographic_pl_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
  
 -polar_stereographic_pl_grib2.tmpl: ../../samples/polar_stereographic_pl_grib2.tmpl
--	cp ../../samples/polar_stereographic_pl_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib2.tmpl .
 +polar_stereographic_pl_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
  
 -polar_stereographic_sfc_grib1.tmpl: ../../samples/polar_stereographic_sfc_grib1.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib1.tmpl .
 +polar_stereographic_sfc_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
  
 -polar_stereographic_sfc_grib2.tmpl: ../../samples/polar_stereographic_sfc_grib2.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib2.tmpl .
 +polar_stereographic_sfc_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
  
 -reduced_gg_ml_grib1.tmpl: ../../samples/reduced_gg_ml_grib1.tmpl
--	cp ../../samples/reduced_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib1.tmpl .
 +reduced_gg_ml_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
  
 -reduced_gg_ml_grib2.tmpl: ../../samples/reduced_gg_ml_grib2.tmpl
--	cp ../../samples/reduced_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib2.tmpl .
 +reduced_gg_ml_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
  
 -reduced_gg_pl_128_grib1.tmpl: ../../samples/reduced_gg_pl_128_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib1.tmpl .
 +reduced_gg_pl_128_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
  
 -reduced_gg_pl_128_grib2.tmpl: ../../samples/reduced_gg_pl_128_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib2.tmpl .
 +reduced_gg_pl_128_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
  
 -reduced_gg_pl_160_grib1.tmpl: ../../samples/reduced_gg_pl_160_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib1.tmpl .
 +reduced_gg_pl_160_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
  
 -reduced_gg_pl_160_grib2.tmpl: ../../samples/reduced_gg_pl_160_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib2.tmpl .
 +reduced_gg_pl_160_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
  
 -reduced_gg_pl_200_grib1.tmpl: ../../samples/reduced_gg_pl_200_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib1.tmpl .
 +reduced_gg_pl_200_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
  
 -reduced_gg_pl_200_grib2.tmpl: ../../samples/reduced_gg_pl_200_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib2.tmpl .
 +reduced_gg_pl_200_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
  
 -reduced_gg_pl_256_grib1.tmpl: ../../samples/reduced_gg_pl_256_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib1.tmpl .
 +reduced_gg_pl_256_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
  
 -reduced_gg_pl_256_grib2.tmpl: ../../samples/reduced_gg_pl_256_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib2.tmpl .
 +reduced_gg_pl_256_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
  
 -reduced_gg_pl_320_grib1.tmpl: ../../samples/reduced_gg_pl_320_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib1.tmpl .
 +reduced_gg_pl_320_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
  
 -reduced_gg_pl_320_grib2.tmpl: ../../samples/reduced_gg_pl_320_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib2.tmpl .
 +reduced_gg_pl_320_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
  
 -reduced_gg_pl_400_grib1.tmpl: ../../samples/reduced_gg_pl_400_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib1.tmpl .
 +reduced_gg_pl_400_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
  
 -reduced_gg_pl_400_grib2.tmpl: ../../samples/reduced_gg_pl_400_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib2.tmpl .
 +reduced_gg_pl_400_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
  
 -reduced_gg_pl_48_grib1.tmpl: ../../samples/reduced_gg_pl_48_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib1.tmpl .
 +reduced_gg_pl_48_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
  
 -reduced_gg_pl_48_grib2.tmpl: ../../samples/reduced_gg_pl_48_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib2.tmpl .
 +reduced_gg_pl_48_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
  
 -reduced_gg_pl_512_grib1.tmpl: ../../samples/reduced_gg_pl_512_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib1.tmpl .
 +reduced_gg_pl_512_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
  
 -reduced_gg_pl_512_grib2.tmpl: ../../samples/reduced_gg_pl_512_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib2.tmpl .
 +reduced_gg_pl_512_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
  
 -reduced_gg_pl_640_grib1.tmpl: ../../samples/reduced_gg_pl_640_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib1.tmpl .
 +reduced_gg_pl_640_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
  
 -reduced_gg_pl_640_grib2.tmpl: ../../samples/reduced_gg_pl_640_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib2.tmpl .
 +reduced_gg_pl_640_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
  
 -reduced_gg_pl_80_grib1.tmpl: ../../samples/reduced_gg_pl_80_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib1.tmpl .
 +reduced_gg_pl_80_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
  
 -reduced_gg_pl_80_grib2.tmpl: ../../samples/reduced_gg_pl_80_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib2.tmpl .
 +reduced_gg_pl_80_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
  
 -reduced_gg_pl_grib1.tmpl: ../../samples/reduced_gg_pl_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib1.tmpl .
 +reduced_gg_pl_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
  
 -reduced_gg_pl_grib2.tmpl: ../../samples/reduced_gg_pl_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib2.tmpl .
 +reduced_gg_pl_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
  
 -reduced_gg_sfc_grib1.tmpl: ../../samples/reduced_gg_sfc_grib1.tmpl
--	cp ../../samples/reduced_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib1.tmpl .
 +reduced_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
  
 -reduced_gg_sfc_grib2.tmpl: ../../samples/reduced_gg_sfc_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib2.tmpl .
 +reduced_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
  
 -reduced_gg_sfc_jpeg_grib2.tmpl: ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
 +reduced_gg_sfc_jpeg_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
  
 -reduced_ll_sfc_grib1.tmpl: ../../samples/reduced_ll_sfc_grib1.tmpl
--	cp ../../samples/reduced_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib1.tmpl .
 +reduced_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
  
 -reduced_ll_sfc_grib2.tmpl: ../../samples/reduced_ll_sfc_grib2.tmpl
--	cp ../../samples/reduced_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib2.tmpl .
 +reduced_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
  
 -regular_gg_ml_grib1.tmpl: ../../samples/regular_gg_ml_grib1.tmpl
--	cp ../../samples/regular_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib1.tmpl .
 +regular_gg_ml_grib1.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
  
 -regular_gg_ml_grib2.tmpl: ../../samples/regular_gg_ml_grib2.tmpl
--	cp ../../samples/regular_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib2.tmpl .
 +regular_gg_ml_grib2.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
  
 -regular_gg_pl_grib1.tmpl: ../../samples/regular_gg_pl_grib1.tmpl
--	cp ../../samples/regular_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib1.tmpl .
 +regular_gg_pl_grib1.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
  
 -regular_gg_pl_grib2.tmpl: ../../samples/regular_gg_pl_grib2.tmpl
--	cp ../../samples/regular_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib2.tmpl .
 +regular_gg_pl_grib2.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
  
 -regular_gg_sfc_grib1.tmpl: ../../samples/regular_gg_sfc_grib1.tmpl
--	cp ../../samples/regular_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib1.tmpl .
 +regular_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
  
 -regular_gg_sfc_grib2.tmpl: ../../samples/regular_gg_sfc_grib2.tmpl
--	cp ../../samples/regular_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib2.tmpl .
 +regular_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
  
 -regular_ll_pl_grib1.tmpl: ../../samples/regular_ll_pl_grib1.tmpl
--	cp ../../samples/regular_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib1.tmpl .
 +regular_ll_pl_grib1.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
  
 -regular_ll_pl_grib2.tmpl: ../../samples/regular_ll_pl_grib2.tmpl
--	cp ../../samples/regular_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib2.tmpl .
 +regular_ll_pl_grib2.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
  
 -regular_ll_sfc_grib1.tmpl: ../../samples/regular_ll_sfc_grib1.tmpl
--	cp ../../samples/regular_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib1.tmpl .
 +regular_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
  
 -regular_ll_sfc_grib2.tmpl: ../../samples/regular_ll_sfc_grib2.tmpl
--	cp ../../samples/regular_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib2.tmpl .
 +regular_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
  
 -rotated_ll_pl_grib1.tmpl: ../../samples/rotated_ll_pl_grib1.tmpl
--	cp ../../samples/rotated_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib1.tmpl .
 +rotated_ll_pl_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
  
 -rotated_ll_pl_grib2.tmpl: ../../samples/rotated_ll_pl_grib2.tmpl
--	cp ../../samples/rotated_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib2.tmpl .
 +rotated_ll_pl_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
  
 -rotated_ll_sfc_grib1.tmpl: ../../samples/rotated_ll_sfc_grib1.tmpl
--	cp ../../samples/rotated_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib1.tmpl .
 +rotated_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
  
 -rotated_ll_sfc_grib2.tmpl: ../../samples/rotated_ll_sfc_grib2.tmpl
--	cp ../../samples/rotated_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib2.tmpl .
 +rotated_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
  
 -sh_ml_grib1.tmpl: ../../samples/sh_ml_grib1.tmpl
--	cp ../../samples/sh_ml_grib1.tmpl .
+-	cp -f ../../samples/sh_ml_grib1.tmpl .
 +sh_ml_grib1.tmpl: $(top_srcdir)/samples/sh_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib1.tmpl .
  
 -sh_ml_grib2.tmpl: ../../samples/sh_ml_grib2.tmpl
--	cp ../../samples/sh_ml_grib2.tmpl .
+-	cp -f ../../samples/sh_ml_grib2.tmpl .
 +sh_ml_grib2.tmpl: $(top_srcdir)/samples/sh_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib2.tmpl .
  
 -sh_pl_grib1.tmpl: ../../samples/sh_pl_grib1.tmpl
--	cp ../../samples/sh_pl_grib1.tmpl .
+-	cp -f ../../samples/sh_pl_grib1.tmpl .
 +sh_pl_grib1.tmpl: $(top_srcdir)/samples/sh_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib1.tmpl .
  
 -sh_pl_grib2.tmpl: ../../samples/sh_pl_grib2.tmpl
--	cp ../../samples/sh_pl_grib2.tmpl .
+-	cp -f ../../samples/sh_pl_grib2.tmpl .
 +sh_pl_grib2.tmpl: $(top_srcdir)/samples/sh_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib2.tmpl .
+ 
+-sh_sfc_grib1.tmpl: ../../samples/sh_sfc_grib1.tmpl
+-	cp -f ../../samples/sh_sfc_grib1.tmpl .
++sh_sfc_grib1.tmpl: $(top_srcdir)/samples/sh_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib1.tmpl .
+ 
+-sh_sfc_grib2.tmpl: ../../samples/sh_sfc_grib2.tmpl
+-	cp -f ../../samples/sh_sfc_grib2.tmpl .
++sh_sfc_grib2.tmpl: $(top_srcdir)/samples/sh_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib2.tmpl .
  
  
  
---- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2/Makefile.am	2012-03-20 15:25:59.034629800 +0900
-@@ -64,164 +64,164 @@ nodist_grib1_mlgrib2_DATA = \
- 	sh_pl_grib1.tmpl \
- 	sh_pl_grib2.tmpl 
+--- origsrc/grib_api-1.9.18/ifs_samples/grib1_mlgrib2/Makefile.am	2012-10-12 02:01:00.000000000 +0900
++++ src/grib_api-1.9.18/ifs_samples/grib1_mlgrib2/Makefile.am	2012-12-15 10:03:33.708778300 +0900
+@@ -72,188 +72,188 @@ nodist_grib1_mlgrib2_DATA = \
+ 	sh_sfc_grib1.tmpl \
+ 	sh_sfc_grib2.tmpl 
  
 -GRIB1.tmpl: ../../samples/GRIB1.tmpl
--	cp ../../samples/GRIB1.tmpl .
+-	cp -f ../../samples/GRIB1.tmpl .
 +GRIB1.tmpl: $(top_srcdir)/samples/GRIB1.tmpl
-+	cp $(top_srcdir)/samples/GRIB1.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB1.tmpl .
  
 -GRIB2.tmpl: ../../samples/GRIB2.tmpl
--	cp ../../samples/GRIB2.tmpl .
+-	cp -f ../../samples/GRIB2.tmpl .
 +GRIB2.tmpl: $(top_srcdir)/samples/GRIB2.tmpl
-+	cp $(top_srcdir)/samples/GRIB2.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB2.tmpl .
+ 
+-gg_sfc_grib1.tmpl: ../../samples/gg_sfc_grib1.tmpl
+-	cp -f ../../samples/gg_sfc_grib1.tmpl .
++gg_sfc_grib1.tmpl: $(top_srcdir)/samples/gg_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib1.tmpl .
+ 
+-gg_sfc_grib2.tmpl: ../../samples/gg_sfc_grib2.tmpl
+-	cp -f ../../samples/gg_sfc_grib2.tmpl .
++gg_sfc_grib2.tmpl: $(top_srcdir)/samples/gg_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib2.tmpl .
  
 -polar_stereographic_pl_grib1.tmpl: ../../samples/polar_stereographic_pl_grib1.tmpl
--	cp ../../samples/polar_stereographic_pl_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib1.tmpl .
 +polar_stereographic_pl_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
  
 -polar_stereographic_pl_grib2.tmpl: ../../samples/polar_stereographic_pl_grib2.tmpl
--	cp ../../samples/polar_stereographic_pl_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib2.tmpl .
 +polar_stereographic_pl_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
  
 -polar_stereographic_sfc_grib1.tmpl: ../../samples/polar_stereographic_sfc_grib1.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib1.tmpl .
 +polar_stereographic_sfc_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
  
 -polar_stereographic_sfc_grib2.tmpl: ../../samples/polar_stereographic_sfc_grib2.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib2.tmpl .
 +polar_stereographic_sfc_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
  
 -reduced_gg_ml_grib1.tmpl: ../../samples/reduced_gg_ml_grib1.tmpl
--	cp ../../samples/reduced_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib1.tmpl .
 +reduced_gg_ml_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
  
 -reduced_gg_ml_grib2.tmpl: ../../samples/reduced_gg_ml_grib2.tmpl
--	cp ../../samples/reduced_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib2.tmpl .
 +reduced_gg_ml_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
+ 
+-reduced_gg_pl_1024_grib1.tmpl: ../../samples/reduced_gg_pl_1024_grib1.tmpl
+-	cp -f ../../samples/reduced_gg_pl_1024_grib1.tmpl .
++reduced_gg_pl_1024_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_1024_grib1.tmpl
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_1024_grib1.tmpl .
+ 
+-reduced_gg_pl_1024_grib2.tmpl: ../../samples/reduced_gg_pl_1024_grib2.tmpl
+-	cp -f ../../samples/reduced_gg_pl_1024_grib2.tmpl .
++reduced_gg_pl_1024_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_1024_grib2.tmpl
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_1024_grib2.tmpl .
  
 -reduced_gg_pl_128_grib1.tmpl: ../../samples/reduced_gg_pl_128_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib1.tmpl .
 +reduced_gg_pl_128_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
  
 -reduced_gg_pl_128_grib2.tmpl: ../../samples/reduced_gg_pl_128_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib2.tmpl .
 +reduced_gg_pl_128_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
  
 -reduced_gg_pl_160_grib1.tmpl: ../../samples/reduced_gg_pl_160_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib1.tmpl .
 +reduced_gg_pl_160_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
  
 -reduced_gg_pl_160_grib2.tmpl: ../../samples/reduced_gg_pl_160_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib2.tmpl .
 +reduced_gg_pl_160_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
+ 
+-reduced_gg_pl_2000_grib1.tmpl: ../../samples/reduced_gg_pl_2000_grib1.tmpl
+-	cp -f ../../samples/reduced_gg_pl_2000_grib1.tmpl .
++reduced_gg_pl_2000_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_2000_grib1.tmpl
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_2000_grib1.tmpl .
+ 
+-reduced_gg_pl_2000_grib2.tmpl: ../../samples/reduced_gg_pl_2000_grib2.tmpl
+-	cp -f ../../samples/reduced_gg_pl_2000_grib2.tmpl .
++reduced_gg_pl_2000_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_2000_grib2.tmpl
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_2000_grib2.tmpl .
  
 -reduced_gg_pl_200_grib1.tmpl: ../../samples/reduced_gg_pl_200_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib1.tmpl .
 +reduced_gg_pl_200_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
  
 -reduced_gg_pl_200_grib2.tmpl: ../../samples/reduced_gg_pl_200_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib2.tmpl .
 +reduced_gg_pl_200_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
  
 -reduced_gg_pl_256_grib1.tmpl: ../../samples/reduced_gg_pl_256_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib1.tmpl .
 +reduced_gg_pl_256_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
  
 -reduced_gg_pl_256_grib2.tmpl: ../../samples/reduced_gg_pl_256_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib2.tmpl .
 +reduced_gg_pl_256_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
  
 -reduced_gg_pl_320_grib1.tmpl: ../../samples/reduced_gg_pl_320_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib1.tmpl .
 +reduced_gg_pl_320_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
  
 -reduced_gg_pl_320_grib2.tmpl: ../../samples/reduced_gg_pl_320_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib2.tmpl .
 +reduced_gg_pl_320_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
  
 -reduced_gg_pl_400_grib1.tmpl: ../../samples/reduced_gg_pl_400_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib1.tmpl .
 +reduced_gg_pl_400_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
  
 -reduced_gg_pl_400_grib2.tmpl: ../../samples/reduced_gg_pl_400_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib2.tmpl .
 +reduced_gg_pl_400_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
  
 -reduced_gg_pl_48_grib1.tmpl: ../../samples/reduced_gg_pl_48_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib1.tmpl .
 +reduced_gg_pl_48_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
  
 -reduced_gg_pl_48_grib2.tmpl: ../../samples/reduced_gg_pl_48_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib2.tmpl .
 +reduced_gg_pl_48_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
  
 -reduced_gg_pl_512_grib1.tmpl: ../../samples/reduced_gg_pl_512_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib1.tmpl .
 +reduced_gg_pl_512_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
  
 -reduced_gg_pl_512_grib2.tmpl: ../../samples/reduced_gg_pl_512_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib2.tmpl .
 +reduced_gg_pl_512_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
  
 -reduced_gg_pl_640_grib1.tmpl: ../../samples/reduced_gg_pl_640_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib1.tmpl .
 +reduced_gg_pl_640_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
  
 -reduced_gg_pl_640_grib2.tmpl: ../../samples/reduced_gg_pl_640_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib2.tmpl .
 +reduced_gg_pl_640_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
  
 -reduced_gg_pl_80_grib1.tmpl: ../../samples/reduced_gg_pl_80_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib1.tmpl .
 +reduced_gg_pl_80_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
  
 -reduced_gg_pl_80_grib2.tmpl: ../../samples/reduced_gg_pl_80_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib2.tmpl .
 +reduced_gg_pl_80_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
  
 -reduced_gg_pl_grib1.tmpl: ../../samples/reduced_gg_pl_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib1.tmpl .
 +reduced_gg_pl_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
  
 -reduced_gg_pl_grib2.tmpl: ../../samples/reduced_gg_pl_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib2.tmpl .
 +reduced_gg_pl_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
  
 -reduced_gg_sfc_grib1.tmpl: ../../samples/reduced_gg_sfc_grib1.tmpl
--	cp ../../samples/reduced_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib1.tmpl .
 +reduced_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
  
 -reduced_gg_sfc_grib2.tmpl: ../../samples/reduced_gg_sfc_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib2.tmpl .
 +reduced_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
  
 -reduced_gg_sfc_jpeg_grib2.tmpl: ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
 +reduced_gg_sfc_jpeg_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
  
 -reduced_ll_sfc_grib1.tmpl: ../../samples/reduced_ll_sfc_grib1.tmpl
--	cp ../../samples/reduced_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib1.tmpl .
 +reduced_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
  
 -reduced_ll_sfc_grib2.tmpl: ../../samples/reduced_ll_sfc_grib2.tmpl
--	cp ../../samples/reduced_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib2.tmpl .
 +reduced_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
  
 -regular_gg_ml_grib1.tmpl: ../../samples/regular_gg_ml_grib1.tmpl
--	cp ../../samples/regular_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib1.tmpl .
 +regular_gg_ml_grib1.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
  
 -regular_gg_ml_grib2.tmpl: ../../samples/regular_gg_ml_grib2.tmpl
--	cp ../../samples/regular_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib2.tmpl .
 +regular_gg_ml_grib2.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
  
 -regular_gg_pl_grib1.tmpl: ../../samples/regular_gg_pl_grib1.tmpl
--	cp ../../samples/regular_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib1.tmpl .
 +regular_gg_pl_grib1.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
  
 -regular_gg_pl_grib2.tmpl: ../../samples/regular_gg_pl_grib2.tmpl
--	cp ../../samples/regular_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib2.tmpl .
 +regular_gg_pl_grib2.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
  
 -regular_gg_sfc_grib1.tmpl: ../../samples/regular_gg_sfc_grib1.tmpl
--	cp ../../samples/regular_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib1.tmpl .
 +regular_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
  
 -regular_gg_sfc_grib2.tmpl: ../../samples/regular_gg_sfc_grib2.tmpl
--	cp ../../samples/regular_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib2.tmpl .
 +regular_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
  
 -regular_ll_pl_grib1.tmpl: ../../samples/regular_ll_pl_grib1.tmpl
--	cp ../../samples/regular_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib1.tmpl .
 +regular_ll_pl_grib1.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
  
 -regular_ll_pl_grib2.tmpl: ../../samples/regular_ll_pl_grib2.tmpl
--	cp ../../samples/regular_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib2.tmpl .
 +regular_ll_pl_grib2.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
  
 -regular_ll_sfc_grib1.tmpl: ../../samples/regular_ll_sfc_grib1.tmpl
--	cp ../../samples/regular_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib1.tmpl .
 +regular_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
  
 -regular_ll_sfc_grib2.tmpl: ../../samples/regular_ll_sfc_grib2.tmpl
--	cp ../../samples/regular_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib2.tmpl .
 +regular_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
  
 -rotated_ll_pl_grib1.tmpl: ../../samples/rotated_ll_pl_grib1.tmpl
--	cp ../../samples/rotated_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib1.tmpl .
 +rotated_ll_pl_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
  
 -rotated_ll_pl_grib2.tmpl: ../../samples/rotated_ll_pl_grib2.tmpl
--	cp ../../samples/rotated_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib2.tmpl .
 +rotated_ll_pl_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
  
 -rotated_ll_sfc_grib1.tmpl: ../../samples/rotated_ll_sfc_grib1.tmpl
--	cp ../../samples/rotated_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib1.tmpl .
 +rotated_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
  
 -rotated_ll_sfc_grib2.tmpl: ../../samples/rotated_ll_sfc_grib2.tmpl
--	cp ../../samples/rotated_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib2.tmpl .
 +rotated_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
  
 -sh_ml_grib1.tmpl: ../../samples/sh_ml_grib1.tmpl
--	cp ../../samples/sh_ml_grib1.tmpl .
+-	cp -f ../../samples/sh_ml_grib1.tmpl .
 +sh_ml_grib1.tmpl: $(top_srcdir)/samples/sh_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib1.tmpl .
  
 -sh_ml_grib2.tmpl: ../../samples/sh_ml_grib2.tmpl
--	cp ../../samples/sh_ml_grib2.tmpl .
+-	cp -f ../../samples/sh_ml_grib2.tmpl .
 +sh_ml_grib2.tmpl: $(top_srcdir)/samples/sh_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib2.tmpl .
  
 -sh_pl_grib1.tmpl: ../../samples/sh_pl_grib1.tmpl
--	cp ../../samples/sh_pl_grib1.tmpl .
+-	cp -f ../../samples/sh_pl_grib1.tmpl .
 +sh_pl_grib1.tmpl: $(top_srcdir)/samples/sh_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib1.tmpl .
  
 -sh_pl_grib2.tmpl: ../../samples/sh_pl_grib2.tmpl
--	cp ../../samples/sh_pl_grib2.tmpl .
+-	cp -f ../../samples/sh_pl_grib2.tmpl .
 +sh_pl_grib2.tmpl: $(top_srcdir)/samples/sh_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib2.tmpl .
+ 
+-sh_sfc_grib1.tmpl: ../../samples/sh_sfc_grib1.tmpl
+-	cp -f ../../samples/sh_sfc_grib1.tmpl .
++sh_sfc_grib1.tmpl: $(top_srcdir)/samples/sh_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib1.tmpl .
+ 
+-sh_sfc_grib2.tmpl: ../../samples/sh_sfc_grib2.tmpl
+-	cp -f ../../samples/sh_sfc_grib2.tmpl .
++sh_sfc_grib2.tmpl: $(top_srcdir)/samples/sh_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib2.tmpl .
  
  
  
---- origsrc/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-03-20 15:25:59.034629800 +0900
-@@ -64,164 +64,164 @@ nodist_grib1_mlgrib2_ieee64_DATA = \
- 	sh_pl_grib1.tmpl \
- 	sh_pl_grib2.tmpl 
+--- origsrc/grib_api-1.9.18/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-10-12 02:01:00.000000000 +0900
++++ src/grib_api-1.9.18/ifs_samples/grib1_mlgrib2_ieee64/Makefile.am	2012-12-15 10:03:51.202919000 +0900
+@@ -68,176 +68,176 @@ nodist_grib1_mlgrib2_ieee64_DATA = \
+ 	sh_sfc_grib1.tmpl \
+ 	sh_sfc_grib2.tmpl 
  
 -GRIB1.tmpl: ../../samples/GRIB1.tmpl
--	cp ../../samples/GRIB1.tmpl .
+-	cp -f ../../samples/GRIB1.tmpl .
 +GRIB1.tmpl: $(top_srcdir)/samples/GRIB1.tmpl
-+	cp $(top_srcdir)/samples/GRIB1.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB1.tmpl .
  
 -GRIB2.tmpl: ../../samples/GRIB2.tmpl
--	cp ../../samples/GRIB2.tmpl .
+-	cp -f ../../samples/GRIB2.tmpl .
 +GRIB2.tmpl: $(top_srcdir)/samples/GRIB2.tmpl
-+	cp $(top_srcdir)/samples/GRIB2.tmpl .
++	cp -f $(top_srcdir)/samples/GRIB2.tmpl .
+ 
+-gg_sfc_grib1.tmpl: ../../samples/gg_sfc_grib1.tmpl
+-	cp -f ../../samples/gg_sfc_grib1.tmpl .
++gg_sfc_grib1.tmpl: $(top_srcdir)/samples/gg_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib1.tmpl .
+ 
+-gg_sfc_grib2.tmpl: ../../samples/gg_sfc_grib2.tmpl
+-	cp -f ../../samples/gg_sfc_grib2.tmpl .
++gg_sfc_grib2.tmpl: $(top_srcdir)/samples/gg_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/gg_sfc_grib2.tmpl .
  
 -polar_stereographic_pl_grib1.tmpl: ../../samples/polar_stereographic_pl_grib1.tmpl
--	cp ../../samples/polar_stereographic_pl_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib1.tmpl .
 +polar_stereographic_pl_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib1.tmpl .
  
 -polar_stereographic_pl_grib2.tmpl: ../../samples/polar_stereographic_pl_grib2.tmpl
--	cp ../../samples/polar_stereographic_pl_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_pl_grib2.tmpl .
 +polar_stereographic_pl_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_pl_grib2.tmpl .
  
 -polar_stereographic_sfc_grib1.tmpl: ../../samples/polar_stereographic_sfc_grib1.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib1.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib1.tmpl .
 +polar_stereographic_sfc_grib1.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib1.tmpl .
  
 -polar_stereographic_sfc_grib2.tmpl: ../../samples/polar_stereographic_sfc_grib2.tmpl
--	cp ../../samples/polar_stereographic_sfc_grib2.tmpl .
+-	cp -f ../../samples/polar_stereographic_sfc_grib2.tmpl .
 +polar_stereographic_sfc_grib2.tmpl: $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/polar_stereographic_sfc_grib2.tmpl .
  
 -reduced_gg_ml_grib1.tmpl: ../../samples/reduced_gg_ml_grib1.tmpl
--	cp ../../samples/reduced_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib1.tmpl .
 +reduced_gg_ml_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib1.tmpl .
  
 -reduced_gg_ml_grib2.tmpl: ../../samples/reduced_gg_ml_grib2.tmpl
--	cp ../../samples/reduced_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_ml_grib2.tmpl .
 +reduced_gg_ml_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_ml_grib2.tmpl .
  
 -reduced_gg_pl_128_grib1.tmpl: ../../samples/reduced_gg_pl_128_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib1.tmpl .
 +reduced_gg_pl_128_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib1.tmpl .
  
 -reduced_gg_pl_128_grib2.tmpl: ../../samples/reduced_gg_pl_128_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_128_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_128_grib2.tmpl .
 +reduced_gg_pl_128_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_128_grib2.tmpl .
  
 -reduced_gg_pl_160_grib1.tmpl: ../../samples/reduced_gg_pl_160_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib1.tmpl .
 +reduced_gg_pl_160_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib1.tmpl .
  
 -reduced_gg_pl_160_grib2.tmpl: ../../samples/reduced_gg_pl_160_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_160_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_160_grib2.tmpl .
 +reduced_gg_pl_160_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_160_grib2.tmpl .
  
 -reduced_gg_pl_200_grib1.tmpl: ../../samples/reduced_gg_pl_200_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib1.tmpl .
 +reduced_gg_pl_200_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib1.tmpl .
  
 -reduced_gg_pl_200_grib2.tmpl: ../../samples/reduced_gg_pl_200_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_200_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_200_grib2.tmpl .
 +reduced_gg_pl_200_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_200_grib2.tmpl .
  
 -reduced_gg_pl_256_grib1.tmpl: ../../samples/reduced_gg_pl_256_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib1.tmpl .
 +reduced_gg_pl_256_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib1.tmpl .
  
 -reduced_gg_pl_256_grib2.tmpl: ../../samples/reduced_gg_pl_256_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_256_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_256_grib2.tmpl .
 +reduced_gg_pl_256_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_256_grib2.tmpl .
  
 -reduced_gg_pl_320_grib1.tmpl: ../../samples/reduced_gg_pl_320_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib1.tmpl .
 +reduced_gg_pl_320_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib1.tmpl .
  
 -reduced_gg_pl_320_grib2.tmpl: ../../samples/reduced_gg_pl_320_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_320_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_320_grib2.tmpl .
 +reduced_gg_pl_320_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_320_grib2.tmpl .
  
 -reduced_gg_pl_400_grib1.tmpl: ../../samples/reduced_gg_pl_400_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib1.tmpl .
 +reduced_gg_pl_400_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib1.tmpl .
  
 -reduced_gg_pl_400_grib2.tmpl: ../../samples/reduced_gg_pl_400_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_400_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_400_grib2.tmpl .
 +reduced_gg_pl_400_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_400_grib2.tmpl .
  
 -reduced_gg_pl_48_grib1.tmpl: ../../samples/reduced_gg_pl_48_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib1.tmpl .
 +reduced_gg_pl_48_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib1.tmpl .
  
 -reduced_gg_pl_48_grib2.tmpl: ../../samples/reduced_gg_pl_48_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_48_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_48_grib2.tmpl .
 +reduced_gg_pl_48_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_48_grib2.tmpl .
  
 -reduced_gg_pl_512_grib1.tmpl: ../../samples/reduced_gg_pl_512_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib1.tmpl .
 +reduced_gg_pl_512_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib1.tmpl .
  
 -reduced_gg_pl_512_grib2.tmpl: ../../samples/reduced_gg_pl_512_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_512_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_512_grib2.tmpl .
 +reduced_gg_pl_512_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_512_grib2.tmpl .
  
 -reduced_gg_pl_640_grib1.tmpl: ../../samples/reduced_gg_pl_640_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib1.tmpl .
 +reduced_gg_pl_640_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib1.tmpl .
  
 -reduced_gg_pl_640_grib2.tmpl: ../../samples/reduced_gg_pl_640_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_640_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_640_grib2.tmpl .
 +reduced_gg_pl_640_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_640_grib2.tmpl .
  
 -reduced_gg_pl_80_grib1.tmpl: ../../samples/reduced_gg_pl_80_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib1.tmpl .
 +reduced_gg_pl_80_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib1.tmpl .
  
 -reduced_gg_pl_80_grib2.tmpl: ../../samples/reduced_gg_pl_80_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_80_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_80_grib2.tmpl .
 +reduced_gg_pl_80_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_80_grib2.tmpl .
  
 -reduced_gg_pl_grib1.tmpl: ../../samples/reduced_gg_pl_grib1.tmpl
--	cp ../../samples/reduced_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib1.tmpl .
 +reduced_gg_pl_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib1.tmpl .
  
 -reduced_gg_pl_grib2.tmpl: ../../samples/reduced_gg_pl_grib2.tmpl
--	cp ../../samples/reduced_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_pl_grib2.tmpl .
 +reduced_gg_pl_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_pl_grib2.tmpl .
  
 -reduced_gg_sfc_grib1.tmpl: ../../samples/reduced_gg_sfc_grib1.tmpl
--	cp ../../samples/reduced_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib1.tmpl .
 +reduced_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib1.tmpl .
  
 -reduced_gg_sfc_grib2.tmpl: ../../samples/reduced_gg_sfc_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_grib2.tmpl .
 +reduced_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_grib2.tmpl .
  
 -reduced_gg_sfc_jpeg_grib2.tmpl: ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl
--	cp ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
+-	cp -f ../../samples/reduced_gg_sfc_jpeg_grib2.tmpl .
 +reduced_gg_sfc_jpeg_grib2.tmpl: $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_gg_sfc_jpeg_grib2.tmpl .
  
 -reduced_ll_sfc_grib1.tmpl: ../../samples/reduced_ll_sfc_grib1.tmpl
--	cp ../../samples/reduced_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib1.tmpl .
 +reduced_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib1.tmpl .
  
 -reduced_ll_sfc_grib2.tmpl: ../../samples/reduced_ll_sfc_grib2.tmpl
--	cp ../../samples/reduced_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/reduced_ll_sfc_grib2.tmpl .
 +reduced_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/reduced_ll_sfc_grib2.tmpl .
  
 -regular_gg_ml_grib1.tmpl: ../../samples/regular_gg_ml_grib1.tmpl
--	cp ../../samples/regular_gg_ml_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib1.tmpl .
 +regular_gg_ml_grib1.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib1.tmpl .
  
 -regular_gg_ml_grib2.tmpl: ../../samples/regular_gg_ml_grib2.tmpl
--	cp ../../samples/regular_gg_ml_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_ml_grib2.tmpl .
 +regular_gg_ml_grib2.tmpl: $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_ml_grib2.tmpl .
  
 -regular_gg_pl_grib1.tmpl: ../../samples/regular_gg_pl_grib1.tmpl
--	cp ../../samples/regular_gg_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib1.tmpl .
 +regular_gg_pl_grib1.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib1.tmpl .
  
 -regular_gg_pl_grib2.tmpl: ../../samples/regular_gg_pl_grib2.tmpl
--	cp ../../samples/regular_gg_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_pl_grib2.tmpl .
 +regular_gg_pl_grib2.tmpl: $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_pl_grib2.tmpl .
  
 -regular_gg_sfc_grib1.tmpl: ../../samples/regular_gg_sfc_grib1.tmpl
--	cp ../../samples/regular_gg_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib1.tmpl .
 +regular_gg_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib1.tmpl .
  
 -regular_gg_sfc_grib2.tmpl: ../../samples/regular_gg_sfc_grib2.tmpl
--	cp ../../samples/regular_gg_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_gg_sfc_grib2.tmpl .
 +regular_gg_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_gg_sfc_grib2.tmpl .
  
 -regular_ll_pl_grib1.tmpl: ../../samples/regular_ll_pl_grib1.tmpl
--	cp ../../samples/regular_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib1.tmpl .
 +regular_ll_pl_grib1.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib1.tmpl .
  
 -regular_ll_pl_grib2.tmpl: ../../samples/regular_ll_pl_grib2.tmpl
--	cp ../../samples/regular_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_pl_grib2.tmpl .
 +regular_ll_pl_grib2.tmpl: $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_pl_grib2.tmpl .
  
 -regular_ll_sfc_grib1.tmpl: ../../samples/regular_ll_sfc_grib1.tmpl
--	cp ../../samples/regular_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib1.tmpl .
 +regular_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib1.tmpl .
  
 -regular_ll_sfc_grib2.tmpl: ../../samples/regular_ll_sfc_grib2.tmpl
--	cp ../../samples/regular_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/regular_ll_sfc_grib2.tmpl .
 +regular_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/regular_ll_sfc_grib2.tmpl .
  
 -rotated_ll_pl_grib1.tmpl: ../../samples/rotated_ll_pl_grib1.tmpl
--	cp ../../samples/rotated_ll_pl_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib1.tmpl .
 +rotated_ll_pl_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib1.tmpl .
  
 -rotated_ll_pl_grib2.tmpl: ../../samples/rotated_ll_pl_grib2.tmpl
--	cp ../../samples/rotated_ll_pl_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_pl_grib2.tmpl .
 +rotated_ll_pl_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_pl_grib2.tmpl .
  
 -rotated_ll_sfc_grib1.tmpl: ../../samples/rotated_ll_sfc_grib1.tmpl
--	cp ../../samples/rotated_ll_sfc_grib1.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib1.tmpl .
 +rotated_ll_sfc_grib1.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib1.tmpl .
  
 -rotated_ll_sfc_grib2.tmpl: ../../samples/rotated_ll_sfc_grib2.tmpl
--	cp ../../samples/rotated_ll_sfc_grib2.tmpl .
+-	cp -f ../../samples/rotated_ll_sfc_grib2.tmpl .
 +rotated_ll_sfc_grib2.tmpl: $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl
-+	cp $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/rotated_ll_sfc_grib2.tmpl .
  
 -sh_ml_grib1.tmpl: ../../samples/sh_ml_grib1.tmpl
--	cp ../../samples/sh_ml_grib1.tmpl .
+-	cp -f ../../samples/sh_ml_grib1.tmpl .
 +sh_ml_grib1.tmpl: $(top_srcdir)/samples/sh_ml_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib1.tmpl .
  
 -sh_ml_grib2.tmpl: ../../samples/sh_ml_grib2.tmpl
--	cp ../../samples/sh_ml_grib2.tmpl .
+-	cp -f ../../samples/sh_ml_grib2.tmpl .
 +sh_ml_grib2.tmpl: $(top_srcdir)/samples/sh_ml_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_ml_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_ml_grib2.tmpl .
  
 -sh_pl_grib1.tmpl: ../../samples/sh_pl_grib1.tmpl
--	cp ../../samples/sh_pl_grib1.tmpl .
+-	cp -f ../../samples/sh_pl_grib1.tmpl .
 +sh_pl_grib1.tmpl: $(top_srcdir)/samples/sh_pl_grib1.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib1.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib1.tmpl .
  
 -sh_pl_grib2.tmpl: ../../samples/sh_pl_grib2.tmpl
--	cp ../../samples/sh_pl_grib2.tmpl .
+-	cp -f ../../samples/sh_pl_grib2.tmpl .
 +sh_pl_grib2.tmpl: $(top_srcdir)/samples/sh_pl_grib2.tmpl
-+	cp $(top_srcdir)/samples/sh_pl_grib2.tmpl .
++	cp -f $(top_srcdir)/samples/sh_pl_grib2.tmpl .
+ 
+-sh_sfc_grib1.tmpl: ../../samples/sh_sfc_grib1.tmpl
+-	cp -f ../../samples/sh_sfc_grib1.tmpl .
++sh_sfc_grib1.tmpl: $(top_srcdir)/samples/sh_sfc_grib1.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib1.tmpl .
+ 
+-sh_sfc_grib2.tmpl: ../../samples/sh_sfc_grib2.tmpl
+-	cp -f ../../samples/sh_sfc_grib2.tmpl .
++sh_sfc_grib2.tmpl: $(top_srcdir)/samples/sh_sfc_grib2.tmpl
++	cp -f $(top_srcdir)/samples/sh_sfc_grib2.tmpl .
  
  
  
---- origsrc/grib_api-1.9.16_libtool/src/Makefile.am	2012-02-02 02:30:47.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/src/Makefile.am	2012-03-20 15:25:59.053057500 +0900
+--- origsrc/grib_api-1.9.18/src/Makefile.am	2012-10-12 23:50:33.000000000 +0900
++++ src/grib_api-1.9.18/src/Makefile.am	2012-12-15 10:04:41.947059600 +0900
 @@ -289,7 +289,7 @@ libgrib_api_la_SOURCES = $(libgrib_api_l
  
  libgrib_api_la_LIBADD = @LIBOBJS@
@@ -950,8 +1032,8 @@
 +include $(srcdir)/$(DEVEL_RULES)
  
  
---- origsrc/grib_api-1.9.16_libtool/tests/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/tests/Makefile.am	2012-03-20 15:25:59.053057500 +0900
+--- origsrc/grib_api-1.9.18/tests/Makefile.am	2012-10-12 22:20:18.000000000 +0900
++++ src/grib_api-1.9.18/tests/Makefile.am	2012-12-15 10:05:23.183387700 +0900
 @@ -33,7 +33,15 @@
  
       LDADD = $(top_builddir)/src/libgrib_api.la $(EMOS_LIB)
@@ -969,8 +1051,8 @@
 +	data_dir=${top_srcdir}/data \
 +	test_dir=${abs_top_builddir}/tests \
 +	def_dir=${top_srcdir}/definitions
---- origsrc/grib_api-1.9.16_libtool/tests/definitions.sh	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/tests/definitions.sh	2012-03-20 16:01:55.004296400 +0900
+--- origsrc/grib_api-1.9.18/tests/definitions.sh	2012-10-12 02:01:00.000000000 +0900
++++ src/grib_api-1.9.18/tests/definitions.sh	2012-12-15 10:05:45.449012700 +0900
 @@ -15,6 +15,6 @@ REDIRECT=/dev/null
  
  for file in `find $GRIB_DEFINITION_PATH -name '*.def' -print`
@@ -979,8 +1061,8 @@
 +  ${tools_dir}grib_parser $file > $REDIRECT
  done
  
---- origsrc/grib_api-1.9.16_libtool/tigge/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/tigge/Makefile.am	2012-03-20 15:25:59.071485200 +0900
+--- origsrc/grib_api-1.9.18/tigge/Makefile.am	2012-10-12 22:20:45.000000000 +0900
++++ src/grib_api-1.9.18/tigge/Makefile.am	2012-12-15 10:06:14.890419000 +0900
 @@ -10,7 +10,7 @@ tigge_name_SOURCES      =  tigge_name.c
  tigge_split_SOURCES      =  tigge_split.c
  tigge_accumulations_SOURCES      =  tigge_accumulations.c
@@ -990,8 +1072,8 @@
  
  LDADD = $(top_builddir)/src/libgrib_api.la
  DEPENDENCIES = $(LDADD)
---- origsrc/grib_api-1.9.16_libtool/tools/Makefile.am	2012-01-31 01:01:06.000000000 +0900
-+++ src/grib_api-1.9.16_libtool/tools/Makefile.am	2012-03-20 15:25:59.071485200 +0900
+--- origsrc/grib_api-1.9.18/tools/Makefile.am	2012-10-12 23:53:34.000000000 +0900
++++ src/grib_api-1.9.18/tools/Makefile.am	2012-12-15 10:07:41.782997100 +0900
 @@ -13,7 +13,7 @@ bin_PROGRAMS = grib_keys grib_histogram
                 grib_debug grib_info grib_filter grib_ls grib_dump \
  			   grib2ppm grib_set grib_get grib_get_data grib_copy grib_repair \
@@ -1019,12 +1101,12 @@
  
  LDADD = libgrib_tools.la $(top_builddir)/src/libgrib_api.la
  DEPENDENCIES = $(LDADD)
-@@ -70,7 +70,7 @@ DEPENDENCIES = $(LDADD)
- CLEANFILES = libgrib_tools.la
+@@ -71,7 +71,7 @@ CLEANFILES = libgrib_tools.la
  
  grib1to2$(EXEEXT): grib1to2.txt
+ 	rm -f grib1to2
 -	sed "s:toolsdir:$(bindir):" grib1to2.txt > grib1to2
 +	sed "s:toolsdir:$(bindir):" $(srcdir)/grib1to2.txt > grib1to2
  	chmod +x grib1to2
  
- noinst_HEADERS = grib_tools.h grib_msg_types.h
+ noinst_HEADERS = grib_tools.h
