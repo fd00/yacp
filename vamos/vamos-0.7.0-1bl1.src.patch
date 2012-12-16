@@ -1,0 +1,270 @@
+--- origsrc/vamos-0.7.0/body/Makefile.am	2011-06-25 11:28:29.000000000 +0900
++++ src/vamos-0.7.0/body/Makefile.am	2012-12-16 19:07:06.974640600 +0900
+@@ -21,6 +21,11 @@ libvamos_body_la_SOURCES = \
+ 	Transmission.cc \
+ 	Wheel.cc
+ 
++libvamos_body_la_LDFLAGS = -no-undefined
++libvamos_body_la_LIBADD = \
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la
++
+ pkginclude_HEADERS = \
+ 	Aerodynamic_Device.h \
+ 	Rigid_Body.h \
+@@ -62,39 +67,39 @@ noinst_PROGRAMS = $(UNIT_TESTS)
+ EXTRA_PROGRAMS = $(UNIT_TESTS)
+ test_Aerodynamic_Device_SOURCES = test_Aerodynamic_Device.cc
+ test_Aerodynamic_Device_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
+ 	Frame.lo \
+ 	Particle.lo \
+ 	Aerodynamic_Device.lo \
+-	-lboost_unit_test_framework
++	-lboost_unit_test_framework-mt
+ test_Car_SOURCES = test_Car.cc
+ test_Car_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
+-	$(top_srcdir)/media/libvamos-media.la \
+-	$(top_srcdir)/body/libvamos-body.la \
+-	-lboost_unit_test_framework
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la \
++	$(top_builddir)/body/libvamos-body.la \
++	-lboost_unit_test_framework-mt
+ test_Frame_SOURCES = test_Frame.cc
+ test_Frame_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
+ 	Frame.lo \
+-	-lboost_unit_test_framework
++	-lboost_unit_test_framework-mt
+ test_Particle_SOURCES = test_Particle.cc
+ test_Particle_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
+ 	Frame.lo \
+ 	Particle.lo \
+-	-lboost_unit_test_framework
++	-lboost_unit_test_framework-mt
+ test_Rigid_Body_SOURCES = test_Rigid_Body.cc
+ test_Rigid_Body_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
+-	$(top_srcdir)/media/libvamos-media.la \
+-	$(top_srcdir)/body/libvamos-body.la \
+-	-lboost_unit_test_framework
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la \
++	$(top_builddir)/body/libvamos-body.la \
++	-lboost_unit_test_framework-mt
+ 
+ if DO_UNIT_TESTS
+ check-local: $(UNIT_TESTS)
+ 	for test in $(UNIT_TESTS); do \
+ 		echo $$test; \
+-		$(top_srcdir)/body/$$test; \
++		$(top_builddir)/body/$$test; \
+ 	done
+ endif
+--- origsrc/vamos-0.7.0/caelum/Makefile.am	2007-06-10 04:42:06.000000000 +0900
++++ src/vamos-0.7.0/caelum/Makefile.am	2012-12-16 19:20:23.421906300 +0900
+@@ -9,8 +9,8 @@ caelum_SOURCES = \
+ INCLUDES = -I$(top_srcdir)/..
+ 
+ LIBS = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
+-	$(top_srcdir)/media/libvamos-media.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la \
+ 	`pkg-config --libs sdl libpng` \
+ 	@LIBS@
+ 
+--- origsrc/vamos-0.7.0/configure.ac	2012-01-15 09:55:48.000000000 +0900
++++ src/vamos-0.7.0/configure.ac	2012-12-16 18:42:27.386750000 +0900
+@@ -33,7 +33,9 @@ AC_CHECK_LIB(openal, alGetError,,
+ AC_CHECK_LIB(alut, alutGetError,,
+ 	AC_MSG_ERROR([ALUT >= v1.1 is required.]))
+ 
+-AC_CHECK_HEADER(windows.h, AC_DEFINE(WIN32))
++if test "$host_os" != "cygwin"; then
++	AC_CHECK_HEADER(windows.h, AC_DEFINE(WIN32))
++fi
+ 
+ dnl Checks for typedefs, structures, and compiler characteristics.
+ 
+--- origsrc/vamos-0.7.0/geometry/Makefile.am	2011-07-18 04:39:56.000000000 +0900
++++ src/vamos-0.7.0/geometry/Makefile.am	2012-12-16 19:21:15.001984400 +0900
+@@ -35,6 +35,8 @@ pkginclude_HEADERS = \
+ 	Two_Vector.h \
+ 	Parameter.h
+ 
++libvamos_geometry_la_LDFLAGS = -no-undefined
++
+ pkgincludedir = $(includedir)/@PACKAGE@/geometry
+ 
+ EXTRA_DIST = $(pkginclude_HEADERS)
+@@ -60,30 +62,30 @@ endif
+ noinst_PROGRAMS = $(UNIT_TESTS)
+ EXTRA_PROGRAMS = $(UNIT_TESTS)
+ test_Calculations_SOURCES = test_Calculations.cc
+-test_Calculations_LDADD = Calculations.lo Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework
++test_Calculations_LDADD = Calculations.lo Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework-mt
+ test_Circular_Buffer_SOURCES = test_Circular_Buffer.cc
+-test_Circular_Buffer_LDADD = -lboost_unit_test_framework
++test_Circular_Buffer_LDADD = -lboost_unit_test_framework-mt
+ test_Linear_Interpolator_SOURCES = test_Linear_Interpolator.cc
+-test_Linear_Interpolator_LDADD = Linear_Interpolator.lo Interpolator.lo Two_Vector.lo -lboost_unit_test_framework
++test_Linear_Interpolator_LDADD = Linear_Interpolator.lo Interpolator.lo Two_Vector.lo -lboost_unit_test_framework-mt
+ test_Numeric_SOURCES = test_Numeric.cc
+-test_Numeric_LDADD = -lboost_unit_test_framework
++test_Numeric_LDADD = -lboost_unit_test_framework-mt
+ test_PID_SOURCES = test_PID.cc
+-test_PID_LDADD = PID.o -lboost_unit_test_framework
++test_PID_LDADD = PID.o -lboost_unit_test_framework-mt
+ test_Rectangle_SOURCES = test_Rectangle.cc
+-test_Rectangle_LDADD = Rectangle.lo Two_Vector.lo -lboost_unit_test_framework
++test_Rectangle_LDADD = Rectangle.lo Two_Vector.lo -lboost_unit_test_framework-mt
+ test_Spline_SOURCES = test_Spline.cc
+-test_Spline_LDADD = Spline.lo Interpolator.lo Two_Vector.lo -lboost_unit_test_framework
++test_Spline_LDADD = Spline.lo Interpolator.lo Two_Vector.lo -lboost_unit_test_framework-mt
+ test_Three_Matrix_SOURCES = test_Three_Matrix.cc
+-test_Three_Matrix_LDADD = Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework
++test_Three_Matrix_LDADD = Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework-mt
+ test_Three_Vector_SOURCES = test_Three_Vector.cc
+-test_Three_Vector_LDADD = Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework
++test_Three_Vector_LDADD = Three_Vector.lo Three_Matrix.lo -lboost_unit_test_framework-mt
+ test_Two_Vector_SOURCES = test_Two_Vector.cc
+-test_Two_Vector_LDADD = Two_Vector.lo -lboost_unit_test_framework
++test_Two_Vector_LDADD = Two_Vector.lo -lboost_unit_test_framework-mt
+ 
+ if DO_UNIT_TESTS
+ check-local: $(UNIT_TESTS)
+ 	for test in $(UNIT_TESTS); do \
+ 		echo $$test; \
+-		$(top_srcdir)/geometry/$$test; \
++		$(top_builddir)/geometry/$$test; \
+ 	done
+ endif
+--- origsrc/vamos-0.7.0/media/Makefile.am	2010-02-03 10:56:24.000000000 +0900
++++ src/vamos-0.7.0/media/Makefile.am	2012-12-16 19:21:52.663117200 +0900
+@@ -12,6 +12,9 @@ pkginclude_HEADERS = \
+ 	Texture_Image.h \
+ 	XML_Parser.h
+ 
++libvamos_media_la_LDFLAGS = -no-undefined
++libvamos_media_la_LIBADD = ../geometry/libvamos-geometry.la
++
+ pkgincludedir = $(includedir)/@PACKAGE@/media
+ 
+ EXTRA_DIST = $(pkginclude_HEADERS)
+@@ -27,12 +30,12 @@ endif
+ noinst_PROGRAMS = $(UNIT_TESTS)
+ EXTRA_PROGRAMS = $(UNIT_TESTS)
+ test_XML_Parser_SOURCES = test_XML_Parser.cc
+-test_XML_Parser_LDADD = XML_Parser.lo -lboost_unit_test_framework
++test_XML_Parser_LDADD = XML_Parser.lo -lboost_unit_test_framework-mt
+ 
+ if DO_UNIT_TESTS
+ check-local: $(UNIT_TESTS)
+ 	for test in $(UNIT_TESTS); do \
+ 		echo $$test; \
+-		$(top_srcdir)/media/$$test; \
++		$(top_builddir)/media/$$test; \
+ 	done
+ endif
+--- origsrc/vamos-0.7.0/track/Makefile.am	2011-01-10 07:41:44.000000000 +0900
++++ src/vamos-0.7.0/track/Makefile.am	2012-12-16 19:09:59.773468800 +0900
+@@ -8,6 +8,11 @@ libvamos_track_la_SOURCES = \
+ 	Strip_Track.cc \
+ 	Strip_Track_Reader.cc
+ 
++libvamos_track_la_LDFLAGS = -no-undefined
++libvamos_track_la_LIBADD = \
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la
++
+ pkginclude_HEADERS = \
+ 	Gl_Road_Segment.h \
+ 	Road_Segment.h \
+@@ -32,25 +37,25 @@ noinst_PROGRAMS = $(UNIT_TESTS)
+ EXTRA_PROGRAMS = $(UNIT_TESTS)
+ test_Road_Segment_SOURCES = test_Road_Segment.cc
+ test_Road_Segment_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
+ 	Road_Segment.lo \
+-	-lboost_unit_test_framework
++	-lboost_unit_test_framework-mt
+ test_Strip_Track_SOURCES = test_Strip_Track.cc
+ test_Strip_Track_LDFLAGS = \
+ 	`pkg-config --libs sdl freealut libpng`
+ test_Strip_Track_LDADD = \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
+-	$(top_srcdir)/media/libvamos-media.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la \
+ 	Road_Segment.lo \
+ 	Gl_Road_Segment.lo \
+ 	Strip_Track.lo \
+ 	Strip_Track_Reader.lo \
+-	-lboost_unit_test_framework
++	-lboost_unit_test_framework-mt
+ 
+ if DO_UNIT_TESTS
+ check-local: $(UNIT_TESTS)
+ 	for test in $(UNIT_TESTS); do \
+ 		echo $$test; \
+-		$(top_srcdir)/track/$$test; \
++		$(top_builddir)/track/$$test; \
+ 	done
+ endif
+--- origsrc/vamos-0.7.0/vamos/Makefile.am	2011-06-26 04:36:06.000000000 +0900
++++ src/vamos-0.7.0/vamos/Makefile.am	2012-12-16 19:19:15.371125000 +0900
+@@ -3,11 +3,11 @@ bin_PROGRAMS = vamos
+ vamos_SOURCES = vamos.cc
+ 
+ vamos_LDADD = \
+-	$(top_srcdir)/world/libvamos-world.la \
+-	$(top_srcdir)/body/libvamos-body.la \
+-	$(top_srcdir)/track/libvamos-track.la \
+-	$(top_srcdir)/geometry/libvamos-geometry.la \
+-	$(top_srcdir)/media/libvamos-media.la
++	$(top_builddir)/world/libvamos-world.la \
++	$(top_builddir)/body/libvamos-body.la \
++	$(top_builddir)/track/libvamos-track.la \
++	$(top_builddir)/geometry/libvamos-geometry.la \
++	$(top_builddir)/media/libvamos-media.la
+ 
+ LIBS = \
+ 	`pkg-config --libs sdl freealut libpng` \
+--- origsrc/vamos-0.7.0/world/Makefile.am	2010-09-07 09:15:44.000000000 +0900
++++ src/vamos-0.7.0/world/Makefile.am	2012-12-16 19:18:08.095734400 +0900
+@@ -9,6 +9,12 @@ libvamos_world_la_SOURCES = \
+ 	Gl_World.cc \
+ 	Sounds.cc
+ 
++libvamos_world_la_LDFLAGS = -no-undefined
++libvamos_world_la_LIBADD = \
++	$(top_builddir)/media/libvamos-media.la \
++	$(top_builddir)/body/libvamos-body.la \
++	$(top_builddir)/track/libvamos-track.la
++
+ pkginclude_HEADERS = \
+ 	Atmosphere.h \
+ 	Driver.h \
+@@ -34,12 +40,12 @@ endif
+ noinst_PROGRAMS = $(UNIT_TESTS)
+ EXTRA_PROGRAMS = $(UNIT_TESTS)
+ test_Controls_SOURCES = test_Controls.cc
+-test_Controls_LDADD = Controls.lo -lboost_unit_test_framework
++test_Controls_LDADD = Controls.lo -lboost_unit_test_framework-mt
+ 
+ if DO_UNIT_TESTS
+ check-local: $(UNIT_TESTS)
+ 	for test in $(UNIT_TESTS); do \
+ 		echo $$test; \
+-		$(top_srcdir)/world/$$test; \
++		$(top_builddir)/world/$$test; \
+ 	done
+ endif
