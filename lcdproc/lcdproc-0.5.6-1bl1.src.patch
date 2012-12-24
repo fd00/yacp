@@ -1,0 +1,111 @@
+--- origsrc/lcdproc-0.5.6/clients/lcdproc/machine.h	2012-08-19 23:29:07.000000000 +0900
++++ src/lcdproc-0.5.6/clients/lcdproc/machine.h	2012-12-24 12:59:07.736768500 +0900
+@@ -202,7 +202,7 @@ int machine_get_uptime(double *up, doubl
+  * \retval  FALSE  Error, do not trust the contents of the parameter pointers.
+  * \retval  TRUE   OK, parameter pointers are filled with sensible data.
+  */
+-int machine_get_iface_stats(IfaceInfo *interface);
++int machine_get_iface_stats(IfaceInfo *interface_);
+ 
+ 
+ #endif /* _lcdproc_machine_h_ */
+--- origsrc/lcdproc-0.5.6/clients/lcdproc/machine_Linux.c	2012-08-19 23:29:07.000000000 +0900
++++ src/lcdproc-0.5.6/clients/lcdproc/machine_Linux.c	2012-12-24 12:59:48.954529900 +0900
+@@ -9,7 +9,7 @@
+  * Refer to the COPYING file distributed with this package.
+  */
+ 
+-#ifdef linux
++#if defined(linux) || defined(__CYGWIN__)
+ 
+ #include <sys/types.h>
+ #include <stdlib.h>
+@@ -562,7 +562,7 @@ machine_get_uptime(double *up, double *i
+ 
+ 
+ int
+-machine_get_iface_stats(IfaceInfo * interface)
++machine_get_iface_stats(IfaceInfo * interface_)
+ {
+ 	FILE *file;		/* file handler */
+ 	char buffer[1024];	/* buffer to work with the file */
+@@ -578,14 +578,14 @@ machine_get_iface_stats(IfaceInfo * inte
+ 		fgets(buffer, sizeof(buffer), file);
+ 
+ 		/* By default, treat interface as down */
+-		interface->status = down;
++		interface_->status = down;
+ 
+ 		/* Search iface_name and scan values */
+ 		while ((fgets(buffer, sizeof(buffer), file) != NULL)) {
+-			if (strstr(buffer, interface->name)) {
++			if (strstr(buffer, interface_->name)) {
+ 				/* interface exists */
+-				interface->status = up;	/* is up */
+-				interface->last_online = time(NULL);	/* save actual time */
++				interface_->status = up;	/* is up */
++				interface_->last_online = time(NULL);	/* save actual time */
+ 
+ 				/* search ':' and skip over it */
+ 				ch_pointer = strchr(buffer, ':');
+@@ -597,10 +597,10 @@ machine_get_iface_stats(IfaceInfo * inte
+ 				 */
+ 				/* Scan values from here */
+ 				sscanf(ch_pointer, "%lf %lf %*s %*s %*s %*s %*s %*s %lf %lf",
+-				       &interface->rc_byte,
+-				       &interface->rc_pkt,
+-				       &interface->tr_byte,
+-				       &interface->tr_pkt);
++				       &interface_->rc_byte,
++				       &interface_->rc_pkt,
++				       &interface_->tr_byte,
++				       &interface_->tr_pkt);
+ 
+ 				/*
+ 				 * if is the first time we call this
+@@ -609,10 +609,10 @@ machine_get_iface_stats(IfaceInfo * inte
+ 				 * calculating
+ 				 */
+ 				if (first_time) {
+-					interface->rc_byte_old = interface->rc_byte;
+-					interface->tr_byte_old = interface->tr_byte;
+-					interface->rc_pkt_old = interface->rc_pkt;
+-					interface->tr_pkt_old = interface->tr_pkt;
++					interface_->rc_byte_old = interface_->rc_byte;
++					interface_->tr_byte_old = interface_->tr_byte;
++					interface_->rc_pkt_old = interface_->rc_pkt;
++					interface_->tr_pkt_old = interface_->tr_pkt;
+ 					first_time = 0;	/* now it isn't first
+ 							 * time */
+ 				}
+--- origsrc/lcdproc-0.5.6/server/drivers/Makefile.am	2012-08-19 23:29:08.000000000 +0900
++++ src/lcdproc-0.5.6/server/drivers/Makefile.am	2012-12-24 20:01:54.921041800 +0900
+@@ -48,7 +48,7 @@ glcd_LDADD =         libLCD.a @GLCD_DRIV
+ glcd_DEPENDENCIES =  @GLCD_DRIVERS@ glcd-glcd-render.o
+ glcdlib_LDADD =      @LIBGLCD@
+ glk_LDADD =          libbignum.a
+-hd44780_LDADD =      libLCD.a @HD44780_DRIVERS@ @LIBUSB_LIBS@ @LIBFTDI_LIBS@ libbignum.a
++hd44780_LDADD =      libLCD.a @HD44780_DRIVERS@ @LIBUSB_LIBS@ @LIBFTDI_LIBS@ libbignum.a $(top_builddir)/shared/libLCDstuff.a
+ hd44780_DEPENDENCIES = @HD44780_DRIVERS@
+ i2500vfd_LDADD =     @LIBFTDI_LIBS@
+ imon_LDADD =         libLCD.a libbignum.a
+--- origsrc/lcdproc-0.5.6/server/drivers/mtc_s16209x.c	2011-08-14 21:29:16.000000000 +0900
++++ src/lcdproc-0.5.6/server/drivers/mtc_s16209x.c	2012-12-24 20:03:42.241443000 +0900
+@@ -49,6 +49,7 @@
+ #include <fcntl.h>
+ #include <string.h>
+ #include <errno.h>
++#include <sys/file.h>
+ 
+ #ifdef HAVE_CONFIG_H
+ # include "config.h"
+--- origsrc/lcdproc-0.5.6/server/menuitem.c	2012-08-19 23:29:08.000000000 +0900
++++ src/lcdproc-0.5.6/server/menuitem.c	2012-12-24 20:07:53.378009300 +0900
+@@ -27,6 +27,7 @@
+ #include "menuitem.h"
+ #include "menu.h"
+ #include "drivers.h"
++#include "menuscreens.h"
+ 
+ /* this is needed for verify_ipv4 and verify_ipv6. */
+ #include "sock.h"
