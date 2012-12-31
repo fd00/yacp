@@ -1,0 +1,161 @@
+--- origsrc/jana/.gitignore	1970-01-01 09:00:00.000000000 +0900
++++ src/jana/.gitignore	2012-12-30 13:08:47.548779000 +0900
+@@ -0,0 +1,45 @@
++/*.bak
++/*.lo
++/*.o
++/*.orig
++/*.rej
++/*.tab.c
++/*~
++/.*.sw[nop]
++/.deps
++/.gitignore
++/.libs
++/GPATH
++/GRTAGS
++/GSYMS
++/GTAGS
++/ID
++/Makefile
++/Makefile.in
++/TAGS
++/_libs
++/autom4te.cache
++/config.cache
++/config.h
++/config.log
++/config.lt
++/config.status
++/config.status.lineno
++/configure
++/configure.lineno
++/intltool-extract.in
++/intltool-merge.in
++/intltool-update.in
++/libtool
++/po/*.gmo
++/po/*.mo
++/po/.intltool-merge-cache
++/po/Jana.pot
++/po/Makefile
++/po/Makefile.in
++/po/Makefile.in.in
++/po/POTFILES
++/po/stamp-it
++/so_locations
++/stamp-h1
++/tags
+--- origsrc/jana/examples/Makefile.am	2012-12-29 15:28:37.000000000 +0900
++++ src/jana/examples/Makefile.am	2012-12-31 05:05:01.998625000 +0900
+@@ -2,7 +2,7 @@
+ SUBDIRS=data
+ 
+ localedir = $(datadir)/locale
+-AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(ECAL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) -Wall -DHANDLE_LIBICAL_MEMORY
++AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(ECAL_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) -Wall -DHANDLE_LIBICAL_MEMORY -I$(top_srcdir)
+ AM_LDFLAGS = $(ECAL_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS)
+ 
+ 
+--- origsrc/jana/libjana/Makefile.am	2012-12-29 15:28:37.000000000 +0900
++++ src/jana/libjana/Makefile.am	2012-12-30 15:21:11.936470500 +0900
+@@ -3,6 +3,7 @@ SUBDIRS = . doc
+ localedir = $(datadir)/locale
+ AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(GOBJECT_CFLAGS) -Wall
+ AM_LDFLAGS = $(GOBJECT_LIBS) -lm
++INCLUDES = -I$(top_srcdir)
+ 
+ source_c = jana-component.c \
+ 	jana-event.c \
+@@ -25,6 +26,8 @@ source_h = jana.h \
+ 
+ lib_LTLIBRARIES = libjana.la
+ libjana_la_SOURCES = $(source_c) $(source_h)
++libjana_la_LDFLAGS = -no-undefined
++libjana_la_LIBADD = $(AM_LDFLAGS)
+ 
+ library_includedir=$(includedir)/jana/libjana
+ library_include_HEADERS = $(source_h)
+--- origsrc/jana/libjana/jana-utils.c	2012-12-29 15:28:38.000000000 +0900
++++ src/jana/libjana/jana-utils.c	2012-12-30 13:24:34.871044600 +0900
+@@ -565,7 +565,11 @@ jana_utils_time_now (JanaTime *jtime)
+ 	gchar *tzname = jana_utils_get_local_tzname ();
+ 	
+ 	jana_time_set_tzname (jtime, tzname);
++#if defined(__CYGWIN__)
++	jana_time_set_offset (jtime, _timezone);
++#else
+ 	jana_time_set_offset (jtime, now->tm_gmtoff);
++#endif
+ 	g_free (tzname);
+ 	
+ 	jana_time_set_seconds (jtime, now->tm_sec);
+--- origsrc/jana/libjana-ecal/Makefile.am	2012-12-29 15:28:37.000000000 +0900
++++ src/jana/libjana-ecal/Makefile.am	2012-12-30 15:26:20.432845000 +0900
+@@ -1,7 +1,7 @@
+ SUBDIRS = . doc
+ 
+ localedir = $(datadir)/locale
+-AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(GOBJECT_CFLAGS) $(ECAL_CFLAGS) $(EDATASERVERUI_CFLAGS) $(GCONF_CFLAGS) -Wall
++AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(GOBJECT_CFLAGS) $(ECAL_CFLAGS) $(EDATASERVERUI_CFLAGS) $(GCONF_CFLAGS) -Wall -I$(top_srcdir)
+ AM_LDFLAGS = $(GOBJECT_LIBS) $(ECAL_LIBS) $(GCONF_LIBS) $(EDATASERVERUI_LIBS)
+ 
+ source_h = jana-ecal.h \
+@@ -24,8 +24,9 @@ source_c = jana-ecal-component.c \
+ 	jana-ecal-task.c
+ 
+ lib_LTLIBRARIES = libjana-ecal.la
+-libjana_ecal_la_LIBADD = $(top_srcdir)/libjana/libjana.la
++libjana_ecal_la_LIBADD = $(top_builddir)/libjana/libjana.la $(AM_LDFLAGS)
+ libjana_ecal_la_SOURCES = $(source_c) $(source_h)
++libjana_ecal_la_LDFLAGS = -no-undefined
+ 
+ library_includedir=$(includedir)/jana/libjana-ecal
+ library_include_HEADERS = $(source_h)
+--- origsrc/jana/libjana-ecal/jana-ecal-utils.c	2012-12-29 15:28:37.000000000 +0900
++++ src/jana/libjana-ecal/jana-ecal-utils.c	2012-12-30 15:23:17.886336000 +0900
+@@ -224,7 +224,11 @@ jana_ecal_utils_guess_location ()
+ 		zone_tz = icaltimezone_get_tznames (zone);
+ 
+ 		if (zone_tz && (strcasecmp (tzname, zone_tz) == 0) &&
++#if defined(__CYGWIN__)
++                    (offset == _timezone)) {
++#else
+ 		    (offset == now->tm_gmtoff)) {
++#endif
+ 			g_free (tzname);
+ 			return g_strdup (icaltimezone_get_display_name (zone));
+ 		}
+--- origsrc/jana/libjana-gtk/Makefile.am	2012-12-29 15:28:37.000000000 +0900
++++ src/jana/libjana-gtk/Makefile.am	2012-12-30 15:30:12.301985600 +0900
+@@ -1,7 +1,7 @@
+ SUBDIRS = . data doc
+ 
+ localedir = $(datadir)/locale
+-AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(GOBJECT_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(GLADE_CFLAGS) -Wall
++AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(GOBJECT_CFLAGS) $(GTK_CFLAGS) $(GTHREAD_CFLAGS) $(GLADE_CFLAGS) -Wall -I$(top_srcdir)
+ AM_LDFLAGS = $(GOBJECT_LIBS) $(GTK_LIBS) $(GTHREAD_LIBS) $(GLADE_LIBS)
+ 
+ source_h = jana-gtk.h \
+@@ -40,8 +40,9 @@ source_c = jana-gtk-event-store.c \
+ 	jana-gtk-utils.c
+ 
+ lib_LTLIBRARIES = libjana-gtk.la
+-libjana_gtk_la_LIBADD = $(top_srcdir)/libjana/libjana.la
++libjana_gtk_la_LIBADD = $(top_builddir)/libjana/libjana.la $(AM_LDFLAGS)
+ libjana_gtk_la_SOURCES = $(source_c) $(source_h)
++libjana_gtk_la_LDFLAGS = -no-undefined
+ 
+ library_includedir=$(includedir)/jana/libjana-gtk
+ library_include_HEADERS = $(source_h)
+--- origsrc/jana/tests/Makefile.am	2012-12-29 15:28:38.000000000 +0900
++++ src/jana/tests/Makefile.am	2012-12-31 04:55:23.210539000 +0900
+@@ -1,7 +1,7 @@
+ 
+ 
+ localedir = $(datadir)/locale
+-AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(ECAL_CFLAGS) -Wall -DHANDLE_LIBICAL_MEMORY
++AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -DPKGDATADIR=\"$(pkgdatadir)\" $(ECAL_CFLAGS) -Wall -DHANDLE_LIBICAL_MEMORY -I$(top_srcdir)
+ AM_LDFLAGS = $(ECAL_LIBS)
+ 
+ 
