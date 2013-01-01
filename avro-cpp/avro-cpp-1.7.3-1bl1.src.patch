@@ -1,0 +1,66 @@
+--- origsrc/avro-cpp-1.7.3/CMakeLists.txt	2012-12-04 03:11:46.000000000 +0900
++++ src/avro-cpp-1.7.3/CMakeLists.txt	2013-01-01 09:41:08.320112600 +0900
+@@ -80,22 +80,33 @@ add_library (avrocpp SHARED ${AVRO_SOURC
+ set_property (TARGET avrocpp
+     APPEND PROPERTY COMPILE_DEFINITIONS AVRO_DYN_LINK)
+ 
++if (NOT CYGWIN)
+ add_library (avrocpp_s STATIC ${AVRO_SOURCE_FILES})
+ 
+ set_property (TARGET avrocpp avrocpp_s
+     APPEND PROPERTY COMPILE_DEFINITIONS AVRO_SOURCE)
++endif (NOT CYGWIN)
+ 
+ set_target_properties (avrocpp PROPERTIES
+     VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
+ 
++if (CYGWIN)
++set_target_properties (avrocpp PROPERTIES
++    SOVERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
++else (CYGWIN)
+ set_target_properties (avrocpp_s PROPERTIES
+     VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
++endif (CYGWIN)
+ 
+ target_link_libraries (avrocpp ${Boost_LIBRARIES})
+ 
+ add_executable (precompile test/precompile.cc)
+ 
++if (NOT CYGWIN)
+ target_link_libraries (precompile avrocpp_s ${Boost_LIBRARIES})
++else (NOT CYGWIN)
++target_link_libraries (precompile avrocpp ${Boost_LIBRARIES})
++endif (NOT CYGWIN)
+ 
+ macro (gencpp file ns)
+     add_custom_command (OUTPUT ${ns}.hh
+@@ -133,7 +144,11 @@ gen (reuse ru)
+ gen (circulardep cd)
+ 
+ add_executable (avrogencpp impl/avrogencpp.cc)
++if (CYGWIN)
++target_link_libraries (avrogencpp avrocpp ${Boost_LIBRARIES})
++else (CYGWIN)
+ target_link_libraries (avrogencpp avrocpp_s ${Boost_LIBRARIES})
++endif (CYGWIN)
+ 
+ enable_testing()
+ 
+@@ -169,10 +184,17 @@ set (CPACK_PACKAGE_FILE_NAME "avrocpp-${
+ 
+ include (CPack)
+ 
++if (CYGWIN)
++install (TARGETS avrocpp
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin)
++else (CYGWIN)
+ install (TARGETS avrocpp avrocpp_s
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+     RUNTIME DESTINATION lib)
++endif (CYGWIN)
+ 
+ install (TARGETS avrogencpp RUNTIME DESTINATION bin)
+ 
