@@ -1,0 +1,67 @@
+--- origsrc/libfplib/CMakeLists.txt	2013-01-02 23:43:28.000000000 +0900
++++ src/libfplib/CMakeLists.txt	2013-01-03 00:02:00.218796900 +0900
+@@ -81,6 +81,8 @@ ENDIF()
+ # Required for taglib
+ INCLUDE_DIRECTORIES(/usr/include/taglib)
+ 
++INCLUDE_DIRECTORIES(/usr/include/)
++
+ ##############################################################################
+ # Build library
+ 
+@@ -92,9 +94,11 @@ SET(lfmfp_sources
+    )
+ 
+ # Define static library
++IF(NOT CYGWIN)
+ ADD_LIBRARY(fplib_static STATIC
+    ${lfmfp_sources}
+    )
++ENDIF(NOT CYGWIN)
+ 
+ # Define dynamic library
+ ADD_LIBRARY(fplib_shared SHARED
+@@ -102,23 +106,33 @@ ADD_LIBRARY(fplib_shared SHARED
+    )
+ 
+ # The static library is called 'libfplib.a'
++IF(NOT CYGWIN)
+ SET_TARGET_PROPERTIES(fplib_static
+    PROPERTIES OUTPUT_NAME fplib
+    )
++ENDIF(NOT CYGWIN)
+ 
+ # The shared library is called 'libfplib.so'
+ SET_TARGET_PROPERTIES(fplib_shared
+    PROPERTIES OUTPUT_NAME fplib
++              SOVERSION 0
++   )
++TARGET_LINK_LIBRARIES(fplib_shared
++   fftw3f
++   samplerate
+    )
+ 
+ # Install static library
++IF(NOT CYGWIN)
+ INSTALL(TARGETS fplib_static
+    ARCHIVE DESTINATION lib
+    )
++ENDIF(NOT CYGWIN)
+ 
+ # Install dynamic library
+ INSTALL(TARGETS fplib_shared
+-   LIBRARY DESTINATION lib
++   RUNTIME DESTINATION bin
++   ARCHIVE DESTINATION lib
+    )
+ 
+ # Install header files
+@@ -139,7 +153,7 @@ ADD_EXECUTABLE(lastfm-fpclient
+ 
+ # Link the executable
+ TARGET_LINK_LIBRARIES(lastfm-fpclient
+-   fplib
++   fplib_shared
+    fftw3f
+    mad
+    tag
