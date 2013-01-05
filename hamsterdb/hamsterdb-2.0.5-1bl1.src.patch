@@ -1,0 +1,109 @@
+--- origsrc/hamsterdb-2.0.5/src/Makefile.am	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/src/Makefile.am	2013-01-05 11:12:18.360109400 +0900
+@@ -1,12 +1,14 @@
+ 
+ if ENABLE_REMOTE
+-SUBDIRS = protocol
++SUBDIRS = protocol .
+ if ENABLE_SERVER
+ SUBDIRS += server
+ endif # ENABLE_SERVER
++else
++SUBDIRS = .
+ endif # ENABLE_REMOTE
+ 
+-AM_CPPFLAGS = -I../include -I$(top_builddir)/3rdparty/aes $(BOOST_CPPFLAGS)
++AM_CPPFLAGS = -I../include -I$(top_builddir)/3rdparty/aes $(BOOST_CPPFLAGS) -I$(top_srcdir)/include
+ AM_LDFLAGS = $(BOOST_THREAD_LDFLAGS)
+ 
+ lib_LTLIBRARIES = libhamsterdb.la
+@@ -44,7 +46,7 @@ libhamsterdb_la_SOURCES = log.cc \
+             changeset.cc \
+             device.cc
+ 
+-libhamsterdb_la_LDFLAGS = -version-info 3:0:0 -lboost_thread -lpthread
++libhamsterdb_la_LDFLAGS = -version-info 3:0:0 -lboost_thread-mt -lpthread -no-undefined
+ 
+ if ENABLE_ENCRYPTION
+ libhamsterdb_la_LDFLAGS += $(top_builddir)/3rdparty/aes/libaes.la
+--- origsrc/hamsterdb-2.0.5/src/protocol/Makefile.am	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/src/protocol/Makefile.am	2013-01-05 10:28:41.328859400 +0900
+@@ -15,6 +15,6 @@ libprotocol_la_SOURCES = messages.pb.cc
+ libprotocol_la_LDFLAGS = -lprotobuf
+ 
+ messages.pb.cc proto: messages.proto
+-	protoc messages.proto --cpp_out=.
++	protoc -I$(srcdir) $(srcdir)/messages.proto --cpp_out=.
+ 
+ 
+--- origsrc/hamsterdb-2.0.5/src/server/Makefile.am	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/src/server/Makefile.am	2013-01-05 10:45:47.351320300 +0900
+@@ -1,14 +1,15 @@
+ 
+-AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty
++AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty -I$(top_srcdir)/3rdparty -I$(top_srcdir)/include -I$(top_srcdir)/src
+ 
+ lib_LTLIBRARIES = libhamserver.la
+ 
+ libhamserver_la_SOURCES = hamserver.cc os.c
+ 
+-libhamserver_la_LDFLAGS = -version-info 0:0:0
++libhamserver_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+ 
+ libhamserver_la_LDFLAGS += $(top_builddir)/3rdparty/json/libjson.la \
+                            $(top_builddir)/3rdparty/mongoose/libmongoose.la \
+-                           $(top_builddir)/src/protocol/libprotocol.la
++                           $(top_builddir)/src/protocol/libprotocol.la \
++                           $(top_builddir)/src/libhamsterdb.la
+ 
+ 
+--- origsrc/hamsterdb-2.0.5/tools/Makefile.am	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/tools/Makefile.am	2013-01-05 10:30:32.438234400 +0900
+@@ -1,6 +1,8 @@
+ 
+ INCLUDES            = -I$(top_builddir)/include -I$(top_builddir)/src \
+-                      -I$(top_builddir)/3rdparty/json
++                      -I$(top_builddir)/3rdparty/json \
++                      -I$(top_srcdir)/include \
++                      -I$(top_srcdir)/3rdparty/json
+ 
+ hamzilla_SOURCES    = hamzilla.c getopts.c config.c
+ hamzilla_LDADD      = $(top_builddir)/src/libhamsterdb.la \
+--- origsrc/hamsterdb-2.0.5/tools/hamzilla.c	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/tools/hamzilla.c	2013-01-05 10:31:10.610109400 +0900
+@@ -248,11 +248,13 @@ daemonize(void)
+     /* disassociate from process group */
+     setpgrp();
+ 
++#if defined(TIOCNOTTY)
+     /* disassociate from control terminal */
+     if ((fd=open("dev/tty", O_RDWR)) >= 0) {
+         ioctl(fd, TIOCNOTTY, NULL);
+         close(fd);
+     }
++#endif
+ }
+ #endif
+ 
+--- origsrc/hamsterdb-2.0.5/unittests/Makefile.am	2012-12-02 05:01:00.000000000 +0900
++++ src/hamsterdb-2.0.5/unittests/Makefile.am	2013-01-05 11:27:00.683200500 +0900
+@@ -2,8 +2,9 @@
+ EXTRA_DIST      = suppressions.valgrind
+ 
+ noinst_PROGRAMS = test bfc_sample recovery
++TESTS           = test bfc_sample recovery
+ 
+-AM_CPPFLAGS     = -I$(top_builddir)/include
++AM_CPPFLAGS     = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ test_SOURCES    = log.cpp \
+                   journal.cpp \
+@@ -45,7 +46,7 @@ test_SOURCES    = log.cpp \
+                   bfc-signal.h \
+                   bfc-signal.c
+ 
+-test_LDADD      = $(top_builddir)/src/libhamsterdb.la -lpthread -ldl
++test_LDADD      = $(top_builddir)/src/libhamsterdb.la -lpthread -ldl -lgnutls
+ 
+ if ENABLE_REMOTE
+ test_SOURCES   += remote.cpp
