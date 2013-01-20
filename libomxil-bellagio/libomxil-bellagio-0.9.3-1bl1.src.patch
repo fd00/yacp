@@ -1,0 +1,267 @@
+--- origsrc/libomxil-bellagio-0.9.3/configure.ac	2011-05-20 14:44:18.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/configure.ac	2013-01-20 12:23:26.250687500 +0900
+@@ -5,7 +5,7 @@ AM_INIT_AUTOMAKE()
+ AC_PREREQ([2.59])
+ 
+ AC_CONFIG_HEADERS([config.h])
+-CFLAGS="${CFLAGS} -Wall -Werror"
++CFLAGS="${CFLAGS} -Wall"
+ 
+ ################################################################################
+ # Set the shared versioning info, according to section 6.3 of the libtool info #
+--- origsrc/libomxil-bellagio-0.9.3/src/Makefile.am	2013-01-20 10:42:42.664375000 +0900
++++ src/libomxil-bellagio-0.9.3/src/Makefile.am	2013-01-20 12:08:10.523731400 +0900
+@@ -7,7 +7,7 @@ bin_PROGRAMS = omxregister-bellagio
+ omxregister_bellagio_SOURCES = omxregister.c common.c common.h
+ omxregister_bellagio_CFLAGS = -DOMXILCOMPONENTSPATH=\"$(plugindir)/\" \
+ 			      -I$(top_srcdir)/include
+-omxregister_bellagio_LDFLAGS = -lomxil-bellagio -L$(builddir)
++omxregister_bellagio_LDADD = libomxil-bellagio.la
+ omxregister_bellagio_DEPENDENCIES = libomxil-bellagio.la
+ 
+ lib_LTLIBRARIES = libomxil-bellagio.la
+@@ -29,7 +29,7 @@ libomxil_bellagio_la_SOURCES = component
+ libomxil_bellagio_la_CFLAGS = -I$(top_srcdir)/include -I$(srcdir)/base -I$(srcdir)/core_extensions \
+                               -DINSTALL_PATH_STR=\"$(plugindir)\" -DOMX_LOADERS_DIRNAME=\"$(libdir)/omxloaders\/\"
+ libomxil_bellagio_la_LIBADD = base/libomxbase.la core_extensions/libomxcoreext.la -lpthread
+-libomxil_bellagio_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
++libomxil_bellagio_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ -no-undefined
+ 
+ include_extradir = $(includedir)/bellagio
+ 
+--- origsrc/libomxil-bellagio-0.9.3/src/base/omx_base_component.c	2013-01-20 10:42:42.258125000 +0900
++++ src/libomxil-bellagio-0.9.3/src/base/omx_base_component.c	2013-01-20 12:03:34.325922900 +0900
+@@ -1445,7 +1445,11 @@ void* compMessageHandlerFunction(void* p
+   internalRequestMessageType *message;
+ 
+   DEBUG(DEB_LEV_FUNCTION_NAME, "In %s for component %p\n", __func__, openmaxStandComp);
++#if defined(__CYGWIN__)
++  omx_base_component_Private->bellagioThreads->nThreadMessageID = (long int)getpid();
++#else
+   omx_base_component_Private->bellagioThreads->nThreadMessageID = (long int)syscall(__NR_gettid);
++#endif
+   DEBUG(DEB_LEV_SIMPLE_SEQ, "In %s the thread ID is %i\n", __func__, (int)omx_base_component_Private->bellagioThreads->nThreadMessageID);
+ 
+   while(1){
+--- origsrc/libomxil-bellagio-0.9.3/src/base/omx_base_component.h	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/base/omx_base_component.h	2013-01-20 12:02:20.659950500 +0900
+@@ -32,7 +32,9 @@
+ #include <string.h>
+ #include <unistd.h>
+ #include <errno.h>
++#if !defined(__CYGWIN__)
+ #include <asm/unistd.h>
++#endif
+ 
+ #ifdef ANDROID_COMPILATION
+ #include <oscl_base_macros.h>
+--- origsrc/libomxil-bellagio-0.9.3/src/base/omx_base_filter.c	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/base/omx_base_filter.c	2013-01-20 12:04:38.836254500 +0900
+@@ -26,7 +26,9 @@
+ */
+ 
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <asm/unistd.h>
++#endif
+ #include <omxcore.h>
+ 
+ #include "omx_base_filter.h"
+@@ -94,7 +96,11 @@ void* omx_base_filter_BufferMgmtFunction
+   OMX_BOOL isInputBufferNeeded=OMX_TRUE,isOutputBufferNeeded=OMX_TRUE;
+   int inBufExchanged=0,outBufExchanged=0;
+ 
++#if defined(__CYGWIN__)
++  omx_base_filter_Private->bellagioThreads->nThreadBufferMngtID = (long int)getpid();
++#else
+   omx_base_filter_Private->bellagioThreads->nThreadBufferMngtID = (long int)syscall(__NR_gettid);
++#endif
+   DEBUG(DEB_LEV_FUNCTION_NAME, "In %s of component %p\n", __func__, openmaxStandComp);
+   DEBUG(DEB_LEV_SIMPLE_SEQ, "In %s the thread ID is %i\n", __func__, (int)omx_base_filter_Private->bellagioThreads->nThreadBufferMngtID);
+ 
+--- origsrc/libomxil-bellagio-0.9.3/src/base/omx_base_sink.c	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/base/omx_base_sink.c	2013-01-20 12:05:15.475110500 +0900
+@@ -76,7 +76,11 @@ void* omx_base_sink_BufferMgmtFunction (
+   OMX_BOOL                        isInputBufferNeeded         = OMX_TRUE;
+   int                             inBufExchanged              = 0;
+ 
++#if defined(__CYGWIN__)
++  omx_base_sink_Private->bellagioThreads->nThreadBufferMngtID = (long int)getpid();
++#else
+   omx_base_sink_Private->bellagioThreads->nThreadBufferMngtID = (long int)syscall(__NR_gettid);
++#endif
+   DEBUG(DEB_LEV_SIMPLE_SEQ, "In %s the thread ID is %i\n", __func__, (int)omx_base_sink_Private->bellagioThreads->nThreadBufferMngtID);
+ 
+   DEBUG(DEB_LEV_FUNCTION_NAME, "In %s \n", __func__);
+--- origsrc/libomxil-bellagio-0.9.3/src/base/omx_base_source.c	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/base/omx_base_source.c	2013-01-20 12:05:56.108396700 +0900
+@@ -78,7 +78,11 @@ void* omx_base_source_BufferMgmtFunction
+   OMX_BOOL isOutputBufferNeeded = OMX_TRUE;
+   int outBufExchanged = 0;
+ 
++#if defined(__CYGWIN__)
++  omx_base_source_Private->bellagioThreads->nThreadBufferMngtID = (long int)getpid();
++#else
+   omx_base_source_Private->bellagioThreads->nThreadBufferMngtID = (long int)syscall(__NR_gettid);
++#endif
+   DEBUG(DEB_LEV_SIMPLE_SEQ, "In %s the thread ID is %i\n", __func__, (int)omx_base_source_Private->bellagioThreads->nThreadBufferMngtID);
+ 
+   DEBUG(DEB_LEV_FUNCTION_NAME, "In %s \n", __func__);
+--- origsrc/libomxil-bellagio-0.9.3/src/components/audio_effects/Makefile.am	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/components/audio_effects/Makefile.am	2013-01-20 11:56:28.513441000 +0900
+@@ -7,6 +7,7 @@ libomxaudio_effects_la_SOURCES = omx_vol
+                                  library_entry_point.c
+ 
+ libomxaudio_effects_la_LIBADD = $(top_builddir)/src/libomxil-bellagio.la
++libomxaudio_effects_la_LDFLAGS = -no-undefined -avoid-version -module
+ libomxaudio_effects_la_CFLAGS = -I$(top_srcdir)/include \
+ 				-I$(top_srcdir)/src \
+ 				-I$(top_srcdir)/src/base
+--- origsrc/libomxil-bellagio-0.9.3/src/components/clocksrc/Makefile.am	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/components/clocksrc/Makefile.am	2013-01-20 11:50:20.638441000 +0900
+@@ -6,6 +6,7 @@ libomxclocksrc_la_SOURCES = omx_clocksrc
+                               library_entry_point.c
+ 
+ libomxclocksrc_la_LIBADD = $(top_builddir)/src/libomxil-bellagio.la
++libomxclocksrc_la_LDFLAGS = -no-undefined -avoid-version -module
+ libomxclocksrc_la_CFLAGS = $(FFMPEG_CFLAGS) \
+                              -I$(top_srcdir)/include \
+                              -I$(top_srcdir)/src \
+--- origsrc/libomxil-bellagio-0.9.3/src/components/videoscheduler/Makefile.am	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/components/videoscheduler/Makefile.am	2013-01-20 11:50:47.310316000 +0900
+@@ -6,7 +6,7 @@ libomxvideosched_la_SOURCES = omx_video_
+ 								library_entry_point.c
+ 
+ libomxvideosched_la_LIBADD = $(top_builddir)/src/libomxil-bellagio.la
+-libomxvideosched_la_LDFLAGS = 
++libomxvideosched_la_LDFLAGS = -no-undefined -avoid-version -module
+ libomxvideosched_la_CFLAGS = -I$(top_srcdir)/include \
+ 			-I$(top_srcdir)/src \
+ 			-I$(top_srcdir)/src/base
+--- origsrc/libomxil-bellagio-0.9.3/src/dynamic_loader/Makefile.am	2013-01-20 10:42:42.555000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/dynamic_loader/Makefile.am	2013-01-20 12:09:48.216021700 +0900
+@@ -3,7 +3,8 @@ omxdynamicloaderdir = $(libdir)/omxloade
+ omxdynamicloader_LTLIBRARIES = libomxdynamicloader.la
+ libomxdynamicloader_la_SOURCES = ste_dynamic_component_loader.c ste_dynamic_component_loader.h
+ 
+-libomxdynamicloader_la_LDFLAGS = -lomxil-bellagio -L$(abs_top_srcdir)/src/.libs
++libomxdynamicloader_la_LIBADD = $(top_builddir)/src/libomxil-bellagio.la
++libomxdynamicloader_la_LDFLAGS = -no-undefined
+ libomxdynamicloader_la_CFLAGS = -I$(top_srcdir)/include \
+ 			-I$(top_srcdir)/src \
+ 			-I$(top_srcdir)/src/base \
+--- origsrc/libomxil-bellagio-0.9.3/src/dynamic_loader/ste_dynamic_component_loader.c	2011-05-20 14:28:17.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/src/dynamic_loader/ste_dynamic_component_loader.c	2013-01-20 11:55:47.943128500 +0900
+@@ -106,7 +106,11 @@ OMX_ERRORTYPE BOSA_STE_InitComponentLoad
+ 	if(len <= 3)
+ 		continue;    
+ 	  
++#if defined(__CYGWIN__)
++	if(strncmp(dp->d_name+len-4, ".dll", 4) == 0) {
++#else
+ 	if(strncmp(dp->d_name+len-3, ".so", 3) == 0) {
++#endif
+ 	  char lib_absolute_path[strlen(OMX_COMPONENT_PATH) + len + 1];
+ 		
+ 	  strcpy(lib_absolute_path, OMX_COMPONENT_PATH);
+--- origsrc/libomxil-bellagio-0.9.3/test/components/audio_effects/Makefile.am	2011-05-20 15:12:59.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/audio_effects/Makefile.am	2013-01-20 12:17:54.394242200 +0900
+@@ -1,7 +1,7 @@
+ check_PROGRAMS = omxvolcontroltest omxaudiomixertest
+ 
+-bellagio_LDADD = -lomxil-bellagio
+-common_CFLAGS = -I$(top_srcdir)/test/components/common -I$(includedir)
++bellagio_LDADD = $(top_builddir)/src/libomxil-bellagio.la
++common_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/test/components/common -I$(includedir)
+ 
+ omxvolcontroltest_SOURCES = omxvolcontroltest.c omxvolcontroltest.h
+ omxvolcontroltest_LDADD = $(bellagio_LDADD) -lpthread 
+--- origsrc/libomxil-bellagio-0.9.3/test/components/audio_effects/omxaudiomixertest.h	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/audio_effects/omxaudiomixertest.h	2013-01-20 12:18:36.175492200 +0900
+@@ -41,7 +41,7 @@
+ #include <OMX_Types.h>
+ #include <OMX_Audio.h>
+ 
+-#include <bellagio/tsemaphore.h>
++#include <tsemaphore.h>
+ #include <user_debug_levels.h>
+ 
+ /** Specification version*/
+--- origsrc/libomxil-bellagio-0.9.3/test/components/audio_effects/omxvolcontroltest.c	2011-05-19 23:56:42.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/audio_effects/omxvolcontroltest.c	2013-01-20 12:17:26.987992200 +0900
+@@ -25,7 +25,7 @@
+ */
+ 
+ #include "omxvolcontroltest.h"
+-#include <bellagio/extension_struct.h>
++#include <extension_struct.h>
+ 
+ /* Application private date: should go in the component field (segs...) */
+ appPrivateType* appPriv;
+--- origsrc/libomxil-bellagio-0.9.3/test/components/audio_effects/omxvolcontroltest.h	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/audio_effects/omxvolcontroltest.h	2013-01-20 12:15:01.425492200 +0900
+@@ -40,7 +40,7 @@
+ #include <OMX_Types.h>
+ #include <OMX_Audio.h>
+ 
+-#include <bellagio/tsemaphore.h>
++#include <tsemaphore.h>
+ #include <user_debug_levels.h>
+ 
+ /** Specification version*/
+--- origsrc/libomxil-bellagio-0.9.3/test/components/resource_manager/Makefile.am	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/resource_manager/Makefile.am	2013-01-20 12:28:59.737992200 +0900
+@@ -1,7 +1,7 @@
+ check_PROGRAMS = omxrmtest omxprioritytest
+ 
+-bellagio_LDADD = -lomxil-bellagio
+-common_CFLAGS = -I$(top_srcdir)/test/components/common -I$(includedir)
++bellagio_LDADD = $(top_builddir)/src/libomxil-bellagio.la
++common_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/test/components/common -I$(includedir)
+ 
+ omxrmtest_SOURCES = omxrmtest.c omxrmtest.h
+ omxrmtest_LDADD = $(bellagio_LDADD) -lpthread
+--- origsrc/libomxil-bellagio-0.9.3/test/components/resource_manager/omxprioritytest.c	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/resource_manager/omxprioritytest.c	2013-01-20 12:29:43.612992200 +0900
+@@ -26,7 +26,7 @@
+ 
+ #include "omxprioritytest.h"
+ #include <string.h>
+-#include <bellagio/extension_struct.h>
++#include <extension_struct.h>
+ 
+ #define MAX_COMPONENTS 5
+ #define TIMEOUT 500
+--- origsrc/libomxil-bellagio-0.9.3/test/components/resource_manager/omxprioritytest.h	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/resource_manager/omxprioritytest.h	2013-01-20 12:28:34.675492200 +0900
+@@ -36,7 +36,7 @@
+ #include <OMX_Types.h>
+ #include <OMX_Audio.h>
+ 
+-#include <bellagio/tsemaphore.h>
++#include <tsemaphore.h>
+ #include <user_debug_levels.h>
+ 
+ /** Specification version*/
+--- origsrc/libomxil-bellagio-0.9.3/test/components/resource_manager/omxrmtest.c	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/resource_manager/omxrmtest.c	2013-01-20 12:21:12.435257800 +0900
+@@ -26,7 +26,7 @@
+ 
+ #include "omxrmtest.h"
+ #include <string.h>
+-#include <bellagio/extension_struct.h>
++#include <extension_struct.h>
+ 
+ #define MAX_COMPONENTS 5
+ #define TIMEOUT 500
+--- origsrc/libomxil-bellagio-0.9.3/test/components/resource_manager/omxrmtest.h	2011-01-12 16:53:26.000000000 +0900
++++ src/libomxil-bellagio-0.9.3/test/components/resource_manager/omxrmtest.h	2013-01-20 12:19:21.622757800 +0900
+@@ -36,7 +36,7 @@
+ #include <OMX_Types.h>
+ #include <OMX_Audio.h>
+ 
+-#include <bellagio/tsemaphore.h>
++#include <tsemaphore.h>
+ #include <user_debug_levels.h>
+ 
+ /** Specification version*/
