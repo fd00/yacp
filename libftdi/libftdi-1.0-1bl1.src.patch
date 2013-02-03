@@ -1,0 +1,101 @@
+--- origsrc/libftdi1-1.0/CMakeLists.txt	2013-01-29 22:21:38.000000000 +0900
++++ src/libftdi1-1.0/CMakeLists.txt	2013-02-02 23:38:39.861843700 +0900
+@@ -137,6 +137,8 @@ else(DOCUMENTATION AND DOXYGEN_FOUND)
+    message(STATUS "Not generating API documentation")
+ endif(DOCUMENTATION AND DOXYGEN_FOUND)
+ 
++option(ENABLE_STATIC "build static" OFF)
++
+ add_subdirectory(src)
+ add_subdirectory(ftdipp)
+ add_subdirectory(bindings)
+--- origsrc/libftdi1-1.0/bindings/CMakeLists.txt	2013-01-29 22:21:38.000000000 +0900
++++ src/libftdi1-1.0/bindings/CMakeLists.txt	2013-02-02 23:44:33.073757800 +0900
+@@ -26,7 +26,11 @@ if(PYTHON_BINDINGS AND SWIG_FOUND AND PY
+ 
+     set ( SITEPACKAGE lib${LIB_SUFFIX}/python${PYTHON_VERSION}/site-packages )
+ 
++IF (CYGWIN)
++    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/_ftdi1.dll DESTINATION ${SITEPACKAGE})
++ELSE (CYGWIN)
+     INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/_ftdi1.so DESTINATION ${SITEPACKAGE})
++ENDIF (CYGWIN)
+     INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/ftdi1.py DESTINATION ${SITEPACKAGE})
+ 
+     if(DOCUMENTATION AND DOXYGEN_FOUND)
+--- origsrc/libftdi1-1.0/ftdipp/CMakeLists.txt	2013-01-29 22:21:38.000000000 +0900
++++ src/libftdi1-1.0/ftdipp/CMakeLists.txt	2013-02-02 23:40:36.799343700 +0900
+@@ -30,12 +30,16 @@ if (FTDIPP)
+         set_target_properties(ftdipp1 PROPERTIES VERSION ${VERSION_FIXUP}.${MINOR_VERSION}.0 SOVERSION 2)
+ 
+         # Static library
++IF (ENABLE_STATIC)
+         add_library(ftdipp1-static STATIC ${cpp_sources})
+         set_target_properties(ftdipp1-static PROPERTIES OUTPUT_NAME "ftdipp1")
++ENDIF (ENABLE_STATIC)
+ 
+         # Prevent clobbering each other during the build
+         set_target_properties(ftdipp1 PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++IF (ENABLE_STATIC)
+         set_target_properties(ftdipp1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++ENDIF (ENABLE_STATIC)
+ 
+         # Dependencies
+         target_link_libraries(ftdipp1 ftdi1 ${LIBUSB_LIBRARIES} ${BOOST_LIBRARIES})
+@@ -43,13 +47,17 @@ if (FTDIPP)
+         # Install
+         if(${UNIX})
+             install( TARGETS ftdipp1
++                        RUNTIME DESTINATION bin
++                        ARCHIVE DESTINATION lib${LIB_SUFFIX}
+                         LIBRARY DESTINATION lib${LIB_SUFFIX}
+                         COMPONENT sharedlibs
+                         )
++IF (ENABLE_STATIC)
+             install( TARGETS ftdipp1-static
+                         ARCHIVE DESTINATION lib${LIB_SUFFIX}
+                         COMPONENT staticlibs
+                         )
++ENDIF (ENABLE_STATIC)
+             install( FILES ${cpp_headers}
+                         DESTINATION include/${PROJECT_NAME}
+                         COMPONENT headers
+--- origsrc/libftdi1-1.0/src/CMakeLists.txt	2013-01-29 22:21:38.000000000 +0900
++++ src/libftdi1-1.0/src/CMakeLists.txt	2013-02-02 23:38:18.251492200 +0900
+@@ -27,12 +27,16 @@ math(EXPR VERSION_FIXUP "${MAJOR_VERSION
+ set_target_properties(ftdi1 PROPERTIES VERSION ${VERSION_FIXUP}.${MINOR_VERSION}.0 SOVERSION 2)
+ 
+ # Static library
++IF (ENABLE_STATIC)
+ add_library(ftdi1-static STATIC ${c_sources})
+ set_target_properties(ftdi1-static PROPERTIES OUTPUT_NAME "ftdi1")
++ENDIF (ENABLE_STATIC)
+ 
+ # Prevent clobbering each other during the build
+ set_target_properties(ftdi1 PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++IF (ENABLE_STATIC)
+ set_target_properties(ftdi1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++ENDIF (ENABLE_STATIC)
+ 
+ # Dependencies
+ target_link_libraries(ftdi1 ${LIBUSB_LIBRARIES})
+@@ -41,15 +45,17 @@ target_link_libraries(ftdi1 ${LIBUSB_LIB
+ if(${UNIX})
+ 
+    install( TARGETS ftdi1
++            RUNTIME DESTINATION bin
++            ARCHIVE DESTINATION lib${LIB_SUFFIX}
+             LIBRARY DESTINATION lib${LIB_SUFFIX}
+             COMPONENT sharedlibs
+             )
+-
++IF (ENABLE_STATIC)
+    install( TARGETS ftdi1-static
+             ARCHIVE DESTINATION lib${LIB_SUFFIX}
+             COMPONENT staticlibs
+             )
+-
++ENDIF (ENABLE_STATIC)
+    install( FILES ${c_headers}
+             DESTINATION include/${PROJECT_NAME}
+             COMPONENT headers
