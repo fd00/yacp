@@ -1,0 +1,87 @@
+--- origsrc/beecrypt-4.2.1/acinclude.m4	2009-07-04 19:04:08.000000000 +0900
++++ src/beecrypt-4.2.1/acinclude.m4	2013-02-23 14:36:32.475257000 +0900
+@@ -1251,7 +1251,6 @@ AC_DEFUN([BEE_OS_DEFS],[
+       ;;
+     cygwin*)
+       AC_DEFINE([CYGWIN])
+-      AC_DEFINE([WIN32])
+       ;;
+     darwin*)
+       AC_DEFINE([DARWIN])
+--- origsrc/beecrypt-4.2.1/c++/provider/Makefile.am	2009-06-19 17:50:30.000000000 +0900
++++ src/beecrypt-4.2.1/c++/provider/Makefile.am	2013-02-23 13:55:48.703011200 +0900
+@@ -60,7 +60,7 @@ SHA256withRSASignature.cxx \
+ SHA384withRSASignature.cxx \
+ SHA512withRSASignature.cxx
+ 
+-base_la_LDFLAGS = -module
++base_la_LDFLAGS = -module -no-undefined
+ base_la_LIBADD = $(top_builddir)/c++/libbeecrypt_cxx.la
+ 
+ CLEANFILES = beecrypt.conf
+--- origsrc/beecrypt-4.2.1/configure.ac	2009-07-12 16:18:46.000000000 +0900
++++ src/beecrypt-4.2.1/configure.ac	2013-02-23 14:32:11.459632000 +0900
+@@ -137,6 +137,10 @@ AC_LANG_PUSH(C++)
+ AC_OPENMP
+ AC_LANG_POP(C++)
+ 
++if test "$OPENMP_CFLAGS" != ""; then
++  AC_SUBST(OPENMP_LIBS,"-lgomp")
++fi
++
+ # Checks for compiler characteristics and flags
+ if test "$ac_enable_expert_mode" = no; then
+   BEE_CC
+@@ -246,7 +250,7 @@ if test "$ac_with_mtmalloc" = yes; then
+ fi
+ 
+ case $target_os in
+-  cygwin* | mingw*)
++  mingw*)
+     AC_CHECK_LIB([winmm],[main]) ac_cv_lib_winmm=ac_cv_lib_winmm_main
+     ;;
+ esac
+@@ -474,7 +478,7 @@ fi
+ AC_MSG_CHECKING([for platform-specific entropy devices])
+ AC_MSG_RESULT()
+ case $target_os in
+-cygwin* | mingw*)
++mingw*)
+   AC_MSG_CHECKING([for wavein])
+   AC_MSG_RESULT(yes)
+   AC_MSG_CHECKING([for wincrypt])
+@@ -512,7 +516,7 @@ solaris*)
+ esac
+ 
+ case $target_os in
+-cygwin* | mingw*)
++mingw*)
+   ;;
+ *)
+   AC_MSG_CHECKING([for generic entropy devices])
+--- origsrc/beecrypt-4.2.1/include/beecrypt/gnu.h	2009-07-12 16:19:44.000000000 +0900
++++ src/beecrypt-4.2.1/include/beecrypt/gnu.h	2013-02-23 14:43:29.584632000 +0900
+@@ -72,7 +72,12 @@ typedef pthread_t bc_threadid_t;
+  * make assumptions about the size set by the configure script
+  */
+ #if !defined(MP_WBITS)
++# include <bits/wordsize.h>
++#if __WORDSIZE == 32
++# define MP_WBITS	32U
++#elif __WORDSIZE == 64
+ # define MP_WBITS	64U
+ #endif
++#endif
+ 
+ #endif
+--- origsrc/beecrypt-4.2.1/python/Makefile.am	2006-09-21 04:12:52.000000000 +0900
++++ src/beecrypt-4.2.1/python/Makefile.am	2013-02-23 13:56:28.234261200 +0900
+@@ -19,7 +19,7 @@ pythondir = @PYTHONLIB@
+ python_LTLIBRARIES = _bc.la
+ 
+ _bc_la_SOURCES = _bc-py.c mpw-py.c rng-py.c
+-_bc_la_LDFLAGS = -avoid-version -module
++_bc_la_LDFLAGS = -avoid-version -module -no-undefined
+ _bc_la_LIBADD = $(mylibs)
+ 
+ splint_srcs = _bc-py.c $(libbc_la_sources)
