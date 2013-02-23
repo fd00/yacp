@@ -1,22 +1,28 @@
---- origsrc/supersonic/Makefile.am	2012-10-31 22:42:51.000000000 +0900
-+++ src/supersonic/Makefile.am	2012-11-03 18:14:49.012402200 +0900
-@@ -12,8 +12,8 @@ AM_CPPFLAGS = -Wno-deprecated \
+--- origsrc/supersonic/Makefile.am	2013-01-10 01:37:32.000000000 +0900
++++ src/supersonic/Makefile.am	2013-02-23 23:45:04.549650500 +0900
+@@ -12,13 +12,12 @@ AM_CPPFLAGS = -Wno-deprecated \
                -DNDEBUG \
                -DSUPERSONIC_FORCE_FAILURE_CHECK=1
  
 -BOOST_SYSTEM_LIB = -lboost_system
 -BOOST_TIMER_LIB = -lboost_timer
-+BOOST_SYSTEM_LIB = -lboost_system-mt
-+BOOST_TIMER_LIB = -lboost_timer-mt
++BOOST_SYSTEM_LIB = $(BOOST_SYSTEM_LIBS)
++BOOST_TIMER_LIB = $(BOOST_TIMER_LIBS)
  
  RE2_LIBS = -lre2
  
-@@ -36,18 +36,23 @@ EXEC_LIB_FLAGS = libsupersonic.la \
+-TEST_FLAGS = -I$(top_srcdir)/gmock/include -I$(top_srcdir)/gmock \
+-    -I$(top_srcdir)/gmock/gtest/include -I$(top_srcdir)/gmock/gtest
++TEST_FLAGS = $(GMOCK_CFLAGS) $(GTEST_CFLAGS)
+ 
+ COMPILER_FLAGS = $(PTHREAD_CFLAGS) \
+     $(AM_CXXFLAGS) \
+@@ -36,18 +35,23 @@ EXEC_LIB_FLAGS = libsupersonic.la \
      $(PROTO_LIBS) \
      $(RE2_LIBS)
  
 -EXEC_TEST_FLAGS = $(EXEC_LIB_FLAGS) libtestutils.la
-+EXEC_TEST_FLAGS = libtestutils.la $(EXEC_LIB_FLAGS) -lgmock -lgtest
++EXEC_TEST_FLAGS = libtestutils.la $(EXEC_LIB_FLAGS) $(GMOCK_LIBS) $(GTEST_LIBS)
  
 -TEST_FILES = gmock/gtest/src/gtest-all.cc \
 -    gmock/src/gmock-all.cc \
@@ -40,7 +46,7 @@
  
  # Testing utils
  noinst_LTLIBRARIES = libtestutils.la
-@@ -57,7 +62,7 @@ libtestutils_la_LDFLAGS =
+@@ -57,7 +61,7 @@ libtestutils_la_LDFLAGS =
  libtestutils_la_LIBADD =
  
  libtestutils_ladir = $(includedir)
@@ -49,16 +55,16 @@
      supersonic/testing/block_builder.h \
      supersonic/testing/comparable_cursor.h \
      supersonic/testing/comparable_tuple_schema.h \
-@@ -88,7 +93,7 @@ libtestutils_la_SOURCES = \
+@@ -88,7 +92,7 @@ libtestutils_la_SOURCES = \
  # Unit tests
  supersonic_guidetest_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS)
  supersonic_guidetest_LDFLAGS =
 -supersonic_guidetest_LDADD = $(EXEC_LIB_FLAGS)
-+supersonic_guidetest_LDADD = $(EXEC_LIB_FLAGS) -lgtest -lgmock
++supersonic_guidetest_LDADD = $(EXEC_LIB_FLAGS) $(GMOCK_LIBS) $(GTEST_LIBS)
  
  supersonic_guidetest_SOURCES = $(TEST_FILES) \
      test/smoke_test.cc \
-@@ -133,15 +138,14 @@ test_base_memory_SOURCES = $(TEST_FILES)
+@@ -133,15 +137,14 @@ test_base_memory_SOURCES = $(TEST_FILES)
  TESTS += test_base_memory
  
  ## benchmark
@@ -76,7 +82,7 @@
  test_benchmark_infrastructure_LDADD = $(EXEC_TEST_FLAGS)
  test_benchmark_infrastructure_SOURCES = $(TEST_FILES) \
      supersonic/benchmark/infrastructure/benchmark_listener_test.cc \
-@@ -149,7 +153,7 @@ test_benchmark_infrastructure_SOURCES =
+@@ -149,7 +152,7 @@ test_benchmark_infrastructure_SOURCES =
      supersonic/benchmark/infrastructure/node_test.cc
  TESTS += test_benchmark_infrastructure
  
@@ -85,7 +91,7 @@
  test_benchmark_manager_LDADD = $(EXEC_TEST_FLAGS)
  test_benchmark_manager_SOURCES = $(TEST_FILES) \
      supersonic/benchmark/manager/benchmark_manager_test.cc
-@@ -257,7 +261,7 @@ libbenchmark_la_LDFLAGS =
+@@ -257,7 +260,7 @@ libbenchmark_la_LDFLAGS =
  libbenchmark_la_LIBADD =
  
  libbenchmark_ladir = $(includedir)
@@ -94,7 +100,7 @@
      supersonic/benchmark/base/benchmark_types.h \
      supersonic/benchmark/dot/dot_drawer.h \
      supersonic/benchmark/examples/common_utils.h \
-@@ -285,7 +289,7 @@ BENCHMARK_EXAMPLES = operation_example
+@@ -285,7 +288,7 @@ BENCHMARK_EXAMPLES = operation_example
  
  ## simple operation example
  operation_example_CPPFLAGS = $(COMPILER_FLAGS) $(TEST_FLAGS) -std=c++0x
@@ -103,8 +109,36 @@
  operation_example_SOURCES = supersonic/benchmark/examples/operation_example.cc
  
  
---- origsrc/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2012-10-31 22:42:51.000000000 +0900
-+++ src/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2012-11-03 17:53:40.620800600 +0900
+--- origsrc/supersonic/configure.ac	2013-01-10 01:37:32.000000000 +0900
++++ src/supersonic/configure.ac	2013-02-23 23:18:56.852384900 +0900
+@@ -44,11 +44,22 @@ AM_CONDITIONAL(GCC, test "$GCC" = yes)
+ PKG_CHECK_MODULES(GLOG, libglog)
+ PKG_CHECK_MODULES(GFLAGS, libgflags)
+ PKG_CHECK_MODULES(PROTO, protobuf)
++if gmock-config --version &> /dev/null ; then
++	GMOCK_CFLAGS=`gmock-config --cppflags`
++	GMOCK_LIBS=`gmock-config --libs`
++	AC_SUBST([GMOCK_CFLAGS])
++	AC_SUBST([GMOCK_LIBS])
++fi
++if gtest-config --version &> /dev/null ; then
++	GTEST_CFLAGS=`gtest-config --cppflags`
++	GTEST_LIBS=`gtest-config --libs`
++	AC_SUBST([GTEST_CFLAGS])
++	AC_SUBST([GTEST_LIBS])
++fi
+ 
+ # Check for boost.
+-AX_BOOST_BASE
+-AX_BOOST_SYSTEM
+-AX_BOOST_TIMER
++BOOST_SYSTEM
++BOOST_FIND_LIB([timer],[],[boost/timer.hpp])
+ 
+ # Checks for header files.
+ AC_CHECK_HEADERS([limits.h stddef.h stdint.h stdlib.h string.h string \
+--- origsrc/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2013-01-10 01:38:56.000000000 +0900
++++ src/supersonic/supersonic/benchmark/infrastructure/benchmark_transformer_test.cc	2013-02-23 23:10:44.064298900 +0900
 @@ -89,7 +89,7 @@ class CursorTransformerWithHistoryTest :
      return ExtractCursor<T>(entry);
    }
@@ -123,8 +157,8 @@
    ASSERT_EQ(cursor_p1, this->Extract((*history)[0].get()));
    ASSERT_EQ(cursor_p2, this->Extract((*history)[1].get()));
    ASSERT_EQ(cursor_p3, this->Extract((*history)[2].get()));
---- origsrc/supersonic/supersonic/utils/file_util.cc	2012-10-31 22:42:52.000000000 +0900
-+++ src/supersonic/supersonic/utils/file_util.cc	2012-10-31 23:32:33.294794200 +0900
+--- origsrc/supersonic/supersonic/utils/file_util.cc	2013-01-10 01:38:57.000000000 +0900
++++ src/supersonic/supersonic/utils/file_util.cc	2013-02-23 23:11:15.240080200 +0900
 @@ -66,7 +66,7 @@ File* TempFile::Create(const char *direc
  // Creates a temporary file name using standard library utilities.
  static inline void TempFilenameInDir(const char *directory_prefix,
@@ -134,8 +168,8 @@
    int32 pid = static_cast<int32>(getpid());
    int64 now = CycleClock::Now();
    int64 now_usec = GetCurrentTimeMicros();
---- origsrc/supersonic/supersonic/utils/mutex.h	2012-10-31 22:42:52.000000000 +0900
-+++ src/supersonic/supersonic/utils/mutex.h	2012-10-31 23:12:15.701044200 +0900
+--- origsrc/supersonic/supersonic/utils/mutex.h	2013-01-10 01:38:57.000000000 +0900
++++ src/supersonic/supersonic/utils/mutex.h	2013-02-23 23:12:05.083830200 +0900
 @@ -110,7 +110,7 @@
  
  #if defined(NO_THREADS)
@@ -154,8 +188,17 @@
  
  Mutex::Mutex() : destroy_(true) {
    InitializeCriticalSection(&mutex_);
---- origsrc/supersonic/supersonic/utils/port.h	2012-10-31 22:42:52.000000000 +0900
-+++ src/supersonic/supersonic/utils/port.h	2012-11-01 23:51:32.594694300 +0900
+--- origsrc/supersonic/supersonic/utils/port.h	2013-01-10 01:38:57.000000000 +0900
++++ src/supersonic/supersonic/utils/port.h	2013-02-23 23:13:07.115080200 +0900
+@@ -14,7 +14,7 @@
+ 
+ #if defined(__APPLE__)
+ #include <unistd.h>         // for getpagesize() on mac
+-#elif defined(OS_CYGWIN)
++#elif defined(__CYGWIN__)
+ #include <malloc.h>         // for memalign()
+ #endif
+ 
 @@ -34,7 +34,7 @@
  /* We use SIGPWR since that seems unlikely to be used for other reasons. */
  #define GOOGLE_OBSCURE_SIGNAL  SIGPWR
@@ -165,7 +208,7 @@
  
  // _BIG_ENDIAN
  #include <endian.h>
-@@ -116,7 +116,7 @@ typedef uint16_t u_int16_t;
+@@ -100,7 +100,7 @@ typedef unsigned long ulong;
  #define bswap_32(x) OSSwapInt32(x)
  #define bswap_64(x) OSSwapInt64(x)
  
@@ -174,8 +217,8 @@
  #include <byteswap.h>  // IWYU pragma: export
  
  #else
---- origsrc/supersonic/supersonic/utils/random.cc	2012-10-31 22:42:52.000000000 +0900
-+++ src/supersonic/supersonic/utils/random.cc	2012-10-31 23:29:12.076044200 +0900
+--- origsrc/supersonic/supersonic/utils/random.cc	2013-01-10 01:38:57.000000000 +0900
++++ src/supersonic/supersonic/utils/random.cc	2013-02-23 23:13:54.005705200 +0900
 @@ -16,7 +16,11 @@
  //
  #include "supersonic/utils/random.h"
