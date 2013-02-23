@@ -1,0 +1,117 @@
+--- origsrc/roadrunner-0.9.1/doc/reference/Makefile.am	2003-01-07 04:29:48.000000000 +0900
++++ src/roadrunner-0.9.1/doc/reference/Makefile.am	2013-02-23 21:18:16.566554200 +0900
+@@ -72,7 +72,6 @@ EXTRA_DIST = 				\
+ 	$(DOC_MAIN_SGML_FILE)		\
+ 	$(DOC_MODULE)-sections.txt	\
+ 	$(DOC_OVERRIDES)
+-#	$(DOC_MODULE).types		\
+ 
+ DOC_STAMPS=scan-build.stamp tmpl-build.stamp sgml-build.stamp html-build.stamp \
+ 	   $(srcdir)/tmpl.stamp $(srcdir)/sgml.stamp $(srcdir)/html.stamp
+--- origsrc/roadrunner-0.9.1/examples/Makefile.am	2003-01-07 04:29:48.000000000 +0900
++++ src/roadrunner-0.9.1/examples/Makefile.am	2013-02-23 21:29:55.219874500 +0900
+@@ -8,9 +8,9 @@ libsimpleprofile_la_SOURCES =	simple-pro
+ EXTRA_DIST = simple-profile.h makefile.msc
+ 
+ simple_server_SOURCES = simple-server.c
+-simple_server_LDADD = $(RR_LIBS) $(top_builddir)/librr/librr-0.9.la \
+-		libsimpleprofile.la
++simple_server_LDADD = libsimpleprofile.la \
++	$(RR_LIBS) $(top_builddir)/librr/librr-0.9.la
+ 
+ simple_client_SOURCES = simple-client.c
+-simple_client_LDADD = $(RR_LIBS) $(top_builddir)/librr/librr-0.9.la \
+-		libsimpleprofile.la
++simple_client_LDADD = libsimpleprofile.la \
++	$(RR_LIBS) $(top_builddir)/librr/librr-0.9.la
+--- origsrc/roadrunner-0.9.1/librr/Makefile.am	2003-01-07 04:29:48.000000000 +0900
++++ src/roadrunner-0.9.1/librr/Makefile.am	2013-02-23 21:11:44.741358900 +0900
+@@ -43,7 +43,7 @@ librrinclude_HEADERS =		\
+ EXTRA_DIST = 			\
+ 	rr-beeperror-priv.h makefile.msc
+ 
+-LDFLAGS = 	@LDFLAGS@ 						\
++LDFLAGS = 	-no-undefined @LDFLAGS@					\
+ 		-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+ 
+ librr_0_9_la_LIBADD = \
+--- origsrc/roadrunner-0.9.1/librr/rr-debug.h	2002-11-29 06:00:24.000000000 +0900
++++ src/roadrunner-0.9.1/librr/rr-debug.h	2013-02-23 21:21:16.109522900 +0900
+@@ -14,7 +14,7 @@
+ #ifndef __RR_DEBUG_H__
+ #define __RR_DEBUG_H__
+ 
+-#include <glib/gmessages.h>
++#include <glib.h>
+ 
+ typedef enum                                                                                 
+ {                 
+--- origsrc/roadrunner-0.9.1/librr/rr-mime.c	2002-12-20 20:57:11.000000000 +0900
++++ src/roadrunner-0.9.1/librr/rr-mime.c	2013-02-23 21:23:36.062647900 +0900
+@@ -16,7 +16,7 @@
+ #include <time.h>
+ #include "rr-mime.h"
+ 
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ #include <winsock.h>
+ #else                              /* For gethostname */
+ #include <unistd.h>
+--- origsrc/roadrunner-0.9.1/librr/tcp/rr-tcpconnection.c	2003-01-07 07:59:32.000000000 +0900
++++ src/roadrunner-0.9.1/librr/tcp/rr-tcpconnection.c	2013-02-23 21:25:37.532374500 +0900
+@@ -13,7 +13,7 @@
+ 
+ #include <librr/rr.h>
+ 
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ #include "rr-win32.h"
+ #else
+ #include <unistd.h>
+@@ -148,7 +148,7 @@ rr_tcp_connection_get_type (void)
+ 						  "RRTCPConnection", 
+ 						  &type_info, 0);
+ 
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ 	rr_win32_init_winsock ();
+ #endif
+ 	}
+@@ -679,7 +679,7 @@ rr_tcp_connection_connect_fd (RRTCPConne
+ 	g_io_channel_set_close_on_unref (tcpc->iochannel, TRUE);
+ 	g_io_channel_set_encoding (tcpc->iochannel, NULL, NULL);
+ 
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ 	if (!rr_win32_enable_nonblock (fd)) {
+ 		g_set_error (error, RR_ERROR, RR_ERROR_OTHER,
+ 			     "rr_win32_enable_nonblock failed.");
+--- origsrc/roadrunner-0.9.1/librr/tcp/rr-tcplistener.c	2003-01-07 04:29:48.000000000 +0900
++++ src/roadrunner-0.9.1/librr/tcp/rr-tcplistener.c	2013-02-23 21:25:51.907374500 +0900
+@@ -13,7 +13,7 @@
+ 
+ #include <librr/rr.h>
+ 
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ #include "rr-win32.h"
+ #else
+ #include <unistd.h>
+@@ -105,7 +105,7 @@ rr_tcp_listener_get_type (void)
+ 		rr_type = g_type_register_static (RR_TYPE_LISTENER, 
+ 						  "RRTCPListener", 
+ 						  &type_info, 0);
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ 	rr_win32_init_winsock ();
+ #endif
+ 	}
+@@ -118,7 +118,7 @@ in_event (GIOChannel *source, GIOConditi
+ 	RRListener *listener = RR_LISTENER (data);
+ 	RRTCPConnection *tcpc;
+         struct sockaddr_in inet_addr;
+-#ifdef G_PLATFORM_WIN32
++#if defined(G_PLATFORM_WIN32) && !defined(__CYGWIN__)
+ 	int addrlen;
+ #else
+         socklen_t addrlen;
