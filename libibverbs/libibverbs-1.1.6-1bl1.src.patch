@@ -1,0 +1,59 @@
+--- origsrc/libibverbs-1.1.6/Makefile.am	2011-12-22 10:11:09.000000000 +0900
++++ src/libibverbs-1.1.6/Makefile.am	2013-02-24 17:12:50.149501800 +0900
+@@ -13,7 +13,7 @@ src_libibverbs_la_SOURCES = src/cmd.c sr
+ 			    src/marshall.c src/memory.c src/sysfs.c src/verbs.c \
+ 			    src/enum_strs.c
+ src_libibverbs_la_LDFLAGS = -version-info 1 -export-dynamic \
+-    $(libibverbs_version_script)
++    $(libibverbs_version_script) -no-undefined
+ src_libibverbs_la_DEPENDENCIES = $(srcdir)/src/libibverbs.map
+ 
+ bin_PROGRAMS = examples/ibv_devices examples/ibv_devinfo \
+--- origsrc/libibverbs-1.1.6/include/infiniband/kern-abi.h	2011-07-28 07:36:13.000000000 +0900
++++ src/libibverbs-1.1.6/include/infiniband/kern-abi.h	2013-02-24 17:17:59.646572100 +0900
+@@ -35,7 +35,13 @@
+ #ifndef KERN_ABI_H
+ #define KERN_ABI_H
+ 
++#if defined(__CYGWIN__)
++#include <asm/types.h>
++typedef __int64_t __s64;
++typedef __uint64_t __u64;
++#else
+ #include <linux/types.h>
++#endif
+ 
+ /*
+  * This file must be kept in sync with the kernel's version of
+--- origsrc/libibverbs-1.1.6/include/infiniband/sa-kern-abi.h	2011-06-29 06:13:45.000000000 +0900
++++ src/libibverbs-1.1.6/include/infiniband/sa-kern-abi.h	2013-02-24 17:22:12.793056500 +0900
+@@ -33,7 +33,11 @@
+ #ifndef INFINIBAND_SA_KERN_ABI_H
+ #define INFINIBAND_SA_KERN_ABI_H
+ 
++#if defined(__CYGWIN__)
++#include <asm/types.h>
++#else
+ #include <linux/types.h>
++#endif
+ 
+ /*
+  * Obsolete, deprecated names.  Will be removed in libibverbs 1.1.
+--- origsrc/libibverbs-1.1.6/src/init.c	2011-12-22 10:11:09.000000000 +0900
++++ src/libibverbs-1.1.6/src/init.c	2013-02-24 17:21:11.317470500 +0900
+@@ -415,10 +415,15 @@ static void check_memlock_limit(void)
+ 	if (!geteuid())
+ 		return;
+ 
++#if defined(__CYGWIN__)
++	fprintf(stderr, PFX "Warning: getrlimit(RLIMIT_MEMLOCK) unsupported on cygwin.");
++	return;
++#else
+ 	if (getrlimit(RLIMIT_MEMLOCK, &rlim)) {
+ 		fprintf(stderr, PFX "Warning: getrlimit(RLIMIT_MEMLOCK) failed.");
+ 		return;
+ 	}
++#endif
+ 
+ 	if (rlim.rlim_cur <= 32768)
+ 		fprintf(stderr, PFX "Warning: RLIMIT_MEMLOCK is %lu bytes.\n"
