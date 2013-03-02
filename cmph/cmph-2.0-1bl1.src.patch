@@ -1,0 +1,97 @@
+--- origsrc/cmph-2.0/configure.ac	2012-06-09 12:32:58.000000000 +0900
++++ src/cmph-2.0/configure.ac	2013-03-02 09:29:26.315841100 +0900
+@@ -39,6 +39,13 @@ AC_ENABLE_CXXMPH
+ if test x$cxxmph = xtrue; then
+   AC_COMPILE_STDCXX_0X
+   if test x$ac_cv_cxx_compile_cxx0x_native = "xno"; then
++    if test "$host_os" = "cygwin"; then
++      if test x$ac_cv_cxx_compile_cxx0x_gxx = "xyes"; then
++        CXXFLAGS="$CXXFLAGS -std=gnu++0x"
++      else
++        AC_MSG_ERROR("cxxmph demands a working c++0x compiler.")
++      fi
++    else
+     if test x$ac_cv_cxx_compile_cxx0x_cxx = "xyes"; then
+       CXXFLAGS="$CXXFLAGS -std=c++0x"
+     elif test x$ac_cv_cxx_compile_cxx0x_gxx = "xyes"; then
+@@ -46,6 +53,7 @@ if test x$cxxmph = xtrue; then
+     else
+       AC_MSG_ERROR("cxxmph demands a working c++0x compiler.")
+     fi
++    fi
+   fi
+   AC_SUBST([CXXMPH], "cxxmph")
+ fi
+--- origsrc/cmph-2.0/cxxmph/Makefile.am	2012-06-09 15:53:46.000000000 +0900
++++ src/cmph-2.0/cxxmph/Makefile.am	2013-03-02 09:39:39.181491200 +0900
+@@ -14,7 +14,7 @@ cxxmph_include_HEADERS = mph_bits.h mph_
+ noinst_LTLIBRARIES = libcxxmph_bm.la
+ lib_LTLIBRARIES = libcxxmph.la
+ libcxxmph_la_SOURCES = MurmurHash3.cpp trigraph.cc mph_bits.cc mph_index.cc benchmark.h benchmark.cc string_util.cc
+-libcxxmph_la_LDFLAGS = -version-info 0:0:0
++libcxxmph_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+ libcxxmph_test_la_SOURCES = test.h test.cc
+ libcxxmph_test_la_LIBADD = libcxxmph.la
+ libcxxmph_bm_la_SOURCES = benchmark.h benchmark.cc bm_common.h bm_common.cc
+--- origsrc/cmph-2.0/cxxmph/benchmark.cc	2012-06-08 22:39:43.000000000 +0900
++++ src/cmph-2.0/cxxmph/benchmark.cc	2013-03-02 09:36:44.333268200 +0900
+@@ -3,6 +3,7 @@
+ #include <cerrno>
+ #include <cstring>
+ #include <cstdio>
++#include <cstdlib>
+ #include <memory>
+ #include <sys/time.h>
+ #include <sys/resource.h>
+--- origsrc/cmph-2.0/cxxmph/bm_common.cc	2012-06-08 22:39:43.000000000 +0900
++++ src/cmph-2.0/cxxmph/bm_common.cc	2013-03-02 09:39:17.509830700 +0900
+@@ -1,4 +1,5 @@
+ #include <cmath>
++#include <cstdlib>
+ #include <fstream>
+ #include <limits>
+ #include <iostream>
+@@ -12,6 +13,10 @@ using std::set;
+ using std::string;
+ using std::vector;
+ 
++#if defined(__CYGWIN__)
++#define random() rand()
++#endif
++
+ namespace cxxmph {
+   
+ UrlsBenchmark::~UrlsBenchmark() {}
+--- origsrc/cmph-2.0/cxxmph/seeded_hash_test.cc	2012-06-09 14:11:33.000000000 +0900
++++ src/cmph-2.0/cxxmph/seeded_hash_test.cc	2013-03-02 09:44:11.135399700 +0900
+@@ -4,6 +4,8 @@
+ #include <string>
+ #include <iostream>
+ 
++#include <cstdio>
++
+ using std::cerr;
+ using std::endl;
+ using std::string;
+--- origsrc/cmph-2.0/src/Makefile.am	2012-06-08 22:39:43.000000000 +0900
++++ src/cmph-2.0/src/Makefile.am	2013-03-02 09:39:52.020165300 +0900
+@@ -28,7 +28,7 @@ libcmph_la_SOURCES =  hash.h hash.c \
+ 		      cmph_benchmark.h cmph_benchmark.c \
+ 		      cmph_time.h
+ 
+-libcmph_la_LDFLAGS = -version-info 0:0:0
++libcmph_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+ 
+ cmph_SOURCES = 	main.c wingetopt.h wingetopt.c
+ cmph_LDADD = libcmph.la
+--- origsrc/cmph-2.0/tests/Makefile.am	2012-06-08 22:39:43.000000000 +0900
++++ src/cmph-2.0/tests/Makefile.am	2013-03-02 09:42:29.866845000 +0900
+@@ -2,7 +2,7 @@ TESTS = $(check_PROGRAMS)
+ check_PROGRAMS = graph_tests select_tests compressed_seq_tests compressed_rank_tests cmph_benchmark_test
+ noinst_PROGRAMS = packed_mphf_tests mphf_tests
+ 
+-INCLUDES = -I../src/
++INCLUDES = -I$(top_srcdir)/src/
+ 
+ graph_tests_SOURCES = graph_tests.c
+ graph_tests_LDADD = ../src/libcmph.la
