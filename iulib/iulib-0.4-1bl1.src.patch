@@ -1,0 +1,116 @@
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x Makefile.am -x Makefile.in -x aclocal.m4 -x config.guess -x config.sub -x configure -x ltmain.sh origsrc/iulib-0.4/configure.ac src/iulib-0.4/configure.ac
+--- origsrc/iulib-0.4/configure.ac	2009-06-10 07:32:20.000000000 +0900
++++ src/iulib-0.4/configure.ac	2013-03-16 12:23:35.753356200 +0900
+@@ -10,7 +10,7 @@ AC_CONFIG_SRCDIR([colib/colib.h])
+ 
+ AC_PROG_CXX
+ AC_PROG_CC
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ AC_HEADER_STDC
+ AC_HEADER_SYS_WAIT
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x Makefile.am -x Makefile.in -x aclocal.m4 -x config.guess -x config.sub -x configure -x ltmain.sh origsrc/iulib-0.4/genAM.py src/iulib-0.4/genAM.py
+--- origsrc/iulib-0.4/genAM.py	2009-06-10 07:32:20.000000000 +0900
++++ src/iulib-0.4/genAM.py	2013-03-16 13:12:20.464142600 +0900
+@@ -30,7 +30,7 @@ AM_CPPFLAGS = -I$(srcdir)/colib -I$(srcd
+ includedir = ${prefix}/include/iulib
+ colibdir = ${prefix}/include/colib
+ 
+-lib_LIBRARIES = libiulib.a
++lib_LTLIBRARIES = libiulib.la
+ """
+ 
+ dirs = """
+@@ -39,7 +39,7 @@ dirs = """
+     imgbits
+ """.split()
+ 
+-print "libiulib_a_SOURCES = ",
++print "libiulib_la_SOURCES = ",
+ for d in dirs:
+     print '\\'
+     for cc in glob.glob(d + "/*.cc"):
+@@ -73,7 +73,7 @@ print "check_PROGRAMS = " + s.join(" " +
+ for t in tests:
+     tName = os.path.basename(t)[:-3].replace('-','_')
+     print tName + "_SOURCES = $(srcdir)/" + t
+-    print tName + "_LDADD = libiulib.a"
++    print tName + "_LDADD = libiulib.la"
+     print tName + "_CPPFLAGS = -I$(srcdir)/colib -I$(srcdir)/imgio -I$(srcdir)/imglib"
+ 
+ 
+@@ -82,39 +82,29 @@ for t in tests:
+ print """
+ # conditionals
+ if have_sdl
+-    libiulib_a_SOURCES += $(srcdir)/utils/dgraphics.cc
+-    libiulib_a_SOURCES += $(srcdir)/utils/SDL_lines.cc
++    libiulib_la_SOURCES += $(srcdir)/utils/dgraphics.cc
++    libiulib_la_SOURCES += $(srcdir)/utils/SDL_lines.cc
+     include_HEADERS += $(srcdir)/utils/SDL_lines.h
+ else
+-    libiulib_a_SOURCES += $(srcdir)/utils/dgraphics_nosdl.cc
++    libiulib_la_SOURCES += $(srcdir)/utils/dgraphics_nosdl.cc
+ endif
+ 
+ if have_vidio
+-    libiulib_a_SOURCES += $(srcdir)/vidio/vidio.cc
++    libiulib_la_SOURCES += $(srcdir)/vidio/vidio.cc
+ endif
+ 
+ # We install it always because iulib.h always includes it.
+ include_HEADERS += $(srcdir)/vidio/vidio.h
+ 
+ if have_v4l2
+-    libiulib_a_SOURCES += $(srcdir)/vidio/v4l2cap.cc
++    libiulib_la_SOURCES += $(srcdir)/vidio/v4l2cap.cc
+ endif
+ 
+-# make installation of colib a separate target
+-
+-install-colib:
+-	install -d $(colibdir)
+-	install $(colib_HEADERS) $(colibdir)
+-
+-install: all install-colib
+-	install -d $(includedir)
+-	install -d $(libdir)
+-	install $(include_HEADERS) $(includedir)
+-	install $(lib_LIBRARIES) $(libdir)
++libiulib_la_LDFLAGS = -no-undefined
+ """
+ 
+ print
+ print "check:"
+ print '	@echo "# running tests"'
+ for t in tests:
+-    print "	$(srcdir)/" + os.path.basename(t)[:-3]
++    print "	$(top_builddir)/" + os.path.basename(t)[:-3]
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x Makefile.am -x Makefile.in -x aclocal.m4 -x config.guess -x config.sub -x configure -x ltmain.sh origsrc/iulib-0.4/imglib/iulib.h src/iulib-0.4/imglib/iulib.h
+--- origsrc/iulib-0.4/imglib/iulib.h	2009-06-10 07:32:20.000000000 +0900
++++ src/iulib-0.4/imglib/iulib.h	2013-03-16 13:00:05.489533200 +0900
+@@ -27,10 +27,10 @@
+ #ifndef iulib_h__
+ #define iulib_h__
+ #include "colib/colib.h"
+-#include "bithacks.h"
+-#include "imgbitptr.h"
+-#include "imgbits.h"
+-#include "imgrle.h"
++#include "imgbits/bithacks.h"
++#include "imgbits/imgbitptr.h"
++#include "imgbits/imgbits.h"
++#include "imgbits/imgrle.h"
+ #include "autoinvert.h"
+ #include "imgio.h"
+ #include "io_jpeg.h"
+@@ -50,6 +50,6 @@
+ #include "imgrescale.h"
+ #include "imgthin.h"
+ #include "imgtrace.h"
+-#include "dgraphics.h"
+-#include "vidio.h"
++#include "utils/dgraphics.h"
++#include "vidio/vidio.h"
+ #endif
