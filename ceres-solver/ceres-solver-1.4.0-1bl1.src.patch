@@ -1,0 +1,86 @@
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ceres-solver-1.4.0/CMakeLists.txt src/ceres-solver-1.4.0/CMakeLists.txt
+--- origsrc/ceres-solver-1.4.0/CMakeLists.txt	2012-11-18 09:46:19.000000000 +0900
++++ src/ceres-solver-1.4.0/CMakeLists.txt	2013-03-17 15:08:03.136693000 +0900
+@@ -407,6 +407,9 @@ IF (NOT ${BUILD_ANDROID})
+             "-DGLOG_INCLUDE=...")
+   ENDIF (NOT EXISTS ${GLOG_INCLUDE})
+   MESSAGE("-- Found Google Log header in: ${GLOG_INCLUDE}")
++  IF (CYGWIN)
++    ADD_DEFINITIONS(-DGLOG_NO_ABBREVIATED_SEVERITIES)
++  ENDIF (CYGWIN)
+ ELSE (NOT ${BUILD_ANDROID})
+   SET(GLOG_LIB miniglog)
+   MESSAGE("-- Using minimal Glog substitute for Android (library): ${GLOG_LIB}")
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ceres-solver-1.4.0/internal/ceres/CMakeLists.txt src/ceres-solver-1.4.0/internal/ceres/CMakeLists.txt
+--- origsrc/ceres-solver-1.4.0/internal/ceres/CMakeLists.txt	2013-03-17 14:45:03.676883100 +0900
++++ src/ceres-solver-1.4.0/internal/ceres/CMakeLists.txt	2013-03-18 09:06:31.312000400 +0900
+@@ -170,6 +170,7 @@ SET(CERES_LIBRARY_SOURCE
+     ${CERES_INTERNAL_HDRS}
+     ${CERES_INTERNAL_SCHUR_FILES})
+ 
++IF (NOT CYGWIN)
+ ADD_LIBRARY(ceres STATIC ${CERES_LIBRARY_SOURCE})
+ TARGET_LINK_LIBRARIES(ceres ${CERES_LIBRARY_DEPENDENCIES})
+ 
+@@ -177,17 +178,18 @@ INSTALL(TARGETS ceres
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib${LIB_SUFFIX}
+         ARCHIVE DESTINATION lib${LIB_SUFFIX})
++ENDIF (NOT CYGWIN)
+ 
+ # Don't build a DLL on MSVC. Supporting Ceres as a DLL on Windows involves
+ # nontrivial changes that we haven't made yet.
+ IF (NOT MSVC AND NOT ${BUILD_ANDROID})
+-  ADD_LIBRARY(ceres_shared SHARED ${CERES_LIBRARY_SOURCE})
+-  TARGET_LINK_LIBRARIES(ceres_shared ${CERES_LIBRARY_DEPENDENCIES})
+-  SET_TARGET_PROPERTIES(ceres_shared PROPERTIES
++  ADD_LIBRARY(ceres SHARED ${CERES_LIBRARY_SOURCE})
++  TARGET_LINK_LIBRARIES(ceres ${CERES_LIBRARY_DEPENDENCIES})
++  SET_TARGET_PROPERTIES(ceres PROPERTIES
+                         VERSION ${CERES_VERSION}
+                         SOVERSION ${CERES_ABI_VERSION})
+ 
+-  INSTALL(TARGETS ceres_shared
++  INSTALL(TARGETS ceres
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib${LIB_SUFFIX}
+           ARCHIVE DESTINATION lib${LIB_SUFFIX})
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ceres-solver-1.4.0/internal/ceres/gmock/mock-log.h src/ceres-solver-1.4.0/internal/ceres/gmock/mock-log.h
+--- origsrc/ceres-solver-1.4.0/internal/ceres/gmock/mock-log.h	2012-11-18 09:46:19.000000000 +0900
++++ src/ceres-solver-1.4.0/internal/ceres/gmock/mock-log.h	2013-03-17 16:54:26.396909500 +0900
+@@ -47,7 +47,11 @@
+ // Needed to make the scoped mock log tests work without modification.
+ namespace ceres {
+ namespace internal {
++#ifndef GLOG_NO_ABBREVIATED_SEVERITIES
+ using google::WARNING;
++#else
++using google::GLOG_WARNING;
++#endif
+ }  // namespace internal
+ }  // namespace ceres
+ 
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ceres-solver-1.4.0/internal/ceres/gradient_checking_cost_function_test.cc src/ceres-solver-1.4.0/internal/ceres/gradient_checking_cost_function_test.cc
+--- origsrc/ceres-solver-1.4.0/internal/ceres/gradient_checking_cost_function_test.cc	2012-11-18 09:46:19.000000000 +0900
++++ src/ceres-solver-1.4.0/internal/ceres/gradient_checking_cost_function_test.cc	2013-03-17 16:57:32.685972000 +0900
+@@ -225,7 +225,7 @@ TEST(GradientCheckingCostFunction, Smoke
+ 
+     ScopedMockLog log;
+     EXPECT_CALL(log, Log(_, _, _)).Times(AnyNumber());
+-    EXPECT_CALL(log, Log(WARNING, _,
++    EXPECT_CALL(log, Log(GLOG_WARNING, _,
+                          AllOf(HasSubstr("(1,0,2) Relative error worse than"),
+                                HasSubstr("Fuzzy bananas"))));
+ 
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ceres-solver-1.4.0/internal/ceres/levenberg_marquardt_strategy_test.cc src/ceres-solver-1.4.0/internal/ceres/levenberg_marquardt_strategy_test.cc
+--- origsrc/ceres-solver-1.4.0/internal/ceres/levenberg_marquardt_strategy_test.cc	2012-11-18 09:46:19.000000000 +0900
++++ src/ceres-solver-1.4.0/internal/ceres/levenberg_marquardt_strategy_test.cc	2013-03-17 17:00:14.109800100 +0900
+@@ -145,7 +145,7 @@ TEST(LevenbergMarquardtStrategy, Correct
+   {
+     ScopedMockLog log;
+     EXPECT_CALL(log, Log(_, _, _)).Times(AnyNumber());
+-    EXPECT_CALL(log, Log(WARNING, _,
++    EXPECT_CALL(log, Log(GLOG_WARNING, _,
+                          HasSubstr("Failed to compute a finite step.")));
+ 
+     TrustRegionStrategy::Summary summary = lms.ComputeStep(pso, &dsm, &residual, x);
