@@ -1,0 +1,141 @@
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/CMakeLists.txt src/SimGrid-3.9/CMakeLists.txt
+--- origsrc/SimGrid-3.9/CMakeLists.txt	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/CMakeLists.txt	2013-03-23 15:36:11.219047400 +0900
+@@ -4,6 +4,7 @@ if(WIN32)
+   SET(CMAKE_RC_COMPILER "windres")
+ endif()
+ project(SimGrid C)
++option(enable_doc "install doc" off)
+ if (enable_gtnets OR enable_ns3)
+   enable_language(CXX)
+ endif()
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/buildtools/Cmake/Distrib.cmake src/SimGrid-3.9/buildtools/Cmake/Distrib.cmake
+--- origsrc/SimGrid-3.9/buildtools/Cmake/Distrib.cmake	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/buildtools/Cmake/Distrib.cmake	2013-03-23 16:28:47.612602100 +0900
+@@ -3,11 +3,13 @@
+ #########################################
+ 
+ # doc
++if(enable_doc)
+ file(MAKE_DIRECTORY ${CMAKE_HOME_DIRECTORY}/doc/html/)
+ install(DIRECTORY "${CMAKE_HOME_DIRECTORY}/doc/html/"
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/doc/simgrid/html/)
+ install(DIRECTORY "${CMAKE_HOME_DIRECTORY}/doc/HelloWorld/"
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/doc/simgrid/HelloWorld/)
++endif(enable_doc)
+ 
+ #### Generate the manpages
+ if(NOT WIN32)
+@@ -33,11 +35,19 @@ install(PROGRAMS ${CMAKE_BINARY_DIR}/bin
+   ${CMAKE_BINARY_DIR}/bin/smpirun
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/)
+ 
++if(CYGWIN)
++install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/tesh.exe
++  DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/)
++
++install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/graphicator.exe
++  DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/)
++else(CYGWIN)
+ install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/tesh
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/)
+ 
+ install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/graphicator
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/)
++endif(CYGWIN)
+ 
+ install(PROGRAMS ${CMAKE_HOME_DIRECTORY}/tools/MSG_visualization/colorize.pl
+   DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
+@@ -59,11 +69,13 @@ add_custom_target(simgrid_update_xml ALL
+ 
+ # libraries
+ install(TARGETS simgrid 
+-  DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/)
++  RUNTIME DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
++  ARCHIVE DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/)
+ 
+ if(enable_smpi)
+   install(TARGETS smpi
+-    DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/)
++    RUNTIME DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
++    ARCHIVE DESTINATION $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/)
+ endif()
+ 
+ if(enable_lib_static AND NOT WIN32)
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/buildtools/Cmake/MakeLib.cmake src/SimGrid-3.9/buildtools/Cmake/MakeLib.cmake
+--- origsrc/SimGrid-3.9/buildtools/Cmake/MakeLib.cmake	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/buildtools/Cmake/MakeLib.cmake	2013-03-23 15:40:47.290336500 +0900
+@@ -9,7 +9,7 @@ include(${CMAKE_HOME_DIRECTORY}/buildtoo
+ # Actually declare our libraries
+ 
+ add_library(simgrid SHARED ${simgrid_sources})
+-set_target_properties(simgrid PROPERTIES VERSION ${libsimgrid_version})
++set_target_properties(simgrid PROPERTIES VERSION ${libsimgrid_version} SOVERSION ${libsimgrid_version})
+ 
+ if(enable_lib_static)
+   add_library(simgrid_static STATIC ${simgrid_sources})
+@@ -17,7 +17,7 @@ endif()
+ 
+ if(enable_smpi)
+   add_library(smpi SHARED ${SMPI_SRC})
+-  set_target_properties(smpi PROPERTIES VERSION ${libsmpi_version})
++  set_target_properties(smpi PROPERTIES VERSION ${libsmpi_version} SOVERSION ${libsimgrid_version})
+   if(enable_lib_static)
+     add_library(smpi_static STATIC ${SMPI_SRC})
+   endif()
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/src/portable.h src/SimGrid-3.9/src/portable.h
+--- origsrc/SimGrid-3.9/src/portable.h	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/src/portable.h	2013-03-23 14:46:22.984841900 +0900
+@@ -131,10 +131,12 @@ extern int asprintf(char **ptr, const ch
+ extern int vasprintf(char **ptr, const char *fmt, va_list ap);
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ extern int asnprintf(char **ptr, size_t str_m, const char *fmt, /*args */
+                      ...);
+ extern int vasnprintf(char **ptr, size_t str_m, const char *fmt,
+                       va_list ap);
++#endif
+ 
+ /*
+  * That's needed to protect solaris's printf from ever seing NULL associated to a %s format
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/src/simix/smx_context_raw.c src/SimGrid-3.9/src/simix/smx_context_raw.c
+--- origsrc/SimGrid-3.9/src/simix/smx_context_raw.c	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/src/simix/smx_context_raw.c	2013-03-23 14:48:24.313943400 +0900
+@@ -44,7 +44,7 @@ extern raw_stack_t raw_makecontext(char*
+                                    rawctx_entry_point_t entry_point, void* arg);
+ extern void raw_swapcontext(raw_stack_t* old, raw_stack_t new);
+ 
+-#ifdef PROCESSOR_i686
++#if defined(PROCESSOR_i686) && !defined(__CYGWIN__)
+ __asm__ (
+ #if defined(APPLE) || defined(_WIN32)
+    ".text\n"
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/src/smpi/smpicc.in src/SimGrid-3.9/src/smpi/smpicc.in
+--- origsrc/SimGrid-3.9/src/smpi/smpicc.in	2013-02-05 19:32:52.000000000 +0900
++++ src/SimGrid-3.9/src/smpi/smpicc.in	2013-03-23 15:12:25.060844300 +0900
+@@ -6,7 +6,11 @@ INCLUDEARGS="@includeflag@"
+ CMAKE_LINKARGS="-L@libdir@"
+ 
+ if [ "@WIN32@" != "1" ]; then
+-  CFLAGS="-Dmain=smpi_simulated_main__"
++  if [ "@CYGWIN@" != "1" ]; then
++    CFLAGS="-Dmain=smpi_simulated_main__"
++  else
++    CFLAGS=
++  fi
+   LINKARGS="-lsimgrid -lsmpi -lm"
+ else
+   CFLAGS="-include @includedir@/smpi/smpi_main.h"
+diff --strip-trailing-cr -uprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.log -x config.status -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test_prog -x '*.trace' -x temp_testdir_background origsrc/SimGrid-3.9/src/xbt/parmap.c src/SimGrid-3.9/src/xbt/parmap.c
+--- origsrc/SimGrid-3.9/src/xbt/parmap.c	2013-02-05 19:32:51.000000000 +0900
++++ src/SimGrid-3.9/src/xbt/parmap.c	2013-03-23 14:50:22.331521600 +0900
+@@ -6,7 +6,7 @@
+ #include "internal_config.h"
+ #include <unistd.h>
+ 
+-#ifndef _XBT_WIN32
++#if !defined(_XBT_WIN32) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ #endif
+ 
