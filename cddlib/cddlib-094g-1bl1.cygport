@@ -1,0 +1,56 @@
+DESCRIPTION="C implementation of the Double Description Method of Motzkin et al."
+HOMEPAGE="http://www.inf.ethz.ch/personal/fukudak/cdd_home/"
+SRC_URI="
+	ftp://ftp.ifor.math.ethz.ch/pub/fukuda/cdd/${P}.tar.gz
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sci-libs/${PN}/files/cdd_both_reps.c
+"
+PATCH_URI="
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/sci-libs/${PN}/files/${PN}-094g-add-cdd_both_reps-binary.patch
+"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	mv cdd_both_reps.c src \
+		|| error "failed to copy source file"
+	cd src-gmp
+	ln -fs ../src/cdd_both_reps.c . \
+		|| error "failed to make symbolic link to source file"
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	cd ${D}/usr/bin
+	for exe in *.exe
+	do
+		mv ${exe} ${PN}_${exe}
+	done
+}
+
+DOCS="
+	doc/*.pdf
+	doc/*.ps
+"
+
+PKG_NAMES="
+	${PN}
+	libcdd0
+	libcdd-devel
+"
+cddlib_CONTENTS="
+	usr/bin/*.exe
+	usr/share --exclude=*.pdf --exclude=*.ps
+"
+libcdd0_CONTENTS="
+	usr/bin/*.dll
+"
+libcdd_devel_CONTENTS="
+	usr/include
+	usr/lib
+	usr/share/doc/${PN}/*.pdf
+	usr/share/doc/${PN}/*.ps
+"
