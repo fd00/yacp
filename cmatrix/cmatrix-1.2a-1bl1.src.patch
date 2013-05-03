@@ -1,0 +1,98 @@
+--- origsrc/cmatrix-1.2a/Makefile.am	2002-04-01 10:17:17.000000000 +0900
++++ src/cmatrix-1.2a/Makefile.am	2013-05-04 01:25:54.499436400 +0900
+@@ -1,5 +1,7 @@
+ bin_PROGRAMS = cmatrix
+ cmatrix_SOURCES = cmatrix.c
++cmatrix_CPPFLAGS = $(NCURSES_CFLAGS)
++cmatrix_LDADD = $(NCURSES_LIBS)
+ 
+ man_MANS = cmatrix.1
+ 
+--- origsrc/cmatrix-1.2a/cmatrix.c	2002-04-01 09:30:02.000000000 +0900
++++ src/cmatrix-1.2a/cmatrix.c	2013-05-04 01:37:42.436057900 +0900
+@@ -223,8 +223,10 @@ void handle_sigwinch(int s)
+     if (result == -1)
+ 	return;
+ 
++#if !defined(__CYGWIN__)
+     COLS = win.ws_col;
+     LINES = win.ws_row;
++#endif
+ 
+ #ifdef HAVE_RESIZETERM
+     resizeterm(LINES, COLS);
+--- origsrc/cmatrix-1.2a/configure.in	2002-04-01 09:54:02.000000000 +0900
++++ src/cmatrix-1.2a/configure.in	2013-05-04 01:30:49.540342900 +0900
+@@ -1,18 +1,16 @@
+ dnl Process this file with autoconf to produce a configure script.
+-AC_INIT(cmatrix.c)
+-AM_INIT_AUTOMAKE(cmatrix, 1.2a)
++AC_INIT([cmatrix], [1.2a])
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ dnl Checks for programs.
+ AC_PROG_CC
++AM_PROG_CC_C_O
+ AC_PROG_INSTALL
+ AC_PROG_MAKE_SET
+ 
+-dnl Checks for libraries.
+-dnl Replace `main' with a function in -lncurses:
+-AC_CHECK_LIB(ncurses, main)
++PKG_CHECK_MODULES([NCURSES], [ncurses])
+ 
+-dnl Checks for header files.
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS(fcntl.h sys/ioctl.h unistd.h termios.h termio.h)
+ 
+@@ -22,39 +20,6 @@ dnl Checks for library functions.
+ AC_TYPE_SIGNAL
+ AC_CHECK_FUNCS(putenv)
+ 
+-dnl Checks for libraries.
+-
+-AC_CHECK_HEADERS(curses.h ncurses.h)
+-
+-CURSES_LIB_NAME=""
+-AC_CHECK_LIB(ncurses, tgetent, CURSES_LIB="-lncurses" CURSES_LIB_NAME=ncurses)
+-
+-if eval "test x$CURSES_LIB_NAME = x"
+-then
+-    AC_CHECK_LIB(curses, tgetent, CURSES_LIB="-lcurses" CURSES_LIB_NAME=curses)
+-fi
+-
+-if eval "test x$CURSES_LIB_NAME = x"
+-then
+-    AC_CHECK_LIB(termcap, tgetent, CURSES_LIB="-ltermcap" CURSES_LIB_NAME=termcap)
+-fi
+-
+-if eval "test x$CURSES_LIB_NAME = x"
+-then
+-    AC_MSG_WARN([
+-*** No termcap lib available, consider getting the official ncurses
+-*** distribution from ftp://ftp.gnu.org/pub/gnu/ncurses if you get
+-*** errors compiling nano.])
+-else
+-    AC_MSG_RESULT("Using $CURSES_LIB_NAME as the termcap library")
+-fi
+-
+-AC_CHECK_LIB($CURSES_LIB_NAME, use_default_colors,
+-	 AC_DEFINE(HAVE_USE_DEFAULT_COLORS))
+-AC_CHECK_LIB($CURSES_LIB_NAME, resizeterm, [AC_DEFINE(HAVE_RESIZETERM)])
+-AC_CHECK_LIB([$CURSES_LIB_NAME], wresize, [AC_DEFINE(HAVE_WRESIZE)])
+-
+-
+ dnl Only change gcc options if we are using gcc.  
+ if test "$ac_cv_prog_CC" = gcc -o "$ac_cv_prog_CC" = g++; then
+   CFLAGS="$CFLAGS -Wall -Wno-comment"
+@@ -122,9 +87,6 @@ if test "x$ac_cv_file__usr_lib_X11_fonts
+ 
+ dnl Parse any configure options
+ 
+-LIBS="$LIBS $CURSES_LIB"
+ AC_ARG_ENABLE(debug, [  --enable-debug          Enable debugging (def disabled)],)
+ 
+-AC_SUBST(CURSES_LIB)
+-
+ AC_OUTPUT(Makefile cmatrix.spec)
