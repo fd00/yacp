@@ -1,0 +1,56 @@
+--- origsrc/ofc-0.8.1/configure.in	2008-09-07 04:26:34.000000000 +0900
++++ src/ofc-0.8.1/configure.in	2013-05-06 04:28:38.684943900 +0900
+@@ -109,22 +109,19 @@ AC_CHECK_LIB(m, asin)
+ AC_CHECK_LIB(gdbm, gdbm_open)
+ AC_CHECK_LIB(regex, re_match)
+ AC_CHECK_LIB(gnuregex, re_match)
+-AC_CHECK_LIB(expat, XML_SetNamespaceDeclHandler)
+-AC_CHECK_LIB(z, gzopen)
+ AC_CHECK_LIB(gmp, __gmpz_init)
+ AC_CHECK_LIB(bz2, BZ2_bzReadOpen)
+-AC_CHECK_LIB(ncurses, initscr)
+-AC_CHECK_LIB(png, png_sig_cmp)
+ AC_CHECK_LIB(jpeg, jpeg_read_header)
++PKG_CHECK_MODULES([OFC], [expat libpng ncurses zlib])
+ 
+-if test "x$CYGWIN" = "xyes" -o "x$MINGW32" = "xyes" ; then
++if test "x$MINGW32" = "xyes" ; then
+ LIBS="-lwsock32 ${LIBS}"
+ fi
+ 
+ dnl Checks for header files.
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS(limits.h sys/time.h unistd.h regex.h gnu/regex.h gdbm.h \
+-expat.h zlib.h syslog.h gmp.h bzlib.h ncurses.h png.h jpeglib.h)
++syslog.h gmp.h bzlib.h jpeglib.h)
+ 
+ dnl Checks for SDL
+ SDL_CFLAGS=""
+--- origsrc/ofc-0.8.1/ofc/Makefile.am	2008-09-07 04:27:48.000000000 +0900
++++ src/ofc-0.8.1/ofc/Makefile.am	2013-05-06 04:36:00.021858000 +0900
+@@ -1,12 +1,12 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+ CXXFLAGS = @CXXFLAGS@
+-INCLUDES = -I..
++INCLUDES = -I$(top_srcdir) $(OFC_CFLAGS)
+        
+ lib_LTLIBRARIES  = libofc.la
+ 
+ libofc_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+-                    -release $(LT_RELEASE)
++                    -release $(LT_RELEASE) -no-undefined
+ 
+ SUFFIXES = .h
+ 
+--- origsrc/ofc-0.8.1/test/Makefile.am	2008-01-03 03:28:39.000000000 +0900
++++ src/ofc-0.8.1/test/Makefile.am	2013-05-06 04:42:23.126350200 +0900
+@@ -2,7 +2,7 @@
+ 
+ AM_LDFLAGS = -L../ofc
+ LDADD    = -lofc
+-INCLUDES = -I..
++INCLUDES = -I$(top_srcdir)
+ 
+ check_PROGRAMS	= test
+ 
