@@ -1,0 +1,135 @@
+--- origsrc/libspatialindex/Makefile.am	2013-06-09 14:41:31.000000000 +0900
++++ src/libspatialindex/Makefile.am	2013-06-09 19:48:34.248974100 +0900
+@@ -17,8 +17,8 @@ libspatialindex_c_la_LIBADD = \
+ 	libspatialindex.la \
+ 	src/capi/libsidxc.la
+ 
+-libspatialindex_la_LDFLAGS = -version-info 3:0:0 
+-libspatialindex_c_la_LDFLAGS = -version-info 3:0:0 -lstdc++
++libspatialindex_la_LDFLAGS = -no-undefined -version-info 3:0:0 
++libspatialindex_c_la_LDFLAGS = -no-undefined -version-info 3:0:0 -lstdc++
+ 
+ EXTRA_DIST = INSTALL.WIN \
+              spatialindex.sln \
+--- origsrc/libspatialindex/configure.ac	2013-06-09 14:41:31.000000000 +0900
++++ src/libspatialindex/configure.ac	2013-06-09 20:11:00.882788300 +0900
+@@ -15,7 +15,7 @@ AC_CANONICAL_BUILD
+ debug_default="no"
+ 
+ CFLAGS="-Wall -Wno-long-long -pedantic $CFLAGS"
+-CXXFLAGS="-Wall -Wno-long-long -pedantic -std=c++98 $CXXFLAGS"
++CXXFLAGS="-Wall -Wno-long-long -pedantic -std=gnu++0x $CXXFLAGS"
+ 
+ # Checks for programs.
+ AC_PROG_CXX
+@@ -57,7 +57,10 @@ else
+ fi
+ 
+ # Checks for library functions.
+-AC_CHECK_FUNCS([gettimeofday memset memcpy bcopy srand48])
++AC_CHECK_FUNCS([gettimeofday memset memcpy bcopy])
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_FUNCS([srand48])
++fi
+ 
+ AM_CONDITIONAL([RAND_IS_CONFIG], [test "x$HAVE_SRAND48" = xtrue])
+ 
+--- origsrc/libspatialindex/src/capi/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/capi/Makefile.am	2013-06-09 20:08:09.305639900 +0900
+@@ -1,6 +1,6 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = libsidxc.la
+-INCLUDES = -I../../include -I../../include/capi
++INCLUDES = -I../../include -I../../include/capi -I$(top_srcdir)/include
+ libsidxc_la_SOURCES =	BoundsQuery.cc \
+ 						CountVisitor.cc \
+ 						CustomStorage.cc \
+--- origsrc/libspatialindex/src/mvrtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/mvrtree/Makefile.am	2013-06-09 20:04:07.998022700 +0900
+@@ -1,4 +1,4 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = libmvrtree.la
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ libmvrtree_la_SOURCES = Index.cc Leaf.cc Node.cc MVRTree.cc Statistics.cc Index.h Leaf.h MVRTree.h Node.h PointerPoolNode.h Statistics.h
+--- origsrc/libspatialindex/src/rtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/rtree/Makefile.am	2013-06-09 20:00:52.072241400 +0900
+@@ -1,4 +1,4 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = librtree.la
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ librtree_la_SOURCES = BulkLoader.cc Index.cc Leaf.cc Node.cc RTree.cc Statistics.cc BulkLoader.h Index.h Leaf.h Node.h PointerPoolNode.h RTree.h Statistics.h
+--- origsrc/libspatialindex/src/spatialindex/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/spatialindex/Makefile.am	2013-06-09 19:57:00.504858600 +0900
+@@ -1,4 +1,4 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = liblibrary.la
+-INCLUDES = -I../../include
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ liblibrary_la_SOURCES = Point.cc Region.cc LineSegment.cc MovingPoint.cc MovingRegion.cc TimePoint.cc TimeRegion.cc SpatialIndexImpl.cc
+--- origsrc/libspatialindex/src/storagemanager/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/storagemanager/Makefile.am	2013-06-09 19:51:45.330138100 +0900
+@@ -1,4 +1,4 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = libstoragemanager.la
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ libstoragemanager_la_SOURCES = Buffer.h Buffer.cc DiskStorageManager.cc MemoryStorageManager.cc RandomEvictionsBuffer.cc DiskStorageManager.h MemoryStorageManager.h RandomEvictionsBuffer.h
+--- origsrc/libspatialindex/src/tools/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/tools/Makefile.am	2013-06-09 20:06:57.131811700 +0900
+@@ -1,6 +1,6 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = libtools.la
+-INCLUDES = -I../../include
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ libtools_la_SOURCES = Tools.cc 
+ 
+ if !RAND_IS_CONFIG
+--- origsrc/libspatialindex/src/tprtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/src/tprtree/Makefile.am	2013-06-09 20:05:41.546850800 +0900
+@@ -1,4 +1,4 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_LTLIBRARIES = libtprtree.la
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ libtprtree_la_SOURCES = Index.cc Leaf.cc Node.cc TPRTree.cc Statistics.cc Leaf.h Index.h Node.h PointerPoolNode.h Statistics.h TPRTree.h 
+--- origsrc/libspatialindex/test/geometry/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/test/geometry/Makefile.am	2013-06-09 20:16:48.845678900 +0900
+@@ -1,5 +1,5 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_PROGRAMS = Intersection
+-INCLUDES = -I../../include
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ Intersection_SOURCES = Intersection.cc
+ Intersection_LDADD = ../../libspatialindex.la
+--- origsrc/libspatialindex/test/mvrtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/test/mvrtree/Makefile.am	2013-06-09 20:19:34.099585200 +0900
+@@ -1,6 +1,6 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_PROGRAMS = Generator Exhaustive MVRTreeLoad MVRTreeQuery
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ Generator_SOURCES = Generator.cc 
+ Generator_LDADD = ../../libspatialindex.la
+ Exhaustive_SOURCES = Exhaustive.cc 
+--- origsrc/libspatialindex/test/rtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/test/rtree/Makefile.am	2013-06-09 20:18:15.691382000 +0900
+@@ -1,6 +1,6 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_PROGRAMS = Generator Exhaustive RTreeLoad RTreeQuery RTreeBulkLoad
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ Generator_SOURCES = Generator.cc 
+ Generator_LDADD = ../../libspatialindex.la
+ Exhaustive_SOURCES = Exhaustive.cc 
+--- origsrc/libspatialindex/test/tprtree/Makefile.am	2013-06-09 14:41:32.000000000 +0900
++++ src/libspatialindex/test/tprtree/Makefile.am	2013-06-09 20:22:00.632788300 +0900
+@@ -1,6 +1,6 @@
+ ## Makefile.am -- Process this file with automake to produce Makefile.in
+ noinst_PROGRAMS = Generator Exhaustive TPRTreeLoad TPRTreeQuery
+-INCLUDES = -I../../include 
++INCLUDES = -I../../include -I$(top_srcdir)/include
+ Generator_SOURCES = RandomGenerator.cc Generator.cc RandomGenerator.h
+ Generator_LDADD = ../../libspatialindex.la
+ Exhaustive_SOURCES = Exhaustive.cc 
