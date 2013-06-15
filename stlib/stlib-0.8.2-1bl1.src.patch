@@ -1,0 +1,263 @@
+--- origsrc/stlib-0.8.2/configure.in	2006-06-14 00:29:12.000000000 +0900
++++ src/stlib-0.8.2/configure.in	2013-06-15 10:51:13.850965700 +0900
+@@ -1,5 +1,5 @@
+ dnl Process this file with autoconf to produce a configure script.
+-AC_INIT(makefile.am)
++AC_INIT([stlib], [0.8.2])
+ 
+ # autoconf 2.50 or higher to rebuild aclocal.m4, because the
+ # AC_CREATE_PREFIX_CONFIG_H macro needs the AS_DIRNAME macro.
+@@ -39,7 +39,7 @@ AC_SUBST(LT_AGE)
+ 
+ #AC_CONFIG_AUX_DIR(.)
+ AC_CONFIG_HEADERS(./config.h)
+-AM_INIT_AUTOMAKE(stlib, $STLIB_VERSION)
++AM_INIT_AUTOMAKE
+ 
+ # General "with" options
+ # ----------------------------------------------------------------------------
+@@ -78,6 +78,7 @@ AC_CHECK_HEADERS(errno.h)
+ AC_CHECK_HEADERS(sys/time.h)
+ AC_CHECK_HEADERS(gc/gc.h)
+ AC_CHECK_HEADERS(gc/gc_cpp.h)
++AC_CHECK_HEADERS(execinfo.h)
+ 
+ #
+ # Check for boehm garbage collector
+--- origsrc/stlib-0.8.2/include/stlib/Locale.h	2006-03-28 23:57:23.000000000 +0900
++++ src/stlib-0.8.2/include/stlib/Locale.h	2013-06-15 10:50:04.857801700 +0900
+@@ -27,6 +27,10 @@
+ #include <stlib/Object.h>
+ #include <locale.h>
+ 
++#if defined(__CYGWIN__)
++typedef void* locale_t;
++#endif
++
+ namespace Core {
+ 
+ class Character;
+--- origsrc/stlib-0.8.2/makefile.am	2006-08-23 22:07:02.000000000 +0900
++++ src/stlib-0.8.2/makefile.am	2013-06-15 10:40:08.764051700 +0900
+@@ -1,3 +1,5 @@
++ACLOCAL_AMFLAGS = -I m4
++
+ AUTOMAKE_OPTIONS = 1.6
+ 
+ SUBDIRS = src include tests doc encodings
+--- origsrc/stlib-0.8.2/src/GenericException.cc	2006-03-22 02:09:16.000000000 +0900
++++ src/stlib-0.8.2/src/GenericException.cc	2013-06-15 10:57:28.273817300 +0900
+@@ -23,7 +23,9 @@
+  */
+ #include <stdio.h>
+ #include <stdlib.h>
++#if defined(HAVE_EXECINFO_H)
+ #include <execinfo.h>
++#endif
+ 
+ #include <stlib/GenericException.h>
+ #include <stlib/Array.h>
+@@ -111,6 +113,7 @@ void GenericException::printStackOn(Stre
+     String *line, *module, *mangledName;
+     int startMark, endMark;
+ 
++#if defined(HAVE_EXECINFO_H)
+     names = backtrace_symbols(method_stack, stack_size);
+     for (int i = 1; i < stack_size; i++) {
+         line = new String(names[i]);
+@@ -132,6 +135,7 @@ void GenericException::printStackOn(Stre
+         stream->lf();
+     }
+     free((void *) names);
++#endif
+ }
+ 
+ /* Raising protocol */
+@@ -164,5 +168,7 @@ void GenericException::getExecutionStack
+ //    if (last_exception == nil)
+ //	GC_exclude_static_roots(method_stack, method_stack + MAXSTACKSIZE);
+     last_exception = this;
++#if defined(HAVE_EXECINFO_H)
+     stack_size = backtrace(method_stack, MAXSTACKSIZE);
++#endif
+ }
+--- origsrc/stlib-0.8.2/src/Locale.cc	2006-04-07 17:08:19.000000000 +0900
++++ src/stlib-0.8.2/src/Locale.cc	2013-06-15 11:06:11.680067300 +0900
+@@ -40,12 +40,14 @@ Locale::Locale(locale_t cLocale)
+ /* Instance accessing protocol */
+ Locale *Locale::current(void)
+ {
++#if !defined(__CYGWIN__)
+     if (_current == nil) {
+         /* In case the requested locale doesn't exist, setlocale
+          * (and newlocale respectively) returns NULL.
+          */
+         _current = new Locale(newlocale(LC_ALL_MASK, setlocale(LC_ALL, ""), NULL));
+     }
++#endif
+     return _current;
+ }
+ 
+@@ -58,14 +60,22 @@ String *Locale::className(void) const
+ /* Accessing protocol */
+ Character *Locale::decimalPoint(void)
+ {
++#if defined(__CYGWIN__)
++    return Character::value('.');
++#else
+     if (locale_def == NULL) return Character::value('.');
+     return Character::value(nl_langinfo_l(DECIMAL_POINT, locale_def)[0]);
++#endif
+ }
+ 
+ String *Locale::encoding(void)
+ {
++#if defined(__CYGWIN__)
++    return new String("ISO-8859-1");
++#else
+     if (locale_def == NULL) return new String("ISO-8859-1");
+     return new String(nl_langinfo_l(CODESET, locale_def));
++#endif
+ }
+ 
+ }; /* namespace Core */
+--- origsrc/stlib-0.8.2/src/external/makefile.am	2005-04-13 00:27:28.000000000 +0900
++++ src/stlib-0.8.2/src/external/makefile.am	2013-06-15 11:09:36.501356400 +0900
+@@ -7,7 +7,8 @@ libstexternal_la_SOURCES = \
+ 	Plugin.cc \
+ 	PluginFactory.cc
+ 
+-libstexternal_la_LDFLAGS= \
++libstexternal_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
+ 
++libstexternal_la_LIBADD = $(top_builddir)/src/libstcore.la
+--- origsrc/stlib-0.8.2/src/makefile.am	2006-04-19 23:36:13.000000000 +0900
++++ src/stlib-0.8.2/src/makefile.am	2013-06-15 10:44:48.954481400 +0900
+@@ -1,4 +1,4 @@
+-SUBDIRS = external net os searchTree tools
++SUBDIRS = . external net os searchTree tools
+ 
+ INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+@@ -57,6 +57,6 @@ libstcore_la_SOURCES = \
+ 	WriteStream.cc
+ 
+ libstcore_la_CPPFLAGS=-DDATADIR=\"$(pkgdatadir)\"
+-libstcore_la_LDFLAGS= \
++libstcore_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
+--- origsrc/stlib-0.8.2/src/net/IPSocketAddress.cc	2006-10-11 22:46:33.000000000 +0900
++++ src/stlib-0.8.2/src/net/IPSocketAddress.cc	2013-06-15 11:22:26.360731400 +0900
+@@ -82,7 +82,7 @@ String *IPSocketAddress::hostNameByAddre
+ {
+     struct hostent *ph = NULL;
+ 
+-    ph = gethostbyaddr(address->rawBytesReadOnly(), address->size(), AF_INET);
++    ph = gethostbyaddr(reinterpret_cast<const char *>(address->rawBytesReadOnly()), address->size(), AF_INET);
+     if (ph != NULL) return new String(ph->h_name);
+     return bytesToName(address);
+ }
+--- origsrc/stlib-0.8.2/src/net/makefile.am	2005-04-13 00:27:28.000000000 +0900
++++ src/stlib-0.8.2/src/net/makefile.am	2013-06-15 11:23:12.135145400 +0900
+@@ -7,6 +7,8 @@ libstnet_la_SOURCES = \
+ 	SocketAccessor.cc \
+ 	URL.cc
+ 
+-libstnet_la_LDFLAGS= \
++libstnet_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
++
++libstnet_la_LIBADD = $(top_builddir)/src/libstcore.la
+--- origsrc/stlib-0.8.2/src/os/Thread.cc	2006-04-07 16:53:13.000000000 +0900
++++ src/stlib-0.8.2/src/os/Thread.cc	2013-06-15 11:46:07.057020400 +0900
+@@ -24,6 +24,10 @@
+ #include <stdio.h>
+ #include <unistd.h>
+ 
++#if defined(__CYGWIN__)
++#define GC_NO_PTHREAD_CANCEL
++#endif
++
+ #include <stlib/os/Thread.h>
+ #include <stlib/Array.h>
+ #include <stlib/Iterator.h>
+--- origsrc/stlib-0.8.2/src/os/makefile.am	2006-03-22 21:55:15.000000000 +0900
++++ src/stlib-0.8.2/src/os/makefile.am	2013-06-15 11:25:55.248426700 +0900
+@@ -14,7 +14,8 @@ libstos_la_SOURCES = \
+ 	ipckey.c \
+ 	ipckey.h
+ 
+-libstos_la_LDFLAGS= \
++libstos_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
+ 
++libstos_la_LIBADD = $(top_builddir)/src/libstcore.la
+--- origsrc/stlib-0.8.2/src/searchTree/makefile.am	2005-04-13 00:27:28.000000000 +0900
++++ src/stlib-0.8.2/src/searchTree/makefile.am	2013-06-15 11:47:29.496473600 +0900
+@@ -5,7 +5,8 @@ lib_LTLIBRARIES = libsttree.la
+ libsttree_la_SOURCES = \
+ 	SearchTreeNode.cc
+ 
+-libsttree_la_LDFLAGS= \
++libsttree_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
+ 
++libsttree_la_LIBADD = $(top_builddir)/src/libstcore.la
+--- origsrc/stlib-0.8.2/src/tools/makefile.am	2006-04-07 17:08:19.000000000 +0900
++++ src/stlib-0.8.2/src/tools/makefile.am	2013-06-15 11:58:17.658582900 +0900
+@@ -13,7 +13,10 @@ libsttools_la_SOURCES = \
+ 	HierarchyConfigReader.cc \
+ 	LogWriter.cc
+ 
+-libsttools_la_LDFLAGS= \
++libsttools_la_LDFLAGS= -no-undefined \
+  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+  -release $(LT_RELEASE) @link_gc_lib@
+ 
++libsttools_la_LIBADD = \
++	$(top_builddir)/src/libstcore.la \
++	$(top_builddir)/src/os/libstos.la
+--- origsrc/stlib-0.8.2/tests/TestsOfEncodedStream.cc	2006-04-19 23:36:14.000000000 +0900
++++ src/stlib-0.8.2/tests/TestsOfEncodedStream.cc	2013-06-15 12:04:05.829481400 +0900
+@@ -8,6 +8,8 @@
+ #include <stlib/String.h>
+ #include <stlib/WriteStream.h>
+ 
++#include <cstring>
++
+ //Registers the fixture into the 'registry'
+ CPPUNIT_TEST_SUITE_REGISTRATION(TestsOfEncodedStream);
+ 
+@@ -34,7 +36,7 @@ void TestsOfEncodedStream::testOf_conten
+ 
+ void TestsOfEncodedStream::testOf_replacement1(void)
+ {
+-    ByteArray *content = new ByteArray("Pøíli¹ ¾lu»ouèký kùò úpìl ïábelské ódy.", 39);
++    ByteArray *content = new ByteArray("Pñ¬©¹ luouè«½ kò º°ì¬ ï¡¢elské ³dy.", 39);
+     EncodedStream *stream = content->withEncoding("us-ascii")->readStream();
+     stream->replacementCharacter(Character::value('?'));
+     String *result = dynamic_cast<String *>(stream->upToEnd());
+@@ -43,7 +45,7 @@ void TestsOfEncodedStream::testOf_replac
+ 
+ void TestsOfEncodedStream::testOf_replacement2(void)
+ {
+-    ByteArray *ba = new ByteArray("Pøíli¹ ¾lu»ouèký kùò úpìl ïábelské ódy.", 39);
++    ByteArray *ba = new ByteArray("Pñ¬©¹ luouè«½ kò º°ì¬ ï¡¢elské ³dy.", 39);
+     String *content = ba->asStringWithEncoding("iso-8859-2");
+     EncodedStream *stream = (new ByteArray(40))->withEncoding("us-ascii")->writeStream();
+     stream->replacementCharacter(Character::value('?'));
+--- origsrc/stlib-0.8.2/tests/makefile.am	2006-05-19 17:53:40.000000000 +0900
++++ src/stlib-0.8.2/tests/makefile.am	2013-06-15 12:01:44.532606400 +0900
+@@ -36,5 +36,4 @@ autoTests_SOURCES = testRunner.cc \
+ 	TestsOfUnixPipe.cc TestsOfUnixPipe.h
+ 
+ autoTests_CXXFLAGS = $(CPPUNIT_CFLAGS) -rdynamic -DROOTDIR=\"$(srcdir)\"
+-autoTests_LDFLAGS = $(CPPUNIT_LIBS) -rdynamic $(LIBADD_DL) -L../src -L../src/tools -L../src/os -L../src/net -L../src/searchTree
+-LIBS = -lsttools -lstos -lstnet -lsttree -lstcore -lgc
++autoTests_LDFLAGS = $(CPPUNIT_LIBS) -rdynamic $(LIBADD_DL) ../src/libstcore.la ../src/tools/libsttools.la ../src/os/libstos.la ../src/net/libstnet.la ../src/searchTree/libsttree.la
