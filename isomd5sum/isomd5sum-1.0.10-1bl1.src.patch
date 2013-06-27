@@ -1,0 +1,89 @@
+--- origsrc/isomd5sum-1.0.10/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.0.10/Makefile.am	2013-06-27 21:21:19.344100000 +0900
+@@ -0,0 +1,33 @@
++
++bin_PROGRAMS = checkisomd5 implantisomd5
++
++checkisomd5_SOURCES = checkisomd5.c
++checkisomd5_LDADD = libcheckisomd5.la -lpopt
++
++implantisomd5_SOURCES = implantisomd5.c
++implantisomd5_LDADD = libimplantisomd5.la -lpopt
++
++
++include_HEADERS = libcheckisomd5.h libimplantisomd5.h
++
++
++lib_LTLIBRARIES = libcheckisomd5.la libimplantisomd5.la
++
++libcheckisomd5_la_SOURCES = libcheckisomd5.c md5.c
++libcheckisomd5_la_CPPFLAGS = -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1
++libcheckisomd5_la_LDFLAGS = -no-undefined
++
++libimplantisomd5_la_SOURCES = libimplantisomd5.c md5.c
++libimplantisomd5_la_CPPFLAGS = -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1
++libimplantisomd5_la_LDFLAGS = -no-undefined
++
++
++pyexec_LTLIBRARIES = pyisomd5sum.la
++pyisomd5sum_la_SOURCES = pyisomd5sum.c
++pyisomd5sum_la_CPPFLAGS = -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1 $(PYTHON_CFLAGS)
++pyisomd5sum_la_LDFLAGS = -no-undefined -avoid-version -module
++pyisomd5sum_la_LIBADD = libcheckisomd5.la libimplantisomd5.la $(PYTHON_LIBS)
++
++
++man_MANS = checkisomd5.1 implantisomd5.1
++
+--- origsrc/isomd5sum-1.0.10/checkisomd5.c	2013-02-27 01:54:30.000000000 +0900
++++ src/isomd5sum-1.0.10/checkisomd5.c	2013-06-27 21:08:09.919295300 +0900
+@@ -23,6 +23,7 @@
+ #include <string.h>
+ #include <popt.h>
+ #include <termios.h>
++#include <sys/time.h>
+ 
+ #include "md5.h"
+ #include "libcheckisomd5.h"
+--- origsrc/isomd5sum-1.0.10/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.0.10/configure.ac	2013-06-27 21:26:06.453475000 +0900
+@@ -0,0 +1,40 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([isomd5sum], [1.0.10])
++AC_CONFIG_SRCDIR([checkisomd5.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++LT_INIT
++AM_PATH_PYTHON
++
++if ! python-config --help &> /dev/null ; then
++	AC_MSG_ERROR([Python is required.])
++else
++	PYTHON_CFLAGS=`python-config --cflags`
++	PYTHON_LIBS=`python-config --libs`
++	AC_SUBST([PYTHON_CFLAGS])
++	AC_SUBST([PYTHON_LIBS])
++fi
++
++# Checks for libraries.
++# FIXME: Replace `main' with a function in `-lpopt':
++AC_CHECK_LIB([popt], [main])
++
++# Checks for header files.
++AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/time.h termios.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_OFF_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_CHECK_FUNCS([memset select strtol])
++
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
