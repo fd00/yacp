@@ -1,0 +1,86 @@
+--- origsrc/groonga-3.0.5/Makefile.am	2013-05-20 10:02:11.833291500 +0900
++++ src/groonga-3.0.5/Makefile.am	2013-06-28 21:52:03.765234400 +0900
+@@ -2,7 +2,7 @@
+ 
+ LOCALES = ja
+ 
+-ACLOCAL_AMFLAGS = $$ACLOCAL_ARGS -I .
++ACLOCAL_AMFLAGS = -I .
+ AUTOMAKE_OPTIONS = 1.9.6
+ SUBDIRS =					\
+ 	build					\
+--- origsrc/groonga-3.0.5/configure.ac	2013-06-26 16:53:16.983085100 +0900
++++ src/groonga-3.0.5/configure.ac	2013-06-28 21:53:45.092382800 +0900
+@@ -1146,7 +1146,7 @@ AC_MSG_CHECKING([whether package platfor
+ AC_ARG_WITH(package-platform,
+   [AS_HELP_STRING([--with-package-platform=PLATFORM],
+     [install package platform related files. [default=no]
+-     (supported package platforms: redhat, fedora)])],
++     (supported package platforms: redhat, fedora, cygwin)])],
+   [package_platform="$withval"],
+   [package_platform="no"])
+ AC_MSG_RESULT($package_platform)
+@@ -1155,6 +1155,8 @@ AM_CONDITIONAL([REDHAT_PLATFORM],
+                [test "${package_platform}" = "redhat"])
+ AM_CONDITIONAL([FEDORA_PLATFORM],
+                [test "${package_platform}" = "fedora"])
++AM_CONDITIONAL([CYGWIN_PLATFORM],
++               [test "${package_platform}" = "cygwin"])
+ 
+ # plugins check
+ relative_pluginsdir_base="\$(PACKAGE)/plugins"
+--- origsrc/groonga-3.0.5/data/init.d/redhat/Makefile.am	2013-01-22 10:29:12.270125700 +0900
++++ src/groonga-3.0.5/data/init.d/redhat/Makefile.am	2013-06-28 21:56:01.326757800 +0900
+@@ -6,5 +6,10 @@ if REDHAT_PLATFORM
+ initdir = $(sysconfdir)/init.d
+ dist_init_SCRIPTS = $(scripts)
+ else
++if CYGWIN_PLATFORM
++initdir = $(sysconfdir)/rc.d/init.d
++dist_init_SCRIPTS = $(scripts)
++else
+ EXTRA_DIST = $(scripts)
+ endif
++endif
+--- origsrc/groonga-3.0.5/data/init.d/redhat/sysconfig/Makefile.am	2013-01-22 10:29:12.270125700 +0900
++++ src/groonga-3.0.5/data/init.d/redhat/sysconfig/Makefile.am	2013-06-28 21:57:32.820898400 +0900
+@@ -4,5 +4,10 @@ if REDHAT_PLATFORM
+ sysconfigdir = $(sysconfdir)/sysconfig
+ dist_sysconfig_DATA = $(data)
+ else
++if CYGWIN_PLATFORM
++sysconfigdir = $(sysconfdir)/sysconfig
++dist_sysconfig_DATA = $(data)
++else
+ EXTRA_DIST = $(data)
+ endif
++endif
+--- origsrc/groonga-3.0.5/data/logrotate.d/redhat/Makefile.am	2013-01-22 10:29:12.270125700 +0900
++++ src/groonga-3.0.5/data/logrotate.d/redhat/Makefile.am	2013-06-28 21:59:57.175390600 +0900
+@@ -5,5 +5,10 @@ if REDHAT_PLATFORM
+ logrotatedir = $(sysconfdir)/logrotate.d
+ dist_logrotate_DATA = $(logrotate_conf)
+ else
++if CYGWIN_PLATFORM
++logrotatedir = $(sysconfdir)/logrotate.d
++dist_logrotate_DATA = $(logrotate_conf)
++else
+ EXTRA_DIST = $(logrotate_conf)
+ endif
++endif
+--- origsrc/groonga-3.0.5/lib/ctx.c	2013-05-27 09:48:09.720318800 +0900
++++ src/groonga-3.0.5/lib/ctx.c	2013-06-28 22:10:31.010044200 +0900
+@@ -2807,6 +2807,9 @@ grn_set_segv_handler(void)
+ 
+   sigemptyset(&action.sa_mask);
+   action.sa_sigaction = segv_handler;
++#if !defined(SA_ONSTACK)
++#define SA_ONSTACK (0)
++#endif
+   action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+ 
+   if (sigaction(SIGSEGV, &action, NULL)) {
+--- origsrc/groonga-3.0.5/src/httpd/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/groonga-3.0.5/src/httpd/configure.ac	2013-06-28 22:01:50.409765600 +0900
+@@ -0,0 +1 @@
++
