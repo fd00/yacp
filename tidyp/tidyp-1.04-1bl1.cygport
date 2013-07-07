@@ -1,0 +1,46 @@
+DESCRIPTION="Fork of the original tidy"
+HOMEPAGE="https://github.com/petdance/tidyp"
+GIT_URI="https://github.com/petdance/tidyp.git"
+GIT_TAG="${PV}"
+
+inherit git
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+	ln -fs ${S}/tests/testall.sh .
+	ln -fs ${S}/tests/testone.sh .
+	ln -fs ${S}/tests/testcases.txt .
+	ln -fs ${S}/tests/input .
+	popd
+	cygtest
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	./bin/${PN}.exe -xml-help > ${PN}1.xml
+	./bin/${PN}.exe -xml-config > ${PN}-config.xml
+	/usr/bin/xsltproc ${S}/htmldoc/${PN}1.xsl ${PN}1.xml > ${PN}.1
+	doman ${PN}.1
+}
+
+PKG_NAMES="
+	${PN}
+	lib${PN}${PV}_0
+	lib${PN}-devel
+"
+tidyp_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libtidyp1_04_0_CONTENTS="
+	usr/bin/*.dll
+"
+libtidyp_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
