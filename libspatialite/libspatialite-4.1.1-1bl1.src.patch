@@ -1,0 +1,90 @@
+--- origsrc/libspatialite-4.1.1/examples/Makefile.am	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/examples/Makefile.am	2013-07-14 12:27:06.887599700 +0900
+@@ -1,7 +1,7 @@
+ noinst_PROGRAMS = demo1 demo2 demo3 demo4 demo5
+ 
+ AM_CFLAGS = -I@srcdir@/../src/headers 
+-AM_LDFLAGS = -L../src -lspatialite -lm $(GCOV_FLAGS)
++AM_LDFLAGS = ../src/libspatialite.la -lm $(GCOV_FLAGS)
+ 
+ LDADD = @LIBXML2_LIBS@
+ 
+--- origsrc/libspatialite-4.1.1/examples/demo2.c	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/examples/demo2.c	2013-07-14 12:27:06.887599700 +0900
+@@ -25,7 +25,9 @@ these headers are required in order to s
+ SQLite/SpatiaLite
+ */
+ 
++#ifndef OMIT_GEOS
+ #include <geos_c.h>
++#endif
+ 
+ #include <sqlite3.h>
+ #include <spatialite/gaiageo.h>
+--- origsrc/libspatialite-4.1.1/src/Makefile.am	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/src/Makefile.am	2013-07-14 12:27:06.887599700 +0900
+@@ -43,5 +43,6 @@ libspatialite_la_LDFLAGS = -version-info
+ libspatialite_la_LIBADD += -lpthread -ldl
+ endif
+ endif
++libspatialite_la_LDFLAGS += -no-undefined
+ 
+ MOSTLYCLEANFILES = *.gcna *.gcno *.gcda
+--- origsrc/libspatialite-4.1.1/src/gaiageo/gg_relations.c	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/src/gaiageo/gg_relations.c	2013-07-14 16:33:21.228942700 +0900
+@@ -4975,4 +4975,18 @@ gaiaConcaveHull (gaiaGeomCollPtr geom, d
+ 
+ #endif /* end GEOS experimental features */
+ 
++#else
++
++GAIAGEO_DECLARE gaiaGeomCollPtr
++gaiaPolygonize (gaiaGeomCollPtr geom, int force_multi)
++{
++    return NULL;
++}
++
++GAIAGEO_DECLARE gaiaGeomCollPtr
++gaiaGeometryIntersection (gaiaGeomCollPtr geom1, gaiaGeomCollPtr geom2)
++{
++    return NULL;
++}
++
+ #endif /* end including GEOS */
+--- origsrc/libspatialite-4.1.1/src/shapefiles/validator.c	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/src/shapefiles/validator.c	2013-07-14 12:32:18.130763800 +0900
+@@ -3510,7 +3510,7 @@ check_geometry_column (sqlite3 * sqlite,
+ 
+ /* silencing stupid compiler warnings */
+     if (sqlite == NULL || table == NULL || geom == NULL ||
+-	||report_path == NULL || n_rows == NULL || n_invalids == NULL)
++	report_path == NULL || n_rows == NULL || n_invalids == NULL)
+ 	table = NULL;
+ 
+     if (err_msg == NULL)
+--- origsrc/libspatialite-4.1.1/test/Makefile.am	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/test/Makefile.am	2013-07-14 12:27:06.887599700 +0900
+@@ -82,7 +82,7 @@ check_PROGRAMS += \
+ endif
+ 
+ AM_CFLAGS = -I@srcdir@/../src/headers -I@srcdir@
+-AM_LDFLAGS = -L../src -lspatialite -lm $(GCOV_FLAGS)
++AM_LDFLAGS = ../src/libspatialite.la -lm $(GCOV_FLAGS)
+ 
+ TESTS = $(check_PROGRAMS)
+ 
+--- origsrc/libspatialite-4.1.1/test/check_extension.c	2013-06-29 15:53:15.000000000 +0900
++++ src/libspatialite-4.1.1/test/check_extension.c	2013-07-14 12:27:06.903224700 +0900
+@@ -85,8 +85,12 @@ int main (int argc, char *argv[])
+     asprintf(&sql_statement, "SELECT load_extension('libspatialite.dll')");
+ #endif
+ #else	/* neither Mac nor Windows: may be Linux or Unix */
++#if defined(__CYGWIN__)
++    asprintf(&sql_statement, "SELECT load_extension('cygspatialite-5.dll')");
++#else
+     asprintf(&sql_statement, "SELECT load_extension('libspatialite.so')");
+ #endif
++#endif
+     ret = sqlite3_exec (db_handle, sql_statement, NULL, NULL, &err_msg);
+     free(sql_statement);
+     if (ret != SQLITE_OK) {
