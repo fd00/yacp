@@ -1,0 +1,67 @@
+--- origsrc/c++-gtk-utils-2.0.18/c++-gtk-utils/Makefile.am	2013-06-28 03:41:54.000000000 +0900
++++ src/c++-gtk-utils-2.0.18/c++-gtk-utils/Makefile.am	2013-07-13 18:08:34.244391100 +0900
+@@ -34,13 +34,13 @@ pkginclude_HEADERS =  fdstream.h fdstrea
+ 
+ AM_CXXFLAGS = -D_XOPEN_SOURCE=600 @PTHREAD_FLAG_CXX@ @GTK_UNIX_PRINT_CFLAGS@	\
+ 	      @GTK_CFLAGS@ @GIO_CFLAGS@ @DBUS_GLIB_CFLAGS@ @GTHREAD_CFLAGS@	\
+-	      @GLIB_CFLAGS@ -I..
++	      @GLIB_CFLAGS@ -I.. -I$(top_srcdir)
+ 
+ libcxx_gtk_utils_@CGU_GTK_SUFFIX@_2_0_la_LIBADD = @PTHREAD_FLAG_CXX@ @GTK_UNIX_PRINT_LIBS@ \
+ 						  @GTK_LIBS@ @GIO_LIBS@ @DBUS_GLIB_LIBS@   \
+-						  @GTHREAD_LIBS@ @GLIB_LIBS@ @INTLLIBS@
++						  @GTHREAD_LIBS@ @GLIB_LIBS@ @LTLIBINTL@
+ 
+-libcxx_gtk_utils_@CGU_GTK_SUFFIX@_2_0_la_LDFLAGS = -version-info @CXX_GTK_UTILS_SO_VERSION@
++libcxx_gtk_utils_@CGU_GTK_SUFFIX@_2_0_la_LDFLAGS = -version-info @CXX_GTK_UTILS_SO_VERSION@ -no-undefined
+ 
+ EXTRA_DIST +=	LGPL.TXT doxygen.main doxygen.main.in cgu_config.h.in \
+ 		prog-presenter/make_bindings.sh prog-presenter/prog-presenter.xml
+--- origsrc/c++-gtk-utils-2.0.18/docs/Makefile.am	2013-06-28 03:41:54.000000000 +0900
++++ src/c++-gtk-utils-2.0.18/docs/Makefile.am	2013-07-13 18:08:34.244391100 +0900
+@@ -9,7 +9,7 @@ docs:
+ 
+ install-data-hook:
+ 	install -d $(DESTDIR)$(htmldir)/2.0/html
+-	install -m a+r,u+w html/* $(DESTDIR)$(htmldir)/2.0/html/
++	install -m a+r,u+w $(srcdir)/html/* $(DESTDIR)$(htmldir)/2.0/html/
+ 
+ uninstall-hook:
+ 	for files in `ls html`; do rm -f $(DESTDIR)$(htmldir)/2.0/html/$$files; done
+--- origsrc/c++-gtk-utils-2.0.18/tests/Makefile.am	2013-06-28 03:41:54.000000000 +0900
++++ src/c++-gtk-utils-2.0.18/tests/Makefile.am	2013-07-13 18:08:34.244391100 +0900
+@@ -9,7 +9,7 @@ noinst_PROGRAMS = $(TEST_PROGS)
+ 
+ libcxx_gtk_utils = $(top_builddir)/c++-gtk-utils/libcxx-gtk-utils-@CGU_GTK_SUFFIX@-2.0.la
+ 
+-AM_CXXFLAGS =	-I.. @PTHREAD_FLAG_CXX@ @GTK_UNIX_PRINT_CFLAGS@ \
++AM_CXXFLAGS =	-I.. -I$(top_srcdir) @PTHREAD_FLAG_CXX@ @GTK_UNIX_PRINT_CFLAGS@ \
+ 		@GTK_CFLAGS@ @GIO_CFLAGS@ @GTHREAD_CFLAGS@	\
+ 		@GLIB_CFLAGS@
+ 
+--- origsrc/c++-gtk-utils-2.0.18/tests/test_thread.cpp	2013-06-28 03:41:54.000000000 +0900
++++ src/c++-gtk-utils-2.0.18/tests/test_thread.cpp	2013-07-13 18:08:34.244391100 +0900
+@@ -180,7 +180,11 @@ static void test_thread_rw_lock() {
+   {
+     Thread::RWLock::ReaderLock l{rw_lock};
+     g_assert_cmpint(rw_lock.writer_trylock(), ==, EBUSY);
++#if defined(__CYGWIN__)
++    g_assert_cmpint(rw_lock.reader_trylock(), ==, EBUSY);
++#else
+     g_assert_cmpint(rw_lock.reader_trylock(), ==, 0);
++#endif
+     g_assert_cmpint(rw_lock.unlock(), ==, 0);
+   }
+ 
+@@ -226,7 +230,11 @@ static void test_thread_rw_lock() {
+   {
+     Thread::RWLock::ReaderTrackLock l{rw_lock};
+     g_assert_cmpint(rw_lock.writer_trylock(), ==, EBUSY);
++#if defined(__CYGWIN__)
++    g_assert_cmpint(rw_lock.reader_trylock(), ==, EBUSY);
++#else
+     g_assert_cmpint(rw_lock.reader_trylock(), ==, 0);
++#endif
+     g_assert_cmpint(rw_lock.unlock(), ==, 0);
+     g_assert(l.is_owner());
+   }
