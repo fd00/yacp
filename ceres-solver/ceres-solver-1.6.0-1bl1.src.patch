@@ -1,0 +1,55 @@
+--- origsrc/ceres-solver-1.6.0/CMakeLists.txt	2013-05-07 02:27:38.000000000 +0900
++++ src/ceres-solver-1.6.0/CMakeLists.txt	2013-07-27 20:46:40.442957800 +0900
+@@ -655,7 +655,7 @@ ENDIF (MSVC)
+ # GCC is not strict enough by default, so enable most of the warnings.
+ IF ("${UNIX}")
+   SET(CMAKE_CXX_FLAGS
+-      "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter")
++      "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter")
+ ENDIF ("${UNIX}")
+ 
+ # Use a larger inlining threshold for Clang, since it hobbles Eigen,
+--- origsrc/ceres-solver-1.6.0/internal/ceres/CMakeLists.txt	2013-05-07 02:27:38.000000000 +0900
++++ src/ceres-solver-1.6.0/internal/ceres/CMakeLists.txt	2013-07-27 20:29:51.371668700 +0900
+@@ -192,6 +192,7 @@ SET(CERES_LIBRARY_SOURCE
+     ${CERES_INTERNAL_HDRS}
+     ${CERES_INTERNAL_SCHUR_FILES})
+ 
++IF (NOT CYGWIN)
+ ADD_LIBRARY(ceres STATIC ${CERES_LIBRARY_SOURCE})
+ TARGET_LINK_LIBRARIES(ceres ${CERES_LIBRARY_DEPENDENCIES})
+ 
+@@ -200,10 +201,24 @@ INSTALL(TARGETS ceres
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib${LIB_SUFFIX}
+         ARCHIVE DESTINATION lib${LIB_SUFFIX})
++ENDIF (NOT CYGWIN)
+ 
+ # Don't build a DLL on MSVC. Supporting Ceres as a DLL on Windows involves
+ # nontrivial changes that we haven't made yet.
+ IF (NOT MSVC AND NOT ${BUILD_ANDROID})
++IF (CYGWIN)
++  ADD_LIBRARY(ceres SHARED ${CERES_LIBRARY_SOURCE})
++  TARGET_LINK_LIBRARIES(ceres ${CERES_LIBRARY_DEPENDENCIES})
++  SET_TARGET_PROPERTIES(ceres PROPERTIES
++                        VERSION ${CERES_VERSION}
++                        SOVERSION ${CERES_ABI_VERSION})
++
++  INSTALL(TARGETS ceres
++          EXPORT  CeresExport
++          RUNTIME DESTINATION bin
++          LIBRARY DESTINATION lib${LIB_SUFFIX}
++          ARCHIVE DESTINATION lib${LIB_SUFFIX})
++ELSE (CYGWIN)
+   ADD_LIBRARY(ceres_shared SHARED ${CERES_LIBRARY_SOURCE})
+   TARGET_LINK_LIBRARIES(ceres_shared ${CERES_LIBRARY_DEPENDENCIES})
+   SET_TARGET_PROPERTIES(ceres_shared PROPERTIES
+@@ -215,7 +230,7 @@ IF (NOT MSVC AND NOT ${BUILD_ANDROID})
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib${LIB_SUFFIX}
+           ARCHIVE DESTINATION lib${LIB_SUFFIX})
+-
++ENDIF (CYGWIN)
+ ENDIF (NOT MSVC AND NOT ${BUILD_ANDROID})
+ 
+ IF (${BUILD_TESTING} AND ${GFLAGS})
