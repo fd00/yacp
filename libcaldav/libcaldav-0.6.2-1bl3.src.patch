@@ -1,0 +1,86 @@
+--- origsrc/libcaldav-0.6.2/configure.ac	2010-09-12 07:45:58.000000000 +0900
++++ src/libcaldav-0.6.2/configure.ac	2013-08-03 00:08:20.523255500 +0900
+@@ -30,8 +30,8 @@ AM_MAINTAINER_MODE
+ 
+ if test $USE_MAINTAINER_MODE = yes; then
+ 	CFLAGS="-g -Wall -D_REENTRANT"
+-	STATIC=1
+-	DYNAMIC=0
++	STATIC=0
++	DYNAMIC=1
+ 	BUILD_TEST=true
+ else
+ 	#CFLAGS="-g -Wall"
+@@ -70,7 +70,7 @@ AC_SUBST(GLIB_LIBS)
+ 
+ # Checks for header files.
+ AC_HEADER_STDC
+-AC_CHECK_HEADER(gcrypt.h, [], AC_MSG_ERROR([libgcrypt was not found]))
++AM_PATH_LIBGCRYPT
+ AC_CHECK_HEADER(errno.h, [], AC_MSG_ERROR([errno.h was not found]))
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+--- origsrc/libcaldav-0.6.2/src/Makefile.am	2010-09-11 09:26:33.000000000 +0900
++++ src/libcaldav-0.6.2/src/Makefile.am	2013-08-03 00:12:35.297669600 +0900
+@@ -1,6 +1,6 @@
+ AUTOMAKE_OPTIONS = gnu
+ 
+-INCLUDES = @CURL_CFLAGS@ @GLIB_CFLAGS@ \
++INCLUDES = @CURL_CFLAGS@ @GLIB_CFLAGS@ $(LIBGCRYPT_CFLAGS) \
+ 		   -I$(top_srcdir) -I$(top_builddir)
+ 
+ if STATIC_LINK
+@@ -9,7 +9,7 @@ endif
+ 
+ if DYNAMIC_LINK
+ lib_LTLIBRARIES = libcaldav.la
+-libcaldav_la_LDFLAGS = -version-info @LIBVERSION@
++libcaldav_la_LDFLAGS = -version-info @LIBVERSION@ -no-undefined
+ endif
+ 
+ libcaldav_la_SOURCES = \
+@@ -55,5 +55,5 @@ noinst_HEADERS = \
+ 
+ libcaldav_la_LIBADD = \
+ 			@CURL_LIBS@ \
+-			@GLIB_LIBS@
++			@GLIB_LIBS@ $(LIBGCRYPT_LIBS)
+ 
+--- origsrc/libcaldav-0.6.2/test/src/Makefile.am	2010-04-05 05:17:57.000000000 +0900
++++ src/libcaldav-0.6.2/test/src/Makefile.am	2013-08-03 00:22:18.345521200 +0900
+@@ -14,11 +14,8 @@ caldav_test_SOURCES = \
+ 
+ noinst_HEADERS =
+ 
+-caldav_test_LDFLAGS = \
+-		      -L$(top_builddir)/src
+-
+ caldav_test_LDADD = \
+ 		    @CURL_LIBS@ \
+ 		    @GLIB_LIBS@ \
+-		    -lcaldav
++		    $(top_builddir)/src/libcaldav.la
+ endif
+--- origsrc/libcaldav-0.6.2/test/unittest/Makefile.am	2010-04-04 23:38:43.000000000 +0900
++++ src/libcaldav-0.6.2/test/unittest/Makefile.am	2013-08-03 00:22:31.597474300 +0900
+@@ -7,16 +7,13 @@ INCLUDES = \
+ 	   -I$(top_srcdir) \
+ 	   -I$(top_srcdir)/src
+ 
+-bin_PROGRAMS = unittest
++bin_PROGRAMS = caldav-unittest
+ 
+-unittest_SOURCES = \
++caldav_unittest_SOURCES = \
+ 		libunit.c
+-				
+-unittest_LDFLAGS = \
+-		      -L$(top_builddir)/src
+ 
+-unittest_LDADD = \
++caldav_unittest_LDADD = \
+ 		    @CURL_LIBS@ \
+ 		    @GLIB_LIBS@ \
+-		    -lcaldav
++		    $(top_builddir)/src/libcaldav.la
+ endif
