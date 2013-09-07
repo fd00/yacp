@@ -1,0 +1,65 @@
+--- origsrc/libvdpau-0.7/src/vdpau_wrapper.c	2013-08-02 05:40:33.000000000 +0900
++++ src/libvdpau-0.7/src/vdpau_wrapper.c	2013-09-08 00:03:36.008436700 +0900
+@@ -66,7 +66,11 @@ static void _vdp_wrapper_error_breakpoin
+ 
+ #endif
+ 
+-#define DRIVER_LIB_FORMAT "%slibvdpau_%s.so%s"
++#if defined(__CYGWIN__)
++#define DRIVER_LIB_FORMAT "%scygvdpau_%s.dll"
++#else
++#define DRIVER_LIB_FORMAT "%slibvdpau_%s.so.%s"
++#endif
+ 
+ static char * _vdp_get_driver_name_from_dri2(
+     Display *             display,
+@@ -121,7 +125,7 @@ static VdpStatus _vdp_open_driver(
+     }
+ 
+     if (snprintf(vdpau_driver_lib, sizeof(vdpau_driver_lib), DRIVER_LIB_FORMAT,
+-                 VDPAU_MODULEDIR "/", vdpau_driver, ".1") >=
++                 VDPAU_MODULEDIR "/", vdpau_driver, "1") >=
+             sizeof(vdpau_driver_lib)) {
+         fprintf(stderr, "Failed to construct driver path: path too long\n");
+         if (vdpau_driver_dri2) {
+@@ -158,8 +162,13 @@ static VdpStatus _vdp_open_driver(
+     if (vdpau_trace && atoi(vdpau_trace)) {
+         SetDllHandle * set_dll_handle;
+ 
++#if defined(__CYGWIN__)
++        _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/cygvdpau_trace.dll",
++                                RTLD_NOW | RTLD_GLOBAL);
++#else
+         _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/libvdpau_trace.so.1",
+                                 RTLD_NOW | RTLD_GLOBAL);
++#endif
+         if (!_vdp_trace_dll) {
+             fprintf(stderr, "Failed to open VDPAU trace library %s\n", dlerror());
+             _VDP_ERROR_BREAKPOINT();
+--- origsrc/libvdpau-0.7/test/dlclose.c	2013-07-25 13:38:16.000000000 +0900
++++ src/libvdpau-0.7/test/dlclose.c	2013-09-08 00:00:43.348005900 +0900
+@@ -35,8 +35,13 @@ int main()
+     // Generic Event Extension causes an identical bug to the one this program
+     // is trying to test for.
+     int nOpenFDs = countOpenFDs();
++#if defined(__CYGWIN__)
++    void *libXext = dlopen("cygXext-6.dll", RTLD_LAZY);
++    void *libvdpau = dlopen("../src/.libs/cygvdpau-1.dll", RTLD_LAZY);
++#else
+     void *libXext = dlopen("libXext.so.6", RTLD_LAZY);
+     void *libvdpau = dlopen("../src/.libs/libvdpau.so", RTLD_LAZY);
++#endif
+     Display *dpy = XOpenDisplay(NULL);
+     VdpDeviceCreateX11 *pvdp_device_create_x11;
+     VdpDevice device;
+--- origsrc/libvdpau-0.7/trace/Makefile.am	2010-01-28 10:55:33.000000000 +0900
++++ src/libvdpau-0.7/trace/Makefile.am	2013-09-08 00:02:26.359646700 +0900
+@@ -10,7 +10,7 @@ libvdpau_trace_la_SOURCES = \
+ libvdpau_trace_la_LIBADD = \
+     $(DLOPEN_LIBS)
+ 
+-libvdpau_trace_la_LDFLAGS = -version-info 1:0:0 -module -no-undefined
++libvdpau_trace_la_LDFLAGS = -avoid-version -module -no-undefined
+ 
+ libvdpau_traceincludedir = $(includedir)/vdpau
+ libvdpau_traceinclude_HEADERS = \
