@@ -1,0 +1,377 @@
+--- origsrc/libmemcached-1.0.17/Makefile.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/Makefile.am	2013-09-11 08:56:01.291824900 +0900
+@@ -2,6 +2,10 @@
+ 
+ ACLOCAL_AMFLAGS = -I m4 -I libtest/m4
+ 
++AM_LDFLAGS = -no-undefined
++
++SUBDIRS = lib
++
+ # includes append to these:
+ SUFFIXES =
+ .PHONY =
+@@ -20,7 +24,7 @@ nobase_include_HEADERS =
+ check_PROGRAMS =
+ EXTRA_HEADERS =
+ BUILT_SOURCES=
+-EXTRA_DIST=
++EXTRA_DIST=m4/gnulib-cache.m4
+ dist_man_MANS=
+ MAINTAINERCLEANFILES=
+ 
+--- origsrc/libmemcached-1.0.17/clients/ms_setting.h	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/clients/ms_setting.h	2013-09-11 22:24:55.162990300 +0900
+@@ -11,6 +11,8 @@
+ #ifndef MS_SETTING_H
+ #define MS_SETTING_H
+ 
++#include <sys/time.h>
++
+ #include "ms_memslap.h"
+ 
+ #ifdef __cplusplus
+--- origsrc/libmemcached-1.0.17/configure.ac	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/configure.ac	2013-09-11 08:56:01.291824900 +0900
+@@ -45,6 +45,9 @@ AX_HEX_VERSION([LIBHASHKIT],[1.0.0])
+ 
+ m4_include([libhashkit/include.m4])
+ 
++gl_EARLY
++gl_INIT
++
+ LT_PREREQ([2.2])
+ LT_INIT
+ LT_LANG([C++])
+@@ -312,6 +315,7 @@ AC_CONFIG_FILES([Makefile
+                  libmemcached-1.0/configure.h
+                  support/libmemcached.pc
+                  support/libmemcached.spec
++                 lib/Makefile
+                  ])
+ AC_OUTPUT
+ 
+--- origsrc/libmemcached-1.0.17/libhashkit/include.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libhashkit/include.am	2013-09-11 08:56:01.312413700 +0900
+@@ -59,7 +59,7 @@ endif
+ libhashkit_libhashkit_la_CXXFLAGS+= -DBUILDING_HASHKIT
+ libhashkit_libhashkit_la_CFLAGS+= -DBUILDING_HASHKIT
+ 
+-libhashkit_libhashkit_la_LDFLAGS= -version-info $(HASHKIT_LIBRARY_VERSION)
++libhashkit_libhashkit_la_LDFLAGS= -no-undefined -version-info $(HASHKIT_LIBRARY_VERSION)
+ 
+ # library used for testing
+ noinst_LTLIBRARIES+= libhashkit/libhashkitinc.la
+--- origsrc/libmemcached-1.0.17/libmemcached/include.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libmemcached/include.am	2013-09-11 08:56:01.312413700 +0900
+@@ -121,7 +121,7 @@ libmemcached_libmemcached_la_SOURCES+= l
+ 
+ libmemcached/options.cc: libmemcached/csl/parser.h
+ 
+-libmemcached_libmemcached_la_LDFLAGS+= -version-info ${MEMCACHED_LIBRARY_VERSION}
++libmemcached_libmemcached_la_LDFLAGS+= -no-undefined -version-info ${MEMCACHED_LIBRARY_VERSION}
+ libmemcached_libmemcached_la_LIBADD+= @DL_LIB@
+ 
+ if HAVE_SASL
+--- origsrc/libmemcached-1.0.17/libtest/cmdline.cc	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libtest/cmdline.cc	2013-09-11 08:56:01.333002500 +0900
+@@ -53,6 +53,7 @@ using namespace libtest;
+ # include <spawn.h>
+ #endif
+ #include <sstream>
++#include <stdarg.h>
+ #include <string>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+@@ -60,7 +61,7 @@ using namespace libtest;
+ 
+ #include <algorithm>
+ 
+-#ifndef __USE_GNU
++#if !defined(__USE_GNU) && !defined(__CYGWIN__)
+ static char **environ= NULL;
+ #endif
+ 
+--- origsrc/libmemcached-1.0.17/libtest/common.h	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libtest/common.h	2013-09-11 08:56:01.333002500 +0900
+@@ -82,6 +82,8 @@
+ # define get_socket_errno() errno
+ #endif
+ 
++#include <stdarg.h>
++
+ #include <libtest/test.hpp>
+ 
+ #include <libtest/is_pid.hpp>
+--- origsrc/libmemcached-1.0.17/libtest/include.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libtest/include.am	2013-09-11 23:14:14.159909500 +0900
+@@ -104,9 +104,10 @@ noinst_HEADERS+= libtest/yatl.h
+ 
+ noinst_LTLIBRARIES+= libtest/libtest.la
+ 
++libtest_libtest_la_CPPFLAGS= -I$(top_builddir)/lib
+ libtest_libtest_la_CXXFLAGS=
+ EXTRA_libtest_libtest_la_DEPENDENCIES=
+-libtest_libtest_la_LIBADD=
++libtest_libtest_la_LIBADD= $(top_builddir)/lib/libgnu.la
+ libtest_libtest_la_SOURCES=
+ if BUILDING_LIBMEMCACHED
+ libtest_libtest_la_LIBADD+= libmemcached/libmemcached.la
+@@ -158,9 +159,10 @@ libtest_libtest_la_LIBADD+= @RT_LIB@
+ 
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/abort
+-EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait
++EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait$(EXEEXT)
+ 
+ # Declare unittest so that we can append to it
++libtest_unittest_CPPFLAGS=-I$(top_builddir)/lib
+ libtest_unittest_CXXFLAGS=
+ libtest_unittest_LDADD=
+ libtest_libtest_la_LDFLAGS=
+@@ -204,16 +206,19 @@ helgrind-unittest: libtest/unittest
+ drd-unittest: libtest/unittest
+ 	@$(DRD_COMMAND) libtest/unittest
+ 
++libtest_skiptest_CPPFLAGS=-I$(top_builddir)/lib
+ libtest_skiptest_LDADD= libtest/libtest.la
+ libtest_skiptest_SOURCES= libtest/skiptest.cc
+ check_PROGRAMS+= libtest/skiptest
+ noinst_PROGRAMS+= libtest/skiptest
+ 
++libtest_wait_CPPFLAGS=-I$(top_builddir)/lib
+ libtest_wait_SOURCES=
+ libtest_wait_SOURCES+= libtest/wait.cc
+ libtest_wait_SOURCES+= libtest/dream.cc
+ noinst_PROGRAMS+= libtest/wait
+ 
++libtest_core_count_CPPFLAGS=-I$(top_builddir)/lib
+ libtest_core_count_SOURCES=
+ libtest_core_count_SOURCES+= libtest/cpu.cc
+ libtest_core_count_SOURCES+= libtest/core_count.cc
+--- origsrc/libmemcached-1.0.17/libtest/test.hpp	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/libtest/test.hpp	2013-09-11 22:28:52.854396500 +0900
+@@ -57,6 +57,7 @@
+ 
+ #define LIBYATL_DEFAULT_PARAM __FILE__, __LINE__, __PRETTY_FUNCTION__
+ 
++#include <cstdarg>
+ #include <cstdio>
+ #include <cstdlib>
+ #include <arpa/inet.h>
+--- origsrc/libmemcached-1.0.17/tests/cli.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/tests/cli.am	2013-09-11 23:08:55.089597000 +0900
+@@ -10,78 +10,89 @@
+ 
+ 
+ tests_memcapable_SOURCES= tests/memcapable.cc
++tests_memcapable_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memcapable_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memcapable_DEPENDENCIES= clients/memcapable
++EXTRA_tests_memcapable_DEPENDENCIES= clients/memcapable$(EXEEXT)
+ tests_memcapable_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcapable
+ noinst_PROGRAMS+= tests/memcapable
+ 
+ tests_memstat_SOURCES= tests/memstat.cc
++tests_memstat_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memstat_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memstat_DEPENDENCIES= clients/memstat
++EXTRA_tests_memstat_DEPENDENCIES= clients/memstat$(EXEEXT)
+ tests_memstat_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memstat
+ noinst_PROGRAMS+= tests/memstat
+ 
+ tests_memcp_SOURCES= tests/memcp.cc
++tests_memcp_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memcp_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memcp_DEPENDENCIES= clients/memcp
++EXTRA_tests_memcp_DEPENDENCIES= clients/memcp$(EXEEXT)
+ tests_memcp_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcp
+ noinst_PROGRAMS+= tests/memcp
+ 
+ tests_memflush_SOURCES= tests/memflush.cc
++tests_memflush_CPPFLAGS= -I$(top_builddir)/lib
+ tests_memflush_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memflush_DEPENDENCIES= clients/memflush
++EXTRA_tests_memflush_DEPENDENCIES= clients/memflush$(EXEEXT)
+ tests_memflush_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memflush
+ noinst_PROGRAMS+= tests/memflush
+ 
+ tests_memrm_SOURCES= tests/memrm.cc
++tests_memrm_CPPFLAGS= -I$(top_builddir)/lib
+ tests_memrm_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memrm_DEPENDENCIES= clients/memrm
++EXTRA_tests_memrm_DEPENDENCIES= clients/memrm$(EXEEXT)
+ tests_memrm_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memrm
+ noinst_PROGRAMS+= tests/memrm
+ 
+ tests_memexist_SOURCES= tests/memexist.cc
++tests_memexist_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memexist_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memexist_DEPENDENCIES= clients/memexist
++EXTRA_tests_memexist_DEPENDENCIES= clients/memexist$(EXEEXT)
+ tests_memexist_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memexist
+ noinst_PROGRAMS+= tests/memexist
+ 
+ tests_memtouch_SOURCES= tests/memtouch.cc
++tests_memtouch_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memtouch_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memtouch_DEPENDENCIES= clients/memtouch
++EXTRA_tests_memtouch_DEPENDENCIES= clients/memtouch$(EXEEXT)
+ tests_memtouch_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memtouch
+ noinst_PROGRAMS+= tests/memtouch
+ 
+ tests_memcat_SOURCES= tests/memcat.cc
++tests_memcat_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memcat_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memcat_DEPENDENCIES= clients/memcat
++EXTRA_tests_memcat_DEPENDENCIES= clients/memcat$(EXEEXT)
+ tests_memcat_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memcat
+ noinst_PROGRAMS+= tests/memcat
+ 
+ tests_memping_SOURCES= tests/memping.cc
++tests_memping_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memping_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memping_DEPENDENCIES= clients/memping
++EXTRA_tests_memping_DEPENDENCIES= clients/memping$(EXEEXT)
+ tests_memping_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memping
+ noinst_PROGRAMS+= tests/memping
+ 
+ tests_memerror_SOURCES= tests/memerror.cc
++tests_memerror_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memerror_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memerror_DEPENDENCIES= clients/memerror
++EXTRA_tests_memerror_DEPENDENCIES= clients/memerror$(EXEEXT)
+ tests_memerror_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memerror
+ noinst_PROGRAMS+= tests/memerror
+ 
+ tests_memslap_SOURCES= tests/memslap.cc
++tests_memslap_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memslap_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memslap_DEPENDENCIES= clients/memslap
++EXTRA_tests_memslap_DEPENDENCIES= clients/memslap$(EXEEXT)
+ tests_memslap_LDADD= libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memslap
+ noinst_PROGRAMS+= tests/memslap
+@@ -93,8 +104,9 @@ gdb-memslap: tests/memslap
+ 	@$(GDB_COMMAND) tests/memslap
+ 
+ tests_memdump_SOURCES= tests/memdump.cc
++tests_memdump_CPPFLAGS= -I$(top_builddir)/lib -I$(top_builddir)
+ tests_memdump_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+-EXTRA_tests_memdump_DEPENDENCIES= clients/memdump
++EXTRA_tests_memdump_DEPENDENCIES= clients/memdump$(EXEEXT)
+ tests_memdump_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/memdump
+ noinst_PROGRAMS+= tests/memdump
+--- origsrc/libmemcached-1.0.17/tests/include.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/tests/include.am	2013-09-11 23:02:05.915768900 +0900
+@@ -26,6 +26,7 @@ noinst_HEADERS+= tests/runner.h
+ 
+ # Cycle should always run first
+ tests_cycle_CFLAGS= $(AM_CFLAGS) $(NO_CONVERSION) $(NO_STRICT_ALIASING)
++tests_cycle_CPPFLAGS=-I$(top_builddir)/lib
+ tests_cycle_CXXFLAGS= $(AM_CXXFLAGS)
+ tests_cycle_CXXFLAGS+= ${PTHREAD_CFLAGS}
+ tests_cycle_SOURCES= tests/cycle.cc
+@@ -47,6 +48,7 @@ tests_failure_SOURCES+= tests/libmemcach
+ tests_failure_SOURCES+= tests/libmemcached-1.0/generate.cc
+ tests_failure_SOURCES+= tests/libmemcached-1.0/print.cc
+ 
++tests_failure_CPPFLAGS =-I$(top_builddir)/lib
+ tests_failure_CXXFLAGS = $(AM_CXXFLAGS)
+ tests_failure_LDADD= $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/failure
+@@ -58,6 +60,7 @@ test-failure: tests/failure
+ gdb-failure: tests/failure
+ 	@$(GDB_COMMAND) tests/failure
+ 
++tests_testhashkit_CPPFLAGS=-I$(top_builddir)/lib
+ tests_testhashkit_SOURCES= tests/hashkit_functions.cc
+ tests_testhashkit_LDADD= libtest/libtest.la libhashkit/libhashkit.la $(TESTS_LDADDS)
+ check_PROGRAMS+= tests/testhashkit
+@@ -68,6 +71,7 @@ test-hash: tests/testhashkit
+ 
+ 
+ tests_hash_plus_SOURCES= tests/hash_plus.cc
++tests_hash_plus_CPPFLAGS=-I$(top_builddir)/lib
+ tests_hash_plus_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
+ tests_hash_plus_LDADD= $(tests_testhashkit_LDADD)
+ check_PROGRAMS+= tests/hash_plus
+--- origsrc/libmemcached-1.0.17/tests/libmemcached-1.0/include.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/tests/libmemcached-1.0/include.am	2013-09-11 22:50:44.023341900 +0900
+@@ -41,6 +41,7 @@ noinst_HEADERS+= tests/virtual_buckets.h
+ if HAVE_DTRACE
+ else
+ # Test internals
++tests_libmemcached_1_0_internals_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_internals_CXXFLAGS=
+ tests_libmemcached_1_0_internals_LDADD=
+ tests_libmemcached_1_0_internals_SOURCES=
+@@ -61,6 +62,7 @@ test-internal: tests/libmemcached-1.0/in
+ 
+ endif
+ 
++tests_libmemcached_1_0_testapp_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_testapp_CXXFLAGS=
+ tests_libmemcached_1_0_testapp_CFLAGS=
+ tests_libmemcached_1_0_testapp_SOURCES=
+@@ -109,6 +111,7 @@ tests_libmemcached_1_0_testapp_LDADD+= l
+ check_PROGRAMS+= tests/libmemcached-1.0/testapp
+ noinst_PROGRAMS+= tests/libmemcached-1.0/testapp
+ 
++tests_libmemcached_1_0_testsocket_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_testsocket_CXXFLAGS=
+ tests_libmemcached_1_0_testsocket_CFLAGS=
+ tests_libmemcached_1_0_testsocket_SOURCES=
+@@ -167,6 +170,7 @@ gdb-socket: tests/libmemcached-1.0/tests
+ 
+ tests_libmemcached_1_0_sasl_SOURCES=
+ tests_libmemcached_1_0_sasl_LDADD=
++tests_libmemcached_1_0_sasl_CPPFLAGS=-I$(top_builddir)/lib
+ tests_libmemcached_1_0_sasl_CXXFLAGS=
+ tests_libmemcached_1_0_sasl_CFLAGS=
+ 
+@@ -208,6 +212,7 @@ test-sasl: tests/libmemcached-1.0/sasl
+ gdb-sasl: tests/libmemcached-1.0/sasl
+ 	@$(GDB_COMMAND)  tests/libmemcached-1.0/sasl
+ 
++tests_atomsmasher_CPPFLAGS=-I$(top_builddir)/lib
+ tests_atomsmasher_SOURCES=
+ tests_atomsmasher_LDADD=
+ 
+@@ -222,6 +227,7 @@ tests_atomsmasher_SOURCES+= tests/libmem
+ tests_atomsmasher_SOURCES+= tests/libmemcached-1.0/print.cc
+ noinst_PROGRAMS+= tests/atomsmasher
+ 
++tests_testudp_CPPFLAGS=-I$(top_builddir)/lib
+ tests_testudp_CFLAGS=
+ tests_testudp_SOURCES=
+ tests_testudp_LDADD=
+@@ -241,6 +247,7 @@ noinst_PROGRAMS+= tests/testudp
+ test-udp: tests/testudp
+ 	@tests/testudp
+ 
++tests_testplus_CPPFLAGS=-I$(top_builddir)/lib
+ tests_testplus_SOURCES=
+ tests_testplus_CXXFLAGS=
+ tests_testplus_LDADD=
+--- origsrc/libmemcached-1.0.17/tests/parser.am	2013-04-03 13:22:00.000000000 +0900
++++ src/libmemcached-1.0.17/tests/parser.am	2013-09-11 22:55:32.333590900 +0900
+@@ -11,6 +11,7 @@
+ noinst_HEADERS+= tests/libmemcached-1.0/parser.h
+ 
+ tests_parser_SOURCES=
++tests_parser_CPPFLAGS=-I$(top_builddir)/lib
+ tests_parser_CXXFLAGS=
+ tests_parser_LDADD=
+ 

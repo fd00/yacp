@@ -1,0 +1,84 @@
+HOMEPAGE="http://${PN}.org/"
+SRC_URI="http://launchpad.net/${PN}/${PV_MAJ_MIN}/${PV}/+download/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="C and C++ client library for memcached"
+DESCRIPTION="libMemcached is an open source C/C++ client library and tools for the
+memcached server (http://danga.com/memcached). It has been designed to be
+light on memory usage, thread safe, and provide full access to server side
+methods."
+
+CYGCONF_ARGS="
+	--enable-libmemcachedprotocol
+	--enable-hsieh_hash
+	--enable-memaslap
+	--enable-jobserver=no
+"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 \
+		--doc-base=doc --tests-base=tests --aux-dir=build-aux \
+		--no-conditional-dependencies --libtool --macro-prefix=gl \
+		posix_spawn \
+		posix_spawn_file_actions_addclose \
+		posix_spawn_file_actions_adddup2 \
+		posix_spawn_file_actions_destroy \
+		posix_spawn_file_actions_init \
+		posix_spawnattr_destroy \
+		posix_spawnattr_init \
+		posix_spawnattr_setflags \
+		posix_spawnattr_setpgroup \
+		posix_spawnattr_setsigmask \
+		posix_spawnp
+}
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf
+	ln -s mem_config.h config.h
+	cygmake
+}
+
+DIFF_EXCLUDES="
+	mem_config.in
+"
+
+PKG_NAMES="
+	${PN}
+	${PN}11
+	libhashkit2
+	${PN}-devel
+	libhashkit-devel
+"
+
+libmemcached_CONTENTS="
+	usr/bin/*.exe
+	usr/share/doc
+	usr/share/man/man1
+"
+libmemcached11_CONTENTS="
+	usr/bin/cygmemcached*.dll
+"
+libhashkit2_CONTENTS="
+	usr/bin/cyghashkit*.dll
+"
+libmemcached_devel_CONTENTS="
+	usr/include/${PN}*
+	usr/lib/${PN}*
+	usr/lib/pkgconfig
+	usr/share/aclocal
+	usr/share/man/man3/${PN}*
+	usr/share/man/man3/memcached*
+"
+libhashkit_devel_CONTENTS="
+	usr/include/libhashkit*
+	usr/lib/libhashkit.*
+	usr/share/man/man3/hashkit*.3*
+	usr/share/man/man3/libhashkit.3*
+"
