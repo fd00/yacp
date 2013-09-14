@@ -1,0 +1,75 @@
+--- origsrc/hamsterdb-2.1.2/samples/Makefile.am	2013-08-26 16:03:15.000000000 +0900
++++ src/hamsterdb-2.1.2/samples/Makefile.am	2013-09-14 23:32:04.824121400 +0900
+@@ -1,5 +1,5 @@
+ 
+-AM_CPPFLAGS     = -I../include -I$(top_builddir)/include
++AM_CPPFLAGS     = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ noinst_PROGRAMS = db1 db2 db3 db4 db5 db6 env1 env2 env3
+ 
+--- origsrc/hamsterdb-2.1.2/src/Makefile.am	2013-08-26 16:03:15.000000000 +0900
++++ src/hamsterdb-2.1.2/src/Makefile.am	2013-09-14 22:47:01.910058900 +0900
+@@ -96,7 +96,7 @@ libhamsterdb_la_SOURCES = \
+ 	util.h \
+ 	version.h
+ 
+-libhamsterdb_la_LDFLAGS = -version-info 4:0:0 $(BOOST_SYSTEM_LDFLAGS)
++libhamsterdb_la_LDFLAGS = -no-undefined -version-info 4:0:0 $(BOOST_SYSTEM_LDFLAGS)
+ libhamsterdb_la_LIBADD = $(BOOST_SYSTEM_LIBS)
+ 
+ if ENABLE_ENCRYPTION
+--- origsrc/hamsterdb-2.1.2/src/server/Makefile.am	2013-08-26 16:03:15.000000000 +0900
++++ src/hamsterdb-2.1.2/src/server/Makefile.am	2013-09-14 22:47:20.825098000 +0900
+@@ -5,7 +5,7 @@ lib_LTLIBRARIES = libhamserver.la
+ 
+ libhamserver_la_SOURCES = hamserver.cc
+ 
+-libhamserver_la_LDFLAGS = -version-info 0:0:0
++libhamserver_la_LDFLAGS = -no-undefined -version-info 0:0:0
+ 
+ libhamserver_la_LDFLAGS += $(top_builddir)/3rdparty/json/libjson.la \
+                            $(top_builddir)/src/protocol/libprotocol.la \
+--- origsrc/hamsterdb-2.1.2/tools/hamzilla.c	2013-08-26 16:03:15.000000000 +0900
++++ src/hamsterdb-2.1.2/tools/hamzilla.c	2013-09-14 22:48:05.078027700 +0900
+@@ -243,11 +243,13 @@ daemonize() {
+   /* disassociate from process group */
+   setpgrp();
+ 
++#if defined(TIOCNOTTY)
+   /* disassociate from control terminal */
+   if ((fd = open("dev/tty", O_RDWR)) >= 0) {
+     ioctl(fd, TIOCNOTTY, NULL);
+     close(fd);
+   }
++#endif
+ }
+ #endif
+ 
+--- origsrc/hamsterdb-2.1.2/unittests/Makefile.am	2013-08-26 16:03:15.000000000 +0900
++++ src/hamsterdb-2.1.2/unittests/Makefile.am	2013-09-14 23:46:47.139551100 +0900
+@@ -3,7 +3,7 @@ EXTRA_DIST      = recovery.pl valgrind.s
+ 
+ noinst_PROGRAMS = test recovery
+ 
+-AM_CPPFLAGS     = -I../include -I$(top_srcdir)/include
++AM_CPPFLAGS     = -I../include -I$(top_srcdir)/include -I$(top_srcdir)
+ 
+ test_SOURCES    = aes.cpp \
+ 				  api110.cpp \
+@@ -76,14 +76,14 @@ test_SOURCES    = aes.cpp \
+                   txn.cpp \
+                   txn_cursor.cpp
+ 
+-test_LDADD      = $(top_builddir)/src/.libs/libhamsterdb.a \
++test_LDADD      = $(top_builddir)/src/libhamsterdb.la \
+ 				  $(BOOST_SYSTEM_LIBS) -lpthread -ldl
+ test_LDFLAGS    = $(BOOST_SYSTEM_LDFLAGS)
+ 
+ if ENABLE_REMOTE
+ test_SOURCES   += remote.cpp
+ AM_CPPFLAGS    += -DHAM_ENABLE_REMOTE
+-test_LDADD     += $(top_builddir)/src/server/.libs/libhamserver.a \
++test_LDADD     += $(top_builddir)/src/server/libhamserver.la \
+ 				  -lprotobuf -luv -ldl
+ endif
+ 
