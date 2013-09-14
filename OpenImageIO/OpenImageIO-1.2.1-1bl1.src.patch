@@ -1,0 +1,100 @@
+--- origsrc/oiio-Release-1.2.1/src/CMakeLists.txt	2013-08-06 14:10:31.000000000 +0900
++++ src/oiio-Release-1.2.1/src/CMakeLists.txt	2013-09-14 11:35:55.020000600 +0900
+@@ -267,7 +267,9 @@ if (OIIO_BUILD_TOOLS)
+   add_subdirectory (iinfo)
+   add_subdirectory (maketx)
+   add_subdirectory (oiiotool)
+-  add_subdirectory (testtex)
++  if (NOT CYGWIN)
++    add_subdirectory (testtex)
++  endif ()
+   add_subdirectory (iv)
+ endif ()
+ 
+--- origsrc/oiio-Release-1.2.1/src/libtexture/texture_pvt.h	2013-08-06 14:10:31.000000000 +0900
++++ src/oiio-Release-1.2.1/src/libtexture/texture_pvt.h	2013-09-14 11:36:33.560039600 +0900
+@@ -56,7 +56,9 @@ class ImageCacheTile;
+ class ImageCacheTileRef;
+ #endif
+ 
+-
++#if defined(__CYGWIN__) && defined(_P)
++#undef _P
++#endif
+ 
+ /// Working implementation of the abstract TextureSystem class.
+ ///
+--- origsrc/oiio-Release-1.2.1/src/libutil/plugin.cpp	2013-08-06 14:10:31.000000000 +0900
++++ src/oiio-Release-1.2.1/src/libutil/plugin.cpp	2013-09-14 11:36:57.116680300 +0900
+@@ -58,7 +58,7 @@ static std::string last_error;
+ const char *
+ Plugin::plugin_extension (void)
+ {
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__CYGWIN__)
+     return "dll";
+ #elif defined(__APPLE__)
+     return "dylib";
+--- origsrc/oiio-Release-1.2.1/src/libutil/sysutil.cpp	2013-08-06 14:10:31.000000000 +0900
++++ src/oiio-Release-1.2.1/src/libutil/sysutil.cpp	2013-09-14 11:53:07.952617800 +0900
+@@ -33,7 +33,7 @@
+ #include <iostream>
+ #include <ctime>
+ 
+-#ifdef __linux__
++#if defined(__linux__ ) || defined(__CYGWIN__)
+ # include <sys/sysinfo.h>
+ # include <unistd.h>
+ # include <sys/ioctl.h>
+@@ -150,7 +150,7 @@ Sysutil::this_program_path ()
+     char filename[10240];
+     filename[0] = 0;
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+     unsigned int size = sizeof(filename);
+     int r = readlink ("/proc/self/exe", filename, size);
+     ASSERT(r < int(size)); // user won't get the right answer if the filename is too long to store
+@@ -205,7 +205,7 @@ Sysutil::terminal_columns ()
+ {
+     int columns = 80;   // a decent guess, if we have nothing more to go on
+ 
+-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__GNU__)
++#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__GNU__) || defined(__CYGWIN__)
+     struct winsize w;
+     ioctl (0, TIOCGWINSZ, &w);
+     columns = w.ws_col;
+--- origsrc/oiio-Release-1.2.1/src/ptex.imageio/CMakeLists.txt	2013-08-06 14:10:31.000000000 +0900
++++ src/oiio-Release-1.2.1/src/ptex.imageio/CMakeLists.txt	2013-09-14 11:38:45.270977100 +0900
+@@ -1,10 +1,24 @@
+ find_package (ZLIB)
+ 
++find_path(PTEX_INCLUDE_DIRS PtexHalf.h PATHS /usr/include/ptex)
++find_library(PTEX_LIBRARIES Ptex)
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(PTEX PTEX_INCLUDE_DIRS PTEX_LIBRARIES)
++
++message(STATUS "Ptex Found        = ${PTEX_FOUND}")
++message(STATUS "Ptex include dirs = ${PTEX_INCLUDE_DIRS}")
++message(STATUS "Ptex libraries    = ${PTEX_LIBRARIES}")
++
+ if (ZLIB_FOUND)
+ 	if (WIN32)
+         add_definitions ("-DPTEX_EXPORTS")
+ 	endif()
+     include_directories (${ZLIB_INCLUDE_DIR})
++    if (PTEX_FOUND)
++        include_directories (${PTEX_INCLUDE_DIRS})
++        add_oiio_plugin (ptexinput.cpp ptexoutput.cpp
++                         LINK_LIBRARIES ${ZLIB_LIBRARIES} ${PTEX_LIBRARIES})
++    else (PTEX_FOUND)
+ 	add_oiio_plugin (ptexinput.cpp ptexoutput.cpp
+                  ptex/PtexCache.cpp
+                  ptex/PtexFilters.cpp
+@@ -17,5 +31,6 @@ if (ZLIB_FOUND)
+                  ptex/PtexUtils.cpp
+                  ptex/PtexWriter.cpp
+                  LINK_LIBRARIES ${ZLIB_LIBRARIES} )
++    endif (PTEX_FOUND)
+ endif ()
+ 
