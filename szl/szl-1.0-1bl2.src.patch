@@ -1,6 +1,13 @@
 --- origsrc/szl-1.0/src/Makefile.am	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/Makefile.am	2012-08-04 23:58:20.219216100 +0900
-@@ -256,6 +256,7 @@ libszl_la_LIBADD = \
++++ src/szl-1.0/src/Makefile.am	2013-09-14 15:07:12.634175900 +0900
+@@ -250,12 +250,13 @@ libengine_la_SOURCES = \
+ 
+ ##### Libraries to install
+ 
+-libszl_la_LIBADD = \
++libszl_la_LIBADD = -lstdc++ \
+   libengine.la \
+   libfmt.la \
    libutilities.la \
    libvalues.la
  libszl_la_SOURCES =
@@ -37,7 +44,7 @@
  ##### The szl program
  
 --- origsrc/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2012-08-05 00:03:42.738747400 +0900
++++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2013-09-14 14:52:12.061910300 +0900
 @@ -233,7 +233,7 @@ bool SzlQuantileTest::CheckCorrectness(i
    // within the tolerable range. The ideal index
    // we are expecting is calculated as next_rank.
@@ -47,8 +54,18 @@
      dec.Init(rvec[i].data(), rvec[i].size());
      dec.GetString(&vstr);
      CHECK_EQ(sscanf(vstr.c_str(), "xx-%d", &index), 1);
+--- origsrc/szl-1.0/src/engine/code.cc	2010-08-16 07:04:14.000000000 +0900
++++ src/szl-1.0/src/engine/code.cc	2013-09-14 14:55:59.414449300 +0900
+@@ -18,6 +18,7 @@
+ #include <string>
+ #include <errno.h>
+ #include <sys/mman.h>
++#include <unistd.h>
+ 
+ #include "engine/globals.h"
+ #include "public/logging.h"
 --- origsrc/szl-1.0/src/engine/scanner.h	2010-08-16 07:04:13.000000000 +0900
-+++ src/szl-1.0/src/engine/scanner.h	2012-08-04 23:36:08.927492300 +0900
++++ src/szl-1.0/src/engine/scanner.h	2013-09-14 14:52:12.061910300 +0900
 @@ -14,6 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -58,7 +75,7 @@
  namespace sawzall {
  
 --- origsrc/szl-1.0/src/engine/symboltable.cc	2010-08-16 07:04:14.000000000 +0900
-+++ src/szl-1.0/src/engine/symboltable.cc	2012-08-04 23:40:08.545388000 +0900
++++ src/szl-1.0/src/engine/symboltable.cc	2013-09-14 14:52:12.077535300 +0900
 @@ -44,7 +44,7 @@ namespace sawzall {
  // ------------------------------------------------------------------------------
  // Implementation of SymbolTable
@@ -69,7 +86,7 @@
  List<TableType*>* SymbolTable::table_types_ = NULL;
  TableType* SymbolTable::collection_type_ = NULL;
 --- origsrc/szl-1.0/src/public/porting.h	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/public/porting.h	2012-08-04 23:35:15.671632900 +0900
++++ src/szl-1.0/src/public/porting.h	2013-09-14 14:52:12.077535300 +0900
 @@ -48,7 +48,9 @@ typedef uint64_t uint64;
  
  typedef signed char schar;
@@ -81,7 +98,7 @@
  typedef unsigned long uword_t;
  
 --- origsrc/szl-1.0/src/utilities/port_ieee.h	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/utilities/port_ieee.h	2012-08-04 23:42:06.773903600 +0900
++++ src/szl-1.0/src/utilities/port_ieee.h	2013-09-14 14:52:12.077535300 +0900
 @@ -14,7 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -92,8 +109,16 @@
  #elif defined(OS_MACOSX)
  #include <machine/endian.h>
 --- origsrc/szl-1.0/src/utilities/random_base.cc	2010-08-16 07:04:15.000000000 +0900
-+++ src/szl-1.0/src/utilities/random_base.cc	2012-08-04 23:43:01.102028600 +0900
-@@ -194,7 +194,7 @@ uint64 RandomBase::UnbiasedUniform64(uin
++++ src/szl-1.0/src/utilities/random_base.cc	2013-09-14 15:03:59.236715000 +0900
+@@ -18,6 +18,7 @@
+ #include <string>
+ #include <memory.h>
+ #include <assert.h>
++#include <unistd.h>
+ 
+ #include "public/porting.h"
+ #include "public/logging.h"
+@@ -194,7 +195,7 @@ uint64 RandomBase::UnbiasedUniform64(uin
  }
  
  float RandomBase::RandFloat() {
@@ -102,7 +127,7 @@
    __ieee_float_shape_type v;
    v.number.sign = 0;
    v.number.fraction0 = Rand8();   // Lower 7 bits
-@@ -215,7 +215,7 @@ float RandomBase::RandFloat() {
+@@ -215,7 +216,7 @@ float RandomBase::RandFloat() {
  }
  
  double RandomBase::RandDouble() {
