@@ -1,0 +1,467 @@
+--- origsrc/gearmand-1.1.9/Makefile.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/Makefile.am	2013-09-15 16:13:23.530177400 +0900
+@@ -10,6 +10,10 @@
+ 
+ ACLOCAL_AMFLAGS= -I m4
+ 
++AM_LDFLAGS = -no-undefined
++
++SUBDIRS = lib
++
+ bin_PROGRAMS=
+ sbin_PROGRAMS= 
+ check_PROGRAMS=
+@@ -24,7 +28,7 @@ man3_MANS=
+ man8_MANS=
+ DISTCLEANFILES=
+ MAINTAINERCLEANFILES=
+-EXTRA_DIST=
++EXTRA_DIST=m4/gnulib-cache.m4
+ CLEANFILES=
+ BUILT_SOURCES=
+ TESTS=
+--- origsrc/gearmand-1.1.9/configure.ac	2013-07-20 19:50:59.000000000 +0900
++++ src/gearmand-1.1.9/configure.ac	2013-09-15 16:13:23.545802400 +0900
+@@ -37,6 +37,9 @@ GEARMAN_LIBRARY_VERSION=8:0:0
+ #                +- increment if interfaces have been added, removed or changed
+ AC_SUBST([GEARMAN_LIBRARY_VERSION])
+ 
++gl_EARLY
++gl_INIT
++
+ LT_PREREQ([2.2])
+ LT_INIT
+ LT_LANG([C++])
+@@ -279,6 +282,7 @@ AM_CONDITIONAL([SHARED_ENABLED],[test "x
+ 
+ AC_CONFIG_FILES([Makefile
+                  docs/conf.py
++                 lib/Makefile
+                  libgearman-1.0/version.h
+                  scripts/gearmand
+                  scripts/gearmand-init
+--- origsrc/gearmand-1.1.9/gearmand/include.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/gearmand/include.am	2013-09-15 17:49:09.938957700 +0900
+@@ -18,6 +18,7 @@ sbin_PROGRAMS+= gearmand/gearmand
+ 
+ BUILT_SOURCES+= configmake.h
+ 
++gearmand_gearmand_CPPFLAGS= -I$(top_builddir)
+ gearmand_gearmand_LDADD=
+ gearmand_gearmand_CXXFLAGS=
+ EXTRA_gearmand_gearmand_DEPENDENCIES=
+--- origsrc/gearmand-1.1.9/libgearman/include.am	2013-07-27 10:12:36.000000000 +0900
++++ src/gearmand-1.1.9/libgearman/include.am	2013-09-15 17:14:11.182121700 +0900
+@@ -139,7 +139,7 @@ libgearman_libgearman_la_SOURCES+= libge
+ 
+ libgearman_libgearman_la_CXXFLAGS+= -DBUILDING_LIBGEARMAN
+ 
+-libgearman_libgearman_la_LDFLAGS+= -version-info $(GEARMAN_LIBRARY_VERSION)
++libgearman_libgearman_la_LDFLAGS+= -no-undefined -version-info $(GEARMAN_LIBRARY_VERSION)
+ 
+ libgearman_libgearman_la_LIBADD+= @CYASSL_LIB@
+ libgearman_libgearman_la_LIBADD+= @DL_LIB@
+--- origsrc/gearmand-1.1.9/libtest/cmdline.cc	2013-07-19 05:58:11.000000000 +0900
++++ src/gearmand-1.1.9/libtest/cmdline.cc	2013-09-15 16:58:37.373679000 +0900
+@@ -61,7 +61,7 @@ using namespace libtest;
+ #include <algorithm>
+ #include <stdexcept>
+ 
+-#ifndef __USE_GNU
++#if !defined(__USE_GNU) && !defined(__CYGWIN__)
+ static char **environ= NULL;
+ #endif
+ 
+--- origsrc/gearmand-1.1.9/libtest/exception.hpp	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/libtest/exception.hpp	2013-09-15 16:58:23.699850900 +0900
+@@ -36,6 +36,8 @@
+ 
+ #pragma once
+ 
++#include <stdarg.h>
++
+ namespace libtest {
+ 
+ class exception : public std::exception
+--- origsrc/gearmand-1.1.9/libtest/include.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/libtest/include.am	2013-09-15 17:12:37.753410800 +0900
+@@ -112,6 +112,7 @@ noinst_HEADERS+= libtest/yatl.h
+ 
+ check_LTLIBRARIES+= libtest/libtest.la
+ 
++libtest_libtest_la_CPPFLAGS= -I$(top_builddir)/lib
+ libtest_libtest_la_CXXFLAGS=
+ EXTRA_libtest_libtest_la_DEPENDENCIES=
+ libtest_libtest_la_LDFLAGS=
+@@ -165,7 +166,7 @@ libtest_libtest_la_LIBADD+= @RT_LIB@
+ 
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/abort
+-EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait
++EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait$(EXEEXT)
+ 
+ # We are either building in tree, or with
+ libtest_libtest_la_SOURCES+= libtest/memcached.cc
+@@ -188,11 +189,12 @@ $(TMP_DIR):
+ 	@$(mkdir_p) $(TMP_DIR)
+ 
+ # Declare unittest so that we can append to it
++t_unittest_CPPFLAGS= -I$(top_builddir)/lib
+ t_unittest_CXXFLAGS=
+ t_unittest_LDADD=
+ t_unittest_SOURCES=
+ 
+-t_unittest_LDADD+= libtest/libtest.la
++t_unittest_LDADD+= libtest/libtest.la $(top_builddir)/lib/libgnu.la
+ t_unittest_SOURCES+= libtest/unittest.cc
+ check_PROGRAMS+= t/unittest
+ noinst_PROGRAMS+= t/unittest
+@@ -215,7 +217,8 @@ sgcheck-unittest: t/unittest
+ 	echo $(SGCHECK_COMMAND)
+ 	@$(SGCHECK_COMMAND) t/unittest
+ 
+-t_skip_LDADD= libtest/libtest.la
++t_skip_CPPFLAGS= -I$(top_builddir)/lib
++t_skip_LDADD= libtest/libtest.la $(top_builddir)/lib/libgnu.la
+ t_skip_SOURCES= libtest/skiptest.cc
+ check_PROGRAMS+= t/skip
+ noinst_PROGRAMS+= t/skip
+@@ -232,6 +235,7 @@ helgrind-skip: libtest/skip
+ drd-skip: t/skip
+ 	@$(DRD_COMMAND) t/skip
+ 
++libtest_wait_CPPFLAGS= -I$(top_builddir)/lib
+ libtest_wait_SOURCES=
+ libtest_wait_SOURCES+= libtest/wait.cc
+ libtest_wait_SOURCES+= libtest/dream.cc
+--- origsrc/gearmand-1.1.9/tests/blobslap_client.cc	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/blobslap_client.cc	2013-09-15 19:06:18.003259700 +0900
+@@ -38,6 +38,7 @@
+ /*
+   Test that we are cycling the servers we are creating during testing.
+ */
++#include "gear_config.h"
+ 
+ #include <libtest/test.hpp>
+ 
+--- origsrc/gearmand-1.1.9/tests/ephemeral.am	2013-07-19 05:58:11.000000000 +0900
++++ src/gearmand-1.1.9/tests/ephemeral.am	2013-09-15 22:48:05.110379500 +0900
+@@ -11,6 +11,7 @@
+ #
+ 
+ t_ephemeral_SOURCES=
++t_ephemeral_CPPFLAGS= -I$(top_builddir)/lib
+ t_ephemeral_CXXFLAGS=
+ t_ephemeral_LDADD= ${CLIENT_LDADD}
+ 
+--- origsrc/gearmand-1.1.9/tests/hostile.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/hostile.am	2013-09-15 20:51:26.312679000 +0900
+@@ -11,6 +11,7 @@
+ #
+ 
+ t_hostile_gearmand_CFLAGS=
++t_hostile_gearmand_CPPFLAGS= -I$(top_builddir)/lib
+ t_hostile_gearmand_CXXFLAGS=
+ t_hostile_gearmand_LDADD=
+ t_hostile_gearmand_SOURCES=
+@@ -27,6 +28,7 @@ t_hostile_gearmand_SOURCES+= tests/hosti
+ t_hostile_gearmand_LDADD+= libgearman/libgearman.la
+ t_hostile_gearmand_LDADD+= libtest/libtest.la
+ t_hostile_gearmand_LDADD+= tests/libstartworker.la
++t_hostile_gearmand_LDADD+= $(top_builddir)/lib/libgnu.la
+ check_PROGRAMS+=t/hostile_gearmand
+ noinst_PROGRAMS+=t/hostile_gearmand
+ 
+@@ -40,6 +42,7 @@ gdb-hostile-gearmand: t/hostile_gearmand
+ 	@$(GDB_COMMAND) t/hostile_gearmand
+ 
+ t_hostile_libgearman_CFLAGS=
++t_hostile_libgearman_CPPFLAGS= -I$(top_builddir)/lib
+ t_hostile_libgearman_CXXFLAGS=
+ t_hostile_libgearman_LDADD=
+ t_hostile_libgearman_SOURCES=
+@@ -58,6 +61,7 @@ t_hostile_libgearman_SOURCES+= tests/hos
+ t_hostile_libgearman_LDADD+= libgearman/libgearman-hostile.la
+ t_hostile_libgearman_LDADD+= libtest/libtest.la
+ t_hostile_libgearman_LDADD+= tests/libstartworker.la
++t_hostile_libgearman_LDADD+= $(top_builddir)/lib/libgnu.la
+ # check_PROGRAMS+=tests/hostile_libgearman
+ noinst_PROGRAMS+=t/hostile_libgearman
+ 
+--- origsrc/gearmand-1.1.9/tests/httpd.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/httpd.am	2013-09-15 23:16:28.516629500 +0900
+@@ -10,6 +10,7 @@
+ # All paths should be given relative to the root
+ #
+ 
++t_httpd_CPPFLAGS= -I$(top_builddir)/lib
+ t_httpd_SOURCES=
+ t_httpd_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/include.am	2013-07-30 03:10:36.000000000 +0900
++++ src/gearmand-1.1.9/tests/include.am	2013-09-15 22:41:24.860379500 +0900
+@@ -29,17 +29,20 @@ CLIENT_LDADD=
+ CLIENT_LDADD+= libgearman/libgearman.la
+ CLIENT_LDADD+= libtest/libtest.la
+ CLIENT_LDADD+= tests/libstartworker.la
++CLIENT_LDADD+= $(top_builddir)/lib/libgnu.la
+ 
++t_cycle_CPPFLAGS= -I$(top_builddir)/lib
+ t_cycle_SOURCES=
+ t_cycle_LDADD=
+ EXTRA_t_cycle_DEPENDENCIES=
+ 
+-EXTRA_t_cycle_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_cycle_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ t_cycle_SOURCES+= tests/cycle.cc
+ t_cycle_LDADD+= ${CLIENT_LDADD}
+ check_PROGRAMS+=t/cycle
+ noinst_PROGRAMS+=t/cycle
+ 
++t_blobslap_client_CPPFLAGS= -I$(top_builddir)/lib
+ t_blobslap_client_SOURCES=
+ t_blobslap_client_LDADD=
+ 
+@@ -48,12 +51,14 @@ t_blobslap_client_LDADD+= ${CLIENT_LDADD
+ noinst_PROGRAMS+= t/blobslap_client
+ 
+ # Vector tests
++t_vector_CPPFLAGS= -I$(top_builddir)/lib
+ t_vector_SOURCES=
+ t_vector_LDADD=
+ 
+ t_vector_SOURCES+= tests/vector.cc
+ t_vector_LDADD+= libtest/libtest.la
+ t_vector_LDADD+= libgearman/libgearman-vector.la
++t_vector_LDADD+= $(top_builddir)/lib/libgnu.la
+ check_PROGRAMS+= t/vector
+ noinst_PROGRAMS+= t/vector
+ 
+@@ -64,12 +69,14 @@ valgrind-vector: t/vector
+ 	@$(VALGRIND_COMMAND) t/vector
+ 
+ # Vector tests
++t_result_CPPFLAGS= -I$(top_builddir)/lib
+ t_result_SOURCES=
+ t_result_LDADD=
+ 
+ t_result_SOURCES+= tests/result.cc
+ t_result_LDADD+= libtest/libtest.la
+ t_result_LDADD+= libgearman/libgearman-result.la
++t_result_LDADD+= $(top_builddir)/lib/libgnu.la
+ check_PROGRAMS+= t/result
+ noinst_PROGRAMS+= t/result
+ 
+@@ -81,24 +88,26 @@ valgrind-result: t/result
+ 
+ 
+ EXTRA_t_cli_DEPENDENCIES=
++t_cli_CPPFLAGS= -I$(top_builddir)/lib
+ t_cli_SOURCES=
+ t_cli_LDADD=
+ 
+ t_cli_SOURCES+= tests/cli.cc
+ EXTRA_t_cli_DEPENDENCIES+= bin/gearman
+ EXTRA_t_cli_DEPENDENCIES+= bin/gearadmin
+-EXTRA_t_cli_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_cli_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ t_cli_LDADD+= ${CLIENT_LDADD}
+ check_PROGRAMS+= t/cli
+ noinst_PROGRAMS+= t/cli
+ 
+ EXTRA_t_gearmand_DEPENDENCIES=
++t_gearmand_CPPFLAGS= -I$(top_builddir)/lib
+ t_gearmand_LDADD=
+ t_gearmand_SOURCES=
+ 
+ t_gearmand_SOURCES+= tests/gearmand.cc
+ t_gearmand_LDADD+= ${CLIENT_LDADD}
+-EXTRA_t_gearmand_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_gearmand_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ check_PROGRAMS+= t/gearmand
+ noinst_PROGRAMS+= t/gearmand
+ 
+@@ -108,6 +117,7 @@ include tests/hostile.am
+ include tests/workers/include.am
+ include tests/protocol.mk
+ 
++t_round_robin_CPPFLAGS= -I$(top_builddir)/lib
+ t_round_robin_SOURCES=
+ t_round_robin_LDADD=
+ 
+@@ -130,6 +140,7 @@ helgrind-round-robin: tests/round_robin
+ 	@$(HELGRIND_COMMAND) t/round_robin
+ 
+ # Test linking with C++ application
++t_cpp_CPPFLAGS= -I$(top_builddir)/lib
+ t_cpp_SOURCES=
+ t_cpp_LDADD=
+ 
+@@ -142,6 +153,7 @@ valgrind-cpp: t/cpp
+ 	@$(VALGRIND_COMMAND) t/cpp
+ 
+ # Test linking with C application
++t_c_CPPFLAGS= -I$(top_builddir)/lib
+ t_c_SOURCES=
+ t_c_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/libdrizzle.am	2013-07-22 18:42:14.000000000 +0900
++++ src/gearmand-1.1.9/tests/libdrizzle.am	2013-09-15 22:48:47.157254500 +0900
+@@ -10,6 +10,7 @@
+ # All paths should be given relative to the root
+ #
+ 
++t_drizzle_CPPFLAGS= -I$(top_builddir)/lib
+ t_drizzle_CXXFLAGS=
+ t_drizzle_SOURCES=
+ t_drizzle_LDADD=
+@@ -21,6 +22,7 @@ t_drizzle_SOURCES+= tests/drizzle_test.c
+ t_drizzle_LDADD+= libgearman/libgearman.la
+ t_drizzle_LDADD+= libtest/libtest.la
+ t_drizzle_LDADD+= tests/libstartworker.la
++t_drizzle_LDADD+= $(top_builddir)/lib/libgnu.la
+ 
+ t_drizzle_LDFLAGS+= @LIBDRIZZLE_LDFLAGS@
+ t_drizzle_LDADD+= @LIBDRIZZLE_LIB@
+--- origsrc/gearmand-1.1.9/tests/libgearman-1.0/include.am	2013-07-30 12:58:05.000000000 +0900
++++ src/gearmand-1.1.9/tests/libgearman-1.0/include.am	2013-09-15 20:38:07.178889900 +0900
+@@ -9,7 +9,9 @@ LIBGEARMAN_1_0_CLIENT_LDADD:=
+ LIBGEARMAN_1_0_CLIENT_LDADD+= libgearman/libgearman.la
+ LIBGEARMAN_1_0_CLIENT_LDADD+= libtest/libtest.la
+ LIBGEARMAN_1_0_CLIENT_LDADD+= tests/libstartworker.la
++LIBGEARMAN_1_0_CLIENT_LDADD+= $(top_builddir)/lib/libgnu.la
+ 
++t_client_CPPFLAGS= -I$(top_builddir)/lib
+ t_client_CXXFLAGS=
+ t_client_SOURCES=
+ t_client_LDADD=
+@@ -44,6 +46,7 @@ t_client_LDADD+= @PTHREAD_LIBS@
+ check_PROGRAMS+=t/client
+ noinst_PROGRAMS+=t/client
+ 
++t_multi_client_CPPFLAGS= -I$(top_builddir)/lib
+ t_multi_client_CXXFLAGS=
+ t_multi_client_SOURCES=
+ t_multi_client_LDADD=
+@@ -62,6 +65,7 @@ gdb-multi-client: t/multi_client gearman
+ valgrind-multi-client: t/multi_client gearmand/gearmand
+ 	@$(VALGRIND_COMMAND) t/multi_client
+ 
++t_internals_CPPFLAGS= -I$(top_builddir)/lib
+ t_internals_SOURCES=
+ t_internals_LDADD=
+ 
+@@ -72,6 +76,7 @@ t_internals_LDADD+= libgearman/libgearma
+ check_PROGRAMS+= t/internals
+ noinst_PROGRAMS+= t/internals
+ 
++t_worker_CPPFLAGS= -I$(top_builddir)/lib
+ t_worker_LDADD=
+ t_worker_SOURCES=
+ 
+--- origsrc/gearmand-1.1.9/tests/libmemcached.am	2013-07-22 18:42:30.000000000 +0900
++++ src/gearmand-1.1.9/tests/libmemcached.am	2013-09-15 22:49:32.594754500 +0900
+@@ -10,6 +10,7 @@
+ # All paths should be given relative to the root
+ #
+ 
++t_memcached_CPPFLAGS= -I$(top_builddir)/lib
+ t_memcached_CXXFLAGS=
+ t_memcached_SOURCES=
+ t_memcached_LDADD=
+@@ -19,6 +20,7 @@ t_memcached_SOURCES+= tests/memcached_te
+ t_memcached_LDADD+= libgearman/libgearman.la
+ t_memcached_LDADD+= libtest/libtest.la
+ t_memcached_LDADD+= tests/libstartworker.la
++t_memcached_LDADD+= $(top_builddir)/lib/libgnu.la
+ 
+ if HAVE_LIBMEMCACHED
+ 
+--- origsrc/gearmand-1.1.9/tests/mysql.am	2013-07-22 18:43:50.000000000 +0900
++++ src/gearmand-1.1.9/tests/mysql.am	2013-09-15 23:14:53.344754500 +0900
+@@ -10,6 +10,7 @@
+ # All paths should be given relative to the root
+ #
+ t_mysql_SOURCES=
++t_mysql_CPPFLAGS= -I$(top_builddir)/lib
+ t_mysql_CXXFLAGS=
+ t_mysql_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/postgres.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/postgres.am	2013-09-15 22:50:00.438504500 +0900
+@@ -11,6 +11,7 @@
+ #
+ 
+ t_postgres_SOURCES=
++t_postgres_CPPFLAGS= -I$(top_builddir)/lib
+ t_postgres_CXXFLAGS=
+ t_postgres_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/protocol.mk	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/protocol.mk	2013-09-15 21:04:11.851741500 +0900
+@@ -7,6 +7,7 @@
+ # Use and distribution licensed under the BSD license.  See
+ # the COPYING file in the parent directory for full text.
+ 
++t_protocol_CPPFLAGS= -I$(top_builddir)/lib
+ t_protocol_SOURCES=
+ t_protocol_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/redis.am	2013-07-22 18:43:29.000000000 +0900
++++ src/gearmand-1.1.9/tests/redis.am	2013-09-15 23:16:05.126004500 +0900
+@@ -9,6 +9,7 @@
+ # Included from Top Level Makefile.am
+ # All paths should be given relative to the root
+ #
++t_redis_CPPFLAGS= -I$(top_builddir)/lib
+ t_redis_CXXFLAGS=
+ t_redis_SOURCES=
+ t_redis_LDADD=
+--- origsrc/gearmand-1.1.9/tests/sqlite.am	2013-07-22 18:43:44.000000000 +0900
++++ src/gearmand-1.1.9/tests/sqlite.am	2013-09-15 23:15:18.516629500 +0900
+@@ -14,6 +14,7 @@ CLEANFILES+= tests/gearman.sql tests/gea
+ 
+ if HAVE_LIBSQLITE3
+ t_sqlite_CFLAGS=
++t_sqlite_CPPFLAGS= -I$(top_builddir)/lib
+ t_sqlite_CXXFLAGS=
+ t_sqlite_LDADD=
+ t_sqlite_SOURCES=
+--- origsrc/gearmand-1.1.9/tests/stress.am	2013-07-25 02:02:21.000000000 +0900
++++ src/gearmand-1.1.9/tests/stress.am	2013-09-15 20:44:45.593929000 +0900
+@@ -11,6 +11,7 @@
+ #
+ 
+ t_stress_CFLAGS=
++t_stress_CPPFLAGS= -I$(top_builddir)/lib
+ t_stress_CXXFLAGS=
+ t_stress_LDADD=
+ t_stress_SOURCES=
+@@ -19,6 +20,7 @@ t_stress_SOURCES+= tests/burnin.cc
+ t_stress_LDADD+= libgearman/libgearman.la
+ t_stress_LDADD+= libtest/libtest.la
+ t_stress_LDADD+= tests/libstartworker.la
++t_stress_LDADD+= $(top_builddir)/lib/libgnu.la
+ #check_PROGRAMS+=t/stress
+ noinst_PROGRAMS+=t/stress
+ 
+--- origsrc/gearmand-1.1.9/tests/tokyocabinet.am	2013-07-22 18:43:35.000000000 +0900
++++ src/gearmand-1.1.9/tests/tokyocabinet.am	2013-09-15 23:15:42.282254500 +0900
+@@ -10,6 +10,7 @@
+ # All paths should be given relative to the root
+ #
+ 
++t_tokyocabinet_CPPFLAGS= -I$(top_builddir)/lib
+ t_tokyocabinet_SOURCES=
+ t_tokyocabinet_LDADD=
+ 
+--- origsrc/gearmand-1.1.9/tests/workers/include.am	2013-07-14 17:20:42.000000000 +0900
++++ src/gearmand-1.1.9/tests/workers/include.am	2013-09-15 17:28:43.145012300 +0900
+@@ -25,6 +25,7 @@ noinst_HEADERS+= tests/workers/v2/split.
+ noinst_HEADERS+= tests/workers/v2/unique.h
+ 
+ check_LTLIBRARIES+= tests/libstartworker.la
++tests_libstartworker_la_CPPFLAGS= -I$(top_builddir)/lib
+ tests_libstartworker_la_CXXFLAGS=
+ tests_libstartworker_la_LIBADD=
+ tests_libstartworker_la_SOURCES=

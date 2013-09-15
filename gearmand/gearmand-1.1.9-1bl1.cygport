@@ -1,0 +1,78 @@
+HOMEPAGE="http://www.gearman.org/"
+SRC_URI="https://launchpad.net/${PN}/1.2/${PV}/+download/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Generic application framework"
+DESCRIPTION="Gearman provides a generic application framework to farm out work to other
+machines or processes that are better suited to do the work. It allows you to
+do work in parallel, to load balance processing, and to call functions between
+languages. It can be used in a variety of applications, from high-availability
+web sites to the transport of database replication events. In other words, it
+is the nervous system for how distributed processing communicates."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook()
+{
+        cd ${origsrcdir}/${SRC_DIR}
+        gnulib-tool --import --dir=. --lib=libgnu --source-base=lib --m4-base=m4 \
+                --doc-base=doc --tests-base=tests --aux-dir=build-aux \
+                --no-conditional-dependencies --libtool --macro-prefix=gl \
+                posix_spawn \
+                posix_spawn_file_actions_addclose \
+                posix_spawn_file_actions_adddup2 \
+                posix_spawn_file_actions_destroy \
+                posix_spawn_file_actions_init \
+                posix_spawnattr_destroy \
+                posix_spawnattr_init \
+                posix_spawnattr_setflags \
+                posix_spawnattr_setpgroup \
+                posix_spawnattr_setsigmask \
+                posix_spawnp
+}
+
+CYGCONF_ARGS="
+	--disable-libdrizzle
+	--disable-libpq
+	--disable-libtokyocabinet
+	--disable-hiredis
+	--enable-ssl
+	--enable-jobserver=1
+"
+
+src_compile()
+{
+        cd ${S}
+        cygautoreconf
+        cd ${B}
+        cygconf
+        ln -s gear_config.h config.h
+        cygmake
+}
+
+DIFF_EXCLUDES="
+	gear_config.in
+	${PN}.pc
+"
+
+PKG_NAMES="
+	${PN}
+	libgearman8
+	libgearman-devel
+"
+gearmand_CONTENTS="
+	usr/bin/*.exe
+	usr/sbin
+	usr/share/doc
+	usr/share/man/man[18]
+"
+libgearman8_CONTENTS="
+	usr/bin/*.dll
+"
+libgearman_devel_CONTENTS="
+	usr/include
+	usr/lib
+	usr/share/man/man3
+"
+gearmand_SUMMARY="${SUMMARY} (utilities)"
+libgearman8_SUMMARY="${SUMMARY} (runtime)"
+libgearman_devel_SUMMARY="${SUMMARY} (development)"
