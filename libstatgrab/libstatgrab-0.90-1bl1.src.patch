@@ -1,0 +1,105 @@
+--- origsrc/libstatgrab-0.90/configure.ac	2013-08-06 07:44:26.000000000 +0900
++++ src/libstatgrab-0.90/configure.ac	2013-09-18 21:35:42.939115500 +0900
+@@ -651,6 +651,7 @@ AC_INCLUDES_DEFAULT
+ 	],
+ 	[cygwin], [
+ 		AC_DEFINE(CYGWIN, , [Building on Cygwin])
++		LINKFLAGS="-no-undefined"
+ 	],
+ 	[mingw32], [
+ 		AC_DEFINE(MINGW, , [Building on MinGW])
+--- origsrc/libstatgrab-0.90/tests/multi_threaded/Makefile.am	2013-08-06 07:44:26.000000000 +0900
++++ src/libstatgrab-0.90/tests/multi_threaded/Makefile.am	2013-09-18 22:16:59.459800400 +0900
+@@ -2,7 +2,8 @@
+ # http://www.i-scream.org/libstatgrab/
+ # $Id$
+ 
+-noinst_PROGRAMS = $(test_bin) $(test_script)
++noinst_PROGRAMS = $(test_bin)
++noinst_SCRIPTS = $(test_script)
+ 
+ EXTRA_DIST = run_tests.synopsis.in libstatgrab-test.properties
+ 
+@@ -14,7 +15,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_bu
+ 	      -I$(top_srcdir)/tests/testlib \
+ 	       @CLIBFLAGS@
+ 
+-LDADD = $(top_builddir)/src/libstatgrab/libstatgrab.la $(top_builddir)/tests/testlib/libtestlib.a @LINKFLAGS@
++LDADD = $(top_builddir)/tests/testlib/libtestlib.la $(top_builddir)/src/libstatgrab/libstatgrab.la @LINKFLAGS@
+ 
+ if TEST_SCRIPTS
+ full_stats_edit=	$(PERL5) $(srcdir)/../testlib/mk_run_tests.pl \
+@@ -33,7 +34,7 @@ diff_stats_edit=	$(PERL5) $(srcdir)/../t
+ 
+ test_script = full_stats.t diff_stats.t
+ 
+-full_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
++#full_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 
+ full_stats.t: Makefile $(srcdir)/../testlib/mk_run_tests.pl $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 	rm -f $@ $@.tmp
+@@ -44,7 +45,7 @@ full_stats.t: Makefile $(srcdir)/../test
+ 	chmod a-w $@.tmp
+ 	mv $@.tmp $@
+ 
+-diff_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
++#diff_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 
+ diff_stats.t: Makefile $(srcdir)/../testlib/mk_run_tests.pl $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 	rm -f $@ $@.tmp
+--- origsrc/libstatgrab-0.90/tests/single_threaded/Makefile.am	2013-08-06 07:44:26.000000000 +0900
++++ src/libstatgrab-0.90/tests/single_threaded/Makefile.am	2013-09-18 22:16:12.816245800 +0900
+@@ -2,7 +2,8 @@
+ # http://www.i-scream.org/libstatgrab/
+ # $Id$
+ 
+-noinst_PROGRAMS = $(test_bin) $(test_script)
++noinst_PROGRAMS = $(test_bin)
++noinst_SCRIPTS = $(test_script)
+ 
+ EXTRA_DIST = run_tests.synopsis.in libstatgrab-test.properties
+ 
+@@ -14,7 +15,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_bu
+ 	      -I$(top_srcdir)/tests/testlib \
+ 	       @CLIBFLAGS@
+ 
+-LDADD = $(top_builddir)/src/libstatgrab/libstatgrab.la $(top_builddir)/tests/testlib/libtestlib.a @LINKFLAGS@
++LDADD = $(top_builddir)/tests/testlib/libtestlib.la $(top_builddir)/src/libstatgrab/libstatgrab.la @LINKFLAGS@
+ 
+ if TEST_SCRIPTS
+ full_stats_edit=	$(PERL5) $(srcdir)/../testlib/mk_run_tests.pl \
+@@ -33,7 +34,7 @@ diff_stats_edit=	$(PERL5) $(srcdir)/../t
+ 
+ test_script = full_stats.t diff_stats.t
+ 
+-full_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
++#full_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 
+ full_stats.t: Makefile $(srcdir)/../testlib/mk_run_tests.pl $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 	rm -f $@ $@.tmp
+@@ -44,7 +45,7 @@ full_stats.t: Makefile $(srcdir)/../test
+ 	chmod a-w $@.tmp
+ 	mv $@.tmp $@
+ 
+-diff_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
++#diff_stats_t_SOURCES = $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 
+ diff_stats.t: Makefile $(srcdir)/../testlib/mk_run_tests.pl $(srcdir)/../testlib/run_tests.t.in run_tests.synopsis.in
+ 	rm -f $@ $@.tmp
+--- origsrc/libstatgrab-0.90/tests/testlib/Makefile.am	2013-08-06 07:44:26.000000000 +0900
++++ src/libstatgrab-0.90/tests/testlib/Makefile.am	2013-09-18 22:09:32.154136400 +0900
+@@ -2,12 +2,12 @@
+ # http://www.i-scream.org/libstatgrab/
+ # $Id$
+ 
+-noinst_LIBRARIES = libtestlib.a
++noinst_LTLIBRARIES = libtestlib.la
+ 
+ EXTRA_DIST = mix_tests.pm run_tests.pm mk_run_tests.pl run_tests.t.in testlib.h
+ 
+ # BUILT_HEADERS = helpers.h
+-libtestlib_a_SOURCES = err.c opt.c routines.c
++libtestlib_la_SOURCES = err.c opt.c routines.c
+ 
+ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)\
+ 	      -I$(top_srcdir)/src -I$(top_builddir)/src\
