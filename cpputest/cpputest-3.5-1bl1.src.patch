@@ -1,0 +1,93 @@
+--- origsrc/cpputest-3.5/Makefile.am	2013-09-23 11:51:31.000000000 +0900
++++ src/cpputest-3.5/Makefile.am	2013-09-28 15:12:33.529288800 +0900
+@@ -4,14 +4,11 @@ ACLOCAL_AMFLAGS = -I m4
+ CPPUTEST_TESTS = CppUTestTests
+ CPPUTESTEXT_TESTS = CppUTestExtTests
+ 
+-EXTRA_LIBRARIES = lib/libCppUTestExt.a
+-EXTRA_PROGRAMS = CppUTestExtTests
+-
+-lib_LIBRARIES = lib/libCppUTest.a
++lib_LTLIBRARIES = lib/libCppUTest.la
+ check_PROGRAMS = $(CPPUTEST_TESTS)
+ 
+ if INCLUDE_CPPUTEST_EXT
+-lib_LIBRARIES+= lib/libCppUTestExt.a
++lib_LTLIBRARIES+= lib/libCppUTestExt.la
+ check_PROGRAMS += $(CPPUTESTEXT_TESTS)
+ endif
+ 
+@@ -24,11 +21,12 @@ EXTRA_DIST = \
+ 	cpputest.pc.in \
+ 	$(ALL_FILES_IN_GIT)
+ 
+-lib_libCppUTest_a_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUTEST_CPPFLAGS) $(CPPUTEST_ADDITIONAL_CPPFLAGS)
+-lib_libCppUTest_a_CFLAGS = $(AM_CFLAGS) $(CPPUTEST_CFLAGS) $(CPPUTEST_ADDITIONAL_CFLAGS)
+-lib_libCppUTest_a_CXXFLAGS = $(AM_CXXFLAGS) $(CPPUTEST_CXXFLAGS) $(CPPUTEST_ADDITIONAL_CXXFLAGS)
++lib_libCppUTest_la_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUTEST_CPPFLAGS) $(CPPUTEST_ADDITIONAL_CPPFLAGS)
++lib_libCppUTest_la_CFLAGS = $(AM_CFLAGS) $(CPPUTEST_CFLAGS) $(CPPUTEST_ADDITIONAL_CFLAGS)
++lib_libCppUTest_la_CXXFLAGS = $(AM_CXXFLAGS) $(CPPUTEST_CXXFLAGS) $(CPPUTEST_ADDITIONAL_CXXFLAGS)
++lib_libCppUTest_la_LDFLAGS = -no-undefined
+ 
+-lib_libCppUTest_a_SOURCES = \
++lib_libCppUTest_la_SOURCES = \
+ 	src/CppUTest/CommandLineArguments.cpp \
+ 	src/CppUTest/MemoryLeakWarningPlugin.cpp \
+ 	src/CppUTest/TestHarness_c.cpp \
+@@ -74,11 +72,13 @@ include_cpputest_HEADERS = \
+ 	include/CppUTest/TestHarness_c.h \
+ 	include/CppUTest/UtestMacros.h
+ 
+-lib_libCppUTestExt_a_CPPFLAGS = $(lib_libCppUTest_a_CPPFLAGS)
+-lib_libCppUTestExt_a_CFLAGS = $(lib_libCppUTest_a_CFLAGS)
+-lib_libCppUTestExt_a_CXXFLAGS = $(lib_libCppUTest_a_CXXFLAGS)
++lib_libCppUTestExt_la_CPPFLAGS = $(lib_libCppUTest_la_CPPFLAGS)
++lib_libCppUTestExt_la_CFLAGS = $(lib_libCppUTest_la_CFLAGS)
++lib_libCppUTestExt_la_CXXFLAGS = $(lib_libCppUTest_la_CXXFLAGS)
++lib_libCppUTestExt_la_LIBADD = $(top_builddir)/lib/libCppUTest.la
++lib_libCppUTestExt_la_LDFLAGS = -no-undefined
+ 
+-lib_libCppUTestExt_a_SOURCES = \
++lib_libCppUTestExt_la_SOURCES = \
+    src/CppUTestExt/CodeMemoryReportFormatter.cpp \
+    src/CppUTestExt/MemoryReporterPlugin.cpp \
+    src/CppUTestExt/MockFailure.cpp \
+@@ -117,10 +117,10 @@ include_cpputestext_HEADERS = \
+ 	
+ endif
+ 
+-CppUTestTests_CPPFLAGS = $(lib_libCppUTest_a_CPPFLAGS)
+-CppUTestTests_CFLAGS = $(lib_libCppUTest_a_CFLAGS)
+-CppUTestTests_CXXFLAGS = $(lib_libCppUTest_a_CXXFLAGS) 
+-CppUTestTests_LDADD = lib/libCppUTest.a $(CPPUTEST_LDADD)
++CppUTestTests_CPPFLAGS = $(lib_libCppUTest_la_CPPFLAGS)
++CppUTestTests_CFLAGS = $(lib_libCppUTest_la_CFLAGS)
++CppUTestTests_CXXFLAGS = $(lib_libCppUTest_la_CXXFLAGS) 
++CppUTestTests_LDADD = lib/libCppUTest.la $(CPPUTEST_LDADD)
+ CppUTestTests_LDFLAGS = $(AM_LDFLAGS) $(CPPUTEST_LDFLAGS) $(CPPUTEST_ADDITIONAL_LDFLAGS)
+ 
+ CppUTestTests_SOURCES = \
+@@ -154,10 +154,10 @@ CppUTestTests_SOURCES = \
+ 	tests/AllocationInCppFile.cpp \
+ 	tests/UtestTest.cpp
+ 
+-CppUTestExtTests_CPPFLAGS = $(lib_libCppUTestExt_a_CPPFLAGS)
+-CppUTestExtTests_CFLAGS = $(lib_libCppUTestExt_a_CFLAGS)
+-CppUTestExtTests_CXXFLAGS = $(lib_libCppUTestExt_a_CXXFLAGS) 
+-CppUTestExtTests_LDADD = lib/libCppUTestExt.a lib/libCppUTest.a $(CPPUTEST_LDADD)
++CppUTestExtTests_CPPFLAGS = $(lib_libCppUTestExt_la_CPPFLAGS)
++CppUTestExtTests_CFLAGS = $(lib_libCppUTestExt_la_CFLAGS)
++CppUTestExtTests_CXXFLAGS = $(lib_libCppUTestExt_la_CXXFLAGS) 
++CppUTestExtTests_LDADD = lib/libCppUTestExt.la lib/libCppUTest.la $(CPPUTEST_LDADD)
+ CppUTestExtTests_LDFLAGS = $(CppUTestTests_LDFLAGS)
+ 
+ CppUTestExtTests_SOURCES = \
+@@ -246,7 +246,7 @@ check_all:
+ 	
+ 	./$(CPPUTEST_TESTS) >> test_output.txt; ./$(CPPUTESTEXT_TESTS) >> test_output.txt 
+ 	$(SILENCE)for f in `ls *.gcno` ; do \
+-		gcov $(CppUTestExtTests_SOURCES) $(CppUTestTests_SOURCES) $(lib_libCppUTest_a_SOURCES) $(lib_libCppUTestExt_a_SOURCES) -o $$f 1>>gcov_output.txt 2>>gcov_error.txt; \
++		gcov $(CppUTestExtTests_SOURCES) $(CppUTestTests_SOURCES) $(lib_libCppUTest_la_SOURCES) $(lib_libCppUTestExt_la_SOURCES) -o $$f 1>>gcov_output.txt 2>>gcov_error.txt; \
+ 	done
+ 	$(srcdir)/scripts/filterGcov.sh gcov_output.txt gcov_error.txt gcov_report.txt test_output.txt
+ 	cat gcov_report.txt
