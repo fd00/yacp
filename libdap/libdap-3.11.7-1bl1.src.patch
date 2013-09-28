@@ -1,0 +1,69 @@
+--- origsrc/libdap-3.11.7/Makefile.am	2012-11-08 04:06:45.000000000 +0900
++++ src/libdap-3.11.7/Makefile.am	2013-09-28 20:35:54.659507900 +0900
+@@ -49,18 +49,18 @@ libparsers_la_CPPFLAGS = $(AM_CPPFLAGS)
+ libparsers_la_LIBADD = $(XML2_LIBS)
+ 
+ libdap_la_SOURCES = $(DAP_SRC) $(GNU_SRC) 
+-libdap_la_LDFLAGS = -version-info $(LIBDAP_VERSION)
++libdap_la_LDFLAGS = -no-undefined -version-info $(LIBDAP_VERSION)
+ libdap_la_CPPFLAGS = $(AM_CPPFLAGS) #$(XML2_CFLAGS)
+ libdap_la_LIBADD = $(XML2_LIBS) $(PTHREAD_LIBS) -lcrypto gl/libgnu.la libparsers.la
+ 
+ libdapclient_la_SOURCES = $(CLIENT_SRC) 
+-libdapclient_la_LDFLAGS = -version-info $(CLIENTLIB_VERSION)
++libdapclient_la_LDFLAGS = -no-undefined -version-info $(CLIENTLIB_VERSION)
+ #libdapclient_la_CPPFLAGS = $(AM_CPPFLAGS) $(CURL_CFLAGS) $(XML2_CFLAGS)
+ libdapclient_la_CPPFLAGS = $(AM_CPPFLAGS) $(CURL_CFLAGS)
+ libdapclient_la_LIBADD = $(CURL_LIBS) libdap.la $(PTHREAD_LIBS)
+ 
+ libdapserver_la_SOURCES = $(SERVER_SRC)
+-libdapserver_la_LDFLAGS = -version-info $(SERVERLIB_VERSION)
++libdapserver_la_LDFLAGS = -no-undefined -version-info $(SERVERLIB_VERSION)
+ libdapserver_la_LIBADD = libdap.la $(UUID_LIBS)
+ 
+ pkginclude_HEADERS = $(DAP_HDR) $(GNU_HDR) $(CLIENT_HDR) $(SERVER_HDR) 
+--- origsrc/libdap-3.11.7/unit-tests/MIMEUtilTest.cc	2012-09-29 07:27:52.000000000 +0900
++++ src/libdap-3.11.7/unit-tests/MIMEUtilTest.cc	2013-09-28 21:53:44.459312500 +0900
+@@ -137,7 +137,11 @@ Content-Description: dods_dds\r\n\
+ 	DBG(cerr << "DODS DDS" << endl << oss);
+ 	CPPUNIT_ASSERT(re_match(r2, oss.str()));
+ 
++#if defined(_BSD_SOURCE)
+ 	struct tm tm = { 0, 0, 0, 1, 0, 100, 0, 0, 0, 0, 0 }; // 1 Jan 2000
++#else
++	struct tm tm = { 0, 0, 0, 1, 0, 100, 0, 0, 0}; // 1 Jan 2000
++#endif
+ 	time_t t = mktime(&tm);
+ 	Regex
+ 		r3(
+@@ -161,7 +165,11 @@ Content-Description: dods_dds\r\n\
+     {
+ 	time_t t = 0;
+ 	CPPUNIT_ASSERT(rfc822_date(t) == "Thu, 01 Jan 1970 00:00:00 GMT");
++#if defined(_BSD_SOURCE)
+ 	struct tm tm = { 0, 0, 0, 1, 0, 100, 0, 0, 0, 0, 0 }; // 1 Jan 2000
++#else
++	struct tm tm = { 0, 0, 0, 1, 0, 100, 0, 0, 0}; // 1 Jan 2000
++#endif
+ 	t = mktime(&tm);
+ 	// This test may fail for some locations since mktime interprets t as
+ 	// the local time and returns the corresponding GMT time.
+--- origsrc/libdap-3.11.7/unit-tests/Makefile.am	2012-09-29 07:27:55.000000000 +0900
++++ src/libdap-3.11.7/unit-tests/Makefile.am	2013-09-28 22:09:51.333336000 +0900
+@@ -98,12 +98,12 @@ DDXParserTest_CPPFLAGS = $(AM_CPPFLAGS)
+ DDXParserTest_LDADD = ../libdap.la $(AM_LDADD)
+ 
+ DODSFilterTest_SOURCES = DODSFilterTest.cc $(TEST_SRC)
+-DODSFilterTest_LDADD = ../libdapserver.la ../libdap.la \
+-	../tests/libtest-types.a $(AM_LDADD)
++DODSFilterTest_LDADD = ../tests/libtest-types.a ../libdapserver.la ../libdap.la \
++	$(AM_LDADD)
+ 
+ ResponseBuilderTest_SOURCES = ResponseBuilderTest.cc $(TEST_SRC)
+-ResponseBuilderTest_LDADD = ../libdapserver.la ../libdap.la \
+-	../tests/libtest-types.a $(AM_LDADD)
++ResponseBuilderTest_LDADD = ../tests/libtest-types.a ../libdapserver.la ../libdap.la \
++	$(AM_LDADD)
+ 
+ Keywords2Test_SOURCES = Keywords2Test.cc
+ Keywords2Test_LDADD = ../libdap.la $(AM_LDADD)
