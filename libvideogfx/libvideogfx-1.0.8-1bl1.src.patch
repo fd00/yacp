@@ -1,0 +1,55 @@
+--- origsrc/libvideogfx-1.0.8/configure.in	2013-08-27 02:11:50.000000000 +0900
++++ src/libvideogfx-1.0.8/configure.in	2013-09-29 14:58:29.508044200 +0900
+@@ -108,7 +108,11 @@ dnl see http://lists.apple.com/archives/
+ dnl and libvideogfx/graphics/color/internal_yuv2rgb_mmx.cc (UVoffset and other constants)
+ case ${target_cpu} in
+   i?86 )
+-	AM_CONDITIONAL(ENABLE_MMX, true)
++	if test "$host_os" = "cygwin"; then
++		AM_CONDITIONAL(ENABLE_MMX, false)
++	else
++		AM_CONDITIONAL(ENABLE_MMX, true)
++	fi
+ 	;;
+ 
+   *)	AM_CONDITIONAL(ENABLE_MMX, false)
+@@ -143,7 +147,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [
+ if test "$GCC" = "yes" ; then
+   if test x$have_gcc45 = xyes; then
+ #    CFLAGS+=" -std=c++0x"
+-    CXXFLAGS+=" -std=c++0x"
++    CXXFLAGS+=" -std=gnu++0x"
+   fi
+ fi
+ 
+--- origsrc/libvideogfx-1.0.8/examples/Makefile.am	2013-06-24 21:45:17.000000000 +0900
++++ src/libvideogfx-1.0.8/examples/Makefile.am	2013-09-29 15:05:19.838122300 +0900
+@@ -24,7 +24,7 @@ noinst_PROGRAMS = test-libvideogfx bitst
+ 	ppmflip chromatest dynarray symmatrix \
+ 	$(linuxprogs) $(audioprogs) $(x11progs) # ppm2avi smartpointer
+ 
+-INCLUDES = -I..
++INCLUDES = -I$(top_srcdir)
+ 
+ test_libvideogfx_DEPENDENCIES = ../libvideogfx/libvideogfx.la
+ test_libvideogfx_CFLAGS = $(X_CFLAGS)
+--- origsrc/libvideogfx-1.0.8/libvideogfx/Makefile.am	2013-06-24 21:45:15.000000000 +0900
++++ src/libvideogfx-1.0.8/libvideogfx/Makefile.am	2013-09-29 14:49:44.225817600 +0900
+@@ -21,7 +21,7 @@ lib_LTLIBRARIES = libvideogfx.la
+ 
+ # libtool stuff: set version and export symbols for resolving
+ libvideogfx_includedir = $(includedir)/libvideogfx
+-libvideogfx_la_LDFLAGS = \
++libvideogfx_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)	\
+ 	-release $(LT_RELEASE)					\
+ 	-export-dynamic
+@@ -49,7 +49,7 @@ libvideogfx_la_LIBADD = \
+ 	audio/fileio/libvideogfx-audio-fileio.la		\
+ 	utility/bitstream/libvideogfx-utility-bitstream.la	\
+ 	utility/libvideogfx-utility.la				\
+-	$(x11_sources)
++	$(x11_sources) $(X_LIBS)
+ 
+ 
+ #	graphics/fileio/avi/libvideogfx-graphics-fileio-avi.la	\
