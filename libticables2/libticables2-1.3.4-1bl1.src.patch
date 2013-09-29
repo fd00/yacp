@@ -1,0 +1,111 @@
+--- origsrc/libticables2-1.3.4/configure.ac	2013-03-29 21:49:37.000000000 +0900
++++ src/libticables2-1.3.4/configure.ac	2013-09-29 18:41:46.179808200 +0900
+@@ -92,7 +92,7 @@ if [test "x$cab_cv_use_libusb" != xno];
+       ])
+   else
+     case $host_os in
+-    *mingw*|*cygwin*)
++    *mingw*)
+       # use builtin libusb_dyn.c to load libusb at runtime
+       HAVE_LIBUSB=yes
+       LIBUSB_CFLAGS='-I$(top_srcdir)/src/win32'
+@@ -171,7 +171,7 @@ CFLAGS="$CFLAGS $ARCH"
+ # What flag to depends on gcc version: gcc3 uses "-mms-bitfields", while
+ # gcc2 uses "-fnative-struct".
+ case $host_os in
+-*mingw*|*cygwin*)
++*mingw*)
+   if test x$GCC = xyes; then
+     msnative_struct=''
+     AC_MSG_CHECKING([how to get MSVC-compatible struct packing])
+--- origsrc/libticables2-1.3.4/src/detect.c	2012-07-21 02:03:49.000000000 +0900
++++ src/libticables2-1.3.4/src/detect.c	2013-09-29 18:48:45.649534800 +0900
+@@ -32,7 +32,7 @@
+ # include <config.h>
+ #endif
+ 
+-#if defined(__LINUX__)
++#if defined(__LINUX__) || defined(__CYGWIN__)
+ #include "linux/detect.c"
+ #elif defined(__MACOSX__)
+ #include "macos/detect.c"
+--- origsrc/libticables2-1.3.4/src/link_blk.c	2012-07-21 02:03:49.000000000 +0900
++++ src/libticables2-1.3.4/src/link_blk.c	2013-09-29 19:02:47.650511300 +0900
+@@ -27,8 +27,11 @@
+ 
+ #ifndef NO_CABLE_BLK
+ 
+-#if defined(__LINUX__) && defined(HAVE_TERMIOS_H)
++#if (defined(__LINUX__) || defined(__CYGWIN__)) && defined(HAVE_TERMIOS_H)
+ #include "linux/link_ser.c"
++#if defined(__CYGWIN__) && defined(HAVE_TERMIOS_H)
++#include "linux/ioports.c"
++#endif
+ 
+ #elif defined(__BSD__)
+ #include "bsd/link_ser.c"
+--- origsrc/libticables2-1.3.4/src/link_gry.c	2012-07-21 02:03:49.000000000 +0900
++++ src/libticables2-1.3.4/src/link_gry.c	2013-09-29 18:51:12.994261300 +0900
+@@ -27,7 +27,7 @@
+ 
+ #ifndef NO_CABLE_GRY
+ 
+-#if defined(__LINUX__)
++#if defined(__LINUX__) || defined(__CYGWIN__)
+ #include "linux/link_gry.c"
+ 
+ #elif defined(__BSD__)
+--- origsrc/libticables2-1.3.4/src/link_tie.c	2012-07-21 02:03:49.000000000 +0900
++++ src/libticables2-1.3.4/src/link_tie.c	2013-09-29 18:59:07.899534800 +0900
+@@ -27,7 +27,7 @@
+ 
+ #ifndef NO_CABLE_TIE
+ 
+-#if defined(__LINUX__)
++#if defined(__LINUX__) || defined(__CYGWIN__)
+ #include "linux/link_tie.c"
+ 
+ #elif defined(__BSD__)
+--- origsrc/libticables2-1.3.4/src/link_vti.c	2012-07-21 02:03:49.000000000 +0900
++++ src/libticables2-1.3.4/src/link_vti.c	2013-09-29 18:58:45.852659800 +0900
+@@ -27,7 +27,7 @@
+ 
+ #ifndef NO_CABLE_VTI
+ 
+-#if defined(__LINUX__)
++#if defined(__LINUX__) || defined(__CYGWIN__)
+ #include "linux/link_vti.c"
+ 
+ #elif defined(__BSD__)
+--- origsrc/libticables2-1.3.4/src/linux/detect.c	2011-11-12 22:04:41.000000000 +0900
++++ src/libticables2-1.3.4/src/linux/detect.c	2013-09-29 18:50:47.571409800 +0900
+@@ -304,6 +304,9 @@ int linux_check_root(void)
+ 
+ int linux_check_tty(const char *devname)
+ {
++#if defined(__CYGWIN__)
++    return ERR_TTDEV;
++#else
+     struct serial_struct serinfo = { 0 };
+     int fd;
+ 
+@@ -352,6 +355,7 @@ int linux_check_tty(const char *devname)
+ #endif
+ 
+     return 0;
++#endif
+ }
+ 
+ int linux_check_parport(const char *devname)
+--- origsrc/libticables2-1.3.4/src/linux/ioports.c	2011-11-12 22:04:41.000000000 +0900
++++ src/libticables2-1.3.4/src/linux/ioports.c	2013-09-29 19:05:08.228636300 +0900
+@@ -132,6 +132,9 @@ int par_io_wr(int dev_fd, uint8_t data)
+ // ---
+ 
+ #ifdef HAVE_TERMIOS_H
++#if defined(__CYGWIN__) && defined(dev_fd)
++#undef dev_fd
++#endif
+ 
+ int ser_io_open(const char *dev_name, int *dev_fd)
+ {
