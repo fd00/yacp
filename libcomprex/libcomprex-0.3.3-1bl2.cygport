@@ -1,0 +1,58 @@
+HOMEPAGE="http://gnupdate.sourceforge.net/components/${PN}/"
+SRC_URI="mirror://sourceforge/gnupdate/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Comprex (de)compression library"
+DESCRIPTION="The libcomprex library transparently handles automatic compression and
+decompression of files. The API is similar to C's built-in file access
+functions, which provides a smooth transition to libcomprex. libcomprex can
+also open uncompressed files, making it a good replacement for the native file
+access functions."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -rf aclocal.m4 configure configure.in libltdl
+	find . -name Makefile.in | xargs rm -f
+}
+
+src_compile()
+{
+	cd ${S}
+	intltoolize --automake --copy --force
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+DIFF_EXCLUDES="
+	libltdl
+"
+
+PKG_NAMES="
+	${PN}
+	${PN}3
+	${PN}-devel
+"
+libcomprex_CONTENTS="
+	usr/share/doc
+"
+libcomprex3_CONTENTS="
+	usr/bin/*.dll
+	usr/lib/comprex
+	usr/share/locale
+"
+libcomprex_devel_CONTENTS="
+	usr/bin/*-config
+	usr/include
+	usr/lib/${PN}*
+	usr/lib/pkgconfig
+	usr/share/aclocal
+	usr/share/man
+"
+
+libcomprex_SUMMARY="${SUMMARY} (licensing & readmes)"
+libcomprex3_SUMMARY="${SUMMARY} (runtime)"
+libcomprex_devel_SUMMARY="${SUMMARY} (development)"
