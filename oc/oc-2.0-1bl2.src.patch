@@ -1,0 +1,63 @@
+--- origsrc/oc-2.0/Makefile.am	2012-07-06 05:59:18.000000000 +0900
++++ src/oc-2.0/Makefile.am	2013-10-14 00:54:28.015276400 +0900
+@@ -47,7 +47,8 @@ ocuri.h ocuri.c \
+ ocutil.h ocutil.c \
+ xxdr.h xxdr.c
+ 
+-liboc_la_LDFLAGS = -version-info $(LIBOC_VERSION) @LDFLAGS@
++liboc_la_LIBADD = $(CURL_LIBS)
++liboc_la_LDFLAGS = -no-undefined -version-info $(LIBOC_VERSION) @LDFLAGS@
+ 
+ pkginclude_HEADERS = oc.h
+ 
+--- origsrc/oc-2.0/configure.ac	2012-07-07 02:22:22.000000000 +0900
++++ src/oc-2.0/configure.ac	2013-10-14 00:51:45.577776400 +0900
+@@ -36,47 +36,7 @@ AC_CHECK_PROG(VALGRIND, valgrind, [valgr
+ 
+ ##################################################
+ # Check for libcurl
+-
+-# Do an initial lib test for curl, but suppress the default action
+-AC_CHECK_LIB([curl],[curl_easy_setopt],[found_curl=yes],[found_curl=no])
+-if test $found_curl = yes ; then
+-    # Redo the check lib to actually add -lcurl
+-    AC_CHECK_LIB([curl], [curl_easy_setopt])
+-fi
+-
+-if test $found_curl = no ; then
+-#  Find curl-config on PATH
+-  if curl-config --version >/dev/null 2>&1 ; then
+-    AC_MSG_NOTICE([checking whether a location for curl-config is in PATH... yes])
+-
+-    # Capture the libs and headers lists
+-    curllibs=`curl-config --libs`
+-    curlheaders=`curl-config --cflags`
+-    LIBS="$LIBS $curllibs"    
+-    CFLAGS="$CFLAGS $curlheaders"    
+-    found_curl=yes
+-  else
+-    AC_MSG_NOTICE([checking whether a location for curl-config is in PATH... no])
+-    AC_MSG_ERROR([cannot locate libcurl or curl-config])  
+-  fi
+-fi
+-
+-# CURLOPT_KEYPASSWD is not defined until curl version 7.16.4
+-# See if defined by trying to compile a program using it
+-# Save/restore CFLAGS
+-SAVECFLAGS="$CFLAGS"
+-CFLAGS="${curl_cflags}"
+-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+-[#include "curl/curl.h"],
+-[[int x = CURLOPT_KEYPASSWD;]])],
+-                   [havekeypassword=yes],
+-                   [havekeypassword=no])
+-AC_MSG_CHECKING([whether a CURLOPT_KEYPASSWD is defined])
+-AC_MSG_RESULT([${havekeypassword}])
+-if test $havekeypassword = yes; then
+-  AC_DEFINE([HAVE_CURLOPT_KEYPASSWD],[1],[Is CURLOPT_KEYPASSWD defined])
+-fi
+-CFLAGS="$SAVECFLAGS"
++PKG_CHECK_MODULES([CURL], [libcurl >= 7.16.4], [AC_DEFINE([HAVE_CURLOPT_KEYPASSWD],[1],[Is CURLOPT_KEYPASSWD defined])])
+ 
+ ##################################################
+ # Checks for additional library functions.
