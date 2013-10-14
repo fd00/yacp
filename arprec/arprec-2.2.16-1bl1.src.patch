@@ -1,0 +1,87 @@
+--- origsrc/arprec-2.2.16/configure.ac	2012-12-04 03:53:43.000000000 +0900
++++ src/arprec-2.2.16/configure.ac	2013-10-14 13:20:40.408567700 +0900
+@@ -12,7 +12,7 @@
+ #
+ #
+ # Process this file with autoconf to produce a configure script.
+-define([ARPREC_PATCHLEVEL], 13)
++define([ARPREC_PATCHLEVEL], 16)
+ AC_PREREQ(2.60)
+ AC_INIT(arprec, 2.2.ARPREC_PATCHLEVEL, dhbailey@lbl.gov)
+ AC_CONFIG_SRCDIR([src/init.cpp])
+--- origsrc/arprec-2.2.16/fortran/Makefile.am	2012-12-04 03:51:09.000000000 +0900
++++ src/arprec-2.2.16/fortran/Makefile.am	2013-10-14 13:29:40.174192700 +0900
+@@ -2,8 +2,11 @@ if HAVE_FORTRAN
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ LDADD = libarprec_f_main.la libarprecmod.la $(top_builddir)/src/libarprec.la $(FCLIBS)
+ 
+-lib_LTLIBRARIES = libarprecmod.la libarprec_f_main.la
++lib_LTLIBRARIES = libarprecmod.la
++noinst_LTLIBRARIES = libarprec_f_main.la
+ libarprecmod_la_SOURCES = f_mp.cpp mp_mod.f mp_modm.f mp_modx.f
++libarprecmod_la_LDFLAGS = -no-undefined
++libarprecmod_la_LIBADD = -lgfortran $(top_builddir)/src/libarprec.la
+ libarprec_f_main_la_SOURCES = main.cpp
+ 
+ if UPCASE_MODULE
+--- origsrc/arprec-2.2.16/src/Makefile.am	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.16/src/Makefile.am	2013-10-14 13:18:36.432981800 +0900
+@@ -16,6 +16,7 @@ SRC = add.cpp agmx.cpp ang.cpp angx.cpp
+ lib_LTLIBRARIES = libarprec.la
+ 
+ libarprec_la_SOURCES = $(SRC)
++libarprec_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+--- origsrc/arprec-2.2.16/toolkit/mathinit.f	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.16/toolkit/mathinit.f	2013-10-14 13:15:58.825559900 +0900
+@@ -24,7 +24,7 @@ subroutine f_main
+ use mpmodule
+ use globdata
+ integer i, nq3, nquadopt
+-parameter (nquadopt = 1)
++parameter (nquadopt = 3)
+ real*8 second, tm0, tm1, tm2
+ type (mp_real) catalan, eulergamma, t1, t2
+ external catalan, eulergamma, second
+--- origsrc/arprec-2.2.16/toolkit/mathtool.f	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.16/toolkit/mathtool.f	2013-10-14 13:16:19.856809900 +0900
+@@ -516,18 +516,18 @@ nef2 = 68
+ 
+ !   Read constants and quadrature arrays from files.
+ 
+-open (11, file = 'const.dat', form = 'unformatted')
++open (11, file = '/usr/share/arprec/const.dat', form = 'unformatted')
+ rewind (11)
+ read (11) t1, t2
+ rewind (11)
+ close (11)
+ 
+ if (nquadt == 1) then
+-  open (11, file = 'quadgs.dat', form = 'unformatted')
++  open (11, file = '/usr/share/arprec/quadgs.dat', form = 'unformatted')
+ elseif (nquadt == 2) then
+-  open (11, file = 'quaderf.dat', form = 'unformatted')
++  open (11, file = '/usr/share/arprec/quaderf.dat', form = 'unformatted')
+ elseif (nquadt == 3) then
+-  open (11, file = 'quadts.dat', form = 'unformatted')
++  open (11, file = '/usr/share/arprec/quadts.dat', form = 'unformatted')
+ endif
+ rewind (11)
+ read (11) nq3
+@@ -1441,11 +1441,11 @@ elseif (ix == 6 .or. ix == 7) then
+       if (ndebug > 0) write (6, 14) quadn(k1)
+ 14    format ('New quadrature type: ',a)
+       if (k1 == 1) then
+-        open (11, file = 'quadgs.dat', form = 'unformatted')
++        open (11, file = '/usr/share/arprec/quadgs.dat', form = 'unformatted')
+       elseif (k1 == 2) then
+-        open (11, file = 'quaderf.dat', form = 'unformatted')
++        open (11, file = '/usr/share/arprec/quaderf.dat', form = 'unformatted')
+       elseif (k1 == 3) then
+-        open (11, file = 'quadts.dat', form = 'unformatted')
++        open (11, file = '/usr/share/arprec/quadts.dat', form = 'unformatted')
+       else
+         write (6, 15)
+ 15      format ('oper: impossible case; please contact author.')

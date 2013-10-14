@@ -1,0 +1,99 @@
+HOMEPAGE="http://crd.lbl.gov/~dhbailey/mpdist/"
+SRC_URI="
+	http://crd.lbl.gov/~dhbailey/mpdist/${P}.tar.gz
+	http://crd.lbl.gov/~dhbailey/mpdist/BSD-LBNL-License.doc
+"
+
+CATEGORY="Math"
+SUMMARY="C++/Fortran-90 arbitrary precision package"
+DESCRIPTION="ARPREC is a software package for performing arbitrary precision arithmetic. It
+consists of a revision and extension of Bailey's earlier MPFUN package,
+enhanced with special IEEE numerical techniques. Features include:
+
+ * Written in C++ for broad portability and fast execution.
+
+ * Includes C++ and Fortran 90/95 interfaces based on custom data-types and
+   operator/function overloading, which permit the library to be used with
+   only minor modifications for many conventional C++ and Fortran-90 programs.
+
+ * Includes all of the usual arithmetic operations, as well as many
+   transcendental functions, including cos, sin, tan, arccos, arcsin, arctan,
+   exp, log, log10, erf, gamma and Bessel functions.
+
+ * Supports three arbitrary precision data-types: mp_real, mp_int and
+   mp_complex.
+
+ * Supports many mixed-mode operations between arbitrary precision variables
+   or constants and conventional variables or constants.
+
+ * Includes special library routines, incorporating advanced algorithms for
+   extra-high precision (above 1000 digits) computation.
+
+ * Includes a number of sample application programs, including programs for
+   quadrature (numerical definite integrals), PLSQ (integer relation finding)
+   and polynomial root finding.
+
+ * Includes the Experimental Mathematician's Toolkit. This is a self-contained
+   interactive program that performs many operations typical of modern
+   experimental mathematics, including arithmetic expressions, common
+   transcendental functions, infinite series evaluation, definite integrals,
+   polynomial roots, user-defined functions, all evaluated to a user-defined
+   level of numeric precision, up to 1000 decimal digits."
+
+CYGCONF_ARGS="
+	--enable-qd
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+	cygmake toolkit
+	pushd toolkit
+		./mathinit
+	popd
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	pushd toolkit
+	for exe in *.exe
+	do
+		newbin ${exe} ${PN}-${exe}
+	done
+	insinto /usr/share/arprec
+	doins *.dat
+	popd
+}
+
+DOCS="
+	BSD-LBNL-License.doc
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+arprec_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libarprec0_CONTENTS="
+	usr/bin/*.dll
+"
+libarprec_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+"
+
+arprec_SUMMARY="${SUMMARY} (utilities)"
+libarprec0_SUMMARY="${SUMMARY} (runtime)"
+libarprec_devel_SUMMARY="${SUMMARY} (development)"
