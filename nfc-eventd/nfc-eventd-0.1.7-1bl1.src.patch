@@ -1,0 +1,34 @@
+--- origsrc/nfc-eventd-0.1.7/src/modules/Makefile.am	2010-08-12 21:24:56.000000000 +0900
++++ src/nfc-eventd-0.1.7/src/modules/Makefile.am	2013-10-14 20:06:01.303111600 +0900
+@@ -5,7 +5,7 @@ noinst_HEADERS = nem_common.h nem_execut
+ nem_LTLIBRARIES = nem_execute.la
+ 
+ nem_execute_la_SOURCES = nem_execute.c
+-nem_execute_la_LDFLAGS = -module -no-undefined @LIBNFC_LIBS@
++nem_execute_la_LDFLAGS = -module -avoid-version -no-undefined @LIBNFC_LIBS@
+ nem_execute_la_CFLAGS = @LIBNFC_CFLAGS@
+ nem_execute_la_LIBADD = $(top_builddir)/src/debug/libdebug.la \
+ 	$(top_builddir)/src/nfcconf/libnfcconf.la
+@@ -17,7 +17,7 @@ noinst_HEADERS += nem_dbus.h nfc-dbus-ob
+ 
+ nem_LTLIBRARIES += nem_dbus.la
+ nem_dbus_la_SOURCES = nem_dbus.c
+-nem_dbus_la_LDFLAGS = -module -no-undefined @LIBNFC_LIBS@ @DBUS_LIBS@
++nem_dbus_la_LDFLAGS = -module -avoid-version -no-undefined @LIBNFC_LIBS@ @DBUS_LIBS@
+ nem_dbus_la_CFLAGS = @LIBNFC_CFLAGS@ @DBUS_CFLAGS@
+ nem_dbus_la_LIBADD = $(top_builddir)/src/debug/libdebug.la \
+ 	$(top_builddir)/src/nfcconf/libnfcconf.la
+--- origsrc/nfc-eventd-0.1.7/src/nfc-eventd.c	2013-06-14 03:08:32.000000000 +0900
++++ src/nfc-eventd-0.1.7/src/nfc-eventd.c	2013-10-14 20:01:13.655650700 +0900
+@@ -107,7 +107,11 @@ static int load_module( void ) {
+     char module_path[256]={ '\0', };
+     strcat(module_path, NEMDIR"/" );
+     strcat(module_path, my_module->name->data);
++#if defined(__CYGWIN__)
++    strcat(module_path, ".dll");
++#else
+     strcat(module_path, ".so");
++#endif
+     DBG("Module found at: '%s'...", module_path);
+ 
+     void *module_handler;
