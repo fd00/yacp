@@ -1,0 +1,37 @@
+--- origsrc/ifdnfc/src/Makefile.am	2013-10-14 18:04:03.000000000 +0900
++++ src/ifdnfc/src/Makefile.am	2013-10-14 18:23:13.198770500 +0900
+@@ -3,8 +3,10 @@ IFDNFC_BUNDLE = ifdnfc.bundle
+ 
+ lib_LTLIBRARIES = libifdnfc.la
+ libifdnfc_la_SOURCES = ifd-nfc.c atr.c
+-libifdnfc_la_LIBADD = $(LIBNFC_LIBS)
++libifdnfc_la_LDFLAGS = -no-undefined
++libifdnfc_la_LIBADD = $(LIBNFC_LIBS) $(PCSC_LIBS)
+ libifdnfc_la_CFLAGS = $(LIBNFC_CFLAGS) $(PCSC_CFLAGS)
++libifdnfc_la_CPPFLAGS = -DNO_LOG
+ 
+ bin_PROGRAMS = ifdnfc-activate
+ ifdnfc_activate_SOURCES = ifdnfc-activate.c
+@@ -17,9 +19,9 @@ EXTRA_DIST = reader.conf.in
+ 
+ ifdnfcdropdir = $(DESTDIR)$(usbdropdir)/$(IFDNFC_BUNDLE)/Contents/$(BUNDLE_HOST)
+ 
+-install-data-local: install_ifdnfc_config
++#install-data-local: install_ifdnfc_config
+ 
+-install-exec-local: install_ifdnfc install_ifdnfc_activate
++#install-exec-local: install_ifdnfc install_ifdnfc_activate
+ 
+ install_ifdnfc: libifdnfc.la
+ 	$(mkinstalldirs) $(ifdnfcdropdir)/
+@@ -42,3 +44,10 @@ uninstall: uninstall-libLTLIBRARIES
+ 	rm -f $(DESTDIR)$(usbdropdir)/$(IFDNFC_BUNDLE)/Contents/$(BUNDLE_HOST)/$(IFDNFC_LIB).$(VERSION)
+ 	rm -f $(DESTDIR)$(bindir)/ifdnfc-activate
+ 	rm -f $(DESTDIR)$(sysconfdir)/reader.conf.d/ifdnfc
++
++install-data-local:
++	$(mkinstalldirs) $(DESTDIR)$(sysconfdir)/reader.conf.d
++	sed "s#TARGETNAME#`awk '/IFDNFC_READER_NAME/ {print $$3}' $(srcdir)/ifd-nfc.h`#;\
++	s#TARGETPATH#$(bindir)/cygifdnfc-0.dll#"   $(srcdir)/reader.conf.in \
++		> $(DESTDIR)$(sysconfdir)/reader.conf.d/ifdnfc
++
