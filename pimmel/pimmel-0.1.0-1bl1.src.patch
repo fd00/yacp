@@ -1,0 +1,183 @@
+--- origsrc/pimmel-0.1.0/configure.ac	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/configure.ac	2013-10-17 19:46:27.724995700 +0900
+@@ -63,7 +63,7 @@ dnl ------------------------------------
+ dnl packages we allow/support
+ dnl -------------------------------------------------------------------------
+ ## event lib
+-SXE_CHECK_LIBEV
++PKG_CHECK_MODULES([libev], [libev])
+ 
+ dnl must come after all AC_LINK_IFELSE clauses
+ ## check for the ldflags
+--- origsrc/pimmel-0.1.0/m4/sxe-compiler.m4	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/m4/sxe-compiler.m4	2013-10-17 19:48:43.489644100 +0900
+@@ -270,10 +270,10 @@ AC_DEFUN([SXE_FEATFLAGS], [dnl
+ 		featflags="${featflags} -static-intel"
+ 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-intel"], [:],
+ 		[${SXE_CFLAGS}])
+-	SXE_CHECK_COMPILER_FLAGS([-static-libgcc], [
+-		featflags="${featflags} -static-libgcc"
+-		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-libgcc"], [:],
+-		[${SXE_CFLAGS}])
++	dnl SXE_CHECK_COMPILER_FLAGS([-static-libgcc], [
++	dnl	featflags="${featflags} -static-libgcc"
++	dnl	XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-libgcc"], [:],
++	dnl	[${SXE_CFLAGS}])
+ 
+ 	AC_SUBST([XCCLDFLAGS])
+ 	AC_SUBST([XCCFLAG])
+@@ -331,7 +331,7 @@ AC_DEFUN([SXE_CHECK_CFLAGS], [dnl
+ 
+ 	## Use either command line flag, environment var, or autodetection
+ 	CFLAGS=""
+-	SXE_DEBUGFLAGS
++	dnl SXE_DEBUGFLAGS
+ 	SXE_WARNFLAGS
+ 	SXE_OPTIFLAGS
+ 	SXE_CFLAGS="$SXE_CFLAGS $debugflags $optiflags $warnflags"
+--- origsrc/pimmel-0.1.0/src/Makefile.am	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/Makefile.am	2013-10-17 19:47:49.475972300 +0900
+@@ -1,7 +1,7 @@
+ ### Makefile.am
+ 
+ AM_CPPFLAGS = -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
+-AM_LDFLAGS =
++AM_LDFLAGS = -no-undefined
+ 
+ bin_PROGRAMS =
+ noinst_PROGRAMS =
+@@ -29,7 +29,7 @@ bin_PROGRAMS += pimmel-noti
+ pimmel_noti_SOURCES = pimmel-noti.c pimmel-noti-clo.ggo
+ pimmel_noti_CPPFLAGS = $(AM_CPPFLAGS)
+ pimmel_noti_CPPFLAGS += $(libev_CFLAGS)
+-pimmel_noti_LDFLAGS = $(AM_LDFLAGS) -static
++pimmel_noti_LDFLAGS = $(AM_LDFLAGS)
+ pimmel_noti_LDFLAGS += $(libev_LIBS)
+ pimmel_noti_LDADD = libpimmel.la
+ BUILT_SOURCES += pimmel-noti-clo.c pimmel-noti-clo.h
+@@ -38,7 +38,7 @@ bin_PROGRAMS += pimmel-wait
+ pimmel_wait_SOURCES = pimmel-wait.c pimmel-wait-clo.ggo
+ pimmel_wait_CPPFLAGS = $(AM_CPPFLAGS)
+ pimmel_wait_CPPFLAGS += $(libev_CFLAGS)
+-pimmel_wait_LDFLAGS = $(AM_LDFLAGS) -static
++pimmel_wait_LDFLAGS = $(AM_LDFLAGS)
+ pimmel_wait_LDFLAGS += $(libev_LIBS)
+ pimmel_wait_LDADD = libpimmel.la
+ BUILT_SOURCES += pimmel-wait-clo.c pimmel-wait-clo.h
+@@ -48,7 +48,7 @@ pimmel_router_SOURCES = pimmel-router.c
+ pimmel_router_SOURCES += daemonise.c daemonise.h
+ pimmel_router_CPPFLAGS = $(AM_CPPFLAGS)
+ pimmel_router_CPPFLAGS += $(libev_CFLAGS)
+-pimmel_router_LDFLAGS = $(AM_LDFLAGS) -static
++pimmel_router_LDFLAGS = $(AM_LDFLAGS)
+ pimmel_router_LDFLAGS += $(libev_LIBS)
+ pimmel_router_LDADD = libpimmel.la
+ BUILT_SOURCES += pimmel-router-clo.c pimmel-router-clo.h
+@@ -58,7 +58,7 @@ pimmel_dealer_SOURCES = pimmel-dealer.c
+ pimmel_dealer_SOURCES += daemonise.c daemonise.h
+ pimmel_dealer_CPPFLAGS = $(AM_CPPFLAGS)
+ pimmel_dealer_CPPFLAGS += $(libev_CFLAGS)
+-pimmel_dealer_LDFLAGS = $(AM_LDFLAGS) -static
++pimmel_dealer_LDFLAGS = $(AM_LDFLAGS)
+ pimmel_dealer_LDFLAGS += $(libev_LIBS)
+ pimmel_dealer_LDADD = libpimmel.la
+ BUILT_SOURCES += pimmel-dealer-clo.c pimmel-dealer-clo.h
+@@ -67,7 +67,7 @@ bin_PROGRAMS += pimmel-moni
+ pimmel_moni_SOURCES = pimmel-moni.c pimmel-moni-clo.ggo
+ pimmel_moni_CPPFLAGS = $(AM_CPPFLAGS)
+ pimmel_moni_CPPFLAGS += $(libev_CFLAGS)
+-pimmel_moni_LDFLAGS = $(AM_LDFLAGS) -static
++pimmel_moni_LDFLAGS = $(AM_LDFLAGS)
+ pimmel_moni_LDFLAGS += $(libev_LIBS)
+ pimmel_moni_LDADD = libpimmel.la
+ BUILT_SOURCES += pimmel-moni-clo.c pimmel-moni-clo.h
+--- origsrc/pimmel-0.1.0/src/pimmel-dealer.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel-dealer.c	2013-10-17 20:01:37.391011300 +0900
+@@ -55,11 +55,11 @@
+ #if defined HAVE_NETDB_H
+ # include <netdb.h>
+ #endif	/* HAVE_NETDB_H */
+-#if defined HAVE_EV_H
+ # include <ev.h>
++#if !defined(__CYGWIN__)
+ # undef EV_P
+ # define EV_P  struct ev_loop *loop __attribute__((unused))
+-#endif	/* HAVE_EV_H */
++#endif
+ #include <pimmel.h>
+ #include "nifty.h"
+ #include "ud-sock.h"
+--- origsrc/pimmel-0.1.0/src/pimmel-moni.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel-moni.c	2013-10-17 20:02:18.141011300 +0900
+@@ -52,11 +52,11 @@
+ #if defined HAVE_ARPA_INET_H
+ # include <arpa/inet.h>
+ #endif
+-#if defined HAVE_EV_H
+ # include <ev.h>
++#if !defined(__CYGWIN__)
+ # undef EV_P
+ # define EV_P  struct ev_loop *loop __attribute__((unused))
+-#endif	/* HAVE_EV_H */
++#endif
+ #include <pimmel.h>
+ #include "nifty.h"
+ #include "ud-sock.h"
+--- origsrc/pimmel-0.1.0/src/pimmel-noti.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel-noti.c	2013-10-17 19:59:04.250386300 +0900
+@@ -50,11 +50,11 @@
+ #if defined HAVE_ARPA_INET_H
+ # include <arpa/inet.h>
+ #endif
+-#if defined HAVE_EV_H
+ # include <ev.h>
++#if !defined(__CYGWIN__)
+ # undef EV_P
+ # define EV_P  struct ev_loop *loop __attribute__((unused))
+-#endif	/* HAVE_EV_H */
++#endif
+ #include <pimmel.h>
+ #include "nifty.h"
+ #include "ud-sock.h"
+--- origsrc/pimmel-0.1.0/src/pimmel-router.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel-router.c	2013-10-17 20:01:05.672261300 +0900
+@@ -55,11 +55,11 @@
+ #if defined HAVE_NETDB_H
+ # include <netdb.h>
+ #endif	/* HAVE_NETDB_H */
+-#if defined HAVE_EV_H
+ # include <ev.h>
++#if !defined(__CYGWIN__)
+ # undef EV_P
+ # define EV_P  struct ev_loop *loop __attribute__((unused))
+-#endif	/* HAVE_EV_H */
++#endif
+ #include <pimmel.h>
+ #include "nifty.h"
+ #include "ud-sock.h"
+--- origsrc/pimmel-0.1.0/src/pimmel-wait.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel-wait.c	2013-10-17 19:59:57.109761300 +0900
+@@ -52,11 +52,11 @@
+ #if defined HAVE_ARPA_INET_H
+ # include <arpa/inet.h>
+ #endif
+-#if defined HAVE_EV_H
+ # include <ev.h>
++#if !defined(__CYGWIN__)
+ # undef EV_P
+ # define EV_P  struct ev_loop *loop __attribute__((unused))
+-#endif	/* HAVE_EV_H */
++#endif
+ #include <pimmel.h>
+ #include "nifty.h"
+ #include "ud-sock.h"
+--- origsrc/pimmel-0.1.0/src/pimmel.c	2013-01-17 00:05:50.000000000 +0900
++++ src/pimmel-0.1.0/src/pimmel.c	2013-10-17 19:57:43.484761300 +0900
+@@ -167,6 +167,7 @@ free_sockasso(struct sockasso_s sa[stati
+ static void
+ fiddle_with_mtu(int MAYBE_UNUSED(s))
+ {
++	int opt;
+ #if defined IPV6_PATHMTU
+ 	struct ip6_mtuinfo mtui;
+ 	socklen_t mtuilen = sizeof(mtui);
