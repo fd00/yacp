@@ -1,0 +1,142 @@
+--- origsrc/msitools-0.93/tests/testsuminfo.c	2013-01-22 01:16:41.000000000 +0900
++++ src/msitools-0.93/tests/testsuminfo.c	2013-10-19 20:28:44.461741500 +0900
+@@ -26,6 +26,7 @@
+ #include <windows.h>
+ #include <libmsi.h>
+ #include <objidl.h>
++#include <glib.h>
+ 
+ #include "test.h"
+ 
+@@ -48,7 +49,7 @@ static void test_suminfo(void)
+     DeleteFile(msifile);
+ 
+     /* just libmsi_database_new should not create a file */
+-    hdb = libmsi_database_new(msifile, LIBMSI_DB_OPEN_CREATE, NULL);
++    hdb = libmsi_database_new(msifile, LIBMSI_DB_FLAGS_CREATE, NULL, NULL);
+     ok(hdb, "libmsi_database_new failed\n");
+ 
+     hsuminfo = libmsi_summary_info_new(hdb, 0, NULL);
+@@ -119,7 +120,7 @@ static void test_suminfo(void)
+     g_clear_error(error);
+ 
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_VERSION, NULL, &error);
+-    g_assert(error, LIBMSI_RESULT_ERROR, LIBMSI_RESULT_DATATYPE_MISMATCH);
++    g_assert(error);
+     g_clear_error(error);
+ 
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_TITLE, "Mike", &error);
+@@ -127,7 +128,7 @@ static void test_suminfo(void)
+ 
+     str = libmsi_summary_info_get_string(hsuminfo, LIBMSI_PROPERTY_TITLE, &error);
+     ok(!error, "got error");
+-    ok(!strcpy(str, "Mike"));
++    ok(!strcpy(str, "Mike"), "libmsi_summary_info_get_string failed\n");
+ 
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_TITLE, "JungAh", &error);
+     ok(!error, "libmsi_summary_info_set_property failed\n");
+@@ -135,14 +136,14 @@ static void test_suminfo(void)
+     g_object_unref(hsuminfo);
+ 
+     /* try again with a higher update count */
+-    hsuminfo = libmsi_summary_info_new(hdb, 10, NULl);
++    hsuminfo = libmsi_summary_info_new(hdb, 10, NULL);
+     ok(hsuminfo, "libmsi_database_get_summary_info failed\n");
+ 
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_TITLE, "JungAh", &error);
+     ok(!error, "libmsi_summary_info_set_property failed\n");
+ 
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_CODEPAGE, "", &error);
+-    g_assert(error, LIBMSI_RESULT_ERROR, LIBMSI_RESULT_DATATYPE_MISMATCH);
++    g_assert(error);
+     g_clear_error(&error);
+ 
+     libmsi_summary_info_set_int(hsuminfo, LIBMSI_PROPERTY_CODEPAGE, 1, &error);
+@@ -154,26 +155,26 @@ static void test_suminfo(void)
+     libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_AUTHOR, "Mike", &error);
+     ok(!error, "libmsi_summary_info_set_property failed\n");
+ 
+-    r = libmsi_summary_info_persist(hsuminfo);
++    r = libmsi_summary_info_persist(hsuminfo, &error);
+     ok(r, "libmsi_summary_info_persist failed\n");
+ 
+-    libmsi_database_commit(hdb);
++    libmsi_database_commit(hdb, &error);
+ 
+     g_object_unref(hsuminfo);
+ 
+     g_object_unref(hdb);
+ 
+     /* reread, non-zero update count */
+-    hdb = libmsi_database_new(msifile, LIBMSI_DB_OPEN_TRANSACT, NULL);
++    hdb = libmsi_database_new(msifile, LIBMSI_DB_FLAGS_TRANSACT, NULL, NULL);
+     ok(hdb, "libmsi_database_new failed\n");
+ 
+-    hsuminfo = libmsi_summary_info_new(hdb, 1, NULl);
++    hsuminfo = libmsi_summary_info_new(hdb, 1, NULL);
+     ok(hsuminfo, "libmsi_database_get_summary_info failed\n");
+ 
+-    r = libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_AUTHOR, "Mike", error);
++    r = libmsi_summary_info_set_string(hsuminfo, LIBMSI_PROPERTY_AUTHOR, "Mike", &error);
+     ok(r == LIBMSI_RESULT_SUCCESS, "libmsi_summary_info_set_property wrong error\n");
+ 
+-    r = libmsi_summary_info_persist(hsuminfo);
++    r = libmsi_summary_info_persist(hsuminfo, &error);
+     ok(r, "libmsi_summary_info_persist failed %u\n", r);
+ 
+     g_object_unref(hsuminfo);
+@@ -181,7 +182,7 @@ static void test_suminfo(void)
+     /* now with zero update count */
+     g_object_unref(hdb);
+ 
+-    hdb = libmsi_database_new(msifile, LIBMSI_DB_OPEN_READONLY, NULL);
++    hdb = libmsi_database_new(msifile, LIBMSI_DB_FLAGS_READONLY, NULL, NULL);
+     ok(hdb, "libmsi_database_new failed\n");
+ 
+     hsuminfo = libmsi_summary_info_new(hdb, 0, NULL);
+@@ -191,7 +192,7 @@ static void test_suminfo(void)
+     todo_wine ok(error, "libmsi_summary_info_set_property wrong error\n");
+     g_clear_error(&error);
+ 
+-    r = libmsi_summary_info_persist(hsuminfo);
++    r = libmsi_summary_info_persist(hsuminfo, &error);
+     ok(!r, "libmsi_summary_info_persist wrong error %u\n", r);
+ 
+     g_object_unref(hsuminfo);
+@@ -323,6 +324,7 @@ static void test_summary_binary(void)
+     unsigned r, type, count;
+     int ival;
+     const gchar *str;
++    GArray* props;
+ 
+     DeleteFile( msifile );
+ 
+@@ -331,7 +333,7 @@ static void test_summary_binary(void)
+     ok( INVALID_FILE_ATTRIBUTES != GetFileAttributes(msifile), "file doesn't exist!\n");
+ 
+     /* just libmsi_database_new should not create a file */
+-    hdb = libmsi_database_new(msifile, LIBMSI_DB_OPEN_READONLY, NULl);
++    hdb = libmsi_database_new(msifile, LIBMSI_DB_FLAGS_READONLY, NULL, NULL);
+     ok(hdb, "libmsi_database_new failed\n");
+ 
+     hsuminfo = libmsi_summary_info_new(hdb, 0, NULL);
+@@ -343,8 +345,8 @@ static void test_summary_binary(void)
+      * but it appears that we're not allowed to read it back again.
+      * We can still read its type though...?
+      */
+-    str = libmsi_summary_info_get_string(hsuminfo, LIBMSI_PROPERTY_LASTPRINTED, error);
+-    ok(!error);
++    str = libmsi_summary_info_get_string(hsuminfo, LIBMSI_PROPERTY_LASTPRINTED, &error);
++    ok(!error, "libmsi_summary_info_get_string\n");
+     ok(!strcmp(str, "") || !strcmp(str, "7"),
+         "Expected empty string or \"7\", got \"%s\"\n", str);
+ 
+@@ -362,7 +364,7 @@ static void test_summary_binary(void)
+     ok(error, "libmsi_summary_info_set_property failed\n");
+     g_clear_error(&error);
+ 
+-    r = libmsi_summary_info_persist( hsuminfo );
++    r = libmsi_summary_info_persist( hsuminfo, &error );
+     ok(!r, "libmsi_summary_info_persist failed %u\n", r);
+ 
+     g_object_unref( hsuminfo );
