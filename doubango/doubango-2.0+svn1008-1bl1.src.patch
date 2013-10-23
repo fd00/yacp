@@ -1,0 +1,532 @@
+--- origsrc/doubango/Makefile.am	2013-08-17 00:09:20.000000000 +0900
++++ src/doubango/Makefile.am	2013-10-22 13:07:52.099880400 +0900
+@@ -17,11 +17,3 @@ SUBDIRS = tinySAK \
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = doubango.pc
+-
+-install-data-hook:
+-	$(MKDIR_P) $(DESTDIR)/etc/ld.so.conf.d
+-	echo "$(libdir)" > $(DESTDIR)/etc/ld.so.conf.d/doubango.conf
+-	ldconfig
+-
+-uninstall-hook:
+-	rm -f $(DESTDIR)/etc/ld.so.conf.d/doubango.conf
+\ No newline at end of file
+--- origsrc/doubango/configure.ac	2013-10-10 09:21:04.000000000 +0900
++++ src/doubango/configure.ac	2013-10-23 08:23:04.243671800 +0900
+@@ -564,7 +564,7 @@ AC_ARG_WITH(gsm,
+ # only if --without-gsm not used
+ if test $want_gsm != no; then
+ 	# check lib and headers
+-	AC_CHECK_HEADERS(gsm.h,
++	AC_CHECK_HEADERS(gsm/gsm.h,
+        	AC_CHECK_LIB(gsm, gsm_create, AC_DEFINE_UNQUOTED(HAVE_LIBGSM, 1, HAVE_LIBGSM) [have_gsm=yes] LIBGSM_LIBADD="-lgsm", 
+ 		AC_DEFINE_UNQUOTED(HAVE_LIBGSM, 0, HAVE_LIBGSM) [have_gsm=no]
+ 	))
+@@ -638,8 +638,8 @@ AC_ARG_WITH(ilbc,
+ # only if --without-ilbc not used
+ if test $want_ilbc != no; then
+ 	# check lib and headers
+-	AC_CHECK_HEADERS(ilbc/iLBC_define.h ilbc/iLBC_encode.h ilbc/iLBC_decode.h,
+-       	AC_CHECK_LIB(iLBC, initDecode, AC_DEFINE_UNQUOTED(HAVE_ILBC, 1, HAVE_ILBC) [have_ilbc=yes] LIBILBC_LIBADD="-liLBC", 
++	AC_CHECK_HEADERS(ilbc.h,
++       	AC_CHECK_LIB(ilbc, WebRtcIlbcfix_InitDecode, AC_DEFINE_UNQUOTED(HAVE_ILBC, 1, HAVE_ILBC) [have_ilbc=yes] LIBILBC_LIBADD="-lilbc",
+ 		AC_DEFINE_UNQUOTED(HAVE_ILBC, 0, HAVE_ILBC) [have_ilbc=no], [-lm]
+ 	))
+ 	# if gsm not found and requested then, die.
+--- origsrc/doubango/tinyDAV/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyDAV/Makefile.am	2013-10-22 12:50:55.646859800 +0900
+@@ -7,13 +7,13 @@ libtinyDAV_la_LIBADD = \
+ 	../tinyMEDIA/libtinyMEDIA.la\
+ 	../tinyMSRP/libtinyMSRP.la
+ 
+-libtinyDAV_la_CPPFLAGS = -I../tinySAK/src\
+-	-I../tinyNET/src\
+-	-I../tinySDP/include\
+-	-I../tinyRTP/include\
+-	-I../tinyMEDIA/include\
+-	-I../tinyMSRP/include\
+-	-Iinclude
++libtinyDAV_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src\
++	-I$(srcdir)/../tinyNET/src\
++	-I$(srcdir)/../tinySDP/include\
++	-I$(srcdir)/../tinyRTP/include\
++	-I$(srcdir)/../tinyMEDIA/include\
++	-I$(srcdir)/../tinyMSRP/include\
++	-I$(srcdir)/include
+ 
+ if USE_FFMPEG
+ libtinyDAV_la_LIBADD += ${LIBFFMPEG_LIBADD}
+@@ -137,13 +137,13 @@ libtinyDAV_la_SOURCES += src/codecs/t140
+ libtinyDAV_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinydav
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinydav/tinydav
+-__include_HEADERS = include/tinydav/*.h
++__include_HEADERS = $(srcdir)/include/tinydav/*.h
+ audio_includedir = $(includedir)/tinydav/tinydav/audio
+-audio_include_HEADERS = include/tinydav/audio/*.h
++audio_include_HEADERS = $(srcdir)/include/tinydav/audio/*.h
+ video_includedir = $(includedir)/tinydav/tinydav/video
+-video_include_HEADERS = include/tinydav/video/*.h
++video_include_HEADERS = $(srcdir)/include/tinydav/video/*.h
+ 
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinyDAV/include/tinydav/codecs/gsm/tdav_codec_gsm.h	2012-12-03 12:11:21.000000000 +0900
++++ src/doubango/tinyDAV/include/tinydav/codecs/gsm/tdav_codec_gsm.h	2013-10-22 12:53:10.259060000 +0900
+@@ -36,7 +36,7 @@
+ 
+ #include "tinymedia/tmedia_codec.h"
+ 
+-#include <gsm.h>
++#include <gsm/gsm.h>
+ 
+ TDAV_BEGIN_DECLS
+ 
+--- origsrc/doubango/tinyDAV/include/tinydav/codecs/ilbc/tdav_codec_ilbc.h	2012-12-03 12:11:21.000000000 +0900
++++ src/doubango/tinyDAV/include/tinydav/codecs/ilbc/tdav_codec_ilbc.h	2013-10-22 12:53:42.120388200 +0900
+@@ -36,9 +36,7 @@
+ 
+ #include "tinymedia/tmedia_codec.h"
+ 
+-#include <ilbc/iLBC_define.h>
+-#include <ilbc/iLBC_encode.h>
+-#include <ilbc/iLBC_decode.h>
++#include <ilbc.h>
+ 
+ TDAV_BEGIN_DECLS
+ 
+--- origsrc/doubango/tinyDAV/src/codecs/ilbc/tdav_codec_ilbc.c	2013-07-19 11:35:03.000000000 +0900
++++ src/doubango/tinyDAV/src/codecs/ilbc/tdav_codec_ilbc.c	2013-10-22 12:58:26.851833500 +0900
+@@ -37,6 +37,22 @@
+ 
+ #define TDAV_ILBC_MODE			20
+ 
++#ifndef MIN_SAMPLE
++#define MIN_SAMPLE -32768
++#endif
++
++#ifndef MAX_SAMPLE
++#define MAX_SAMPLE 32767
++#endif
++
++#ifndef NO_OF_BYTES_20MS
++#define NO_OF_BYTES_20MS    38
++#endif
++
++#ifndef NO_OF_BYTES_30MS
++#define NO_OF_BYTES_30MS    50
++#endif
++
+ /* ============ iLBC Plugin interface ================= */
+ 
+ #define tdav_codec_ilbc_set tsk_null
+--- origsrc/doubango/tinyHTTP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyHTTP/Makefile.am	2013-10-22 12:35:35.209555100 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyHTTP.la
+ libtinyHTTP_la_LIBADD = ../tinySAK/libtinySAK.la ../tinyNET/libtinyNET.la
+-libtinyHTTP_la_CPPFLAGS = -Iinclude -I../tinySAK/src -I../tinyNET/src
++libtinyHTTP_la_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/../tinySAK/src -I$(srcdir)/../tinyNET/src
+ 
+ libtinyHTTP_la_SOURCES = \
+ 	src/thttp.c\
+@@ -34,15 +34,15 @@ libtinyHTTP_la_SOURCES +=	src/parsers/th
+ libtinyHTTP_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinyhttp
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinyhttp/tinyhttp
+-__include_HEADERS = include/tinyhttp/*.h
++__include_HEADERS = $(srcdir)/include/tinyhttp/*.h
+ auth_includedir = $(includedir)/tinyhttp/tinyhttp/auth
+-auth_include_HEADERS = include/tinyhttp/auth/*.h
++auth_include_HEADERS = $(srcdir)/include/tinyhttp/auth/*.h
+ headers_includedir = $(includedir)/tinyhttp/tinyhttp/headers
+-headers_include_HEADERS = include/tinyhttp/headers/*.h
++headers_include_HEADERS = $(srcdir)/include/tinyhttp/headers/*.h
+ parsers_includedir = $(includedir)/tinyhttp/tinyhttp/parsers
+-parsers_include_HEADERS = include/tinyhttp/parsers/*.h
++parsers_include_HEADERS = $(srcdir)/include/tinyhttp/parsers/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinyHTTP.pc
+--- origsrc/doubango/tinyIPSec/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyIPSec/Makefile.am	2013-10-22 12:37:09.745687900 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyIPSec.la
+ libtinyIPSec_la_LIBADD = ../tinySAK/libtinySAK.la
+-libtinyIPSec_la_CPPFLAGS = -I../tinySAK/src -Isrc
++libtinyIPSec_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -Isrc
+ 
+ libtinyIPSec_la_SOURCES = \
+ 	src/tipsec.c\
+@@ -13,7 +13,7 @@ libtinyIPSec_la_SOURCES = \
+ libtinyIPSec_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ # Headers file to install
+-libtinyIPSec_la_HEADERS = src/*.h
++libtinyIPSec_la_HEADERS = $(srcdir)/src/*.h
+ libtinyIPSec_ladir = $(includedir)/tinyipsec
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinyMEDIA/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyMEDIA/Makefile.am	2013-10-22 12:43:03.999594200 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyMEDIA.la
+ libtinyMEDIA_la_LIBADD = ../tinySAK/libtinySAK.la ../tinyNET/libtinyNET.la ../tinySDP/libtinySDP.la
+-libtinyMEDIA_la_CPPFLAGS = -Iinclude -I../tinySAK/src -I../tinyNET/src -I../tinySDP/include
++libtinyMEDIA_la_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/../tinySAK/src -I$(srcdir)/../tinyNET/src -I$(srcdir)/../tinySDP/include
+ 	
+ libtinyMEDIA_la_SOURCES = \
+ 	src/tmedia.c \
+@@ -30,11 +30,11 @@ libtinyMEDIA_la_SOURCES += \
+ libtinyMEDIA_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinymedia
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinymedia/tinymedia
+-__include_HEADERS = include/tinymedia/*.h
++__include_HEADERS = $(srcdir)/include/tinymedia/*.h
+ content_includedir = $(includedir)/tinymedia/tinymedia/content
+-content_include_HEADERS = include/tinymedia/content/*.h
++content_include_HEADERS = $(srcdir)/include/tinymedia/content/*.h
+ 
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinyMSRP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyMSRP/Makefile.am	2013-10-22 12:41:28.267172300 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyMSRP.la
+ libtinyMSRP_la_LIBADD = ../tinySAK/libtinySAK.la ../tinyNET/libtinyNET.la ../tinyHTTP/libtinyHTTP.la ../tinySDP/libtinySDP.la
+-libtinyMSRP_la_CPPFLAGS = -Iinclude -I../tinySAK/src -I../tinyNET/src -I../tinyHTTP/include -I../tinySDP/include
++libtinyMSRP_la_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/../tinySAK/src -I$(srcdir)/../tinyNET/src -I$(srcdir)/../tinyHTTP/include -I$(srcdir)/../tinySDP/include
+ 	
+ libtinyMSRP_la_SOURCES = \
+ 	src/tmsrp.c\
+@@ -37,15 +37,15 @@ libtinyMSRP_la_SOURCES += src/session/tm
+ libtinyMSRP_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinymsrp
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinymsrp/tinymsrp
+-__include_HEADERS = include/tinymsrp/*.h
++__include_HEADERS = $(srcdir)/include/tinymsrp/*.h
+ headers_includedir = $(includedir)/tinymsrp/tinymsrp/headers
+-headers_include_HEADERS = include/tinymsrp/headers/*.h
++headers_include_HEADERS = $(srcdir)/include/tinymsrp/headers/*.h
+ parsers_includedir = $(includedir)/tinymsrp/tinymsrp/parsers
+-parsers_include_HEADERS = include/tinymsrp/parsers/*.h
++parsers_include_HEADERS = $(srcdir)/include/tinymsrp/parsers/*.h
+ session_includedir = $(includedir)/tinymsrp/tinymsrp/session
+-session_include_HEADERS = include/tinymsrp/session/*.h
++session_include_HEADERS = $(srcdir)/include/tinymsrp/session/*.h
+ 
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinyNET/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyNET/Makefile.am	2013-10-22 12:33:43.506430100 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyNET.la
+ libtinyNET_la_LIBADD = ../tinySAK/libtinySAK.la
+-libtinyNET_la_CPPFLAGS = -I../tinySAK/src -I./src
++libtinyNET_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/src
+ 
+ if USE_SSL
+ libtinyNET_la_LIBADD += ${LIBSSL_LIBADD}
+@@ -70,21 +70,21 @@ libtinyNET_la_SOURCES +=	src/turn/tnet_t
+ libtinyNET_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ src_includedir = $(includedir)/tinynet
+-src_include_HEADERS = src/*.h
++src_include_HEADERS = $(srcdir)/src/*.h
+ dhcp_includedir = $(includedir)/tinynet/dhcp
+-dhcp_include_HEADERS = src/dhcp/*.h
++dhcp_include_HEADERS = $(srcdir)/src/dhcp/*.h
+ dhcp6_includedir = $(includedir)/tinynet/dhcp6
+-dhcp6_include_HEADERS = src/dhcp6/*.h
++dhcp6_include_HEADERS = $(srcdir)/src/dhcp6/*.h
+ dns_includedir = $(includedir)/tinynet/dns
+-dns_include_HEADERS = src/dns/*.h
++dns_include_HEADERS = $(srcdir)/src/dns/*.h
+ ice_includedir = $(includedir)/tinynet/ice
+-ice_include_HEADERS = src/ice/*.h
++ice_include_HEADERS = $(srcdir)/src/ice/*.h
+ stun_includedir = $(includedir)/tinynet/stun
+-stun_include_HEADERS = src/stun/*.h
++stun_include_HEADERS = $(srcdir)/src/stun/*.h
+ tls_includedir = $(includedir)/tinynet/tls
+-tls_include_HEADERS = src/tls/*.h
++tls_include_HEADERS = $(srcdir)/src/tls/*.h
+ turn_includedir = $(includedir)/tinynet/turn
+-turn_include_HEADERS = src/turn/*.h
++turn_include_HEADERS = $(srcdir)/src/turn/*.h
+ 
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinyNET/src/tnet_utils.c	2013-10-07 14:04:07.000000000 +0900
++++ src/doubango/tinyNET/src/tnet_utils.c	2013-10-22 12:32:11.531820700 +0900
+@@ -252,11 +252,11 @@ tnet_interfaces_L_t* tnet_get_interfaces
+         if((ifa->ifa_flags & IFF_LOOPBACK) || !(ifa->ifa_flags & IFF_UP)) {
+             continue;
+         }
+-        
++#if defined(AF_PACKET)
+ 		if(ifa->ifa_addr->sa_family != AF_LINK){
+ 			continue;
+ 		}
+-		
++#endif		
+ #if defined(__linux__) && 0 /* FIXME */
+ 		{
+ 			struct ifreq ifr;
+--- origsrc/doubango/tinyRTP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyRTP/Makefile.am	2013-10-22 12:45:30.036703500 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyRTP.la
+ libtinyRTP_la_LIBADD = ../tinySAK/libtinySAK.la ../tinyNET/libtinyNET.la ../tinyMEDIA/libtinyMEDIA.la
+-libtinyRTP_la_CPPFLAGS = -I../tinySAK/src -I../tinyNET/src -I../tinyMEDIA/include -Iinclude
++libtinyRTP_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/../tinyNET/src -I$(srcdir)/../tinyMEDIA/include -I$(srcdir)/include
+ 
+ if USE_SRTP
+ libtinyRTP_la_LIBADD += ${LIBSRTP_LIBADD}
+@@ -34,13 +34,13 @@ libtinyRTP_la_SOURCES += src/rtp/trtp_rt
+ libtinyRTP_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinyrtp
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinyrtp/tinyrtp
+-__include_HEADERS = include/tinyrtp/*.h
++__include_HEADERS = $(srcdir)/include/tinyrtp/*.h
+ rtcp_includedir = $(includedir)/tinyrtp/tinyrtp/rtcp
+-rtcp_include_HEADERS = include/tinyrtp/rtcp/*.h
++rtcp_include_HEADERS = $(srcdir)/include/tinyrtp/rtcp/*.h
+ rtp_includedir = $(includedir)/tinyrtp/tinyrtp/rtp
+-rtp_include_HEADERS = include/tinyrtp/rtp/*.h
++rtp_include_HEADERS = $(srcdir)/include/tinyrtp/rtp/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinyRTP.pc
+\ No newline at end of file
+--- origsrc/doubango/tinyRTP/src/trtp_srtp.c	2013-08-07 09:53:16.000000000 +0900
++++ src/doubango/tinyRTP/src/trtp_srtp.c	2013-10-22 12:49:45.415609800 +0900
+@@ -68,8 +68,10 @@ int trtp_srtp_ctx_internal_init(struct t
+ 	ctx->policy.key = (unsigned char*)ctx->key_bin;
+ 	ctx->policy.ssrc.type = ssrc_any_outbound;
+ 	ctx->policy.ssrc.value = ssrc;
++#if !defined(__CYGWIN__)
+ 	ctx->policy.window_size = 2048;
+ 	ctx->policy.allow_repeat_tx = 1;
++#endif
+ 	if((srtp_err = srtp_create(&ctx->session, &ctx->policy)) != err_status_ok){
+ 		TSK_DEBUG_ERROR("srtp_create() failed");
+ 		return -3;
+@@ -240,8 +242,10 @@ int trtp_srtp_set_crypto(struct trtp_man
+ 	tsk_base64_decode((const uint8_t*)srtp_ctx->rtp.key_str, tsk_strlen(srtp_ctx->rtp.key_str), (char**)&key_bin);
+ 	srtp_ctx->rtp.policy.key = key_bin;
+ 	srtp_ctx->rtp.policy.ssrc.type = idx == TRTP_SRTP_LINE_IDX_REMOTE ? ssrc_any_inbound : ssrc_any_outbound;
++#if !defined(__CYGWIN__)
+ 	srtp_ctx->rtp.policy.window_size = 2048;
+ 	srtp_ctx->rtp.policy.allow_repeat_tx = 1;
++#endif
+ 	if((srtp_err = srtp_create(&srtp_ctx->rtp.session, &srtp_ctx->rtp.policy)) != err_status_ok){
+ 		TSK_DEBUG_ERROR("srtp_create() failed: %d", srtp_err);
+ 		return -3;
+@@ -290,8 +294,10 @@ int trtp_srtp_set_key_and_salt(trtp_mana
+ 	
+ 	srtp_ctx->policy.key = (unsigned char *)srtp_ctx->key_bin;
+ 	srtp_ctx->policy.ssrc.type = idx == TRTP_SRTP_LINE_IDX_REMOTE ? ssrc_any_inbound : ssrc_any_outbound;
++#if !defined(__CYGWIN__)
+ 	srtp_ctx->policy.window_size = 2048;
+ 	srtp_ctx->policy.allow_repeat_tx = 1;
++#endif
+ 	if((srtp_err = srtp_create(&srtp_ctx->session, &srtp_ctx->policy)) != err_status_ok){
+ 		TSK_DEBUG_ERROR("srtp_create() failed: %d", srtp_err);
+ 		return -3;
+--- origsrc/doubango/tinySAK/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinySAK/Makefile.am	2013-10-22 10:56:02.010250000 +0900
+@@ -5,6 +5,7 @@ if USE_RT
+ libtinySAK_la_LIBADD = ${LIBRT_LIBADD}
+ endif
+ 
++libtinySAK_la_CPPFLAGS = -I$(srcdir)/src
+ libtinySAK_la_SOURCES  = \
+ 	src/tsk.c\
+ 	src/tsk_base64.c\
+@@ -38,7 +39,7 @@ libtinySAK_la_SOURCES  = \
+ 	src/tsk_xml.c
+ 	
+ libtinySAK_la_LDFLAGS = $LDFLAGS -no-undefined
+-libtinySAK_la_HEADERS = src/*.h
++libtinySAK_la_HEADERS = $(srcdir)/src/*.h
+ libtinySAK_ladir = $(includedir)/tinysak
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinySDP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinySDP/Makefile.am	2013-10-22 12:40:10.931234800 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinySDP.la
+ libtinySDP_la_LIBADD = ../tinySAK/libtinySAK.la
+-libtinySDP_la_CPPFLAGS = -I../tinySAK/src -Iinclude
++libtinySDP_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/include
+ 
+ libtinySDP_la_SOURCES = \
+ 	src/tsdp.c\
+@@ -30,13 +30,13 @@ libtinySDP_la_SOURCES += src/parsers/tsd
+ libtinySDP_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinysdp
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinysdp/tinysdp
+-__include_HEADERS = include/tinysdp/*.h
++__include_HEADERS = $(srcdir)/include/tinysdp/*.h
+ headers_includedir = $(includedir)/tinysdp/tinysdp/headers
+-headers_include_HEADERS = include/tinysdp/headers/*.h
++headers_include_HEADERS = $(srcdir)/include/tinysdp/headers/*.h
+ parsers_includedir = $(includedir)/tinysdp/tinysdp/parsers
+-parsers_include_HEADERS = include/tinysdp/parsers/*.h
++parsers_include_HEADERS = $(srcdir)/include/tinysdp/parsers/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinySDP.pc
+\ No newline at end of file
+--- origsrc/doubango/tinySIGCOMP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinySIGCOMP/Makefile.am	2013-10-22 12:39:16.497641000 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinySIGCOMP.la
+ libtinySIGCOMP_la_LIBADD = ../tinySAK/libtinySAK.la
+-libtinySIGCOMP_la_CPPFLAGS = -I../tinySAK/src -Iinclude
++libtinySIGCOMP_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/include
+ 
+ libtinySIGCOMP_la_SOURCES = \
+ 	src/adler32.c\
+@@ -36,7 +36,7 @@ libtinySIGCOMP_la_SOURCES = \
+ 	src/zutil.c
+ 
+ libtinySIGCOMP_la_LDFLAGS = $LDFLAGS -no-undefined
+-libtinySIGCOMP_la_HEADERS = src/*.h
++libtinySIGCOMP_la_HEADERS = $(srcdir)/src/*.h
+ libtinySIGCOMP_ladir = $(includedir)/tinysigcomp
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/doubango/tinySIP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinySIP/Makefile.am	2013-10-22 13:04:28.016872500 +0900
+@@ -9,14 +9,14 @@ libtinySIP_la_LIBADD = \
+ 	../tinySIGCOMP/libtinySIGCOMP.la
+ 
+ libtinySIP_la_CPPFLAGS = \
+-	-I../tinySAK/src\
+-	-I../tinyNET/src\
+-	-I../tinyHTTP/include\
+-	-I../tinyIPSec/src\
+-	-I../tinySIGCOMP/src\
+-	-I../tinySDP/include\
+-	-I../tinyMEDIA/include\
+-	-Iinclude
++	-I$(srcdir)/../tinySAK/src\
++	-I$(srcdir)/../tinyNET/src\
++	-I$(srcdir)/../tinyHTTP/include\
++	-I$(srcdir)/../tinyIPSec/src\
++	-I$(srcdir)/../tinySIGCOMP/src\
++	-I$(srcdir)/../tinySDP/include\
++	-I$(srcdir)/../tinyMEDIA/include\
++	-I$(srcdir)/include
+ 	
+ libtinySIP_la_SOURCES = \
+ 	src/tsip.c\
+@@ -180,25 +180,25 @@ libtinySIP_la_LDFLAGS = $LDFLAGS -no-und
+ 
+ 
+ _includedir = $(includedir)/tinysip
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinysip/tinysip
+-__include_HEADERS = include/tinysip/*.h
++__include_HEADERS = $(srcdir)/include/tinysip/*.h
+ api_includedir = $(includedir)/tinysip/tinysip/api
+-api_include_HEADERS = include/tinysip/api/*.h
++api_include_HEADERS = $(srcdir)/include/tinysip/api/*.h
+ authentication_includedir = $(includedir)/tinysip/tinysip/authentication
+-authentication_include_HEADERS = include/tinysip/authentication/*.h
++authentication_include_HEADERS = $(srcdir)/include/tinysip/authentication/*.h
+ dialogs_includedir = $(includedir)/tinysip/tinysip/dialogs
+-dialogs_include_HEADERS = include/tinysip/dialogs/*.h
++dialogs_include_HEADERS = $(srcdir)/include/tinysip/dialogs/*.h
+ headers_includedir = $(includedir)/tinysip/tinysip/headers
+-headers_include_HEADERS = include/tinysip/headers/*.h
++headers_include_HEADERS = $(srcdir)/include/tinysip/headers/*.h
+ parsers_includedir = $(includedir)/tinysip/tinysip/parsers
+-parsers_include_HEADERS = include/tinysip/parsers/*.h
++parsers_include_HEADERS = $(srcdir)/include/tinysip/parsers/*.h
+ sigcomp_includedir = $(includedir)/tinysip/tinysip/sigcomp
+-sigcomp_include_HEADERS = include/tinysip/sigcomp/*.h
++sigcomp_include_HEADERS = $(srcdir)/include/tinysip/sigcomp/*.h
+ transactions_includedir = $(includedir)/tinysip/tinysip/transactions
+-transactions_include_HEADERS = include/tinysip/transactions/*.h
++transactions_include_HEADERS = $(srcdir)/include/tinysip/transactions/*.h
+ transports_includedir = $(includedir)/tinysip/tinysip/transports
+-transports_include_HEADERS = include/tinysip/transports/*.h
++transports_include_HEADERS = $(srcdir)/include/tinysip/transports/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinySIP.pc
+--- origsrc/doubango/tinySMS/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinySMS/Makefile.am	2013-10-22 12:38:32.911703500 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinySMS.la
+ libtinySMS_la_LIBADD = ../tinySAK/libtinySAK.la
+-libtinySMS_la_CPPFLAGS = -I../tinySAK/src -Iinclude
++libtinySMS_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/include
+ 
+ libtinySMS_la_SOURCES = \
+ 	src/tsms.c\
+@@ -19,13 +19,13 @@ libtinySMS_la_SOURCES += src/tpdu/tsms_t
+ libtinySMS_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinysms
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinysms/tinysms
+-__include_HEADERS = include/tinysms/*.h
++__include_HEADERS = $(srcdir)/include/tinysms/*.h
+ rpdu_includedir = $(includedir)/tinysms/tinysms/rpdu
+-rpdu_include_HEADERS = include/tinysms/rpdu/*.h
++rpdu_include_HEADERS = $(srcdir)/include/tinysms/rpdu/*.h
+ tpdu_includedir = $(includedir)/tinysms/tinysms/tpdu
+-tpdu_include_HEADERS = include/tinysms/tpdu/*.h
++tpdu_include_HEADERS = $(srcdir)/include/tinysms/tpdu/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinySMS.pc
+\ No newline at end of file
+--- origsrc/doubango/tinyXCAP/Makefile.am	2013-06-10 14:47:01.000000000 +0900
++++ src/doubango/tinyXCAP/Makefile.am	2013-10-22 12:36:29.788656700 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES         = libtinyXCAP.la
+ libtinyXCAP_la_LIBADD = ../tinySAK/libtinySAK.la ../tinyNET/libtinyNET.la ../tinyHTTP/libtinyHTTP.la
+-libtinyXCAP_la_CPPFLAGS = -I../tinySAK/src -I../tinyNET/src -I../tinyHTTP/include -Iinclude
++libtinyXCAP_la_CPPFLAGS = -I$(srcdir)/../tinySAK/src -I$(srcdir)/../tinyNET/src -I$(srcdir)/../tinyHTTP/include -I$(srcdir)/include
+ 
+ libtinyXCAP_la_SOURCES = \
+ 	src/txcap.c\
+@@ -14,9 +14,9 @@ libtinyXCAP_la_SOURCES = \
+ libtinyXCAP_la_LDFLAGS = $LDFLAGS -no-undefined
+ 
+ _includedir = $(includedir)/tinyxcap
+-_include_HEADERS = include/*.h
++_include_HEADERS = $(srcdir)/include/*.h
+ __includedir = $(includedir)/tinyxcap/tinyxcap
+-__include_HEADERS = include/tinyxcap/*.h
++__include_HEADERS = $(srcdir)/include/tinyxcap/*.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = tinyXCAP.pc
