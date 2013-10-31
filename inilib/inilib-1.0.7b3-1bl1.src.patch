@@ -1,0 +1,90 @@
+--- origsrc/inilib-1.0.7b3/configure.in	2002-05-24 02:52:20.000000000 +0900
++++ src/inilib-1.0.7b3/configure.in	2013-11-01 00:02:03.972359600 +0900
+@@ -12,7 +12,7 @@ define([AC_CACHE_SAVE], )
+ #
+ # Init autoconf
+ #
+-AC_INIT(./src/Debug.h)
++AC_INIT([inilib], [1.0.7b3])
+ AC_CONFIG_AUX_DIR(./config)
+ 
+ 
+@@ -48,7 +48,7 @@ echo "Configuring inilib library version
+ # The third argument to AM_INIT_AUTOMAKE surpresses the PACKAGE and
+ # VERSION macors
+ #
+-AM_INIT_AUTOMAKE(inilib, $INI_VERSION, 'no')
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(src/ini_config.h)
+ 
+ 
+@@ -121,7 +121,7 @@ AC_SUBST(INILIB_CXX_HAVE_BROKEN_GETLINE)
+ ########################################################################
+ show_title "C++ Linking Characteristics"
+ 
+-AC_PROG_RANLIB
++LT_INIT
+ AC_CHECK_PROG(ARBIN, ar, ar, ;)
+ 
+ #
+--- origsrc/inilib-1.0.7b3/src/Makefile.am	2002-05-24 02:47:55.000000000 +0900
++++ src/inilib-1.0.7b3/src/Makefile.am	2013-11-01 00:06:08.737008000 +0900
+@@ -21,21 +21,16 @@ ini_files		= \
+ 			string_attribute.cc
+ 
+ # The library - add in extra because lib_LIBRARIES is in a conditional
+-EXTRA_LIBRARIES		= libini.a
+-libini_a_SOURCES	= $(ini_files)
+-libini_a_AR		= $(INI_AR)
++libini_la_SOURCES	= $(ini_files)
++libini_la_LDFLAGS	= -no-undefined
+ 
+ # The binary - add in extra because noinst_PROGRAMS is in a conditional
+-EXTRA_PROGRAMS		= inilib
+-inilib_SOURCES		= $(ini_files) \
+-			  inilib.cc
++inilib_SOURCES		= inilib.cc
++inilib_LDADD		= libini.la
+ 
+ # Which do we build - library or binary?
+-if WANT_INI_LIBRARY
+-lib_LIBRARIES		= libini.a
+-else
+-noinst_PROGRAMS		= inilib
+-endif
++lib_LTLIBRARIES		= libini.la
++bin_PROGRAMS		= inilib
+ 
+ # All the header files - only inilib.h gets sent to include everyone
+ # else will end up in include/inilib/<filename>
+--- origsrc/inilib-1.0.7b3/src/double_attribute.cc	2005-03-15 02:22:49.000000000 +0900
++++ src/inilib-1.0.7b3/src/double_attribute.cc	2013-11-01 00:13:11.136422100 +0900
+@@ -15,6 +15,8 @@
+ //           save state of program
+ 
+ 
++#include <cstdlib>
++
+ #include "double_attribute.h"
+ #include "ini_functions.h"
+ 
+--- origsrc/inilib-1.0.7b3/src/int_attribute.cc	2005-03-15 02:22:50.000000000 +0900
++++ src/inilib-1.0.7b3/src/int_attribute.cc	2013-11-01 00:13:00.323922100 +0900
+@@ -15,6 +15,7 @@
+ //           save state of program
+ 
+ #include <string>
++#include <cstdlib>
+ 
+ #include "int_attribute.h"
+ #include "ini_functions.h"
+--- origsrc/inilib-1.0.7b3/src/registry.cc	2005-03-15 02:22:51.000000000 +0900
++++ src/inilib-1.0.7b3/src/registry.cc	2013-11-01 00:12:52.495797100 +0900
+@@ -18,6 +18,7 @@
+ #include <iostream>
+ #include <fstream>
+ #include <string>
++#include <cstdlib>
+ 
+ #include "Debug.h"
+ #include "ini_getline.h"
