@@ -1,0 +1,153 @@
+--- origsrc/libannodex/Makefile.am	2008-02-09 22:24:21.000000000 +0900
++++ src/libannodex/Makefile.am	2013-11-03 21:58:37.170047600 +0900
+@@ -1,12 +1,10 @@
+ ## Process this file with automake to produce Makefile.in
+ 
++ACLOCAL_AMFLAGS = -I m4
++
+ DISTCHECK_CONFIGURE_FLAGS = --enable-gcc-werror
+ 
+-if ANX_CONFIG_WRITE
+-SUBDIRS = doc libltdl include src
+-else
+ SUBDIRS = doc include src
+-endif
+ 
+ EXTRA_DIST = annodex.pc.in README.win32 \
+ 	libtool.m4 \
+--- origsrc/libannodex/configure.ac	2008-02-10 08:06:23.000000000 +0900
++++ src/libannodex/configure.ac	2013-11-03 23:37:35.563451200 +0900
+@@ -1,22 +1,18 @@
+ # Process this file with autoconf to produce a configure script.
+-AC_INIT
++AC_INIT([libannodex], [0.7.4+svn4086])
+ AC_CONFIG_SRCDIR([src/libannodex/annodex.c])
+ 
+ AC_PREREQ(2.53)
+ 
+ AC_CANONICAL_TARGET
+ 
+-AM_INIT_AUTOMAKE(libannodex, 0.7.4)
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ SHARED_VERSION_INFO="5:0:0"
+ SHLIB_VERSION_ARG=""
+ 
+-# Setup libltdl -- this must come before AC_PROG_LIBTOOL
+-AC_LIBLTDL_CONVENIENCE
+-AC_SUBST(INCLTDL)
+-AC_SUBST(LIBLTDL)
+-AC_LIBTOOL_DLOPEN
++LTDL_INIT
+ 
+ # Checks for programs.
+ AC_PROG_CC
+@@ -195,10 +191,6 @@ fi
+ 
+ AC_SUBST(SIZE64)
+ 
+-
+-# Configures libltdl
+-AC_CONFIG_SUBDIRS(libltdl)
+-
+ dnl
+ dnl  Detect oggz
+ dnl
+--- origsrc/libannodex/src/examples/Makefile.am	2008-10-26 07:35:50.000000000 +0900
++++ src/libannodex/src/examples/Makefile.am	2013-11-04 10:51:03.380904200 +0900
+@@ -1,6 +1,6 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include
++AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include
+ 
+ ANNODEXDIR = ../libannodex
+ ANNODEX_LIBS = $(ANNODEXDIR)/libannodex.la $(OGGZ_LIBS) -lm
+--- origsrc/libannodex/src/importers/Makefile.am	2008-02-10 08:06:23.000000000 +0900
++++ src/libannodex/src/importers/Makefile.am	2013-11-04 10:50:50.988326100 +0900
+@@ -1,6 +1,6 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-INCLUDES = -I$(top_srcdir)/include $(OGGZ_CFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include $(OGGZ_CFLAGS)
+ 
+ # don't use IMPORTERS_DIR from configure.ac; since that's decided at
+ # configure time, and not at install time
+@@ -28,21 +28,21 @@ importerslib_LTLIBRARIES = \
+ 	$(import_sndfile)
+ 
+ libanx_import_anx_la_SOURCES = anx_import_anx.c
+-libanx_import_anx_la_LDFLAGS = -module -version-info $(SHARED_VERSION_INFO)
++libanx_import_anx_la_LDFLAGS = -no-undefined -module -version-info $(SHARED_VERSION_INFO)
+ libanx_import_anx_la_LIBADD = $(ANNODEX_LIBS)
+ 
+ libanx_import_cmml_la_SOURCES = anx_import_cmml.c
+ libanx_import_cmml_la_CFLAGS = $(CMML_CFLAGS)
+-libanx_import_cmml_la_LDFLAGS = -module -version-info $(SHARED_VERSION_INFO)
++libanx_import_cmml_la_LDFLAGS = -no-undefined -module -version-info $(SHARED_VERSION_INFO)
+ libanx_import_cmml_la_LIBADD = $(ANNODEX_LIBS) $(CMML_LIBS)
+ 
+ libanx_import_ogg_la_SOURCES = anx_import_ogg.c
+ libanx_import_ogg_la_CFLAGS = $(OGG_CFLAGS)
+-libanx_import_ogg_la_LDFLAGS = -module -version-info $(SHARED_VERSION_INFO)
++libanx_import_ogg_la_LDFLAGS = -no-undefined -module -version-info $(SHARED_VERSION_INFO)
+ libanx_import_ogg_la_LIBADD = $(ANNODEX_LIBS)
+ 
+ libanx_import_sndfile_la_SOURCES = anx_import_sndfile.c
+ libanx_import_sndfile_la_CFLAGS = $(SNDFILE_CFLAGS)
+-libanx_import_sndfile_la_LDFLAGS = -module -version-info $(SHARED_VERSION_INFO)
++libanx_import_sndfile_la_LDFLAGS = -no-undefined -module -version-info $(SHARED_VERSION_INFO)
+ libanx_import_sndfile_la_LIBADD = $(ANNODEX_LIBS) @SNDFILE_LIBS@
+ 
+--- origsrc/libannodex/src/libannodex/Makefile.am	2008-02-10 08:06:23.000000000 +0900
++++ src/libannodex/src/libannodex/Makefile.am	2013-11-04 10:50:04.438521400 +0900
+@@ -10,7 +10,7 @@ anx_write_includes = $(INCLTDL)
+ anx_write_libs = $(LIBLTDL)
+ endif
+ 
+-INCLUDES = $(anx_write_includes) -I$(top_srcdir)/include @OGGZ_CFLAGS@
++AM_CPPFLAGS = $(anx_write_includes) -I$(top_builddir)/include -I$(top_srcdir)/include @OGGZ_CFLAGS@
+ 
+ EXTRA_DIST = Version_script.in
+ 
+@@ -53,7 +53,7 @@ libannodex_la_SOURCES = \
+ 	anx_write.c \
+ 	content_type.c
+ 
+-libannodex_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@ @SHLIB_VERSION_ARG@
++libannodex_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ @SHLIB_VERSION_ARG@
+ libannodex_la_LIBADD = $(anx_write_libs) $(OGGZ_LIBS)
+ libannodex_la_DEPENDENCIES = $(anx_write_libs)
+ 
+--- origsrc/libannodex/src/libannodex/anx_import.c	2013-11-03 21:53:55.588992900 +0900
++++ src/libannodex/src/libannodex/anx_import.c	2013-11-04 10:56:27.871138600 +0900
+@@ -103,7 +103,7 @@ anx_register_media_importer_lib (const c
+   AnxImporter * importer;
+   int i;
+ 
+-#ifdef WIN32 /* only try with .dll files */
++#if defined(WIN32) || defined(__CYGWIN__) /* only try with .dll files */
+     char *extension;
+ 	int len_ext;
+ 	len_ext = (strlen(pathname)>4?strlen(pathname)-4:0);
+--- origsrc/libannodex/src/tests/Makefile.am	2008-10-26 07:35:50.000000000 +0900
++++ src/libannodex/src/tests/Makefile.am	2013-11-04 10:51:15.117232400 +0900
+@@ -1,6 +1,6 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include
++AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/include
+ 
+ ANNODEXDIR = ../libannodex
+ ANNODEX_LIBS = $(ANNODEXDIR)/libannodex.la $(OGGZ_LIBS) -lm
+--- origsrc/libannodex/src/tools/Makefile.am	2008-10-26 06:30:19.000000000 +0900
++++ src/libannodex/src/tools/Makefile.am	2013-11-04 10:50:25.292037100 +0900
+@@ -1,6 +1,6 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/src/libannodex @OGGZ_CFLAGS@
++AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_srcdir)/src/libannodex @OGGZ_CFLAGS@
+ 
+ ANNODEXDIR = ../libannodex
+ ANNODEX_LIBS = $(ANNODEXDIR)/libannodex.la $(OGGZ_LIBS) -lm
