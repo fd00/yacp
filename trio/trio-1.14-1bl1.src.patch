@@ -1,0 +1,108 @@
+--- origsrc/trio-1.14/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/trio-1.14/Makefile.am	2013-11-17 18:55:35.796092000 +0900
+@@ -0,0 +1,12 @@
++
++TESTS = regression
++check_PROGRAMS = $(TESTS)
++regression_SOURCES = regression.c
++regression_LDADD = libtrio.la
++
++pkginclude_HEADERS = trio.h triop.h triodef.h trionan.h triostr.h
++
++lib_LTLIBRARIES = libtrio.la
++libtrio_la_LDFLAGS = -no-undefined
++libtrio_la_SOURCES = triostr.c trio.c trionan.c
++
+--- origsrc/trio-1.14/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/trio-1.14/configure.ac	2013-11-17 17:48:35.700903900 +0900
+@@ -0,0 +1,33 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([trio], [1.14])
++AC_CONFIG_SRCDIR([compare.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++LT_INIT
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([float.h inttypes.h limits.h locale.h stddef.h stdint.h stdlib.h string.h unistd.h wchar.h wctype.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_INT16_T
++AC_TYPE_INT32_T
++AC_TYPE_INT64_T
++AC_TYPE_INT8_T
++AC_TYPE_SIZE_T
++AC_CHECK_TYPES([ptrdiff_t])
++
++# Checks for library functions.
++AC_FUNC_STRCOLL
++AC_FUNC_STRTOD
++AC_CHECK_FUNCS([isascii localeconv mblen memset modf strcasecmp strchr strerror strncasecmp strstr strtol strtoul])
++
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
+--- origsrc/trio-1.14/configure.in	2009-11-01 00:51:57.000000000 +0900
++++ src/trio-1.14/configure.in	1970-01-01 09:00:00.000000000 +0900
+@@ -1,54 +0,0 @@
+-dnl
+-dnl Configuration for trio
+-dnl
+-
+-AC_INIT
+-AC_CONFIG_SRCDIR([triodef.h])
+-AC_PREREQ(2.55) dnl autoconf 2.55 was released in 2002
+-
+-AC_PROG_CC
+-ifdef([AC_PROG_CC_STDC], [AC_PROG_CC_STDC])
+-AC_LANG([C])
+-
+-AC_PROG_INSTALL
+-AC_PROG_RANLIB
+-
+-dnl
+-dnl Alpha floating-point compiler option.
+-dnl
+-
+-AC_MSG_CHECKING(for IEEE compilation options)
+-AC_CACHE_VAL(ac_cv_ieee_option, [
+-  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(,[[[
+-    #if !(defined(__alpha) && (defined(__DECC) || defined(__DECCXX) || (defined(__osf__) && defined(__LANGUAGE_C__))) && (defined(VMS) || defined(__VMS)))
+-    # error "Option needed"
+-    typedef int option_needed[-1];
+-    #endif
+-    ]]]),
+-    ac_cv_ieee_option="/IEEE_MODE=UNDERFLOW_TO_ZERO/FLOAT=IEEE",
+-    AC_COMPILE_IFELSE(AC_LANG_PROGRAM(,[[[
+-      #if !(defined(__alpha) && (defined(__DECC) || defined(__DECCXX) || (defined(__osf__) && defined(__LANGUAGE_C__) && !defined(__GNUC__))) && !(defined(VMS) || defined(__VMS)) && !defined(_CFE))
+-      # error "Option needed"
+-      typedef int option_needed[-1];
+-      #endif
+-      ]]]),
+-      ac_cv_ieee_option="-ieee",
+-      AC_COMPILE_IFELSE(AC_LANG_PROGRAM(,[[[
+-	#if !(defined(__alpha) && (defined(__GNUC__) && (defined(__osf__) || defined(__linux__))))
+-	# error "Option needed"
+-	typedef int option_needed[-1];
+-	#endif
+-	]]]),
+-	ac_cv_ieee_option="-mieee",
+-	ac_cv_ieee_option="none"
+-      )
+-    )
+-  )
+-])
+-AC_MSG_RESULT($ac_cv_ieee_option)
+-if test $ac_cv_ieee_option != none; then
+-  CFLAGS="${CFLAGS} ${ac_cv_ieee_option}"
+-fi
+-
+-AC_CONFIG_FILES([Makefile])
+-AC_OUTPUT
