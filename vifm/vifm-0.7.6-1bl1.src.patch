@@ -1,9 +1,14 @@
---- origsrc/vifm-0.7.5/configure.in	2013-05-10 22:24:57.000000000 +0900
-+++ src/vifm-0.7.5/configure.in	2013-06-22 19:42:16.559649300 +0900
-@@ -310,97 +310,7 @@ AC_CHECK_TYPE([pthread_mutex_t], [], [AC
- AC_CHECK_DECL([PTHREAD_ONCE_INIT], [], [AC_MSG_ERROR([PTHREAD_ONCE_INIT not found in pthread.h])], [[#include <pthread.h>]])
+--- origsrc/vifm-0.7.6/configure.in	2013-11-01 05:34:50.000000000 +0900
++++ src/vifm-0.7.6/configure.in	2013-11-24 18:50:18.674069300 +0900
+@@ -324,98 +324,7 @@ AC_CHECK_DECL([PTHREAD_ONCE_INIT], [], [
  AC_CHECK_DECL([PTHREAD_MUTEX_INITIALIZER], [], [AC_MSG_ERROR([PTHREAD_MUTEX_INITIALIZER not found in pthread.h])], [[#include <pthread.h>]])
  
+ dnl Name of curses library file.
+-curses_lib_name=ncursesw
+-AC_ARG_WITH(curses-name,
+-	[  --with-curses-name=NAME name of curses library file @<:@default=ncursesw@:>@],
+-	[curses_lib_name=$withval])
+-
 -dnl AC_CHECK_LIB(XCurses, initscr)
 -vifm_cv_curses=/usr
 -AC_ARG_WITH(curses, [  --with-curses=DIR       where ncurses is installed ],
@@ -12,16 +17,16 @@
 -	fi
 -	if test x$vifm_cv_curses != x/usr; then
 -		LDFLAGS="-L${vifm_cv_curses}/lib $LDFLAGS"
--		CPPFLAGS="$CPPFLAGS -I${vifm_cv_curses}/include -I${vifm_cv_curses}/include/ncursesw"
+-		CPPFLAGS="$CPPFLAGS -I${vifm_cv_curses}/include -I${vifm_cv_curses}/include/${curses_lib_name}"
 -	fi])
 -
 -dnl Try to find ncurses library.
 -ncurses_found=no
--dnl Firstly check for libncursesw.
--AC_CHECK_LIB(ncursesw, initscr,
--	[LIBS="$LIBS -lncursesw"
--	if test x$vifm_cv_curses = x/usr -a -d /usr/include/ncursesw; then
--		CPPFLAGS="$CPPFLAGS -I/usr/include/ncursesw"
+-dnl Firstly check for lib${curses_lib_name}.
+-AC_CHECK_LIB(${curses_lib_name}, initscr,
+-	[LIBS="$LIBS -l${curses_lib_name}"
+-	if test x$vifm_cv_curses = x/usr -a -d /usr/include/${curses_lib_name}; then
+-		CPPFLAGS="$CPPFLAGS -I/usr/include/${curses_lib_name}"
 -	fi
 -	ncurses_found=yes])
 -dnl If libncursesw is not found on OS X, check for libncurses.  On OS X it has
@@ -49,9 +54,6 @@
 -AC_CHECK_DECL([COLORS], [], [AC_MSG_ERROR([COLORS not found in curses.h])], [[#include <curses.h>]])
 -AC_CHECK_DECL([COLOR_PAIR], [], [AC_MSG_ERROR([COLOR_PAIR not found in curses.h])], [[#include <curses.h>]])
 -AC_CHECK_DECL([TABSIZE], [], [AC_MSG_ERROR([TABSIZE not found in curses.h])], [[#include <curses.h>]])
--if test -z "$OSX_HOST" ; then
--	AC_CHECK_TYPE([WINDOW], [], [AC_MSG_ERROR([WINDOW type not found in curses.h])], [[#include <curses.h>]])
--fi
 -AC_CHECK_FUNC([curs_set], [], [AC_MSG_ERROR([curs_set() function not found.])])
 -AC_CHECK_FUNC([def_prog_mode], [], [AC_MSG_ERROR([def_prog_mode() function not found.])])
 -AC_CHECK_FUNC([doupdate], [], [AC_MSG_ERROR([doupdate() function not found.])])
@@ -72,9 +74,8 @@
 -AC_CHECK_FUNC([resize_term], [], [AC_MSG_ERROR([resize_term() function not found.])])
 -AC_CHECK_FUNC([resizeterm], [], [AC_MSG_ERROR([resizeterm() function not found.])])
 -AC_CHECK_FUNC([scrollok], [], [AC_MSG_ERROR([scrollok() function not found.])])
--AC_CHECK_FUNC([set_escdelay], [], [AC_MSG_ERROR([set_escdelay() function not found.])])
+-AC_CHECK_FUNC([set_escdelay], [AC_DEFINE([HAVE_SET_ESCDELAY_FUNC], [1], [set_escdelay() function is available.])])
 -AC_CHECK_FUNC([start_color], [], [AC_MSG_ERROR([start_color() function not found.])])
--AC_CHECK_FUNC([stdscr], [], [AC_MSG_ERROR([stdscr() function not found.])])
 -AC_CHECK_FUNC([use_default_colors], [], [AC_MSG_ERROR([use_default_colors() function not found.])])
 -AC_CHECK_FUNC([waddch], [], [AC_MSG_ERROR([waddch() function not found.])])
 -AC_CHECK_FUNC([waddnstr], [], [AC_MSG_ERROR([waddnstr() function not found.])])
@@ -99,35 +100,33 @@
  
  dnl ----------------------------------------------------------------------------
  dnl check for gnu coreutils version
---- origsrc/vifm-0.7.5/src/Makefile.am	2013-05-10 22:24:57.000000000 +0900
-+++ src/vifm-0.7.5/src/Makefile.am	2013-06-22 19:56:43.616920800 +0900
-@@ -124,10 +124,16 @@ vifm_SOURCES = \
+--- origsrc/vifm-0.7.6/src/Makefile.am	2013-11-01 05:34:50.000000000 +0900
++++ src/vifm-0.7.6/src/Makefile.am	2013-11-24 19:02:01.996334900 +0900
+@@ -134,10 +134,14 @@ vifm_SOURCES = \
+ 	viewcolumns_parser.c viewcolumns_parser.h \
  	compile_info.c \
  	vifm.c
- 
 +vifm_CFLAGS = $(NCURSES_CFLAGS)
 +vifm_LDADD = $(NCURSES_LIBS)
-+
+ 
  vifmrc_converter_SOURCES = \
  	color_scheme.h \
  	vifmrc-converter.c
- 
 +vifmrc_converter_CFLAGS = $(NCURSES_CFLAGS)
 +vifmrc_converter_LDADD = $(NCURSES_LIBS)
-+
+ 
  check_SCRIPTS = runtests
  TESTS = $(check_SCRIPTS)
- 
-@@ -154,12 +160,13 @@ update_compile_info:
+@@ -165,12 +169,13 @@ update_compile_info:
  		echo "$$new" > compile_info.c; \
  	fi
  
 -../data/vifm-help.txt: ../data/vifm.1
 +../data/vifm-help.txt: $(top_srcdir)/data/vifm.1
  	@if [ "x$$(whereis groff)" != "x" -a "x$$(whereis sed)" != "x" ]; then \
--		groff -Tutf8 -man ../data/vifm.1 | sed 's/.\x08//g' >| ../data/vifm-help.txt; \
+-		groff -Tutf8 -man ../data/vifm.1 | sed -e 's/.\x08//g' -e 's/\x1b\[[0-9]*m//g' -e 's/\r//g' >| '$@'; \
 +		mkdir -p ../data; \
-+		groff -Tutf8 -man $(top_srcdir)/data/vifm.1 | sed 's/.\x08//g' >| ../data/vifm-help.txt; \
++		groff -Tutf8 -man $(top_srcdir)/data/vifm.1 | sed -e 's/.\x08//g' -e 's/\x1b\[[0-9]*m//g' -e 's/\r//g' >| '$@'; \
  	fi
  
 -tags.c: ../data/vim/doc/vifm.txt
