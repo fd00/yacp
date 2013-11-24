@@ -1,0 +1,35 @@
+--- origsrc/recutils-1.6/src/rec-db.c	2013-11-03 23:03:29.000000000 +0900
++++ src/recutils-1.6/src/rec-db.c	2013-11-24 15:51:01.467975800 +0900
+@@ -1497,7 +1497,9 @@ rec_db_add_random_indexes (size_t **inde
+ 
+   size_t i;
+   char random_state[128];
++#if defined(HAVE_STRUCT_RANDOM_DATA)
+   struct random_data random_data;
++#endif
+ 
+   *index = malloc (sizeof(size_t) * ((num + 1) * 2));
+   if (*index == NULL)
+@@ -1512,14 +1514,20 @@ rec_db_add_random_indexes (size_t **inde
+     }
+ 
+   /* Insert the random indexes.  */
+-
++#if defined(HAVE_STRUCT_RANDOM_DATA)
+   memset (&random_data, 0, sizeof (random_data));
+   initstate_r (time(NULL), (char *) &random_state, 128, &random_data);
++#else
++  initstate (time(NULL), (char *) &random_state, 128);
++#endif
+   for (i = 0; i < (num * 2); i = i + 2)
+     {
+       size_t random_value = 0;
+-      
++#if defined(HAVE_STRUCT_RANDOM_DATA)
+       random_r (&random_data, (int32_t *) &random_value); /* Can't fail.  */
++#else
++      random_value = random ();
++#endif
+       random_value = random_value % limit;
+ 
+       /* Avoid having repeated random indexes.  */
