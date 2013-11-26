@@ -1,0 +1,52 @@
+HOMEPAGE="https://github.com/maxmind/${PN}"
+SRC_URI="https://github.com/maxmind/${PN}/releases/download/${PV}/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="C library for the MaxMind DB file format"
+DESCRIPTION="The libmaxminddb library provides a C library for reading MaxMind DB files,
+including the GeoIP2 databases from MaxMind. This is a custom binary format
+designed to facilitate fast lookups of IP addresses while allowing for great
+flexibility in the type of data associated with an address.
+
+The MaxMind DB format is an open format. The spec is available at
+http://maxmind.github.io/MaxMind-DB/. This spec is licensed under the Creative
+Commons Attribution-ShareAlike 3.0 Unported License.
+
+See http://dev.maxmind.com/ for more details about MaxMind's GeoIP2 products."
+
+src_test()
+{
+	cd ${B}
+	ln -fs ${S}/maxmind-db .
+	cygtest
+
+	cd ${T}
+	wget http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.mmdb.gz
+	gunzip GeoLite2-Country.mmdb.gz
+	${B}/bin/mmdblookup.exe -f GeoLite2-Country.mmdb -i 8.8.8.8
+}
+
+DIFF_EXCLUDES="
+	Makefile
+"
+
+PKG_NAMES="
+	${PN}
+	${PN}0
+	${PN}-devel
+"
+libmaxminddb_CONTENTS="
+	usr/share/doc
+"
+libmaxminddb0_CONTENTS="
+	usr/bin
+"
+libmaxminddb_devel_CONTENTS="
+	usr/include
+	usr/lib
+	usr/share/man
+"
+
+libmaxminddb_SUMMARY="${SUMMARY} (licensing & readmes)"
+libmaxminddb0_SUMMARY="${SUMMARY} (runtime)"
+libmaxminddb_devel_SUMMARY="${SUMMARY} (development)"
