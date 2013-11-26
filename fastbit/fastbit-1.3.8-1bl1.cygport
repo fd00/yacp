@@ -1,0 +1,72 @@
+HOMEPAGE="https://sdm.lbl.gov/${PN}/"
+SRC_URI="https://codeforge.lbl.gov/frs/download.php/409/${PN}-ibis${PV}.tar.gz"
+SRC_DIR="${PN}-ibis${PV}"
+
+CATEGORY="Libs"
+SUMMARY="Minimalistic data warehousing engine designed to test ideas on bitmap indexes"
+DESCRIPTION="FastBit is an open-source data processing library following the spirit of
+NoSQL movement. It offers a set of searching functions supported by compressed
+bitmap indexes. It treats user data in the column-oriented manner similar to
+well-known database management systems such as Sybase IQ, MonetDB, and
+Vertica. It is designed to accelerate user's data selection tasks without
+imposing undue requirements. In particular, the user data is NOT required to
+be under the control of FastBit software, which allows the user to continue to
+use their existing data analysis tools."
+
+CYGCONF_ARGS="
+	--includedir=/usr/include/${PN}
+	--enable-maintainer-mode
+	--with-java=no
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	rm -fr src
+	cp -R ${S}/src .
+	cygconf
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}
+	ln -fs ${S}/tests/scripts/hcompare.pl \
+		./tests/scripts/hcompare.pl
+	ln -fs ${S}/tests/scripts/jrf-check.pl \
+		./tests/scripts/jrf-check.pl
+	ln -fs ${S}/tests/scripts/matchCounts.pl \
+		./tests/scripts/matchCounts.pl
+	ln -fs ${S}/tests/scripts/printWarning.pl \
+		./tests/scripts/printWarning.pl
+	ln -fs ${S}/tests/vault \
+		./tests/vault
+	cygmake -j1 check
+}
+
+DIFF_EXCLUDES="
+	${PN}-config.h
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+fastbit_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libfastbit0_CONTENTS="
+	usr/bin/*.dll
+"
+libfastbit_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+"
+fastbit_SUMMARY="${SUMMARY} (utilities)"
+libfastbit0_SUMMARY="${SUMMARY} (runtime)"
+libfastbit_devel_SUMMARY="${SUMMARY} (development)"
