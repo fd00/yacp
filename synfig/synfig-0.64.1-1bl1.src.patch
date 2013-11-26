@@ -1,0 +1,52 @@
+--- origsrc/synfig-0.64.1/configure.ac	2013-11-26 19:08:36.554617600 +0900
++++ src/synfig-0.64.1/configure.ac	2013-11-26 19:10:31.377859800 +0900
+@@ -427,8 +427,8 @@ PKG_CHECK_MODULES(LIBPANGO, pango pangoc
+ 	AC_MSG_ERROR([ ** You need to install pango])
+ ])
+ 
+-AX_BOOST_BASE([1.32.0])
+-AX_BOOST_PROGRAM_OPTIONS
++BOOST_REQUIRE([1.32.0])
++BOOST_PROGRAM_OPTIONS
+ if test "x$ax_cv_boost_program_options" = "xno" ; then
+ 	AC_MSG_ERROR([ ** You need to install Boost program-options library])
+ fi
+@@ -567,7 +567,7 @@ AC_CHECK_HEADERS(signal.h termios.h sys/
+ 
+ 
+ case "$host" in
+-	*mingw* | *cygwin*)
++	*mingw*)
+ 		AM_CONDITIONAL(WIN32_PKG, true)
+ 		AM_CONDITIONAL(MACOSX_PKG, false)
+ 	;;
+@@ -749,7 +749,5 @@ Using OpenEXR's \"half\" type ------> $u
+ "'$'"LIBSIGC_LIBS --------------------> '$LIBSIGC_LIBS'
+ "'$'"SYNFIG_CFLAGS -------------------> '$SYNFIG_CFLAGS'
+ "'$'"BOOST_CPPFLAGS ------------------> '$BOOST_CPPFLAGS'
+-"'$'"BOOST_LDFLAGS -------------------> '$BOOST_LDFLAGS'
+-"'$'"BOOST_PROGRAM_OPTIONS_LIB -------> '$BOOST_PROGRAM_OPTIONS_LIB'
+ "'$'"LIBADD_DL -----------------------> '$LIBADD_DL'
+ "
+--- origsrc/synfig-0.64.1/src/synfig/module.cpp	2013-10-25 19:54:52.000000000 +0900
++++ src/synfig-0.64.1/src/synfig/module.cpp	2013-11-26 19:12:26.913016000 +0900
+@@ -127,6 +127,7 @@ synfig::Module::Register(const String &m
+ 
+ 	module=lt_dlopenext((string("lib")+module_name).c_str());
+ 	if(!module)module=lt_dlopenext(module_name.c_str());
++	if(!module)module=lt_dlopenext((string("cyg")+module_name).c_str());
+ 
+ 	if(!module)
+ 	{
+--- origsrc/synfig-0.64.1/src/tool/Makefile.am	2013-10-25 19:54:52.000000000 +0900
++++ src/synfig-0.64.1/src/tool/Makefile.am	2013-11-26 20:05:10.785609700 +0900
+@@ -34,8 +34,7 @@ synfig_LDADD = \
+ 	../synfig/libsynfig.la \
+ 	@SYNFIG_LIBS@ \
+ 	@OPENEXR_HALF_LIBS@ \
+-	@BOOST_LDFLAGS@ \
+-	@BOOST_PROGRAM_OPTIONS_LIB@
++	@BOOST_PROGRAM_OPTIONS_LIBS@
+ 
+ synfig_CXXFLAGS = \
+ 	@SYNFIG_CFLAGS@
