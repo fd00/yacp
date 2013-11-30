@@ -1,0 +1,266 @@
+--- origsrc/CBFlib-0.9.3.3/CMakeLists.txt	2013-11-08 23:54:21.000000000 +0900
++++ src/CBFlib-0.9.3.3/CMakeLists.txt	2013-11-30 20:10:34.208261400 +0900
+@@ -281,6 +281,8 @@ set (CBF_CMAKE_DEBUG "ON")
+ 
+ set(CMAKE_C_FLAGS "-Wall -fno-strict-aliasing")
+ 
++set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}")
++
+ #
+ #  User setable parameters
+ #
+@@ -366,12 +368,20 @@ endmacro(CBF_LOAD_TARBALL)
+ #
+ macro(CBF_ADD_C_EXAMPLE PGMNAME EXDIR EXTRASRCS EXTRALIBS)
+   add_executable(${PGMNAME} "${EXDIR}/${PGMNAME}.c" "${EXTRASRCS}")
+-  target_link_libraries(${PGMNAME} cbf_static ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  if (CYGWIN)
++    target_link_libraries(${PGMNAME} cbf_shared ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  else (CYGWIN)
++    target_link_libraries(${PGMNAME} cbf_static ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  endif (CYGWIN)
+ endmacro(CBF_ADD_C_EXAMPLE)
+ 
+ macro(CBF_ADD_CXX_EXAMPLE PGMNAME EXDIR EXTRASRCS EXTRALIBS)
+   add_executable(${PGMNAME} "${EXDIR}/${PGMNAME}.C" "${EXTRASRCS}")
+-  target_link_libraries(${PGMNAME} cbf_static ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  if (CYGWIN)
++    target_link_libraries(${PGMNAME} cbf_shared ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  else (CYGWIN)
++    target_link_libraries(${PGMNAME} cbf_static ${CBF_HDF5_LIBRARY_PATH} ${EXTRALIBS})
++  endif (CYGWIN)
+ endmacro(CBF_ADD_CXX_EXAMPLE)
+ 
+ 
+@@ -531,6 +541,10 @@ find_package(ZLIB)
+ 
+ 
+ #Load external packages in build directory at cmake time
++if (CYGWIN)
++find_package(HDF5)
++find_package(PCRE)
++else (CYGWIN)
+ add_subdirectory(${CBF__EXTERNAL_PACKAGES}  "${CBF__EXT_PKG}")
+ 
+ find_file(CBF_EXT_PKG_BLD_RUNNING cbf_ext_pkg_build_running "${CBF__EXT_PKG}")
+@@ -564,7 +578,7 @@ if ("|${CBF_HDF5_LIBRARY_PATH}|" STREQUA
+   MESSAGE(STATUS "Then rerun cmake")
+   MESSAGE(WARNING "Finishing run to make Makefiles")
+ endif ("|${CBF_HDF5_LIBRARY_PATH}|" STREQUAL "||" OR "|${CBF_TIFF_LIBRARY_PATH}|" STREQUAL "||")
+-
++endif (CYGWIN)
+ 
+ #
+ # Data Directories
+@@ -588,6 +602,7 @@ CBF_LOAD_TARBALL(${CBF__DATA} ${CBF_DATA
+ #
+ # Verify the checksums
+ #
++if (NOT CYGWIN)
+ file(GLOB CBF_DATADIRI_FILES "${CBF_DATADIRI}/*")
+ file(GLOB CBF_DATADIRO_FILES "${CBF_DATADIRO}/*")
+ foreach(loop_file ${CBF_DATADIRI_FILES} )
+@@ -608,7 +623,7 @@ foreach(loop_file ${CBF_DATADIRO_FILES}
+     endif (NOT ("${loop_file_md5}" STREQUAL "${loop_file_md5_orig}"))
+   endif (NOT "${loop_file}" MATCHES "[*.]md5")
+ endforeach(loop_file)
+-
++endif (CYGWIN)
+ 
+ #
+ # Source files
+@@ -761,13 +776,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CB
+ #  Build the static and shared CBF libraries
+ #
+ 
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
+-add_library(cbf_static STATIC ${CBF_C_SOURCES})
+-set_target_properties(cbf_static PROPERTIES OUTPUT_NAME "cbf")
+-set_target_properties(cbf_static PROPERTIES LINKER_LANGUAGE C)
+-set_target_properties(cbf_static PROPERTIES SOVERSION "${CBF_APIVERSION}")
+-
++if (NOT CYGWIN)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
++  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
++  add_library(cbf_static STATIC ${CBF_C_SOURCES})
++  set_target_properties(cbf_static PROPERTIES OUTPUT_NAME "cbf")
++  set_target_properties(cbf_static PROPERTIES LINKER_LANGUAGE C)
++  set_target_properties(cbf_static PROPERTIES SOVERSION "${CBF_APIVERSION}")
++endif (CYGWIN)
+ 
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/solib")
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/solib")
+@@ -775,22 +791,24 @@ add_library(cbf_shared SHARED  ${CBF_C_S
+ set_target_properties(cbf_shared PROPERTIES OUTPUT_NAME "cbf")
+ set_target_properties(cbf_shared PROPERTIES LINKER_LANGUAGE C)
+ set_target_properties(cbf_shared PROPERTIES SOVERSION "${CBF_APIVERSION}")
+-target_link_libraries(cbf_shared ${CBF_HDF5_LIBRARY_PATH})
++target_link_libraries(cbf_shared ${HDF5_hdf5_LIBRARY})
+ 
+ #
+ # Build the static and shared IMG libraries
+ #
+ 
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
+-add_library(img_static STATIC ${CBF__EXAMPLES}/img.c)
+-set_target_properties(img_static PROPERTIES OUTPUT_NAME "img")
+-set_target_properties(img_static PROPERTIES LINKER_LANGUAGE C)
+-
++if (NOT CYGWIN)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
++  add_library(img_static STATIC ${CBF__EXAMPLES}/img.c)
++  set_target_properties(img_static PROPERTIES OUTPUT_NAME "cbfimg")
++  set_target_properties(img_static PROPERTIES LINKER_LANGUAGE C)
++endif (NOT CYGWIN)
+ 
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/solib")
+ add_library(img_shared SHARED  ${CBF__EXAMPLES}/img.c)
+-set_target_properties(img_shared PROPERTIES OUTPUT_NAME "img")
++set_target_properties(img_shared PROPERTIES OUTPUT_NAME "cbfimg")
+ set_target_properties(img_shared PROPERTIES LINKER_LANGUAGE C)
++set_target_properties(img_shared PROPERTIES SOVERSION "${CBF_APIVERSION}")
+ target_link_libraries(img_shared ${CBF_HDF5_LIBRARY_PATH})
+ 
+ 
+@@ -813,30 +831,32 @@ endforeach(f90src)
+ #
+ # Build the fcb libraries
+ #
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
+-add_library(fcb_static STATIC ${CBF_F90_BUILT_SOURCES};${CBF_F90_SOURCES})
+-set_target_properties(fcb_static PROPERTIES OUTPUT_NAME "fcb")
+-set_target_properties(fcb_static PROPERTIES LINKER_LANGUAGE C)
+-
++if (NOT CYGWIN)
++  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/lib")
++  add_library(fcb_static STATIC ${CBF_F90_BUILT_SOURCES};${CBF_F90_SOURCES})
++  set_target_properties(fcb_static PROPERTIES OUTPUT_NAME "fcb")
++  set_target_properties(fcb_static PROPERTIES LINKER_LANGUAGE C)
++endif (NOT CYGWIN)
+ 
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CBFlib_BINARY_DIR}/solib")
+ add_library(fcb_shared SHARED  ${CBF_F90_BUILT_SOURCES};${CBF_F90_SOURCES})
+ set_target_properties(fcb_shared PROPERTIES OUTPUT_NAME "fcb")
+ set_target_properties(fcb_shared PROPERTIES LINKER_LANGUAGE C)
++set_target_properties(fcb_shared PROPERTIES SOVERSION "${CBF_APIVERSION}")
+ target_link_libraries(fcb_shared ${CBF_HDF5_LIBRARY_PATH})
+ 
+ 
+ #
+ #  C and C++ examples
+ #
+-CBF_ADD_C_EXAMPLE(convert_image "${CBF__EXAMPLES}" "" "img_static")
++CBF_ADD_C_EXAMPLE(convert_image "${CBF__EXAMPLES}" "" "img_shared")
+ CBF_ADD_C_EXAMPLE(convert_minicbf "${CBF__EXAMPLES}" "" "")
+-CBF_ADD_C_EXAMPLE(makecbf "${CBF__EXAMPLES}" "" "img_static")
++CBF_ADD_C_EXAMPLE(makecbf "${CBF__EXAMPLES}" "" "img_shared")
+ CBF_ADD_C_EXAMPLE(adscimg2cbf "${CBF__EXAMPLES}" "${CBF__EXAMPLES}/adscimg2cbf_sub.c" "")
+ CBF_ADD_C_EXAMPLE(cbf2adscimg "${CBF__EXAMPLES}" "${CBF__EXAMPLES}/cbf2adscimg_sub.c" "")
+ CBF_ADD_C_EXAMPLE(cbf_tail "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(changtestcompression "${CBF__EXAMPLES}" "" "")
+-CBF_ADD_C_EXAMPLE(img2cif "${CBF__EXAMPLES}" "" "img_static")
++CBF_ADD_C_EXAMPLE(img2cif "${CBF__EXAMPLES}" "" "img_shared")
+ CBF_ADD_C_EXAMPLE(cif2cbf "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(cbf2nexus "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(minicbf2nexus "${CBF__EXAMPLES}" "" "")
+@@ -844,7 +864,9 @@ CBF_ADD_C_EXAMPLE(cbf_template_t "${CBF_
+ CBF_ADD_CXX_EXAMPLE(testcell "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_CXX_EXAMPLE(sauter_test "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(sequence_match "${CBF__EXAMPLES}" "" "")
++if (NOT CYGWIN)
+ CBF_ADD_C_EXAMPLE(tiff2cbf "${CBF__EXAMPLES}" "${CBF__EXT_PKG}/${CBF_TIFF}/libtiff/tif_sprint.c" "${CBF_TIFF_LIBRARY_PATH}")
++endif (NOT CYGWIN)
+ CBF_ADD_C_EXAMPLE(testulp "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(testhdf5 "${CBF__EXAMPLES}" "" "")
+ CBF_ADD_C_EXAMPLE(testtree "${CBF__EXAMPLES}" "" "")
+@@ -868,8 +890,8 @@ add_custom_command(OUTPUT "${CBF__BLDEXM
+ 
+ add_executable(test_fcb_read_image "${CBF__BLDEXMP}/test_fcb_read_image.f90")
+ add_executable(test_xds_binary     "${CBF__BLDEXMP}/test_xds_binary.f90")
+-target_link_libraries(test_fcb_read_image fcb_static)
+-target_link_libraries(test_xds_binary     fcb_static)
++target_link_libraries(test_fcb_read_image fcb_shared)
++target_link_libraries(test_xds_binary     fcb_shared)
+ 
+ 
+ 
+@@ -889,13 +911,33 @@ install (TARGETS cbf_template_t DESTINAT
+ install (TARGETS testcell DESTINATION bin)
+ install (TARGETS sauter_test DESTINATION bin)
+ install (TARGETS sequence_match DESTINATION bin)
+-install (TARGETS tiff2cbf DESTINATION bin)
+-install (TARGETS cbf_static DESTINATION lib)
+-install (TARGETS cbf_shared DESTINATION lib)
+-install (TARGETS fcb_static DESTINATION lib)
+-install (TARGETS fcb_shared DESTINATION lib)
+-install (TARGETS img_static DESTINATION lib)
+-install (TARGETS img_shared DESTINATION lib)
++if (NOT CYGWIN)
++  install (TARGETS tiff2cbf DESTINATION bin)
++endif (NOT CYGWIN)
++if (NOT CYGWIN)
++  install (TARGETS cbf_static DESTINATION lib)
++endif (NOT CYGWIN)
++if (CYGWIN)
++  install (TARGETS cbf_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++else (CYGWIN)
++  install (TARGETS cbf_shared DESTINATION lib)
++endif (CYGWIN)
++if (NOT CYGWIN)
++  install (TARGETS fcb_static DESTINATION lib)
++endif (NOT CYGWIN)
++if (CYGWIN)
++  install (TARGETS fcb_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++else (CYGWIN)
++  install (TARGETS fcb_shared DESTINATION lib)
++endif (CYGWIN)
++if (NOT CYGWIN)
++  install (TARGETS img_static DESTINATION lib)
++endif (NOT CYGWIN)
++if (CYGWIN)
++  install (TARGETS img_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++else (CYGWIN)
++  install (TARGETS img_shared DESTINATION lib)
++endif (CYGWIN)
+ install (DIRECTORY ${CBF__INCLUDE}/ DESTINATION include/cbflib FILES_MATCHING PATTERN "*.h")
+ install (DIRECTORY ${CBF__BIN_INCLUDE}/* DESTINATION include/cbflib FILES_MATCHING PATTERN "*.h")
+ 
+--- origsrc/CBFlib-0.9.3.3/FindPCRE.cmake	1970-01-01 09:00:00.000000000 +0900
++++ src/CBFlib-0.9.3.3/FindPCRE.cmake	2013-11-30 19:19:32.318613000 +0900
+@@ -0,0 +1,35 @@
++#
++# $Id$
++#
++# - Find pcre
++# Find the native PCRE includes and library
++#
++#  PCRE_INCLUDE_DIRS - where to find pcre.h, etc.
++#  PCRE_LIBRARIES    - List of libraries when using pcre.
++#  PCRE_FOUND        - True if pcre found.
++
++
++IF (PCRE_INCLUDE_DIRS)
++  # Already in cache, be silent
++  SET(PCRE_FIND_QUIETLY TRUE)
++ENDIF (PCRE_INCLUDE_DIRS)
++
++FIND_PATH(PCRE_INCLUDE_DIR pcre.h)
++
++SET(PCRE_NAMES pcre)
++FIND_LIBRARY(PCRE_LIBRARY NAMES ${PCRE_NAMES} )
++
++# handle the QUIETLY and REQUIRED arguments and set PCRE_FOUND to TRUE if 
++# all listed variables are TRUE
++INCLUDE(FindPackageHandleStandardArgs)
++FIND_PACKAGE_HANDLE_STANDARD_ARGS(PCRE DEFAULT_MSG PCRE_LIBRARY PCRE_INCLUDE_DIR)
++
++IF(PCRE_FOUND)
++  SET( PCRE_LIBRARIES ${PCRE_LIBRARY} )
++  SET( PCRE_INCLUDE_DIRS ${PCRE_INCLUDE_DIR} )
++ELSE(PCRE_FOUND)
++  SET( PCRE_LIBRARIES )
++  SET( PCRE_INCLUDE_DIRS )
++ENDIF(PCRE_FOUND)
++
++MARK_AS_ADVANCED( PCRE_LIBRARIES PCRE_INCLUDE_DIRS )
