@@ -1,0 +1,46 @@
+--- origsrc/igraph-0.6.5/Makefile.am	2013-03-03 05:23:36.000000000 +0900
++++ src/igraph-0.6.5/Makefile.am	2013-12-06 09:17:01.554096100 +0900
+@@ -14,10 +14,10 @@ EXTRA_DIST = igraph.pc $(top_srcdir)/inc
+ 	$(top_srcdir)/interfaces/R/configure.in.in \
+ 	optional
+ 
+-install-exec-hook:
+-	if test -f $(top_builddir)/src/.libs/cygigraph-0.dll ; \
+-		then cp $(top_builddir)/src/.libs/cygigraph-0.dll \
+-		$(DESTDIR)$(libdir) ; fi
++#install-exec-hook:
++#	if test -f $(top_builddir)/src/.libs/cygigraph-0.dll ; \
++#		then cp $(top_builddir)/src/.libs/cygigraph-0.dll \
++#		$(DESTDIR)$(libdir) ; fi
+ 
+ install-info:
+ 	if test -f doc/igraph.info; then d="doc"; \
+--- origsrc/igraph-0.6.5/configure.ac	2013-03-03 05:23:36.000000000 +0900
++++ src/igraph-0.6.5/configure.ac	2013-12-06 07:54:50.927828100 +0900
+@@ -216,7 +216,8 @@ if test "$internal_f2c" = "no"; then
+      AC_CHECK_LIB([f2c], [f77_alloc], [],
+         AC_CHECK_LIB([f2c], [F77_ALLOC_], [],
+            AC_CHECK_LIB([f2c], [F77_ALLOC], [],
+-	      [AC_MSG_RESULT(not found, trying to use -lf2c anyway.)]))))
++              AC_CHECK_LIB([f2c], [F77_aloc], [],
++                 [AC_MSG_RESULT(not found, trying to use -lf2c anyway.)])))))
+   LDFLAGS="${LDFLAGS}"
+ else
+   AC_DEFINE([INTERNAL_F2C], [1], [Define to 1 if you use the internal F2C library])
+--- origsrc/igraph-0.6.5/src/Makefile.am	2013-03-03 05:23:36.000000000 +0900
++++ src/igraph-0.6.5/src/Makefile.am	2013-12-06 08:35:40.016916600 +0900
+@@ -64,10 +64,11 @@ if INTERNAL_F2C
+   libf2c_la_SOURCES = f2c.h f2c/fio.h f2c/fmt.h f2c/sysdep1.h\
+ 					  f2c/sysdep1.h0 f2c/lio.h f2c/fp.h f2c/signal1.h\
+ 					  f2c/signal1.h0 $(F2C)
+-  libf2c_la_CFLAGS = -DSkip_f2c_Undefs -I. -I$(top_srcdir)/include -I$(top_builddir)/include $(WARNING_CFLAGS)
++  libf2c_la_CFLAGS = -DSkip_f2c_Undefs -If2c -I. -I$(top_srcdir)/include -I$(top_builddir)/include $(WARNING_CFLAGS)
+   f2c/arith.h: f2c/arithchk.c
+-	$(CC) $(CFLAGS) -DNO_FPINIT f2c/arithchk.c -lm -o f2c/arith || \
+-	$(CC) -DNO_LONG_LONG $(CFLAGS) -DNO_FPINIT f2c/arithchk.c \
++	$(mkdir_p) f2c
++	$(CC) $(CFLAGS) -DNO_FPINIT $(srcdir)/f2c/arithchk.c -lm -o f2c/arith || \
++	$(CC) -DNO_LONG_LONG $(CFLAGS) -DNO_FPINIT $(srcdir)/f2c/arithchk.c \
+ 		$(WARNING_CFLAGS) -lm -o f2c/arith
+ 	f2c/arith > f2c/arith.h
+   f2c/sysdep1.h: f2c/sysdep1.h0
