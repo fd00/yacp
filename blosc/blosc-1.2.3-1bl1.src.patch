@@ -1,0 +1,69 @@
+--- origsrc/blosc-1.2.3/CMakeLists.txt	2013-05-17 19:00:01.000000000 +0900
++++ src/blosc-1.2.3/CMakeLists.txt	2013-12-15 11:25:40.822160400 +0900
+@@ -47,8 +47,8 @@ project(blosc)
+ # version numbers
+ # @TODO: set version numbers by parsing the blosc.h header
+ set(BLOSC_VERSION_MAJOR 1)
+-set(BLOSC_VERSION_MINOR 1)
+-set(BLOSC_VERSION_PATCH 6)  # BLOSC_VERSION_RELEASE
++set(BLOSC_VERSION_MINOR 2)
++set(BLOSC_VERSION_PATCH 3)  # BLOSC_VERSION_RELEASE
+ 
+ 
+ # options
+--- origsrc/blosc-1.2.3/bench/plot-speeds.py	2013-05-17 19:00:01.000000000 +0900
++++ src/blosc-1.2.3/bench/plot-speeds.py	2013-12-15 11:34:51.346574500 +0900
+@@ -1,3 +1,4 @@
++#!/usr/bin/python
+ """Script for plotting the results of the 'suite' benchmark.
+ Invoke without parameters for usage hints.
+ 
+--- origsrc/blosc-1.2.3/blosc/CMakeLists.txt	2013-05-17 19:00:01.000000000 +0900
++++ src/blosc-1.2.3/blosc/CMakeLists.txt	2013-12-15 11:49:03.505026200 +0900
+@@ -38,7 +38,7 @@ endif(BUILD_STATIC)
+ 
+ # install
+ install(FILES blosc.h DESTINATION include COMPONENT DEV)
+-install(TARGETS blosc_shared DESTINATION ${lib_dir} COMPONENT LIB)
++install(TARGETS blosc_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION ${lib_dir} COMPONENT LIB)
+ if(BUILD_STATIC)
+     install(TARGETS blosc_static DESTINATION ${lib_dir} COMPONENT DEV)
+ endif(BUILD_STATIC)
+--- origsrc/blosc-1.2.3/hdf5/CMakeLists.txt	2013-05-17 19:00:01.000000000 +0900
++++ src/blosc-1.2.3/hdf5/CMakeLists.txt	2013-12-15 11:42:01.935690300 +0900
+@@ -6,10 +6,15 @@ set(SOURCES blosc_filter.c)
+ find_package(HDF5 REQUIRED)
+ include_directories(HDF5_INCLIDE_DIRS)
+ 
++set(version_string ${BLOSC_VERSION_MAJOR}.${BLOSC_VERSION_MINOR}.${BLOSC_VERSION_PATCH})
+ 
+ # targets
+ add_library(blosc_filter_shared SHARED ${SOURCES})
+ set_target_properties(blosc_filter_shared PROPERTIES OUTPUT_NAME blosc_filter)
++set_target_properties(blosc_filter_shared PROPERTIES
++        VERSION ${version_string}
++        SOVERSION ${version_string}
++    )
+ target_link_libraries(blosc_filter_shared blosc_shared ${HDF5_LIBRARIES})
+ 
+ if(BUILD_STATIC)
+@@ -22,16 +27,16 @@ endif(BUILD_STATIC)
+ 
+ # install
+ install(FILES blosc_filter.h DESTINATION include COMPONENT HDF5_FILTER_DEV)
+-install(TARGETS blosc_filter_static DESTINATION lib COMPONENT HDF5_FILTER)
++install(TARGETS blosc_filter_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT HDF5_FILTER)
+ if(BUILD_STATIC)
+     install(
+-        TARGETS blosc_filter_shared DESTINATION lib COMPONENT HDF5_FILTER_DEV)
++        TARGETS blosc_filter_static DESTINATION lib COMPONENT HDF5_FILTER_DEV)
+ endif(BUILD_STATIC)
+ 
+ 
+ # test
+ if(BUILD_TESTS)
+     add_executable(example example.c)
+-    target_link_libraries(example blosc_filter_static ${HDF5_LIBRARIES})
++    target_link_libraries(example blosc_filter_shared ${HDF5_LIBRARIES})
+     add_test(test_hdf5_filter example)
+ endif(BUILD_TESTS)
