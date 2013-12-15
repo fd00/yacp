@@ -1,0 +1,193 @@
+--- origsrc/libmsocket-0.4/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libmsocket-0.4/Makefile.am	2013-12-15 14:35:13.450462600 +0900
+@@ -0,0 +1,16 @@
++
++bin_PROGRAMS = lms-ex-server lms-ex-client
++lms_ex_server_SOURCES = Example-server.c
++lms_ex_server_LDADD = libmsocket.la
++lms_ex_client_SOURCES = Example-client.c
++lms_ex_client_LDADD = libmsocket.la
++
++include_HEADERS = msocket.h msocketutils.h
++
++lib_LTLIBRARIES = libmsocket.la
++libmsocket_la_SOURCES = \
++	base64.c conn.c dns.c file.c lms.c mux.c passwords.c rand.c socket.c \
++	ssl.c str.c
++libmsocket_la_LDFLAGS = -no-undefined
++libmsocket_la_LIBADD = $(OPENSSL_LIBS) $(LIBEVENT_LIBS)
++
+--- origsrc/libmsocket-0.4/configure.ac	2008-10-13 08:30:58.000000000 +0900
++++ src/libmsocket-0.4/configure.ac	2013-12-15 14:26:26.509271500 +0900
+@@ -10,11 +10,13 @@ AC_INIT([libmsocket],[0.4])
+ AC_CONFIG_HEADER(localconfig.h)
+ 
+ AC_PREFIX_DEFAULT(/usr/local)
++AM_INIT_AUTOMAKE
+ 
+ OLD_CFLAGS="$CFLAGS"
+ 
+ AC_PROG_CC
+ AC_LANG(C)
++LT_INIT
+ 
+ CFLAGS="$OLD_CFLAGS"
+ 
+@@ -26,7 +28,7 @@ AC_ARG_ENABLE(debug,
+ [cf_debug="0"])
+ AC_ARG_ENABLE(throttling,
+ [AC_HELP_STRING([--enable-throttling],[Enable throttling interface])],
+-[AC_DEFINE([LMS_THROTTLE_ENABLE], [1])],
++[AC_DEFINE([LMS_THROTTLE_ENABLE], [1], [enable throttle])],
+ [unusedvariable="0"])
+ 
+ AC_ARG_WITH(openssl,
+@@ -55,6 +57,17 @@ AC_CHECK_SIZEOF(long)
+ AC_CHECK_SIZEOF(int)
+ AC_CHECK_SIZEOF(short)
+ AC_CHECK_FUNCS([mmap realloc reallocf gmtime_r localtime_r usleep])
++AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h unistd.h])
++AC_TYPE_UID_T
++AC_C_INLINE
++AC_TYPE_PID_T
++AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++AC_TYPE_UINT32_T
++AC_FUNC_GETGROUPS
++AC_FUNC_MALLOC
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([inet_ntoa memset socket strcasecmp strerror])
+ 
+ AC_CHECK_HEADER([readpassphrase.h], [
+ 	AC_CHECK_FUNCS(readpassphrase, AC_DEFINE(HAVE_READPASSPHRASE, 1, [Define to 1 if readpassphrase() is available.]))],
+@@ -88,119 +101,25 @@ dnl OpenSSL support
+ AC_MSG_CHECKING(for OpenSSL)
+ 
+ if test "$cf_enable_openssl" != "no" ; then
+-  cf_openssl_basedir=""
+-  if test "$cf_enable_openssl" != "auto" &&
+-  test "$cf_enable_openssl" != "yes" ; then
+-    cf_openssl_basedir="`echo ${cf_enable_openssl} | sed 's/\/$//'`"
+-  else
+-    for dirs in /usr/local/ssl /usr/pkg /usr/local /usr/local/openssl /usr/sfw /opt/sfw /usr; do
+-      if test -f "${dirs}/include/openssl/opensslv.h" ; then
+-	cf_openssl_basedir="${dirs}"
+-	break
+-      fi
+-    done
+-    unset dirs
+-  fi
+-  if test ! -z "$cf_openssl_basedir"; then
+-    if test -f "${cf_openssl_basedir}/include/openssl/opensslv.h" ; then
+-      SSL_INCLUDES="-I${cf_openssl_basedir}/include"
+-      SSL_LIBS="-L${cf_openssl_basedir}/lib"
+-    else
+-      cf_openssl_basedir=""
+-    fi
+-  fi
+-
+-  if test ! -z "$cf_openssl_basedir"; then
+-    AC_MSG_RESULT($cf_openssl_basedir)
+-    cf_enable_openssl="yes"
+-  else
+-    AC_MSG_ERROR([Could not find OpenSSL: please use --with-openssl=/path/to/openssl])
+-  fi
+-  unset cf_openssl_basedir
++  PKG_CHECK_MODULES([OPENSSL], [openssl])
+ else
+   cf_enable_openssl="no"
+   AC_MSG_RESULT([not found.])
+ fi
+ 
+-CPPFLAGS="$CPPFLAGS $SSL_INCLUDES"
+-CFLAGS="$CFLAGS $SSL_INCLUDES"
+-LIBS="$LIBS $SSL_LIBS"
+-AC_CHECK_LIB(ssl, SSL_library_init)
+-AC_CHECK_LIB(crypto, RAND_seed)
+-if test "$cf_enable_openssl" != no; then
+-	AC_MSG_CHECKING(for OpenSSL 0.9.7 or above)
+-	AC_RUN_IFELSE(
+-		AC_LANG_PROGRAM(
+-	    	[#include <openssl/opensslv.h>
+-		#include <stdlib.h>],
+-		[[if (OPENSSL_VERSION_NUMBER >= 0x00907000)
+-		exit(0); else exit(1);]]),
+-	cf_openssl_version_ok=yes,
+-	cf_openssl_version_ok=no,
+-	cf_openssl_version_ok=no)
+-
+-	if test "$cf_openssl_version_ok" = yes; then
+-		AC_MSG_RESULT(found)
+-	else
+-		AC_MSG_RESULT([no - OpenSSL 0.9.8d or later is recommended, but OpenSSL 0.9.7 and above should work.])
+-		cf_enable_openssl='no'
+-		AC_MSG_ERROR([No OpenSSL found.])
+-	fi
+-fi
+-
+ dnl End OpenSSL detection
+ 
+-
+ dnl libevent
+ 
+ AC_MSG_CHECKING(for libevent)
+ 
+ if test "$cf_enable_libevent" != "no" ; then
+-  cf_libevent_basedir=""
+-  if test "$cf_enable_libevent" != "auto" &&
+-  test "$cf_enable_libevent" != "yes" ; then
+-    cf_libevent_basedir="`echo ${cf_enable_libevent} | sed 's/\/$//'`"
+-  else
+-    for dirs in /usr/local /usr/pkg /usr/sfw /opt/sfw /usr; do
+-      if test -f "${dirs}/include/event.h" ; then
+-	cf_libevent_basedir="${dirs}"
+-	break
+-      fi
+-    done
+-    unset dirs
+-  fi
+-  if test ! -z "$cf_libevent_basedir"; then
+-    if test -f "${cf_libevent_basedir}/include/event.h" ; then
+-      LIBEVENT_INCLUDES="-I${cf_libevent_basedir}/include"
+-      LIBEVENT_LIBS="-L${cf_libevent_basedir}/lib"
+-    else
+-      cf_libevent_basedir=""
+-    fi
+-  fi
+-
+-  if test ! -z "$cf_libevent_basedir"; then
+-    AC_MSG_RESULT($cf_libevent_basedir)
+-    cf_enable_libevent="yes"
+-  else
+-    AC_MSG_ERROR([Could not find libevent: please use --with-libevent=/path/to/libevent])
+-  fi
+-  unset cf_libevent_basedir
++  PKG_CHECK_MODULES([LIBEVENT], [libevent])
+ else
+   cf_enable_libevent="no"
+   AC_MSG_RESULT([not found.])
+ fi
+ 
+-CPPFLAGS="$CPPFLAGS $LIBEVENT_INCLUDES"
+-CFLAGS="$CFLAGS $LIBEVENT_INCLUDES"
+-LIBS="$LIBS $LIBEVENT_LIBS"
+-
+-AC_CHECK_LIB(event, event_init)
+-if test "$ac_cv_lib_event_event_init" = yes; then
+-	AC_CHECK_HEADER(event.h, , [AC_MSG_ERROR([Could not find event.h])])
+-else
+-	AC_MSG_ERROR(not found)
+-fi
+-
+ dnl end libevent detection
+ 
+ if test "$prefix" = "NONE"; then 
+@@ -214,7 +133,7 @@ fi
+ 
+ if test "$cf_debug" = "1"; then
+   DFLAGS="-Wall -Wno-long-long -Wno-unused-function -Wno-unused-variable -Wno-unused-value -ggdb"
+-  AC_DEFINE([LMS_DEBUG], [1])
++  AC_DEFINE([LMS_DEBUG], [1], [enable debug])
+ else
+   DFLAGS=""
+ fi
