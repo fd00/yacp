@@ -1,0 +1,228 @@
+--- origsrc/lamarc/Makefile.am	2012-11-16 08:51:50.000000000 +0900
++++ src/lamarc/Makefile.am	2013-12-21 10:50:38.778931500 +0900
+@@ -69,18 +69,6 @@ lam_conv_rc.o   :       $(top_srcdir)/re
+ ## to this list
+ LDADD				=
+ 
+-noinst_LIBRARIES		= libtinyxml.a
+-
+-libtinyxml_a_CXXFLAGS	= -DTIXML_USE_STL
+-
+-libtinyxml_a_SOURCES	= \
+-			tinyxml/tinyxml.h \
+-			tinyxml/tinyxml.cpp \
+-			tinyxml/tinyxmlerror.cpp \
+-			tinyxml/tinyxmlparser.cpp \
+-			tinyxml/tinystr.h \
+-			tinyxml/tinystr.cpp
+-
+ ## ############################################################
+ ## setting up compiler flags
+ ## ############################################################
+@@ -110,9 +98,7 @@ lamarc_includes         = \
+ 			-I $(lamarc_srcdir)/ui_util \
+ 			-I $(lamarc_srcdir)/ui_vars \
+ 			-I $(lamarc_srcdir)/xml \
+-			-I $(top_srcdir)/boost \
+-			-I $(top_srcdir)/resources \
+-			-I $(top_srcdir)/tinyxml
++			-I $(top_srcdir)/resources
+ 
+ 
+ ## include resource file if needed
+@@ -604,14 +590,6 @@ xml_sources     =   \
+ 		    src/xml/toxml.cpp \
+ 		    $(xml_core_sources)
+ 
+-tinyxml_sources =   \
+-		    tinyxml/tinyxml.h \
+-		    tinyxml/tinyxml.cpp \
+-		    tinyxml/tinyxmlerror.cpp \
+-		    tinyxml/tinyxmlparser.cpp \
+-		    tinyxml/tinystr.h \
+-		    tinyxml/tinystr.cpp
+-
+ config_sources  =   \
+ 		    config/conf.h
+ 
+@@ -634,7 +612,7 @@ lamarc_SOURCES  =   $(lamarcgcov_sources
+ 					$(lamarc_resources) \
+ 					$(config_sources)
+ 
+-lamarc_LDADD	= libtinyxml.a
++lamarc_LDADD	= -ltinyxml
+ 
+ old_lam_conv_core       = \
+ 			src/conversion/ConverterIf.cpp \
+@@ -942,9 +920,9 @@ lam_conv_SOURCES        = \
+ 			$(lam_conv_core) \
+ 			$(lam_conv_resources)
+ 
+-lam_conv_LDADD = @WX_LIBS@ libtinyxml.a
++lam_conv_LDADD = @WX_LIBS@ -ltinyxml
+ 
+-EXTRA_lam_conv_SOURCES  = $(tinyxml_suite) $(lam_conv_icons)
++EXTRA_lam_conv_SOURCES  = $(lam_conv_icons)
+ 
+ batch_lam_conv_core     = \
+ 			src/guiconv/batchconverter.h \
+@@ -961,9 +939,9 @@ batch_lam_conv_testable = \
+ batch_lam_conv_SOURCES	=	\
+ 			$(batch_lam_conv_testable)
+ 
+-batch_lam_conv_LDADD = @WX_LIBS@ libtinyxml.a
++batch_lam_conv_LDADD = @WX_LIBS@ -ltinyxml
+ 
+-EXTRA_batch_lam_conv_SOURCES = $(tinyxml_suite)
++EXTRA_batch_lam_conv_SOURCES =
+ 
+ ## ############################################################
+ ## To make OSX executables for wxWindows stuff
+@@ -1028,7 +1006,7 @@ lamarc.app:     lamarc
+ ## html documentation
+ ## ############################################################
+ 
+-htmldir = $(prefix)/html/lamarc
++htmldir = $(docdir)/html
+ 
+ html_DATA = \
+ 			doc/html/bayes.html \
+@@ -1049,7 +1027,6 @@ html_DATA = \
+ 			doc/html/genotype.html \
+ 			doc/html/glossary.html \
+ 			doc/html/growthmenu.html \
+-			doc/html/forces.html \
+ 			doc/html/index.html \
+ 			doc/html/insumfile.2reg3rep.html \
+ 			doc/html/insumfile.2reg3rep.xml \
+@@ -1079,7 +1056,7 @@ html_DATA = \
+ 			doc/html/viral_data.html \
+ 			doc/html/xmlinput.html
+ 
+-htmlimgdir = $(prefix)/html/lamarc/images
++htmlimgdir = $(docdir)/html/images
+ 
+ htmlimg_DATA = \
+ 			doc/html/images/LamarcAnalysisScreen.png \
+@@ -1104,7 +1081,7 @@ htmlimg_DATA = \
+ 			doc/html/images/uncorrelated.gif \
+ 			doc/html/images/variably_correlated.gif
+ 
+-htmlbconvdir = $(prefix)/html/lamarc/batch_converter
++htmlbconvdir = $(docdir)/html/batch_converter
+ 
+ htmlbconv_DATA = \
+ 			doc/html/batch_converter/README.txt \
+@@ -1121,7 +1098,7 @@ htmlbconv_DATA = \
+ 			doc/html/batch_converter/sample-conv-cmd.html \
+ 			doc/html/batch_converter/sample-conv-cmd.xml
+ 
+-htmlbconvimgdir = $(prefix)/html/lamarc/batch_converter/images
++htmlbconvimgdir = $(docdir)/html/batch_converter/images
+ 
+ htmlbconvimg_DATA = \
+ 			doc/html/batch_converter/images/CombinedPanels.png \
+@@ -1154,7 +1131,7 @@ htmlbconvimg_DATA = \
+ 			doc/html/batch_converter/images/lam_conv_export_file_mac_expanded.png
+ 
+ 
+-htmltraitdir = $(prefix)/html/lamarc/trait_mapping
++htmltraitdir = $(docdir)/html/trait_mapping
+ 
+ htmltrait_DATA  = \
+ 			doc/html/trait_mapping/README.txt \
+--- origsrc/lamarc/configure.ac	2013-11-09 07:47:53.000000000 +0900
++++ src/lamarc/configure.ac	2013-12-21 09:37:10.288937800 +0900
+@@ -66,7 +66,7 @@ case "$target_os" in
+             LAMARC_CODE_OSTYPE=LAMARC_COMPILE_MACOSX
+         fi
+         ;;
+-    freebsd*|linux*)
++    freebsd*|linux*|cygwin*)
+         if test "X${lamCONV}" = "Xyes" ; then
+             if test "X${lamGUI}" = "Xyes" ; then
+                 if test "X${GUI_TOOLKIT}" = "X" ; then
+@@ -372,10 +372,9 @@ if test X$user_set_cxxflags != Xyes; the
+     CXXFLAGS=" "
+ fi
+ 
+-# so we can build tinyxml as a library
+-AC_PROG_RANLIB
+-
+ # Checks for libraries.
++BOOST_REQUIRE
++BOOST_SMART_PTR
+ 
+ # Checks for header files.
+ AC_HEADER_STDC
+--- origsrc/lamarc/src/control/types.h	2012-06-30 10:32:39.000000000 +0900
++++ src/lamarc/src/control/types.h	2013-12-21 09:43:33.002805000 +0900
+@@ -17,7 +17,7 @@
+ #include <memory>
+ 
+ #include "vectorx.h"
+-#include "shared_ptr.hpp"
++#include <boost/shared_ptr.hpp>
+ 
+ class Branch;
+ class DataType;
+--- origsrc/lamarc/src/force/event.cpp	2013-10-26 02:00:52.000000000 +0900
++++ src/lamarc/src/force/event.cpp	2013-12-21 09:47:18.789914400 +0900
+@@ -24,7 +24,7 @@
+ #include "mathx.h"
+ #include "range.h"                      // For Link-related typedefs and constants.
+ #include "registry.h"
+-#include "shared_ptr.hpp"
++#include <boost/shared_ptr.hpp>
+ #include "stringx.h"
+ #include "timemanager.h"                // for use in Picktime for coals and disease
+ #include "tree.h"
+--- origsrc/lamarc/src/tools/stringx.h	2012-06-30 10:32:42.000000000 +0900
++++ src/lamarc/src/tools/stringx.h	2013-12-21 10:04:51.753781500 +0900
+@@ -164,6 +164,11 @@ std::vector < string >  MultisetElemToSt
+     return svec;
+ }
+ 
++std::string Pretty(double number, int width=DEFWIDTH);
++std::string Pretty(long number, int width=DEFWIDTH);
++std::string Pretty(unsigned long number, int width=DEFWIDTH);
++std::string Pretty(std::string str, int width=DEFWIDTH);
++
+ template <class T>
+ std::vector < string >  VecElemToString(vector <T> number, int width)
+ {
+@@ -203,10 +208,6 @@ std::string MakeCentered(const char* str
+                          long indent=DEFINDENT, bool trunc=true);
+ std::string MakeIndent(const std::string & str, unsigned long indent);
+ std::string MakeIndent(const char* str, unsigned long indent);
+-std::string Pretty(double number, int width=DEFWIDTH);
+-std::string Pretty(long number, int width=DEFWIDTH);
+-std::string Pretty(unsigned long number, int width=DEFWIDTH);
+-std::string Pretty(std::string str, int width=DEFWIDTH);
+ 
+ bool   StringCompare(const std::string&, const char*, long, long);
+ bool   StringCompare(const std::string&, const std::string&, long, long);
+--- origsrc/lamarc/src/tree/branch.h	2012-06-30 10:32:42.000000000 +0900
++++ src/lamarc/src/tree/branch.h	2013-12-21 09:44:27.104367500 +0900
+@@ -50,8 +50,8 @@
+ #include "range.h"                      // For Link-related typedefs and constants.
+ #include "dlcell.h"
+ #include "locuscell.h"
+-#include "shared_ptr.hpp"               // for Branch_ptr (boost::shared_ptr)
+-#include "enable_shared_from_this.hpp"  // for shared_ptr support
++#include <boost/shared_ptr.hpp>               // for Branch_ptr (boost::shared_ptr)
++#include <boost/enable_shared_from_this.hpp>  // for shared_ptr support
+ #include "branchtag.h"
+ #include "rangex.h"                     // for class Range (and subclass) factory duties
+ #include "fc_status.h"                  // for RevalidateRange debug function
+--- origsrc/lamarc/src/tree/treesum.cpp	2013-11-09 06:46:21.000000000 +0900
++++ src/lamarc/src/tree/treesum.cpp	2013-12-21 10:43:11.771359700 +0900
+@@ -20,7 +20,7 @@
+ 
+ #include "chainmanager.h"
+ #include "constants.h"
+-#include "enable_shared_from_this.hpp"  // For shared_from_this in RecTreeSummary handling of
++#include <boost/enable_shared_from_this.hpp>  // For shared_from_this in RecTreeSummary handling of
+                                         // recombination events for partnerpicks logic.
+ #include "force.h"                      // For setting up the recsbypartition vector of intervals
+                                         // in a RecTreeSummary.
