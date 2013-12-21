@@ -1,0 +1,53 @@
+--- origsrc/libdbh2-5.0.11/configure.ac	2013-12-20 02:37:00.000000000 +0900
++++ src/libdbh2-5.0.11/configure.ac	2013-12-21 12:57:16.665475400 +0900
+@@ -264,8 +264,11 @@ fi
+ AC_CHECK_LIB([m],[pow])
+ 
+ 
+-AC_CHECK_HEADERS([windows.h sys/select.h sys/types.h sys/wait.h unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h sys/mman.h])
+-AC_CHECK_HEADERS([windows.h process.h conio.h tchar.h])
++AC_CHECK_HEADERS([sys/select.h sys/types.h sys/wait.h unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h sys/mman.h])
++AC_CHECK_HEADERS([process.h conio.h tchar.h])
++if test "$host_os" != "cygwin"; then
++	AC_CHECK_HEADERS([windows.h])
++fi
+ AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes"])
+ 
+ AC_SUBST(PARALLEL_SAFE)
+--- origsrc/libdbh2-5.0.11/examples/Makefile.am	2013-12-05 10:21:25.000000000 +0900
++++ src/libdbh2-5.0.11/examples/Makefile.am	2013-12-21 13:08:19.786061100 +0900
+@@ -3,13 +3,14 @@ bin_PROGRAMS = simple_hash
+ if WANT_GLIB
+ bin_PROGRAMS += filesystem
+ filesystem_SOURCES = filesystem.c ../src/dbh.c
+-filesystem_CFLAGS = -g @GLIB_CFLAGS@ -I../src `pkg-config gthread-2.0 --cflags`
++filesystem_CPPFLAGS = -I$(top_srcdir) -I../src
++filesystem_CFLAGS = -g @GLIB_CFLAGS@ `pkg-config gthread-2.0 --cflags`
+ filesystem_LDFLAGS = @GLIB_LIBS@ -lm -lpthread `pkg-config gthread-2.0 --libs`
+ endif
+ 
+ simple_hash_SOURCES =  simple_hash.c ../src/dbh.c ../src/dbh.h ../src/dbh_static.i  ../src/dbh_exported.i
+-
+-simple_hash_CFLAGS = -g -I../src @GLIB_CFLAGS@ 
++simple_hash_CPPFLAGS = -I$(top_srcdir) -I../src
++simple_hash_CFLAGS = -g @GLIB_CFLAGS@ 
+ simple_hash_LDADD =  -lm -lpthread @GLIB_LIBS@
+ 
+ if WANT_GLIB
+--- origsrc/libdbh2-5.0.11/src/Makefile.am	2013-12-07 09:21:41.000000000 +0900
++++ src/libdbh2-5.0.11/src/Makefile.am	2013-12-21 12:54:35.707130000 +0900
+@@ -6,11 +6,12 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ EXTRA_DIST = dbh.h.in 
+ 
+ if WINDOZE
+-#no_undefined = -no-undefined
+ #FIXME: list symbols to export here
+ export_symbols = -export-symbols 
+ endif
+-	
++
++no_undefined = -no-undefined
++
+ lib_LTLIBRARIES=libdbh.la
+ libdbh_la_SOURCES = dbh.c  		\
+ 		    dbh_static.i dbh_exported.i \
