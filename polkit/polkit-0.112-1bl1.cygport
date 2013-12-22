@@ -1,0 +1,87 @@
+HOMEPAGE="http://www.freedesktop.org/wiki/Software/${PN}"
+SRC_URI="http://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="PolicyKit Authorization Framework"
+DESCRIPTION="PolicyKit is an application-level toolkit for defining and handling the policy
+that allows unprivileged processes to speak to privileged processes: It is a
+framework for centralizing the decision making process with respect to
+granting access to privileged operations for unprivileged applications.
+PolicyKit is specifically targeting applications in rich desktop environments
+on multi-user UNIX-like operating systems. It does not imply or rely on any
+exotic kernel features."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	ln -fs /usr/share/gtk-doc/data/gtk-doc.make .
+}
+
+CYGCONF_ARGS="
+	--enable-maintainer-mode
+	--disable-gtk-doc
+	--enable-examples
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	intltoolize
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+PKG_NAMES="
+	${PN}
+	lib${PN}-agent1_0
+	lib${PN}-agent1-devel
+	lib${PN}-gobject1_0
+	lib${PN}-gobject1-devel
+	girepository-Polkit1.0
+	girepository-PolkitAgent1.0
+"
+polkit_CONTENTS="
+	etc
+	usr/bin/*.exe
+	usr/lib/polkit*/*.exe
+	usr/share/dbus*
+	usr/share/doc
+	usr/share/locale
+	usr/share/man
+	usr/share/${PN}*
+"
+libpolkit_agent1_0_CONTENTS="
+	usr/bin/cygpolkit-agent-1-0.dll
+"
+libpolkit_agent1_devel_CONTENTS="
+	usr/include/polkit-1/polkitagent
+	usr/lib/libpolkit-agent-1*
+	usr/lib/pkgconfig/polkit-agent-1.pc
+"
+libpolkit_gobject1_0_CONTENTS="
+	usr/bin/cygpolkit-gobject-1-0.dll
+"
+libpolkit_gobject1_devel_CONTENTS="
+	usr/include/polkit-1/polkit
+	usr/lib/libpolkit-gobject-1*
+	usr/lib/pkgconfig/polkit-gobject-1.pc
+"
+girepository_Polkit1_0_CONTENTS="
+	usr/lib/girepository*/Polkit-1.0*
+	usr/share/gir*/Polkit-1.0*
+"
+girepository_PolkitAgent1_0_CONTENTS="
+	usr/lib/girepository*/PolkitAgent-1.0*
+	usr/share/gir*/PolkitAgent-1.0*
+"
+
+polkit_SUMMARY="${SUMMARY} (utilities)"
+libpolkit_agent1_0_SUMMARY="${SUMMARY} (runtime / agent)"
+libpolkit_agent1_devel_SUMMARY="${SUMMARY} (development / agent)"
+libpolkit_gobject1_0_SUMMARY="${SUMMARY} (runtime / gobject)"
+libpolkit_gobject1_devel_SUMMARY="${SUMMARY} (development / gobject)"
+girepository_Polkit1_0_SUMMARY="${SUMMARY} (GObject Introspection data)"
+girepository_PolkitAgent1_0_SUMMARY="${SUMMARY} (GObject Introspection data / agent)"
