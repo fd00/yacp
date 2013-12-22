@@ -1,0 +1,23 @@
+--- origsrc/libkafka-0.5.0/Makefile.am	2013-12-19 03:25:45.000000000 +0900
++++ src/libkafka-0.5.0/Makefile.am	2013-12-22 22:35:13.047352900 +0900
+@@ -47,7 +47,8 @@ lib_libkafka_la_SOURCES = \
+ 
+ LIBKAFKA_LIBRARY_VERSION = 0:5:0
+ lib_libkafka_la_CPPFLAGS = $(AM_CPPFLAGS) $(COVERAGE_CFLAGS)
+-lib_libkafka_la_LDFLAGS = -version-info $(LIBKAFKA_LIBRARY_VERSION) $(COVERAGE_LDFLAGS)
++lib_libkafka_la_LDFLAGS = -no-undefined -version-info $(LIBKAFKA_LIBRARY_VERSION) $(COVERAGE_LDFLAGS)
++lib_libkafka_la_LIBADD = -lz -lsnappy
+ 
+ lib_libkafka_ladir = $(includedir)/libkafka
+ 
+--- origsrc/libkafka-0.5.0/lib/src/Packet.cc	2013-10-16 04:54:04.000000000 +0900
++++ src/libkafka-0.5.0/lib/src/Packet.cc	2013-12-22 22:33:51.663563800 +0900
+@@ -270,7 +270,7 @@ int Packet::writeCompressedBytes(unsigne
+ 
+   if (codec == COMPRESSION_SNAPPY)
+   {
+-    unsigned long compressionBufferSize = snappy::MaxCompressedLength(numBytes);
++    size_t compressionBufferSize = snappy::MaxCompressedLength(numBytes);
+     unsigned char* compressionBuffer = new unsigned char[compressionBufferSize];
+     snappy::RawCompress((const char *)bytes, numBytes, (char *)compressionBuffer, &compressionBufferSize);
+     this->writeBytes(compressionBuffer, (long)compressionBufferSize);
