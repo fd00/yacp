@@ -1,0 +1,105 @@
+--- origsrc/libdynd-0.5.0/CMakeLists.txt	2013-10-14 06:15:46.000000000 +0900
++++ src/libdynd-0.5.0/CMakeLists.txt	2013-12-23 00:35:01.126653900 +0900
+@@ -56,8 +56,6 @@ list(APPEND CMAKE_MODULE_PATH
+ set(CMAKE_VERBOSE_MAKEFILE 1)
+ 
+ # Embedded libraries
+-add_subdirectory(thirdparty/blosc)
+-include_directories(thirdparty/blosc/blosc)
+ add_subdirectory(thirdparty/datetime)
+ include_directories(thirdparty/datetime/include)
+ 
+@@ -65,12 +63,12 @@ if(WIN32)
+     # Treat warnings as errors (-WX does this)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -WX -EHsc")
+ else()
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fomit-frame-pointer -fstrict-aliasing -fPIC -Wall -Wextra -Werror")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fomit-frame-pointer -fstrict-aliasing -Wall -Wextra -Werror")
+     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+         # The '-fmax-errors' flag was first supported in gcc 4.6
+         # Use the c++0x flag only in 4.6 and later
+         if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.6")
+-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fmax-errors=20")
++            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x -fmax-errors=20")
+         endif()
+     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
+@@ -86,9 +84,7 @@ else()
+ endif()
+ 
+ # Get the git revision
+-include(GetGitRevisionDescriptionDyND)
+-get_git_head_revision("${CMAKE_CURRENT_SOURCE_DIR}" GIT_REFSPEC DYND_GIT_SHA1)
+-git_describe("${CMAKE_CURRENT_SOURCE_DIR}" DYND_VERSION_STRING --dirty --match "v[0-9]*")
++set(DYND_VERSION_STRING "0.5.0")
+ message(STATUS "DyND version: ${DYND_VERSION_STRING}")
+ configure_file(
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/dynd/git_version.cpp.in"
+@@ -386,8 +382,9 @@ if (DYND_SHARED_LIB)
+         PROPERTIES
+         # For now, during development, embed the full version string
+         # to reduce the chance of accidentally linking the wrong one.
+-        OUTPUT_NAME "dynd_${DYND_VERSION_STRING}"
++        OUTPUT_NAME "dynd"
+         PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}"
++        SOVERSION ${DYND_VERSION_STRING}
+         )
+ else()
+     add_library(libdynd STATIC ${libdynd_SRC})
+@@ -470,9 +467,9 @@ endif()
+ if (DYND_INSTALL_LIB)
+     # Install the libdynd binary
+     install(TARGETS libdynd
+-        RUNTIME DESTINATION lib
++        RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib
+-        ARCHIVE DESTINATION lib/static)
++        ARCHIVE DESTINATION lib)
+     # Install the libdynd headers
+     install(DIRECTORY "include/dynd" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+     # Install the libdynd-config script
+--- origsrc/libdynd-0.5.0/include/dynd/platform_definitions.h	2013-10-14 06:15:46.000000000 +0900
++++ src/libdynd-0.5.0/include/dynd/platform_definitions.h	2013-12-22 23:46:38.761749800 +0900
+@@ -17,7 +17,7 @@
+ ////////////////////////////////////////////////////////////////////////////////
+ #   define DYND_OS_WINDOWS
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ // platform is a Linux
+ #   define DYND_OS_LINUX
+ #elif defined(__APPLE__) && defined(__MACH__)
+--- origsrc/libdynd-0.5.0/tests/CMakeLists.txt	2013-10-14 06:15:46.000000000 +0900
++++ src/libdynd-0.5.0/tests/CMakeLists.txt	2013-12-23 00:08:09.921963500 +0900
+@@ -60,14 +60,9 @@ set(tests_SRC
+     test_arithmetic_op.cpp
+     test_shape_tools.cpp
+     test_platform.cpp
+-    ../thirdparty/gtest/gtest-all.cc
+-    ../thirdparty/gtest/gtest_main.cc
+     )
+ 
+-include_directories(
+-    ../thirdparty
+-    .
+-    )
++include_directories(.)
+ 
+ source_group("Other Tests" REGULAR_EXPRESSION "\\/test_[^\\/]*\\.cpp$")
+ source_group("Array Tests" REGULAR_EXPRESSION "\\/array\\/test_[^\\/]*\\.cpp$")
+@@ -100,6 +95,7 @@ else()
+     target_link_libraries(test_libdynd
+         libdynd
+         pthread
++        gtest gtest_main
+         )
+ endif()
+ 
+--- origsrc/libdynd-0.5.0/tests/inc_gtest.hpp	2013-10-14 06:15:46.000000000 +0900
++++ src/libdynd-0.5.0/tests/inc_gtest.hpp	2013-12-22 23:58:25.735573200 +0900
+@@ -1 +1,5 @@
++#if defined(__CYGWIN__)
++#include <stdio.h>
++extern "C" int fileno(FILE *);
++#endif
+ #include <gtest/gtest.h>
