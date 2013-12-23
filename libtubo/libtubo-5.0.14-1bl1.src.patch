@@ -1,0 +1,48 @@
+--- origsrc/libtubo0-5.0.14/configure.ac	2013-12-20 02:38:28.000000000 +0900
++++ src/libtubo0-5.0.14/configure.ac	2013-12-23 17:36:39.559296900 +0900
+@@ -156,7 +156,10 @@ fi
+ 
+ AC_CHECK_HEADERS([sys/types.h sys/wait.h sys/mman.h])
+ AC_CHECK_HEADERS([unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h semaphore.h pthread.h])
+-AC_CHECK_HEADERS([windows.h process.h conio.h tchar.h])
++AC_CHECK_HEADERS([process.h conio.h tchar.h])
++if test "$host_os" != "cygwin"; then
++	AC_CHECK_HEADERS([windows.h])
++fi
+ AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes"])
+ if test "$ac_cv_header_windows_h" = "yes" ; then
+   AC_CHECK_FUNCS([GetProcessId],[],[AC_MSG_ERROR("GetProcessId() not found. Try compiling with Mingw-w64 >= 3.0 instead.")])
+--- origsrc/libtubo0-5.0.14/src/Makefile.am	2013-12-07 10:12:03.000000000 +0900
++++ src/libtubo0-5.0.14/src/Makefile.am	2013-12-23 17:31:22.748750000 +0900
+@@ -5,10 +5,10 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ #EXTRA_DIST = tubo.h.in 
+ 
+ if WINDOZE
+-no_undefined = -no-undefined
+ #FIXME: list symbols to export here
+ #export_symbols = -export-symbols 
+ endif
++no_undefined = -no-undefined
+ 
+ lib_LTLIBRARIES = libtubo.la	
+ libtubo_la_SOURCES =  tubo.h tubo_exec.c tubo_exec.i
+@@ -40,14 +40,14 @@ endif
+ 
+ if WANT_EXAMPLES
+ 
+-bin_PROGRAMS += example
+-example_CFLAGS =  @GLIB_CFLAGS@
+-example_LDADD =   @GLIB_LIBS@ -lpthread  @RT_LIB@  
+-example_SOURCES = example.c tubo.h tubo_exec.c tubo_exec.i
++bin_PROGRAMS += tubo-example
++tubo_example_CFLAGS =  @GLIB_CFLAGS@
++tubo_example_LDADD =   @GLIB_LIBS@ -lpthread  @RT_LIB@  
++tubo_example_SOURCES = example.c tubo.h tubo_exec.c tubo_exec.i
+ 
+ if WINDOZE 
+ if WANT_SEMAPHORES
+-example_SOURCES += sem.h sem.c
++tubo_example_SOURCES += sem.h sem.c
+ endif
+ endif
+ 
