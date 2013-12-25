@@ -1,0 +1,45 @@
+--- origsrc/lunar-calendar-3.0.0/lunar-calendar/Makefile.am	2011-05-07 22:10:03.000000000 +0900
++++ src/lunar-calendar-3.0.0/lunar-calendar/Makefile.am	2013-12-25 20:33:49.124025100 +0900
+@@ -17,14 +17,14 @@ liblunar_calendar_3_0_includedir = $(inc
+ liblunar_calendar_3_0_include_HEADERS =	$(source_h)
+ liblunar_calendar_3_0_la_SOURCES = $(source_c)
+ liblunar_calendar_3_0_la_LIBADD = $(LUNAR_CALENDAR_LIBS)
+-liblunar_calendar_3_0_la_LDFLAGS = \
++liblunar_calendar_3_0_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+ 	-export-dynamic $(export_symbols)
+ 
+ liblunar_calendar_preload_3_0_includedir = $(includedir)/liblunar-3.0/lunar-calendar
+ liblunar_calendar_preload_3_0_include_HEADERS = $(source_h)
+ liblunar_calendar_preload_3_0_la_SOURCES = lunar-calendar-preload.c
+-liblunar_calendar_preload_3_0_la_LDFLAGS =  -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) 
++liblunar_calendar_preload_3_0_la_LDFLAGS = -no-undefined -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) 
+ liblunar_calendar_preload_3_0_la_LIBADD = 	\
+ 	$(LUNAR_CALENDAR_LIBS)	\
+ 	liblunar-calendar-3.0.la		\
+--- origsrc/lunar-calendar-3.0.0/lunar-calendar/lunar-calendar-preload.c	2011-05-07 21:59:20.000000000 +0900
++++ src/lunar-calendar-3.0.0/lunar-calendar/lunar-calendar-preload.c	2013-12-25 20:33:49.124025100 +0900
+@@ -41,7 +41,11 @@ void  gtk_calendar_set_display_options (
+ 	char *error;
+ 	void  (* _gtk_calendar_set_display_options) (GtkCalendar *calendar, GtkCalendarDisplayOptions flags) = NULL;
+ 
++#if defined(__CYGWIN__)
++	handle = dlopen("/usr/bin/cyggtk-x11-2.0-0.dll", RTLD_LAZY);
++#else
+ 	handle = dlopen("/usr/lib/libgtk-x11-2.0.so", RTLD_LAZY);
++#endif
+ 	if (!handle) {
+ 		fprintf(stderr, "%s\n", dlerror());
+ 		exit(EXIT_FAILURE);
+@@ -72,7 +76,11 @@ gpointer g_object_newv (GType object_typ
+ 	char *error;
+ 	gpointer (* _g_object_newv) (GType object_type, guint n_parameters, GParameter *parameters) = NULL;
+ 
++#if defined(__CYGWIN__)
++	handle = dlopen("/usr/bin/cyggobject-2.0-0.dll", RTLD_LAZY);
++#else
+ 	handle = dlopen("/usr/lib/libgobject-2.0.so", RTLD_LAZY);
++#endif
+ 	if (!handle) {
+ 		fprintf(stderr, "%s\n", dlerror());
+ 		exit(EXIT_FAILURE);
