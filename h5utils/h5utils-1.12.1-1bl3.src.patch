@@ -1,0 +1,24 @@
+--- origsrc/h5utils-1.12.1/writepng.c	2009-06-13 05:58:50.000000000 +0900
++++ src/h5utils-1.12.1/writepng.c	2013-12-26 08:11:43.762794900 +0900
+@@ -309,7 +309,7 @@ void writepng(char *filename,
+      }
+      /* Set error handling.  REQUIRED if you aren't supplying your own *
+       * error hadnling functions in the png_create_write_struct() call. */
+-     if (setjmp(png_ptr->jmpbuf)) {
++     if (setjmp(png_jmpbuf(png_ptr))) {
+ 	  /* If we get here, we had a problem reading the file */
+ 	  fclose(fp);
+ 	  png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
+@@ -434,7 +434,11 @@ void writepng(char *filename,
+      png_write_end(png_ptr, info_ptr);
+ 
+      /* if you malloced the palette, free it here */
+-     free(info_ptr->palette);
++     {
++	  png_colorp palette; int num_palette;
++	  png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
++	  free(palette);
++     }
+ 
+      /* if you allocated any text comments, free them here */
+ 
