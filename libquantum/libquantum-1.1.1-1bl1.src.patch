@@ -1,0 +1,88 @@
+--- origsrc/libquantum-1.1.1/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libquantum-1.1.1/Makefile.am	2014-01-05 22:33:02.066488000 +0900
+@@ -0,0 +1,25 @@
++
++AM_CFLAGS = -Wall
++
++bin_PROGRAMS = quobprint quobdump
++quobprint_SOURCES = quobprint.c
++quobprint_LDADD = libquantum.la
++quobdump_SOURCES = quobdump.c
++quobdump_LDADD = libquantum.la
++
++noinst_PROGRAMS = grover ising shor
++grover_SOURCES = grover.c
++grover_LDADD = libquantum.la
++ising_SOURCES = ising.c
++ising_LDADD = libquantum.la
++shor_SOURCES = shor.c
++shor_LDADD = libquantum.la
++
++include_HEADERS = quantum.h
++
++lib_LTLIBRARIES = libquantum.la
++libquantum_la_SOURCES = complex.c measure.c matrix.c gates.c qft.c classic.c \
++	qureg.c decoherence.c oaddn.c omuln.c expn.c qec.c version.c \
++	objcode.c density.c error.c qtime.c lapack.c energy.c
++libquantum_la_LDFLAGS = -no-undefined -version-info 8:0:0
++
+--- origsrc/libquantum-1.1.1/complex.h	2013-01-29 05:24:17.000000000 +0900
++++ src/libquantum-1.1.1/complex.h	2014-01-05 22:31:57.410238000 +0900
+@@ -27,6 +27,7 @@
+ 
+ #include <complex.h>
+ #include "config.h"
++#include "types.h"
+ 
+ #define quantum_conj(z) (conj(z))
+ #define quantum_real(z) (creal(z))
+--- origsrc/libquantum-1.1.1/configure.in	2013-01-29 05:24:17.000000000 +0900
++++ src/libquantum-1.1.1/configure.in	2014-01-05 22:23:52.428792700 +0900
+@@ -23,6 +23,7 @@
+ AC_INIT([libquantum], [1.1.1], [libquantum@libquantum.de])
+ AC_CONFIG_SRCDIR([classic.c])
+ AC_CONFIG_HEADER([config.h])
++AM_INIT_AUTOMAKE
+ 
+ # The language of our choice
+ AC_LANG([C])
+@@ -100,7 +101,7 @@ AC_MSG_CHECKING([for corresponding real
+ AC_RUN_IFELSE(
+ 	[AC_LANG_PROGRAM([], [return sizeof($CF_TYPE) == 2*sizeof(double)])],
+ 	[RF_TYPE="float"],
+-	[RF_TYPE="double"; AC_DEFINE(USE_DOUBLE)], [float])
++	[RF_TYPE="double"; AC_DEFINE([USE_DOUBLE], [], [use double])], [float])
+ AC_MSG_RESULT($RF_TYPE)
+ 
+ 
+@@ -137,13 +138,6 @@ AC_ARG_ENABLE(profiling,
+ 	    then CFLAGS="$CFLAGS -pg -fprofile-arcs -ftest-coverage"
+ 	fi], [])
+ 
+-# Enable -Wall for gcc
+-if test $CC = "gcc"
+-then
+-	AC_DEFINE(HAVE_GCC)
+-	CFLAGS="$CFLAGS -Wall"
+-fi
+-
+ # Write the output files
+ AC_CONFIG_FILES([Makefile quantum.h types.h])
+ AC_OUTPUT
+--- origsrc/libquantum-1.1.1/lapack.c	2013-01-29 05:24:17.000000000 +0900
++++ src/libquantum-1.1.1/lapack.c	2014-01-05 22:34:53.410238000 +0900
+@@ -24,12 +24,13 @@
+ #include <stdlib.h>
+ #include <math.h>
+ 
++#include "config.h"
++#include "types.h"
+ #include "lapack.h"
+ #include "matrix.h"
+ #include "complex.h"
+ #include "qureg.h"
+ #include "error.h"
+-#include "config.h"
+ 
+ extern void cheev_(char *jobz, char *uplo, int *n, float _Complex *A, int *lda,
+ 		   float *w, float _Complex *work, int *lwork, float *rwork,
