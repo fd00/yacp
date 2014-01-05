@@ -1,0 +1,46 @@
+--- origsrc/haildb-2.3.2/Makefile.am	2011-01-12 10:07:59.000000000 +0900
++++ src/haildb-2.3.2/Makefile.am	2014-01-05 17:33:09.421433400 +0900
+@@ -18,7 +18,7 @@ ACLOCAL_AMFLAGS = -I m4 --force
+ 
+ include_HEADERS = haildb.h
+ 
+-libhaildb_la_LDFLAGS	= -version-info $(IB_API_VERSION) $(LD_VERSION_SCRIPT)
++libhaildb_la_LDFLAGS	= -no-undefined -version-info $(IB_API_VERSION) $(LD_VERSION_SCRIPT)
+ 
+ libhaildb_la_CFLAGS= \
+         ${AM_CFLAGS} \
+@@ -259,6 +259,9 @@ tests_ib_mt_drv_SOURCES= \
+ 			 tests/ib_mt_t1.c \
+ 			 tests/ib_mt_t2.c
+ libtest0aux_la_SOURCES= tests/test0aux.c
++libtest0aux_la_CFLAGS = -mcmodel=large
++libtest0aux_la_LDFLAGS = -no-undefined
++libtest0aux_la_LIBADD = libhaildb.la
+ 
+ TESTS= $(check_PROGRAMS)
+  
+--- origsrc/haildb-2.3.2/config.h.in	2011-01-12 10:08:30.000000000 +0900
++++ src/haildb-2.3.2/config.h.in	2014-01-05 17:25:43.283738100 +0900
+@@ -501,6 +501,11 @@
+ # endif
+ #endif
+ 
++/* Enable large inode numbers on Mac OS X 10.5.  */
++#ifndef _DARWIN_USE_64_BIT_INODE
++# define _DARWIN_USE_64_BIT_INODE 1
++#endif
++
+ /* Number of bits in a file offset, on hosts where this is settable. */
+ #undef _FILE_OFFSET_BITS
+ 
+--- origsrc/haildb-2.3.2/os/os0thread.c	2011-01-12 10:07:59.000000000 +0900
++++ src/haildb-2.3.2/os/os0thread.c	2014-01-04 23:04:25.237148800 +0900
+@@ -37,6 +37,8 @@ Created 9/8/1995 Heikki Tuuri
+ #include <sys/select.h>
+ #endif /* HAVE_SYS_SELECT_H */
+ 
++#include <sys/time.h>
++
+ #ifndef UNIV_HOTBACKUP
+ 
+ #include "srv0srv.h"
