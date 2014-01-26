@@ -1,0 +1,54 @@
+HOMEPAGE="http://${PN}.org/"
+SRC_URI="http://www.${PN}.org/files/${P}.tar.gz"
+PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/${PN}.git/plain/${PN}-manpages.patch
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/net-misc/${PN}/files/${PN}-1.2.2-fbsd.patch
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/net-misc/${PN}/files/${PN}-1.4.0-fix-as-needed-linking.patch
+	http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/net-misc/${PN}/files/${PN}-1.4.4-as-needed.patch
+"
+
+CATEGORY="Net"
+SUMMARY="Distributed memory object caching system"
+DESCRIPTION="Free & open source, high-performance, distributed memory object caching
+system, generic in nature, but intended for use in speeding up dynamic web
+applications by alleviating database load.
+
+Memcached is an in-memory key-value store for small chunks of arbitrary data
+(strings, objects) from results of database calls, API calls, or page
+rendering.
+
+Memcached is simple yet powerful. Its simple design promotes quick deployment,
+ease of development, and solves many problems facing large data caches. Its
+API is available for most popular languages."
+
+CYGCONF_ARGS="
+	--enable-sasl
+	--enable-sasl-pwdb
+"
+
+src_test()
+{
+	cd ${B}
+	SKIP_TEST_101=1 cygmake test
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	cd ${S}
+	dobin scripts/${PN}-tool
+	insinto /etc/rc.d/init.d
+	newins scripts/${PN}.sysv ${PN}
+}
+
+DIFF_EXCLUDES="
+	Makefile
+"
+
+DOCS="
+	README.md
+	doc/CONTRIBUTORS
+	doc/protocol.txt
+"
