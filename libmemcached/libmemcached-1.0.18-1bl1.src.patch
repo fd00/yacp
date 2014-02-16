@@ -1,0 +1,104 @@
+--- origsrc/libmemcached-1.0.18/Makefile.am	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/Makefile.am	2014-02-16 23:42:32.265163300 +0900
+@@ -2,6 +2,7 @@
+ 
+ ACLOCAL_AMFLAGS= -I m4 -I libtest/m4
+ AM_YFLAGS= -d
++AM_LDFLAGS = -no-undefined
+ 
+ # includes append to these:
+ SUFFIXES =
+--- origsrc/libmemcached-1.0.18/clients/ms_setting.h	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/clients/ms_setting.h	2014-02-16 22:55:44.412560300 +0900
+@@ -11,6 +11,8 @@
+ #ifndef MS_SETTING_H
+ #define MS_SETTING_H
+ 
++#include <sys/time.h>
++
+ #include "ms_memslap.h"
+ 
+ #ifdef __cplusplus
+--- origsrc/libmemcached-1.0.18/configure.ac	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/configure.ac	2014-02-16 22:47:29.611734700 +0900
+@@ -65,13 +65,13 @@ AC_SUBST([lt_cv_dlopen_libs])
+ AC_PROG_CC_C99
+ AS_IF([test "x${ac_cv_prog_cc_c99}" == "xno"],[AC_MSG_ERROR([No c99 compatible compiler found])])
+ 
+-AC_DEFUN([CHECK_CXX0X],[
++AC_DEFUN([CHECK_GNU0X],[
+           AC_LANG_PUSH([C++])
+-          AX_CHECK_COMPILE_FLAG([-std=c++0x],[
+-                                 CXX="$CXX -std=c++0x"])
++          AX_CHECK_COMPILE_FLAG([-std=gnu++0x],[
++                                 CXX="$CXX -std=gnu++0x"])
+           AC_LANG_POP([C++])
+           ])
+-CHECK_CXX0X
++CHECK_GNU0X
+ 
+ AX_ASSERT
+ 
+--- origsrc/libmemcached-1.0.18/libhashkit/include.am	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libhashkit/include.am	2014-02-16 20:11:21.912390600 +0900
+@@ -59,7 +59,7 @@ endif
+ libhashkit_libhashkit_la_CXXFLAGS+= -DBUILDING_HASHKIT
+ libhashkit_libhashkit_la_CFLAGS+= -DBUILDING_HASHKIT
+ 
+-libhashkit_libhashkit_la_LDFLAGS= -version-info $(HASHKIT_LIBRARY_VERSION)
++libhashkit_libhashkit_la_LDFLAGS= -no-undefined -version-info $(HASHKIT_LIBRARY_VERSION)
+ 
+ # library used for testing
+ noinst_LTLIBRARIES+= libhashkit/libhashkitinc.la
+--- origsrc/libmemcached-1.0.18/libmemcached/include.am	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libmemcached/include.am	2014-02-16 20:11:50.734656200 +0900
+@@ -124,7 +124,7 @@ libmemcached_libmemcached_la_SOURCES+= l
+ 
+ libmemcached/options.cc: libmemcached/csl/parser.h
+ 
+-libmemcached_libmemcached_la_LDFLAGS+= -version-info ${MEMCACHED_LIBRARY_VERSION}
++libmemcached_libmemcached_la_LDFLAGS+= -no-undefined -version-info ${MEMCACHED_LIBRARY_VERSION}
+ libmemcached_libmemcached_la_LIBADD+= @lt_cv_dlopen_libs@
+ 
+ if HAVE_SASL
+--- origsrc/libmemcached-1.0.18/libmemcachedprotocol/include.am	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libmemcachedprotocol/include.am	2014-02-16 22:54:54.507286900 +0900
+@@ -33,4 +33,4 @@ libmemcached_libmemcachedprotocol_la_LIB
+ libmemcached_libmemcachedprotocol_la_LIBADD+= @LIBEVENT_LIB@
+ libmemcached_libmemcachedprotocol_la_LIBADD+= @PTHREAD_LIBS@
+ libmemcached_libmemcachedprotocol_la_LDFLAGS= ${AM_LDFLAGS}
+-libmemcached_libmemcachedprotocol_la_LDFLAGS+= -version-info ${MEMCACHED_PROTOCAL_LIBRARY_VERSION}
++libmemcached_libmemcachedprotocol_la_LDFLAGS+= -no-undefined -version-info ${MEMCACHED_PROTOCAL_LIBRARY_VERSION}
+--- origsrc/libmemcached-1.0.18/libtest/cmdline.cc	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libtest/cmdline.cc	2014-02-16 23:02:31.158438900 +0900
+@@ -61,7 +61,7 @@ using namespace libtest;
+ #include <algorithm>
+ #include <stdexcept>
+ 
+-#ifndef __USE_GNU
++#if !defined(__USE_GNU) && !defined(__CYGWIN__)
+ static char **environ= NULL;
+ #endif
+ 
+--- origsrc/libmemcached-1.0.18/libtest/include.am	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libtest/include.am	2014-02-16 23:05:08.292228000 +0900
+@@ -160,7 +160,7 @@ libtest_libtest_la_LIBADD+= @RT_LIB@
+ 
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/abort
+-EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait
++EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait$(EXEEXT)
+ 
+ # Declare unittest so that we can append to it
+ libtest_unittest_CXXFLAGS=
+--- origsrc/libmemcached-1.0.18/libtest/test.hpp	2014-02-09 20:52:42.000000000 +0900
++++ src/libmemcached-1.0.18/libtest/test.hpp	2014-02-16 23:01:44.189688900 +0900
+@@ -61,6 +61,8 @@
+ #include <cstdlib>
+ #include <arpa/inet.h>
+ 
++#include <stdarg.h>
++
+ #include <libtest/visibility.h>
+ #include <libtest/version.h>
+ 
