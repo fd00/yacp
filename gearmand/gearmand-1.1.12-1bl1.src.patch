@@ -1,0 +1,141 @@
+--- origsrc/gearmand-1.1.12/Makefile.am	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/Makefile.am	2014-02-16 20:24:04.339148400 +0900
+@@ -10,6 +10,8 @@
+ 
+ ACLOCAL_AMFLAGS= -I m4
+ 
++AM_LDFLAGS = -no-undefined
++
+ bin_PROGRAMS=
+ sbin_PROGRAMS= 
+ check_PROGRAMS=
+--- origsrc/gearmand-1.1.12/configure.ac	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/configure.ac	2014-02-16 22:46:45.236734700 +0900
+@@ -56,8 +56,8 @@ AS_IF([test "x${ac_cv_prog_cc_c99}" == "
+ 
+ AC_DEFUN([CHECK_CXX0X],[
+           AC_LANG_PUSH([C++])
+-          AX_CHECK_COMPILE_FLAG([-std=c++0x],[
+-                                 CXXFLAGS="$CXXFLAGS -std=c++0x"])
++          AX_CHECK_COMPILE_FLAG([-std=gnu++0x],[
++                                 CXXFLAGS="$CXXFLAGS -std=gnu++0x"])
+           AC_LANG_POP([C++])
+           ])
+ CHECK_CXX0X
+--- origsrc/gearmand-1.1.12/gearmand/include.am	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/gearmand/include.am	2014-02-16 20:24:04.354773400 +0900
+@@ -18,6 +18,7 @@ sbin_PROGRAMS+= gearmand/gearmand
+ 
+ BUILT_SOURCES+= configmake.h
+ 
++gearmand_gearmand_CPPFLAGS= -I$(top_builddir)
+ gearmand_gearmand_LDADD=
+ gearmand_gearmand_CXXFLAGS=
+ EXTRA_gearmand_gearmand_DEPENDENCIES=
+--- origsrc/gearmand-1.1.12/libgearman/include.am	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/libgearman/include.am	2014-02-16 20:24:04.370398400 +0900
+@@ -88,7 +88,7 @@ libgearman_libgearman_result_la_SOURCES+
+ libgearman_libgearman_la_LIBADD=
+ libgearman_libgearman_la_SOURCES=
+ libgearman_libgearman_la_CXXFLAGS=
+-libgearman_libgearman_la_LDFLAGS=
++libgearman_libgearman_la_LDFLAGS= -no-undefined
+ 
+ lib_LTLIBRARIES+= libgearman/libgearman.la
+ libgearman_libgearman_la_SOURCES+= libgearman/check.cc
+--- origsrc/gearmand-1.1.12/libtest/cmdline.cc	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/libtest/cmdline.cc	2014-02-16 20:24:04.370398400 +0900
+@@ -61,7 +61,7 @@ using namespace libtest;
+ #include <algorithm>
+ #include <stdexcept>
+ 
+-#ifndef __USE_GNU
++#if !defined(__USE_GNU) && !defined(__CYGWIN__)
+ static char **environ= NULL;
+ #endif
+ 
+--- origsrc/gearmand-1.1.12/libtest/exception.hpp	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/libtest/exception.hpp	2014-02-16 20:24:04.386023400 +0900
+@@ -36,6 +36,8 @@
+ 
+ #pragma once
+ 
++#include <stdarg.h>
++
+ namespace libtest {
+ 
+ class exception : public std::exception
+--- origsrc/gearmand-1.1.12/libtest/include.am	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/libtest/include.am	2014-02-16 20:24:04.386023400 +0900
+@@ -175,7 +175,7 @@ libtest_libtest_la_LIBADD+= @RT_LIB@
+ 
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
+ EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/abort
+-EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait
++EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/wait$(EXEEXT)
+ 
+ # We are either building in tree, or with
+ libtest_libtest_la_SOURCES+= libtest/memcached.cc
+--- origsrc/gearmand-1.1.12/support/gearmand.init	2014-02-12 09:12:47.000000000 +0900
++++ src/gearmand-1.1.12/support/gearmand.init	2014-02-17 00:25:38.575634600 +0900
+@@ -18,8 +18,8 @@
+ # Description: Gearman is a distributed job system.
+ ### END INIT INFO
+ 
+-sysconf=${prefix}/etc/sysconfig/gearmand
+-gearmand=${exec_prefix}/sbin/gearmand
++sysconf=/etc/sysconfig/gearmand
++gearmand=/usr/sbin/gearmand
+ prog=gearmand
+ 
+ # Source function library.
+@@ -29,8 +29,8 @@ if [ -f @sysconf@ ]; then
+         . @sysconf@
+ fi
+ 
+-[ -z "${PIDFILE}" ] && pidfile="${prefix}/var/run/gearmand/gearmand.pid"
+-[ -z "${LOCKFILE}" ] && lockfile="${prefix}/var/lock/subsys/gearmand"
++[ -z "${PIDFILE}" ] && pidfile="/var/run/gearmand/gearmand.pid"
++[ -z "${LOCKFILE}" ] && lockfile="/var/lock/subsys/gearmand"
+ 
+ RETVAL=0
+ 
+--- origsrc/gearmand-1.1.12/tests/blobslap_client.cc	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/tests/blobslap_client.cc	2014-02-16 20:24:04.386023400 +0900
+@@ -38,6 +38,7 @@
+ /*
+   Test that we are cycling the servers we are creating during testing.
+ */
++#include "gear_config.h"
+ 
+ #include <libtest/test.hpp>
+ 
+--- origsrc/gearmand-1.1.12/tests/include.am	2014-02-12 09:05:28.000000000 +0900
++++ src/gearmand-1.1.12/tests/include.am	2014-02-16 20:24:04.401648400 +0900
+@@ -34,7 +34,7 @@ t_cycle_SOURCES=
+ t_cycle_LDADD=
+ EXTRA_t_cycle_DEPENDENCIES=
+ 
+-EXTRA_t_cycle_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_cycle_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ t_cycle_SOURCES+= tests/cycle.cc
+ t_cycle_LDADD+= ${CLIENT_LDADD}
+ check_PROGRAMS+=t/cycle
+@@ -87,7 +87,7 @@ t_cli_LDADD=
+ t_cli_SOURCES+= tests/cli.cc
+ EXTRA_t_cli_DEPENDENCIES+= bin/gearman
+ EXTRA_t_cli_DEPENDENCIES+= bin/gearadmin
+-EXTRA_t_cli_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_cli_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ t_cli_LDADD+= ${CLIENT_LDADD}
+ check_PROGRAMS+= t/cli
+ noinst_PROGRAMS+= t/cli
+@@ -98,7 +98,7 @@ t_gearmand_SOURCES=
+ 
+ t_gearmand_SOURCES+= tests/gearmand.cc
+ t_gearmand_LDADD+= ${CLIENT_LDADD}
+-EXTRA_t_gearmand_DEPENDENCIES+= gearmand/gearmand
++EXTRA_t_gearmand_DEPENDENCIES+= gearmand/gearmand$(EXEEXT)
+ check_PROGRAMS+= t/gearmand
+ noinst_PROGRAMS+= t/gearmand
+ 
