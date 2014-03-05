@@ -1,0 +1,112 @@
+--- origsrc/libmicrohttpd-0.9.34/configure.ac	2014-02-25 07:13:03.000000000 +0900
++++ src/libmicrohttpd-0.9.34/configure.ac	2014-03-06 00:24:47.311298600 +0900
+@@ -234,11 +234,8 @@ fi
+ AM_CONDITIONAL(ENABLE_EPOLL, [test "x$enable_epoll" != "xno"])
+ 
+ 
+-CHECK_PTHREAD
++AX_PTHREAD
+ LIBS="$PTHREAD_LIBS $LIBS"
+-AC_SUBST(PTHREAD_LIBS)
+-AC_SUBST(PTHREAD_LDFLAGS)
+-AC_SUBST(PTHREAD_CPPFLAGS)
+ 
+ # Check for headers that are ALWAYS required
+ AC_CHECK_HEADERS([fcntl.h math.h errno.h limits.h stdio.h locale.h sys/stat.h sys/types.h pthread.h],,AC_MSG_ERROR([Compiling libmicrohttpd requires standard UNIX headers files]))
+@@ -429,14 +426,11 @@ AC_MSG_RESULT($enable_spdy)
+ 
+ if test "$enable_spdy" = "yes"
+ then
+- AC_CHECK_HEADERS([openssl/err.h],
+-                   AC_CHECK_LIB(ssl, SSL_CTX_set_next_protos_advertised_cb,
+-                    [AM_CONDITIONAL(HAVE_OPENSSL, true)
+-                     enable_spdy="yes"],
+-                    [AM_CONDITIONAL(HAVE_OPENSSL, false)
+-                    enable_spdy="no"]),
+-                   [AM_CONDITIONAL(HAVE_OPENSSL, false)
+-                   enable_spdy="no"])
++ PKG_CHECK_MODULES([OPENSSL], [openssl],
++                  [AM_CONDITIONAL(HAVE_OPENSSL, true)
++                  enable_spdy="yes"],
++                  [AM_CONDITIONAL(HAVE_OPENSSL, false)
++                  enable_spdy="no"])
+ else
+  AM_CONDITIONAL(HAVE_OPENSSL, false)
+ fi
+@@ -451,18 +445,14 @@ AM_CONDITIONAL(ENABLE_SPDY, [test "x$ena
+ AC_MSG_CHECKING(whether we have OpenSSL and thus can support libmicrospdy)
+ AC_MSG_RESULT($enable_spdy)
+ 
+-spdy_OPENSSL
+-# for pkg-config
+ SPDY_LIBDEPS=""
+ 
+-
+-AC_CHECK_HEADERS([spdylay/spdylay.h],
++PKG_CHECK_MODULES([SPDYLAY], [libspdylay],
+                  [AM_CONDITIONAL(HAVE_SPDYLAY, true)
+ 		 have_spdylay="yes"],
+                  [AM_CONDITIONAL(HAVE_SPDYLAY, false)
+                  have_spdylay="no"])
+ 
+-AC_SUBST(SPDY_LIB_LDFLAGS)
+ # for pkg-config
+ AC_SUBST(SPDY_LIBDEPS)
+ 
+@@ -524,32 +514,7 @@ AC_DEFINE_UNQUOTED([MHD_GCRYPT_VERSION],
+ 
+ # gnutls
+ gnutls=0
+-AC_MSG_CHECKING(for gnutls)
+-AC_ARG_WITH(gnutls,
+-   [  --with-gnutls=PFX   base of gnutls installation],
+-   [AC_MSG_RESULT([$with_gnutls])
+-    case $with_gnutls in
+-      no)
+-        ;;
+-      yes)
+-        AC_CHECK_HEADERS([gnutls/gnutls.h],
+-            AC_CHECK_LIB([gnutls], [gnutls_priority_set],
+-	     gnutls=true))
+-        ;;
+-      *)
+-        LDFLAGS="-L$with_gnutls/lib $LDFLAGS"
+-        CPPFLAGS="-I$with_gnutls/include $CPPFLAGS"
+-        AC_CHECK_HEADERS([gnutls/gnutls.h],
+-            AC_CHECK_LIB([gnutls], [gnutls_priority_set],
+-              EXT_LIB_PATH="-L$with_gnutls/lib $EXT_LIB_PATH"
+-              gnutls=true))
+-        ;;
+-    esac
+-   ],
+-   [AC_MSG_RESULT([--with-gnutls not specified])
+-    AC_CHECK_HEADERS([gnutls/gnutls.h],
+-        AC_CHECK_LIB([gnutls], [gnutls_priority_set],
+-          gnutls=true))])
++PKG_CHECK_MODULES([GNUTLS], [gnutls], [gnutls=true])
+ AM_CONDITIONAL(HAVE_GNUTLS, test x$gnutls = xtrue)
+ AC_DEFINE_UNQUOTED([HAVE_GNUTLS], $gnutls, [We have gnutls])
+ 
+--- origsrc/libmicrohttpd-0.9.34/src/microspdy/Makefile.am	2014-02-25 07:26:08.000000000 +0900
++++ src/libmicrohttpd-0.9.34/src/microspdy/Makefile.am	2014-03-06 00:33:45.057567900 +0900
+@@ -21,17 +21,17 @@ libmicrospdy_la_SOURCES = \
+   applicationlayer.c applicationlayer.h \
+   alstructures.c alstructures.h 
+ libmicrospdy_la_LIBADD = \
+-  -lssl
++  $(OPENSSL_LIBS) $(SPDYLAY_LIBS)
+ 
+ libmicrospdy_la_LDFLAGS = \
+-  $(SPDY_LIB_LDFLAGS) 
++  -no-undefined
+ 
+ libmicrospdy_la_CPPFLAGS = \
+   $(AM_CPPFLAGS) \
+   -DBUILDING_MHD_LIB=1
+ 
+ libmicrospdy_la_CFLAGS = -Wextra \
+-  $(SPDY_LIB_CFLAGS)
++  $(OPENSSL_CFLAGS) $(SPDYLAY_CFLAGS)
+ 
+ 
+ if USE_COVERAGE
