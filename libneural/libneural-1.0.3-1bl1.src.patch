@@ -1,0 +1,158 @@
+--- origsrc/libneural-1.0.3/configure.in	2001-09-24 09:12:31.000000000 +0900
++++ src/libneural-1.0.3/configure.in	2014-03-08 23:46:45.182481400 +0900
+@@ -1,7 +1,7 @@
+ dnl Process this file with autoconf to produce a configure script.
+ 
+-AC_INIT(lib/neuron.cc)
+-AM_INIT_AUTOMAKE(libneural, 1.0.3)
++AC_INIT([libneural], [1.0.3])
++AM_INIT_AUTOMAKE
+ AC_PROG_MAKE_SET
+ 
+ dnl Checks for programs.
+@@ -9,7 +9,6 @@ AC_PROG_CXX
+ AC_PROG_CC
+ AC_PROG_INSTALL
+ AC_PROG_LN_S
+-AC_PROG_RANLIB
+ AM_PROG_LIBTOOL
+ 
+ AC_ARG_PROGRAM
+@@ -17,8 +16,6 @@ AC_ARG_PROGRAM
+ dnl Checks for libraries.
+ dnl Replace `main' with a function in -lm:
+ AC_CHECK_LIB(m, fabs)
+-dnl Replace `main' with a function in -lneural:
+-AC_CHECK_LIB(neural, sigmoid)
+ 
+ dnl Checks for header files.
+ AC_HEADER_STDC
+--- origsrc/libneural-1.0.3/examples/Makefile.am	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/examples/Makefile.am	2014-03-08 23:45:29.213731400 +0900
+@@ -8,5 +8,5 @@ char_cov_SOURCES=char_cov.cc char_data.c
+ odd_even_SOURCES=odd_even.cc
+ char_recognition_LDADD=$(NEURALDIR)/libneural.la
+ odd_even_LDADD=$(NEURALDIR)/libneural.la
+-INCLUDES=-I../include
++INCLUDES=-I$(top_srcdir)/include
+ EXTRA_DIST=README char_recognition.nnw odd_even.nnw build_nnstats build_covstats
+--- origsrc/libneural-1.0.3/examples/char_cov.cc	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/examples/char_cov.cc	2014-03-08 23:56:25.045581400 +0900
+@@ -23,13 +23,15 @@
+ 
+  ****************************************************************************/
+ 
+-#include <iostream.h>
++#include <iostream>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <limits.h>
+ #include <time.h>
+ //#define WAFFLY
+ 
++using namespace std;
++
+ extern float Alphabet [26][35];
+ 
+ // Copy size elements from source []  to destination []
+--- origsrc/libneural-1.0.3/examples/char_recognition.cc	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/examples/char_recognition.cc	2014-03-08 23:55:41.201831400 +0900
+@@ -20,12 +20,14 @@
+  ****************************************************************************/
+ 
+ #include <nnwork.h>
+-#include <iostream.h>
+-#include <iomanip.h>
++#include <iostream>
++#include <iomanip>
+ #include <ctype.h>
+ #include <stdlib.h>
+ #include <time.h>
+ 
++using namespace std;
++
+ extern float Alphabet [26][35];
+ 
+ // Copy size elements from source []  to destination []
+--- origsrc/libneural-1.0.3/examples/char_stats.cc	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/examples/char_stats.cc	2014-03-08 23:56:05.701831400 +0900
+@@ -24,13 +24,15 @@
+  ****************************************************************************/
+ 
+ #include <nnwork.h>
+-#include <iostream.h>
++#include <iostream>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <limits.h>
+ #include <time.h>
+ //#define WAFFLY
+ 
++using namespace std;
++
+ extern float Alphabet [26][35];
+ 
+ // Copy size elements from source []  to destination []
+--- origsrc/libneural-1.0.3/examples/odd_even.cc	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/examples/odd_even.cc	2014-03-08 23:56:49.654956400 +0900
+@@ -20,12 +20,14 @@
+  ****************************************************************************/
+ 
+ #include <nnwork.h>
+-#include <iostream.h>
+-#include <iomanip.h>
++#include <iostream>
++#include <iomanip>
+ #include <math.h>
+ #include <stdlib.h>
+ #include <time.h>
+ 
++using namespace std;
++
+ // The "even" examples (element 0 is the MSB, 4 is the LSB)
+ float test_data_odd_1 [5] = {1., 0., 0., 1., 1.};
+ float test_data_odd_2 [5] = {1., 1., 1., 0., 1.};
+--- origsrc/libneural-1.0.3/include/Makefile.am	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/include/Makefile.am	2014-03-08 23:57:30.125659500 +0900
+@@ -1,2 +1,2 @@
+ ## Process this file with automake to produce Makefile.in
+-include_HEADERS=neuron.h nnwork.h
++pkginclude_HEADERS=neuron.h nnwork.h
+--- origsrc/libneural-1.0.3/lib/Makefile.am	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/lib/Makefile.am	2014-03-08 23:44:55.166856400 +0900
+@@ -1,4 +1,5 @@
+ ## Process this file with automake to produce Makefile.in
+ lib_LTLIBRARIES=libneural.la
+ libneural_la_SOURCES=neuron.cc nnwork.cc
+-INCLUDES=-I../include
++INCLUDES=-I$(top_srcdir)/include
++libneural_la_LDFLAGS=-no-undefined
+--- origsrc/libneural-1.0.3/lib/neuron.cc	1999-10-24 14:30:14.000000000 +0900
++++ src/libneural-1.0.3/lib/neuron.cc	2014-03-08 23:48:22.627860700 +0900
+@@ -25,7 +25,7 @@
+ // combiner similar to ADALINE, and "nnwork" which is the entire network.
+ 
+ #include <stdlib.h>
+-#include <iostream.h>
++#include <iostream>
+ #include <assert.h>
+ #include <neuron.h>
+ 
+--- origsrc/libneural-1.0.3/lib/nnwork.cc	2001-09-24 09:12:49.000000000 +0900
++++ src/libneural-1.0.3/lib/nnwork.cc	2014-03-08 23:55:05.426736300 +0900
+@@ -25,11 +25,13 @@
+ #include <time.h>
+ #include <stdlib.h>
+ #include <limits.h>
+-#include <iostream.h>
+-#include <fstream.h>
++#include <iostream>
++#include <fstream>
+ #include <assert.h>
+ #include <string.h>
+ 
++using namespace std;
++
+ // This class implements a simple three-layer backpropagation network.
+ 
+ // Calculate the sigmoid function. This is the transfer function of the nodes.
