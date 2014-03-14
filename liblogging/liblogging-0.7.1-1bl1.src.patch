@@ -1,44 +1,0 @@
---- origsrc/liblogging-0.7.1/configure.ac	2008-04-16 22:58:58.000000000 +0900
-+++ src/liblogging-0.7.1/configure.ac	2011-06-11 19:46:52.595183400 +0900
-@@ -9,7 +9,7 @@ AC_CONFIG_HEADER([config.h])
- 
- # Checks for programs.
- AC_PROG_CC
--AC_PROG_LIBTOOL
-+LT_INIT
- 
- save_LIBS=$LIBS
- LIBS=
---- origsrc/liblogging-0.7.1/src/Makefile.am	2008-04-16 22:58:15.000000000 +0900
-+++ src/liblogging-0.7.1/src/Makefile.am	2011-06-11 19:47:19.864394600 +0900
-@@ -21,6 +21,8 @@ liblogging_la_SOURCES = \
- 	stringbuf.c \
- 	syslogmessage.c
- 
-+liblogging_la_LDFLAGS = -no-undefined
-+
- os_sources = \
- 	oscallsUnix.c \
- 	oscallsWin32.c \
---- origsrc/liblogging-0.7.1/src/oscallsUnix.c	2008-04-16 01:15:22.000000000 +0900
-+++ src/liblogging-0.7.1/src/oscallsUnix.c	2011-06-11 20:11:21.080874800 +0900
-@@ -76,11 +76,18 @@ srRetVal getCurrTime(int* year, int* mon
- 	gettimeofday(&tp, NULL);
- 	tm = localtime(&(tp.tv_sec));
- 	*year = tm->tm_year + 1900;	*month = tm->tm_mon + 1;	*day = tm->tm_mday;	*hour = tm->tm_hour;	*minute = tm->tm_min;	*second = tm->tm_sec;	*secfrac = tp.tv_usec;	*secfracPrecison = 6;
--#ifdef SROS_Solaris 
-+#if defined(SROS_Solaris)
-     /* Solaris uses a different method of exporting the time zone.
-      * It is UTC - localtime, which is opposite sign of min east of GMT.
-      */
-     lBias = -(daylight ? altzone : timezone);
-+#elif defined(__CYGWIN__)
-+  {
-+    lBias = timezone;
-+    if (tm->tm_isdst) {
-+      lBias += 3600;
-+    }
-+  }
- #else
- 	lBias = tm->tm_gmtoff;#endif
- 	if(lBias < 0)	{		*pcOffsetMode = '-';		lBias *= -1;	}	else		*pcOffsetMode = '+';	*pOffsetHour = lBias / 3600;	*pOffsetMinute = lBias % 3600;
