@@ -1,0 +1,69 @@
+--- origsrc/glog-0.3.3/Makefile.am	2013-02-01 15:31:37.000000000 +0900
++++ src/glog-0.3.3/Makefile.am	2014-03-23 20:03:09.890271000 +0900
+@@ -38,7 +38,7 @@ gloginclude_HEADERS = src/glog/log_sever
+ nodist_gloginclude_HEADERS = src/glog/logging.h src/glog/raw_logging.h src/glog/vlog_is_on.h src/glog/stl_logging.h
+ noinst_HEADERS = src/glog/logging.h.in src/glog/raw_logging.h.in src/glog/vlog_is_on.h.in src/glog/stl_logging.h.in
+ 
+-docdir = $(prefix)/share/doc/$(PACKAGE)-$(VERSION)
++docdir = $(prefix)/share/doc/$(PACKAGE)
+ ## This is for HTML and other documentation you want to install.
+ ## Add your documentation files (in doc/) in addition to these
+ ## top-level boilerplate files.  Also add a TODO file if you have one.
+@@ -196,7 +196,7 @@ libglog_la_SOURCES = $(gloginclude_HEADE
+ nodist_libglog_la_SOURCES = $(nodist_gloginclude_HEADERS)
+ 
+ libglog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
+-libglog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
++libglog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS) -no-undefined
+ libglog_la_LIBADD = $(COMMON_LIBS)
+ 
+ ## The location of the windows project file for each binary we make
+--- origsrc/glog-0.3.3/src/demangle_unittest.sh	2012-01-11 18:14:17.000000000 +0900
++++ src/glog-0.3.3/src/demangle_unittest.sh	2014-03-23 20:03:09.890271000 +0900
+@@ -41,7 +41,12 @@ die () {
+ }
+ 
+ BINDIR=".libs"
++if test `uname -o` != Cygwin
++then
+ LIBGLOG="$BINDIR/libglog.so"
++else
++LIBGLOG="$BINDIR/cygglog-0.dll"
++fi
+ 
+ DEMANGLER="$BINDIR/demangle_unittest"
+ 
+--- origsrc/glog-0.3.3/src/googletest.h	2012-01-12 17:40:58.000000000 +0900
++++ src/glog-0.3.3/src/googletest.h	2014-03-23 20:08:31.413684500 +0900
+@@ -529,7 +529,7 @@ class Thread {
+   virtual ~Thread() {}
+ 
+   void SetJoinable(bool) {}
+-#if defined(OS_WINDOWS) || defined(OS_CYGWIN)
++#if defined(OS_WINDOWS)
+   void Start() {
+     handle_ = CreateThread(NULL,
+                            0,
+@@ -562,7 +562,7 @@ class Thread {
+     return NULL;
+   }
+ 
+-#if defined(OS_WINDOWS) || defined(OS_CYGWIN)
++#if defined(OS_WINDOWS)
+   HANDLE handle_;
+   DWORD th_;
+ #else
+--- origsrc/glog-0.3.3/src/utilities.cc	2013-01-10 16:31:27.000000000 +0900
++++ src/glog-0.3.3/src/utilities.cc	2014-03-23 20:06:50.744826300 +0900
+@@ -259,9 +259,9 @@ pid_t GetTID() {
+ #endif  // OS_LINUX || OS_MACOSX
+ 
+   // If gettid() could not be used, we use one of the following.
+-#if defined OS_LINUX
++#if defined OS_LINUX || defined OS_CYGWIN
+   return getpid();  // Linux:  getpid returns thread ID when gettid is absent
+-#elif defined OS_WINDOWS || defined OS_CYGWIN
++#elif defined OS_WINDOWS
+   return GetCurrentThreadId();
+ #else
+   // If none of the techniques above worked, we use pthread_self().
