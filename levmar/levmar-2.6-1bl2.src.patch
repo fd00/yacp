@@ -1,0 +1,37 @@
+--- origsrc/levmar-2.6/CMakeLists.txt	2011-11-30 06:36:19.000000000 +0900
++++ src/levmar-2.6/CMakeLists.txt	2014-04-06 22:22:25.116976600 +0900
+@@ -7,7 +7,7 @@ PROJECT(LEVMAR)
+ SET(HAVE_LAPACK 1 CACHE BOOL "Do we have LAPACK/BLAS?")
+ # the directory where the lapack/blas/f2c libraries reside
+ SET(LAPACKBLAS_DIR "/usr/lib" CACHE PATH "Path to lapack/blas libraries")
+-SET(NEED_F2C 1 CACHE BOOL "Do we need either f2c or F77/I77?")
++SET(NEED_F2C 0 CACHE BOOL "Do we need either f2c or F77/I77?")
+ SET(HAVE_PLASMA 0 CACHE BOOL "Do we have PLASMA parallel linear algebra library?")
+ IF(HAVE_PLASMA)
+  SET(PLASMA_DIR "/usr/local/PLASMA" CACHE PATH "Path to PLASMA root")
+@@ -60,10 +60,13 @@ IF(HAVE_PLASMA)
+ ENDIF(HAVE_PLASMA)
+ 
+ # levmar library source files
+-ADD_LIBRARY(levmar STATIC
++ADD_LIBRARY(levmar SHARED
+   lm.c Axb.c misc.c lmlec.c lmbc.c lmblec.c lmbleic.c
+   levmar.h misc.h compiler.h
+ )
++TARGET_LINK_LIBRARIES(levmar ${LAPACKBLAS_LIB_NAMES})
++SET_TARGET_PROPERTIES(levmar PROPERTIES SOVERSION 2)
++INSTALL(TARGETS levmar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # demo program
+ IF(BUILD_DEMO)
+@@ -91,7 +94,10 @@ IF(BUILD_DEMO)
+   MESSAGE(STATUS "lmdemo will be linked against ${LIBS}")
+ 
+ # make sure that the library is built before the demo
++  INSTALL(TARGETS lmdemo DESTINATION bin)
+   ADD_DEPENDENCIES(lmdemo levmar)
+ ENDIF(BUILD_DEMO)
+ 
++INSTALL(FILES levmar.h DESTINATION include)
++
+ #SUBDIRS(matlab)
