@@ -1,61 +1,0 @@
---- origsrc/liblogging-1.0.2/configure.ac	2014-03-03 18:01:35.000000000 +0900
-+++ src/liblogging-1.0.2/configure.ac	2014-03-13 07:35:39.798620000 +0900
-@@ -129,7 +129,10 @@ if test "x$enable_cached_man_pages" = "x
- # obtain path for rst2man
-     AC_PATH_PROG([RST2MAN], [rst2man])
-     if test "x${RST2MAN}" == "x"; then
--        AC_MSG_FAILURE([rst2man not found in PATH])
-+        AC_PATH_PROG([RST2MAN], [rst2man.py])
-+        if test "x${RST2MAN}" == "x"; then
-+            AC_MSG_FAILURE([rst2man not found in PATH])
-+        fi
-     fi
- fi
- 
---- origsrc/liblogging-1.0.2/rfc3195/src/Makefile.am	2014-02-18 16:54:45.000000000 +0900
-+++ src/liblogging-1.0.2/rfc3195/src/Makefile.am	2014-03-13 07:28:00.328111000 +0900
-@@ -20,6 +20,7 @@ liblogging_rfc3195_la_SOURCES = \
- 	srUtils.c \
- 	stringbuf.c \
- 	syslogmessage.c
-+liblogging_rfc3195_la_LDFLAGS = -no-undefined
- 
- os_sources = \
- 	oscallsUnix.c \
---- origsrc/liblogging-1.0.2/rfc3195/src/oscallsUnix.c	2014-02-18 16:54:45.000000000 +0900
-+++ src/liblogging-1.0.2/rfc3195/src/oscallsUnix.c	2014-03-13 07:40:27.345495000 +0900
-@@ -76,6 +76,13 @@ srRetVal getCurrTime(int* year, int* mon
-      * It is UTC - localtime, which is opposite sign of min east of GMT.
-      */
-     lBias = -(daylight ? altzone : timezone);
-+#elif defined(__CYGWIN__)
-+  {
-+    lBias = timezone;
-+    if (tm->tm_isdst) {
-+      lBias += 3600;
-+    }
-+  }
- #else
- 	lBias = tm->tm_gmtoff;#endif
- 	if(lBias < 0)	{		*pcOffsetMode = '-';		lBias *= -1;	}	else		*pcOffsetMode = '+';	*pOffsetHour = lBias / 3600;	*pOffsetMinute = lBias % 3600;
---- origsrc/liblogging-1.0.2/stdlog/Makefile.am	2014-02-27 17:29:08.000000000 +0900
-+++ src/liblogging-1.0.2/stdlog/Makefile.am	2014-03-13 07:27:11.000962500 +0900
-@@ -3,7 +3,7 @@ CLEANFILES =
- lib_LTLIBRARIES = liblogging-stdlog.la
- liblogging_stdlog_la_CPPFLAGS =
- liblogging_stdlog_la_LIBADD =  $(SOL_LIBS)
--
-+liblogging_stdlog_la_LDFLAGS = -no-undefined
- liblogging_stdlog_la_SOURCES = \
- 	stdlog.c \
- 	uxsock.c \
---- origsrc/liblogging-1.0.2/stdlog/stdlog.h	2014-02-26 00:19:12.000000000 +0900
-+++ src/liblogging-1.0.2/stdlog/stdlog.h	2014-03-13 07:38:29.744909000 +0900
-@@ -27,6 +27,7 @@
- 
- #ifndef LIBLOGGING_STDLOG_H_INCLUDED
- #define LIBLOGGING_STDLOG_H_INCLUDED
-+#include <stdarg.h>
- #include <stdint.h>
- 
- /* options for stdlog_open() call */

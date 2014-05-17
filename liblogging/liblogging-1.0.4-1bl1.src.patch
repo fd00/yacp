@@ -1,0 +1,39 @@
+--- origsrc/liblogging-1.0.4/rfc3195/src/Makefile.am	2014-03-18 15:40:05.000000000 +0900
++++ src/liblogging-1.0.4/rfc3195/src/Makefile.am	2014-05-17 13:22:16.302184300 +0900
+@@ -2,6 +2,7 @@ lib_LTLIBRARIES = liblogging-rfc3195.la
+ 
+ liblogging_rfc3195_la_CFLAGS = ${AM_CFLAGS}
+ liblogging_rfc3195_la_LDFLAGS = \
++	-no-undefined \
+ 	-version-info 0:0:0 \
+ 	-export-symbols-regex '(^(srAPI|srSLMG).*)'
+ liblogging_rfc3195_la_SOURCES = \
+--- origsrc/liblogging-1.0.4/rfc3195/src/oscallsUnix.c	2014-02-18 16:54:45.000000000 +0900
++++ src/liblogging-1.0.4/rfc3195/src/oscallsUnix.c	2014-05-17 13:23:07.238599600 +0900
+@@ -76,7 +76,15 @@ srRetVal getCurrTime(int* year, int* mon
+      * It is UTC - localtime, which is opposite sign of min east of GMT.
+      */
+     lBias = -(daylight ? altzone : timezone);
++#elif defined(__CYGWIN__)
++  {
++    lBias = timezone;
++    if (tm->tm_isdst) {
++      lBias += 3600;
++    }
++  }
+ #else
+-	lBias = tm->tm_gmtoff;#endif
++	lBias = tm->tm_gmtoff;
++#endif
+ 	if(lBias < 0)	{		*pcOffsetMode = '-';		lBias *= -1;	}	else		*pcOffsetMode = '+';	*pOffsetHour = lBias / 3600;	*pOffsetMinute = lBias % 3600;
+ 	return SR_RET_OK;}
+--- origsrc/liblogging-1.0.4/stdlog/Makefile.am	2014-04-03 18:09:56.000000000 +0900
++++ src/liblogging-1.0.4/stdlog/Makefile.am	2014-05-17 13:23:45.536762900 +0900
+@@ -5,6 +5,7 @@ liblogging_stdlog_la_CPPFLAGS =
+ liblogging_stdlog_la_CFLAGS = ${AM_CFLAGS}
+ liblogging_stdlog_la_LIBADD =  $(SOL_LIBS)
+ liblogging_stdlog_la_LDFLAGS = \
++	-no-undefined \
+ 	-version-info 0:0:0 \
+ 	-export-symbols-regex '(^stdlog_.*)'
+ # For instructions on how to increment --version-info see:
