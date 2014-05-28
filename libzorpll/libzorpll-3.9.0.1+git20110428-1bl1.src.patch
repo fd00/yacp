@@ -1,0 +1,59 @@
+--- origsrc/libzorpll/configure.in	2014-05-27 23:57:14.000000000 +0900
++++ src/libzorpll/configure.in	2014-05-28 08:10:47.748679700 +0900
+@@ -378,7 +378,7 @@ EOF
+ 
+ # -Wbad-function-cast cannot be used because in log.c we cast g_hash_table_lookup
+ # return value (which is a pointer) to int.
+-CFLAGS="$CFLAGS -D_GNU_SOURCE -Wall -Werror -Wshadow -W -Wstrict-prototypes -Werror-implicit-function-declaration -Wpointer-arith -g"
++CFLAGS="$CFLAGS -D_GNU_SOURCE -Wall -Wshadow -W -Wstrict-prototypes -Wpointer-arith -g"
+ 
+ if test "x$enable_debug" = "xno"; then
+ 	dnl CFLAGS="$CFLAGS -Werror"
+--- origsrc/libzorpll/src/Makefile.am	2014-05-27 23:57:14.000000000 +0900
++++ src/libzorpll/src/Makefile.am	2014-05-27 23:57:41.624679100 +0900
+@@ -43,7 +43,7 @@ libzorpll_la_SOURCES = \
+ 	zurlparse.c
+ 	
+ 
+-libzorpll_la_LDFLAGS = \
++libzorpll_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LIBZORPLL_LT_CURRENT):0:$(LIBZORPLL_LT_AGE) \
+ 	-release $(LIBZORPLL_LT_RELEASE) \
+ 	-export-dynamic
+--- origsrc/libzorpll/src/process.c	2014-05-27 23:57:14.000000000 +0900
++++ src/libzorpll/src/process.c	2014-05-28 08:22:25.797507800 +0900
+@@ -505,7 +505,9 @@ z_process_detach_tty(void)
+       /* detach ourselves from the tty when not staying in the foreground */
+       if (isatty(STDIN_FILENO))
+         {
++#if defined(TIOCNOTTY)
+           ioctl(STDIN_FILENO, TIOCNOTTY, 0);
++#endif
+           setsid();
+         }
+     }
+--- origsrc/libzorpll/src/sockaddr.c	2014-05-27 23:57:14.000000000 +0900
++++ src/libzorpll/src/sockaddr.c	2014-05-28 08:37:41.232078100 +0900
+@@ -399,9 +399,12 @@ z_sockaddr_inet_new_hostname(const gchar
+   int err = 0;
+   int rc;
+   ZSockAddr *saddr = NULL;
+-
++#if defined(__CYGWIN__)
++  he = gethostbyname(hostname);
++  rc = he ? 0 : 1;
++#else
+   rc = gethostbyname_r(hostname, &hes, hostbuf, sizeof(hostbuf), &he, &err);
+-
++#endif
+   if (rc == 0 && he && he->h_addr_list[0])
+     {
+       z_inet_ntoa(buf, sizeof(buf), *((struct in_addr *) he->h_addr_list[0]));
+--- origsrc/libzorpll/tests/Makefile.am	2014-05-27 23:57:14.000000000 +0900
++++ src/libzorpll/tests/Makefile.am	2014-05-28 08:40:17.874656200 +0900
+@@ -44,4 +44,4 @@ test_codecipher_LDADD = ../src/libzorpll
+ portrandom_SOURCES = portrandom.c randtest.c randtest.h
+ portrandom_LDADD = ../src/libzorpll.la -lm
+ 
+-TESTS = test_registry test_readline zcrypt test_conns test_ssl test_random test_streams test_valid_chars test_sockaddr test_blob test_base64 test_codegzip test_codecipher portrandom
++TESTS = test_registry test_readline zcrypt test_ssl test_random test_streams test_valid_chars test_sockaddr test_blob test_base64 test_codegzip test_codecipher portrandom
