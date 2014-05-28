@@ -1,0 +1,394 @@
+--- origsrc/thrift-0.9.1/lib/c_glib/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/c_glib/Makefile.am	2014-05-29 00:20:18.333266500 +0900
+@@ -24,8 +24,8 @@ pkgconfigdir = $(libdir)/pkgconfig
+ lib_LTLIBRARIES = libthrift_c_glib.la
+ pkgconfig_DATA = thrift_c_glib.pc
+ 
+-common_cflags = -g -Wall -W -Werror -Isrc -I src/thrift/c_glib $(GLIB_CFLAGS)
+-common_ldflags = -g -Wall -W $(GLIB_LDFLAGS) @GCOV_LDFLAGS@
++common_cflags = -g -Wall -W -I$(srcdir)/src -I$(srcdir)/src/thrift/c_glib $(GLIB_CFLAGS)
++common_ldflags = -no-undefined -g -Wall -W $(GLIB_LDFLAGS) @GCOV_LDFLAGS@
+ 
+ # this removes optimizations and adds coverage flags
+ CFLAGS = @GCOV_CFLAGS@
+@@ -52,6 +52,8 @@ libthrift_c_glib_la_SOURCES = src/thrift
+                               src/thrift/c_glib/server/thrift_simple_server.c
+ 
+ libthrift_c_glib_la_CFLAGS = $(common_cflags)
++libthrift_c_glib_la_LIBADD = $(GOBJECT_LIBS)
++libthrift_c_glib_la_LDFLAGS = $(common_ldflags)
+ 
+ include_thriftdir = $(includedir)/thrift/c_glib
+ include_thrift_HEADERS = \
+--- origsrc/thrift-0.9.1/lib/c_glib/test/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/c_glib/test/Makefile.am	2014-05-29 08:10:19.423590500 +0900
+@@ -19,7 +19,7 @@
+ .NOTPARALLEL:
+ SUBDIRS =
+ 
+-AM_CPPFLAGS = -g -Wall -I../src $(GLIB_CFLAGS)
++AM_CPPFLAGS = -g -Wall -I$(top_srcdir)/lib/c_glib/src $(GLIB_CFLAGS)
+ AM_LDFLAGS = $(GLIB_LIBS) $(GOBJECT_LIBS) @GCOV_LDFLAGS@
+ 
+ CFLAGS = @GCOV_CFLAGS@
+@@ -42,71 +42,39 @@ if WITH_CPP
+ endif
+ 
+ testtransportsocket_SOURCES = testtransportsocket.c
+-testtransportsocket_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testtransportsocket_LDADD = ../libthrift_c_glib.la
+ 
+ testbinaryprotocol_SOURCES = testbinaryprotocol.c
+-testbinaryprotocol_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testbinaryprotocol_LDADD = ../libthrift_c_glib.la
+ 
+ testbufferedtransport_SOURCES = testbufferedtransport.c
+-testbufferedtransport_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testbufferedtransport_LDADD = ../libthrift_c_glib.la
+ 
+ testframedtransport_SOURCES = testframedtransport.c
+-testframedtransport_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o
++testframedtransport_LDADD = ../libthrift_c_glib.la
+ 
+ testmemorybuffer_SOURCES = testmemorybuffer.c
+-testmemorybuffer_LDADD = \
+-    ../libthrift_c_glib_la-thrift_transport.o
++testmemorybuffer_LDADD = ../libthrift_c_glib.la
+ 
+ teststruct_SOURCES = teststruct.c
+-teststruct_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o
++teststruct_LDADD = ../libthrift_c_glib.la
+ 
+ testsimpleserver_SOURCES = testsimpleserver.c
+-testsimpleserver_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
+-    ../libthrift_c_glib_la-thrift_transport_factory.o \
+-    ../libthrift_c_glib_la-thrift_processor.o \
+-    ../libthrift_c_glib_la-thrift_protocol_factory.o \
+-    ../libthrift_c_glib_la-thrift_binary_protocol.o \
+-    ../libthrift_c_glib_la-thrift_binary_protocol_factory.o \
+-    ../libthrift_c_glib_la-thrift_socket.o \
+-    ../libthrift_c_glib_la-thrift_server_transport.o \
+-    ../libthrift_c_glib_la-thrift_server_socket.o \
+-    ../libthrift_c_glib_la-thrift_server.o
++testsimpleserver_LDADD = ../libthrift_c_glib.la
+ 
+ testdebugproto_SOURCES = testdebugproto.c
+ testdebugproto_LDADD = libtestgenc.la
+ 
+ testoptionalrequired_SOURCES = testoptionalrequired.c
+-testoptionalrequired_LDADD = \
+-    ../libthrift_c_glib_la-thrift_protocol.o \
+-    ../libthrift_c_glib_la-thrift_transport.o \
++testoptionalrequired_LDADD = ../libthrift_c_glib.la \
+     libtestgenc.la
+ 
+ testthrifttest_SOURCES = testthrifttest.c
+ testthrifttest_LDADD = libtestgenc.la
+ 
+ testthrifttestclient_SOURCES = testthrifttestclient.cpp
+-testthrifttestclient_CPPFLAGS = -I../../cpp/src $(BOOST_CPPFLAGS) -I./gen-cpp -I../src -I./gen-c_glib $(GLIB_CFLAGS)
+-testthrifttestclient_LDADD = ../../cpp/.libs/libthrift.la ../libthrift_c_glib.la libtestgenc.la libtestgencpp.la
++testthrifttestclient_CPPFLAGS = -I../../cpp/src $(BOOST_CPPFLAGS) -I./gen-cpp -I../src -I./gen-c_glib -I$(top_srcdir)/lib/cpp/src -I$(top_srcdir)/lib/c_glib/src $(GLIB_CFLAGS)
++testthrifttestclient_LDADD = libtestgenc.la libtestgencpp.la ../../cpp/libthrift.la ../libthrift_c_glib.la
+ testthrifttestclient_LDFLAGS = -L../.libs -L../../cpp/.libs $(GLIB_LIBS) $(GOBJECT_LIBS)
+ 
+ check_LTLIBRARIES = libtestgenc.la
+@@ -145,7 +113,7 @@ nodist_libtestgencpp_la_SOURCES = \
+         gen-cpp/ThriftTest.h \
+         gen-cpp/ThriftTest_constants.h \
+         gen-cpp/ThriftTest_types.h
+-libtestgencpp_la_CPPFLAGS = -I../../cpp/src $(BOOST_CPPFLAGS) -I./gen-cpp
++libtestgencpp_la_CPPFLAGS = -I$(top_builddir)/lib/cpp/src -I$(top_srcdir)/lib/cpp/src $(BOOST_CPPFLAGS) -I./gen-cpp
+ 
+ THRIFT = $(top_builddir)/compiler/cpp/thrift
+ 
+--- origsrc/thrift-0.9.1/lib/cpp/Makefile.am	2013-08-16 08:19:40.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/Makefile.am	2014-05-28 21:26:34.302508900 +0900
+@@ -30,7 +30,7 @@ pkgconfigdir = $(libdir)/pkgconfig
+ 
+ lib_LTLIBRARIES = libthrift.la
+ pkgconfig_DATA = thrift.pc
+-libthrift_la_LDFLAGS = -release $(VERSION) $(BOOST_LDFLAGS)
++libthrift_la_LDFLAGS = -no-undefined -release $(VERSION) $(BOOST_LDFLAGS)
+ 
+ ## We only build the extra libraries if we have the dependencies,
+ ## but we install all of the headers unconditionally.
+@@ -48,7 +48,7 @@ pkgconfig_DATA += thrift-qt.pc
+ endif
+ 
+ AM_CXXFLAGS = -Wall
+-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/src
++AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(builddir)/src -I$(srcdir)/src
+ AM_LDFLAGS = $(BOOST_LDFLAGS)
+ 
+ # Define the source files for the module
+@@ -117,9 +117,12 @@ libthriftqt_la_CPPFLAGS = $(AM_CPPFLAGS)
+ libthriftnb_la_CXXFLAGS = $(AM_CXXFLAGS)
+ libthriftz_la_CXXFLAGS  = $(AM_CXXFLAGS)
+ libthriftqt_la_CXXFLAGS  = $(AM_CXXFLAGS)
+-libthriftnb_la_LDFLAGS  = -release $(VERSION) $(BOOST_LDFLAGS)
+-libthriftz_la_LDFLAGS   = -release $(VERSION) $(BOOST_LDFLAGS)
+-libthriftqt_la_LDFLAGS   = -release $(VERSION) $(BOOST_LDFLAGS) $(QT_LIBS)
++libthriftnb_la_LDFLAGS  = -no-undefined -release $(VERSION) $(BOOST_LDFLAGS)
++libthriftz_la_LDFLAGS   = -no-undefined -release $(VERSION) $(BOOST_LDFLAGS)
++libthriftqt_la_LDFLAGS   = -no-undefined -release $(VERSION) $(BOOST_LDFLAGS) $(QT_LIBS)
++libthriftnb_la_LIBADD = libthrift.la $(LIBEVENT_LIBS)
++libthriftz_la_LIBADD = libthrift.la $(ZLIB_LIBS)
++libthriftqt_la_LIBADD = libthrift.la
+ 
+ include_thriftdir = $(includedir)/thrift
+ include_thrift_HEADERS = \
+--- origsrc/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Monitor.h	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Monitor.h	2014-05-28 21:26:34.302508900 +0900
+@@ -25,6 +25,8 @@
+ 
+ #include <boost/utility.hpp>
+ 
++#include <sys/time.h>
++
+ 
+ namespace apache { namespace thrift { namespace concurrency {
+ 
+@@ -84,7 +86,7 @@ class Monitor : boost::noncopyable {
+    * Waits until the absolute time specified using struct timeval.
+    * Returns 0 if condition occurs, THRIFT_ETIMEDOUT on timeout, or an error code.
+    */
+-  int waitForTime(const struct timeval* abstime) const;
++  int waitForTime(const struct ::timeval* abstime) const;
+ 
+   /**
+    * Waits forever until the condition occurs.
+--- origsrc/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Mutex.cpp	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Mutex.cpp	2014-05-28 21:26:34.318133900 +0900
+@@ -211,7 +211,7 @@ void Mutex::DEFAULT_INITIALIZER(void* ar
+   assert(ret == 0);
+ }
+ 
+-#if defined(PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP) || defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP)
++#if defined(PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP) || (defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP) && defined(PTHREAD_MUTEX_RECURSIVE_NP))
+ static void init_with_kind(pthread_mutex_t* mutex, int kind) {
+   pthread_mutexattr_t mutexattr;
+   int ret = pthread_mutexattr_init(&mutexattr);
+@@ -244,7 +244,7 @@ void Mutex::ADAPTIVE_INITIALIZER(void* a
+ }
+ #endif
+ 
+-#ifdef PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
++#if defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP) && defined(PTHREAD_MUTEX_RECURSIVE_NP)
+ void Mutex::RECURSIVE_INITIALIZER(void* arg) {
+   init_with_kind((pthread_mutex_t*)arg, PTHREAD_MUTEX_RECURSIVE_NP);
+ }
+--- origsrc/thrift-0.9.1/lib/cpp/src/thrift/concurrency/TimerManager.cpp	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/src/thrift/concurrency/TimerManager.cpp	2014-05-28 21:26:34.318133900 +0900
+@@ -277,7 +277,7 @@ void TimerManager::add(shared_ptr<Runnab
+   add(task, expiration - now);
+ }
+ 
+-void TimerManager::add(shared_ptr<Runnable> task, const struct timeval& value) {
++void TimerManager::add(shared_ptr<Runnable> task, const struct ::timeval& value) {
+ 
+   int64_t expiration;
+   Util::toMilliseconds(expiration, value);
+--- origsrc/thrift-0.9.1/lib/cpp/src/thrift/concurrency/TimerManager.h	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/src/thrift/concurrency/TimerManager.h	2014-05-28 21:26:34.333758900 +0900
+@@ -26,7 +26,7 @@
+ 
+ #include <boost/shared_ptr.hpp>
+ #include <map>
+-#include <time.h>
++#include <sys/time.h>
+ 
+ namespace apache { namespace thrift { namespace concurrency {
+ 
+@@ -85,7 +85,7 @@ class TimerManager {
+    * @param task The task to execute
+    * @param timeout Absolute time in the future to execute task.
+    */
+-  virtual void add(boost::shared_ptr<Runnable> task, const struct timeval& timeout);
++  virtual void add(boost::shared_ptr<Runnable> task, const struct ::timeval& timeout);
+ 
+   /**
+    * Removes a pending task
+--- origsrc/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Util.h	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/src/thrift/concurrency/Util.h	2014-05-28 21:26:34.333758900 +0900
+@@ -68,7 +68,7 @@ class Util {
+     result.tv_nsec = (value % MS_PER_S) * NS_PER_MS; // ms to ns
+   }
+ 
+-  static void toTimeval(struct timeval& result, int64_t value) {
++  static void toTimeval(struct ::timeval& result, int64_t value) {
+     result.tv_sec  = static_cast<uint32_t>(value / MS_PER_S); // ms to s
+     result.tv_usec = static_cast<uint32_t>((value % MS_PER_S) * US_PER_MS); // ms to us
+   }
+@@ -96,7 +96,7 @@ class Util {
+    * Converts struct timeval to arbitrary-sized ticks since epoch
+    */
+   static void toTicks(int64_t& result,
+-                      const struct timeval& value,
++                      const struct ::timeval& value,
+                       int64_t ticksPerSec) {
+     return toTicks(result, value.tv_sec, value.tv_usec, US_PER_S, ticksPerSec);
+   }
+@@ -113,7 +113,7 @@ class Util {
+    * Converts struct timeval to milliseconds
+    */
+   static void toMilliseconds(int64_t& result,
+-                             const struct timeval& value) {
++                             const struct ::timeval& value) {
+     return toTicks(result, value, MS_PER_S);
+   }
+ 
+@@ -127,7 +127,7 @@ class Util {
+   /**
+    * Converts struct timeval to microseconds
+    */
+-  static void toUsec(int64_t& result, const struct timeval& value) {
++  static void toUsec(int64_t& result, const struct ::timeval& value) {
+     return toTicks(result, value, US_PER_S);
+   }
+ 
+--- origsrc/thrift-0.9.1/lib/cpp/test/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/lib/cpp/test/Makefile.am	2014-05-28 23:48:33.250770700 +0900
+@@ -56,11 +56,7 @@ check_PROGRAMS = \
+ 	JSONProtoTest \
+ 	OptionalRequiredTest \
+ 	SpecializationTest \
+-	AllProtocolsTest \
+-	TransportTest \
+-	ZlibTest \
+-	TFileTransportTest \
+-	UnitTests
++	AllProtocolsTest
+ # disable these test ... too strong
+ #       processor_test
+ #	concurrency_test
+@@ -86,7 +82,7 @@ endif
+ 
+ UnitTests_LDADD = \
+   libtestgencpp.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a
++  -lboost_unit_test_framework-mt
+ 
+ TransportTest_SOURCES = \
+ 	TransportTest.cpp
+@@ -94,7 +90,7 @@ TransportTest_SOURCES = \
+ TransportTest_LDADD = \
+   libtestgencpp.la \
+   $(top_builddir)/lib/cpp/libthriftz.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a \
++  -lboost_unit_test_framework-mt \
+   -lz
+ 
+ ZlibTest_SOURCES = \
+@@ -103,7 +99,7 @@ ZlibTest_SOURCES = \
+ ZlibTest_LDADD = \
+   libtestgencpp.la \
+   $(top_builddir)/lib/cpp/libthriftz.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a \
++  -lboost_unit_test_framework-mt \
+   -lz
+ 
+ TFileTransportTest_SOURCES = \
+@@ -111,7 +107,7 @@ TFileTransportTest_SOURCES = \
+ 
+ TFileTransportTest_LDADD = \
+   libtestgencpp.la \
+-  $(BOOST_ROOT_PATH)/lib/libboost_unit_test_framework.a
++  -lboost_unit_test_framework-mt
+ 
+ #
+ # TFDTransportTest
+@@ -219,7 +215,7 @@ gen-cpp/ChildService.cpp: processor/proc
+ 	$(THRIFT) --gen cpp:templates,cob_style $<
+ 
+ INCLUDES = \
+-	-I$(top_srcdir)/lib/cpp/src
++	-I$(top_builddir)/lib/cpp/src -I$(top_srcdir)/lib/cpp/src
+ 
+ AM_CPPFLAGS = $(BOOST_CPPFLAGS)
+ AM_LDFLAGS = $(BOOST_LDFLAGS)
+--- origsrc/thrift-0.9.1/lib/php/src/ext/thrift_protocol/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/thrift-0.9.1/lib/php/src/ext/thrift_protocol/configure.ac	2014-05-28 21:26:34.349383900 +0900
+@@ -0,0 +1 @@
++
+--- origsrc/thrift-0.9.1/test/cpp/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/test/cpp/Makefile.am	2014-05-29 08:26:58.870231800 +0900
+@@ -56,7 +56,7 @@ TestServer_LDADD = \
+ 	$(top_builddir)/lib/cpp/libthrift.la \
+ 	$(top_builddir)/lib/cpp/libthriftz.la \
+ 	$(top_builddir)/lib/cpp/libthriftnb.la \
+-	-levent -lboost_program_options
++	-levent -lboost_program_options-mt
+ 
+ TestClient_SOURCES = \
+ 	src/TestClient.cpp
+@@ -66,7 +66,7 @@ TestClient_LDADD = \
+ 	$(top_builddir)/lib/cpp/libthrift.la \
+ 	$(top_builddir)/lib/cpp/libthriftz.la \
+ 	$(top_builddir)/lib/cpp/libthriftnb.la \
+-	-levent -lboost_program_options
++	-levent -lboost_program_options-mt
+ 
+ StressTest_SOURCES = \
+ 	src/StressTest.cpp
+@@ -90,11 +90,11 @@ THRIFT = $(top_builddir)/compiler/cpp/th
+ gen-cpp/ThriftTest.cpp gen-cpp/ThriftTest_types.cpp gen-cpp/ThriftTest_constants.cpp: $(top_srcdir)/test/ThriftTest.thrift
+ 	$(THRIFT) --gen cpp:templates,cob_style -r $<
+ 
+-gen-cpp/ThriftTest.cpp gen-cpp/StressTest_types.cpp gen-cpp/StressTest_constants.cpp: $(top_srcdir)/test/StressTest.thrift
++gen-cpp/StressTest.cpp gen-cpp/StressTest_types.cpp gen-cpp/StressTest_constants.cpp: $(top_srcdir)/test/StressTest.thrift
+ 	$(THRIFT) --gen cpp $<
+ 
+ INCLUDES = \
+-	-I$(top_srcdir)/lib/cpp/src -Igen-cpp
++	-I$(top_builddir)/lib/cpp/src -I$(top_srcdir)/lib/cpp/src -I$(top_srcdir)/test/cpp/gen-cpp
+ 
+ AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(LIBEVENT_CPPFLAGS)
+ AM_CXXFLAGS = -Wall
+--- origsrc/thrift-0.9.1/test/nodejs/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/test/nodejs/Makefile.am	2014-05-29 08:21:12.987419300 +0900
+@@ -16,10 +16,10 @@
+ # under the License.
+ 
+ 
+-THRIFT = $(top_srcdir)/compiler/cpp/thrift
++THRIFT = $(top_builddir)/compiler/cpp/thrift
+ 
+-stubs: ../ThriftTest.thrift
+-	$(THRIFT) --gen js:node ../ThriftTest.thrift
++stubs: $(top_srcdir)/test/ThriftTest.thrift
++	$(THRIFT) --gen js:node $(top_srcdir)/test/ThriftTest.thrift
+ 
+ check: stubs
+ 	@if which nodeunit &> /dev/null ; then \
+--- origsrc/thrift-0.9.1/tutorial/cpp/Makefile.am	2013-08-15 23:04:29.000000000 +0900
++++ src/thrift-0.9.1/tutorial/cpp/Makefile.am	2014-05-28 21:26:34.349383900 +0900
+@@ -63,7 +63,7 @@ gen-cpp/Calculator.cpp gen-cpp/tutorial_
+ 	$(THRIFT) --gen cpp -r $<
+ 
+ INCLUDES = \
+-	-I$(top_srcdir)/lib/cpp/src -Igen-cpp
++	-I$(top_builddir)/lib/cpp/src -I$(top_srcdir)/lib/cpp/src -Igen-cpp
+ 
+ AM_CPPFLAGS = $(BOOST_CPPFLAGS) $(LIBEVENT_CPPFLAGS)
+ AM_CXXFLAGS = -Wall
