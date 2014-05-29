@@ -1,0 +1,63 @@
+--- origsrc/libdoozer-libdoozer-0.1.2/cli/Makefile.am	2012-10-31 07:38:36.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/cli/Makefile.am	2014-05-29 16:19:21.253875600 +0900
+@@ -4,7 +4,11 @@ doozer_cli_SOURCES=	add.cc del.cc get.cc
+ 			touch.cc wait.cc watch.cc main.cc
+ doozer_cli_LDADD=	${top_builddir}/lib/libdoozer.la
+ doozer_cli_DEPENDENCIES=${top_builddir}/lib/libdoozer.la
++doozer_cli_CPPFLAGS=    -I$(top_srcdir)
++doozer_cli_CXXFLAGS=    $(QTNETWORK_CFLAGS)
+ 
+ doozer_ping_SOURCES=	ping.cc
+ doozer_ping_LDADD=	${top_builddir}/lib/libdoozer.la
+ doozer_ping_DEPENDENCIES=${top_builddir}/lib/libdoozer.la
++doozer_ping_CPPFLAGS=   -I$(top_srcdir)
++doozer_ping_CXXFLAGS=   $(QTNETWORK_CFLAGS)
+--- origsrc/libdoozer-libdoozer-0.1.2/configure.ac	2012-10-31 07:38:36.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/configure.ac	2014-05-29 16:09:20.928789500 +0900
+@@ -59,15 +59,11 @@ AC_CHECK_LIB([protobuf], [main], [PROTO_
+ 	AC_ERROR([libprotobuf is required]))
+ AC_CHECK_LIB([gtest_main], [main], [GTEST_LIBS="$GTEST_LIBS -lgtest_main"])
+ AC_CHECK_LIB([gtest], [main], [GTEST_LIBS="$GTEST_LIBS -lgtest"])
+-AC_CHECK_LIB([glog], [main],
+-	[GLOG_LIBS="$GLOG_LIBS -lglog"],
+-	AC_ERROR([libglog is required]))
+-AC_CHECK_LIB([QtNetwork], [main],
+-	[QT_LIBS="$QT_LIBS -lQtNetwork"])
+-AC_CHECK_LIB([QtCore], [main],
+-	[QT_LIBS="$QT_LIBS -lQtCore"])
+-AC_CHECK_LIB([pthread], [pthread_once],
+-	     [AC_LIBS="$AC_LIBS -lpthread"])
++PKG_CHECK_MODULES([GLOG], [libglog])
++PKG_CHECK_MODULES([QTNETWORK], [QtNetwork])
++QT_LIBS="$QT_LIBS $QTNETWORK_LIBS"
++PKG_CHECK_MODULES([QTCORE], [QtCore])
++QT_LIBS="$QT_LIBS $QTCORE_LIBS"
+ LIBS="$LIBS $AC_LIBS $PROTO_LIBS $GLOG_LIBS"
+ AC_SUBST(GTEST_LIBS)
+ AC_SUBST(QT_LIBS)
+@@ -75,8 +71,6 @@ AC_SUBST(AC_LIBS)
+ AC_SUBST(LIBS)
+ 
+ # Checks for header files.
+-AC_CHECK_HEADERS([QtNetwork/QTcpSocket QtCore/QString], [],
+-		 [AC_ERROR([QT headers missing])])
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+ 
+--- origsrc/libdoozer-libdoozer-0.1.2/lib/Makefile.am	2012-10-31 07:38:36.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/lib/Makefile.am	2014-05-29 16:16:03.434957900 +0900
+@@ -4,10 +4,12 @@ lib_LTLIBRARIES=	libdoozer.la
+ 
+ libdoozer_la_SOURCES=	msg.pb.h msg.pb.cc error.cc conn.cc baseops.cc	\
+ 			dirops.cc wait.cc
+-libdoozer_la_LDFLAGS=	-version-info ${LIBRARY_VERSION}
++libdoozer_la_LDFLAGS=	-no-undefined -version-info ${LIBRARY_VERSION}
+ libdoozer_la_LIBADD=	@QT_LIBS@
++libdoozer_la_CPPFLAGS = -I$(top_srcdir)
++libdoozer_la_CXXFLAGS=  $(QTNETWORK_CFLAGS)
+ 
+ CLEANFILES=	msg.pb.h msg.pb.cc
+ 
+ msg.pb.cc msg.pb.h: msg.proto
+-	protoc --cpp_out=. $<
++	protoc --cpp_out=. -I$(srcdir) $<
