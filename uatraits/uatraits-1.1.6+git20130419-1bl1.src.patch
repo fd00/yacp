@@ -1,0 +1,91 @@
+--- origsrc/uatraits/configure.in	2014-06-27 21:34:17.000000000 +0900
++++ src/uatraits/configure.in	2014-06-27 22:13:02.140540600 +0900
+@@ -10,13 +10,12 @@ AC_LANG([C++])
+ AC_PROG_LIBTOOL
+ AM_MAINTAINER_MODE
+ 
+-CPPFLAGS="$CPPFLAGS -pthread"
+ AX_PREFIX_CONFIG_H(config/acsetup.hpp)
+ for i in -W -Wall -Wextra -Wlint -fexceptions -frtti -ftemplate-depth-128; do
+ 	AX_CHECK_COMPILER_FLAGS([$i], [CXXFLAGS="$CXXFLAGS $i"], [])
+ done
+ 
+-AM_PATH_XML2([2.6.29], [], [AC_MSG_FAILURE([libxml2 is not found])])
++PKG_CHECK_MODULES([XML], [libxml-2.0])
+ 
+ PKG_CHECK_MODULES([crypto], [libcrypto], [], [AC_MSG_ERROR([libcrypto not found])])
+ 
+@@ -29,14 +28,15 @@ ax_have_boost_thread="yes"
+ ax_have_boost_unit_test="yes"
+ AX_BOOST_PREFIX([], [ax_have_boost="no"])
+ 
+-AX_CHECK_PCRE([], [AC_MSG_FAILURE([pcre installation is not found])])
++PKG_CHECK_MODULES([PCRE], [libpcre])
+ 
+ if test "f$ax_have_boost" = "fyes"; then
+ 	AM_PATH_PYTHON
+ 	AX_PYTHON_DEVEL
+-	AX_BOOST_PYTHON([], [ax_have_boost_python="no"])
+-	AX_BOOST_THREAD([], [ax_have_boost_thread="no"])
+-	AX_BOOST_UNIT_TEST([], [ax_have_boost_unit_test="no"])
++	BOOST_REQUIRE
++	BOOST_PYTHON([mt])
++	BOOST_THREADS([mt])
++	BOOST_TEST([mt])
+ fi
+ 
+ ac_python_binding="smart"
+--- origsrc/uatraits/library/Makefile.am	2014-06-27 21:34:18.000000000 +0900
++++ src/uatraits/library/Makefile.am	2014-06-27 22:16:55.941321800 +0900
+@@ -4,7 +4,6 @@ libuatraits_la_SOURCES = detector.cpp de
+ 	error.cpp pcre_utils.cpp \
+ 	type_traits.cpp xml_utils.cpp
+ 
+-AM_CXXFLAGS = -pthread
+ AM_CPPFLAGS = -I${top_srcdir}/include -I${topc_srcdir}/config \
+-	@XML_CPPFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@
+-AM_LDFLAGS = @XML_LIBS@ @PCRE_LIBS@
++	@XML_CFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@
++AM_LDFLAGS = @XML_LIBS@ @PCRE_LIBS@ -no-undefined
+--- origsrc/uatraits/perl/Makefile.PL.in	2014-06-27 21:34:18.000000000 +0900
++++ src/uatraits/perl/Makefile.PL.in	2014-06-27 22:30:26.122962400 +0900
+@@ -15,7 +15,7 @@ WriteMakefile(
+        AUTHOR         => 'Oleg Obolensky <highpower@yandex-team.ru>') : ()),
+     LIBS              => ['-L../library/.libs/ @XML_LIBS@ @PCRE_LIBS@ -luatraits'],
+     DEFINE            => '',
+-    INC               => '-I. -I../include -I../config @XML_CPPFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@',
++    INC               => '-I. -I../include -I../config @XML_CFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@',
+ 	CC                => 'g++',
+ 	LD                => 'g++',
+ 	XSOPT             => '-C++',
+--- origsrc/uatraits/python/Makefile.am	2014-06-27 21:34:18.000000000 +0900
++++ src/uatraits/python/Makefile.am	2014-06-27 22:21:41.562415600 +0900
+@@ -2,12 +2,11 @@ pyexec_LTLIBRARIES = uatraits.la
+ 
+ uatraits_la_SOURCES = dict_wrapper.cpp module.cpp streambuf.cpp
+ 
+-uatraits_la_LDFLAGS = -module -avoid-version @PYTHON_LDFLAGS@ \
++uatraits_la_LDFLAGS = -no-undefined -module -avoid-version @PYTHON_LDFLAGS@ \
+ 	@XML_LIBS@ @PCRE_LIBS@ @BOOST_LDFLAGS@ @BOOST_PYTHON_LDFLAGS@ 
+-uatraits_la_LIBADD = ${top_srcdir}/library/libuatraits.la
++uatraits_la_LIBADD = ${top_builddir}/library/libuatraits.la $(PYTHON_LIBS) $(BOOST_PYTHON_LIBS)
+ 
+-AM_CXXFLAGS = -pthread
+ AM_CPPFLAGS = -I${top_srcdir}/include -I${top_srcdir}/config \
+-	@XML_CPPFLAGS@ @PCRE_CFLAGS@ @PYTHON_CPPFLAGS@ @BOOST_CPPFLAGS@
++	@XML_CFLAGS@ @PCRE_CFLAGS@ @PYTHON_CPPFLAGS@ @BOOST_CPPFLAGS@
+ 
+ noinst_HEADERS = dict_wrapper.hpp streambuf.hpp
+--- origsrc/uatraits/utils/Makefile.am	2014-06-27 21:34:18.000000000 +0900
++++ src/uatraits/utils/Makefile.am	2014-06-27 22:18:16.732337400 +0900
+@@ -1,8 +1,7 @@
+ bin_PROGRAMS = check-uatraits
+ 
+ check_uatraits_SOURCES = main.cpp
+-check_uatraits_LDADD = ${top_srcdir}/library/libuatraits.la
++check_uatraits_LDADD = ${top_builddir}/library/libuatraits.la
+ 
+-AM_CXXFLAGS = -pthread
+-AM_CPPFLAGS = -I${top_srcdir}/include -I${topc_srcdir}/config @XML_CPPFLAGS@
++AM_CPPFLAGS = -I${top_srcdir}/include -I${top_srcdir}/config @XML_CFLAGS@
+ AM_LDFLAGS = @XML_LIBS@
