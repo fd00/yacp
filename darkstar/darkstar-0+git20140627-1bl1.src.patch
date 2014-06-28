@@ -1,0 +1,73 @@
+--- origsrc/darkstar/configure.ac	2014-06-28 15:41:29.000000000 +0900
++++ src/darkstar/configure.ac	2014-06-28 15:51:59.450825500 +0900
+@@ -28,7 +28,11 @@ AC_C_BIGENDIAN(
+ 
+ ### pkg-config checks
+ LUA_REQUIRED_VERSION=0.25
+-PKG_CHECK_MODULES(LUA, lua5.1 >= LUA_REQUIRED_VERSION)
++if test "$host_os" = "cygwin"; then
++	PKG_CHECK_MODULES(LUA, lua >= LUA_REQUIRED_VERSION)
++else
++	PKG_CHECK_MODULES(LUA, lua5.1 >= LUA_REQUIRED_VERSION)
++fi
+ AC_SUBST(LUA_CFLAGS)
+ AC_SUBST(LUA_LIBS)
+ 
+--- origsrc/darkstar/src/map/navmesh.cpp	2014-06-28 15:42:29.000000000 +0900
++++ src/darkstar/src/map/navmesh.cpp	2014-06-28 16:10:00.588369700 +0900
+@@ -24,6 +24,7 @@
+ #include "navmesh.h"
+ #include "../common/detour/DetourNavMeshQuery.h"
+ #include <string.h>
++#include <cstdio>
+ #include "../common/utils.h"
+ 
+ CNavMesh::CNavMesh()
+--- origsrc/darkstar/src/search/data_loader.cpp	2014-06-28 15:42:31.000000000 +0900
++++ src/darkstar/src/search/data_loader.cpp	2014-06-28 16:34:36.991690000 +0900
+@@ -31,6 +31,16 @@
+ #include "data_loader.h"
+ #include "search.h"
+ 
++#if defined(__CYGWIN__)
++#include <sstream>
++static std::string to_string(unsigned long long value)
++{
++    std::ostringstream os;
++    os << value;
++    return os.str();
++}
++#endif
++
+ CDataLoader::CDataLoader()
+ {
+     SqlHandle = Sql_Malloc();
+@@ -177,16 +187,28 @@ std::list<SearchEntity*> CDataLoader::Ge
+ 	if(sr.jobid > 0 && sr.jobid < 21){ 
+         filterQry.append(" AND "); 
+ 		filterQry.append(" mjob = ");
++#if defined(__CYGWIN__)
++        filterQry.append(to_string(sr.jobid));
++#else
+         filterQry.append(std::to_string(static_cast<unsigned long long>(sr.jobid)));
++#endif
+ 	}
+ 	if(sr.zoneid[0] > 0) { 
+         string_t zoneList;
+         int i = 1;
++#if defined(__CYGWIN__)
++        zoneList.append(to_string(sr.zoneid[0]));
++#else
+         zoneList.append(std::to_string(static_cast<unsigned long long>(sr.zoneid[0])));
++#endif
+         while (i < 10 && sr.zoneid[i] != 0)
+         {
+             zoneList.append(", ");
++#if defined(__CYGWIN__)
++            zoneList.append(to_string(sr.zoneid[i]));
++#else
+             zoneList.append(std::to_string(static_cast<unsigned long long>(sr.zoneid[i])));
++#endif
+             i++;
+         }
+         filterQry.append(" AND ");
