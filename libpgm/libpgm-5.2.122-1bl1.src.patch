@@ -1,0 +1,51 @@
+--- origsrc/libpgm-5.2.122/openpgm/pgm/Makefile.am	2012-12-04 11:57:22.000000000 +0900
++++ src/libpgm-5.2.122/openpgm/pgm/Makefile.am	2014-06-29 00:05:28.538429700 +0900
+@@ -95,7 +95,7 @@ libpgm_noinst_la_CFLAGS = \
+ lib_LTLIBRARIES   = libpgm.la
+ libpgm_la_SOURCES =
+ libpgm_la_CFLAGS  = $(libpgm_noinst_la_CFLAGS)
+-libpgm_la_LDFLAGS = -release @RELEASE_INFO@ -version-info @VERSION_INFO@
++libpgm_la_LDFLAGS = -no-undefined -release @RELEASE_INFO@ -version-info @VERSION_INFO@
+ libpgm_la_LIBADD  = libpgm_noinst.la
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/libpgm-5.2.122/openpgm/pgm/getifaddrs.c	2012-12-04 11:57:22.000000000 +0900
++++ src/libpgm-5.2.122/openpgm/pgm/getifaddrs.c	2014-06-29 00:37:49.389015600 +0900
+@@ -48,7 +48,7 @@
+ #endif
+ #include <impl/i18n.h>
+ #include <impl/framework.h>
+-
++#include <sys/ioctl.h>
+ 
+ //#define GETIFADDRS_DEBUG
+ 
+@@ -322,6 +322,7 @@ again:
+ }
+ #endif /* SIOCGLIFCONF */
+ 
++#if !defined( HAVE_GETIFADDRS )
+ #ifdef SIOCGIFCONF
+ /* Popular socket option for enumerating interfaces.  However returned
+  * structure is often harded coded for IPv4 addressing and so either
+@@ -523,6 +524,7 @@ _pgm_getifaddrs (
+ 	return TRUE;
+ }
+ #endif /* SIOCLIFCONF */
++#endif
+ 
+ #if defined(_WIN32)
+ static inline
+--- origsrc/libpgm-5.2.122/openpgm/pgm/time.c	2012-12-04 11:57:22.000000000 +0900
++++ src/libpgm-5.2.122/openpgm/pgm/time.c	2014-06-29 00:05:28.554054700 +0900
+@@ -34,6 +34,10 @@
+ #include <impl/i18n.h>
+ #include <impl/framework.h>
+ 
++#if defined(HAVE_GETTIMEOFDAY)
++#define CONFIG_HAVE_GETTIMEOFDAY
++#endif
++
+ //#define TIME_DEBUG
+ 
+ 
