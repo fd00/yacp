@@ -1,0 +1,99 @@
+--- origsrc/ValyriaTear-0.6.0/CMake/Modules/FindIconv.cmake	1970-01-01 09:00:00.000000000 +0900
++++ src/ValyriaTear-0.6.0/CMake/Modules/FindIconv.cmake	2014-07-05 21:49:01.341843400 +0900
+@@ -0,0 +1,57 @@
++# - Try to find Iconv 
++# Once done this will define 
++# 
++#  ICONV_FOUND - system has Iconv 
++#  ICONV_INCLUDE_DIR - the Iconv include directory 
++#  ICONV_LIBRARIES - Link these to use Iconv 
++#  ICONV_SECOND_ARGUMENT_IS_CONST - the second argument for iconv() is const
++# 
++include(CheckCXXSourceCompiles)
++
++IF (ICONV_INCLUDE_DIR AND ICONV_LIBRARIES)
++  # Already in cache, be silent
++  SET(ICONV_FIND_QUIETLY TRUE)
++ENDIF (ICONV_INCLUDE_DIR AND ICONV_LIBRARIES)
++
++FIND_PATH(ICONV_INCLUDE_DIR iconv.h) 
++ 
++FIND_LIBRARY(ICONV_LIBRARIES NAMES iconv libiconv libiconv-2 c)
++ 
++IF(ICONV_INCLUDE_DIR AND ICONV_LIBRARIES) 
++   SET(ICONV_FOUND TRUE) 
++ENDIF(ICONV_INCLUDE_DIR AND ICONV_LIBRARIES) 
++
++set(CMAKE_REQUIRED_INCLUDES ${ICONV_INCLUDE_DIR})
++set(CMAKE_REQUIRED_LIBRARIES ${ICONV_LIBRARIES})
++IF(ICONV_FOUND)
++  check_cxx_source_compiles("
++  #include <iconv.h>
++  int main(){
++    iconv_t conv = 0;
++    const char* in = 0;
++    size_t ilen = 0;
++    char* out = 0;
++    size_t olen = 0;
++    iconv(conv, &in, &ilen, &out, &olen);
++    return 0;
++  }
++" ICONV_SECOND_ARGUMENT_IS_CONST )
++ENDIF(ICONV_FOUND)
++set(CMAKE_REQUIRED_INCLUDES)
++set(CMAKE_REQUIRED_LIBRARIES)
++
++IF(ICONV_FOUND) 
++  IF(NOT ICONV_FIND_QUIETLY) 
++    MESSAGE(STATUS "Found Iconv: ${ICONV_LIBRARIES}") 
++  ENDIF(NOT ICONV_FIND_QUIETLY) 
++ELSE(ICONV_FOUND) 
++  IF(Iconv_FIND_REQUIRED) 
++    MESSAGE(FATAL_ERROR "Could not find Iconv") 
++  ENDIF(Iconv_FIND_REQUIRED) 
++ENDIF(ICONV_FOUND)
++
++MARK_AS_ADVANCED(
++  ICONV_INCLUDE_DIR
++  ICONV_LIBRARIES
++  ICONV_SECOND_ARGUMENT_IS_CONST
++)
+--- origsrc/ValyriaTear-0.6.0/src/CMakeLists.txt	2013-09-24 20:33:12.000000000 +0900
++++ src/ValyriaTear-0.6.0/src/CMakeLists.txt	2014-07-05 21:50:53.300827800 +0900
+@@ -10,6 +10,8 @@ FIND_PACKAGE(Lua51 REQUIRED)
+ FIND_PACKAGE(PNG REQUIRED)
+ FIND_PACKAGE(Gettext REQUIRED)
+ FIND_PACKAGE(Boost 1.48.0 REQUIRED)
++FIND_PACKAGE(Libintl REQUIRED)
++FIND_PACKAGE(Iconv REQUIRED)
+ 
+ IF (UNIX AND USE_SYSTEM_LUABIND)
+     # Find the luabind package
+@@ -507,6 +509,7 @@ ELSE()
+         ${LUA_LIBRARIES}
+         ${X11_LIBRARIES}
+         ${LIBINTL_LIBRARIES}
++        ${ICONV_LIBRARIES}
+         ${EXTRA_LIBRARIES})
+ ENDIF()
+ 
+--- origsrc/ValyriaTear-0.6.0/src/utils/utils_files.cpp	2013-09-24 20:33:12.000000000 +0900
++++ src/ValyriaTear-0.6.0/src/utils/utils_files.cpp	2014-07-05 21:25:51.082864000 +0900
+@@ -273,7 +273,7 @@ static void _CopyOldSaveFiles(const std:
+         return;
+     }
+ 
+-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS))
++#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS)) || defined(__CYGWIN__)
+     // We assume the old save files are in ~/.valyriatear
+     passwd *pw = getpwuid(getuid());
+     if(!pw)
+@@ -324,7 +324,7 @@ static void _CopyOldSettingsFile(const s
+         return;
+     }
+ 
+-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS))
++#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS)) || defined(__CYGWIN__)
+     // We assume the old settings.lua file is in ~/.valyriatear
+     passwd *pw = getpwuid(getuid());
+     if(!pw)
