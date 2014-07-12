@@ -1,0 +1,51 @@
+--- origsrc/spdylay-1.2.5/configure.ac	2014-06-02 21:45:54.000000000 +0900
++++ src/spdylay-1.2.5/configure.ac	2014-07-12 11:58:01.083271300 +0900
+@@ -101,6 +101,8 @@ case "$host" in
+     # android does not need -pthread, but needs followng 2 libs for C++
+     SRC_LIBS="$SRC_LIBS -lstdc++ -lsupc++"
+     ;;
++  *cygwin*)
++    ;;
+   *)
+     SRC_LIBS="$SRC_LIBS -pthread"
+     ;;
+--- origsrc/spdylay-1.2.5/src/Makefile.am	2014-06-02 21:45:54.000000000 +0900
++++ src/spdylay-1.2.5/src/Makefile.am	2014-07-12 11:57:17.932880700 +0900
+@@ -115,7 +115,7 @@ shrpx_unittest_SOURCES = shrpx-unittest.
+ 	${SHRPX_SRCS}
+ shrpx_unittest_CPPFLAGS = ${AM_CPPFLAGS}\
+ 	 -DSPDYLAY_TESTS_DIR=\"$(top_srcdir)/tests\"
+-shrpx_unittest_LDFLAGS = -static @OPENSSL_LIBS@ @LIBEVENT_OPENSSL_LIBS@\
++shrpx_unittest_LDFLAGS = @OPENSSL_LIBS@ @LIBEVENT_OPENSSL_LIBS@\
+ 	@SRC_LIBS@ @CUNIT_LIBS@ @TESTS_LIBS@
+ TESTS += shrpx-unittest
+ endif # HAVE_CUNIT
+--- origsrc/spdylay-1.2.5/tests/Makefile.am	2014-06-02 21:45:54.000000000 +0900
++++ src/spdylay-1.2.5/tests/Makefile.am	2014-07-12 12:38:41.307729600 +0900
+@@ -41,7 +41,7 @@ HFILES = spdylay_pq_test.h spdylay_map_t
+ main_SOURCES = $(HFILES) $(OBJECTS)
+ 
+ main_LDADD = ${top_builddir}/lib/libspdylay.la
+-main_LDFLAGS = -static @CUNIT_LIBS@ @TESTS_LIBS@
++main_LDFLAGS = @CUNIT_LIBS@ @TESTS_LIBS@
+ 
+ failmalloc_SOURCES = failmalloc.c failmalloc_test.c failmalloc_test.h \
+ 	malloc_wrapper.c malloc_wrapper.h \
+--- origsrc/spdylay-1.2.5/tests/malloc_wrapper.c	2014-06-02 21:45:54.000000000 +0900
++++ src/spdylay-1.2.5/tests/malloc_wrapper.c	2014-07-12 11:34:52.209247900 +0900
+@@ -32,6 +32,7 @@ int spdylay_failstart = 0;
+ int spdylay_countmalloc = 1;
+ int spdylay_nmalloc = 0;
+ 
++#if defined(RTLD_NEXT)
+ static void* (*real_malloc)(size_t) = NULL;
+ 
+ static void init(void)
+@@ -53,6 +54,7 @@ void* malloc(size_t size)
+     return real_malloc(size);
+   }
+ }
++#endif
+ 
+ static int failmalloc_bk, countmalloc_bk;
+ 
