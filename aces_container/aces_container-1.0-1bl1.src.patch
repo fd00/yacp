@@ -1,0 +1,39 @@
+--- origsrc/aces_container-1.0/CMakeLists.txt	2013-07-27 08:07:55.000000000 +0900
++++ src/aces_container-1.0/CMakeLists.txt	2014-07-19 12:36:57.393375000 +0900
+@@ -52,6 +52,7 @@ set( AcesContainer_MINOR_VERSION 0 )
+ set( AcesContainer_PATCH_VERSION 0 )
+ set( AcesContainer_VERSION ${AcesContainer_MAJOR_VERSION}.${AcesContainer_MINOR_VERSION}.${AcesContainer_PATCH_VERSION} )
+ 
++set( INSTALL_BIN_DIR bin CACHE PATH "Install directory for runtimes")
+ set( INSTALL_LIB_DIR lib CACHE PATH "Install directory for libraries" )
+ set( INSTALL_INCLUDE_DIR include CACHE PATH "Install directory for public header files" )
+ 
+@@ -63,7 +64,7 @@ endif()
+ set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Install directory for project CMake files" )
+ 
+ ## convert install paths to absolute
+-foreach( p LIB INCLUDE CMAKE )
++foreach( p BIN LIB INCLUDE CMAKE )
+   set( var INSTALL_${p}_DIR )
+   if( NOT IS_ABSOLUTE "${${var}}" )
+     set( ${var} "${CMAKE_INSTALL_PREFIX}/${${var}}" )
+@@ -82,7 +83,7 @@ add_library( AcesContainer SHARED
+ 	aces_md5.cc
+ )
+ 
+-install (TARGETS AcesContainer EXPORT AcesContainerTargets DESTINATION ${INSTALL_LIB_DIR})
++install (TARGETS AcesContainer EXPORT AcesContainerTargets RUNTIME DESTINATION ${INSTALL_BIN_DIR} ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+ install (FILES 
+ 			aces_errors.h
+ 			aces_genericWriter.h
+@@ -99,7 +100,9 @@ install (FILES
+ 		 DESTINATION 
+ 		 	${INSTALL_INCLUDE_DIR}/aces
+ 		 )
+-
++if(CYGWIN)
++  set_target_properties(AcesContainer PROPERTIES SOVERSION 0)
++endif()
+ 
+ find_package( PkgConfig )
+ if ( PKG_CONFIG_FOUND )
