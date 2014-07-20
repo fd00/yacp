@@ -1,0 +1,79 @@
+HOMEPAGE="http://www.ens-lyon.fr/LIP/Arenaire/Ware/SCSLib/"
+SRC_URI="http://www.ens-lyon.fr/LIP/Arenaire/Ware/SCSLib/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Software Carry-Save Multiple-Precision Library"
+DESCRIPTION="Software Carry-Save (SCS) Library, a fast and lightweight multiple-precision
+library.
+
+SCSLib has the following features:
+
+ * Multiple-precision
+SCSLib is a fixed-precision library, where precision is selected at
+compile-time. Out-of-the-box, the library ensures 210 bits of precision
+(quad-double). It is easily configurable to do twice or half, and with a
+little bit more work it can in principle ensure up to a few thousand bits.
+
+ * Floating-point format
+The SCS format is a floating-point format where exponents are machine integers
+(usually 32-bit numbers), which ensures a huge exponent range.
+
+ * Supported operations
+SCSLib currently offers addition/subtraction, multiplication, and an
+experimental division, plus all the useful conversion functions.
+
+ * IEEE-754 compatibility
+The range of SCS numbers includes the range of IEEE double-precision numbers,
+including denormals and exceptional cases. Conversions between SCS format and
+IEEE-754 doubles, as well as arithmetic operations, follow the IEEE rules
+concerning the exceptional cases. SCS doesn't ensure correct rounding, but
+provides conversions to doubles in the four IEEE-754 rounding modes."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -f aclocal.m4 configure
+	find . -name Makefile.in | xargs rm -f
+}
+
+CYGCONF_ARGS="
+	--includedir=/usr/include/${PN}
+	--enable-mpfr
+	--enable-gmp
+"
+
+src_test()
+{
+	cd ${B}/tests
+	for n in `seq 1 10`
+	do
+		./scs_test_accuracy.exe $n
+	done
+	./scs_test_timing.exe
+}
+
+DIFF_EXCLUDES="
+	*.h
+"
+
+PKG_NAMES="
+	${PN}
+	libscs0
+	libscs-devel
+"
+scslib_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libscs0_CONTENTS="
+	usr/bin/*.dll
+"
+libscs_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+
+scslib_SUMMARY="${SUMMARY} (utilities)"
+libscs0_SUMMARY="${SUMMARY} (runtime)"
+libscs_devel_SUMMARY="${SUMMARY} (development)"
