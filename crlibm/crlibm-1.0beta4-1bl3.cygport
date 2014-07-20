@@ -1,0 +1,64 @@
+HOMEPAGE="http://lipforge.ens-lyon.fr/www/${PN}/"
+SRC_URI="http://lipforge.ens-lyon.fr/frs/download.php/162/${P}.tar.gz"
+PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/crlibm.git/plain/crlibm-1.0beta4-shared.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="Correctly Rounded mathematical library"
+DESCRIPTION="CRlibm is a free mathematical library (libm) which provides:
+ * implementations of the double-precision C99 standard elementary functions,
+ * correctly rounded in the four IEEE-754 rounding modes,
+ * with a comprehensive proof of both the algorithms used and their
+   implementation,
+ * sufficiently efficient in average time, worst-case time, and memory
+   consumption to replace existing libms transparently."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -rf scs_lib
+}
+
+export CPPFLAGS=-I/usr/include/scslib
+
+CYGCONF_ARGS="
+	--enable-sse2
+	--enable-mpfr
+	--enable-gmp
+"
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+	cp ${S}/tests/*.testdata .
+	popd
+	cygtest
+}
+
+DIFF_EXCLUDES="
+	*.h
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+crlibm_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libcrlibm0_CONTENTS="
+	usr/bin/*.dll
+"
+libcrlibm_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+
+crlibm_SUMMARY="${SUMMARY} (utilities)"
+libcrlibm0_SUMMARY="${SUMMARY} (runtime)"
+libcrlibm_devel_SUMMARY="${SUMMARY} (development)"
