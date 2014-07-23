@@ -1,0 +1,59 @@
+--- origsrc/libdbh2-5.0.15/configure.ac	2014-03-28 07:09:48.000000000 +0900
++++ src/libdbh2-5.0.15/configure.ac	2014-07-23 20:59:01.815984100 +0900
+@@ -319,7 +319,7 @@ AC_CHECK_LIB([m],[pow])
+ 
+ AC_CHECK_HEADERS([gdbm.h sys/select.h sys/types.h sys/wait.h unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h sys/mman.h])
+ AC_CHECK_HEADERS([windows.h process.h conio.h tchar.h])
+-AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes"])
++AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes" -a "$host_os" != "cygwin"])
+ 
+ AC_SUBST(PARALLEL_SAFE)
+ if test "x$ac_cv_header_sys_mman_h" = "xyes"; then
+--- origsrc/libdbh2-5.0.15/examples/Makefile.am	2014-03-28 07:09:29.000000000 +0900
++++ src/libdbh2-5.0.15/examples/Makefile.am	2014-07-23 21:14:50.804071200 +0900
+@@ -19,7 +19,7 @@ bin_PROGRAMS = simple_hash
+ if WANT_GLIB
+ bin_PROGRAMS += filesystem
+ filesystem_SOURCES = filesystem.c ../src/dbh.c
+-filesystem_CFLAGS = -g @GLIB_CFLAGS@ -I../src `pkg-config gthread-2.0 --cflags`
++filesystem_CFLAGS = -g @GLIB_CFLAGS@ -I../src -I$(top_srcdir) `pkg-config gthread-2.0 --cflags`
+ filesystem_LDFLAGS = @GLIB_LIBS@ -lm -lpthread `pkg-config gthread-2.0 --libs`
+ endif
+ 
+@@ -30,7 +30,7 @@ endif
+ 
+ simple_hash_SOURCES =  simple_hash.c ../src/dbh.c ../src/dbh.h ../src/dbh_static.i  ../src/dbh_exported.i
+ 
+-simple_hash_CFLAGS = -g -I../src @GLIB_CFLAGS@ 
++simple_hash_CFLAGS = -g -I../src -I$(top_srcdir) @GLIB_CFLAGS@ 
+ simple_hash_LDADD =  -lm -lpthread @GLIB_LIBS@
+ 
+ if WANT_GLIB
+--- origsrc/libdbh2-5.0.15/src/Makefile.am	2014-03-27 23:09:40.000000000 +0900
++++ src/libdbh2-5.0.15/src/Makefile.am	2014-07-23 21:01:02.652898200 +0900
+@@ -22,11 +22,12 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ EXTRA_DIST = dbh.h.in 
+ 
+ if WINDOZE
+-#no_undefined = -no-undefined
+ #FIXME: list symbols to export here
+ export_symbols = -export-symbols 
+ endif
+-	
++
++no_undefined = -no-undefined
++
+ lib_LTLIBRARIES=libdbh.la
+ libdbh_la_SOURCES = dbh.c  		\
+ 		    dbh_static.i dbh_exported.i \
+--- origsrc/libdbh2-5.0.15/src/dbh.h	2014-03-28 07:10:12.000000000 +0900
++++ src/libdbh2-5.0.15/src/dbh.h	2014-07-23 21:10:07.451532200 +0900
+@@ -34,7 +34,7 @@ notice: MODIFICATIONS TO FILE "dbh.h" WI
+ #include <pthread.h>
+ #endif
+ 
+-#ifndef HAVE_WINDOWS_H
++#if !defined(HAVE_WINDOWS_H) || defined(__CYGWIN__)
+ #include <semaphore.h>
+ #endif
+ #ifdef __cplusplus
