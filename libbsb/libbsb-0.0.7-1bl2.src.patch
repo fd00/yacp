@@ -1,5 +1,5 @@
 --- origsrc/libbsb-0.0.7/Makefile.am	2004-12-22 22:01:19.000000000 +0900
-+++ src/libbsb-0.0.7/Makefile.am	2011-08-19 00:55:13.426157800 +0900
++++ src/libbsb-0.0.7/Makefile.am	2014-07-29 06:36:58.181728500 +0900
 @@ -9,8 +9,9 @@ SUBDIRS = . tests
  valgrind-check:
  	cd tests && $(MAKE) $(AM_MAKEFLAGS) $@
@@ -23,17 +23,17 @@
 +bsb2ppm_LDADD = libbsb.la
 +ppm2bsb_LDADD = libbsb.la
 +bsbfix_LDADD = libbsb.la
-+bsb2tif_LDADD = libbsb.la -ltiff -lm
-+tif2bsb_LDADD = libbsb.la -ltiff -lm
++bsb2tif_LDADD = libbsb.la $(LIBTIFF_LIBS)
++tif2bsb_LDADD = libbsb.la $(LIBTIFF_LIBS)
  
  # Under MinGW libpng needs -lz (doesn't hurt under other platforms)
 -bsb2png_LDADD = libbsb.a -lpng -lz -lm
-+bsb2png_LDADD = libbsb.la -lpng -lz -lm
++bsb2png_LDADD = libbsb.la $(LIBPNG_LIBS)
  
  if USE_MSVC
  # The '; true' is necessary to throw away the remaining arguments from the
 --- origsrc/libbsb-0.0.7/configure.ac	2004-12-22 22:11:36.000000000 +0900
-+++ src/libbsb-0.0.7/configure.ac	2011-08-19 00:33:27.897803100 +0900
++++ src/libbsb-0.0.7/configure.ac	2014-07-29 06:36:19.103603500 +0900
 @@ -8,7 +8,6 @@ dnl AC_PROG_CC finds CC and defaults CFL
  orig_cflags=$CFLAGS
  AC_PROG_CC
@@ -42,12 +42,36 @@
  dnl Default CFLAGS for developer's convenience and avoid ranlib with MSVC
  use_msvc=no
  case "$CC" in
-@@ -24,7 +23,7 @@ case "$CC" in
+@@ -24,29 +23,21 @@ case "$CC" in
  		if test x"$orig_cflags" != x"$CFLAGS" ; then
  			CFLAGS="-g -O2 -W -Wall -Werror"
  		fi
 -		AC_PROG_RANLIB
-+		LT_INIT([disable-static])
++		LT_INIT
  		;;
  esac
  AM_CONDITIONAL(USE_MSVC, test x"$use_msvc" = "xyes")
+ 
+ 
+ dnl If libtiff found, build TIFF programs: tif2bsb, bsb2tif
+-have_libtiff=no
+-AC_CHECK_HEADER([tiff.h],
+-	[AC_CHECK_LIB(tiff, TIFFOpen, [ have_libtiff=yes ],
+-		[], [-lm])]
+-	)
++PKG_CHECK_MODULES([LIBTIFF], [libtiff-4], [have_libtiff=yes], [have_libtiff=no])
+ AM_CONDITIONAL(HAVE_LIBTIFF, test x"$have_libtiff" = "xyes")
+ if test x"$have_libtiff" = "xno" ; then
+ 	AC_MSG_WARN([*** TIFF conversion tools will not be built ***])
+ fi
+ 
+ dnl If libpng found, build PNG programs: tif2png
+-have_libpng=no
+-AC_CHECK_HEADER([png.h],
+-	[AC_CHECK_LIB(png, png_init_io, [ have_libpng=yes ],
+-		[], [-lz -lm])]
+-	)
++PKG_CHECK_MODULES([LIBPNG], [libpng], [have_libpng=yes], [have_libpng=no])
+ AM_CONDITIONAL(HAVE_LIBPNG, test x"$have_libpng" = "xyes")
+ if test x"$have_libpng" = "xno" ; then
+ 	AC_MSG_WARN([*** PNG conversion tools will not be built ***])
