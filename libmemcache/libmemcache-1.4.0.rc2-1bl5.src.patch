@@ -1,0 +1,149 @@
+--- origsrc/libmemcache-1.4.0.rc2/configure.ac	2006-02-21 17:01:41.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/configure.ac	2014-08-02 20:33:22.909063000 +0900
+@@ -37,7 +37,7 @@ AC_SUBST(MEMCACHE_VERSION_NUMBER)
+ 
+ AM_INIT_AUTOMAKE(libmemcache,${MEMCACHE_VERSION})
+ 
+-dnl AM_PATH_CHECK()
++PKG_CHECK_MODULES([CHECK], [check >= 0.9.4])
+ 
+ dnl Checks for programs.
+ AC_C_CONST
+--- origsrc/libmemcache-1.4.0.rc2/include/memcache.h	2006-02-21 17:04:37.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/include/memcache.h	2014-08-02 20:38:48.617070800 +0900
+@@ -88,17 +88,17 @@ typedef uint32_t u_int32_t;
+ 
+ /* A handful of #define's for callbacks that discourage developers
+  * from improperly using the interface. */
+-#define MCM_CALLBACK_CTXT	md597f78ab4a96c3e71c3bb9fe036f37367
+-#define MCM_CALLBACK_KEY	md5783365dee46035fa36d8d9e6fe15da0f
+-#define MCM_CALLBACK_LEN	md54c1f40392e708222b8a25a4337cd05fd
+-#define MCM_CALLBACK_MC		md5646277084faa5a0f511793a728521ef5
+-#define MCM_CALLBACK_PTR	md57f5686851aeded9e00761d4aaaac20ee
+-#define MCM_CALLBACK_RES	md52e8a13a74753effc0f149a3ce900dc28
+-#define MCM_ERR_MASK		md5fc9f4e2249ad88de0081136fef04defa
+-#define MCM_ERR_FUNC_ERR_CTXT	md5096953205b8982964e25927bd8154148
+-#define MCM_ERR_FUNC_MC_CTXT	md521e67c8edeaac774b00d960e230c8686
+-#define MCM_KEY_VALID_KEY	md58926735b19e189407440aa1ba3ab1962
+-#define MCM_KEY_VALID_LEN	md5d6077405f1a7b35ddeac18ccc2a8f4c7
++#define MCM_CALLBACK_CTXT	md5md517e9be250407e8a37fb60180a76510d7
++#define MCM_CALLBACK_KEY	md5md5c029c91da86138a5ad1489427e1d71b0
++#define MCM_CALLBACK_LEN	md5md5a07b51f993c7254fcb18197565700326
++#define MCM_CALLBACK_MC		md5md5897e5e464792802e78a18e0fdd437b7c
++#define MCM_CALLBACK_PTR	md5md57b4ac6d3ad66bcb14ca7584f9a3eff43
++#define MCM_CALLBACK_RES	md5md5e252857f6eaeebe7e61573a2a5bfa564
++#define MCM_ERR_MASK		md5md51ba931bcdf1b3f122e9b86617155853e
++#define MCM_ERR_FUNC_ERR_CTXT	md5md5314e69877a17018a14789a1a7fb8025c
++#define MCM_ERR_FUNC_MC_CTXT	md5md57c7c80036a426539d819e35ebab5192f
++#define MCM_KEY_VALID_KEY	md5md5537bb21da67eb92e5898f9911c607217
++#define MCM_KEY_VALID_LEN	md5md55ecd4a9c706b439f8eebaca09eeadacf
+ 
+ /* Our initial read(2) buffer has to be long enough to read the
+  * first line of the response.  ie:
+--- origsrc/libmemcache-1.4.0.rc2/src/Makefile.am	2006-02-21 16:58:59.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/Makefile.am	2014-08-02 20:33:38.456914600 +0900
+@@ -1,5 +1,5 @@
+ INCLUDES = -I${top_srcdir}/include
+ lib_LTLIBRARIES = libmemcache.la
+ libmemcache_la_SOURCES = memcache.c buffer.c
+-libmemcache_la_LDFLAGS = -version-info @MEMCACHE_VERSION_INFO@
++libmemcache_la_LDFLAGS = -no-undefined -version-info @MEMCACHE_VERSION_INFO@
+ noinst_HEADERS = crc32_table.h
+--- origsrc/libmemcache-1.4.0.rc2/src/buffer.c	2006-02-21 16:58:59.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/buffer.c	2014-08-02 20:34:34.287969200 +0900
+@@ -259,7 +259,7 @@ mcm_buf_free(struct memcache_ctxt *ctxt,
+ }
+ 
+ 
+-inline u_int32_t
++extern inline u_int32_t
+ mcm_buf_len(const struct memcache_ctxt *ctxt, const struct memcache_buf *s) {
+   return s->len;
+ }
+@@ -425,13 +425,13 @@ mcm_buf_realloc(struct memcache_ctxt *ct
+ }
+ 
+ 
+-inline size_t
++extern inline size_t
+ mcm_buf_remain(const struct memcache_ctxt *ctxt, const struct memcache_buf *buf) {
+   return mcm_buf_size(ctxt, buf) - mcm_buf_len(ctxt, buf);
+ }
+ 
+ 
+-inline size_t
++extern inline size_t
+ mcm_buf_remain_off(const struct memcache_ctxt *ctxt, const struct memcache_buf *buf) {
+   return mcm_buf_len(ctxt, buf) - buf->off;
+ }
+--- origsrc/libmemcache-1.4.0.rc2/src/memcache.c	2006-02-21 16:58:58.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/src/memcache.c	2014-08-02 20:35:01.331914600 +0900
+@@ -278,7 +278,7 @@ mc_get(struct memcache *mc, struct memca
+ }
+ 
+ 
+-inline struct memcache_ctxt *
++extern inline struct memcache_ctxt *
+ mc_global_ctxt(void) {
+   return &mcGlobalCtxt;
+ }
+--- origsrc/libmemcache-1.4.0.rc2/test/benchmark/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/benchmark/Makefile.am	2014-08-02 20:35:28.975469200 +0900
+@@ -1,5 +1,4 @@
+ check_PROGRAMS = benchmark
+ benchmark_SOURCES = benchmark.c
+-benchmark_LDADD = -lmemcache
+-benchmark_LDFLAGS = -L${top_srcdir}/src
++benchmark_LDADD = $(top_builldir)/src/libmemcache.la
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/buffer_recycle/Makefile.am	2006-02-21 16:58:54.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/buffer_recycle/Makefile.am	2014-08-02 20:35:43.807500500 +0900
+@@ -1,5 +1,4 @@
+ check_PROGRAMS = buffer_recycle
+ buffer_recycle_SOURCES = buffer_recycle.c
+-buffer_recycle_LDADD = -lmemcache
+-buffer_recycle_LDFLAGS = -L${top_srcdir}/src
++buffer_recycle_LDADD = $(top_builldir)/src/libmemcache.la
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/long_val/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/long_val/Makefile.am	2014-08-02 20:35:52.137578600 +0900
+@@ -1,5 +1,4 @@
+ check_PROGRAMS = long_val
+ long_val_SOURCES = long_val.c
+-long_val_LDADD = -lmemcache
+-long_val_LDFLAGS = -L${top_srcdir}/src
++long_val_LDADD = $(top_builldir)/src/libmemcache.la
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/redundant_server/Makefile.am	2006-02-21 16:58:56.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/redundant_server/Makefile.am	2014-08-02 20:36:00.084844200 +0900
+@@ -1,5 +1,4 @@
+ check_PROGRAMS = redundant_server
+ redundant_server_SOURCES = redundant_server.c
+-redundant_server_LDADD = -lmemcache
+-redundant_server_LDFLAGS = -L${top_srcdir}/src
++redundant_server_LDADD = $(top_builldir)/src/libmemcache.la
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/regress/Makefile.am	2006-02-21 16:58:56.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/regress/Makefile.am	2014-08-02 20:36:08.352422400 +0900
+@@ -1,5 +1,4 @@
+ check_PROGRAMS = regress
+ regress_SOURCES = regress.c
+-regress_LDADD = -lmemcache
+-regress_LDFLAGS = -L${top_srcdir}/src
++regress_LDADD = $(top_builldir)/src/libmemcache.la
+ INCLUDES = -I${top_srcdir}/include
+--- origsrc/libmemcache-1.4.0.rc2/test/unit/Makefile.am	2006-02-21 16:58:55.000000000 +0900
++++ src/libmemcache-1.4.0.rc2/test/unit/Makefile.am	2014-08-02 20:37:01.885625500 +0900
+@@ -1,8 +1,6 @@
+ check_PROGRAMS=check_buffer
+ check_buffer_SOURCES=  check_buffer.c
+-check_buffer_INCLUDES= @CHECK_CFLAGS@
+-check_buffer_LIBS= @CHECK_LIBS@
+-check_buffer_LDADD = -lmemcache
+-check_buffer_LDFLAGS = -L${top_srcdir}/src
+-INCLUDES = -I${top_srcdir}/include @CHECK_CFLAGS@
+-LIBS = @CHECK_LIBS@
++check_buffer_INCLUDES= $(CHECK_CFLAGS)
++check_buffer_LDADD = $(CHECK_LIBS) $(top_builldir)/src/libmemcache.la
++INCLUDES = -I${top_srcdir}/include $(CHECK_CFLAGS)
++LIBS = $(CHECK_LIBS)
