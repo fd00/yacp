@@ -1,0 +1,56 @@
+--- origsrc/gsk-1.0.63/src/Makefile.am	2008-11-05 03:33:18.000000000 +0900
++++ src/gsk-1.0.63/src/Makefile.am	2014-08-03 18:17:27.671148400 +0900
+@@ -139,7 +139,7 @@ cycle.h
+ 
+ gskerror.lo: gskerror.inc
+ 
+-libgsk_1_0_la_LDFLAGS = @GLIB_LIBS@
++libgsk_1_0_la_LDFLAGS = -no-undefined @GLIB_LIBS@
+ libgsk_1_0_la_LIBADD = \
+ main-loops/libgsk-mainloops.la \
+ dns/libgsk-dns.la \
+--- origsrc/gsk-1.0.63/src/gskdaemonize.c	2006-05-18 03:39:35.000000000 +0900
++++ src/gsk-1.0.63/src/gskdaemonize.c	2014-08-03 18:22:46.039161700 +0900
+@@ -21,7 +21,9 @@ is_error_signal (guint signal_no)
+       || signal_no == SIGILL
+       || signal_no == SIGABRT
+       || signal_no == SIGSEGV
++#if defined(SIGIOT)
+       || signal_no == SIGIOT
++#endif
+       || signal_no == SIGBUS
+       || signal_no == SIGFPE;
+ }
+--- origsrc/gsk-1.0.63/src/gsktable-flat.c	2008-10-10 22:03:32.000000000 +0900
++++ src/gsk-1.0.63/src/gsktable-flat.c	2014-08-03 18:25:45.074821900 +0900
+@@ -23,7 +23,11 @@
+ 
+ #define FTELLO          ftello          /* TODO: track the offsets ourselves */
+ #define FSEEKO          fseeko
++#if defined(__CYGWIN__)
++#define FREAD           fread
++#else
+ #define FREAD           fread_unlocked
++#endif
+ 
+ /* debug invocation of cache-entry force */
+ #define DEBUG_CACHE_ENTRY_FORCE                 0
+--- origsrc/gsk-1.0.63/src/tests/Makefile.am	2008-10-10 22:03:19.000000000 +0900
++++ src/gsk-1.0.63/src/tests/Makefile.am	2014-08-03 18:34:03.869570800 +0900
+@@ -28,7 +28,6 @@ common_check_programs = \
+ 	test-wait-source \
+ 	test-gskstreamexternal \
+ 	test-rbtree-macros \
+-	test-serverclient \
+ 	test-store \
+ 	test-streamfd-guess-flags \
+ 	test-thread-pool \
+@@ -96,7 +95,7 @@ client-key.pem client.pem server-key.pem
+ make-ssl-pem-files
+ 
+ # --- How to build the programs. ---
+-INCLUDES = @GLIB_CFLAGS@ @GSK_DEBUG_CFLAGS@
++INCLUDES = -I$(top_srcdir)/src @GLIB_CFLAGS@ @GSK_DEBUG_CFLAGS@
+ 
+ # GLIB_LIBS should not be necessary, EXCEPT that
+ # on BSD -pthread is lost by libtool.  hack it up thusly.
