@@ -1,0 +1,92 @@
+--- origsrc/libeap-ikev2-0.2.1/acinclude.m4	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/acinclude.m4	2014-08-05 17:18:05.516052600 +0900
+@@ -8,7 +8,7 @@ dnl #    Defines the variable MYSQLLIB_D
+ dnl #    which the file libmysqlclient.a is to be found.
+ dnl #
+ dnl #
+-AC_DEFUN(AC_LOCATE_DIR,
++AC_DEFUN([AC_LOCATE_DIR],
+ [
+ dnl # If we have the program 'locate', then the problem of finding a
+ dnl # particular file becomes MUCH easier.
+@@ -71,7 +71,7 @@ dnl #  Look for a library in a number of
+ dnl #
+ dnl #  AC_SMART_CHECK_LIB(library, function)
+ dnl #
+-AC_DEFUN(AC_SMART_CHECK_LIB, [
++AC_DEFUN([AC_SMART_CHECK_LIB], [
+ 
+ sm_lib_safe=`echo "$1" | sed 'y%./+-%__p_%'`
+ sm_func_safe=`echo "$2" | sed 'y%./+-%__p_%'`
+@@ -148,7 +148,7 @@ dnl #  Look for a header file in a numbe
+ dnl #
+ dnl #  AC_SMART_CHECK_INCLUDE(foo.h, [ #include <other.h> ])
+ dnl #
+-AC_DEFUN(AC_SMART_CHECK_INCLUDE, [
++AC_DEFUN([AC_SMART_CHECK_INCLUDE], [
+ 
+ ac_safe=`echo "$1" | sed 'y%./+-%__pm%'`
+ AC_MSG_CHECKING([for $1])
+--- origsrc/libeap-ikev2-0.2.1/configure.in	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/configure.in	2014-08-05 17:18:39.969177600 +0900
+@@ -1,6 +1,6 @@
+-AC_INIT(Makefile.in)
++AC_INIT([libeap-ikev2], [0.2.1])
+ AM_CONFIG_HEADER(src/config.h)
+-AM_INIT_AUTOMAKE(libeap-ikev2,0.2.1)
++AM_INIT_AUTOMAKE
+ AM_MAINTAINER_MODE
+ AC_PROG_LIBTOOL
+ 
+@@ -28,36 +28,14 @@ dnl Checks for header files.
+ AC_HEADER_STDC
+ 
+ AC_CHECK_HEADERS(netinet/in.h)
+-AC_CHECK_HEADERS(winsock.h)
+ AC_CHECK_HEADERS(stdint.h)
+ AC_CHECK_HEADERS(pthread.h)
++if test "$host_os" != "cygwin"; then
++	AC_CHECK_HEADERS(winsock.h)
++fi
+ 
+-dnl #
+-dnl # extra argument: --openssl-includes=dir
+-dnl #
+-AC_ARG_WITH(openssl-includes,
+-[  --with-openssl-includes=DIR      Directory to look for OpenSSL include files],
+-[ case "$withval" in
+-    *) OPENSSL_INCLUDE="$withval"
+-	OPENSSL_INCLUDE_FLAG=-I"$OPENSSL_INCLUDE"
+-	;;
+-  esac ]
+-)
+-AC_SUBST(OPENSSL_INCLUDE_FLAG)
+-
+-dnl #
+-dnl # extra argument: --openssl-libraries=dir
+-dnl #
+-AC_ARG_WITH(openssl-libraries,
+-[  --with-openssl-libraries=DIR     Directory to look for OpenSSL library files],
+-[ case "$withval" in
+-    *) OPENSSL_LIBS="$withval"
+-	;;
+-  esac ]
+-)
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+-old_LIBS=$LIBS
+-LIBS=-lssl
+ if test  "x$OPENSSL_LIBS" != "x"; then
+     LIBS="$OPENSSL_LIBS $LIBS"
+ fi    
+--- origsrc/libeap-ikev2-0.2.1/src/Makefile.am	2006-09-16 08:26:08.000000000 +0900
++++ src/libeap-ikev2-0.2.1/src/Makefile.am	2014-08-05 17:16:40.156677600 +0900
+@@ -44,6 +44,7 @@ libeap_ikev2_la_SOURCES= auth.c \
+ 			 utils.c \
+ 			 tiger.c
+ 
+-
++libeap_ikev2_la_LDFLAGS = -no-undefined
++libeap_ikev2_la_LIBADD = $(OPENSSL_LIBS)
+ 
+ MAINTAINERCLEANFILES=Makefile.in
