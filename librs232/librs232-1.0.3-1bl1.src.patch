@@ -1,0 +1,51 @@
+--- origsrc/librs232-1.0.3/bindings/lua/Makefile.am	2012-05-10 22:29:17.000000000 +0900
++++ src/librs232-1.0.3/bindings/lua/Makefile.am	2014-10-25 21:39:17.230714600 +0900
+@@ -6,11 +6,11 @@ else
+ AM_CFLAGS_EXTRA = -O2
+ endif
+ 
+-INCLUDES = $(all_includes) -I$(top_srcdir)/include
++AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
+ AM_CFLAGS = -Wall -ansi -pedantic -W -Wmissing-prototypes -Wmissing-declarations -Werror -Wno-unused-but-set-variable -std=gnu99 $(AM_CFLAGS_EXTRA) $(LUA_CFLAGS)
+ 
+ lib_LTLIBRARIES = luars232.la
+ luars232_la_LIBADD = ../../src/librs232.la $(LUA_LFLAGS)
+-luars232_la_LDFLAGS = -Wc,-nostartfiles -version-info $(LIBVERSION) -module
++luars232_la_LDFLAGS = -no-undefined -Wc,-nostartfiles -module -avoid-version
+ luars232_la_SOURCES = luars232.c
+ 
+--- origsrc/librs232-1.0.3/configure.in	2012-05-10 22:29:17.000000000 +0900
++++ src/librs232-1.0.3/configure.in	2014-10-25 21:30:53.772161800 +0900
+@@ -22,7 +22,7 @@
+ #
+ 
+ AC_PREREQ(2.61)
+-AC_INIT([librs232], [0.0.1], [ynezz@true.cz])
++AC_INIT([librs232], [1.0.3], [ynezz@true.cz])
+ AM_INIT_AUTOMAKE([1.8 foreign])
+ AC_PROG_CC
+ AM_PROG_CC_C_O
+--- origsrc/librs232-1.0.3/src/Makefile.am	2012-05-10 22:29:17.000000000 +0900
++++ src/librs232-1.0.3/src/Makefile.am	2014-10-25 21:30:24.011419600 +0900
+@@ -10,7 +10,7 @@ INCLUDES = $(all_includes) -I$(top_srcdi
+ AM_CFLAGS = -Wall -ansi -pedantic -W -Wmissing-prototypes -Wmissing-declarations -Werror -std=gnu99 $(AM_CFLAGS_EXTRA)
+ 
+ lib_LTLIBRARIES = librs232.la
+-librs232_la_LDFLAGS = -Wc,-nostartfiles -version-info $(LIBVERSION)
++librs232_la_LDFLAGS = -no-undefined -Wc,-nostartfiles -version-info $(LIBVERSION)
+ librs232_la_SOURCES = rs232.c rs232_posix.c
+ 
+ if ENABLE_DEBUG
+--- origsrc/librs232-1.0.3/src/rs232_posix.c	2012-05-10 22:29:17.000000000 +0900
++++ src/librs232-1.0.3/src/rs232_posix.c	2014-10-25 21:35:13.804388400 +0900
+@@ -39,6 +39,10 @@
+ 
+ #include "librs232/rs232.h"
+ 
++#if defined(TIOCINQ) && !defined(FIONREAD)
++#define FIONREAD TIOCINQ
++#endif
++
+ struct rs232_port_t *
+ rs232_init(void)
+ {
