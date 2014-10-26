@@ -1,0 +1,86 @@
+--- origsrc/libmorphine-1.0.3/CMakeLists.txt	2012-03-23 06:12:05.000000000 +0900
++++ src/libmorphine-1.0.3/CMakeLists.txt	2014-10-26 12:41:15.347296800 +0900
+@@ -13,7 +13,8 @@ message("MinSizeRel FLAGS: ${CMAKE_C_FLA
+ message("RelWithDebInfo FLAGS: ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+ 
+ find_package(LibZt)
+-find_package(LibJSONC)
++find_package(PkgConfig)
++pkg_check_modules(LIBJSONC json-c)
+ find_package(Lua)
+ find_package(LibZ)
+ 
+@@ -43,7 +44,7 @@ include_directories(
+ 	${LIBZT_INCLUDE_DIR}
+ 	${LUA_INCLUDE_DIR}
+ 	${LUALIB_INCLUDE_DIR}
+-	${LIBJSONC_INCLUDE_DIR}
++	${LIBJSONC_INCLUDE_DIRS}
+ 	${LIBZ_INCLUDE_DIR}
+ )
+ 
+@@ -51,17 +52,18 @@ set(MORPHINE_EXTERNAL_LIBS
+ 	${LIBZT_LIBRARIES}
+ 	${LIBJSONC_LIBRARIES}
+ 	${LIBZ_LIBRARIES}
++	${LUA_LIBRARIES}
+ )
+ 
+-add_library(libmorphine STATIC ${MORPHINE_SOURCES})
+-set_target_properties(libmorphine PROPERTIES OUTPUT_NAME "morphine")
++add_library(libmorphine SHARED ${MORPHINE_SOURCES})
++set_target_properties(libmorphine PROPERTIES OUTPUT_NAME "morphine" SOVERSION 0)
+ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+     set(SYS_EXTRA_LIBS Ws2_32)
+ endif()
+ 
+ target_link_libraries(libmorphine ${MORPHINE_EXTERNAL_LIBS} ${SYS_EXTRA_LIBS})
+ 
+-install (TARGETS libmorphine DESTINATION lib)
++install (TARGETS libmorphine RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install (FILES morphine.h DESTINATION include)
+ install (FILES include/morphine/base.h DESTINATION include/morphine)
+ install (FILES include/morphine/morph.h DESTINATION include/morphine)
+--- origsrc/libmorphine-1.0.3/CMakeModules/BaseConfig.cmake	2012-03-23 06:12:05.000000000 +0900
++++ src/libmorphine-1.0.3/CMakeModules/BaseConfig.cmake	2014-10-26 12:39:35.816046800 +0900
+@@ -1,5 +1,5 @@
+ if(CMAKE_COMPILER_IS_GNUCC)
+-    SET(RSN_BASE_C_FLAGS "-std=c99 -Wall") # -Wextra")   #-pedantic
++    SET(RSN_BASE_C_FLAGS "-std=gnu99 -Wall") # -Wextra")   #-pedantic
+     SET(RSN_BASE_CXX_FLAGS "-Wall") # -Wextra")
+ 
+     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${RSN_BASE_C_FLAGS}")
+@@ -20,7 +20,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
+       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshorten-64-to-32 -D_BSD_SOURCE")
+     endif(APPLE)
+     if (UNIX)
++        if (NOT CYGWIN)
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC ")
++        endif (NOT CYGWIN)
+         if (NOT APPLE)
+             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_BSD_SOURCE -D_POSIX_C_SOURCE=199309L")
+         endif(NOT APPLE)
+--- origsrc/libmorphine-1.0.3/include/morphine/morph/json.h	2012-03-23 06:12:05.000000000 +0900
++++ src/libmorphine-1.0.3/include/morphine/morph/json.h	2014-10-26 12:38:40.087531200 +0900
+@@ -1,7 +1,7 @@
+ #ifndef __CHNO_MORPH_JSON_H__
+ #define __CHNO_MORPH_JSON_H__
+ /* includes */
+-#include <json/json.h>
++#include <json.h>
+ #include <zt.h>
+ 
+ BEGIN_C_DECLS
+--- origsrc/libmorphine-1.0.3/morph/json.c	2012-03-23 06:12:05.000000000 +0900
++++ src/libmorphine-1.0.3/morph/json.c	2014-10-26 12:37:57.388312500 +0900
+@@ -3,8 +3,8 @@
+ #include <string.h>
+ #include <stdint.h>
+ #include <errno.h>
+-#include <json/json.h>
+-#include <json/json_object_private.h>
++#include <json.h>
++#include <json_object_private.h>
+ 
+ #include "morphine/util.h"
+ #include "morphine/base.h"
