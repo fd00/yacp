@@ -1,0 +1,117 @@
+--- origsrc/libzt-1.6.9/CMakeModules/BaseConfig.cmake	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/CMakeModules/BaseConfig.cmake	2014-10-26 10:23:44.535011100 +0900
+@@ -6,7 +6,7 @@ IF(NOT CMAKE_BUILD_TYPE)
+ ENDIF(NOT CMAKE_BUILD_TYPE)
+ 
+ if(CMAKE_COMPILER_IS_GNUCC)
+-    SET(RSN_BASE_C_FLAGS "-std=c99 -pedantic -Wall -Wextra -Wstrict-prototypes -Wno-unused-parameter")
++    SET(RSN_BASE_C_FLAGS "-std=gnu99 -pedantic -Wall -Wextra -Wstrict-prototypes -Wno-unused-parameter")
+     SET(RSN_BASE_CXX_FLAGS "-Wall")
+ 
+     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${RSN_BASE_C_FLAGS} -DLUA_USE_MKSTEMP")
+@@ -32,7 +32,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
+             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+         endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+ 
++        if (NOT CYGWIN)
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
++        endif (NOT CYGWIN)
+     endif(UNIX)
+ 
+     if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+--- origsrc/libzt-1.6.9/src/CMakeLists.txt	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/src/CMakeLists.txt	2014-10-26 10:08:44.123853100 +0900
+@@ -111,6 +111,7 @@ if (WIN32)
+ endif(WIN32)
+ 
+ install(TARGETS ${ZT_INSTALL_TARGETS}
++        RUNTIME DESTINATION bin
+         ARCHIVE DESTINATION lib
+         LIBRARY DESTINATION lib)
+ 
+--- origsrc/libzt-1.6.9/src/zt_cstr.h	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/src/zt_cstr.h	2014-10-26 10:01:26.013501500 +0900
+@@ -69,7 +69,7 @@ typedef int (*zt_hexdump_output)(void *
+ int zt_hexdump_default_printer(UNUSED void * ctx, size_t addr, char * hex, char * txt);
+ size_t zt_hexdump_str(char * data, size_t size,
+                       zt_hexdump_output output, void * odata);
+-size_t zt_hexdump(int getchar(void *), void * data,
++size_t zt_hexdump(int _getchar(void *), void * data,
+                   zt_hexdump_output output, void * odata);
+ 
+ extern size_t zt_binary_to_hex(void *data, size_t dlen, char *hex, size_t hlen);
+--- origsrc/libzt-1.6.9/src/zt_progname.c	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/src/zt_progname.c	2014-10-26 10:05:46.799634300 +0900
+@@ -50,7 +50,7 @@ zt_progname(const char *name, int opts)
+ }
+ 
+ 
+-#if defined(linux) || defined(__linux__) || (defined(sun) && defined(svr4)) || defined(BSD)
++#if defined(linux) || defined(__linux__) || (defined(sun) && defined(svr4)) || defined(BSD) || defined(__CYGWIN__)
+ static ssize_t
+ _proc_get_path(char * result, size_t size) {
+     pid_t     pid;
+@@ -59,7 +59,7 @@ _proc_get_path(char * result, size_t siz
+     pid = getpid();
+ 
+     /* FIXME: switch to "supported" definitions ie if defined(PROC_PID_PATH) ... */
+-# if defined(linux) || defined(__linux__)
++# if defined(linux) || defined(__linux__) || defined(__CYGWIN__)
+     /* check proc */
+     snprintf(path, PATH_MAX, "/proc/%d/exe", pid);
+ # elif defined(sun) && defined(svr4)
+--- origsrc/libzt-1.6.9/src/zt_uuid.c	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/src/zt_uuid.c	2014-10-26 10:12:19.920728100 +0900
+@@ -500,6 +500,10 @@ base62_encode_int64(uint64_t in, char *
+     return ret;
+ }
+ 
++#if defined(__CYGWIN__)
++#define powl pow
++#endif
++
+ static int
+ base62_decode_int64(const char * in, size_t ilen, uint64_t * out) {
+     uint64_t    v    = 0;
+--- origsrc/libzt-1.6.9/tests/base_test.c	2014-03-06 06:58:20.000000000 +0900
++++ src/libzt-1.6.9/tests/base_test.c	2014-10-26 10:18:30.665870500 +0900
+@@ -5,6 +5,8 @@
+ #include <ctype.h>
+ #include <zt_base.h>
+ 
++#include <alloca.h>
++
+ #define test_encoding(_base, _data, _len, _result1, _result2)                                   \
+     do { unsigned char * cdata = (unsigned char *)_data;                                        \
+          char          * result = malloc(20);                                                   \
+@@ -48,6 +50,30 @@
+          ZT_UNIT_ASSERT(test, strcmp(result, (char *)_data) == 0);                             \
+          ZT_UNIT_ASSERT(test, strlen(result) == len); zt_free(result);} while (0)
+ 
++#if defined(__CYGWIN__)
++#include <sys/time.h>
++#include <fcntl.h>
++#include <stdlib.h>
++#include <time.h>
++#include <unistd.h>
++static void srandomdev(void)
++{
++        struct timeval tv;
++        unsigned int seed;
++        int fd;
++
++        if ((fd = open("/dev/urandom", O_RDONLY)) >= 0 ||
++            (fd = open("/dev/random", O_RDONLY)) >= 0) {
++                read(fd, &seed, sizeof seed);
++                close(fd);
++        } else {
++                gettimeofday(&tv, NULL);
++                seed = (getpid() << 16) ^ tv.tv_sec ^ tv.tv_usec;
++        }
++        srandom(seed);
++}
++#endif
++
+ static void
+ encoding_tests(struct zt_unit_test * test, void * _data UNUSED) {
+     char * data = NULL;
