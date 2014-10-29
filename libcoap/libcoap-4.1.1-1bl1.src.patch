@@ -1,0 +1,71 @@
+--- origsrc/libcoap-4.1.1/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libcoap-4.1.1/Makefile.am	2014-10-29 21:55:44.259421900 +0900
+@@ -0,0 +1,41 @@
++
++bin_PROGRAMS = coap-server coap-client coap-rd coap-etsi_iot_01
++coap_server_SOURCES = examples/server.c
++coap_server_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++coap_server_CPPFLAGS = -I$(top_srcdir)
++coap_server_LDADD = libcoap.la
++coap_client_SOURCES = examples/client.c
++coap_client_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++coap_client_CPPFLAGS = -I$(top_srcdir)
++coap_client_LDADD = libcoap.la
++coap_rd_SOURCES = examples/rd.c
++coap_rd_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++coap_rd_CPPFLAGS = -I$(top_srcdir)
++coap_rd_LDADD = libcoap.la
++coap_etsi_iot_01_SOURCES = examples/etsi_iot_01.c
++coap_etsi_iot_01_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++coap_etsi_iot_01_CPPFLAGS = -I$(top_srcdir)
++coap_etsi_iot_01_LDADD = libcoap.la
++
++check_PROGRAMS = testdriver
++testdriver_SOURCES = \
++	tests/test_uri.c tests/test_options.c tests/test_pdu.c \
++	tests/test_error_response.c tests/test_sendqueue.c \
++	tests/test_wellknown.c tests/testdriver.c
++TESTS = $(check_PROGRAMS)
++testdriver_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++testdriver_CPPFLAGS = -I$(top_srcdir) $(CUNIT_CFLAGS)
++testdriver_LDADD = libcoap.la $(CUNIT_LIBS)
++
++pkginclude_HEADERS = \
++	coap.h config.h debug.h pdu.h net.h encode.h uri.h coap_list.h mem.h \
++	str.h option.h bits.h uthash.h utlist.h resource.h hashkey.h async.h \
++	subscribe.h block.h address.h prng.h coap_time.h t_list.h
++
++lib_LTLIBRARIES = libcoap.la
++libcoap_la_CFLAGS = -Wall -Wextra -std=c99 -pedantic
++libcoap_la_SOURCES = \
++	pdu.c net.c debug.c encode.c uri.c coap_list.c resource.c hashkey.c \
++	str.c option.c async.c subscribe.c block.c
++libcoap_la_LDFLAGS = -no-undefined
++
+--- origsrc/libcoap-4.1.1/configure.in	2014-02-05 23:10:19.000000000 +0900
++++ src/libcoap-4.1.1/configure.in	2014-10-29 21:38:31.016257800 +0900
+@@ -9,6 +9,7 @@
+ AC_PREREQ([2.65])
+ AC_INIT([libcoap], [4.1.1])
+ AC_CONFIG_SRCDIR([coap.h])
++AM_INIT_AUTOMAKE
+ 
+ # First check for Contiki build to quit configure before any other test
+ AC_ARG_WITH(contiki,
+@@ -22,14 +23,14 @@ AC_ARG_WITH(contiki,
+ # Checks for programs.
+ AC_PROG_MAKE_SET
+ AC_PROG_CC
+-AC_PROG_RANLIB
++LT_INIT
+ AC_PATH_PROG(DOXYGEN, doxygen, [:])
+ AC_PATH_PROG(ETAGS, etags, [/bin/false])
+ 
+ AC_C_BIGENDIAN
+ 
+ # Checks for libraries.
+-AC_CHECK_LIB([coap], [coap_new_pdu])
++PKG_CHECK_MODULES([CUNIT], [cunit])
+ 
+ AC_SEARCH_LIBS([gethostbyname], [nsl])
+ AC_SEARCH_LIBS([socket], [socket])
