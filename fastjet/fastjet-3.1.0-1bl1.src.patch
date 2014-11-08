@@ -1,6 +1,6 @@
---- origsrc/fastjet-3.0.6/configure.ac	2014-03-09 11:33:55.372405000 +0900
-+++ src/fastjet-3.0.6/configure.ac	2014-03-09 13:29:18.360230600 +0900
-@@ -87,6 +87,8 @@ AC_STDC_HEADERS
+--- origsrc/fastjet-3.1.0/configure.ac	2014-09-30 16:08:04.000000000 +0900
++++ src/fastjet-3.1.0/configure.ac	2014-11-08 21:45:31.227126000 +0900
+@@ -90,6 +90,8 @@ AC_STDC_HEADERS
  dnl set the default destination directory
  AC_PREFIX_DEFAULT(/usr/local)
  
@@ -9,16 +9,29 @@
  dnl-------------------------------------------------------------------
  dnl initialize compilation and link flags to set in fastjet-config
  dnl-------------------------------------------------------------------
-@@ -177,6 +179,8 @@ AC_ARG_ENABLE(cgal,
-        [ENABLE_CGAL_FLAG="no"])
- dnl if asked for, check if the CGAL library can be used
- if [[ "x${ENABLE_CGAL_FLAG}" == "xyes" ]] ; then
+@@ -187,6 +189,8 @@ fi
+ 
+ dnl update compilation/link flags for the CGAL lib
+ if [[ "x$ENABLE_CGAL_FLAG" == "xyes" ]] ; then
 +   BOOST_REQUIRE
 +   BOOST_THREADS
-    dnl if the search for CGAL has been explicitly asked and not found, return an error
-    dnl ACX_CHECK_CGAL([],[ENABLE_CGAL_FLAG="no"])
-    ACX_CHECK_CGAL([],AC_MSG_ERROR([CGAL explicitly requested and not found or not functional]))
-@@ -314,11 +318,6 @@ ACX_CHECK_PLUGIN(GridJet, gridjet, GRIDJ
+    AM_CXXFLAGS=${AM_CXXFLAGS}" $CGAL_CPPFLAGS "
+    CONFIG_LIBS=${CONFIG_LIBS}" $CGAL_LDFLAGS $CGAL_LIBS "
+ else
+@@ -281,6 +285,12 @@ if [[ "x$monolithic" == "xyes" ]] ; then
+ fi
+ 
+ dnl SISCone
++AC_ARG_WITH(bundle-siscone,
++	[  --with-bundle-siscone  Build the bundled SISCone library [default=no]],
++	[bundle_siscone=$withval],
++	[bundle_siscone=no])
++AM_CONDITIONAL(BUNDLE_SISCONE, test x$bundle_siscone != xno)
++
+ ACX_CHECK_PLUGIN(SISCone, siscone, SISCONE, yes,
+ 	         [CONFIG_LIBS_PLUGINS=${CONFIG_LIBS_PLUGINS}" -lsiscone_spherical -lsiscone"
+                   CONFIG_LIBS_PLUGINS_STATIC=${CONFIG_LIBS_PLUGINS_STATIC}" \${installationdir}/lib/libsiscone.a \${installationdir}/lib/libsiscone_spherical.a"])
+@@ -329,11 +339,6 @@ ACX_CHECK_PLUGIN(GridJet, gridjet, GRIDJ
  dnl end of plugin section --- don't modify this line
  
  dnl-------------------------------------------------------------------
@@ -30,8 +43,8 @@
  dnl add Fortran flags if any plugin that needs it is enabled
  dnl-------------------------------------------------------------------
  if [[ "x$ENABLE_PXCONE" == "xyes" ]] ; then
---- origsrc/fastjet-3.0.6/example/Makefile.am	2014-03-09 11:33:55.388030000 +0900
-+++ src/fastjet-3.0.6/example/Makefile.am	2014-03-09 11:33:58.903655000 +0900
+--- origsrc/fastjet-3.1.0/example/Makefile.am	2011-10-03 17:07:56.000000000 +0900
++++ src/fastjet-3.1.0/example/Makefile.am	2014-11-08 21:47:17.914626000 +0900
 @@ -41,9 +41,9 @@ noinst_PROGRAMS += 03-plugin
  03_plugin_SOURCES = 03-plugin.cc
  #03_plugin_SHORTNAME = 03
@@ -39,12 +52,18 @@
 -03_plugin_LDADD = ../src/libfastjet.la $(CGAL_LIBS)
 +03_plugin_LDADD = $(CGAL_LIBS)
  03_plugin_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
--03_plugin_LDADD += ../plugins/SISCone/libSISConePlugin.la
+-03_plugin_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
 +03_plugin_LDADD += ../plugins/SISCone/libSISConePlugin.la ../src/libfastjet.la
  else
  EXTRA_DIST += 03-plugin.cc
  endif
-@@ -130,7 +130,7 @@ endif
+@@ -125,17 +125,17 @@ fastjet_areas_CXXFLAGS = $(AM_CXXFLAGS)
+ fastjet_areas_LDADD = ../src/libfastjet.la $(CGAL_LIBS)
+ if BUILD_PLUGIN_SISCONE
+ fastjet_areas_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
+-fastjet_areas_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++fastjet_areas_LDADD += ../plugins/SISCone/libSISConePlugin.la
+ endif
  
  fastjet_timing_plugins_SOURCES = fastjet_timing_plugins.cc CmdLine.cc
  fastjet_timing_plugins_CXXFLAGS = $(AM_CXXFLAGS) $(CGAL_CPPFLAGS) -I$(srcdir)/../include
@@ -53,16 +72,22 @@
  fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../tools
  fastjet_timing_plugins_LDADD += ../tools/libfastjettools.la 
  if BUILD_PLUGIN_SISCONE
+ fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
+-fastjet_timing_plugins_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++fastjet_timing_plugins_LDADD += ../plugins/SISCone/libSISConePlugin.la
+ endif
+ if BUILD_PLUGIN_CDFCONES
+ fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/CDFCones
 @@ -177,6 +177,7 @@ if BUILD_PLUGIN_GRIDJET
  fastjet_timing_plugins_CXXFLAGS += -I${srcdir}/../plugins/GridJet
  fastjet_timing_plugins_LDADD += ../plugins/GridJet/libGridJetPlugin.la
  endif
-+fastjet_timing_plugins_LDADD += $(top_builddir)/src/libfastjet.la
++fastjet_timing_plugins_LDADD += ../src/libfastjet.la
  
  # add entries for other plugins here
  
---- origsrc/fastjet-3.0.6/plugins/ATLASCone/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/ATLASCone/Makefile.am	2014-03-09 13:43:19.486180300 +0900
+--- origsrc/fastjet-3.1.0/plugins/ATLASCone/Makefile.am	2011-11-26 02:11:06.000000000 +0900
++++ src/fastjet-3.1.0/plugins/ATLASCone/Makefile.am	2014-11-08 21:47:56.279860400 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libATLASConePlugin.la
  endif
  libATLASConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -71,8 +96,8 @@
 +libATLASConePlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/CDFCones/Makefile.am	2012-06-13 23:14:51.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/CDFCones/Makefile.am	2014-03-09 13:38:33.549024400 +0900
+--- origsrc/fastjet-3.1.0/plugins/CDFCones/Makefile.am	2011-04-12 17:28:42.000000000 +0900
++++ src/fastjet-3.1.0/plugins/CDFCones/Makefile.am	2014-11-08 21:48:25.109938500 +0900
 @@ -7,6 +7,7 @@ lib_LTLIBRARIES = libCDFConesPlugin.la
  endif
  libCDFConesPlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include -I$(srcdir)/CDFcode
@@ -82,8 +107,8 @@
 +libCDFConesPlugin_la_LDFLAGS = -no-undefined
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/CMSIterativeCone/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/CMSIterativeCone/Makefile.am	2014-03-09 13:44:48.162938200 +0900
+--- origsrc/fastjet-3.1.0/plugins/CMSIterativeCone/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/CMSIterativeCone/Makefile.am	2014-11-08 21:48:45.127516700 +0900
 @@ -7,6 +7,9 @@ lib_LTLIBRARIES = libCMSIterativeConePlu
  endif
  libCMSIterativeConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -94,8 +119,8 @@
  noinst_HEADERS = SortByEt.h
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/D0RunICone/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/D0RunICone/Makefile.am	2014-03-09 13:46:10.676610000 +0900
+--- origsrc/fastjet-3.1.0/plugins/D0RunICone/Makefile.am	2010-11-02 18:40:34.000000000 +0900
++++ src/fastjet-3.1.0/plugins/D0RunICone/Makefile.am	2014-11-08 21:49:03.160719800 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libD0RunIConePlugin.la
  endif
  libD0RunIConePlugin_la_CXXFLAGS = ${AM_CXXFLAGS} -I$(srcdir) -I$(srcdir)/../../include
@@ -104,8 +129,8 @@
 +libD0RunIConePlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static ConeClusterAlgo.hpp HepEntityI.h HepEntityIpre96.h inline_maths.h
---- origsrc/fastjet-3.0.6/plugins/D0RunIICone/Makefile.am	2012-06-13 23:14:51.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/D0RunIICone/Makefile.am	2014-03-09 13:40:52.392658800 +0900
+--- origsrc/fastjet-3.1.0/plugins/D0RunIICone/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/D0RunIICone/Makefile.am	2014-11-08 21:49:19.836501000 +0900
 @@ -7,7 +7,8 @@ lib_LTLIBRARIES = libD0RunIIConePlugin.l
  endif
  libD0RunIIConePlugin_la_CXXFLAGS = $(D0_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -116,8 +141,8 @@
  
  #EXTRA_DIST = makefile.static pxcone.h
  EXTRA_DIST = ConeJetInfo.hpp  ConeSplitMerge.hpp  ILConeAlgorithm.hpp  ProtoJet.hpp HepEntity.h  inline_maths.h
---- origsrc/fastjet-3.0.6/plugins/EECambridge/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/EECambridge/Makefile.am	2014-03-09 13:43:59.989110000 +0900
+--- origsrc/fastjet-3.1.0/plugins/EECambridge/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/EECambridge/Makefile.am	2014-11-08 21:49:33.682204200 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libEECambridgePlugin.l
  endif
  libEECambridgePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -126,8 +151,8 @@
 +libEECambridgePlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/GridJet/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/GridJet/Makefile.am	2014-03-09 13:46:45.068211600 +0900
+--- origsrc/fastjet-3.1.0/plugins/GridJet/Makefile.am	2011-07-01 02:03:13.000000000 +0900
++++ src/fastjet-3.1.0/plugins/GridJet/Makefile.am	2014-11-08 21:49:50.684157300 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libGridJetPlugin.la
  endif
  libGridJetPlugin_la_CXXFLAGS = ${AM_CXXFLAGS} -I$(srcdir) -I$(srcdir)/../../include
@@ -136,17 +161,18 @@
 +libGridJetPlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/Jade/Makefile.am	2012-06-13 23:14:51.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/Jade/Makefile.am	2014-03-09 11:33:58.934905000 +0900
-@@ -7,5 +7,6 @@ lib_LTLIBRARIES = libJadePlugin.la
+--- origsrc/fastjet-3.1.0/plugins/Jade/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/Jade/Makefile.am	2014-11-08 22:16:47.266166300 +0900
+@@ -7,5 +7,7 @@ lib_LTLIBRARIES = libJadePlugin.la
  endif
  libJadePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
  libJadePlugin_la_SOURCES = JadePlugin.cc
-+libJadePlugin_la_LDLFAGS = -no-undefined
++libJadePlugin_la_LDFLAGS = -no-undefined
++libJadePlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/Makefile.am	2012-06-13 23:14:53.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/Makefile.am	2014-03-09 11:33:58.934905000 +0900
+--- origsrc/fastjet-3.1.0/plugins/Makefile.am	2011-07-01 02:03:13.000000000 +0900
++++ src/fastjet-3.1.0/plugins/Makefile.am	2014-11-08 21:51:18.808180700 +0900
 @@ -43,8 +43,9 @@ SUBDIRS += .
  if MONOLITHIC_PLUGINS
  lib_LTLIBRARIES = libfastjetplugins.la
@@ -167,18 +193,19 @@
  endif
  if BUILD_PLUGIN_D0RUNIICONE
  libfastjetplugins_la_LIBADD += D0RunIICone/libD0RunIIConePlugin.la
---- origsrc/fastjet-3.0.6/plugins/NestedDefs/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/NestedDefs/Makefile.am	2014-03-09 13:41:42.380711600 +0900
+--- origsrc/fastjet-3.1.0/plugins/NestedDefs/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/NestedDefs/Makefile.am	2014-11-08 21:51:42.684157300 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libNestedDefsPlugin.la
  endif
  libNestedDefsPlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
  libNestedDefsPlugin_la_SOURCES = NestedDefsPlugin.cc
+-
 +libNestedDefsPlugin_la_LDFLAGS = -no-undefined
 +libNestedDefsPlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
- 
++ 
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/PxCone/Makefile.am	2012-06-13 23:14:53.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/PxCone/Makefile.am	2014-03-09 13:39:57.817579100 +0900
+--- origsrc/fastjet-3.1.0/plugins/PxCone/Makefile.am	2011-04-12 17:28:42.000000000 +0900
++++ src/fastjet-3.1.0/plugins/PxCone/Makefile.am	2014-11-08 21:51:57.924391700 +0900
 @@ -7,6 +7,8 @@ lib_LTLIBRARIES = libPxConePlugin.la
  endif
  libPxConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -188,20 +215,37 @@
  
  EXTRA_DIST = makefile.static pxcone.h
  
---- origsrc/fastjet-3.0.6/plugins/SISCone/Makefile.am	2014-03-09 11:33:55.388030000 +0900
-+++ src/fastjet-3.0.6/plugins/SISCone/Makefile.am	2014-03-09 13:37:27.647211100 +0900
-@@ -16,7 +16,9 @@ libSISConePlugin_la_LIBADD = \
- else
- libSISConePlugin_la_LIBADD = -lsiscone -lsiscone_spherical
- endif
-+libSISConePlugin_la_LIBADD += $(top_builddir)/src/libfastjet.la
+--- origsrc/fastjet-3.1.0/plugins/SISCone/Makefile.am	2014-09-05 19:08:37.000000000 +0900
++++ src/fastjet-3.1.0/plugins/SISCone/Makefile.am	2014-11-08 22:13:23.054252200 +0900
+@@ -1,11 +1,24 @@
+-SUBDIRS = siscone fastjet .
++SUBDIRS = fastjet .
  
- libSISConePlugin_la_SOURCES = SISConePlugin.cc SISConeSphericalPlugin.cc
+ if MONOLITHIC_PLUGINS
+ noinst_LTLIBRARIES = libSISConePlugin.la
+ else
+ lib_LTLIBRARIES = libSISConePlugin.la
+ endif
+-libSISConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/siscone -I$(srcdir)/../../include
++libSISConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
++
++if BUNDLE_SISCONE
++SUBDIRS += siscone
++libSISConePlugin_la_CXXFLAGS += -I$(srcdir)/siscone
++libSISConePlugin_la_LIBADD = \
++	$(top_builddir)/plugins/SISCone/siscone/siscone/libsiscone.la \
++	$(top_builddir)/plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++else
++libSISConePlugin_la_LIBADD = -lsiscone -lsiscone_spherical
++endif
++
++libSISConePlugin_la_LIBADD += $(top_builddir)/src/libfastjet.la
+ libSISConePlugin_la_SOURCES = SISConeBasePlugin.cc SISConePlugin.cc SISConeSphericalPlugin.cc
 +libSISConePlugin_la_LDFLAGS = -no-undefined
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/plugins/TrackJet/Makefile.am	2012-06-13 23:14:52.000000000 +0900
-+++ src/fastjet-3.0.6/plugins/TrackJet/Makefile.am	2014-03-09 13:42:35.812352200 +0900
+--- origsrc/fastjet-3.1.0/plugins/TrackJet/Makefile.am	2010-04-21 16:59:24.000000000 +0900
++++ src/fastjet-3.1.0/plugins/TrackJet/Makefile.am	2014-11-08 21:52:47.987868200 +0900
 @@ -7,5 +7,7 @@ lib_LTLIBRARIES = libTrackJetPlugin.la
  endif
  libTrackJetPlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include
@@ -210,19 +254,19 @@
 +libTrackJetPlugin_la_LIBADD = $(top_builddir)/src/libfastjet.la
  
  EXTRA_DIST = makefile.static
---- origsrc/fastjet-3.0.6/src/Makefile.am	2012-06-13 23:14:56.000000000 +0900
-+++ src/fastjet-3.0.6/src/Makefile.am	2014-03-09 11:33:58.981780000 +0900
-@@ -17,5 +17,7 @@ libfastjet_la_SOURCES = DnnPlane.cc\
- 	RangeDefinition.cc CompositeJetStructure.cc \
- 	FunctionOfPseudoJet.cc\
- 	LimitedWarning.cc
+--- origsrc/fastjet-3.1.0/src/Makefile.am	2014-08-11 19:32:00.000000000 +0900
++++ src/fastjet-3.1.0/src/Makefile.am	2014-11-08 21:53:15.975172900 +0900
+@@ -23,5 +23,7 @@ libfastjet_la_SOURCES = DnnPlane.cc\
+         LazyTiling25.cc \
+         LazyTiling9SeparateGhosts.cc \
+         RectangularGrid.cc
 +libfastjet_la_LDFLAGS = -no-undefined
 +libfastjet_la_LIBADD = $(CGAL_LIBS) $(BOOST_THREAD_LIBS)
  
  EXTRA_DIST = makefile.static genconfig.sh
---- origsrc/fastjet-3.0.6/tools/Makefile.am	2012-06-13 23:14:49.000000000 +0900
-+++ src/fastjet-3.0.6/tools/Makefile.am	2014-03-09 11:33:58.997405000 +0900
-@@ -10,5 +10,7 @@ libfastjettools_la_SOURCES = \
+--- origsrc/fastjet-3.1.0/tools/Makefile.am	2014-07-28 14:58:24.000000000 +0900
++++ src/fastjet-3.1.0/tools/Makefile.am	2014-11-08 21:53:33.774001000 +0900
+@@ -11,5 +11,7 @@ libfastjettools_la_SOURCES = \
    Filter.cc Pruner.cc Subtractor.cc\
    MassDropTagger.cc RestFrameNSubjettinessTagger.cc CASubJetTagger.cc \
    JHTopTagger.cc TopTaggerBase.cc
