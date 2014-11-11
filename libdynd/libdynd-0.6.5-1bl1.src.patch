@@ -1,6 +1,6 @@
---- origsrc/libdynd-0.6.2/CMakeLists.txt	2014-05-02 01:43:13.000000000 +0900
-+++ src/libdynd-0.6.2/CMakeLists.txt	2014-06-11 22:52:50.071618000 +0900
-@@ -80,7 +80,7 @@ if(WIN32)
+--- origsrc/libdynd-0.6.5/CMakeLists.txt	2014-08-29 09:23:05.000000000 +0900
++++ src/libdynd-0.6.5/CMakeLists.txt	2014-11-11 21:17:16.003028500 +0900
+@@ -88,7 +88,7 @@ if(WIN32)
          endif ()
      endif()
  else()
@@ -9,7 +9,7 @@
      if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
          # The '-fmax-errors' flag was first supported in gcc 4.6
          if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.6")
-@@ -89,7 +89,7 @@ else()
+@@ -97,7 +97,7 @@ else()
          # Enable C++11 features for gcc >= 4.7 when CUDA support is disabled
          if (NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "4.7" AND
                  NOT ${DYND_CUDA})
@@ -18,18 +18,19 @@
          endif()
      elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=20")
-@@ -112,9 +112,7 @@ else()
+@@ -120,10 +120,7 @@ else()
  endif()
  
  # Get the git revision
 -include(GetGitRevisionDescriptionDyND)
 -get_git_head_revision("${CMAKE_CURRENT_SOURCE_DIR}" GIT_REFSPEC DYND_GIT_SHA1)
--git_describe("${CMAKE_CURRENT_SOURCE_DIR}" DYND_VERSION_STRING --dirty --always --match "v*")
-+SET(DYND_VERSION_STRING "0.6.2")
+-git_describe("${CMAKE_CURRENT_SOURCE_DIR}" DYND_VERSION_STRING
+-             --dirty --always --match "v*")
++SET(DYND_VERSION_STRING "0.6.5")
  message(STATUS "DyND version: ${DYND_VERSION_STRING}")
  configure_file(
      "${CMAKE_CURRENT_SOURCE_DIR}/src/dynd/git_version.cpp.in"
-@@ -511,8 +509,9 @@ if (DYND_SHARED_LIB)
+@@ -584,8 +581,9 @@ if (DYND_SHARED_LIB)
          PROPERTIES
          # For now, during development, embed the full version string
          # to reduce the chance of accidentally linking the wrong one.
@@ -40,20 +41,20 @@
          )
  else()
      if (DYND_CUDA)
-@@ -614,9 +613,9 @@ endif()
+@@ -695,9 +693,8 @@ endif()
  if (DYND_INSTALL_LIB)
      # Install the libdynd binary
      install(TARGETS libdynd
--        RUNTIME DESTINATION lib
+-        RUNTIME DESTINATION lib${LIB_SUFFIX}
+-        LIBRARY DESTINATION lib${LIB_SUFFIX}
+-        ARCHIVE DESTINATION lib${LIB_SUFFIX}/static)
 +        RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib
--        ARCHIVE DESTINATION lib/static)
-+        ARCHIVE DESTINATION lib)
++        ARCHIVE DESTINATION lib${LIB_SUFFIX})
      # Install the libdynd headers
-     install(DIRECTORY "include/dynd" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
-     # Install the libdynd-config script
---- origsrc/libdynd-0.6.2/include/dynd/platform_definitions.hpp	2014-05-02 01:43:13.000000000 +0900
-+++ src/libdynd-0.6.2/include/dynd/platform_definitions.hpp	2014-06-11 22:47:52.169274200 +0900
+     install(DIRECTORY "include/dynd"
+             DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+--- origsrc/libdynd-0.6.5/include/dynd/platform_definitions.hpp	2014-08-29 09:23:05.000000000 +0900
++++ src/libdynd-0.6.5/include/dynd/platform_definitions.hpp	2014-11-11 21:17:59.184669100 +0900
 @@ -17,7 +17,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  #   define DYND_OS_WINDOWS
@@ -63,19 +64,10 @@
  // platform is a Linux
  #   define DYND_OS_LINUX
  #elif defined(__APPLE__) && defined(__MACH__)
---- origsrc/libdynd-0.6.2/tests/CMakeLists.txt	2014-05-02 01:43:13.000000000 +0900
-+++ src/libdynd-0.6.2/tests/CMakeLists.txt	2014-06-11 23:19:59.320277500 +0900
-@@ -70,7 +70,7 @@ set(tests_SRC
-     array/test_array_compare.cpp
-     array/test_array_views.cpp
-     array/test_arrmeta_holder.cpp
--    array/test_elwise.cpp
-+#    array/test_elwise.cpp # memory exhaust
-     array/test_json_formatter.cpp
-     array/test_json_parser.cpp
-     array/test_memmap.cpp
-@@ -79,12 +79,9 @@ set(tests_SRC
-     test_arithmetic_op.cpp
+--- origsrc/libdynd-0.6.5/tests/CMakeLists.txt	2014-08-29 09:23:05.000000000 +0900
++++ src/libdynd-0.6.5/tests/CMakeLists.txt	2014-11-11 21:19:11.695411300 +0900
+@@ -97,12 +97,9 @@ set(tests_SRC
+     test_fft.cpp
      test_shape_tools.cpp
      test_platform.cpp
 -    ../thirdparty/gtest/gtest-all.cc
@@ -87,7 +79,7 @@
      .
      )
  
-@@ -112,13 +109,13 @@ elseif(APPLE)
+@@ -130,13 +127,13 @@ elseif(APPLE)
                  $<TARGET_FILE:test_libdynd>)
      endif()
  else()
