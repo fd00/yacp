@@ -1,0 +1,57 @@
+HOMEPAGE="http://${PN}.sf.net/"
+SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Speedy, yet forgiving, SAX-stylee HTML parser"
+DESCRIPTION="El-Kabong is a high-speed, forgiving, sax-style HTML parser. Its aim is to
+provide consumers with a very fast, clean, lightweight library which parses
+HTMLquickly, while forgiving syntactically incorrect tags."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -f aclocal.m4 configure
+	find . -name Makefile.in | xargs rm -f
+}
+
+MAKEOPTS="-j1"
+
+src_test()
+{
+	cd ${B}
+	pushd testsuite
+	for f in ek_sgmllib.py gen_html.py plparser.pl pyparser.py test_basic.sh test_bogus_feedsize.sh test_crazypage.sh tstpages
+	do
+		ln -fs ${S}/testsuite/${f} .
+	done
+	popd
+	cygtest
+	pushd testsuite
+	rm -f ek_sgmllib.py gen_html.py plparser.pl pyparser.py test_basic.sh test_bogus_feedsize.sh test_crazypage.sh tstpages
+	popd
+}
+
+DIFF_EXCLUDES="
+	config.in
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+ekhtml_CONTENTS="
+	usr/share
+"
+libekhtml0_CONTENTS="
+	usr/bin
+"
+libekhtml_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+
+ekhtml_SUMMARY="${SUMMARY} (licensing & readmes)"
+libekhtml0_SUMMARY="${SUMMARY} (runtime)"
+libekhtml_devel_SUMMARY="${SUMMARY} (development)"
