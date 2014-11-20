@@ -1,0 +1,112 @@
+--- origsrc/arrayfire/CMakeLists.txt	2014-11-19 05:55:44.000000000 +0900
++++ src/arrayfire/CMakeLists.txt	2014-11-19 08:58:30.783922900 +0900
+@@ -27,7 +27,7 @@ INCLUDE_DIRECTORIES(
+     )
+ 
+ IF(${UNIX})
+-    ADD_DEFINITIONS(-Wall -std=c++11 -fvisibility=hidden)
++    ADD_DEFINITIONS(-Wall -std=gnu++11 -fvisibility=hidden)
+ ENDIF()
+ 
+ # OS Definitions
+--- origsrc/arrayfire/common/bin2cpp.cpp	2014-11-19 05:55:44.000000000 +0900
++++ src/arrayfire/common/bin2cpp.cpp	2014-11-19 06:09:17.250109400 +0900
+@@ -9,6 +9,7 @@
+ #include <vector>
+ #include <map>
+ #include <memory>
++#include <cstdlib>
+ 
+ using namespace std;
+ typedef map<string, string> opt_t;
+--- origsrc/arrayfire/examples/helloworld.cpp	2014-11-19 05:55:44.000000000 +0900
++++ src/arrayfire/examples/helloworld.cpp	2014-11-20 08:21:49.437790200 +0900
+@@ -9,6 +9,7 @@
+ 
+ #include <arrayfire.h>
+ #include <cstdio>
++#include <cstdlib>
+ 
+ using namespace af;
+ 
+--- origsrc/arrayfire/src/backend/cpu/CMakeLists.txt	2014-11-19 05:55:45.000000000 +0900
++++ src/arrayfire/src/backend/cpu/CMakeLists.txt	2014-11-19 08:54:27.647204100 +0900
+@@ -1,8 +1,18 @@
+ 
++IF(CYGWIN)
++FIND_PACKAGE(PKGCONFIG REQUIRED)
++PKG_CHECK_MODULES(BLAS REQUIRED blas)
++ELSE()
+ FIND_PACKAGE(CBLAS REQUIRED)
++ENDIF()
+ MESSAGE(STATUS "BLAS Library: ${BLAS_LIBRARIES}")
+ 
++IF(CYGWIN)
++FIND_PACKAGE(PKGCONFIG REQUIRED)
++PKG_CHECK_MODULES(FFTW REQUIRED fftw3 fftw3f)
++ELSE()
+ FIND_PACKAGE(FFTW REQUIRED)
++ENDIF()
+ MESSAGE(STATUS "FFTW Found ? ${FFTW_FOUND}")
+ MESSAGE(STATUS "FFTW Library: ${FFTW_LIBRARIES}")
+ 
+@@ -40,7 +50,7 @@ source_group(cpu\\Headers FILES ${cpu_he
+ source_group(cpu\\Sources FILES ${cpu_sources})
+ 
+ # OS Definitions
+-IF(UNIX)
++IF(UNIX AND NOT CYGWIN)
+ 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+ ELSE(${UNIX}) #Windows
+ 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+@@ -52,6 +62,8 @@ ADD_LIBRARY(afcpu SHARED 	${cpp_sources}
+ 							${cpu_headers}
+ 							${cpu_sources})
+ 
+-TARGET_LINK_LIBRARIES(afcpu ${lib_deps} ${CBLAS_LIBRARIES} ${FFTW_LIBRARIES})
++TARGET_LINK_LIBRARIES(afcpu ${lib_deps} ${BLAS_LIBRARIES} ${FFTW_LIBRARIES})
++SET_TARGET_PROPERTIES(afcpu PROPERTIES SOVERSION 0)
++
++INSTALL(TARGETS afcpu RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+-INSTALL(TARGETS afcpu DESTINATION lib)
+--- origsrc/arrayfire/test/CMakeLists.txt	2014-11-19 05:55:48.000000000 +0900
++++ src/arrayfire/test/CMakeLists.txt	2014-11-20 07:37:22.842087100 +0900
+@@ -24,7 +24,7 @@ MACRO(CREATE_TESTS BACKEND)
+ ENDMACRO(CREATE_TESTS)
+ 
+ FIND_PACKAGE(Threads REQUIRED)
+-IF(CMAKE_USE_PTHREADS_INIT AND NOT "${APPLE}")
++IF(CMAKE_USE_PTHREADS_INIT AND NOT "${APPLE}" AND NOT CYGWIN)
+     SET(THREAD_LIB_FLAG "-pthread")
+ ELSE()
+     SET(THREAD_LIB_FLAG ${CMAKE_THREAD_LIBS_INIT})
+@@ -45,6 +45,9 @@ ENDIF()
+ 
+ SET(GTEST_SRC               ${GTEST_SOURCE_DIR})
+ SET(GTEST_BUILD             ${GTEST_BINARY_DIR})
++
++IF (${BUILD_GTEST})
++
+ SET(GTEST_INCLUDE_DIRS      "${GTEST_SRC}/include")
+ 
+ SET(GTEST_RELEASE_LIBRARY_DIRS "${GTEST_BUILD}/ReleaseLibs")
+@@ -55,6 +58,18 @@ SET(GTEST_DEBUG_MAIN_LIB "${GTEST_DEBUG_
+ 
+ SET(GTEST_RELEASE_LIB "${GTEST_RELEASE_LIBRARY_DIRS}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}")
+ SET(GTEST_RELEASE_MAIN_LIB "${GTEST_RELEASE_LIBRARY_DIRS}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest_main${CMAKE_STATIC_LIBRARY_SUFFIX}")
++ELSE()
++SET(GTEST_INCLUDE_DIRS "/usr/include")
++
++SET(GTEST_RELEASE_LIBRARY_DIRS "/usr/lib")
++SET(GTEST_DEBUG_LIBRARY_DIRS "/usr/lib")
++
++SET(GTEST_DEBUG_LIB gtest)
++SET(GTEST_DEBUG_MAIN_LIB gtest_main)
++
++SET(GTEST_RELEASE_LIB gtest)
++SET(GTEST_RELEASE_MAIN_LIB gtest_main)
++ENDIF()
+ 							
+ SET(TESTDATA_SOURCE_DIR "${CMAKE_SOURCE_DIR}/test/data")
+ ADD_DEFINITIONS("-D TEST_DIR=\"\\\"${TESTDATA_SOURCE_DIR}\\\"\"")
