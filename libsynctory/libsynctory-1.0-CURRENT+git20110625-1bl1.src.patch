@@ -1,0 +1,58 @@
+--- origsrc/libsynctory/src/lib/CMakeLists.txt	2014-11-21 20:12:15.000000000 +0900
++++ src/libsynctory/src/lib/CMakeLists.txt	2014-11-21 22:28:17.133000000 +0900
+@@ -38,10 +38,10 @@ set(
+ #endif(LZMA_LIB)
+ 
+ # check whether libssl can be used
+-find_library(SSL_LIB ssl)
+-if(SSL_LIB)
+-    list(APPEND LIBSYNCTORY_LIBRARIES ${SSL_LIB})
+-endif(SSL_LIB)
++find_package(OpenSSL)
++if(OPENSSL_FOUND)
++    list(APPEND LIBSYNCTORY_LIBRARIES ${OPENSSL_LIBRARIES})
++endif(OPENSSL_FOUND)
+ 
+ # build shared library binary
+ add_library(synctory SHARED ${LIBSYNCTORY_SOURCEFILES})
+@@ -55,5 +55,6 @@ set_target_properties(synctory PROPERTIE
+ 
+ install(
+     TARGETS synctory
+-    LIBRARY DESTINATION lib
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
+ )
+\ No newline at end of file
+--- origsrc/libsynctory/src/test/helpers.c	2014-11-21 20:12:15.000000000 +0900
++++ src/libsynctory/src/test/helpers.c	2014-11-21 20:28:31.991691500 +0900
+@@ -27,6 +27,29 @@
+ 
+ #include "helpers.h"
+ 
++#if defined(__CYGWIN__)
++static u_long next = 1;
++static void sranddev()
++{
++	int fd, done;
++
++	done = 0;
++	fd = open("/dev/random", O_RDONLY, 0);
++	if (fd >= 0) {
++		if (read(fd, (void *) &next, sizeof(next)) == sizeof(next))
++			done = 1;
++		close(fd);
++	}
++
++	if (!done) {
++		struct timeval tv;
++		unsigned long junk;
++
++		gettimeofday(&tv, NULL);
++		srand((getpid() << 16) ^ tv.tv_sec ^ tv.tv_usec ^ junk);
++	}
++}
++#endif
+ 
+ size_t hlp_path_maxlen(void)
+ {
