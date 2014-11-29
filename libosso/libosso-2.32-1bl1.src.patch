@@ -1,0 +1,178 @@
+--- origsrc/libosso-2.32/configure.ac	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/configure.ac	2014-11-30 01:34:39.962504100 +0900
+@@ -45,9 +45,9 @@ fi
+ WFLAGS="-Wall -Wmissing-prototypes -std=c99"
+ if test x${libosso_use_debug} = xyes ; then
+     AC_DEFINE([LIBOSSO_DEBUG],1,[Build extra debug code])
+-    OSSO_CFLAGS="-g -ansi -D_BSD_SOURCE -D_GNU_SOURCE -rdynamic $WFLAGS"
++    OSSO_CFLAGS="-g -ansi -D_BSD_SOURCE -D_GNU_SOURCE $WFLAGS"
+ else
+-    OSSO_CFLAGS="-g -ansi -D_BSD_SOURCE -D_GNU_SOURCE -O2 -rdynamic $WFLAGS"
++    OSSO_CFLAGS="-g -ansi -D_BSD_SOURCE -D_GNU_SOURCE -O2 $WFLAGS"
+ fi
+ 
+ AC_SUBST([OSSO_CFLAGS])
+--- origsrc/libosso-2.32/src/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/src/Makefile.am	2014-11-30 01:31:51.502543200 +0900
+@@ -9,7 +9,7 @@ lib_LTLIBRARIES = libosso.la
+ 
+ libosso_la_LIBADD = -ldl -lc $(MCE_LIBS) $(GTHREAD_LIBS) $(GLIB_LIBS) \
+ 		    $(DBUS_LIBS)
+-libosso_la_LDFLAGS = -version-info 4:0:3
++libosso_la_LDFLAGS = -no-undefined -version-info 4:0:3
+ 
+ ossoincludedir=$(includedir)
+ ossoinclude_HEADERS = libosso.h osso-log.h log-functions.h osso-mem.h muali.h osso-fpu.h
+--- origsrc/libosso-2.32/src/osso-cp-plugin.c	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/src/osso-cp-plugin.c	2014-11-30 01:40:10.236918200 +0900
+@@ -25,7 +25,9 @@
+ #include "osso-internal.h"
+ #include "osso-cp-plugin.h"
+ #include "osso-log.h"
++#if !defined(__CYGWIN__)
+ #include <linux/limits.h>
++#endif
+ #include <errno.h>
+ 
+ /* hildon-control-panel RPC */
+--- origsrc/libosso-2.32/src/osso-mem.c	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/src/osso-mem.c	2014-11-30 01:43:26.471293200 +0900
+@@ -55,6 +55,9 @@
+ 
+ typedef void* (*malloc_hook_t)(size_t, const void*);
+ 
++#if defined(__CYGWIN__)
++static malloc_hook_t __malloc_hook = NULL;
++#endif
+ 
+ /* ========================================================================= *
+  * Meminfo related strings.
+--- origsrc/libosso-2.32/ut/osso-application-autosave/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-application-autosave/Makefile.am	2014-11-30 01:45:12.646097900 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossoautosave_la_LIBADD = -L../../src -lc -losso
+ libossoautosave_la_SOURCES = test-osso-application-autosave.c
+--- origsrc/libosso-2.32/ut/osso-application-top/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-application-top/Makefile.am	2014-11-30 01:45:21.476176000 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossotop_la_LIBADD = -L../../src -lc -losso
+ libossotop_la_SOURCES = test-osso-application-top.c
+--- origsrc/libosso-2.32/ut/osso-cp-plugin/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-cp-plugin/Makefile.am	2014-11-30 01:45:30.791605700 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossocppanel_la_LIBADD = -L../../src -lc -losso
+ libossocppanel_la_SOURCES = test-osso-cp.c
+--- origsrc/libosso-2.32/ut/osso-hw/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-hw/Makefile.am	2014-11-30 01:44:53.517191600 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossohw_la_LIBADD = -L../../src -lc -losso
+ libossohw_la_SOURCES = test-osso-hw.c
+--- origsrc/libosso-2.32/ut/osso-init/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-init/Makefile.am	2014-11-30 01:44:42.733988500 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossoinit_la_LIBADD = -L../../src/ -lc -losso
+ libossoinit_la_SOURCES = test-osso-init.c
+--- origsrc/libosso-2.32/ut/osso-mime/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-mime/Makefile.am	2014-11-30 01:45:55.983988500 +0900
+@@ -6,7 +6,7 @@ AM_CPPFLAGS = $(CFLAGS) $(OSSO_CFLAGS) -
+ 
+ EXTRA_DIST = mimedummy.doc
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossomime_la_LIBADD = -L../../src -lc -losso
+ libossomime_la_SOURCES = test-osso-mime.c
+--- origsrc/libosso-2.32/ut/osso-rpc/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-rpc/Makefile.am	2014-11-30 01:46:05.485941600 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossorpc_la_LIBADD = -L../../src -lc -losso
+ libossorpc_la_SOURCES = test-osso-rpc.c
+--- origsrc/libosso-2.32/ut/osso-state/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-state/Makefile.am	2014-11-30 01:46:15.573832300 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossostate_la_LIBADD = -L../../src -lc -losso
+ libossostate_la_SOURCES = test-osso-state.c
+--- origsrc/libosso-2.32/ut/osso-statusbar/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-statusbar/Makefile.am	2014-11-30 01:51:57.462504100 +0900
+@@ -4,14 +4,14 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossosbevent_la_LIBADD = -L../../src -lc -losso
+ libossosbevent_la_SOURCES = test-osso-sbevent.c
+ 
+ outomodule_PROGRAMS = ossosbeventbin
+ 
+-ossosbeventbin_LDADD = -L$(top_srcdir)/src -lc -losso
++ossosbeventbin_LDADD = -L$(top_builddir)/src -lc -losso
+ ossosbeventbin_SOURCES = test-osso-sbevent-prog.c
+ 
+ servicefiledir=$(DBUS_SVC_DIR)
+--- origsrc/libosso-2.32/ut/osso-system-note/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-system-note/Makefile.am	2014-11-30 01:46:35.598246300 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossosystemnote_la_LIBADD = -L../../src -lc -losso
+ libossosystemnote_la_SOURCES = test-system-note.c
+--- origsrc/libosso-2.32/ut/osso-time/Makefile.am	2010-05-28 18:19:11.000000000 +0900
++++ src/libosso-2.32/ut/osso-time/Makefile.am	2014-11-30 01:46:44.491801000 +0900
+@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(OSSO_CFLAGS) -I$(top_src
+ 	   $(GLIB_CFLAGS) $(OUTO_CFLAGS) -DPREFIX='"$(prefix)"' \
+ 	   $(DBUS_CFLAGS)
+ 
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ libossotime_la_LIBADD = -L../../src -lc -losso
+ libossotime_la_SOURCES = test-osso-time.c
