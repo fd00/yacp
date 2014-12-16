@@ -1,0 +1,139 @@
+--- origsrc/Celero-1.0.7/CMakeLists.txt	2014-12-09 23:26:06.000000000 +0900
++++ src/Celero-1.0.7/CMakeLists.txt	2014-12-16 09:23:10.962354700 +0900
+@@ -30,6 +30,8 @@ include(CheckFunctionExists)
+ include(CheckCXXSourceCompiles)
+ include(CheckIncludeFile)
+ 
++find_package(Boost)
++
+ #
+ # User Options
+ #
+@@ -48,12 +50,6 @@ endif()
+ 
+ if(CELERO_ENABLE_TESTS)
+ 	set(CELERO_ENABLE_AUTO_RUN_TESTS ON CACHE BOOL "Enable Celero tests to automatically run after building")
+-	set(GTEST_DIRECTORY test/gtest-1.7.0)
+-	set(GTEST_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/include)
+-	set(GTEST_LIBRARY gtest)
+-	set(GTEST_MAIN_LIBRARY gtest_main)
+-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/include ${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/src)
+-	ADD_SUBDIRECTORY(${GTEST_DIRECTORY})
+ endif()
+ 
+ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+@@ -91,7 +87,7 @@ endif()
+  
+ if(UNIX)
+ 	if(CMAKE_COMPILER_IS_GNUCXX) 
+-	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall" CACHE STRING "Compiler Flags for All Builds" FORCE) 
++	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall -fpermissive" CACHE STRING "Compiler Flags for All Builds" FORCE) 
+ 	  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pedantic" CACHE STRING "Compiler Flags for Debug Builds" FORCE) 
+ 	  set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Compiler Flags for Release Builds" FORCE) 
+ 	else()
+@@ -190,10 +186,13 @@ set(TARGET_SRC
+ 
+ set(TARGET_LIBRARIES ${SYSLIBS})
+ add_library(${PROJECT_NAME} ${CELERO_USER_DEFINED_SHARED_OR_STATIC} ${TARGET_SRC} ${TARGET_H})
++set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
+ include_directories(${HEADER_PATH})
+ 
++install(FILES ${TARGET_H}
++        DESTINATION include/Celero)
+ install(TARGETS ${PROJECT_NAME} 
+-	LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
++	RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin 
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+ 
+ # --------------------------------------------------------------------------- 
+@@ -540,7 +539,7 @@ if(CELERO_BUILD_EXAMPLES)
+     	include_directories(${GTEST_INCLUDE_DIR})
+     
+     	add_dependencies(${PROJECT_NAME} celero)
+-    	target_link_libraries(${PROJECT_NAME} ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} celero)
++    	target_link_libraries(${PROJECT_NAME} gtest gtest_main celero)
+     
+     	if(CELERO_ENABLE_AUTO_RUN_TESTS)
+     		add_test(${PROJECT_NAME} ${PROJECT_NAME})
+--- origsrc/Celero-1.0.7/include/celero/Utilities.h	2014-12-09 23:26:06.000000000 +0900
++++ src/Celero-1.0.7/include/celero/Utilities.h	2014-12-16 09:00:18.276242200 +0900
+@@ -28,6 +28,7 @@
+ #include <cstdlib>
+ #include <thread>
+ #include <stdint.h>
++#include <cstdio>
+ 
+ #include <celero/Export.h>
+ 
+--- origsrc/Celero-1.0.7/src/Experiment.cpp	2014-12-09 23:26:06.000000000 +0900
++++ src/Celero-1.0.7/src/Experiment.cpp	2014-12-16 08:53:59.703000000 +0900
+@@ -26,6 +26,8 @@
+ #include <algorithm>
+ #include <cassert>
+ 
++#include <boost/lexical_cast.hpp>
++
+ using namespace celero;
+ 
+ class Experiment::Impl
+@@ -168,7 +170,7 @@ Experiment::operator std::string() const
+ 
+ 	if(this->getSamples() > 0)
+ 	{
+-		output += " -- " + std::to_string(this->getSamples());
++		output += " -- " + boost::lexical_cast<std::string>(this->getSamples());
+ 
+ 		if(this->getSamples() == 1)
+ 		{
+@@ -184,7 +186,7 @@ Experiment::operator std::string() const
+ 		output += " -- Auto Run, ";
+ 	}
+ 
+-	output += std::to_string(this->getCalls());
++	output += boost::lexical_cast<std::string>(this->getCalls());
+ 
+ 	if(this->getCalls() == 1)
+ 	{
+--- origsrc/Celero-1.0.7/src/Timer.cpp	2014-12-09 23:26:06.000000000 +0900
++++ src/Celero-1.0.7/src/Timer.cpp	2014-12-16 08:56:33.421750000 +0900
+@@ -19,6 +19,8 @@
+ #include <celero/Timer.h>
+ #include <celero/Print.h>
+ 
++#include <boost/lexical_cast.hpp>
++
+ #ifdef WIN32
+ 	#include <Windows.h>
+ 	LARGE_INTEGER QPCFrequency;
+@@ -57,9 +59,9 @@ void celero::timer::CachePerformanceFreq
+ 
+ 	#ifdef WIN32
+ 		QueryPerformanceFrequency(&QPCFrequency);
+-		ss << std::to_string((1.0/static_cast<double>(QPCFrequency.QuadPart)) * 1000000);
++		ss << boost::lexical_cast<std::string>((1.0/static_cast<double>(QPCFrequency.QuadPart)) * 1000000);
+ 	#else
+-		ss << std::to_string(1.0/1.0e-6);
++		ss << boost::lexical_cast<std::string>(1.0/1.0e-6);
+ 	#endif
+ 
+ 	ss << " us";
+--- origsrc/Celero-1.0.7/test/CMakeLists.txt	2014-12-09 23:26:06.000000000 +0900
++++ src/Celero-1.0.7/test/CMakeLists.txt	2014-12-14 19:24:07.857242200 +0900
+@@ -1,15 +1,6 @@
+ 
+-set(GTEST_DIRECTORY gtest-1.7.0)
+-
+-set(GTEST_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/include)
++set(GTEST_INCLUDE_DIR /usr/include)
+ set(GTEST_LIBRARY gtest)
+ set(GTEST_MAIN_LIBRARY gtest_main)
+ 
+-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/include ${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/src)
+-
+-FILE(GLOB _ALL_FILES ./ ./*)
+-FOREACH(_FILE ${_ALL_FILES})
+-  IF(IS_DIRECTORY ${_FILE})
+-    ADD_SUBDIRECTORY(${_FILE})
+-  ENDIF()
+-ENDFOREACH()
++add_subdirecotry(Celero)
