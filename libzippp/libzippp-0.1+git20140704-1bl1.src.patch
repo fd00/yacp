@@ -1,0 +1,39 @@
+--- origsrc/libzippp/CMakeLists.txt	2014-12-20 19:27:24.000000000 +0900
++++ src/libzippp/CMakeLists.txt	2014-12-20 19:23:44.228062900 +0900
+@@ -22,18 +22,29 @@ INCLUDE_DIRECTORIES("src")
+ 
+ add_definitions(-DLIBZIPPP_EXPORTS)
+ ADD_LIBRARY(libzippp_shared SHARED "src/libzippp.cpp")
+-SET_TARGET_PROPERTIES(libzippp_shared PROPERTIES OUTPUT_NAME libzippp)
++SET_TARGET_PROPERTIES(libzippp_shared PROPERTIES OUTPUT_NAME libzippp SOVERSION 0)
++IF (CYGWIN)
++TARGET_LINK_LIBRARIES(libzippp_shared ${ZLIB_LIBRARY} zip)
++INSTALL(TARGETS libzippp_shared
++        RUNTIME DESTINATION bin
++        ARCHIVE DESTINATION lib)
++INSTALL(FILES src/libzippp.h
++        DESTINATION include)
++ELSE (CYGWIN)
+ TARGET_LINK_LIBRARIES(libzippp_shared 
+ 			debug ../${LIBZIP_PATH}/build/lib/Debug/zip
+ 			optimized ../${LIBZIP_PATH}/build/lib/Release/zip
+ 			${ZLIB_LIBRARY})
++ENDIF (CYGWIN)
+ 
+-add_definitions(-DLIBZIPPP_EXPORTS)
++IF (NOT CYGWIN)
+ ADD_LIBRARY(libzippp_static STATIC "src/libzippp.cpp")
++ENDIF (NOT CYGWIN)
+ 
+ ADD_EXECUTABLE(libzippp_shared_test "tests/tests.cpp")
+ TARGET_LINK_LIBRARIES(libzippp_shared_test libzippp_shared)
+ 
++IF (NOT CYGWIN)
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MT" FORCE)
+ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd" FORCE)
+ ADD_EXECUTABLE(libzippp_static_test "tests/tests.cpp")
+@@ -43,3 +54,4 @@ TARGET_LINK_LIBRARIES(libzippp_static_te
+ 			optimized ../${LIBZIP_PATH}/build/lib/Release/zipstatic
+ 			debug ../${ZLIB_PATH}/build/Debug/zlibstaticd
+ 			optimized ../${ZLIB_PATH}/build/Release/zlibstatic)
++ENDIF (NOT CYGWIN)
