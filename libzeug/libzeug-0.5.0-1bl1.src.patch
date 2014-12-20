@@ -1,0 +1,183 @@
+--- origsrc/libzeug-0.5.0/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/CMakeLists.txt	2014-12-20 11:57:36.749822300 +0900
+@@ -86,6 +86,8 @@ elseif(WIN32 AND CMAKE_COMPILER_IS_GNUCX
+     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformWindowsGCC.cmake)
+ elseif(APPLE)
+     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformMacOS.cmake)
++elseif(CYGWIN)
++    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformCygwinGCC.cmake)
+ elseif(UNIX)
+     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformLinuxGCC.cmake)
+ else()
+@@ -145,8 +147,10 @@ endif()
+ create_revision_file(${CMAKE_BINARY_DIR}/revision ${INSTALL_ROOT})
+ # Install the project meta files
+ install(FILES libzeug-config.cmake DESTINATION ${INSTALL_ROOT})
++IF (NOT CYGWIN)
+ install(FILES AUTHORS DESTINATION ${INSTALL_ROOT})
+ install(FILES LICENSE DESTINATION ${INSTALL_ROOT})
++ENDIF (NOT CYGWIN)
+ 
+ # Data files
+ if(OPTION_BUILD_EXAMPLES)
+--- origsrc/libzeug-0.5.0/cmake/PlatformCygwinGCC.cmake	1970-01-01 09:00:00.000000000 +0900
++++ src/libzeug-0.5.0/cmake/PlatformCygwinGCC.cmake	2014-12-20 11:15:44.904378400 +0900
+@@ -0,0 +1,58 @@
++message(STATUS "Configuring for platform Cygwin/GCC.")
++
++
++# Enable C++11 support
++
++execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
++    OUTPUT_VARIABLE GCC_VERSION)
++
++if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
++elseif(GCC_VERSION VERSION_EQUAL 4.6)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
++else()
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
++endif()
++
++
++set(LINUX_COMPILE_DEFS
++    _REENTRANT                # Reentrant code
++)
++set(DEFAULT_COMPILE_DEFS_DEBUG
++    ${LINUX_COMPILE_DEFS}
++    _DEBUG                    # Debug build
++)
++set(DEFAULT_COMPILE_DEFS_RELEASE
++    ${LINUX_COMPILE_DEFS}
++    NDEBUG                    # Release build
++)
++
++if (OPTION_ERRORS_AS_EXCEPTION OR NOT OPTION_BUILD_WITH_STD_REGEX)
++    set(EXCEPTION_FLAG "-fexceptions")
++else()
++    set(EXCEPTION_FLAG "-fno-exceptions")
++endif()
++
++set(LINUX_COMPILE_FLAGS "-pipe -Wreturn-type -Wall -Wextra -Wcast-align -Wno-unused-parameter -Wno-unused-variable ${EXCEPTION_FLAG}")
++# no-rtti       -> disable c++ rtti
++# no-exceptions -> disable exception handling
++# pipe          -> use pipes
++# -Wreturn-type -Werror=return-type -> missing returns in functions and methods are handled as errors which stops the compilation
++# -Wshadow -> e.g. when a parameter is named like a member, too many warnings, disabled for now
++
++if(CMAKE_COMPILER_IS_GNUCXX)
++    # gcc
++    set(LINUX_COMPILE_FLAGS "${LINUX_COMPILE_FLAGS} -Wno-unused-but-set-variable")
++elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
++    # clang
++    set(LINUX_COMPILE_FLAGS "${LINUX_COMPILE_FLAGS} -Wno-reinterpret-base-class -Wno-overloaded-virtual")
++endif()
++
++set(DEFAULT_COMPILE_FLAGS ${LINUX_COMPILE_FLAGS})
++
++set(DEFAULT_LINKER_FLAGS_RELEASE ${LINUX_LINKER_FLAGS})
++set(DEFAULT_LINKER_FLAGS_DEBUG ${LINUX_LINKER_FLAGS})
++set(DEFAULT_LINKER_FLAGS ${LINUX_LINKER_FLAGS})
++
++# Add platform specific libraries for linking
++set(EXTRA_LIBS "")
+--- origsrc/libzeug-0.5.0/source/iozeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/iozeug/CMakeLists.txt	2014-12-20 11:16:50.776448700 +0900
+@@ -67,6 +67,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/loggingzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/loggingzeug/CMakeLists.txt	2014-12-20 11:17:02.559651800 +0900
+@@ -79,6 +79,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/propertyguizeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/propertyguizeug/CMakeLists.txt	2014-12-20 11:17:15.539730000 +0900
+@@ -122,6 +122,7 @@ qt5_use_modules(${target} Core Gui Widge
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/reflectionzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/reflectionzeug/CMakeLists.txt	2014-12-20 11:17:27.067104800 +0900
+@@ -177,6 +177,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/reflectionzeug/include/reflectionzeug/ArrayProperty.hpp	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/reflectionzeug/include/reflectionzeug/ArrayProperty.hpp	2014-12-20 11:19:49.865127400 +0900
+@@ -13,6 +13,8 @@
+ #include <reflectionzeug/util.h>
+ #include <reflectionzeug/Variant.h>
+ 
++#include <boost/lexical_cast.hpp>
++
+ namespace reflectionzeug
+ {
+ 
+@@ -240,7 +242,7 @@ void ArrayProperty<Type, Size>::init()
+     
+     for (size_t i = 0; i < Size; ++i)
+     {
+-        m_properties[i] = new Property<Type>("_" + std::to_string(i),
++        m_properties[i] = new Property<Type>("_" + boost::lexical_cast<std::string>(i),
+                                              std::bind(&ArrayProperty::element, this, i),
+                                              std::bind(&ArrayProperty::setElement, this, i, std::placeholders::_1));
+     }
+--- origsrc/libzeug-0.5.0/source/scriptzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/scriptzeug/CMakeLists.txt	2014-12-20 11:17:35.931051000 +0900
+@@ -108,6 +108,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/signalzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/signalzeug/CMakeLists.txt	2014-12-20 11:17:45.763564900 +0900
+@@ -76,6 +76,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/threadingzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/threadingzeug/CMakeLists.txt	2014-12-20 11:17:55.546768100 +0900
+@@ -86,6 +86,7 @@ target_link_libraries(${target} ${libs})
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
+--- origsrc/libzeug-0.5.0/source/widgetzeug/CMakeLists.txt	2014-11-26 18:09:58.000000000 +0900
++++ src/libzeug-0.5.0/source/widgetzeug/CMakeLists.txt	2014-12-20 11:18:05.095596200 +0900
+@@ -123,6 +123,7 @@ endif()
+ 
+ set_target_properties(${target}
+     PROPERTIES
++    SOVERSION                   0
+     LINKER_LANGUAGE              CXX
+     FOLDER                      "${IDE_FOLDER}"
+     COMPILE_DEFINITIONS_DEBUG   "${DEFAULT_COMPILE_DEFS_DEBUG}"
