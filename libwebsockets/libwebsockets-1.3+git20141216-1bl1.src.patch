@@ -1,0 +1,48 @@
+--- origsrc/libwebsockets/CMakeLists.txt	2014-12-21 18:02:07.000000000 +0900
++++ src/libwebsockets/CMakeLists.txt	2014-12-21 18:18:14.012289700 +0900
+@@ -361,11 +361,11 @@ endif(UNIX)
+ 
+ 
+ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+-    if (UNIX)
++    if (UNIX AND NOT CYGWIN)
+ 		set( CMAKE_C_FLAGS "-Wall -Werror -O3 -fvisibility=hidden ${CMAKE_C_FLAGS}" )
+-    else(UNIX)
++    else(UNIX AND NOT CYGWIN)
+ 		set( CMAKE_C_FLAGS "-Wall -O3 -fvisibility=hidden ${CMAKE_C_FLAGS}" )
+-    endif(UNIX)
++    endif(UNIX AND NOT CYGWIN)
+ endif ()
+ 
+ source_group("Headers Private"  FILES ${HDR_PRIVATE})
+@@ -516,6 +516,8 @@ if (LWS_WITH_SSL)
+ endif(LWS_WITH_SSL)
+ 
+ if (LWS_WITH_LIBEV)
++	pkg_check_modules(LIBEV REQUIRED libev)
++	include_directories("${LIBEV_INCLUDEDIR}")
+ 	list(APPEND LIB_LIST "ev")
+ endif(LWS_WITH_LIBEV)
+ 
+@@ -846,12 +848,21 @@ set_target_properties(websockets websock
+ #
+ 
+ # Install libs and headers.
++if (CYGWIN)
++install(TARGETS websockets_shared
++		EXPORT LibwebsocketsTargets
++		LIBRARY DESTINATION "${LWS_INSTALL_LIB_DIR}${LIB_SUFFIX}" COMPONENT libraries
++		ARCHIVE DESTINATION "${LWS_INSTALL_LIB_DIR}${LIB_SUFFIX}" COMPONENT libraries
++		RUNTIME DESTINATION "${LWS_INSTALL_BIN_DIR}" COMPONENT libraries # Windows DLLs
++		PUBLIC_HEADER DESTINATION "${LWS_INSTALL_INCLUDE_DIR}" COMPONENT dev)
++else (CYGWIN)
+ install(TARGETS websockets websockets_shared
+ 		EXPORT LibwebsocketsTargets
+ 		LIBRARY DESTINATION "${LWS_INSTALL_LIB_DIR}${LIB_SUFFIX}" COMPONENT libraries
+ 		ARCHIVE DESTINATION "${LWS_INSTALL_LIB_DIR}${LIB_SUFFIX}" COMPONENT libraries
+ 		RUNTIME DESTINATION "${LWS_INSTALL_BIN_DIR}" COMPONENT libraries # Windows DLLs
+ 		PUBLIC_HEADER DESTINATION "${LWS_INSTALL_INCLUDE_DIR}" COMPONENT dev)
++endif (CYGWIN)
+ set(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
+ set(CPACK_COMPONENT_DEV_DISPLAY_NAME "Development files")
+ 
