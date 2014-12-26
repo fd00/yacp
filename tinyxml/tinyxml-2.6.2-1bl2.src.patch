@@ -1,0 +1,106 @@
+--- origsrc/tinyxml/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/tinyxml/Makefile.am	2014-12-27 00:58:32.034010500 +0900
+@@ -0,0 +1,16 @@
++
++check_PROGRAMS = xmltest
++xmltest_SOURCES = xmltest.cpp
++xmltest_LDADD = libtinyxml.la
++
++include_HEADERS = tinyxml.h
++
++lib_LTLIBRARIES = libtinyxml.la
++libtinyxml_la_SOURCES = tinyxml.cpp tinystr.cpp tinyxmlerror.cpp tinyxmlparser.cpp
++libtinyxml_la_LDFLAGS = -no-undefined
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = tinyxml.pc
++
++TESTS = xmltest
++
+--- origsrc/tinyxml/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/tinyxml/configure.ac	2014-12-27 00:53:46.439283900 +0900
+@@ -0,0 +1,30 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([tinyxml], [2.6.2])
++AC_CONFIG_SRCDIR([tinystr.cpp])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++LT_INIT
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([stddef.h stdlib.h string.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_CHECK_HEADER_STDBOOL
++AC_C_INLINE
++AC_TYPE_SIZE_T
++AC_CHECK_TYPES([ptrdiff_t])
++
++# Checks for library functions.
++AC_CHECK_FUNCS([memmove strchr])
++
++AC_CONFIG_FILES([tinyxml.pc Makefile])
++AC_OUTPUT
+--- origsrc/tinyxml/tinyxml.pc.in	2014-12-27 00:51:08.895338600 +0900
++++ src/tinyxml/tinyxml.pc.in	2014-12-27 01:00:11.512526100 +0900
+@@ -5,6 +5,6 @@ includedir=@includedir@
+ 
+ Name: TinyXML
+ Description: A simple, small, C++ XML parser
+-Version: @version@
++Version: @VERSION@
+ Libs: -L${libdir} -ltinyxml
+ Cflags: -I${includedir} -DTIXML_USE_STL=YES
+--- origsrc/tinyxml/xmltest.cpp	2014-12-27 00:51:09.129713600 +0900
++++ src/tinyxml/xmltest.cpp	2014-12-27 00:56:17.377760500 +0900
+@@ -2,6 +2,7 @@
+    Test program for TinyXML.
+ */
+ 
++#include "tinyxml.h"
+ 
+ #ifdef TIXML_USE_STL
+ 	#include <iostream>
+@@ -17,8 +18,6 @@
+ 	_CrtMemState endMemState;
+ #endif
+ 
+-#include "tinyxml.h"
+-
+ bool XmlTest (const char* testString, const char* expected, const char* found, bool noEcho = false);
+ bool XmlTest( const char* testString, int expected, int found, bool noEcho = false );
+ 
+@@ -1138,19 +1137,19 @@ int main()
+             // Legacy mode test. (This test may only pass on a western system)
+             const char* str =
+                         "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"
+-                        "<ä>"
+-                        "CöntäntßäöüÄÖÜ"
+-                        "</ä>";
++                        "<?>"
++                        "CöntäntßäöüÄÖ?"
++                        "</?>";
+ 
+             TiXmlDocument doc;
+             doc.Parse( str );
+ 
+             TiXmlHandle docHandle( &doc );
+-            TiXmlHandle aHandle = docHandle.FirstChildElement( "ä" );
++            TiXmlHandle aHandle = docHandle.FirstChildElement( "?" );
+             TiXmlHandle tHandle = aHandle.Child( 0 );
+             assert( aHandle.Element() );
+             assert( tHandle.Text() );
+-            XmlTest( "ISO-8859-1 Parsing.", "CöntäntßäöüÄÖÜ", tHandle.Text()->Value() );
++            XmlTest( "ISO-8859-1 Parsing.", "CöntäntßäöüÄÖ?", tHandle.Text()->Value() );
+     }
+ 
+ 	{
