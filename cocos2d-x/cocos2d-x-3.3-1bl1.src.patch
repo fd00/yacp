@@ -1,0 +1,604 @@
+--- origsrc/cocos2d-x-3rd-party-libs-bin-3-deps-29/unzip/ioapi.h	2014-12-08 19:45:13.000000000 +0900
++++ src/cocos2d-x-3rd-party-libs-bin-3-deps-29/unzip/ioapi.h	2014-12-23 11:14:43.590182600 +0900
+@@ -52,7 +52,7 @@ namespace cocos2d {
+ #define OF _Z_OF
+ #endif
+ 
+-#if defined(USE_FILE32API)
++#if defined(USE_FILE32API) || defined(__CYGWIN__)
+ #define fopen64 fopen
+ #define ftello64 ftell
+ #define fseeko64 fseek
+--- origsrc/cocos2d-x-cocos2d-x-3.3/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/CMakeLists.txt	2014-12-25 21:13:08.282292100 +0900
+@@ -84,8 +84,8 @@ if(MSVC)
+ else()
+   set(CMAKE_C_FLAGS_DEBUG "-g -Wall -DCOCOS2D_DEBUG=1")
+   set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -std=c99")
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -std=c++11 -Wno-deprecated-declarations -Wno-reorder")
++  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -std=gnu99")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -std=gnu++11 -Wno-deprecated-declarations -Wno-reorder -fpermissive")
+   if(CLANG)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+   endif()
+@@ -114,6 +114,8 @@ elseif(LINUX)
+ elseif(ANDROID)
+   ADD_DEFINITIONS (-DUSE_FILE32API)
+   set(PLATFORM_FOLDER android)
++elseif(CYGWIN)
++  set(PLATFORM_FOLDER linux)
+ else()
+   message( FATAL_ERROR "Unsupported platform, CMake will exit" )
+ endif()
+@@ -263,6 +265,7 @@ cocos_find_package(CURL CURL REQUIRED)
+ # and source file not provided. So these files can be
+ # compiled only with our in-source version of flatbuffers
+ ## if(USE_PREBUILT_LIBS)
++if(NOT CYGWIN)
+   add_subdirectory(external/flatbuffers)
+   set(FLATBUFFERS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/external)
+   set(FLATBUFFERS_LIBRARIES flatbuffers)
+@@ -272,7 +275,7 @@ cocos_find_package(CURL CURL REQUIRED)
+ ## endif()
+ message(STATUS "Flatbuffers libs: ${FLATBUFFERS_LIBRARIES}")
+ message(STATUS "Flatbuffers include dirs: ${FLATBUFFERS_INCLUDE_DIRS}")
+-
++endif()
+ 
+ # build for 3rd party libraries
+ if(LINUX OR APPLE)
+@@ -299,3 +302,5 @@ if(BUILD_LUA_LIBS)
+   endif(BUILD_LUA_TESTS)
+ 
+ endif(BUILD_LUA_LIBS)
++
++install(DIRECTORY cocos DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN scripting EXCLUDE)
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/2d/CCActionCamera.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/2d/CCActionCamera.cpp	2014-12-23 11:13:35.813815400 +0900
+@@ -190,11 +190,11 @@ void OrbitCamera::startWithTarget(Node *
+ 
+     float r, zenith, azimuth;
+     this->sphericalRadius(&r, &zenith, &azimuth);
+-    if( isnan(_radius) )
++    if( std::isnan(_radius) )
+         _radius = r;
+-    if( isnan(_angleZ) )
++    if( std::isnan(_angleZ) )
+         _angleZ = (float)CC_RADIANS_TO_DEGREES(zenith);
+-    if( isnan(_angleX) )
++    if( std::isnan(_angleX) )
+         _angleX = (float)CC_RADIANS_TO_DEGREES(azimuth);
+ 
+     _radZ = (float)CC_DEGREES_TO_RADIANS(_angleZ);
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/CMakeLists.txt	2014-12-25 21:10:12.430729600 +0900
+@@ -123,6 +123,8 @@ elseif(MACOSX OR APPLE)
+ 
+ elseif(ANDROID)
+   set(PLATFORM_SPECIFIC_LIBS GLESv2 log android)
++elseif(CYGWIN)
++  set(PLATFORM_SPECIFIC_LIBS alut fontconfig gl glew glfw openal vorbisfile x11)
+ else()
+   message( FATAL_ERROR "Unsupported platform, CMake will exit" )
+ endif()
+@@ -153,4 +155,7 @@ set_target_properties(cocos2d
+     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+     VERSION "${COCOS2D_X_VERSION}"
++    SOVERSION 0
+ )
++
++install(TARGETS cocos2d RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/audio/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/audio/CMakeLists.txt	2014-12-25 00:59:17.815299600 +0900
+@@ -43,6 +43,12 @@ elseif(MACOSX)
+         ${COCOS_AUDIO_PLATFORM_SRC_C}
+         PROPERTIES LANGUAGE C
+     )
++elseif(CYGWIN)
++    set(COCOS_AUDIO_PLATFORM_SRC
++        audio/openal/SimpleAudioEngineOpenAL.cpp
++        audio/openal/OpenALDecoder.cpp
++    )
+ endif()
+ 
+ list(APPEND COCOS_AUDIO_SRC ${COCOS_AUDIO_PLATFORM_SRC})
++
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/audio/include/AudioEngine.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/audio/include/AudioEngine.h	2014-12-23 23:50:27.172315400 +0900
+@@ -23,7 +23,7 @@
+  ****************************************************************************/
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
++#if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #ifndef __AUDIO_ENGINE_H_
+ #define __AUDIO_ENGINE_H_
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/audio/include/Export.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/audio/include/Export.h	2014-12-23 23:58:06.855909200 +0900
+@@ -28,6 +28,8 @@ THE SOFTWARE.
+ #if defined(SHP)
+     #include <FBaseConfig.h>
+     #define EXPORT_DLL  _EXPORT_
++#elif defined(__CYGWIN__)
++#define EXPORT_DLL __declspec(dllexport)
+ #elif defined(_WIN32)
+     #if defined(CC_STATIC)
+         #define EXPORT_DLL
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/audio/openal/OpenALDecoder.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/audio/openal/OpenALDecoder.cpp	2014-12-23 15:15:12.788979600 +0900
+@@ -13,6 +13,9 @@ using namespace Tizen::Media;
+ #endif
+ 
+ #ifndef DISABLE_VORBIS
++#if defined(__CYGWIN__) && defined(_WIN32)
++#undef _WIN32
++#endif
+ #include <vorbis/vorbisfile.h>
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/base/CCValue.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/base/CCValue.cpp	2014-12-23 11:13:35.845065400 +0900
+@@ -29,9 +29,9 @@
+ 
+ NS_CC_BEGIN
+ 
+-CC_DLL const ValueVector ValueVectorNull;
+-CC_DLL const ValueMap ValueMapNull;
+-CC_DLL const ValueMapIntKey ValueMapIntKeyNull;
++const ValueVector ValueVectorNull;
++const ValueMap ValueMapNull;
++const ValueMapIntKey ValueMapIntKeyNull;
+ 
+ const Value Value::Null;
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/base/ccTypes.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/base/ccTypes.h	2014-12-23 11:17:16.847018500 +0900
+@@ -364,7 +364,7 @@ struct CC_DLL BlendFunc
+ 
+ // FIXME:: If any of these enums are edited and/or reordered, update Texture2D.m
+ //! Vertical text alignment type
+-enum class CC_DLL TextVAlignment
++enum class TextVAlignment
+ {
+     TOP,
+     CENTER,
+@@ -373,7 +373,7 @@ enum class CC_DLL TextVAlignment
+ 
+ // FIXME:: If any of these enums are edited and/or reordered, update Texture2D.m
+ //! Horizontal text alignment type
+-enum class CC_DLL TextHAlignment
++enum class TextHAlignment
+ {
+     LEFT,
+     CENTER,
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/cocos2d.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/cocos2d.h	2014-12-23 15:10:00.937417100 +0900
+@@ -238,6 +238,10 @@ THE SOFTWARE.
+ 	#include "platform/winrt/CCPrecompiledShaders.h"
+ #endif // CC_TARGET_PLATFORM == CC_PLATFORM_WP8
+ 
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
++#include "platform/desktop/CCGLViewImpl-desktop.h"
++#endif
++
+ // script_support
+ #include "base/CCScriptSupport.h"
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/deprecated/CCDeprecated.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/deprecated/CCDeprecated.h	2014-12-23 14:11:33.073159300 +0900
+@@ -29,6 +29,8 @@
+ #ifndef __COCOS2D_CCDEPRECATED_H__
+ #define __COCOS2D_CCDEPRECATED_H__
+ 
++#include "platform/CCApplication.h"
++
+ #include <math.h>
+ #include "math/CCGeometry.h"
+ #include "base/ccTypes.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/ActionTimeline/CCActionTimelineCache.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/ActionTimeline/CCActionTimelineCache.cpp	2014-12-23 21:23:19.426221700 +0900
+@@ -35,6 +35,10 @@ THE SOFTWARE.
+ 
+ #include "tinyxml2/tinyxml2.h"
+ #include "flatbuffers/flatbuffers.h"
++
++#if defined(__CYGWIN__) && defined(_WIN32)
++#undef _WIN32
++#endif
+ #include "flatbuffers/util.h"
+ 
+ #include "cocostudio/FlatBuffersSerialize.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/ActionTimeline/CSLoader.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/ActionTimeline/CSLoader.cpp	2014-12-23 21:30:54.285596700 +0900
+@@ -59,6 +59,10 @@
+ #include "cocostudio/WidgetReader/ListViewReader/ListViewReader.h"
+ 
+ #include "flatbuffers/flatbuffers.h"
++
++#if defined(__CYGWIN__) && defined(_WIN32)
++#undef _WIN32
++#endif
+ #include "flatbuffers/util.h"
+ 
+ #include "cocostudio/FlatBuffersSerialize.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/CocosStudioExport.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/CocosStudioExport.h	2014-12-24 15:37:21.237413400 +0900
+@@ -1,7 +1,9 @@
+ #ifndef __CCCOCOSSTUDIO_H__
+ #define __CCCOCOSSTUDIO_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
++#if defined(__CYGWIN__)
++#define CC_STUDIO_DLL __declspec(dllexport)
++#elif (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/FlatBuffersSerialize.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/cocostudio/FlatBuffersSerialize.cpp	2014-12-23 15:30:16.188393600 +0900
+@@ -56,6 +56,10 @@
+ 
+ #include "tinyxml2/tinyxml2.h"
+ #include "flatbuffers/flatbuffers.h"
++
++#if defined(__CYGWIN__) && defined(_WIN32)
++#undef _WIN32
++#endif
+ #include "flatbuffers/util.h"
+ 
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/AnimationState.c	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/AnimationState.c	2014-12-24 19:55:05.900298100 +0900
+@@ -316,7 +316,11 @@ spTrackEntry* spAnimationState_addAnimat
+ 	return entry;
+ }
+ 
+-spTrackEntry* spAnimationState_getCurrent (spAnimationState* self, int trackIndex) {
++#if defined(__CYGWIN__)
++#define SPINE_DLL __declspec(dllexport)
++#endif
++
++SPINE_DLL spTrackEntry* spAnimationState_getCurrent (spAnimationState* self, int trackIndex) {
+ 	if (trackIndex >= self->tracksCount) return 0;
+ 	return self->tracks[trackIndex];
+ }
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/SkeletonAnimation.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/SkeletonAnimation.h	2014-12-24 16:13:42.950865800 +0900
+@@ -44,7 +44,7 @@ typedef std::function<void(int trackInde
+ 
+ /** Draws an animated skeleton, providing an AnimationState for applying one or more animations and queuing animations to be
+   * played later. */
+-class SkeletonAnimation: public SkeletonRenderer {
++class SPINE_DLL SkeletonAnimation: public SkeletonRenderer {
+ public:
+ 	static SkeletonAnimation* createWithData (spSkeletonData* skeletonData);
+ 	static SkeletonAnimation* createWithFile (const std::string& skeletonDataFile, spAtlas* atlas, float scale = 1);
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/SkeletonRenderer.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/SkeletonRenderer.h	2014-12-24 16:30:08.851256400 +0900
+@@ -39,7 +39,7 @@ namespace spine {
+ class PolygonBatch;
+ 
+ /** Draws a skeleton. */
+-class SkeletonRenderer: public cocos2d::Node, public cocos2d::BlendProtocol {
++class SPINE_DLL SkeletonRenderer: public cocos2d::Node, public cocos2d::BlendProtocol {
+ public:
+ 	static SkeletonRenderer* createWithData (spSkeletonData* skeletonData, bool ownsSkeletonData = false);
+ 	static SkeletonRenderer* createWithFile (const std::string& skeletonDataFile, spAtlas* atlas, float scale = 1);
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/spine.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/editor-support/spine/spine.h	2014-12-24 16:13:22.015318900 +0900
+@@ -31,6 +31,10 @@
+ #ifndef SPINE_SPINE_H_
+ #define SPINE_SPINE_H_
+ 
++#if defined(__CYGWIN__)
++#define SPINE_DLL __declspec(dllexport)
++#endif
++
+ #include <spine/Animation.h>
+ #include <spine/AnimationState.h>
+ #include <spine/AnimationStateData.h>
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCApplication.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCApplication.h	2014-12-23 14:09:32.986245200 +0900
+@@ -38,7 +38,7 @@ THE SOFTWARE.
+ #include "platform/win32/CCApplication-win32.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_WP8
+ #include "platform/winrt/CCApplication.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "platform/linux/CCApplication-linux.h"
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCApplicationProtocol.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCApplicationProtocol.h	2014-12-24 00:17:26.938917000 +0900
+@@ -56,7 +56,8 @@ public:
+         OS_EMSCRIPTEN,
+         OS_TIZEN,
+         OS_WINRT,
+-        OS_WP8
++        OS_WP8,
++        OS_CYGWIN
+     };
+ 
+     /**
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCGL.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCGL.h	2014-12-23 11:13:35.860690400 +0900
+@@ -40,6 +40,8 @@ THE SOFTWARE.
+ #include "platform/winrt/CCGL.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
+ #include "platform/linux/CCGL-linux.h"
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
++#include <GL/glew.h>
+ #endif
+ 
+ #endif /* __PLATFORM_CCPLATFORMDEFINE_H__*/
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCPlatformConfig.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCPlatformConfig.h	2014-12-23 11:13:35.876315400 +0900
+@@ -52,6 +52,7 @@ THE SOFTWARE.
+ #define CC_PLATFORM_QT5               12
+ #define CC_PLATFORM_WP8               13
+ #define CC_PLATFORM_WINRT             14
++#define CC_PLATFORM_CYGWIN            15
+ 
+ // Determine target platform by compile environment macro.
+ #define CC_TARGET_PLATFORM             CC_PLATFORM_UNKNOWN
+@@ -140,6 +141,10 @@ THE SOFTWARE.
+     #define CC_TARGET_PLATFORM			CC_PLATFORM_WP8
+ #endif
+ 
++#if defined(__CYGWIN__)
++    #undef  CC_TARGET_PLATFORM
++    #define CC_TARGET_PLATFORM CC_PLATFORM_CYGWIN
++#endif
+ 
+ //////////////////////////////////////////////////////////////////////////
+ // post configure
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCPlatformDefine.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCPlatformDefine.h	2014-12-23 11:13:35.876315400 +0900
+@@ -40,6 +40,14 @@ THE SOFTWARE.
+ #include "platform/winrt/CCPlatformDefine-winrt.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
+ #include "platform/linux/CCPlatformDefine-linux.h"
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
++
++#define CC_DLL     __declspec(dllexport)
++
++#include <assert.h>
++#define CC_ASSERT(cond)    assert(cond)
++#define CC_UNUSED_PARAM(unusedparam) (void)unusedparam
++
+ #endif
+ 
+ #endif /* __PLATFORM_CCPLATFORMDEFINE_H__*/
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCStdC.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CCStdC.h	2014-12-23 11:13:35.891940400 +0900
+@@ -38,7 +38,7 @@ THE SOFTWARE.
+ #include "platform/win32/CCStdC-win32.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_WP8 || CC_TARGET_PLATFORM == CC_PLATFORM_WINRT
+ #include "platform/winrt/CCStdC.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "platform/linux/CCStdC-linux.h"
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/CMakeLists.txt	2014-12-23 11:58:21.159623800 +0900
+@@ -22,7 +22,7 @@ set(COCOS_PLATFORM_SPECIFIC_SRC
+   platform/desktop/CCGLViewImpl-desktop.cpp
+ )
+ 
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+ 
+   include_directories(
+     /usr/include
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCApplication-linux.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCApplication-linux.cpp	2014-12-23 13:57:58.732587200 +0900
+@@ -24,7 +24,7 @@ THE SOFTWARE.
+ ****************************************************************************/
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "CCApplication-linux.h"
+ #include <unistd.h>
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCApplication-linux.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCApplication-linux.h	2014-12-24 00:33:44.730554500 +0900
+@@ -27,7 +27,7 @@ THE SOFTWARE.
+ #define CCAPLICATION_H_
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "platform/CCCommon.h"
+ #include "platform/CCApplicationProtocol.h"
+@@ -36,7 +36,7 @@ THE SOFTWARE.
+ NS_CC_BEGIN
+ class Rect;
+ 
+-class Application : public ApplicationProtocol
++class CC_DLL Application : public ApplicationProtocol
+ {
+ public:
+     /**
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCCommon-linux.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCCommon-linux.cpp	2014-12-23 13:56:38.032391900 +0900
+@@ -24,7 +24,7 @@ THE SOFTWARE.
+ ****************************************************************************/
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "platform/CCCommon.h"
+ #include "CCStdC-linux.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCDevice-linux.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCDevice-linux.cpp	2014-12-23 12:52:38.813005900 +0900
+@@ -24,7 +24,7 @@ THE SOFTWARE.
+ ****************************************************************************/
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "platform/CCDevice.h"
+ #include <X11/Xlib.h>
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCFileUtils-linux.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCFileUtils-linux.cpp	2014-12-23 11:58:48.472123800 +0900
+@@ -24,7 +24,7 @@ THE SOFTWARE.
+ ****************************************************************************/
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "CCFileUtils-linux.h"
+ #include "CCApplication-linux.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCFileUtils-linux.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCFileUtils-linux.h	2014-12-23 11:58:41.987748800 +0900
+@@ -26,7 +26,7 @@ THE SOFTWARE.
+ #define __CC_FILEUTILS_LINUX_H__
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "platform/CCFileUtils.h"
+ #include "platform/CCPlatformMacros.h"
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCStdC-linux.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/platform/linux/CCStdC-linux.h	2014-12-23 11:13:35.891940400 +0900
+@@ -27,7 +27,7 @@ THE SOFTWARE.
+ #define __CC_STD_C_H__
+ 
+ #include "platform/CCPlatformConfig.h"
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #include "platform/CCPlatformMacros.h"
+ 
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/ui/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/ui/CMakeLists.txt	2014-12-24 14:05:35.455918000 +0900
+@@ -11,7 +11,7 @@ elseif(MACOSX)
+   set(COCOS_UI_SPECIFIC_SRC
+       ui/UIEditBox/UIEditBoxImpl-mac.mm
+       )
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+   set(COCOS_UI_SPECIFIC_SRC
+       ui/UIEditBox/UIEditBoxImpl-stub.cpp
+       )
+--- origsrc/cocos2d-x-cocos2d-x-3.3/cocos/ui/GUIExport.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/cocos/ui/GUIExport.h	2014-12-24 16:41:09.181334600 +0900
+@@ -1,7 +1,9 @@
+ #ifndef __CCLIBGUI_H__
+ #define __CCLIBGUI_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
++#if defined(__CYGWIN__)
++#define CC_GUI_DLL __declspec(dllexport)
++#elif (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-3.3/extensions/ExtensionExport.h	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/extensions/ExtensionExport.h	2014-12-24 17:56:43.454160100 +0900
+@@ -1,7 +1,9 @@
+ #ifndef __CCEXTENSIONEXPORT_H__
+ #define __CCEXTENSIONEXPORT_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
++#if defined(__CYGWIN__)
++#define CC_EX_DLL __declspec(dllexport)
++#elif (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-3.3/extensions/GUI/CCControlExtension/CCControlUtils.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/extensions/GUI/CCControlExtension/CCControlUtils.cpp	2014-12-23 11:45:11.023596500 +0900
+@@ -92,7 +92,7 @@ RGBA ControlUtils::RGBfromHSV(HSV value)
+     
+     if (value.s <= 0.0) // < is bogus, just shuts up warnings
+     {       
+-        if (isnan(value.h)) // value.h == NAN
++        if (std::isnan(value.h)) // value.h == NAN
+         {   
+             out.r = value.v;
+             out.g = value.v;
+--- origsrc/cocos2d-x-cocos2d-x-3.3/extensions/assets-manager/Downloader.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/extensions/assets-manager/Downloader.cpp	2014-12-23 23:00:17.547315400 +0900
+@@ -22,8 +22,14 @@
+  THE SOFTWARE.
+  ****************************************************************************/
+ 
++
+ #include "Downloader.h"
+ #include "cocos2d.h"
++#if defined(__CYGWIN__)
++#undef WIN32
++#undef _WIN32
++#undef __WIN32__
++#endif
+ #include <curl/curl.h>
+ #include <curl/easy.h>
+ #include <cstdio>
+--- origsrc/cocos2d-x-cocos2d-x-3.3/external/unzip/ioapi.h	2014-12-08 19:45:13.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/external/unzip/ioapi.h	2014-12-23 11:14:43.590182600 +0900
+@@ -52,7 +52,7 @@ namespace cocos2d {
+ #define OF _Z_OF
+ #endif
+ 
+-#if defined(USE_FILE32API)
++#if defined(USE_FILE32API) || defined(__CYGWIN__)
+ #define fopen64 fopen
+ #define ftello64 ftell
+ #define fseeko64 fseek
+--- origsrc/cocos2d-x-cocos2d-x-3.3/tests/cpp-empty-test/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/tests/cpp-empty-test/CMakeLists.txt	2014-12-23 11:13:35.923190400 +0900
+@@ -20,7 +20,7 @@ elseif(MACOSX OR APPLE)
+   cocos_mark_resources(FILES ${RES_FILES} BASEDIR Resources)
+   list(APPEND PLATFORM_SRC ${RES_FILES})
+ 
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+   set(PLATFORM_SRC proj.linux/main.cpp)
+   set(RES_PREFIX "/Resources")
+ else()
+--- origsrc/cocos2d-x-cocos2d-x-3.3/tests/cpp-tests/CMakeLists.txt	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/tests/cpp-tests/CMakeLists.txt	2014-12-24 15:31:49.755968100 +0900
+@@ -10,7 +10,7 @@ elseif(MACOSX)
+   cocos_mark_resources(FILES ${RES_FILES} BASEDIR Resources)
+   list(APPEND PLATFORM_SRC ${RES_FILES})
+ 
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+   set(PLATFORM_SRC proj.linux/main.cpp)
+   set(RES_PREFIX "/Resources")
+ else()
+@@ -212,7 +212,7 @@ if(USE_BOX2D)
+     )
+ endif()
+ 
+-if(LINUX)
++if(LINUX OR CYGWIN)
+     set(EXTENDED_TESTS_SRC
+     )
+ else()
+--- origsrc/cocos2d-x-cocos2d-x-3.3/tests/cpp-tests/Classes/CurlTest/CurlTest.cpp	2014-12-12 16:49:17.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-3.3/tests/cpp-tests/Classes/CurlTest/CurlTest.cpp	2014-12-24 00:10:25.419385800 +0900
+@@ -1,6 +1,12 @@
+ #include "CurlTest.h"
+ #include "stdio.h"
+ #include "stdlib.h"
++
++#if defined(__CYGWIN__)
++#undef WIN32
++#undef _WIN32
++#undef __WIN32__
++#endif
+ #include "curl/curl.h"
+ 
+ CurlTest::CurlTest()

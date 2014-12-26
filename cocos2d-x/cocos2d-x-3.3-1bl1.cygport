@@ -1,0 +1,64 @@
+HOMEPAGE="https://github.com/cocos2d/${PN}"
+SRC_URI="
+	https://github.com/cocos2d/${PN}/archive/${P}.tar.gz
+	https://github.com/cocos2d/${PN}-3rd-party-libs-bin/archive/v${PV[1]}-deps-29.tar.gz
+"
+SRC_DIR="${PN}-${P}"
+
+CATEGORY="Devel"
+SUMMARY="Cocos2d-x for C++"
+DESCRIPTION="Cocos2d-x is a multi-platform framework for building 2d games, interactive
+books, demos and other graphical applications. It is based on cocos2d-iphone,
+but instead of using Objective-C, it uses C++. It works on iOS, Android,
+Windows Phone, OS X, Windows and Linux."
+
+inherit cmake
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}/external
+	for d in ConvertUTF edtaa3func json unzip
+	do
+		ln -fs ../../${PN}-3rd-party-libs-bin-3-deps-29/${d} .
+	done
+	for h in glfw3.h glfw3native.h
+	do
+		ln -fs ../../${PN}-3rd-party-libs-bin-3-deps-29/glfw3/include/mac/${h} ./${h}
+	done
+	mkdir -p tinyxml2
+	ln -fs /usr/include/tinyxml2.h ./tinyxml2/tinyxml2.h
+}
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DUSE_PREBUILT_LIBS:BOOL=OFF
+	-DBUILD_LUA_LIBS:BOOL=OFF
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/cocos:${PATH} ./bin/cpp-empty-test/cpp-empty-test.exe
+	PATH=${B}/cocos:${PATH} ./bin/cpp-tests/cpp-tests.exe
+}
+
+PKG_NAMES="
+	${PN}
+	libcocos2d0
+	libcocos2d-devel
+"
+cocos2d_x_CONTENTS="
+	usr/share
+"
+libcocos2d0_CONTENTS="
+	usr/bin
+"
+libcocos2d_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+
+cocos2d_x_SUMMARY="${SUMMARY} (licensing & readmes)"
+libcocos2d0_SUMMARY="${SUMMARY} (runtime)"
+libcocos2d_devel_SUMMARY="${SUMMARY} (development)"
