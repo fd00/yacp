@@ -1,0 +1,130 @@
+--- origsrc/gperftools-2.3/Makefile.am	2014-12-07 07:51:40.000000000 +0900
++++ src/gperftools-2.3/Makefile.am	2014-12-28 16:01:48.807539000 +0900
+@@ -575,7 +575,7 @@ noinst_SCRIPTS += $(maybe_threads_unitte
+ # TODO(csilvers): replace by 'if ! cmp $^ $@ >/dev/null 2>&; then ...; fi'
+ maybe_threads_unittest.sh$(EXEEXT): $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) \
+                            $(LIBTCMALLOC_MINIMAL) \
+-                           low_level_alloc_unittest
++                           low_level_alloc_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) $@
+ endif !ENABLE_STATIC
+@@ -835,7 +835,7 @@ TESTS += debugallocation_test.sh$(EXEEXT
+ debugallocation_test_sh_SOURCES = src/tests/debugallocation_test.sh
+ noinst_SCRIPTS += $(debugallocation_test_sh_SOURCES)
+ debugallocation_test.sh$(EXEEXT): $(top_srcdir)/$(debugallocation_test_sh_SOURCES) \
+-                                  debugallocation_test
++                                  debugallocation_test$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(debugallocation_test_sh_SOURCES) $@
+ 
+@@ -896,7 +896,7 @@ libtcmalloc_internal_la_LIBADD = libstac
+ lib_LTLIBRARIES += libtcmalloc.la
+ libtcmalloc_la_SOURCES = $(TCMALLOC_CC) $(TCMALLOC_INCLUDES)
+ libtcmalloc_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG $(AM_CXXFLAGS)
+-libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
++libtcmalloc_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
+ libtcmalloc_la_LIBADD = libtcmalloc_internal.la libmaybe_threads.la $(PTHREAD_LIBS)
+ 
+ if WITH_HEAP_CHECKER
+@@ -925,7 +925,7 @@ TESTS += tcmalloc_unittest.sh$(EXEEXT)
+ tcmalloc_unittest_sh_SOURCES = src/tests/tcmalloc_unittest.sh
+ noinst_SCRIPTS += $(tcmalloc_unittest_sh_SOURCES)
+ tcmalloc_unittest.sh$(EXEEXT): $(top_srcdir)/$(tcmalloc_unittest_sh_SOURCES) \
+-                               tcmalloc_unittest
++                               tcmalloc_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(tcmalloc_unittest_sh_SOURCES) $@
+ 
+@@ -1020,7 +1020,7 @@ TESTS += sampling_test.sh$(EXEEXT)
+ sampling_test_sh_SOURCES = src/tests/sampling_test.sh
+ noinst_SCRIPTS += $(sampling_test_sh_SOURCES)
+ sampling_test.sh$(EXEEXT): $(top_srcdir)/$(sampling_test_sh_SOURCES) \
+-                           sampling_test
++                           sampling_test$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(sampling_test_sh_SOURCES) $@
+ 
+@@ -1044,7 +1044,7 @@ TESTS += heap-profiler_unittest.sh$(EXEE
+ heap_profiler_unittest_sh_SOURCES = src/tests/heap-profiler_unittest.sh
+ noinst_SCRIPTS += $(heap_profiler_unittest_sh_SOURCES)
+ heap-profiler_unittest.sh$(EXEEXT): $(top_srcdir)/$(heap_profiler_unittest_sh_SOURCES) \
+-                                    heap-profiler_unittest
++                                    heap-profiler_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(heap_profiler_unittest_sh_SOURCES) $@
+ 
+@@ -1153,7 +1153,7 @@ sampler_debug_test_LDADD = libtcmalloc_d
+ TESTS += sampling_debug_test.sh$(EXEEXT)
+ sampling_debug_test_sh_SOURCES = src/tests/sampling_test.sh
+ sampling_debug_test.sh$(EXEEXT): $(top_srcdir)/$(sampling_test_sh_SOURCES) \
+-                                 sampling_debug_test
++                                 sampling_debug_test$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(sampling_test_sh_SOURCES) $@
+ 
+@@ -1172,7 +1172,7 @@ if WITH_HEAP_PROFILER
+ TESTS += heap-profiler_debug_unittest.sh$(EXEEXT)
+ heap_profiler_debug_unittest_sh_SOURCES = src/tests/heap-profiler_unittest.sh
+ heap-profiler_debug_unittest.sh$(EXEEXT): $(top_srcdir)/$(heap_profiler_unittest_sh_SOURCES) \
+-                                    heap-profiler_debug_unittest
++                                    heap-profiler_debug_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(heap_profiler_unittest_sh_SOURCES) $@
+ 
+@@ -1190,7 +1190,7 @@ if WITH_HEAP_CHECKER
+ TESTS += heap-checker_debug_unittest.sh$(EXEEXT)
+ heap_checker_debug_unittest_sh_SOURCES = src/tests/heap-checker_unittest.sh
+ heap-checker_debug_unittest.sh$(EXEEXT): $(top_srcdir)/$(heap_checker_unittest_sh_SOURCES) \
+-                                   heap-checker_debug_unittest
++                                   heap-checker_debug_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(heap_checker_unittest_sh_SOURCES) $@
+ 
+@@ -1240,7 +1240,7 @@ libprofiler_la_SOURCES = src/profiler.cc
+ libprofiler_la_LIBADD = libstacktrace.la libmaybe_threads.la
+ # We have to include ProfileData for profiledata_unittest
+ CPU_PROFILER_SYMBOLS = '(ProfilerStart|ProfilerStartWithOptions|ProfilerStop|ProfilerFlush|ProfilerEnable|ProfilerDisable|ProfilingIsEnabledForAllThreads|ProfilerRegisterThread|ProfilerGetCurrentState|ProfilerState|ProfileData|ProfileHandler)'
+-libprofiler_la_LDFLAGS = -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
++libprofiler_la_LDFLAGS = -no-undefined -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
+                          -version-info @PROFILER_SO_VERSION@
+ 
+ # See discussion above (under LIBTCMALLOC_MINIMAL) for why we do this.
+@@ -1333,7 +1333,7 @@ libtcmalloc_and_profiler_la_CXXFLAGS = $
+ # Since this library is meant to be used as a .a, I don't worry as much
+ # about .so versioning.  I just give the libtcmalloc version number.
+ # TODO(csilvers): use -export-symbols-regex?
+-libtcmalloc_and_profiler_la_LDFLAGS = $(PTHREAD_CFLAGS) \
++libtcmalloc_and_profiler_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) \
+                                       -version-info @TCMALLOC_SO_VERSION@
+ # We don't include libprofiler_la_LIBADD here because all it adds is
+ # libstacktrace.la, which we already get via libtcmalloc.  Trying to
+--- origsrc/gperftools-2.3/configure.ac	2014-12-08 05:50:37.000000000 +0900
++++ src/gperftools-2.3/configure.ac	2014-12-28 15:57:53.557539000 +0900
+@@ -18,7 +18,7 @@ AC_SUBST(PROFILER_SO_VERSION)
+ AC_CONFIG_SRCDIR(README)
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_CANONICAL_HOST
+-AM_INIT_AUTOMAKE([dist-zip])
++AM_INIT_AUTOMAKE([dist-zip subdir-objects])
+ AC_CONFIG_HEADERS([src/config.h])
+ 
+ AM_MAINTAINER_MODE()
+--- origsrc/gperftools-2.3/src/maybe_threads.cc	2014-12-07 07:51:40.000000000 +0900
++++ src/gperftools-2.3/src/maybe_threads.cc	2014-12-28 15:49:08.114179700 +0900
+@@ -56,6 +56,7 @@
+ # define __THROW   // __THROW is just an optimization, so ok to make it ""
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ // These are the methods we're going to conditionally include.
+ extern "C" {
+   int pthread_key_create (pthread_key_t*, void (*)(void*))
+@@ -69,6 +70,7 @@ extern "C" {
+   int pthread_once(pthread_once_t *, void (*)(void))
+       ATTRIBUTE_WEAK;
+ }
++#endif
+ 
+ #define MAX_PERTHREAD_VALS 16
+ static void *perftools_pthread_specific_vals[MAX_PERTHREAD_VALS];
