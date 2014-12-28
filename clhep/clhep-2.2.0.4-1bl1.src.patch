@@ -1,0 +1,163 @@
+--- origsrc/2.2.0.4/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2014-11-22 05:24:23.000000000 +0900
++++ src/2.2.0.4/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2014-12-28 14:26:47.527265600 +0900
+@@ -29,25 +29,18 @@ macro(clhep_build_library package)
+ 
+   # Add the libraries and set properties
+   ADD_LIBRARY(${package}  SHARED ${CLHEP_${package}_SOURCES})
+-  ADD_LIBRARY(${package}S STATIC ${CLHEP_${package}_SOURCES})
+   SET_TARGET_PROPERTIES (${package}
+       PROPERTIES 
+-        OUTPUT_NAME CLHEP-${package}-${VERSION}
+-	CLEAN_DIRECT_OUTPUT 1
+-      )
+-  SET_TARGET_PROPERTIES(${package}S
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${package}-${VERSION}
++        OUTPUT_NAME CLHEP-${package}
+ 	CLEAN_DIRECT_OUTPUT 1
++        SOVERSION 0
+       )
+ 
+   target_link_libraries(${package}  ${package_library_list} )
+-  target_link_libraries(${package}S ${package_library_list} )
+ 
+   # Install the libraries
+-  INSTALL (TARGETS ${package} ${package}S
++  INSTALL (TARGETS ${package}
+       RUNTIME DESTINATION bin
+-      LIBRARY DESTINATION lib${LIB_SUFFIX}
+       ARCHIVE DESTINATION lib${LIB_SUFFIX}
+       ) 
+ endmacro(clhep_build_library)
+@@ -61,24 +54,18 @@ macro(clhep_build_libclhep )
+   ##message( STATUS "clheplib source list ${clhep_sources}" )
+ 
+   ADD_LIBRARY (CLHEP  SHARED ${clhep_sources})
+-  ADD_LIBRARY (CLHEPS STATIC ${clhep_sources})
+ 
+   SET_TARGET_PROPERTIES(CLHEP
+       PROPERTIES 
+-        OUTPUT_NAME CLHEP-${VERSION}
+-        CLEAN_DIRECT_OUTPUT 1
+-      )
+-  SET_TARGET_PROPERTIES(CLHEPS
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${VERSION}
++        OUTPUT_NAME CLHEP
+         CLEAN_DIRECT_OUTPUT 1
++        SOVERSION 0
+       )
+ 
+   # export creates library dependency files for CLHEPConfig.cmake
+-  INSTALL(TARGETS CLHEP CLHEPS
++  INSTALL(TARGETS CLHEP
+       EXPORT CLHEPLibraryDepends
+       RUNTIME DESTINATION bin
+-      LIBRARY DESTINATION lib${LIB_SUFFIX}
+       ARCHIVE DESTINATION lib${LIB_SUFFIX}
+       ) 
+ 
+@@ -96,7 +83,9 @@ macro(clhep_build_libclhep )
+         	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP${CMAKE_SHARED_LIBRARY_SUFFIX} WORKING_DIRECTORY \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}\" )" )
+   endif()
+ 
+-  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
+-  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
++  if (NOT CYGWIN)
++      INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
++      INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
++  endif (NOT CYGWIN)
+ 
+ endmacro(clhep_build_libclhep )
+--- origsrc/2.2.0.4/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2014-11-22 05:24:23.000000000 +0900
++++ src/2.2.0.4/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2014-12-28 14:35:37.573164000 +0900
+@@ -26,14 +26,14 @@ macro( clhep_test testname )
+   if( CTST_NOLIB )
+     set(package_library_list)
+   else()
+-    set( package_library_list ${PACKAGE}S)
++    set( package_library_list ${PACKAGE})
+     #set( package_library_list ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${PACKAGE}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
+   endif()
+ 
+   if( ${PACKAGE}_DEPS )
+      foreach ( dep ${${PACKAGE}_DEPS} )
+         ##message( STATUS "clhep_test ${testname} will use ${dep}")
+-	list(APPEND package_library_list ${PACKAGE}S)
++	list(APPEND package_library_list ${PACKAGE})
+ 	#list(APPEND package_library_list  ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${dep}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
+      endforeach()
+   endif()
+--- origsrc/2.2.0.4/CLHEP/cmake/Modules/ClhepToolchain.cmake	2014-11-22 05:24:23.000000000 +0900
++++ src/2.2.0.4/CLHEP/cmake/Modules/ClhepToolchain.cmake	2014-12-28 14:49:20.060468700 +0900
+@@ -52,7 +52,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+ 
+ # We 'export' the main CLHEP library targets from the build tree.
+ # This file is include()d by CLHEPConfig.cmake
+-export(TARGETS CLHEP CLHEPS 
++export(TARGETS CLHEP
+   FILE ${PROJECT_BINARY_DIR}/CLHEPLibraryDepends.cmake
+   )
+ 
+@@ -129,10 +129,10 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+ install(FILES
+   ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake 
+   ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake 
+-  DESTINATION lib${LIB_SUFFIX}/CLHEP-${VERSION}
++  DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP
+   )
+ 
+-install(EXPORT CLHEPLibraryDepends DESTINATION lib${LIB_SUFFIX}/CLHEP-${VERSION})
++install(EXPORT CLHEPLibraryDepends DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP)
+ 
+ # Install the pkg-config file. The choice of 'lib${LIB_SUFFIX}/pkgconfig' for the 
+ # installation seems fairly standard.
+--- origsrc/2.2.0.4/CLHEP/cmake/Modules/ClhepVariables.cmake	2014-11-22 05:24:23.000000000 +0900
++++ src/2.2.0.4/CLHEP/cmake/Modules/ClhepVariables.cmake	2014-12-28 14:54:52.438398400 +0900
+@@ -152,12 +152,12 @@ macro( clhep_set_compiler_flags )
+   if( ${clhep_c_compiler} STREQUAL "clang" )
+     set(CMAKE_C_FLAGS "-O -pedantic -Wall ${CMAKE_C_FLAGS}")
+   elseif( CMAKE_COMPILER_IS_GNUCC )
+-    set(CMAKE_C_FLAGS "-O -ansi -pedantic -Wall -D_GNU_SOURCE ${CMAKE_C_FLAGS}")
++    set(CMAKE_C_FLAGS "-O -pedantic -Wall -D_GNU_SOURCE ${CMAKE_C_FLAGS}")
+   endif()
+   if( ${clhep_cxx_compiler} STREQUAL "clang++" )
+     set(CMAKE_CXX_FLAGS "-O -pedantic -Wall ${CMAKE_CXX_FLAGS}")
+   elseif(CMAKE_COMPILER_IS_GNUCXX)
+-    set(CMAKE_CXX_FLAGS "-O -ansi -pedantic -Wall -D_GNU_SOURCE ${CMAKE_CXX_FLAGS}")
++    set(CMAKE_CXX_FLAGS "-O -pedantic -Wall -D_GNU_SOURCE ${CMAKE_CXX_FLAGS}")
+   endif()
+   if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+     ##message( STATUS "system is Windows" )
+@@ -182,7 +182,7 @@ macro( clhep_package_config_no_lib )
+   ## don't install <package>-config on Windows
+   if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+     install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
+-              DESTINATION bin
++              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
+ 	    )
+   endif()
+ endmacro( clhep_package_config_no_lib )
+@@ -190,11 +190,11 @@ endmacro( clhep_package_config_no_lib )
+ macro( clhep_package_config )
+   set( ${PACKAGE}_CPPFLAGS "-I${includedir}" )
+   set( ${PACKAGE}_LDFLAGS  "-L\${exec_prefix}/lib${LIB_SUFFIX}" )
+-  set( ${PACKAGE}_LIBS     "-lCLHEP-${PACKAGE}-${VERSION}" )
++  set( ${PACKAGE}_LIBS     "-lCLHEP-${PACKAGE}" )
+   if( ${PACKAGE}_DEPS )
+      foreach ( dep ${${PACKAGE}_DEPS} )
+         message( STATUS "${PACKAGE} depends on ${dep}")
+-	set( ${PACKAGE}_LIBS     "${${PACKAGE}_LIBS} -lCLHEP-${dep}-${VERSION}" )
++	set( ${PACKAGE}_LIBS     "${${PACKAGE}_LIBS} -lCLHEP-${dep}" )
+      endforeach()
+   endif()
+   configure_file ( ${CLHEP_SOURCE_DIR}/${PACKAGE}/${PACKAGE}-config.in
+@@ -204,7 +204,7 @@ macro( clhep_package_config )
+   ## don't install <package>-config on Windows
+   if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+     install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
+-              DESTINATION bin
++              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
+ 	    )
+   endif()
+ endmacro( clhep_package_config )
