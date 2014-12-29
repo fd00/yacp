@@ -1,22 +1,22 @@
---- origsrc/AFFLIBv3-3.7.4/lib/Makefile.am	2013-11-17 03:11:56.000000000 +0900
-+++ src/AFFLIBv3-3.7.4/lib/Makefile.am	2014-02-15 19:12:06.504056100 +0900
-@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = subdir-objects
+--- origsrc/AFFLIBv3-3.7.6/lib/Makefile.am	2014-11-08 15:32:35.000000000 +0900
++++ src/AFFLIBv3-3.7.6/lib/Makefile.am	2014-12-29 12:54:48.318842900 +0900
+@@ -8,7 +8,7 @@ AUTOMAKE_OPTIONS = subdir-objects
  
  aftest_SOURCES = aftest.cpp
  aftest_LDADD = libafflib.la  
 -aftest_LDFLAGS = $(PTHREAD_CFLAGS) -static # easier debugging
-+aftest_LDFLAGS = $(PTHREAD_CFLAGS) # easier debugging
++aftest_LDFLAGS = $(PTHREAD_CFLAGS)
  
  AFFLIB_SOURCES = aff_db.cpp aff_db.h aff_toc.cpp \
  	afflib.cpp afflib.h afflib_i.h afflib_os.cpp \
-@@ -84,30 +84,30 @@ install-exec-hook:
+@@ -85,30 +85,30 @@ install-exec-hook:
  EXTRA_DIST = 
  
  AM_CPPFLAGS =  \
 -	-I@top_srcdir@/lzma443/C  \
 -	-I@top_srcdir@/lzma443/C/7zip/Compress/LZMA_Alone  
-+	-I$(top_srcdir)/lzma443/C  \
-+	-I$(top_srcdir)/lzma443/C/7zip/Compress/LZMA_Alone  
++	-I${top_srcdir}/lzma443/C  \
++	-I${top_srcdir}/lzma443/C/7zip/Compress/LZMA_Alone  
  
  LZMA_SOURCES =  \
 -	@top_srcdir@/lzma443/C/7zip/Compress/LZMA_Alone/LzmaBench.cpp \
@@ -62,14 +62,14 @@
  
  
  # specify lib_ to force tools to be dynamically linked against the installed library. 
-@@ -115,3 +115,4 @@ LZMA_SOURCES =  \
+@@ -116,3 +116,4 @@ LZMA_SOURCES =  \
  # Unfortunately, when we specify lib_, things don't build. I can't figure it out.
  lib_LTLIBRARIES = libafflib.la
  libafflib_la_SOURCES += $(LZMA_SOURCES)
 +libafflib_la_LDFLAGS = -no-undefined
---- origsrc/AFFLIBv3-3.7.4/pyaff/Makefile.am	2013-11-17 03:11:56.000000000 +0900
-+++ src/AFFLIBv3-3.7.4/pyaff/Makefile.am	2014-02-15 19:12:06.504056100 +0900
-@@ -8,7 +8,7 @@ pyexec_LTLIBRARIES 	= pyaff.la
+--- origsrc/AFFLIBv3-3.7.6/pyaff/Makefile.am	2014-11-08 15:32:35.000000000 +0900
++++ src/AFFLIBv3-3.7.6/pyaff/Makefile.am	2014-12-29 12:50:00.016259600 +0900
+@@ -9,7 +9,7 @@ pyexec_LTLIBRARIES 	= pyaff.la
  
  pyaff_la_SOURCES	= pyaff.c
  pyaff_la_LIBADD		= ../lib/libafflib.la
@@ -79,20 +79,9 @@
 -pyaff_la_LDFLAGS 	= -module -avoid-version $(PYTHON_LDFLAGS)
 +pyaff_la_LDFLAGS 	= -no-undefined -module -avoid-version $(PYTHON_LDFLAGS)
  endif
---- origsrc/AFFLIBv3-3.7.4/tools/Makefile.am	2013-11-17 03:11:56.000000000 +0900
-+++ src/AFFLIBv3-3.7.4/tools/Makefile.am	2014-02-15 19:12:06.519681100 +0900
-@@ -8,8 +8,6 @@ TESTS = test_signing.sh test_recovery.sh
- 
- # See http://www.gnu.org/software/libtool/manual.html		# Using-Automake
- 
--AM_LDFLAGS = -static		# staticly link our tools (easier debugging)
--
- affcat_SOURCES = affcat.cpp 
- 
- affcrypto_SOURCES = affcrypto.cpp
---- origsrc/AFFLIBv3-3.7.4/tools/affcopy.cpp	2013-11-17 03:11:56.000000000 +0900
-+++ src/AFFLIBv3-3.7.4/tools/affcopy.cpp	2014-02-15 19:12:06.519681100 +0900
-@@ -154,7 +154,7 @@ void unlink_outfiles(vector<string> outf
+--- origsrc/AFFLIBv3-3.7.6/tools/affcopy.cpp	2014-11-08 15:32:35.000000000 +0900
++++ src/AFFLIBv3-3.7.6/tools/affcopy.cpp	2014-12-29 13:00:45.068842900 +0900
+@@ -150,7 +150,7 @@ void unlink_outfiles(vector<string> outf
      if(failure) exit(1);
  }
  
@@ -101,15 +90,3 @@
  #define isnumber(x) isdigit(x)
  #endif
  
---- origsrc/AFFLIBv3-3.7.4/tools/affinfo.cpp	2013-11-17 03:11:56.000000000 +0900
-+++ src/AFFLIBv3-3.7.4/tools/affinfo.cpp	2014-02-15 19:12:06.519681100 +0900
-@@ -776,7 +776,9 @@ int main(int argc,char **argv)
-     term = getenv("TERM");
-     if(term){
- 	setupterm((char *)0,1,(int *)0);
-+#if !defined(__CYGWIN__)
- 	start_color();
-+#endif
- 	cols = tgetnum((char *)"co");
-     }
- #endif
