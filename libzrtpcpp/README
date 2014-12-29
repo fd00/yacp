@@ -1,68 +1,83 @@
 libzrtpcpp
 ------------------------------------------
-This package provides a library that adds ZRTP support to the GNU ccRTP stack.
-Phil Zimmermann developed ZRTP to allow ad-hoc, easy to use key negotiation to
-setup Secure RTP (SRTP) sessions. GNU ZRTP works together with GNU ccRTP
-(1.5.0 or later) and provides a ZRTP implementation that can be directly
-embedded into client and server applications.
+This package provides a library that adds ZRTP support to the GNU ccRTP stack
+and serves as library for other RTP stacks (PJSIP, GStreamer). Phil Zimmermann
+developed ZRTP to allow ad-hoc, easy to use key negotiation to setup Secure
+RTP (SRTP) sessions. GNU ZRTP works together with GNU ccRTP (1.5.0 or later)
+and provides a ZRTP implementation that can be directly embedded into client
+and server applications.
 
-The GNU ZRTP implementation is compliant to RFC 6189. Currently GNU ZRTP C++
-supports the following features:
+The GNU ZRTP implementation is compliant to RFC 6189 and adds some more
+algorithms. Currently GNU ZRTP C++ supports the following features:
 
  * multi-stream mode
- * Finite field Diffie-Helman with 2048 and 3072 bit primes
- * Elliptic curve Diffie-Helman with 256 and 384 bit curves
- * AES-128 and AES-256 symmetric cipher
+ * Finite field Diffie-Hellman with 2048 and 3072 bit primes
+ * Elliptic curve Diffie-Hellman with 256 and 384 bit curves (NIST curves)
+ * Elliptic curves Curve25519 and Curve3617 (Dan Bernstein, Tanja Lange)
+ * Skein Hash and MAC for ZRTP
+ * AES-128 and AES-256 symmetric ciphers
  * Twofish-128 and Twofish-256 bit symmetric ciphers
  * The SRTP authentication methods HMAC-SHA1 with 32 bit and 80 bit length and
    the Skein MAC with 32 bit and 64 bit length
  * The Short Authentication String (SAS) type with base 32 encoding (4
-   characters)
+   characters) and the SAS 256 type using words.
 
-Enhanced features like PBX SAS relay aka trusted Man-in-the-Middle or
-preshared mode are not supported but the GNU ZRTP C++ implementation defines
-the necessary external interfaces and functions for these enhanced features
-(stubs only).
+Some features like preshared mode are not supported but the GNU ZRTP C++
+implementation defines the necessary external interfaces and functions for
+these enhanced features.
+
+Note: The Elliptic curves Cure25519 and Curve3617 are available only if you
+select the crypto standalone mode during build.
+
+The newer verisons (starting with 4.1) implement an extensible mechanisms to
+define algorithm selection policies that control selection of Hash, symmetric
+cipher, and the SRTP authentication. Currently two policies exist: Standard
+and PreferNonNist. The Standard policy selects algorihms based on the
+preferences (order) in the Hello packet, the PreferNonNist policy prefers
+non-NIST algorithms, for example Skein and Twofish, if the selected public key
+(Diffie-Hellman) algorithm is also one of the non-NIST algorithms. This is
+fully backward compatible and in-line with RFC6189.
 
 Runtime requirements:
-  cygwin-1.7.22-1
-  libccrtp2-2.0.6-1bl1
-  libcommoncpp6-6.0.6-1bl1
-  libgcc1-4.7.3-1
-  libopenssl100-1.0.1e-2
-  libstdc++6-4.7.3-1
-  libucommon6-6.0.6-1bl1
-  openssl-devel-1.0.1e-2
+  cygwin-1.7.33-1
+  libccrtp3-2.1.1-1bl1
+  libcommoncpp7-6.3.0-1bl1
+  libgcc1-4.9.2-1
+  libsqlite3_0-3.8.7.4-1
+  libstdc++6-4.9.2-1
+  libucommon7-6.3.0-1bl1
+  libzrtpcpp-devel-4.3.1-1bl1
+  libzrtpcpp4-4.3.1-1bl1
 
 Build requirements:
 (besides corresponding -devel packages)
-  binutils-2.23.51-1
-  cmake-2.8.9-2
-  cygport-0.12.2-1
-  gcc-core-4.7.3-1
-  gcc-g++-4.7.3-1
-  make-3.82.90-1
+  binutils-2.24.51-6
+  cmake-2.8.12.2-3
+  cygport-0.17.1-1
+  gcc-core-4.9.2-1
+  gcc-g++-4.9.2-1
+  make-4.0-2
 
 Canonical website:
   https://github.com/wernerd/ZRTPCPP
 
 Canonical download:
-  mirror://gnu/ccrtp/libzrtpcpp-2.3.4.tar.gz
+  https://github.com/wernerd/ZRTPCPP/archive/V4.3.1.tar.gz
 
 -------------------------------------------
 
 Build instructions:
-  unpack libzrtpcpp-2.3.4-X-src.tar.bz2
+  unpack libzrtpcpp-4.3.1-X-src.tar.xz
     if you use setup to install this src package, it will be
-	 unpacked under /usr/src automatically
+        unpacked under /usr/src automatically
   cd /usr/src
-  cygport ./libzrtpcpp-2.3.4-X.cygport all
+  cygport ./libzrtpcpp-4.3.1-X.cygport all
 
 This will create:
-  /usr/src/libzrtpcpp-2.3.4-X-src.tar.bz2
-  /usr/src/libzrtpcpp-2.3.4-X.tar.bz2
-  /usr/src/libzrtpcpp2-2.3.4-X.tar.bz2
-  /usr/src/libzrtpcpp-devel-2.3.4-X.tar.bz2
+  /usr/src/libzrtpcpp-4.3.1-X-src.tar.xz
+  /usr/src/libzrtpcpp-4.3.1-X.tar.xz
+  /usr/src/libzrtpcpp4-4.3.1-X.tar.xz
+  /usr/src/libzrtpcpp-devel-4.3.1-X.tar.xz
 
 -------------------------------------------
 
@@ -76,17 +91,18 @@ Files included in the binary package:
   /usr/share/doc/libzrtpcpp/NEWS
   /usr/share/doc/libzrtpcpp/README.md
 
-(libzrtpcpp2)
-  /usr/bin/cygzrtpcpp-2.dll
+(libzrtpcpp4)
+  /usr/bin/cygzrtpcpp-4.dll
 
 (libzrtpcpp-devel)
-  /usr/include/libzrtpcpp/TimeoutProvider.h
+  /usr/include/libzrtpcpp/CcrtpTimeoutProvider.h
   /usr/include/libzrtpcpp/ZrtpCWrapper.h
   /usr/include/libzrtpcpp/ZrtpCallback.h
   /usr/include/libzrtpcpp/ZrtpCodes.h
   /usr/include/libzrtpcpp/ZrtpConfigure.h
   /usr/include/libzrtpcpp/ZrtpQueue.h
   /usr/include/libzrtpcpp/ZrtpUserCallback.h
+  /usr/include/libzrtpcpp/common/osSpecifics.h
   /usr/include/libzrtpcpp/zrtpccrtp.h
   /usr/lib/libzrtpcpp.dll.a
   /usr/lib/pkgconfig/libzrtpcpp.pc
@@ -94,6 +110,9 @@ Files included in the binary package:
 ------------------
 
 Port Notes:
+
+----- version 4.3.1-1bl1 -----
+Version bump.
 
 ----- version 2.3.4-1bl1 -----
 Version bump.
