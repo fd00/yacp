@@ -1,0 +1,84 @@
+--- origsrc/libwebsock-2.0.0/configure.ac	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/configure.ac	2014-12-29 23:38:34.140172400 +0900
+@@ -27,35 +27,14 @@ AC_FUNC_MALLOC
+ AC_FUNC_REALLOC
+ AC_CHECK_FUNCS([memset socket strstr])
+ 
+-AC_CHECK_HEADERS([event2/thread.h], [
+-					LIBS="-levent_pthreads ${LIBS}"
+-				    ], [
+-                                                echo "libevent_pthreads required, failing"
+-                                                exit -1
+-                                                ])
+-AC_CHECK_LIB(pthread, pthread_create, [LIBS="-lpthread ${LIBS}"], [
+-                                                echo "pthreads required, failing"
+-                                                exit -1
+-                                                ])
+-AC_CHECK_LIB(event, event_base_dispatch, [], [
+-						echo "libevent required, failing"
+-						exit -1
+-						])
++PKG_CHECK_MODULES([LIBEVENT_PTHREADS], [libevent_pthreads])
+ 
+-AS_IF([test "x$with_ssl" != "xno"],
+-	[
+-  	AC_CHECK_LIB([ssl], [SSL_CTX_new],
+-  		[
+-  			LIBS="-lssl ${LIBS}"
+-  			AC_CHECK_LIB([event_openssl], [bufferevent_openssl_socket_new], [
+-  				LIBS="-levent_openssl ${LIBS}"
+-  				have_ssl=yes
+-  			], [have_ssl=no])
+-  		], 
+-  		[have_ssl=no])
+-  	],
+-  	[have_ssl=no])
+-  	
++if test "x$with_ssl" != "xno"
++then
++        PKG_CHECK_MODULES([LIBEVENT_OPENSSL], [libevent_openssl], [have_ssl=yes], [have_ssl=no])
++else
++        have_ssl=no
++fi
+ AS_IF([test "x$have_ssl" = "xyes"],
+ 	[
+ 		AC_DEFINE([WEBSOCK_HAVE_SSL], [1], [Define if building SSL support])
+--- origsrc/libwebsock-2.0.0/examples/Makefile.am	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/examples/Makefile.am	2014-12-29 23:30:12.010775600 +0900
+@@ -1,5 +1,6 @@
+ EXTRA_PROGRAMS = ws-echo autobahn-echo
+ ws_echo_SOURCES = echo.c
++ws_echo_LDADD = $(top_builddir)/src/libwebsock.la
+ autobahn_echo_SOURCES = autobahn-echo.c
+-LIBS = -lwebsock
++autobahn_echo_LDADD = $(top_builddir)/src/libwebsock.la
+ ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libwebsock-2.0.0/src/Makefile.am	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/src/Makefile.am	2014-12-29 23:31:51.198275600 +0900
+@@ -7,8 +7,9 @@ else
+ libwebsock_la_SOURCES = websock.c base64.c sha1.c frames.c default_callbacks.c api.c sha1.h base64.h utf.c util.c
+ endif
+ 
+-libwebsock_la_LDFLAGS = -version-info $(LIBWEBSOCK_LIBRARY_VERSION)
+-libwebsock_la_CFLAGS = -Wall -Wmissing-prototypes
++libwebsock_la_LDFLAGS = -no-undefined -version-info $(LIBWEBSOCK_LIBRARY_VERSION)
++libwebsock_la_CFLAGS = -Wall -Wmissing-prototypes $(LIBEVENT_PTHREADS_CFLAGS) $(LIBEVENT_OPENSSL_CFLAGS)
++libwebsock_la_LIBADD = $(LIBEVENT_PTHREADS_LIBS) $(LIBEVENT_OPENSSL_LIBS)
+ library_includedir=$(includedir)/websock
+ library_include_HEADERS = websock.h api.h default_callbacks.h frames.h util.h utf.h types.h websock_config.h
+ ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libwebsock-2.0.0/src/websock_config.h	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/src/websock_config.h	2014-12-29 23:41:23.077672400 +0900
+@@ -2,10 +2,8 @@
+ #ifndef WEBSOCK_CONFIG_H
+ #define WEBSOCK_CONFIG_H 1
+ 
+-#define LIBWEBSOCK_DEBUG 0
+-
+-#define WEBSOCK_PACKAGE_STRING "libwebsock 1.0.7"
+-#define WEBSOCK_PACKAGE_VERSION "1.0.7"
++#define WEBSOCK_PACKAGE_STRING "libwebsock 2.0.0"
++#define WEBSOCK_PACKAGE_VERSION "2.0.0"
+ #define WEBSOCK_PACKAGE_NAME "libwebsock"
+ #define WEBSOCK_HAVE_SSL 1
+ 
