@@ -1,0 +1,166 @@
+--- origsrc/cdo-1.6.7/libcdi/m4/acx_options.m4	2014-12-04 05:25:39.000000000 +0900
++++ src/cdo-1.6.7/libcdi/m4/acx_options.m4	2014-12-31 20:30:02.800748400 +0900
+@@ -35,9 +35,7 @@ AC_ARG_WITH([zlib],
+             [AS_CASE(["$with_zlib"],
+                      [no],[AC_MSG_CHECKING([for ZLIB library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(zlib.h)
+-                            AC_SEARCH_LIBS([deflate],[z],[AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])
+-                            ZLIB_LIBS=" -lz"],
++                     [yes],[PKG_CHECK_MODULES([ZLIB], [zlib], [AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])],
+                      [*],[ZLIB_ROOT=$with_zlib
+                           LDFLAGS="-L$ZLIB_ROOT/lib $LDFLAGS"
+                           CPPFLAGS="-I$ZLIB_ROOT/include $CPPFLAGS"
+@@ -60,7 +58,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+@@ -214,10 +212,7 @@ AC_ARG_WITH([jasper],
+             [AS_CASE(["$with_jasper"],
+                      [no],[AC_MSG_CHECKING([for jasper library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([jasper.h])
+-                            AC_SEARCH_LIBS([jas_init],[jasper],[AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])],
+-                                           [AC_MSG_ERROR([Could not link to jasper library! Required for GRIB_API])])
+-                            AC_SUBST([JASPER_LIBS],[" -ljasper"])],
++                     [yes],[PKG_CHECK_MODULES([JASPER], [jasper], [AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])])],
+                      [*],[JASPER_ROOT=$with_jasper
+                           AS_IF([test -d "$JASPER_ROOT"],
+                                 [LDFLAGS="$LDFLAGS -L$JASPER_ROOT/lib"
+@@ -240,10 +235,7 @@ AC_ARG_WITH([openjpeg],
+             [AS_CASE(["$with_openjpeg"],
+                      [no],[AC_MSG_CHECKING([for openjpeg library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([openjpeg.h])
+-                            AC_SEARCH_LIBS([opj_image_create],[openjpeg],[AC_DEFINE([HAVE_LIBOPENJPEG],[1],[Define to 1 for JPEG compression for GRIB2])],
+-                                           [AC_MSG_ERROR([Could not link to openjpeg library! Required for GRIB_API])])
+-                            AC_SUBST([openjpeg_LIBS],[" -lopenjpeg"])],
++                     [yes],[PKG_CHECK_MODULES([LIBOPENJPEG], [libopenjpeg], [AC_DEFINE([HAVE_LIBOPENJPEG],[1],[Define to 1 for JPEG compression for GRIB2])])],
+                      [*],[OPENJPEG_ROOT=$with_openjpeg
+                           AS_IF([test -d "$OPENJPEG_ROOT"],
+                                 [LDFLAGS="$LDFLAGS -L$OPENJPEG_ROOT/lib"
+--- origsrc/cdo-1.6.7/libcdi/src/Makefile.am	2014-12-03 02:12:07.000000000 +0900
++++ src/cdo-1.6.7/libcdi/src/Makefile.am	2014-12-31 20:20:06.047447900 +0900
+@@ -7,6 +7,7 @@ noinst_LTLIBRARIES = libcdiresunpack.la
+ if ENABLE_CDI_LIB
+   lib_LTLIBRARIES = libcdi.la
+   include_HEADERS = cdi.h cdi.inc
++  libcdi_la_LDFLAGS = -no-undefined
+ else
+   noinst_LTLIBRARIES += libcdi.la
+ endif
+@@ -118,6 +119,7 @@ if USE_MPI
+ if ENABLE_CDI_LIB
+ lib_LTLIBRARIES += libcdipio.la
+ include_HEADERS += cdipio.h cdipio.inc
++libcdipio_la_LDFLAGS = -no-undefined
+ else
+ noinst_LTLIBRARIES += libcdipio.la
+ endif
+--- origsrc/cdo-1.6.7/libcdi/src/cgribexlib.c	2014-12-06 03:46:43.000000000 +0900
++++ src/cdo-1.6.7/libcdi/src/cgribexlib.c	2014-12-31 20:46:13.758092200 +0900
+@@ -6590,7 +6590,7 @@ extern "C" {
+ #if defined (HAVE_LIBAEC)
+ #  include <libaec.h>
+ #else
+-#  include <szlib.h>
++#  include <szip/szlib.h>
+ #endif
+ #if defined (__cplusplus)
+ }
+--- origsrc/cdo-1.6.7/m4/acx_options.m4	2014-12-04 02:09:13.000000000 +0900
++++ src/cdo-1.6.7/m4/acx_options.m4	2014-12-31 20:28:29.740201500 +0900
+@@ -35,9 +35,7 @@ AC_ARG_WITH([zlib],
+             [AS_CASE(["$with_zlib"],
+                      [no],[AC_MSG_CHECKING([for ZLIB library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(zlib.h)
+-                            AC_SEARCH_LIBS([deflate],[z],[AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])
+-                            ZLIB_LIBS=" -lz"],
++                     [yes],[PKG_CHECK_MODULES([ZLIB], [zlib], [AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])],
+                      [*],[ZLIB_ROOT=$with_zlib
+                           LDFLAGS="-L$ZLIB_ROOT/lib $LDFLAGS"
+                           CPPFLAGS="-I$ZLIB_ROOT/include $CPPFLAGS"
+@@ -60,7 +58,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+@@ -215,10 +213,7 @@ AC_ARG_WITH([jasper],
+             [AS_CASE(["$with_jasper"],
+                      [no],[AC_MSG_CHECKING([for jasper library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([jasper.h])
+-                            AC_SEARCH_LIBS([jas_init],[jasper],[AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])],
+-                                           [AC_MSG_ERROR([Could not link to jasper library! Required for GRIB_API])])
+-                            AC_SUBST([JASPER_LIBS],[" -ljasper"])],
++                     [yes],[PKG_CHECK_MODULES([JASPER], [jasper], [AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])])],
+                      [*],[JASPER_ROOT=$with_jasper
+                           AS_IF([test -d "$JASPER_ROOT"],
+                                 [LDFLAGS="$LDFLAGS -L$JASPER_ROOT/lib"
+@@ -335,12 +330,10 @@ AC_ARG_WITH([fftw3],
+       [enable support for fftw3])],
+     [],
+     [with_fftw3=no])
+-
+-  AS_IF([test "x$with_fftw3" != xno],
+-      [AC_CHECK_HEADERS([fftw3.h])
+-    AC_SEARCH_LIBS([fftw_cleanup],[fftw3],
+-      [AC_DEFINE([HAVE_LIBFFTW3],[1],[FFTW3 library is present if defined to 1])],
+-      [AC_MSG_RESULT([Could not link to fftw3 library])])])
++if test "x$with_fftw3" != xno
++then
++    PKG_CHECK_MODULES([FFTW3], [fftw3], [AC_DEFINE([HAVE_LIBFFTW3],[1],[FFTW3 library is present if defined to 1])])
++fi
+ 
+ #  ----------------------------------------------------------------------
+ #  Checks for PROJ.4 library
+@@ -464,14 +457,7 @@ AC_ARG_WITH([libxml2],
+             [AS_CASE(["$with_libxml2"],
+                      [no],[AC_MSG_CHECKING([for libxml2 library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
+-                            AC_CHECK_HEADERS([libxml/parser.h])
+-                            AC_CHECK_HEADERS([libxml/tree.h])
+-                            AC_SEARCH_LIBS([xmlInitMemory],
+-                                           [xml2],
+-                                           [AC_DEFINE([HAVE_LIBXML2],[1],[Define to 1 for XML2 support])],
+-                                           [AC_MSG_ERROR([Could not link to libxml2 library])])
+-                            AC_SUBST([XML2_LIBS],[" -lxml2"])],
++                     [yes],[PKG_CHECK_MODULES([LIBXML2], [libxml-2.0], [AC_DEFINE([HAVE_LIBXML2],[1],[Define to 1 for XML2 support])])],
+                      [*],[AS_IF([test -d "$with_libxml2"],
+                                 [XML2_ROOT=$with_libxml2
+                                  LDFLAGS="-L$XML2_ROOT/lib $LDFLAGS"
+--- origsrc/cdo-1.6.7/src/Makefile.am	2014-10-28 04:16:39.000000000 +0900
++++ src/cdo-1.6.7/src/Makefile.am	2014-12-31 20:51:50.785420900 +0900
+@@ -334,7 +334,7 @@ cdo_SOURCES += Magplot.c       \
+                CdoMagicsMapper.c
+ endif
+ 
+-cdo_CPPFLAGS = -I$(top_srcdir)/libcdi/src
++cdo_CPPFLAGS = $(LIBXML2_CFLAGS) -I$(top_srcdir)/libcdi/src
+ cdo_LDADD    = $(top_builddir)/libcdi/src/libcdi.la
+ cdo_LDFLAGS  =
+ 
+--- origsrc/cdo-1.6.7/src/clipping/intersection.c	2014-11-26 23:12:39.000000000 +0900
++++ src/cdo-1.6.7/src/clipping/intersection.c	2014-12-31 20:54:15.559835000 +0900
+@@ -41,6 +41,10 @@
+ #include "utils.h"
+ #include "geometry.h"
+ 
++#if defined(__CYGWIN__)
++#define sqrtl sqrt
++#endif
++
+ // angle tolerance
+ const double angle_tol = 1e-9;
+ static double const tol = 1.0e-10;
