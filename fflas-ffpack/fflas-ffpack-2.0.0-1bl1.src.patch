@@ -1,0 +1,133 @@
+--- origsrc/fflas-ffpack-2.0.0/configure.ac	2014-08-08 10:53:52.000000000 +0900
++++ src/fflas-ffpack-2.0.0/configure.ac	2015-01-02 02:11:23.961970100 +0900
+@@ -241,49 +241,23 @@ FF_CHECK_GIVARO
+ # echo '*******************************************************************************'
+ # ])
+ 
+-BLAS_FOUND=false
+-
+-FF_CHECK_BLAS_CFLAGS
+-FF_CHECK_BLAS_LIBS
+-FF_CHECK_USER_BLAS
+-FF_CHECK_USER_LAPACK
+-
+-# FF_CHECK_BLAS
+-
+-# FF_CHECK_GOTOBLAS
+-
+-# FF_CHECK_GSL
+-
+-# if test "$BLAS_FOUND" = "false" ; then
+-	# FF_CHECK_CBLAS
+-# fi
+-
+-# if test "$BLAS_FOUND" = "false" ; then
+-	# FF_CHECK_OTHERBLAS
+-# fi
+-
+-# FF_CHECK_LAPACK
+-
+-# if test "$BLAS_FOUND" = "false" ; then
+-	# FF_CHECK_BLAS2
+-# fi
+-
+-
+-
+-if test "$BLAS_FOUND" = "false" ; then
+-	echo ''
+-	echo '*******************************************************************************'
+-	echo ' ERROR: BLAS not found!'
+-	echo
+-	echo ' BLAS routines are required for this library to compile. Please'
+-	echo ' make sure BLAS are installed and specify its location with the option'
+-	echo ' --with-blas-libs=<libs> and if necessary --with-blas-cflags=<cflags>'
+-	ecjp ' when running configure.'
+-	echo '*******************************************************************************'
+-	exit 1
+-fi
+-
+-
++PKG_CHECK_MODULES([BLAS], [blas], [
++    CBLAS_FLAG="-D__FFLASFFPACK_HAVE_CBLAS"
++    AC_DEFINE(HAVE_BLAS, 1, [Define if BLAS is installed])
++    AC_DEFINE(HAVE_CBLAS, 1, [Define if C interface to BLAS is installed])
++    BLAS_FOUND=true
++    BLAS_PATH="`pkg-config blas --variable=prefix`"
++    HAVE_BLAS=yes
++    AC_SUBST(BLAS_LIBS)
++    AC_SUBST(BLAS_CFLAGS)
++    AC_SUBST(CBLAS_FLAG)
++    AC_SUBST(BLAS_FOUND)
++    AC_SUBST(BLAS_PATH)])
++PKG_CHECK_MODULES([LAPACK], [lapack], [
++    AC_DEFINE(HAVE_LAPACK, 1, [Define if LAPACK is installed])
++    AC_DEFINE(HAVE_CLAPACK, 1, [Define if C interface to LAPACK is available])
++    HAVE_LAPACK=yes])
++AM_CONDITIONAL(FFLASFFPACK_HAVE_LAPACK, test "x$HAVE_LAPACK" = "xyes")
+ 
+ # BLAS_LIBS="${BLAS_LIBS}"
+ # BLAS_LIBS="-L/${BLAS_PATH} ${LAPACK_LIBS} ${BLAS_LIBS}"
+--- origsrc/fflas-ffpack-2.0.0/fflas-ffpack-config.in	2014-07-09 02:18:59.000000000 +0900
++++ src/fflas-ffpack-2.0.0/fflas-ffpack-config.in	2015-01-02 10:48:00.699647100 +0900
+@@ -99,22 +99,22 @@ while test $# -gt 0; do
+ 			;;
+ 
+ 		--cflags)
+-			echo -I${includedir} @CBLAS_FLAG@ @AVXFLAGS@ # @PARFLAGS@ # @CUDA_CFLAGS@
++			echo -I${includedir} @BLAS_CFLAGS@ @AVXFLAGS@ # @PARFLAGS@ # @CUDA_CFLAGS@
+ # @GMP_CFLAGS@ @GIVARO_CFLAGS@
+ # @CBLAS_FLAG@
+ 			;;
+ 
+ 		--blas-cflags)
+-			echo -I${includedir} @CBLAS_FLAG@  @AVXFLAGS@ # @PARFLAGS@ # @CUDA_CFLAGS@
++			echo -I${includedir} @BLAS_CFLAGS@  @AVXFLAGS@ # @PARFLAGS@ # @CUDA_CFLAGS@
+ 			;;
+ 
+ 		--libs)
+-			echo  @CBLAS_LIBS@ # @CUDA_LIBS@
++			echo  @BLAS_LIBS@ # @CUDA_LIBS@
+ # @GMP_LIBS@ @GIVARO_LIBS@
+ 			;;
+ 
+ 		--blas-libs)
+-			echo  @CBLAS_LIBS@
++			echo  @BLAS_LIBS@
+ 			;;
+ 
+ 		--blas-home)
+--- origsrc/fflas-ffpack-2.0.0/macros/avx-check.m4	2014-07-02 22:59:41.000000000 +0900
++++ src/fflas-ffpack-2.0.0/macros/avx-check.m4	2015-01-02 10:49:44.677186100 +0900
+@@ -39,7 +39,7 @@ AC_DEFUN([FF_CHECK_AVX],
+ 			BACKUP_CXXFLAGS=${CXXFLAGS}
+ 			AVXFLAGS="-mavx"
+ 			CXXFLAGS="${BACKUP_CXXFLAGS} ${AVXFLAGS}"
+-			CODE_AVX=`cat macros/CodeChunk/avx.C`
++			CODE_AVX=`cat ${srcdir}/macros/CodeChunk/avx.C`
+ 			AC_TRY_RUN([
+ 				${CODE_AVX}
+ 				],
+--- origsrc/fflas-ffpack-2.0.0/macros/gmp-check.m4	2014-06-26 06:09:33.000000000 +0900
++++ src/fflas-ffpack-2.0.0/macros/gmp-check.m4	2015-01-02 10:49:10.895936100 +0900
+@@ -82,7 +82,7 @@ do
+ 
+ 	CXXFLAGS="${CXXFLAGS} ${GMP_CFLAGS}"
+ 	LIBS="${LIBS} ${GMP_LIBS}"
+-	CODE_GMP=`cat macros/CodeChunk/gmp.C`
++	CODE_GMP=`cat ${srcdir}/macros/CodeChunk/gmp.C`
+ 
+ 	AC_TRY_LINK(
+ 		[
+--- origsrc/fflas-ffpack-2.0.0/tests/Makefile.am	2014-08-08 10:53:51.000000000 +0900
++++ src/fflas-ffpack-2.0.0/tests/Makefile.am	2015-01-02 02:20:56.452204400 +0900
+@@ -27,8 +27,8 @@ check:
+ AM_CPPFLAGS=-I$(top_srcdir)
+ AM_CXXFLAGS = @TESTS_CFLAGS@
+ AM_CPPFLAGS += $(OPTFLAGS)  -I$(top_srcdir)/fflas-ffpack/utils/ -I$(top_srcdir)/fflas-ffpack/fflas/  -I$(top_srcdir)/fflas-ffpack/ffpack  -I$(top_srcdir)/fflas-ffpack/field  $(CBLAS_FLAG) $(GMP_CFLAGS)  $(GIVARO_CFLAGS) $(CUDA_CFLAGS) $(PARFLAGS)
+-LDADD = $(CBLAS_LIBS) $(GIVARO_LIBS) $(GMP_LIBS) $(CUDA_LIBS) $(PARFLAGS)
+-AM_LDFLAGS=-static
++LDADD = $(BLAS_LIBS) $(GIVARO_LIBS) $(GMP_LIBS) $(CUDA_LIBS) $(PARFLAGS)
++AM_LDFLAGS=
+ 
+ BASIC_TESTS =              \
+ 		test-lqup              \
