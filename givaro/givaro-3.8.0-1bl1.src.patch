@@ -1,0 +1,257 @@
+--- origsrc/givaro-3.8.0/configure.ac	2014-08-07 15:26:13.000000000 +0900
++++ src/givaro-3.8.0/configure.ac	2015-01-02 17:10:47.337463400 +0900
+@@ -179,21 +179,6 @@ AC_C_BIGENDIAN(
+   [AC_DEFINE(HAVE_LITTLE_ENDIAN, 1, [Define that architecture uses little endian storage])],
+   [])
+ 
+-echo "Creating symbolic link for compilation"
+-if test ! -L src/kernel/system/givaro  ; then ln -s . src/kernel/system/givaro  ; fi
+-if test ! -L src/kernel/bstruct/givaro ; then ln -s . src/kernel/bstruct/givaro ; fi
+-if test ! -L src/kernel/integer/givaro ; then ln -s . src/kernel/integer/givaro ; fi
+-if test ! -L src/kernel/memory/givaro  ; then ln -s . src/kernel/memory/givaro  ; fi
+-if test ! -L src/kernel/rational/givaro; then ln -s . src/kernel/rational/givaro; fi
+-if test ! -L src/kernel/zpz/givaro     ; then ln -s . src/kernel/zpz/givaro     ; fi
+-if test ! -L src/kernel/gmp++/gmp++    ; then ln -s . src/kernel/gmp++/gmp++    ; fi
+-if test ! -L src/library/matrix/givaro ; then ln -s . src/library/matrix/givaro ; fi
+-if test ! -L src/library/poly1/givaro  ; then ln -s . src/library/poly1/givaro  ; fi
+-if test ! -L src/library/tools/givaro  ; then ln -s . src/library/tools/givaro  ; fi
+-if test ! -L src/library/vector/givaro ; then ln -s . src/library/vector/givaro ; fi
+-
+-
+-
+ AC_DEFINE_UNQUOTED(INT8,  $GIVARO_INT8, Canonical 8-bit data type)
+ AC_DEFINE_UNQUOTED(INT16, $GIVARO_INT16, Canonical 16-bit data type)
+ AC_DEFINE_UNQUOTED(INT32, $GIVARO_INT32, Canonical 32-bit data type)
+@@ -259,3 +244,16 @@ docs/Makefile
+ AC_OUTPUT
+ 
+ echo "-----------------------------------------------"
++
++echo "Creating symbolic link for compilation"
++if test ! -L src/kernel/system/givaro  ; then ln -s $srcdir/src/kernel/system   src/kernel/system/givaro  ; fi
++if test ! -L src/kernel/bstruct/givaro ; then ln -s $srcdir/src/kernel/bstruct  src/kernel/bstruct/givaro ; fi
++if test ! -L src/kernel/integer/givaro ; then ln -s $srcdir/src/kernel/integer  src/kernel/integer/givaro ; fi
++if test ! -L src/kernel/memory/givaro  ; then ln -s $srcdir/src/kernel/memory   src/kernel/memory/givaro  ; fi
++if test ! -L src/kernel/rational/givaro; then ln -s $srcdir/src/kernel/rational src/kernel/rational/givaro; fi
++if test ! -L src/kernel/zpz/givaro     ; then ln -s $srcdir/src/kernel/zpz      src/kernel/zpz/givaro     ; fi
++if test ! -L src/kernel/gmp++/gmp++    ; then ln -s $srcdir/src/kernel/gmp++    src/kernel/gmp++/gmp++    ; fi
++if test ! -L src/library/matrix/givaro ; then ln -s $srcdir/src/library/matrix  src/library/matrix/givaro ; fi
++if test ! -L src/library/poly1/givaro  ; then ln -s $srcdir/src/library/poly1   src/library/poly1/givaro  ; fi
++if test ! -L src/library/tools/givaro  ; then ln -s $srcdir/src/library/tools   src/library/tools/givaro  ; fi
++if test ! -L src/library/vector/givaro ; then ln -s $srcdir/src/library/vector  src/library/vector/givaro ; fi
+--- origsrc/givaro-3.8.0/examples/FiniteField/Makefile.am	2014-06-25 16:55:26.000000000 +0900
++++ src/givaro-3.8.0/examples/FiniteField/Makefile.am	2015-01-02 18:09:31.058605100 +0900
+@@ -29,10 +29,9 @@ OPTLINKS=
+ #OPTFLAGS+= -tpp2 -mcpu=itanium2
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/zpz -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/library/poly1 -I$(top_srcdir)/src/kernel/bstruct -I$(top_srcdir)/src/library/tools
++AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/zpz -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/library/poly1 -I$(top_builddir)/src/kernel/bstruct -I$(top_builddir)/src/library/tools
+ 
+-LDADD = $(OPTLINKS) -L${top_srcdir}/src -L${top_srcdir}/src/.libs -lgivaro $(GMP_LIBS) $(LDFLAGS)
+-AM_LDFLAGS=-static
++LDADD = $(OPTLINKS) $(top_builddir)/src/libgivaro.la $(GMP_LIBS) $(LDFLAGS)
+ 
+ 
+ EXTRA_PROGRAMS=gfq_atomic GaloisFields Test_Extension zpz_atomic ff_arith exponentiation domain_to_operatorstyle all_field GF128 GFirreducible
+@@ -49,14 +48,3 @@ Test_Extension_SOURCES          = Test_E
+ zpz_atomic_SOURCES              = zpz_atomic.C
+ ff_arith_SOURCES                = ff_arith.C
+ exponentiation_SOURCES          = exponentiation.C
+-
+-# for compilation of new examples
+-GIVARO_BIN=@bindir@
+-examp_comp = $(CXX) $(OPTFLAGS) $(AM_CPPFLAGS) $(AM_CXXFLAGS) $< -o $*  $(shell $(GIVARO_BIN)/givaro-config --cflags ) $(LDADD) $(shell $(GIVARO_BIN)/givaro-config --libs)
+-
+-%:%.C
+-	$(examp_comp)
+-
+-%:%.cpp
+-	$(examp_comp)
+-
+--- origsrc/givaro-3.8.0/examples/Integer/Makefile.am	2011-12-17 01:17:54.000000000 +0900
++++ src/givaro-3.8.0/examples/Integer/Makefile.am	2015-01-02 18:05:33.960948800 +0900
+@@ -25,10 +25,9 @@ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+ AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS)
+-AM_CPPFLAGS += -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/kernel/zpz -I$(top_srcdir)/src/kernel/bstruct -I$(top_srcdir)/src/library/poly1 -I$(top_srcdir)/src/library/tools
++AM_CPPFLAGS += -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/kernel/zpz -I$(top_builddir)/src/kernel/bstruct -I$(top_builddir)/src/library/poly1 -I$(top_builddir)/src/library/tools
+ 
+-LDADD = -L${top_srcdir}/src -L${top_srcdir}/src/.libs -lgivaro $(GMP_LIBS) $(LDFLAGS)
+-AM_LDFLAGS=-static
++LDADD = $(top_builddir)/src/libgivaro.la $(GMP_LIBS) $(LDFLAGS)
+ 
+ EXTRA_PROGRAMS=ifactor ifactor_lenstra igcd igcdext ilcm isproot nb_primes isprime nextprime order prevprime RSA_breaking RSA_keys_generator primitiveroot primitiveelement phi lambda lambda_inv iexponentiation RSA_decipher  RSA_encipher  ispower probable_primroot ProbLucas ModularSquareRoot
+ 
+@@ -59,8 +58,3 @@ RSA_keys_generator_SOURCES = RSA_keys_ge
+ RSA_encipher_SOURCES       = RSA_encipher.C
+ RSA_decipher_SOURCES       = RSA_decipher.C
+ iexponentiation_SOURCES    = iexponentiation.C
+-
+-# for compilation of new examples
+-GIVARO_BIN=@bindir@
+-%:%.C
+-	$(CXX) $(OPTFLAGS) $(AM_CPPFLAGS) $(AM_CXXFLAGS) $*.C -o $*  `$(GIVARO_BIN)/givaro-config --cflags` $(LDADD)  `$(GIVARO_BIN)/givaro-config --libs`
+--- origsrc/givaro-3.8.0/examples/Polynomial/Makefile.am	2011-06-07 22:11:13.000000000 +0900
++++ src/givaro-3.8.0/examples/Polynomial/Makefile.am	2015-01-02 18:12:37.402355100 +0900
+@@ -24,11 +24,9 @@ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/library/poly1 -I$(top_srcdir)/src/kernel/zpz -I$(top_srcdir)/src/kernel/bstruct -I$(top_srcdir)/src/kernel/rational -I$(top_srcdir)/src/library/tools
+-
+-LDADD = -L${top_srcdir}/src -L${top_srcdir}/src/.libs -lgivaro $(GMP_LIBS) $(LDFLAGS)
+-AM_LDFLAGS=-static
++AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/library/poly1 -I$(top_builddir)/src/kernel/zpz -I$(top_builddir)/src/kernel/bstruct -I$(top_builddir)/src/kernel/rational -I$(top_builddir)/src/library/tools
+ 
++LDADD = $(top_builddir)/src/libgivaro.la $(GMP_LIBS) $(LDFLAGS)
+ 
+ EXTRA_PROGRAMS=isirred isprimitive trunc_arith pol_arith pol_eval pol_factor interpolate PolynomialCRT highorder
+ 
+@@ -43,8 +41,3 @@ pol_eval_SOURCES      = pol_eval.C
+ pol_factor_SOURCES    = pol_factor.C
+ PolynomialCRT_SOURCES = PolynomialCRT.C
+ highorder_SOURCES     = highorder.C
+-
+-# for compilation of new examples
+-GIVARO_BIN=@bindir@
+-%:%.C
+-	$(CXX) $(OPTFLAGS) $(AM_CPPFLAGS) $(AM_CXXFLAGS) $*.C -o $*  `$(GIVARO_BIN)/givaro-config --cflags` $(LDADD)    `$(GIVARO_BIN)/givaro-config --libs`
+--- origsrc/givaro-3.8.0/examples/Rational/Makefile.am	2013-06-28 20:42:54.000000000 +0900
++++ src/givaro-3.8.0/examples/Rational/Makefile.am	2015-01-02 18:03:46.342784700 +0900
+@@ -25,10 +25,9 @@ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+ AM_CPPFLAGS += $(OPTFLAGS) $(GMP_CFLAGS)
+-AM_CPPFLAGS += -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/kernel/zpz -I$(top_srcdir)/src/kernel/bstruct -I$(top_srcdir)/src/kernel/rational -I$(top_srcdir)/src/library/tools -I$(top_srcdir)/src/library/poly1
++AM_CPPFLAGS += -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/kernel/zpz -I$(top_builddir)/src/kernel/bstruct -I$(top_builddir)/src/kernel/rational -I$(top_builddir)/src/library/tools -I$(top_builddir)/src/library/poly1
+ 
+-LDADD = -L${top_srcdir}/src -L${top_srcdir}/src/.libs -lgivaro $(GMP_LIBS) $(LDFLAGS)
+-AM_LDFLAGS=-static
++LDADD = $(top_builddir)/src/libgivaro.la $(GMP_LIBS) $(LDFLAGS)
+ 
+ 
+ EXTRA_PROGRAMS=iratrecon polydouble
+@@ -37,8 +36,3 @@ CLEANFILES=$(EXTRA_PROGRAMS)
+ 
+ iratrecon_SOURCES  = iratrecon.C
+ polydouble_SOURCES = polydouble.C
+-
+-# for compilation of new examples
+-GIVARO_BIN=@bindir@
+-%:%.C
+-	$(CXX) $(OPTFLAGS) $(AM_CPPFLAGS) $(AM_CXXFLAGS) $*.C -o $*  `$(GIVARO_BIN)/givaro-config --cflags` $(LDADD)  `$(GIVARO_BIN)/givaro-config --libs`
+--- origsrc/givaro-3.8.0/macros/givaro-doc.m4	2012-05-04 17:58:24.000000000 +0900
++++ src/givaro-3.8.0/macros/givaro-doc.m4	2015-01-02 17:15:02.817932200 +0900
+@@ -70,6 +70,7 @@ res=yes;
+ AC_MSG_RESULT([$res])
+ AS_IF([test $res = yes],
+ [
++mkdir -p docs
+ sed 's/^HAVE_DOT.*/HAVE_DOT = YES/' docs/Doxyfile.mod > docs/Doxyfile
+ sed 's/^HAVE_DOT.*/HAVE_DOT = YES/' docs/DoxyfileDev.mod > docs/DoxyfileDev
+ ],
+--- origsrc/givaro-3.8.0/src/kernel/bstruct/Makefile.am	2012-05-07 21:41:22.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/bstruct/Makefile.am	2015-01-02 17:32:06.034483100 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory
+ 
+ pkginclude_HEADERS=     \
+ 	givarray0.h		    \
+--- origsrc/givaro-3.8.0/src/kernel/gmp++/Makefile.am	2011-10-03 21:33:36.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/gmp++/Makefile.am	2015-01-02 17:23:52.120738000 +0900
+@@ -9,7 +9,7 @@ AM_CPPFLAGS=-I$(top_srcdir) ${GMP_VERSIO
+ pkgincludesubdir=$(includedir)/gmp++
+ 
+ AM_CXXFLAGS=@DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/system
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/system
+ 
+ 
+ noinst_LTLIBRARIES=libgmppp.la
+--- origsrc/givaro-3.8.0/src/kernel/integer/Makefile.am	2013-01-24 18:42:41.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/integer/Makefile.am	2015-01-02 17:30:24.180967500 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)  ${GMP_VERSION}
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/memory  -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel
+ 
+ pkginclude_HEADERS=         \
+ 	givinteger.h		    \
+--- origsrc/givaro-3.8.0/src/kernel/memory/Makefile.am	2012-05-07 21:41:22.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/memory/Makefile.am	2015-01-02 17:22:59.329722400 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ AM_CXXFLAGS=@DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/system
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/system
+ 
+ pkginclude_HEADERS= \
+ 	givaromm.h     	\
+--- origsrc/givaro-3.8.0/src/kernel/rational/Makefile.am	2012-05-07 21:41:22.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/rational/Makefile.am	2015-01-02 17:57:22.742490900 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)  ${GMP_VERSION}
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory
+ 
+ pkginclude_HEADERS= \
+ 	givrational.h	\
+--- origsrc/givaro-3.8.0/src/kernel/system/Makefile.am	2012-05-21 22:36:10.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/system/Makefile.am	2015-01-02 17:22:30.747691200 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ AM_CXXFLAGS=@DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/memory
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/memory
+ 
+ pkginclude_HEADERS= \
+ 	givbasictype.h	\
+--- origsrc/givaro-3.8.0/src/kernel/zpz/Makefile.am	2012-05-07 21:41:22.000000000 +0900
++++ src/givaro-3.8.0/src/kernel/zpz/Makefile.am	2015-01-02 17:59:34.158506500 +0900
+@@ -7,7 +7,7 @@
+ AM_CPPFLAGS=-I$(top_srcdir)  ${GMP_VERSION}
+ 
+ AM_CXXFLAGS = @DEFAULT_CFLAGS@
+-AM_CPPFLAGS+= -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/bstruct
++AM_CPPFLAGS+= -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/bstruct
+ 
+ pkginclude_HEADERS=     \
+ 	StaticElement.h		\
+--- origsrc/givaro-3.8.0/tests/Makefile.am	2013-06-04 22:24:59.000000000 +0900
++++ src/givaro-3.8.0/tests/Makefile.am	2015-01-02 19:02:47.982425500 +0900
+@@ -9,10 +9,10 @@ check: $(BASE_TESTS)
+ 
+ AM_CPPFLAGS=-I$(top_srcdir)
+ AM_CXXFLAGS = @TESTS_CFLAGS@
+-AM_CPPFLAGS += @TESTS_CFLAGS@ $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_srcdir)/src/kernel/system -I$(top_srcdir)/src/kernel/memory -I$(top_srcdir)/src/kernel/zpz -I$(top_srcdir)/src/kernel/integer -I$(top_srcdir)/src/kernel -I$(top_srcdir)/src/library/poly1 -I$(top_srcdir)/src/kernel/bstruct -I$(top_srcdir)/src/library/tools
++AM_CPPFLAGS += @TESTS_CFLAGS@ $(OPTFLAGS) $(GMP_CFLAGS) -I$(top_builddir)/src/kernel/gmp++ -I$(top_builddir)/src/kernel/system -I$(top_builddir)/src/kernel/memory -I$(top_builddir)/src/kernel/zpz -I$(top_builddir)/src/kernel/integer -I$(top_builddir)/src/kernel -I$(top_builddir)/src/library/poly1 -I$(top_builddir)/src/kernel/bstruct -I$(top_builddir)/src/library/tools
+ 
+-LDADD = $(OPTLINKS) -L${top_srcdir}/src -L${top_srcdir}/src/.libs -lgivaro $(GMP_LIBS)
+-AM_LDFLAGS=-static $(LDFLAGS)
++LDADD = $(OPTLINKS) $(top_builddir)/src/libgivaro.la $(GMP_LIBS)
++AM_LDFLAGS=$(LDFLAGS)
+ 
+ BASIC_TESTS =          \
+ 		test-random    \
+@@ -50,9 +50,3 @@ test_geom_SOURCES     = test-geom.C
+ test_integer_SOURCES  = test-integer.C
+ test_ratrecon_SOURCES = test-ratrecon.C
+ test_conversion_SOURCES = test-conversion.C
+-
+-
+-# for compilation of new tests
+-GIVARO_BIN=@bindir@
+-%:%.C
+-	$(CXX) $(OPTFLAGS) $(AM_CPPFLAGS) $(AM_CXXFLAGS) $*.C -o $*  `$(GIVARO_BIN)/givaro-config --cflags` $(LDADD)  `$(GIVARO_BIN)/givaro-config --libs`
