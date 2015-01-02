@@ -1,0 +1,32 @@
+--- origsrc/icecream-1.1rc1/services/Makefile.am	2014-10-31 16:12:52.000000000 +0900
++++ src/icecream-1.1rc1/services/Makefile.am	2015-01-02 21:23:00.688294300 +0900
+@@ -5,8 +5,9 @@ libicecc_la_LIBADD = \
+ 	$(CAPNG_LDADD) \
+ 	-ldl
+ 
+-libicecc_la_CFLAGS = -fPIC -DPIC
+-libicecc_la_CXXFLAGS = -fPIC -DPIC
++libicecc_la_CFLAGS = -DPIC
++libicecc_la_CXXFLAGS = -DPIC
++libicecc_la_LDFLAGS = -no-undefined
+ 
+ icedir = $(includedir)/icecc
+ ice_HEADERS = \
+--- origsrc/icecream-1.1rc1/services/comm.cpp	2014-10-31 16:12:52.000000000 +0900
++++ src/icecream-1.1rc1/services/comm.cpp	2015-01-02 21:42:22.632415100 +0900
+@@ -788,6 +788,7 @@ MsgChannel::MsgChannel(int _fd, struct s
+     int on = 1;
+ 
+     if (!setsockopt(_fd, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on))) {
++#if !defined(__CYGWIN__)
+ #if defined( TCP_KEEPIDLE )
+         int keepidle = TCP_KEEPIDLE;
+ #else
+@@ -806,6 +807,7 @@ MsgChannel::MsgChannel(int _fd, struct s
+ 
+         sec = MAX_SCHEDULER_PONG;
+         setsockopt(_fd, IPPROTO_TCP, keepintvl, (char *) &sec, sizeof(sec));
++#endif
+ 
+ #ifdef TCP_KEEPCNT
+         sec = 3;
