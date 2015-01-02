@@ -1,0 +1,83 @@
+--- origsrc/isync-1.1.1/configure.ac	2014-02-08 21:13:58.000000000 +0900
++++ src/isync-1.1.1/configure.ac	2015-01-02 23:39:26.182063900 +0900
+@@ -44,61 +44,11 @@ if $have_ipv6; then
+     AC_DEFINE(HAVE_IPV6, 1, [if your libc has IPv6 support])
+ fi
+ 
+-have_ssl_paths=
+-AC_ARG_WITH(ssl,
+-  AC_HELP_STRING([--with-ssl[=PATH]], [where to look for SSL [detect]]),
+-  [ob_cv_with_ssl=$withval])
+-if test "x$ob_cv_with_ssl" != xno; then
+-  case $ob_cv_with_ssl in
+-    ""|yes)
+-      dnl Detect the pkg-config tool, as it may have extra info about the openssl
+-      dnl installation we can use. I *believe* this is what we are expected to do
+-      dnl on really recent Redhat Linux hosts.
+-      AC_PATH_PROG(PKGCONFIG, pkg-config, no, $PATH:/usr/bin:/usr/local/bin)
+-      if test "$PKGCONFIG" != "no" ; then
+-        AC_MSG_CHECKING([OpenSSL presence with pkg-config])
+-        if $PKGCONFIG --exists openssl; then
+-          SSL_LIBS=`$PKGCONFIG --libs-only-l openssl`
+-          SSL_LDFLAGS=`$PKGCONFIG --libs-only-L openssl`
+-          SSL_CPPFLAGS=`$PKGCONFIG --cflags-only-I openssl`
+-          have_ssl_paths=yes
+-          AC_MSG_RESULT([found])
+-        else
+-          AC_MSG_RESULT([not found])
+-        fi
+-      fi
+-      ;;
+-    *)
+-      SSL_LDFLAGS=-L$ob_cv_with_ssl/lib$libsuff
+-      SSL_CPPFLAGS=-I$ob_cv_with_ssl/include
+-      ;;
+-  esac
+-  if test -z "$have_ssl_paths"; then
+-    sav_LDFLAGS=$LDFLAGS
+-    LDFLAGS="$LDFLAGS $SSL_LDFLAGS"
+-    AC_CHECK_LIB(dl, dlopen, [LIBDL=-ldl])
+-    AC_CHECK_LIB(crypto, CRYPTO_lock, [LIBCRYPTO=-lcrypto])
+-    AC_CHECK_LIB(ssl, SSL_connect,
+-                 [SSL_LIBS="-lssl $LIBCRYPTO $LIBDL" have_ssl_paths=yes])
+-    LDFLAGS=$sav_LDFLAGS
+-  fi
+-
+-  sav_CPPFLAGS=$CPPFLAGS
+-  CPPFLAGS="$CPPFLAGS $SSL_CPPFLAGS"
+-  AC_CHECK_HEADER(openssl/ssl.h, , [have_ssl_paths=])
+-  CPPFLAGS=$sav_CPPFLAGS
+-
+-  if test -z "$have_ssl_paths"; then
+-    if test -n "$ob_cv_with_ssl"; then
+-      AC_MSG_ERROR([OpenSSL libs and/or includes were not found where specified])
+-    fi
+-  else
+-    AC_DEFINE(HAVE_LIBSSL, 1, [if you have the OpenSSL libraries])
+-    CPPFLAGS="$CPPFLAGS $SSL_CPPFLAGS"
+-    LDFLAGS="$LDFLAGS $SSL_LDFLAGS"
+-  fi
+-fi
+-AC_SUBST(SSL_LIBS)
++PKG_CHECK_MODULES([SSL], [openssl], [
++  AC_DEFINE([HAVE_LIBSSL], [1], [have libssl])
++  AC_DEFINE([HAVE_LIBCRYPTO], [1], [have libcrypto])
++])
++AC_CHECK_LIB(dl, dlopen)
+ 
+ AC_CACHE_CHECK([for Berkley DB >= 4.2], ac_cv_berkdb4,
+   [ac_cv_berkdb4=no
+@@ -121,13 +71,3 @@ AM_CONDITIONAL(with_compat, test "x$ob_c
+ 
+ AC_CONFIG_FILES([Makefile src/Makefile src/compat/Makefile isync.spec])
+ AC_OUTPUT
+-
+-if test -n "$have_ssl_paths"; then
+-    AC_MSG_RESULT([
+-Using SSL
+-])
+-else
+-    AC_MSG_RESULT([
+-Not using SSL
+-])
+-fi
