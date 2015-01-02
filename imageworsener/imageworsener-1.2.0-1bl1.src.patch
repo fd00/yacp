@@ -1,0 +1,120 @@
+--- origsrc/imageworsener-1.2.0/Makefile.am	2014-02-17 02:44:11.000000000 +0900
++++ src/imageworsener-1.2.0/Makefile.am	2015-01-02 22:47:16.470907700 +0900
+@@ -14,8 +14,8 @@ libimageworsener_la_SOURCES=src/imagew-m
+  src/imagew-webp.c \
+  src/imagew-pnm.c \
+  src/imagew-util.c
+-libimageworsener_la_LIBADD=-lm
+-libimageworsener_la_LDFLAGS=-version-info 2:0:1
++libimageworsener_la_LIBADD=-lm $(LIBPNG_LIBS) $(LIBWEBP_LIBS)
++libimageworsener_la_LDFLAGS=-no-undefined -version-info 2:0:1
+ bin_PROGRAMS=imagew
+ imagew_SOURCES=src/imagew-cmd.c
+ imagew_LDADD=libimageworsener.la
+@@ -34,9 +34,9 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ check-local:  # Run test suite with support for VPATH builds (e.g. make distcheck)
+ 	mkdir -p tests
+-	test -e tests/expected || ln -s "$(abs_top_srcdir)"/tests/expected tests/expected
+-	test -e tests/srcimg || ln -s "$(abs_top_srcdir)"/tests/srcimg tests/srcimg
+-	cd tests && "$(abs_top_srcdir)"/tests/runtest
++	test -e tests/expected || ln -s $(abs_top_srcdir)/tests/expected tests/expected
++	test -e tests/srcimg || ln -s $(abs_top_srcdir)/tests/srcimg tests/srcimg
++	cd tests && $(abs_top_srcdir)/tests/runtest
+ 	rm tests/expected 2>/dev/null ; true
+ 	rm tests/srcimg 2>/dev/null ; true
+ 
+--- origsrc/imageworsener-1.2.0/configure.ac	2014-02-17 02:15:23.000000000 +0900
++++ src/imageworsener-1.2.0/configure.ac	2015-01-02 22:45:25.267782700 +0900
+@@ -25,51 +25,16 @@ AM_INIT_AUTOMAKE([foreign subdir-objects
+ dnl Checks for libraries.
+ 
+ dnl ---------- zlib ----------
+-AC_ARG_WITH([zlib],
+-    [AS_HELP_STRING([--without-zlib], [disable ZLIB support])],
+-    [with_zlib=$withval],
+-    [with_zlib='yes'])
+-AC_ARG_WITH(zlib-include-dir,
+- AS_HELP_STRING([--with-zlib-include-dir=DIR],
+-  [location of zlib headers]),,)
+-AC_ARG_WITH(zlib-lib-dir,
+- AS_HELP_STRING([--with-zlib-lib-dir=DIR],
+-  [location of zlib library binary]),,)
+-
+-if test "$with_zlib" != 'no'; then
+- if test "x$with_zlib_include_dir" != "x"; then
+-dnl TODO: Is modifying CPPFLAGS and LDFLAGS the best practice?
+-  CPPFLAGS="-I$with_zlib_include_dir $CPPFLAGS"
+- fi
+- AC_CHECK_HEADERS([zlib.h])
+- if test "x$with_zlib_lib_dir" != "x"; then
+-  LDFLAGS="-L$with_zlib_lib_dir $LDFLAGS"
+- fi
+- AC_CHECK_LIB(z,deflate)
+-fi
++PKG_CHECK_MODULES([ZLIB], [zlib], [
++  AC_DEFINE([HAVE_LIBZ], [1], [have libz])
++  AC_DEFINE([HAVE_ZLIB_H], [1], [have zlib.h])
++])
+ 
+ dnl ---------- libpng ----------
+-AC_ARG_WITH([png],
+-    [AS_HELP_STRING([--without-png], [disable PNG support])],
+-    [with_png=$withval],
+-    [with_png='yes'])
+-AC_ARG_WITH(png-include-dir,
+- AS_HELP_STRING([--with-png-include-dir=DIR],
+-  [location of libpng headers]),,)
+-AC_ARG_WITH(png-lib-dir,
+- AS_HELP_STRING([--with-png-lib-dir=DIR],
+-  [location of libpng library binary]),,)
+-
+-if test "$with_png" != 'no'; then
+- if test "x$with_png_include_dir" != "x"; then
+-  CPPFLAGS="-I$with_png_include_dir $CPPFLAGS"
+- fi
+- AC_CHECK_HEADERS([png.h])
+- if test "x$with_png_lib_dir" != "x"; then
+-  LDFLAGS="-L$with_png_lib_dir $LDFLAGS"
+- fi
+- AC_CHECK_LIB(png,png_read_png)
+-fi
++PKG_CHECK_MODULES([LIBPNG], [libpng], [
++  AC_DEFINE([HAVE_LIBPNG], [1], [have libpng])
++  AC_DEFINE([HAVE_PNG_H], [1], [have png.h])
++])
+ 
+ dnl ---------- libjpeg ----------
+ AC_ARG_WITH([jpeg],
+@@ -95,27 +60,10 @@ if test "$with_jpeg" != 'no'; then
+ fi
+ 
+ dnl ---------- libwebp ----------
+-AC_ARG_WITH([webp],
+- [AS_HELP_STRING([--without-webp], [disable WebP support])],
+- [with_webp=$withval],
+- [with_webp='yes'])
+-AC_ARG_WITH(webp-include-dir,
+- AS_HELP_STRING([--with-webp-include-dir=DIR],
+-  [location of libwebp headers]),,)
+-AC_ARG_WITH(webp-lib-dir,
+- AS_HELP_STRING([--with-webp-lib-dir=DIR],
+-  [location of libwebp library binary]),,)
+-
+-if test "$with_webp" != 'no'; then
+- if test "x$with_webp_include_dir" != "x"; then
+-  CPPFLAGS="-I$with_webp_include_dir $CPPFLAGS"
+- fi
+- AC_CHECK_HEADERS([webp/decode.h])
+- if test "x$with_webp_lib_dir" != "x"; then
+-  LDFLAGS="-L$with_webp_lib_dir $LDFLAGS"
+- fi
+- AC_CHECK_LIB(webp,WebPGetDecoderVersion)
+-fi
++PKG_CHECK_MODULES([LIBWEBP], [libwebp], [
++  AC_DEFINE([HAVE_LIBWEBP], [1], [have libwebp])
++  AC_DEFINE([HAVE_WEBP_DECODE_H], [1], [have webp/decode.h])
++])
+ 
+ dnl ---------------------------
+ 
