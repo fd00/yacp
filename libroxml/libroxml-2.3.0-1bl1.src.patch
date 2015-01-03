@@ -1,0 +1,69 @@
+--- origsrc/libroxml-2.3.0/CMakeLists.txt	2014-01-31 06:11:30.000000000 +0900
++++ src/libroxml-2.3.0/CMakeLists.txt	2015-01-03 23:16:44.364266000 +0900
+@@ -23,7 +23,10 @@ add_library(roxml-dynamic SHARED
+ 		${TOPDIR}src/roxml-tune.h
+ 		${TOPDIR}src/roxml-win32-native.h
+ 		)
+-		
++
++option(ENABLE_STATIC "enable static" off)
++
++if (ENABLE_STATIC)
+ add_library(roxml-static STATIC
+ 		${TOPDIR}src/roxml.c
+ 		${TOPDIR}src/roxml-internal.c
+@@ -36,7 +39,8 @@ add_library(roxml-static STATIC
+ 		${TOPDIR}src/roxml-tune.h
+ 		${TOPDIR}src/roxml-win32-native.h
+ 		)
+-		
++endif ()
++
+ add_executable(roxml-tool
+ 		${TOPDIR}src/roxml-parser.c
+ 		)
+@@ -49,18 +53,24 @@ set_target_properties (roxml-dynamic
+ 		SOVERSION ${SOVERSION} 
+ 		VERSION ${VERSION}
+ 	)
+-	
++
++if (ENABLE_STATIC)
+ set_target_properties (roxml-static 
+ 	PROPERTIES 
+ 		OUTPUT_NAME roxml
+ 	)
++endif ()
+ 	
+ set_target_properties (roxml-tool 
+ 	PROPERTIES 
+ 		OUTPUT_NAME roxml
+ 	)
+ 
+-install (TARGETS roxml-dynamic roxml-static DESTINATION lib/)
++install (TARGETS roxml-dynamic RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++if (ENABLE_STATIC)
++install (TARGETS roxml-static DESTINATION lib/)
++endif ()
+ install (TARGETS roxml-tool DESTINATION bin/)
+ install (FILES "${TOPDIR}src/roxml.h" DESTINATION include/)
+ 
++configure_file(libroxml.pc.in libroxml.pc @ONLY)
+--- origsrc/libroxml-2.3.0/libroxml.pc.in	2014-01-31 06:11:30.000000000 +0900
++++ src/libroxml-2.3.0/libroxml.pc.in	2015-01-03 23:20:19.083016000 +0900
+@@ -1,10 +1,10 @@
+-prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
+ 
+ Name: libroxml
+-Version: @PACKAGE_VERSION@
++Version: @SOVERSION@
+ Description: light and powerful XML parser
+ URL: http://www.libroxml.net
+ Libs: -L${libdir} -lroxml
