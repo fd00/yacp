@@ -1,0 +1,110 @@
+--- origsrc/lasso-2.4.1/bindings/python/Makefile.am	2014-01-06 23:44:23.000000000 +0900
++++ src/lasso-2.4.1/bindings/python/Makefile.am	2015-01-04 01:57:10.765482100 +0900
+@@ -15,7 +15,7 @@ python_LTLIBRARIES = _lasso.la
+ 
+ nodist__lasso_la_SOURCES = _lasso.c
+ _lasso_la_CFLAGS = -fno-strict-aliasing $(LASSO_CORE_CFLAGS) $(PY_CFLAGS) $(AM_CFLAGS)
+-_lasso_la_LIBADD = $(top_builddir)/lasso/liblasso.la $(LASSO_LIBS)
++_lasso_la_LIBADD = $(top_builddir)/lasso/liblasso.la $(LASSO_LIBS) -lpython$(PYTHON_VERSION)
+ if DARWIN
+ _lasso_la_LDFLAGS = -no-undefined -module -avoid-version -Wl,-F. -Wl,-F. -bundle -framework Python 
+ else
+--- origsrc/lasso-2.4.1/lasso/logging.h	2014-03-28 07:26:07.452024300 +0900
++++ src/lasso-2.4.1/lasso/logging.h	2015-01-04 01:47:55.627786800 +0900
+@@ -25,10 +25,11 @@
+ #define __LASSO_LOGGING_H__ 1
+ 
+ #include <glib.h>
++#include "export.h"
+ #include "errors.h"
+ 
+ #ifndef lasso_log
+-void lasso_log(GLogLevelFlags level, const char *filename, int line,
++LASSO_EXPORT void lasso_log(GLogLevelFlags level, const char *filename, int line,
+ 		const char *function, const char *format, ...);
+ #endif
+ 
+--- origsrc/lasso-2.4.1/lasso/xml/id-wsf-2.0/Makefile.am	2014-01-06 23:44:23.000000000 +0900
++++ src/lasso-2.4.1/lasso/xml/id-wsf-2.0/Makefile.am	2015-01-04 01:18:39.476419600 +0900
+@@ -4,6 +4,7 @@ liblassoincludedir = $(includedir)/lasso
+ INCLUDES = \
+ 	-I$(top_builddir) \
+ 	-I$(top_srcdir) \
++	-I$(top_srcdir)/lasso/xml \
+ 	$(LASSO_CORE_CFLAGS) \
+ 	-DG_LOG_DOMAIN=\"lasso\"
+ 
+--- origsrc/lasso-2.4.1/lasso/xml/id-wsf-2.0/disco_query_response.c	2014-03-28 07:26:07.488024500 +0900
++++ src/lasso-2.4.1/lasso/xml/id-wsf-2.0/disco_query_response.c	2015-01-04 01:17:24.163919600 +0900
+@@ -25,6 +25,8 @@
+ #include "disco_query_response.h"
+ #include "idwsf2_strings.h"
+ 
++#include "idwsf_strings.h"
++
+ /**
+  * SECTION:disco_query_response
+  * @short_description: &lt;disco:QueryResponse&gt;
+--- origsrc/lasso-2.4.1/lasso/xml/private.h	2014-06-07 21:11:19.599928300 +0900
++++ src/lasso-2.4.1/lasso/xml/private.h	2015-01-04 01:53:13.848489900 +0900
+@@ -33,6 +33,7 @@ extern "C" {
+ #include <xmlsec/crypto.h>
+ #include <xmlsec/xmlenc.h>
+ #include "saml-2.0/saml2_encrypted_element.h"
++#include "../export.h"
+ #include "../utils.h"
+ 
+ typedef enum {
+@@ -163,9 +164,9 @@ struct _LassoNodeClassData
+ 	gboolean xsi_sub_type;
+ };
+ 
+-void lasso_node_class_set_nodename(LassoNodeClass *klass, char *name);
+-void lasso_node_class_set_ns(LassoNodeClass *klass, char *href, char *prefix);
+-void lasso_node_class_add_snippets(LassoNodeClass *klass, struct XmlSnippet *snippets);
++LASSO_EXPORT void lasso_node_class_set_nodename(LassoNodeClass *klass, char *name);
++LASSO_EXPORT void lasso_node_class_set_ns(LassoNodeClass *klass, char *href, char *prefix);
++LASSO_EXPORT void lasso_node_class_add_snippets(LassoNodeClass *klass, struct XmlSnippet *snippets);
+ void lasso_node_class_add_query_snippets(LassoNodeClass *klass, struct QuerySnippet *snippets);
+ 
+ gchar* lasso_node_build_query_from_snippets(LassoNode *node);
+@@ -196,7 +197,7 @@ char* lasso_query_sign(char *query, Lass
+ 
+ int lasso_query_verify_signature(const char *query, const xmlSecKey *public_key);
+ 
+-int lasso_saml2_query_verify_signature(const char *query, const xmlSecKey *sender_public_key);
++LASSO_EXPORT int lasso_saml2_query_verify_signature(const char *query, const xmlSecKey *sender_public_key);
+ 
+ char* lasso_sha1(const char *str);
+ 
+@@ -246,7 +247,7 @@ gboolean lasso_eval_xpath_expression(xml
+ 
+ char * lasso_get_relaystate_from_query(const char *query);
+ char * lasso_url_add_parameters(char *url, gboolean free, ...);
+-xmlSecKey* lasso_xmlsec_load_private_key_from_buffer(const char *buffer, size_t length, const char *password, LassoSignatureMethod signature_method, const char *certificate);
++LASSO_EXPORT xmlSecKey* lasso_xmlsec_load_private_key_from_buffer(const char *buffer, size_t length, const char *password, LassoSignatureMethod signature_method, const char *certificate);
+ xmlSecKey* lasso_xmlsec_load_private_key(const char *filename_or_buffer, const char *password,
+ 		LassoSignatureMethod signature_method, const char *certificate);
+ xmlDocPtr lasso_xml_parse_file(const char *filepath);
+--- origsrc/lasso-2.4.1/tests/Makefile.am	2014-06-08 19:32:10.482404400 +0900
++++ src/lasso-2.4.1/tests/Makefile.am	2015-01-04 01:36:28.157083700 +0900
+@@ -26,19 +26,16 @@ tests_LDADD = \
+ 	$(top_builddir)/lasso/liblasso.la \
+ 	$(LASSO_LIBS) \
+ 	$(CHECK_LIBS)
+-tests_LDFLAGS = -rpath `cd $(top_builddir)/lasso/.libs/; pwd` -static
+ 
+ tests2_SOURCES = tests2.c
+ tests2_LDADD = \
+ 	$(top_builddir)/lasso/liblasso.la \
+ 	$(LASSO_LIBS) \
+ 	$(CHECK_LIBS)
+-tests2_LDFLAGS = -rpath `cd $(top_builddir)/lasso/.libs/; pwd`
+ tests2_CFLAGS = $(AM_CFLAGS) -DSRCDIR=\"$(srcdir)\"
+ 
+ perfs_SOURCES = perfs.c
+ perfs_LDADD = $(top_builddir)/lasso/liblasso.la $(LASSO_LIBS)
+-perfs_LDFLAGS = -rpath `cd $(top_builddir)/lasso/.libs/; pwd`
+ 
+ .PHONY: valgrind
+ 
