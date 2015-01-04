@@ -1,0 +1,115 @@
+--- origsrc/libsoap-1.1.0/configure.ac	2006-07-10 01:24:18.000000000 +0900
++++ src/libsoap-1.1.0/configure.ac	2015-01-04 20:57:17.868891500 +0900
+@@ -320,49 +320,15 @@ AC_CHECK_LIB(nsl, inet_ntoa, [LIBNSL="-l
+ AC_CHECK_LIB(nsl, gethostbyname, [LIBNSL="-lnsl"])
+ AC_SUBST(LIBNSL)
+ 
+-AM_PATH_XML2(2.6.0,CFLAGS="$CFLAGS $XML_CPPFLAGS"; LDFLAGS="$LDFLAGS $XML_LIBS",exit 1)
++PKG_CHECK_MODULES([LIBXML2], [libxml-2.0])
+ 
+ # ------------------------------------------
+ # Check ssl library 
+ # Original work at: http://autoconf-archive.cryp.to/check_ssl.html
+ # ------------------------------------------
+-AC_DEFUN([CHECK_SSL],
+-[AC_MSG_CHECKING(if ssl is wanted)
+-AC_ARG_WITH(ssl,
+-[  --with-ssl=PFX	will check PFX for ssl library
+-  --with-ssl		will check /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr for ssl library
+-],
+-[   AC_MSG_RESULT(yes)
+-    for dir in $withval /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
+-        ssldir="$dir"
+-        if test -f "$dir/include/openssl/ssl.h"; then
+-            found_ssl="yes";
+-            CFLAGS="$CFLAGS -I$ssldir/include/openssl";
+-            break;
+-        fi
+-        if test -f "$dir/include/ssl.h"; then
+-            found_ssl="yes";
+-            CFLAGS="$CFLAGS -I$ssldir/include";
+-            break
+-        fi
+-    done
+-    if test x_$found_ssl != x_yes; then
+-        AC_MSG_ERROR(Cannot find ssl libraries
+-		Please goto http://www.openssl.org and install OpenSSL or
+-		install it from your os distribution)
+-    else
+-        printf "OpenSSL found in $ssldir\n";
+-        LIBS="$LIBS -lssl -lcrypto";
+-        LDFLAGS="$LDFLAGS -L$ssldir/lib";
+-        AC_DEFINE(HAVE_SSL,1,Define to 1 if you have requested --with-ssl)
+-    fi
+-],
+-[
+-    AC_MSG_RESULT(no)
+-])
+-])dnl
+-
+-CHECK_SSL
++PKG_CHECK_MODULES([OPENSSL], [openssl], [
++    AC_DEFINE([HAVE_SSL], [1], [Define SSL])
++], [])
+ 
+ AC_OUTPUT(Makefile 
+ libcsoap/Makefile 
+--- origsrc/libsoap-1.1.0/csoap-config.in	2006-07-10 01:24:18.000000000 +0900
++++ src/libsoap-1.1.0/csoap-config.in	2015-01-04 21:04:06.193110200 +0900
+@@ -68,11 +68,11 @@ while test $# -gt 0; do
+ 			;;
+ 
+ 		--cflags)
+-			echo -I${includedir}/libcsoap-$relcsoap -I${includedir}/nanohttp-$relnanohttp @XML_CPPFLAGS@ @PTHREAD_CFLAGS@
++			echo -I${includedir}/libcsoap-$relcsoap -I${includedir}/nanohttp-$relnanohttp @LIBXML2_CFLAGS@ @PTHREAD_CFLAGS@
+ 		 	;;
+ 
+ 		--libs)
+-			echo -L${libdir} -lcsoap -lnanohttp @XML_LIBS@ @PTHREAD_LIBS@
++			echo -L${libdir} -lcsoap -lnanohttp @LIBXML2_LIBS@ @PTHREAD_LIBS@
+ 			;;
+ 		*)
+ 			usage
+--- origsrc/libsoap-1.1.0/examples/csoap/Makefile.am	2006-07-10 01:24:19.000000000 +0900
++++ src/libsoap-1.1.0/examples/csoap/Makefile.am	2015-01-04 21:02:37.813227400 +0900
+@@ -1,5 +1,5 @@
+ LDADD=../../nanohttp/libnanohttp.la ../../libcsoap/libcsoap.la
+-INCLUDES=-I${top_srcdir}
++INCLUDES=-I${top_srcdir} $(LIBXML2_CFLAGS)
+ 
+ noinst_PROGRAMS=simpleclient simpleserver echoattachments-client echoattachments-server
+ bin_PROGRAMS=soapclient
+--- origsrc/libsoap-1.1.0/libcsoap/Makefile.am	2006-03-29 17:35:55.000000000 +0900
++++ src/libsoap-1.1.0/libcsoap/Makefile.am	2015-01-04 21:01:23.059321100 +0900
+@@ -11,6 +11,6 @@ libcsoap_la_HEADERS=soap-xml.h soap-faul
+                     soap-router.h soap-client.h soap-server.h soap-ctx.h \
+                     soap-admin.h
+ 
+-libcsoap_la_LDFLAGS= -version-info @csoap_version@ -release @csoap_release@
+-libcsoap_la_CFLAGS=-I${top_srcdir}
+-
++libcsoap_la_LDFLAGS= -no-undefined -version-info @csoap_version@ -release @csoap_release@
++libcsoap_la_CFLAGS=-I${top_srcdir} $(LIBXML2_CFLAGS)
++libcsoap_la_LIBADD = $(top_builddir)/nanohttp/libnanohttp.la $(LIBXML2_LIBS)
+--- origsrc/libsoap-1.1.0/libcsoap.pc.in	2006-03-06 22:28:21.000000000 +0900
++++ src/libsoap-1.1.0/libcsoap.pc.in	2015-01-04 20:51:16.822016500 +0900
+@@ -5,7 +5,7 @@ includedir=@includedir@
+ 
+ Name: csoap
+ Description: C API for SOAP applications
+-Version: @csoap_version_dotted@
++Version: @VERSION@
+ Libs: -L${libdir} -lcsoap-@csoap_release@ -lnanohttp-@nanohttp_release@ @XML_LIBS@
+ Cflags: @XML_CPPFLAGS@ -I${includedir}/libcsoap-@csoap_release@ -I${includedir}/nanohttp-@nanohttp_release@
+ 
+--- origsrc/libsoap-1.1.0/nanohttp/Makefile.am	2006-07-10 01:24:19.000000000 +0900
++++ src/libsoap-1.1.0/nanohttp/Makefile.am	2015-01-04 21:00:15.307368000 +0900
+@@ -12,6 +12,6 @@ libnanohttp_la_HEADERS=nanohttp-common.h
+                            nanohttp-request.h nanohttp-response.h                \
+                            nanohttp-base64.h nanohttp-ssl.h nanohttp-logging.h
+ 
+-libnanohttp_la_LDFLAGS= -version-info @nanohttp_version@ -release @nanohttp_release@
++libnanohttp_la_LDFLAGS= -no-undefined -version-info @nanohttp_version@ -release @nanohttp_release@
+ libnanohttp_la_CFLAGS=-I${top_srcdir}
+-
++libnanohttp_la_LIBADD = $(OPENSSL_LIBS)
