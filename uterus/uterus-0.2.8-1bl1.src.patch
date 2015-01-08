@@ -1,0 +1,418 @@
+--- origsrc/uterus-0.2.8/build-aux/yuck.mk	2014-09-17 19:53:55.000000000 +0900
++++ src/uterus-0.2.8/build-aux/yuck.mk	2015-01-08 15:56:09.216694300 +0900
+@@ -1,6 +1,6 @@
+ ## bootstrapping rules, made for inclusion in your own Makefiles
+ yuck.m4i: yuck.yuck
+-	$(MAKE) $(AM_MAKEFLAGS) yuck-bootstrap
++	$(MAKE) $(AM_MAKEFLAGS) yuck-bootstrap$(EXEEXT)
+ 	$(AM_V_GEN) $(builddir)/yuck-bootstrap$(EXEEXT) $(srcdir)/yuck.yuck > $@ \
+ 		|| { rm -f -- $@; false; }
+ 
+--- origsrc/uterus-0.2.8/m4/sxe-compiler.m4	2014-09-17 19:53:55.000000000 +0900
++++ src/uterus-0.2.8/m4/sxe-compiler.m4	2015-01-08 18:16:27.054433900 +0900
+@@ -366,10 +366,14 @@ AC_DEFUN([SXE_FEATFLAGS], [dnl
+ 		featflags="${featflags} -static-intel"
+ 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-intel"], [:],
+ 		[${SXE_CFLAGS}])
++
++	if test $host_os != cygwin
++	then
+ 	SXE_CHECK_COMPILER_FLAG([-static-libgcc], [
+ 		featflags="${featflags} -static-libgcc"
+ 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-libgcc"], [:],
+ 		[${SXE_CFLAGS}])
++	fi
+ 
+ 	SXE_CHECK_COMPILER_FLAG([-intel-extensions], [dnl
+ 		featflags="${featflags} -intel-extensions"])
+--- origsrc/uterus-0.2.8/src/Makefile.am	2014-09-17 19:53:55.000000000 +0900
++++ src/uterus-0.2.8/src/Makefile.am	2015-01-08 16:01:03.562397400 +0900
+@@ -5,7 +5,7 @@
+ ## Author:  Sebastian Freundt <hroptatyr@fresse.org>
+ ##
+ ## This file is part of uterus.
+-## 
++##
+ ## Redistribution and use in source and binary forms, with or without
+ ## modification, are permitted provided that the following conditions
+ ## are met:
+@@ -40,7 +40,7 @@ include $(top_builddir)/version.mk
+ AM_CPPFLAGS = -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=201001L
+ AM_CPPFLAGS += -DTIMESTAMPS
+ AM_CPPFLAGS += -DHAVE_VERSION_H
+-AM_LDFLAGS = $(XCCLDFLAGS)
++AM_LDFLAGS = $(XCCLDFLAGS) -no-undefined
+ 
+ ## headerdir and utedir are defined in c.ac
+ 
+@@ -60,9 +60,9 @@ BUILT_SOURCES =
+ DSO_LDFLAGS = -shared -avoid-version -module
+ 
+ ## version stuff
+-noinst_LIBRARIES += libversion.a
+-libversion_a_SOURCES =
+-libversion_a_SOURCES += version.c version.h version.c.in
++noinst_LTLIBRARIES = libversion.la
++libversion_la_SOURCES =
++libversion_la_SOURCES += version.c version.h version.c.in
+ 
+ ## the main thing
+ lib_LTLIBRARIES += libuterus.la
+@@ -118,13 +118,13 @@ EXTRA_libuterus_la_SOURCES += nifty.h
+ EXTRA_libuterus_la_SOURCES += cmd-aux.c
+ 
+ uterus_LIBS = libuterus.la
+-uterus_LIBS += libversion.a
++uterus_LIBS += libversion.la
+ 
+ bin_PROGRAMS += ute
+ ute_SOURCES = ute.c ute.yuck
+ ute_LDADD = $(uterus_LIBS)
+ ute_CPPFLAGS = $(AM_CPPFLAGS) -DUTEDIR=\"$(utedir)\"
+-ute_LDFLAGS = $(AM_LDFLAGS) -static
++ute_LDFLAGS = $(AM_LDFLAGS)
+ BUILT_SOURCES += ute.yucc
+ 
+ UTE_CMD_CPPFLAGS = -DSTANDALONE
+@@ -132,14 +132,14 @@ UTE_CMD_CPPFLAGS = -DSTANDALONE
+ ute_PROGRAMS += ute-shnot
+ ute_shnot_SOURCES = ute-shnot.c ute-shnot.h ute-shnot.yuck
+ ute_shnot_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_shnot_LDFLAGS = $(AM_LDFLAGS) -static
++ute_shnot_LDFLAGS = $(AM_LDFLAGS)
+ ute_shnot_LDADD = $(uterus_LIBS)
+ BUILT_SOURCES += ute-shnot.yucc
+ 
+ ute_PROGRAMS += ute-chndl
+ ute_chndl_SOURCES = ute-chndl.c ute-chndl.h ute-chndl.yuck
+ ute_chndl_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_chndl_LDFLAGS = $(AM_LDFLAGS) -static
++ute_chndl_LDFLAGS = $(AM_LDFLAGS)
+ ute_chndl_LDADD = $(uterus_LIBS)
+ BUILT_SOURCES += ute-chndl.yucc
+ 
+@@ -169,28 +169,28 @@ BUILT_SOURCES += ute-mux.yucc
+ ute_PROGRAMS += ute-fsck
+ ute_fsck_SOURCES = ute-fsck.c ute-fsck.yuck
+ ute_fsck_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_fsck_LDFLAGS = $(AM_LDFLAGS) -static
++ute_fsck_LDFLAGS = $(AM_LDFLAGS)
+ ute_fsck_LDADD = $(uterus_LIBS)
+ BUILT_SOURCES += ute-fsck.yucc
+ 
+ ute_PROGRAMS += ute-slut
+ ute_slut_SOURCES = ute-slut.c ute-slut.yuck
+ ute_slut_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_slut_LDFLAGS = $(AM_LDFLAGS) -static
++ute_slut_LDFLAGS = $(AM_LDFLAGS)
+ ute_slut_LDADD = $(uterus_LIBS)
+ BUILT_SOURCES += ute-slut.yucc
+ 
+ ute_PROGRAMS += ute-slab
+ ute_slab_SOURCES = ute-slab.c ute-slab.yuck
+ ute_slab_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_slab_LDFLAGS = $(AM_LDFLAGS) -static
++ute_slab_LDFLAGS = $(AM_LDFLAGS)
+ ute_slab_LDADD = $(uterus_LIBS)
+ BUILT_SOURCES += ute-slab.yucc
+ 
+ ute_PROGRAMS += ute-info
+ ute_info_SOURCES = ute-info.c ute-info.yuck
+ ute_info_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_info_LDFLAGS = $(AM_LDFLAGS) -static
++ute_info_LDFLAGS = $(AM_LDFLAGS)
+ ute_info_LDADD = $(uterus_LIBS)
+ EXTRA_ute_info_SOURCES = gbs.c gbs.h
+ BUILT_SOURCES += ute-info.yucc
+@@ -198,7 +198,7 @@ BUILT_SOURCES += ute-info.yucc
+ ute_PROGRAMS += ute-anal
+ ute_anal_SOURCES = ute-anal.c ute-anal.yuck
+ ute_anal_CPPFLAGS = $(AM_CPPFLAGS) $(UTE_CMD_CPPFLAGS)
+-ute_anal_LDFLAGS = $(AM_LDFLAGS) -static
++ute_anal_LDFLAGS = $(AM_LDFLAGS)
+ if HAVE_LIBPNG
+ ute_anal_LDFLAGS += -lpng
+ endif  HAVE_LIBPNG
+@@ -208,12 +208,14 @@ BUILT_SOURCES += ute-anal.yucc
+ ## muxer/demuxer DSOs
+ ute_LTLIBRARIES += uta.la
+ uta_la_SOURCES = uta.c
+-uta_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++uta_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++uta_la_LIBADD = libuterus.la
+ 
+ ute_LTLIBRARIES += dukas.la
+ dukas_la_SOURCES = dukas.c
+-dukas_la_LIBADD = libversion.a
+-dukas_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++dukas_la_LIBADD = $(uterus_LIBS)
++dukas_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++
+ ## dukas has a binary too
+ noinst_PROGRAMS += ute-mux-dukas
+ ute_mux_dukas_SOURCES = dukas.c dukas.yuck
+@@ -224,41 +226,47 @@ BUILT_SOURCES += dukas.yucc
+ 
+ ute_LTLIBRARIES += mat.la
+ mat_la_SOURCES = mat.c
+-mat_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++mat_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++mat_la_LIBADD = libuterus.la
+ 
+ if HAVE_HDF5
+ ute_LTLIBRARIES += hdf5.la
+ hdf5_la_SOURCES = hdf5.c hdf5.yuck
+ hdf5_la_CPPFLAGS = $(AM_CPPFLAGS) $(HDF5_CPPFLAGS)
+-hdf5_la_LIBADD = libversion.a
+-hdf5_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS) $(HDF5_LDFLAGS)
++hdf5_la_LIBADD = $(uterus_LIBS)
++hdf5_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS) $(HDF5_LDFLAGS)
+ endif  ## HAVE_HDF5
+ BUILT_SOURCES += hdf5.yucc
+ 
+ ute_LTLIBRARIES += ariva.la
+ ariva_la_SOURCES = ariva.c
+-ariva_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++ariva_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++ariva_la_LIBADD = libuterus.la
+ 
+ ute_LTLIBRARIES += truefx.la
+ truefx_la_SOURCES = truefx.c
+-truefx_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++truefx_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++truefx_la_LIBADD = libuterus.la
+ 
+ if HAVE_EXPAT
+ ute_LTLIBRARIES += ibhist.la
+ ibhist_la_SOURCES = ibhist.c
+ ibhist_la_SOURCES += expobuf.h
+ ibhist_la_CPPFLAGS = $(AM_CPPFLAGS) $(expat_CFLAGS)
+-ibhist_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++ibhist_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
+ ibhist_la_LDFLAGS += $(expat_LIBS)
++ibhist_la_LIBADD = libuterus.la
+ endif
+ 
+ ute_LTLIBRARIES += forexfactory.la
+ forexfactory_la_SOURCES = forexfactory.c
+-forexfactory_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++forexfactory_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++forexfactory_la_LIBADD = libuterus.la
+ 
+ ute_LTLIBRARIES += fxstreet.la
+ fxstreet_la_SOURCES = fxstreet.c
+-fxstreet_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
++fxstreet_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
++fxstreet_la_LIBADD = libuterus.la
+ 
+ ## version rules
+ version.c: version.c.in $(top_builddir)/.version
+@@ -282,7 +290,7 @@ $(LTDLDEPS):
+ 	cd ../libltdl && $(MAKE)
+ endif
+ 
+-# 
++#
+ # Help the developers get nice post-processed source files
+ 
+ ## Create preprocessor output (debugging purposes only)
+--- origsrc/uterus-0.2.8/test/Makefile.am	2014-09-17 19:53:55.000000000 +0900
++++ src/uterus-0.2.8/test/Makefile.am	2015-01-08 16:11:56.387592800 +0900
+@@ -178,13 +178,13 @@ check_PROGRAMS += core-file-2
+ check_PROGRAMS += core-file-3
+ check_PROGRAMS += core-file-4
+ 
+-core_file_1_LDFLAGS = $(AM_LDFLAGS) -static
++core_file_1_LDFLAGS = $(AM_LDFLAGS)
+ core_file_1_LDADD = $(uterus_LIBS)
+-core_file_2_LDFLAGS = $(AM_LDFLAGS) -static
++core_file_2_LDFLAGS = $(AM_LDFLAGS)
+ core_file_2_LDADD = $(uterus_LIBS)
+-core_file_3_LDFLAGS = $(AM_LDFLAGS) -static
++core_file_3_LDFLAGS = $(AM_LDFLAGS)
+ core_file_3_LDADD = $(uterus_LIBS)
+-core_file_4_LDFLAGS = $(AM_LDFLAGS) -static
++core_file_4_LDFLAGS = $(AM_LDFLAGS)
+ core_file_4_LDADD = $(uterus_LIBS)
+ bin_tests += core-file-1
+ bin_tests += core-file-2
+@@ -193,142 +193,142 @@ bin_tests += core-file-4
+ 
+ ## testing headers and stuff
+ check_PROGRAMS += m30-1
+-m30_1_LDFLAGS = $(AM_LDFLAGS) -static
++m30_1_LDFLAGS = $(AM_LDFLAGS)
+ m30_1_LDADD = $(m30_LIBS)
+ bin_tests += m30-1
+ 
+ check_PROGRAMS += m30-2
+-m30_2_LDFLAGS = $(AM_LDFLAGS) -static
++m30_2_LDFLAGS = $(AM_LDFLAGS)
+ m30_2_LDADD = $(m30_LIBS)
+ bin_tests += m30-2
+ 
+ check_PROGRAMS += m30-3
+-m30_3_LDFLAGS = $(AM_LDFLAGS) -static
++m30_3_LDFLAGS = $(AM_LDFLAGS)
+ m30_3_LDADD = $(m30_LIBS)
+ bin_tests += m30-3
+ 
+ check_PROGRAMS += m30-4
+-m30_4_LDFLAGS = $(AM_LDFLAGS) -static
++m30_4_LDFLAGS = $(AM_LDFLAGS)
+ m30_4_LDADD = $(m30_LIBS)
+ bin_tests += m30-4
+ 
+ check_PROGRAMS += m30-5
+-m30_5_LDFLAGS = $(AM_LDFLAGS) -static
++m30_5_LDFLAGS = $(AM_LDFLAGS)
+ m30_5_LDADD = $(m30_LIBS)
+ bin_tests += m30-5
+ 
+ check_PROGRAMS += m30-6
+-m30_6_LDFLAGS = $(AM_LDFLAGS) -static
++m30_6_LDFLAGS = $(AM_LDFLAGS)
+ m30_6_LDADD = $(m30_LIBS)
+ bin_tests += m30-6
+ 
+ check_PROGRAMS += m30-7
+-m30_7_LDFLAGS = $(AM_LDFLAGS) -static
++m30_7_LDFLAGS = $(AM_LDFLAGS)
+ m30_7_LDADD = $(m30_LIBS)
+ bin_tests += m30-7
+ 
+ check_PROGRAMS += m30-8
+-m30_8_LDFLAGS = $(AM_LDFLAGS) -static
++m30_8_LDFLAGS = $(AM_LDFLAGS)
+ m30_8_LDADD = $(m30_LIBS)
+ bin_tests += m30-8
+ 
+ check_PROGRAMS += m30-9
+-m30_9_LDFLAGS = $(AM_LDFLAGS) -static
++m30_9_LDFLAGS = $(AM_LDFLAGS)
+ m30_9_LDADD = $(m30_LIBS)
+ bin_tests += m30-9
+ 
+ check_PROGRAMS += m30-10
+-m30_10_LDFLAGS = $(AM_LDFLAGS) -static
++m30_10_LDFLAGS = $(AM_LDFLAGS)
+ m30_10_LDADD = $(m30_LIBS)
+ bin_tests += m30-10
+ 
+ check_PROGRAMS += m30-11
+-m30_11_LDFLAGS = $(AM_LDFLAGS) -static
++m30_11_LDFLAGS = $(AM_LDFLAGS)
+ m30_11_LDADD = $(m30_LIBS)
+ bin_tests += m30-11
+ 
+ check_PROGRAMS += m30-12
+-m30_12_LDFLAGS = $(AM_LDFLAGS) -static
++m30_12_LDFLAGS = $(AM_LDFLAGS)
+ m30_12_LDADD = $(m30_LIBS)
+ bin_tests += m30-12
+ 
+ check_PROGRAMS += m30-13
+-m30_13_LDFLAGS = $(AM_LDFLAGS) -static
++m30_13_LDFLAGS = $(AM_LDFLAGS)
+ m30_13_LDADD = $(m30_LIBS)
+ bin_tests += m30-13
+ 
+ check_PROGRAMS += m30-14
+-m30_14_LDFLAGS = $(AM_LDFLAGS) -static
++m30_14_LDFLAGS = $(AM_LDFLAGS)
+ m30_14_LDADD = $(m30_LIBS)
+ bin_tests += m30-14
+ 
+ check_PROGRAMS += m30-15
+-m30_15_LDFLAGS = $(AM_LDFLAGS) -static
++m30_15_LDFLAGS = $(AM_LDFLAGS)
+ m30_15_LDADD = $(m30_LIBS)
+ bin_tests += m30-15
+ 
+ check_PROGRAMS += m30-16
+-m30_16_LDFLAGS = $(AM_LDFLAGS) -static
++m30_16_LDFLAGS = $(AM_LDFLAGS)
+ m30_16_LDADD = $(m30_LIBS)
+ bin_tests += m30-16
+ 
+ check_PROGRAMS += m62-1
+-m62_1_LDFLAGS = $(AM_LDFLAGS) -static
++m62_1_LDFLAGS = $(AM_LDFLAGS)
+ m62_1_LDADD = $(m30_LIBS)
+ bin_tests += m62-1
+ 
+ check_PROGRAMS += m62-2
+-m62_2_LDFLAGS = $(AM_LDFLAGS) -static
++m62_2_LDFLAGS = $(AM_LDFLAGS)
+ m62_2_LDADD = $(m30_LIBS)
+ bin_tests += m62-2
+ 
+ check_PROGRAMS += m62-3
+-m62_3_LDFLAGS = $(AM_LDFLAGS) -static
++m62_3_LDFLAGS = $(AM_LDFLAGS)
+ m62_3_LDADD = $(m30_LIBS)
+ bin_tests += m62-3
+ 
+ check_PROGRAMS += m62-4
+-m62_4_LDFLAGS = $(AM_LDFLAGS) -static
++m62_4_LDFLAGS = $(AM_LDFLAGS)
+ m62_4_LDADD = $(m30_LIBS)
+ bin_tests += m62-4
+ 
+ check_PROGRAMS += m62-5
+-m62_5_LDFLAGS = $(AM_LDFLAGS) -static
++m62_5_LDFLAGS = $(AM_LDFLAGS)
+ m62_5_LDADD = $(m30_LIBS)
+ bin_tests += m62-5
+ 
+ check_PROGRAMS += m62-6
+-m62_6_LDFLAGS = $(AM_LDFLAGS) -static
++m62_6_LDFLAGS = $(AM_LDFLAGS)
+ m62_6_LDADD = $(m30_LIBS)
+ bin_tests += m62-6
+ 
+ check_PROGRAMS += m62-7
+-m62_7_LDFLAGS = $(AM_LDFLAGS) -static
++m62_7_LDFLAGS = $(AM_LDFLAGS)
+ m62_7_LDADD = $(m30_LIBS)
+ bin_tests += m62-7
+ 
+ check_PROGRAMS += m62-8
+-m62_8_LDFLAGS = $(AM_LDFLAGS) -static
++m62_8_LDFLAGS = $(AM_LDFLAGS)
+ m62_8_LDADD = $(m30_LIBS)
+ bin_tests += m62-8
+ 
+ check_PROGRAMS += m62-9
+-m62_9_LDFLAGS = $(AM_LDFLAGS) -static
++m62_9_LDFLAGS = $(AM_LDFLAGS)
+ m62_9_LDADD = $(m30_LIBS)
+ bin_tests += m62-9
+ 
+ check_PROGRAMS += m62-10
+-m62_10_LDFLAGS = $(AM_LDFLAGS) -static
++m62_10_LDFLAGS = $(AM_LDFLAGS)
+ m62_10_LDADD = $(m30_LIBS)
+ bin_tests += m62-10
+ 
+ 
+ check_PROGRAMS += stream-01
+-stream_01_LDFLAGS = $(AM_LDFLAGS) -static
++stream_01_LDFLAGS = $(AM_LDFLAGS)
+ stream_01_LDADD = $(m30_LIBS)
+ 
+ check_PROGRAMS += stream-02
+-stream_02_LDFLAGS = $(AM_LDFLAGS) -static
++stream_02_LDFLAGS = $(AM_LDFLAGS)
+ stream_02_LDADD = $(m30_LIBS)
+ 
+ 
+@@ -337,7 +337,7 @@ check_PROGRAMS += clitoris
+ clitoris_SOURCES = clitoris.c clitoris.yuck
+ clitoris_CPPFLAGS = $(AM_CPPFLAGS)
+ clitoris_CPPFLAGS += -D_GNU_SOURCE
+-clitoris_LDFLAGS = $(AM_LDFLAGS) -static
++clitoris_LDFLAGS = $(AM_LDFLAGS)
+ clitoris_LDADD = -lutil
+ BUILT_SOURCES += clitoris.yucc
+ 
