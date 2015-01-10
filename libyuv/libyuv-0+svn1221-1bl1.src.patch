@@ -1,0 +1,36 @@
+--- origsrc/libyuv/CMakeLists.txt	2014-10-29 08:37:11.000000000 +0900
++++ src/libyuv/CMakeLists.txt	2015-01-10 16:21:34.667600900 +0900
+@@ -87,7 +87,16 @@ set(ly_header_files
+ 
+ include_directories(${ly_inc_dir})
+ 
++option(ENABLE_SHARED "enable shared" ON)
++if (ENABLE_SHARED)
++add_library(${ly_lib_name} SHARED ${ly_source_files})
++else()
+ add_library(${ly_lib_name} STATIC ${ly_source_files})
++endif()
++
++if(CYGWIN)
++set_target_properties(${ly_lib_name} PROPERTIES SOVERSION 0)
++endif()
+ 
+ add_executable(convert ${ly_base_dir}/util/convert.cc)
+ target_link_libraries(convert ${ly_lib_name})
+@@ -95,7 +104,7 @@ target_link_libraries(convert ${ly_lib_n
+ include(FindJPEG)
+ if (JPEG_FOUND)
+   include_directories(${JPEG_INCLUDE_DIR})
+-  target_link_libraries(convert ${JPEG_LIBRARY})
++  target_link_libraries(${ly_lib_name} ${JPEG_LIBRARY})
+   add_definitions(-DHAVE_JPEG)
+ endif()
+ 
+@@ -125,6 +134,6 @@ if(NACL AND NACL_LIBC STREQUAL "newlib")
+   target_link_libraries(libyuv_unittest glibc-compat)
+ endif()
+ 
+-install(TARGETS ${ly_lib_name} DESTINATION lib)
++install(TARGETS ${ly_lib_name} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES ${ly_header_files} DESTINATION include/libyuv)
+ install(FILES ${ly_inc_dir}/libyuv.h DESTINATION include/)
