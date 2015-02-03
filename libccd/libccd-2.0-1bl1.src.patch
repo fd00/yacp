@@ -1,0 +1,30 @@
+--- origsrc/libccd-2.0/CMakeLists.txt	2015-02-03 17:04:24.854312500 +0900
++++ src/libccd-2.0/CMakeLists.txt	2015-02-03 17:06:29.693179700 +0900
+@@ -47,15 +47,22 @@ set_target_properties(ccd PROPERTIES VER
+ 
+ target_link_libraries(ccd ${MATH})
+ 
+-add_library(ccd_static STATIC ${SOURCE_FILES})
+-set_target_properties(ccd_static PROPERTIES OUTPUT_NAME ccd)
+-target_link_libraries(ccd_static ${MATH})
++if(NOT CYGWIN)
++  add_library(ccd_static STATIC ${SOURCE_FILES})
++  set_target_properties(ccd_static PROPERTIES OUTPUT_NAME ccd)
++  target_link_libraries(ccd_static ${MATH})
++endif()
+ 
+ set(pkg_conf_file "${CMAKE_CURRENT_SOURCE_DIR}/ccd.pc")
+ configure_file("${pkg_conf_file}.in" "${pkg_conf_file}" @ONLY)
+ 
+-install(TARGETS ccd ccd_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if(CYGWIN)
++  install(TARGETS ccd ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++                      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++else()
++  install(TARGETS ccd ccd_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+ install(DIRECTORY src/ccd DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+ install(FILES "${pkg_conf_file}" DESTINATION
+   ${CMAKE_INSTALL_LIBDIR}/pkgconfig COMPONENT pkgconfig)
