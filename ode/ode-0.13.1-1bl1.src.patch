@@ -1,0 +1,142 @@
+--- origsrc/ode-0.13.1/Makefile.am	2014-03-08 17:31:45.000000000 +0900
++++ src/ode-0.13.1/Makefile.am	2015-02-04 01:18:40.800984400 +0900
+@@ -1,14 +1,6 @@
+ AUTOMAKE_OPTIONS = foreign
+ ACLOCAL_AMFLAGS = -I m4 --install
+ 
+-if ENABLE_OU
+-OU_DIR = ou
+-endif
+-
+-if LIBCCD
+-LIBCCD_DIR = libccd
+-endif
+-
+ if ENABLE_DEMOS
+ DRAWSTUFF_DIR = drawstuff
+ endif
+@@ -25,8 +17,6 @@ SUBDIRS = include \
+           $(DRAWSTUFF_DIR) \
+           $(GIMPACT_DIR) \
+           $(OPCODE_DIR) \
+-          $(OU_DIR) \
+-          $(LIBCCD_DIR) \
+           ode \
+           tests
+ 
+--- origsrc/ode-0.13.1/configure.ac	2014-03-08 17:37:25.000000000 +0900
++++ src/ode-0.13.1/configure.ac	2015-02-04 01:24:49.809773500 +0900
+@@ -199,8 +199,8 @@ elif test "x$drawstuff" != "xnone"; then
+   have_gl=no
+   have_glu=no
+   TEMP_LDFLAGS="$LDFLAGS"
+-  AC_CHECK_LIB(GL, main, [GL_LIBS="-lGL"; have_gl=yes])
+-  AC_CHECK_LIB(GLU, main, [GL_LIBS="-lGLU $GL_LIBS"; have_glu=yes], , -lGL)
++  PKG_CHECK_MODULES([GL], [gl], [have_gl=yes])
++  PKG_CHECK_MODULES([GLU], [glu], [have_glu=yes])
+   AC_CHECK_LIB(opengl32, main, [GL_LIBS="-lopengl32"; have_gl=yes])
+   AC_CHECK_LIB(glu32, main, [GL_LIBS="-lglu32 $GL_LIBS"; have_glu=yes], , -lopengl32)
+   LDFLAGS="$TEMP_LDFLAGS"
+@@ -208,7 +208,6 @@ elif test "x$drawstuff" != "xnone"; then
+     drawstuff="none"
+   fi
+ fi
+-AC_SUBST(GL_LIBS)
+ 
+ dnl Set Conditionals
+ AM_CONDITIONAL(WIN32, test x$drawstuff = xWin32)
+@@ -300,9 +299,6 @@ then
+ fi
+ if test x$use_ou = xyes
+ then
+-    OU_NAMESPACE=odeou
+-    AC_CONFIG_COMMANDS_POST([export OU_NAMESPACE=odeou])
+-    AC_DEFINE([_OU_NAMESPACE],[odeou],[libou namespace for ODE])
+     AC_DEFINE([dOU_ENABLED],[1],[Generic OU features are enabled])
+     AC_DEFINE([dATOMICS_ENABLED],[1],[Atomic API of OU is enabled])
+     if test x$use_ou_tls = xyes
+@@ -311,7 +307,7 @@ then
+     fi
+ 
+     case "$host_os" in
+-      cygwin* | mingw*)
++      mingw*)
+         targetos=_OU_TARGET_OS_WINDOWS
+         ;;
+       *qnx*)
+@@ -346,8 +342,8 @@ then
+     fi
+     
+     AC_DEFINE_UNQUOTED(_OU_TARGET_OS, $targetos, [Target OS setting for OU Library])
++    PKG_CHECK_MODULES([OU], [oderutils])
+ fi
+-AC_CONFIG_SUBDIRS([ou])
+ AM_CONDITIONAL(ENABLE_OU, test x$use_ou = xyes)
+ 
+ if test x$threading_intf = xyes
+@@ -431,7 +427,7 @@ then
+     libccd=yes
+ fi
+ 
+-AC_CONFIG_SUBDIRS([libccd])
++PKG_CHECK_MODULES([LIBCCD], [ccd])
+ 
+ AM_CONDITIONAL(LIBCCD, test x$libccd != xno)
+ AM_CONDITIONAL(LIBCCD_BOX_CYL,          test x$col_box_cylinder = xlibccd)
+--- origsrc/ode-0.13.1/drawstuff/dstest/Makefile.am	2014-02-04 15:00:58.000000000 +0900
++++ src/ode-0.13.1/drawstuff/dstest/Makefile.am	2015-02-04 01:26:27.348836000 +0900
+@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/drawstuff/
+ 
+ dstest_SOURCES= dstest.cpp
+ dstest_LDADD=$(top_builddir)/drawstuff/src/libdrawstuff.la \
+-            @GL_LIBS@
++            $(GL_LIBS) $(GLU_LIBS)
+ 
+ if WIN32
+ resources.o: $(top_srcdir)/drawstuff/src/resources.rc $(top_srcdir)/drawstuff/src/resource.h
+--- origsrc/ode-0.13.1/include/ode/precision.h	2014-03-08 17:39:39.000000000 +0900
++++ src/ode-0.13.1/include/ode/precision.h	2015-02-04 01:37:46.782127500 +0900
+@@ -10,7 +10,7 @@
+ #elif defined(dIDEDOUBLE)
+ #define dDOUBLE
+ #else
+-#define dSINGLE
++#define dDOUBLE
+ #endif
+ 
+ #endif
+--- origsrc/ode-0.13.1/ode/demo/Makefile.am	2014-02-04 15:00:58.000000000 +0900
++++ src/ode-0.13.1/ode/demo/Makefile.am	2015-02-04 01:42:02.687400600 +0900
+@@ -8,7 +8,7 @@ endif
+ 
+ # On Windows, GL_LIBS must go after libdrawstuff.la.
+ LDADD = $(top_builddir)/drawstuff/src/libdrawstuff.la \
+-        $(top_builddir)/ode/src/libode.la @GL_LIBS@
++        $(top_builddir)/ode/src/libode.la $(GL_LIBS) $(GLU_LIBS)
+ 
+ noinst_HEADERS = basket_geom.h texturepath.h world_geom3.h bunny_geom.h convex_bunny_geom.h \
+                  icosahedron_geom.h
+--- origsrc/ode-0.13.1/ode/src/Makefile.am	2014-02-04 15:00:58.000000000 +0900
++++ src/ode-0.13.1/ode/src/Makefile.am	2015-02-04 01:29:25.430867200 +0900
+@@ -81,8 +81,8 @@ libode_la_SOURCES =     nextafterf.c \
+ 
+ if ENABLE_OU
+ 
+-AM_CPPFLAGS += -I$(top_srcdir)/ou/include
+-libode_la_LIBADD += $(top_builddir)/ou/src/ou/libou.la
++AM_CPPFLAGS += $(OU_CFLAGS)
++libode_la_LIBADD += $(OU_LIBS)
+ libode_la_SOURCES +=    odetls.cpp odetls.h \
+                         odeou.cpp odeou.h
+ 
+@@ -138,8 +138,8 @@ endif
+ 
+ 
+ if LIBCCD
+-AM_CPPFLAGS += -I$(top_srcdir)/libccd/src -I$(top_builddir)/libccd/src -DdLIBCCD_ENABLED
+-libode_la_LIBADD += $(top_builddir)/libccd/src/libccd.la
++AM_CPPFLAGS += $(LIBCCD_CFLAGS) -DdLIBCCD_ENABLED
++libode_la_LIBADD += $(LIBCCD_LIBS)
+ 
+ libode_la_SOURCES += collision_libccd.cpp collision_libccd.h
+ 
