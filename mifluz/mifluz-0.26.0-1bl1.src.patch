@@ -1,0 +1,84 @@
+--- origsrc/mifluz-0.26.0/Makefile.am	2014-04-18 05:22:55.000000000 +0900
++++ src/mifluz-0.26.0/Makefile.am	2015-02-09 22:26:40.605993100 +0900
+@@ -17,6 +17,9 @@ bin_SCRIPTS = mifluz-config
+ 
+ pkginclude_HEADERS = config.h
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = mifluz.pc
++
+ dist-hook:
+ 	find $(distdir) -depth -name CVS -print | xargs rm -fr 
+ 
+--- origsrc/mifluz-0.26.0/configure.ac	2014-04-18 05:27:24.000000000 +0900
++++ src/mifluz-0.26.0/configure.ac	2015-02-09 22:27:09.401890000 +0900
+@@ -321,5 +321,5 @@ if test ! -d "./db"; then
+ fi
+ 
+ AC_CONFIG_FILES([mifluz-config], [chmod +x mifluz-config])
+-AC_CONFIG_FILES([Makefile mifluz.spec clib/Makefile db/Makefile db/db.h mifluz/Makefile htdb/Makefile search/Makefile doc/Makefile test/Makefile test/test_functions examples/Makefile man/Makefile])
++AC_CONFIG_FILES([Makefile mifluz.pc mifluz.spec clib/Makefile db/Makefile db/db.h mifluz/Makefile htdb/Makefile search/Makefile doc/Makefile test/Makefile test/test_functions examples/Makefile man/Makefile])
+ AC_OUTPUT()
+--- origsrc/mifluz-0.26.0/db/txn.c	2014-04-18 05:27:41.000000000 +0900
++++ src/mifluz-0.26.0/db/txn.c	2015-02-09 22:13:51.063512400 +0900
+@@ -801,12 +801,12 @@ __txn_freekids(txnp)
+ 		__txn_freekids(kids);
+ 
+ 		/* Free the transaction detail in the region. */
+-		R_LOCK(dbenv, &mgr->reginfo);
++		//R_LOCK(dbenv, &mgr->reginfo);
+ 		tp = (TXN_DETAIL *)R_ADDR(&mgr->reginfo, kids->off);
+ 		SH_TAILQ_REMOVE(&region->active_txn, tp, links, __txn_detail);
+ 
+ 		CDB___db_shalloc_free(mgr->reginfo.addr, tp);
+-		R_UNLOCK(dbenv, &mgr->reginfo);
++		//R_UNLOCK(dbenv, &mgr->reginfo);
+ 
+ 		/* Now remove from its parent. */
+ 		TAILQ_REMOVE(&txnp->kids, kids, klinks);
+--- origsrc/mifluz-0.26.0/mifluz/Makefile.am	2014-04-18 05:22:55.000000000 +0900
++++ src/mifluz-0.26.0/mifluz/Makefile.am	2015-02-09 22:16:41.293004900 +0900
+@@ -40,8 +40,8 @@ libmifluz_la_SOURCES = \
+ 	WordReference.cc \
+ 	WordType.cc
+ 
+-libmifluz_la_LDFLAGS = -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(MICRO_VERSION)
+-libmifluz_la_LIBADD = ../db/libdb.la ../clib/libclib.la
++libmifluz_la_LDFLAGS = -no-undefined -version-info $(MAJOR_VERSION):$(MINOR_VERSION):$(MICRO_VERSION)
++libmifluz_la_LIBADD = ../db/libdb.la ../clib/libclib.la $(LTLIBICONV)
+ 
+ include_HEADERS = \
+ 	mifluz.h
+--- origsrc/mifluz-0.26.0/mifluz.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mifluz-0.26.0/mifluz.pc.in	2015-02-09 22:25:47.774938600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mifluz
++Description: C++ library to store a full text inverted index
++Version: @VERSION@
++Libs: -L${libdir} -lmifluz
++Cflags: -I${includedir}
+--- origsrc/mifluz-0.26.0/search/Makefile.am	2014-04-18 05:22:55.000000000 +0900
++++ src/mifluz-0.26.0/search/Makefile.am	2015-02-09 21:50:28.960385900 +0900
+@@ -13,7 +13,6 @@ include $(top_srcdir)/Makefile.config
+ #
+ TESTS = t_search 
+ 
+-TESTS_ENVIRONMENT = $(top_srcdir)/test/test_prepare
+ AM_MAKEFLAGS = MAKE="$(MAKE)"
+ 
+ LOCAL_DEFINES = -I$(top_builddir)/db -I$(top_srcdir)/db $(PROFILING) \
+--- origsrc/mifluz-0.26.0/test/Makefile.am	2014-04-18 05:22:55.000000000 +0900
++++ src/mifluz-0.26.0/test/Makefile.am	2015-02-09 21:50:28.960385900 +0900
+@@ -36,7 +36,6 @@ TESTS = t_wordkey t_wordlist t_wordskip
+ 	t_htdb t_rdonly t_trunc t_dict \
+ 	t_dead t_delete t_cache t_largefile t_env
+ 
+-TESTS_ENVIRONMENT = $(top_srcdir)/test/test_prepare
+ AM_MAKEFLAGS = MAKE="$(MAKE)"
+ 
+ EXTRA_DIST = test_functions.in test_prepare $(TESTS) \
