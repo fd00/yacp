@@ -1,16 +1,50 @@
---- origsrc/arprec-2.2.16/configure.ac	2012-12-04 03:53:43.000000000 +0900
-+++ src/arprec-2.2.16/configure.ac	2013-10-14 13:20:40.408567700 +0900
+--- origsrc/arprec-2.2.17/Makefile.am	2012-12-04 03:51:09.000000000 +0900
++++ src/arprec-2.2.17/Makefile.am	2015-02-13 00:47:54.591596500 +0900
+@@ -4,6 +4,9 @@ SUBDIRS = src tests include fortran tool
+ bin_SCRIPTS=arprec-config
+ dist_doc_DATA = README doc/arprec.pdf
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = arprec.pc
++
+ cpp-demo:
+ 	$(MAKE) -C tests demo
+ 
+--- origsrc/arprec-2.2.17/arprec.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arprec-2.2.17/arprec.pc.in	2015-02-13 00:47:13.162885600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arprec
++Description: C++/Fortran-90 arbitrary precision package
++Version: @VERSION@
++Libs: -L${libdir} -larprec
++Cflags: -I${includedir}
+--- origsrc/arprec-2.2.17/configure.ac	2012-12-04 03:53:43.000000000 +0900
++++ src/arprec-2.2.17/configure.ac	2015-02-13 00:47:35.747846500 +0900
 @@ -12,7 +12,7 @@
  #
  #
  # Process this file with autoconf to produce a configure script.
 -define([ARPREC_PATCHLEVEL], 13)
-+define([ARPREC_PATCHLEVEL], 16)
++define([ARPREC_PATCHLEVEL], 17)
  AC_PREREQ(2.60)
  AC_INIT(arprec, 2.2.ARPREC_PATCHLEVEL, dhbailey@lbl.gov)
  AC_CONFIG_SRCDIR([src/init.cpp])
---- origsrc/arprec-2.2.16/fortran/Makefile.am	2012-12-04 03:51:09.000000000 +0900
-+++ src/arprec-2.2.16/fortran/Makefile.am	2013-10-14 13:29:40.174192700 +0900
+@@ -280,7 +280,7 @@ AC_SUBST(F77, $FC)
+ AC_SUBST(FFLAGS, $FCFLAGS)
+ 
+ AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile include/Makefile
+-                 fortran/Makefile toolkit/Makefile arprec-config 
++                 fortran/Makefile toolkit/Makefile arprec-config arprec.pc
+                  fortran/second.f toolkit/second.f])
+ 
+ AC_OUTPUT
+--- origsrc/arprec-2.2.17/fortran/Makefile.am	2012-12-04 03:51:09.000000000 +0900
++++ src/arprec-2.2.17/fortran/Makefile.am	2015-02-12 23:35:09.391559700 +0900
 @@ -2,8 +2,11 @@ if HAVE_FORTRAN
  AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
  LDADD = libarprec_f_main.la libarprecmod.la $(top_builddir)/src/libarprec.la $(FCLIBS)
@@ -24,8 +58,8 @@
  libarprec_f_main_la_SOURCES = main.cpp
  
  if UPCASE_MODULE
---- origsrc/arprec-2.2.16/src/Makefile.am	2012-12-04 03:51:10.000000000 +0900
-+++ src/arprec-2.2.16/src/Makefile.am	2013-10-14 13:18:36.432981800 +0900
+--- origsrc/arprec-2.2.17/src/Makefile.am	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.17/src/Makefile.am	2015-02-12 23:35:09.391559700 +0900
 @@ -16,6 +16,7 @@ SRC = add.cpp agmx.cpp ang.cpp angx.cpp
  lib_LTLIBRARIES = libarprec.la
  
@@ -34,8 +68,8 @@
  
  AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
  
---- origsrc/arprec-2.2.16/toolkit/mathinit.f	2012-12-04 03:51:10.000000000 +0900
-+++ src/arprec-2.2.16/toolkit/mathinit.f	2013-10-14 13:15:58.825559900 +0900
+--- origsrc/arprec-2.2.17/toolkit/mathinit.f	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.17/toolkit/mathinit.f	2015-02-12 23:35:09.391559700 +0900
 @@ -24,7 +24,7 @@ subroutine f_main
  use mpmodule
  use globdata
@@ -45,8 +79,8 @@
  real*8 second, tm0, tm1, tm2
  type (mp_real) catalan, eulergamma, t1, t2
  external catalan, eulergamma, second
---- origsrc/arprec-2.2.16/toolkit/mathtool.f	2012-12-04 03:51:10.000000000 +0900
-+++ src/arprec-2.2.16/toolkit/mathtool.f	2013-10-14 13:16:19.856809900 +0900
+--- origsrc/arprec-2.2.17/toolkit/mathtool.f	2012-12-04 03:51:10.000000000 +0900
++++ src/arprec-2.2.17/toolkit/mathtool.f	2015-02-12 23:35:09.391559700 +0900
 @@ -516,18 +516,18 @@ nef2 = 68
  
  !   Read constants and quadrature arrays from files.
