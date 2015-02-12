@@ -1,0 +1,80 @@
+--- origsrc/qd-2.3.15/Makefile.am	2012-03-14 08:35:00.000000000 +0900
++++ src/qd-2.3.15/Makefile.am	2015-02-13 00:05:42.760268900 +0900
+@@ -20,6 +20,9 @@ dist_noinst_DATA = docs/Makefile \
+   docs/two-prod.eps docs/two-prod.fig \
+   docs/two-sum.eps docs/two-sum.fig
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = qd.pc
++
+ doc: docs/qd.pdf
+ 
+ docs/qd.pdf:
+--- origsrc/qd-2.3.15/configure.ac	2012-03-14 08:35:00.000000000 +0900
++++ src/qd-2.3.15/configure.ac	2015-02-13 00:05:10.088393900 +0900
+@@ -317,7 +317,7 @@ AC_PROG_LIBTOOL
+ 
+ # Output
+ AC_CONFIG_FILES([Makefile config/Makefile src/Makefile include/Makefile 
+-                 tests/Makefile fortran/Makefile qd-config 
++                 tests/Makefile fortran/Makefile qd-config qd.pc
+                  fortran/second.f])
+ AC_OUTPUT
+ chmod +x qd-config
+--- origsrc/qd-2.3.15/fortran/Makefile.am	2012-03-14 08:35:00.000000000 +0900
++++ src/qd-2.3.15/fortran/Makefile.am	2015-02-12 23:58:45.593276700 +0900
+@@ -14,9 +14,10 @@ QDMOD=qdmodule.$(module_ext)
+ DDMOD=ddmodule.$(module_ext)
+ endif
+ 
+-lib_LTLIBRARIES = libqdmod.la libqd_f_main.la
++lib_LTLIBRARIES = libqdmod.la
+ libqdmod_la_SOURCES = ddext.f ddmod.f qdext.f qdmod.f f_dd.cpp f_qd.cpp
+-libqd_f_main_la_SOURCES = main.cpp
++libqdmod_la_LDFLAGS = -no-undefined
++libqdmod_la_LIBADD = -lgfortran $(top_builddir)/src/libqd.la
+ ddmod.lo: $(DDEXT) ddext.lo
+ qdmod.lo: ddmod.lo $(DDMOD) qdext.lo
+ $(QDMOD): qdmod.lo $(DDMOD)
+--- origsrc/qd-2.3.15/qd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/qd-2.3.15/qd.pc.in	2015-02-13 00:04:57.320815800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: qd
++Description: C++/Fortran-90 double-double and quad-double package
++Version: @VERSION@
++Libs: -L${libdir} -lqd -lm
++Cflags: -I${includedir}
+--- origsrc/qd-2.3.15/src/Makefile.am	2012-03-14 08:35:00.000000000 +0900
++++ src/qd-2.3.15/src/Makefile.am	2015-02-12 23:41:01.282184700 +0900
+@@ -4,6 +4,7 @@ SRC = c_dd.cpp c_qd.cpp dd_real.cpp dd_c
+ lib_LTLIBRARIES = libqd.la
+ 
+ libqd_la_SOURCES = $(SRC)
++libqd_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+--- origsrc/qd-2.3.15/tests/Makefile.am	2012-03-14 08:35:00.000000000 +0900
++++ src/qd-2.3.15/tests/Makefile.am	2015-02-13 00:00:52.569839200 +0900
+@@ -16,7 +16,6 @@ AM_FFLAGS = $(AM_FCFLAGS)
+ f_test_SOURCES = f_test.f
+ f_test_LINK=$(CXXLINK)
+ f_test_LDADD = $(top_builddir)/fortran/libqdmod.la \
+-               $(top_builddir)/fortran/libqd_f_main.la \
+                $(LDADD) $(top_builddir)/src/libqd.la $(FCLIBS)
+ endif
+ 
+--- origsrc/qd-2.3.15/tests/f_test.f	2009-05-12 02:45:05.000000000 +0900
++++ src/qd-2.3.15/tests/f_test.f	2015-02-13 00:02:10.272964200 +0900
+@@ -28,3 +28,6 @@ subroutine f_main
+   call f_fpu_fix_end (old_cw)
+ end
+ 
++program main
++  call f_main
++end
