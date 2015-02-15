@@ -1,0 +1,94 @@
+--- origsrc/libwibble-0.1.28-1.1/wibble/Makefile.am	2012-04-17 05:06:09.000000000 +0900
++++ src/libwibble-0.1.28-1.1/wibble/Makefile.am	2015-02-15 18:14:11.462925700 +0900
+@@ -127,7 +127,8 @@ libwibble_la_SOURCES = \
+     net/http.cpp
+ 
+ #libwibble_la_LIBADD = 
+-#libwibble_la_LDFLAGS = -no-undefined
++libwibble_la_LDFLAGS = -no-undefined
++libwibble_la_CXXFLAGS = -fpermissive
+ 
+ EXTRA_DIST = README libwibble.m4 libwibble.pc.in \
+     amorph.test.h \
+--- origsrc/libwibble-0.1.28-1.1/wibble/exception.cpp	2012-04-17 05:06:09.000000000 +0900
++++ src/libwibble-0.1.28-1.1/wibble/exception.cpp	2015-02-15 18:11:37.827182900 +0900
+@@ -29,7 +29,7 @@
+ #include <sstream>
+ #include <iostream>
+ 
+-#if defined(POSIX) && ! defined(__xlC__)
++#if defined(POSIX) && ! defined(__xlC__) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ 
+@@ -40,7 +40,7 @@ namespace exception {
+ 
+ std::vector< std::string > *AddContext::s_context = 0;
+ 
+-#if defined(POSIX) && ! defined(__xlC__)
++#if defined(POSIX) && ! defined(__xlC__) && !defined(__CYGWIN__)
+ void DefaultUnexpected()
+ {
+ 	try {
+--- origsrc/libwibble-0.1.28-1.1/wibble/sys/filelock.h	2012-04-17 05:06:09.000000000 +0900
++++ src/libwibble-0.1.28-1.1/wibble/sys/filelock.h	2015-02-15 18:16:56.464391100 +0900
+@@ -2,6 +2,7 @@
+ #define WIBBLE_SYS_FILELOCK_H
+ 
+ #include <fcntl.h>
++#include <cstdio>
+ 
+ namespace wibble {
+ namespace sys {
+--- origsrc/libwibble-0.1.28-1.1/wibble/sys/mutex.h	2012-04-17 05:06:09.000000000 +0900
++++ src/libwibble-0.1.28-1.1/wibble/sys/mutex.h	2015-02-15 18:38:17.903843700 +0900
+@@ -68,7 +68,7 @@ public:
+             pthread_mutexattr_t attr;
+             pthread_mutexattr_init( &attr );
+             if ( recursive ) {
+-#if (__APPLE__ || __xlC__)
++#if (__APPLE__ || __xlC__) || defined(__CYGWIN__)
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
+ #else
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE_NP );
+--- origsrc/libwibble-0.1.28-1.1/wibble/sys/process.cpp	2012-04-17 05:06:09.000000000 +0900
++++ src/libwibble-0.1.28-1.1/wibble/sys/process.cpp	2015-02-15 18:37:02.013218700 +0900
+@@ -268,10 +268,14 @@ static string describe_rlimit_res_t(int
+ 		case RLIMIT_DATA: return "max data size";
+ 		case RLIMIT_STACK: return "max stack size";
+ 		case RLIMIT_CORE: return "max core file size";
++#if defined(RLIMIT_RSS)
+ 		case RLIMIT_RSS: return "max resident set size";
++#endif
++#if defined(RLIMIT_NPROC)
+ 		case RLIMIT_NPROC: return "max number of processes";
++#endif
+ 		case RLIMIT_NOFILE: return "max number of open files";
+-#ifndef __xlC__
++#if defined(RLIMIT_MEMLOCK)
+ 		case RLIMIT_MEMLOCK: return "max locked-in-memory address spac";
+ #endif
+ #ifndef __APPLE__
+@@ -309,14 +313,22 @@ int getCPUTimeLimit(int* max) { return g
+ int getFileSizeLimit(int* max) { return getLimit(RLIMIT_FSIZE, max); }
+ int getDataMemoryLimit(int* max) { return getLimit(RLIMIT_DATA, max); }
+ int getCoreSizeLimit(int* max) { return getLimit(RLIMIT_CORE, max); }
++#if defined(RLIMIT_NPROC)
+ int getChildrenLimit(int* max) { return getLimit(RLIMIT_NPROC, max); }
++#else
++int getChildrenLimit(int* max) { return -1; }
++#endif
+ int getOpenFilesLimit(int* max) { return getLimit(RLIMIT_NOFILE, max); }
+ 
+ void setCPUTimeLimit(int value) { setLimit(RLIMIT_CPU, value); }
+ void setFileSizeLimit(int value) { setLimit(RLIMIT_FSIZE, value); }
+ void setDataMemoryLimit(int value) { setLimit(RLIMIT_DATA, value); }
+ void setCoreSizeLimit(int value) { setLimit(RLIMIT_CORE, value); }
++#if defined(RLIMIT_NPROC)
+ void setChildrenLimit(int value) { setLimit(RLIMIT_NPROC, value); }
++#else
++void setChildrenLimit(int value) { }
++#endif
+ void setOpenFilesLimit(int value) { setLimit(RLIMIT_NOFILE, value); }
+ 
+ #ifdef __linux__
