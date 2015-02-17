@@ -1,0 +1,69 @@
+--- origsrc/libsurl-0.7.2/Makefile.am	2011-09-11 05:16:40.000000000 +0900
++++ src/libsurl-0.7.2/Makefile.am	2015-02-18 08:43:00.087574000 +0900
+@@ -18,3 +18,6 @@
+ 
+ SUBDIRS=surl tests doc
+ BUILD_DATE=@BUILD_DATE@
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libsurl.pc
+--- origsrc/libsurl-0.7.2/acinclude.m4	2011-09-11 05:16:40.000000000 +0900
++++ src/libsurl-0.7.2/acinclude.m4	2015-02-18 08:36:55.603199000 +0900
+@@ -1,4 +1,4 @@
+-AC_DEFUN(AX_CHECK_XMLTO,[
++AC_DEFUN([AX_CHECK_XMLTO],[
+ 	AC_MSG_CHECKING(for xmlto)
+ 	ax_xmlto_ok=no
+ 	if test -x /usr/bin/xmlto;then ax_xmlto_ok=yes;fi
+--- origsrc/libsurl-0.7.2/configure.ac	2012-02-11 08:22:48.000000000 +0900
++++ src/libsurl-0.7.2/configure.ac	2015-02-18 08:42:36.556324000 +0900
+@@ -39,4 +39,4 @@ AC_PROG_CC
+ AC_PROG_CXX
+ AC_PROG_LIBTOOL
+ AC_PROG_INSTALL
+-AC_OUTPUT(Makefile surl/Makefile tests/Makefile doc/Makefile doc/tutorial/Makefile doc/api/Makefile)
++AC_OUTPUT(Makefile surl/Makefile tests/Makefile doc/Makefile doc/tutorial/Makefile doc/api/Makefile libsurl.pc)
+--- origsrc/libsurl-0.7.2/libsurl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsurl-0.7.2/libsurl.pc.in	2015-02-18 08:42:21.759449000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsurl
++Description: Library for generating shortened URLs
++Version: @VERSION@
++Libs: -L${libdir} -lsurl
++Cflags: -I${includedir}
+--- origsrc/libsurl-0.7.2/surl/Makefile.am	2011-09-11 05:16:40.000000000 +0900
++++ src/libsurl-0.7.2/surl/Makefile.am	2015-02-18 08:36:55.603199000 +0900
+@@ -18,5 +18,7 @@
+ 
+ lib_LTLIBRARIES=libsurl.la
+ libsurl_la_SOURCES=surl.c surl.h engine.h engine.c curl_simple.c curl_simple.h $(include_HEADERS)
++libsurl_la_LIBADD = $(LIBCURL)
++libsurl_la_LDFLAGS = -no-undefined
+ include_HEADERS=libsurl-fe.h
+ AM_CFLAGS=-Wall -Werror
+--- origsrc/libsurl-0.7.2/tests/Makefile.am	2011-09-11 05:16:40.000000000 +0900
++++ src/libsurl-0.7.2/tests/Makefile.am	2015-02-18 08:39:39.735034900 +0900
+@@ -19,6 +19,6 @@
+ noinst_PROGRAMS=libsurl-tests
+ check_PROGRAMS=libsurl-tests
+ TESTS=$(check_PROGRAMS)
+-libsurl_tests_LDFLAGS=@PTHREAD_LIBS@ @PTHREAD_CFLAGS@ -lcurl
++libsurl_tests_CPPFLAGS=-I$(top_srcdir)/surl
+ libsurl_tests_SOURCES=main.c
+-libsurl_tests_LDADD=-lsurl -L../surl
++libsurl_tests_LDADD=$(top_builddir)/surl/libsurl.la
+--- origsrc/libsurl-0.7.2/tests/main.c	2011-09-11 05:16:40.000000000 +0900
++++ src/libsurl-0.7.2/tests/main.c	2015-02-18 08:40:30.000659900 +0900
+@@ -20,6 +20,7 @@
+ 
+ #include <stdlib.h>
+ #include <stdio.h>
++#include <string.h>
+ 
+ #include <libsurl-fe.h>
+ 
