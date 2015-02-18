@@ -1,0 +1,86 @@
+--- origsrc/libsolv-0.6.8/CMakeLists.txt	2015-01-14 17:02:54.000000000 +0900
++++ src/libsolv-0.6.8/CMakeLists.txt	2015-02-18 21:33:11.781541200 +0900
+@@ -66,7 +66,7 @@ MESSAGE(STATUS "Man pages will be instal
+ 
+ # where to look first for cmake modules, before ${CMAKE_ROOT}/Modules/ is checked
+ SET (CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+-INSTALL( FILES ${CMAKE_MODULE_PATH}/FindLibSolv.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules )
++INSTALL( FILES ${CMAKE_MODULE_PATH}/FindLibSolv.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/libsolv )
+ 
+ INCLUDE (${CMAKE_SOURCE_DIR}/VERSION.cmake)
+ 
+@@ -350,3 +350,10 @@ ADD_CUSTOM_TARGET (srcpackage_local
+ 
+ ENABLE_TESTING()
+ ADD_SUBDIRECTORY (test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${LIB_INSTALL_DIR})
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libsolv.pc.in ${CMAKE_BINARY_DIR}/libsolv.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libsolv.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
+--- origsrc/libsolv-0.6.8/bindings/CMakeLists.txt	2015-01-14 17:02:54.000000000 +0900
++++ src/libsolv-0.6.8/bindings/CMakeLists.txt	2015-02-18 21:13:25.611785300 +0900
+@@ -1,4 +1,6 @@
++IF (NOT CYGWIN)
+ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
++ENDIF (NOt CYGWIN)
+ 
+ FIND_PACKAGE (SWIG)
+ 
+--- origsrc/libsolv-0.6.8/ext/CMakeLists.txt	2015-01-14 17:02:54.000000000 +0900
++++ src/libsolv-0.6.8/ext/CMakeLists.txt	2015-02-18 21:13:25.611785300 +0900
+@@ -106,7 +106,9 @@ IF (ENABLE_APPDATA)
+ 	repo_appdata.h)
+ ENDIF (ENABLE_APPDATA)
+ 
++IF (NOT CYGWIN)
+ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
++ENDIF (NOT CYGWIN)
+ SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${CMAKE_SOURCE_DIR}/ext/libsolvext.ver")
+ 
+ IF (DISABLE_SHARED)
+@@ -120,7 +122,7 @@ SET_TARGET_PROPERTIES(libsolvext PROPERT
+ SET_TARGET_PROPERTIES(libsolvext PROPERTIES SOVERSION ${LIBSOLVEXT_SOVERSION})
+ 
+ INSTALL (FILES ${libsolvext_HEADERS} DESTINATION "${INCLUDE_INSTALL_DIR}/solv")
+-INSTALL (TARGETS libsolvext LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
++INSTALL (TARGETS libsolvext RUNTIME DESTINATION ${BIN_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+ 
+ IF (ENABLE_STATIC AND NOT DISABLE_SHARED)
+ ADD_LIBRARY (libsolvext_static STATIC ${libsolvext_SRCS})
+--- origsrc/libsolv-0.6.8/libsolv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsolv-0.6.8/libsolv.pc.in	2015-02-18 21:26:15.214324400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsolv
++Description: Library for solving packages and reading repositories
++Version: @VERSION@
++Libs: -L${libdir} -lsolv -lsolvext
++Cflags: -I${includedir}
+--- origsrc/libsolv-0.6.8/src/CMakeLists.txt	2015-01-14 17:02:54.000000000 +0900
++++ src/libsolv-0.6.8/src/CMakeLists.txt	2015-02-18 21:13:25.611785300 +0900
+@@ -27,7 +27,9 @@ SET (libsolv_HEADERS
+     strpool.h dirpool.h knownid.h transaction.h rules.h problems.h
+     chksum.h dataiterator.h ${CMAKE_BINARY_DIR}/src/solvversion.h)
+ 
++IF (NOT CYGWIN)
+ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
++ENDIF (NOT CYGWIN)
+ SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINK_FLAGS} -Wl,--version-script=${CMAKE_SOURCE_DIR}/src/libsolv.ver")
+ 
+ IF (DISABLE_SHARED)
+@@ -40,7 +42,7 @@ SET_TARGET_PROPERTIES(libsolv PROPERTIES
+ SET_TARGET_PROPERTIES(libsolv PROPERTIES SOVERSION ${LIBSOLV_SOVERSION})
+ 
+ INSTALL (FILES ${libsolv_HEADERS} DESTINATION "${INCLUDE_INSTALL_DIR}/solv")
+-INSTALL (TARGETS libsolv LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
++INSTALL (TARGETS libsolv RUNTIME DESTINATION ${BIN_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+ 
+ IF (ENABLE_STATIC AND NOT DISABLE_SHARED)
+ ADD_LIBRARY (libsolv_static STATIC ${libsolv_SRCS})
