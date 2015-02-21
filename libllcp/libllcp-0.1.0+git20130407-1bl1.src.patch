@@ -1,0 +1,64 @@
+--- origsrc/libllcp/Makefile.am	2015-02-21 21:40:07.000000000 +0900
++++ src/libllcp/Makefile.am	2015-02-21 21:54:15.436023400 +0900
+@@ -4,6 +4,9 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ SUBDIRS = doc libllcp test tools examples
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libllcp.pc
++
+ dist-hook:
+ 	@if ! grep -qi "$$(LC_ALL=C date +'%d %b %Y')" NEWS; then \
+ 	    printf "\033[31;1mBEWARE!  The first line from the NEWS file does not contain the current date!\033[0m\n"; \
+--- origsrc/libllcp/configure.ac	2015-02-21 21:40:07.000000000 +0900
++++ src/libllcp/configure.ac	2015-02-21 21:54:42.969226600 +0900
+@@ -101,5 +101,6 @@ AC_CONFIG_FILES([
+ 	   tools/llcp-pdu-explain/Makefile
+ 	   tools/llcp-test-client/Makefile
+ 	   tools/llcp-test-server/Makefile
++	   libllcp.pc
+ 	   ])
+ AC_OUTPUT
+--- origsrc/libllcp/doc/data-link-connection-status.dot	2015-02-21 21:40:07.000000000 +0900
++++ src/libllcp/doc/data-link-connection-status.dot	2015-02-21 21:48:08.908679700 +0900
+@@ -16,4 +16,4 @@ digraph data_link_connection {
+     c -> d [constraint=false];
+     r -> d;
+     d -> t [label="llc_send(DM)"];
+-};
++}
+--- origsrc/libllcp/libllcp/Makefile.am	2015-02-21 21:40:07.000000000 +0900
++++ src/libllcp/libllcp/Makefile.am	2015-02-21 21:51:42.973132800 +0900
+@@ -29,6 +29,9 @@ if WITH_DEBUG
+ libllcp_la_SOURCES += llcp_log.c
+ endif
+ 
++libllcp_la_LDFLAGS = -no-undefined
++libllcp_la_LIBADD = $(AM_LDFLAGS)
++
+ EXTRA_DIST = \
+ 	     llcp_log.h \
+ 	     llcp_parameters.h \
+--- origsrc/libllcp/libllcp/llc_link.h	2015-02-21 21:40:07.000000000 +0900
++++ src/libllcp/libllcp/llc_link.h	2015-02-21 21:41:12.961414100 +0900
+@@ -24,6 +24,7 @@
+ 
+ #include <mqueue.h>
+ #include <stdint.h>
++#include <sys/time.h>
+ 
+ #include "llcp_pdu.h"
+ #include "llcp.h"
+--- origsrc/libllcp/libllcp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libllcp/libllcp.pc.in	2015-02-21 21:54:22.264148400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libllcp
++Description: LLCP layer for libnfc
++Version: 0.1.0+git20130407
++Libs: -L${libdir} -lllcp
++Cflags: -I${includedir}
