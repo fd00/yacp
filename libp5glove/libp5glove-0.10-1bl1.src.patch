@@ -1,0 +1,87 @@
+--- origsrc/libp5glove-0.10/Makefile.am	2010-03-31 00:16:19.000000000 +0900
++++ src/libp5glove-0.10/Makefile.am	2015-02-21 12:32:10.897549400 +0900
+@@ -3,3 +3,6 @@ EXTRA_DIST=README linux-2.4.patch
+ ACLOCAL_AMFLAGS=-I m4
+ 
+ SUBDIRS=src demo
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libp5glove.pc
+--- origsrc/libp5glove-0.10/configure.in	2010-03-31 00:16:19.000000000 +0900
++++ src/libp5glove-0.10/configure.in	2015-02-21 12:32:22.381924400 +0900
+@@ -1,6 +1,6 @@
+ dnl Process this file with autoconf to produce a configure script.
+-AC_INIT
+-AM_INIT_AUTOMAKE(libp5glove,0.3)
++AC_INIT([libp5glove] ,[0.10])
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ AC_CONFIG_MACRO_DIR([m4])
+@@ -17,12 +17,11 @@ AC_PATH_X
+ AC_PATH_XTRA
+ 
+ dnl Check for GL libs
+-AC_CHECK_LIB(GL, glAccum)
+-AC_CHECK_LIB(GLU, gluSphere)
++PKG_CHECK_MODULES([GLU], [glu])
+ AC_CHECK_LIB(glut, glutInit)
+ 
+ dnl Replace `main' with a function in -lusb:
+-AC_CHECK_LIB(usb, usb_open)
++PKG_CHECK_MODULES([LIBUSB], [libusb])
+ 
+ AC_CHECK_LIB(usb, usb_interrupt_read, 
+ 	     [AC_DEFINE(HAVE_USB_INTERRUPT_READ,1,[libusb has usb_interrupt_read()])],
+@@ -41,4 +40,5 @@ AC_OUTPUT([
+ 	Makefile
+ 	src/Makefile
+ 	demo/Makefile
++	libp5glove.pc
+ ])
+--- origsrc/libp5glove-0.10/demo/Makefile.am	2010-03-31 00:16:19.000000000 +0900
++++ src/libp5glove-0.10/demo/Makefile.am	2015-02-21 12:31:04.155361900 +0900
+@@ -1,4 +1,4 @@
+-INCLUDES=-I$(top_srcdir)/src
++AM_CPPFLAGS=-I$(top_srcdir)/src
+ 
+ bin_PROGRAMS=p5dump p5hand
+ 
+@@ -6,4 +6,4 @@ p5dump_SOURCES=p5dump.c
+ p5dump_LDADD=$(top_builddir)/src/libp5glove.la 
+ 
+ p5hand_SOURCES=p5hand.c
+-p5hand_LDADD=$(top_builddir)/src/libp5glove.la @X_LIBS@
++p5hand_LDADD=$(top_builddir)/src/libp5glove.la @X_LIBS@ $(GLU_LIBS)
+--- origsrc/libp5glove-0.10/libp5glove.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libp5glove-0.10/libp5glove.pc.in	2015-02-21 12:32:52.788174400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libp5glove
++Description: Essential Reality P5 Glove Driver
++Version: 0.10
++Libs: -L${libdir} -lp5glove
++Cflags: -I${includedir}
+--- origsrc/libp5glove-0.10/src/Makefile.am	2010-03-31 00:16:19.000000000 +0900
++++ src/libp5glove-0.10/src/Makefile.am	2015-02-21 12:25:44.824307200 +0900
+@@ -3,4 +3,5 @@ lib_LTLIBRARIES=libp5glove.la
+ include_HEADERS=p5glove.h
+ 
+ libp5glove_la_SOURCES=p5glove.h p5glove.c usb_hid_libusb.c usb_hid.h
+-libp5glove_la_LIBADD=-lusb -lm
++libp5glove_la_LIBADD=$(LIBUSB_LIBS) -lm
++libp5glove_la_LDFLAGS=-no-undefined
+--- origsrc/libp5glove-0.10/src/p5glove.c	2010-03-31 00:16:19.000000000 +0900
++++ src/libp5glove-0.10/src/p5glove.c	2015-02-21 12:30:32.774502500 +0900
+@@ -33,6 +33,7 @@
+ #include <stdint.h>
+ #include <string.h> /* for memcpy */
+ #include <math.h>
++#include <sys/time.h>
+ 
+ #include "usb_hid.h"
+ #include <errno.h>
