@@ -1,0 +1,77 @@
+--- origsrc/libadjoint-1.4/CMakeLists.txt	2014-06-30 15:04:40.000000000 +0900
++++ src/libadjoint-1.4/CMakeLists.txt	2015-02-23 01:43:09.525960900 +0900
+@@ -4,9 +4,9 @@ project(libadjoint C CXX)
+ enable_language(Fortran OPTIONAL)
+ 
+ # Set the version. (Used for so-naming of the library.)
+-set(libadjoint_MAJOR_VERSION 0)
+-set(libadjoint_MINOR_VERSION 9)
+-set(libadjoint_PATCH_VERSION 3)
++set(libadjoint_MAJOR_VERSION 1)
++set(libadjoint_MINOR_VERSION 4)
++set(libadjoint_PATCH_VERSION 0)
+ set(libadjoint_VERSION
+     ${libadjoint_MAJOR_VERSION}.${libadjoint_MINOR_VERSION}.${libadjoint_PATCH_VERSION})
+ 
+@@ -23,3 +23,10 @@ set(INSTALL_INCLUDE_DIR "include/libadjo
+ 
+ add_subdirectory(src)
+ add_subdirectory(python)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libadjoint.pc.in ${CMAKE_BINARY_DIR}/libadjoint.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libadjoint.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libadjoint-1.4/libadjoint.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libadjoint-1.4/libadjoint.pc.in	2015-02-23 01:43:24.916585900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libadjoint
++Description: Library for the high-level algorithmic differentiation of scientific models
++Version: @libadjoint_VERSION@
++Libs: -L${libdir} -ladjoint
++Cflags: -I${includedir}
+--- origsrc/libadjoint-1.4/src/CMakeLists.txt	2014-06-30 15:04:40.000000000 +0900
++++ src/libadjoint-1.4/src/CMakeLists.txt	2015-02-23 01:41:18.696859400 +0900
+@@ -36,10 +36,13 @@ set_target_properties(adjoint PROPERTIES
+   SOVERSION ${libadjoint_MAJOR_VERSION}
+   )
+ 
++option(ENABLE_STATIC "enable static" OFF)
++if (ENABLE_STATIC)
+ add_library(adjoint-static STATIC ${libadjoint_SRCS})
+ set_target_properties(adjoint-static PROPERTIES
+   OUTPUT_NAME adjoint
+   )
++endif()
+ 
+ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+ find_package(PETSc 3.3)
+@@ -56,6 +59,7 @@ endif()
+ 
+ 
+ # Installation of the program
++if (ENABLE_STATIC)
+ install(TARGETS adjoint adjoint-static
+   # We don't actually need the RUNTIME DESTINATION here since we're only
+   # installing a library.
+@@ -64,6 +68,13 @@ install(TARGETS adjoint adjoint-static
+   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT shlib # .a
+   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}" COMPONENT dev
+   )
++else()
++install(TARGETS adjoint
++  RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
++  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
++  PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
++  )
++endif()
+ 
+ # -----------------------------------------------------------------------------
+ find_package(PythonInterp REQUIRED)
