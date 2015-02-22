@@ -1,0 +1,71 @@
+--- origsrc/aws_dynamo/Makefile.am	2015-02-22 11:58:50.000000000 +0900
++++ src/aws_dynamo/Makefile.am	2015-02-22 12:02:30.546007800 +0900
+@@ -2,3 +2,6 @@
+ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = src test
+ EXTRA_DIST = autogen.sh
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = aws_dynamo.pc
+--- origsrc/aws_dynamo/aws_dynamo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws_dynamo/aws_dynamo.pc.in	2015-02-22 12:02:01.030382800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws_dynamo
++Description: AWS DynamoDB Library for C and C++
++Version: 0.1.0+git20141208
++Libs: -L${libdir} -laws_dynamo
++Cflags: -I${includedir}
+--- origsrc/aws_dynamo/configure.ac	2015-02-22 11:58:50.000000000 +0900
++++ src/aws_dynamo/configure.ac	2015-02-22 12:04:19.655382800 +0900
+@@ -1,24 +1,20 @@
+ dnl Process this file with autoconf to produce a configure script.
+-AC_INIT(aws_dynamo, 0.1.0)
++AC_INIT([aws_dynamo], [0.1.0])
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_CONFIG_AUX_DIR(config)
+ AC_CONFIG_SRCDIR(src/aws_dynamo.c)
+ 
+ AM_INIT_AUTOMAKE([foreign])
+ 
+-AC_CHECK_LIB([crypto], [HMAC_Init_ex],,
+-				 AC_MSG_ERROR([no openssl; please install openssl or equivalent]))
+-AC_CHECK_LIB([yajl], [yajl_alloc],,
+-				 AC_MSG_ERROR([no libyajl; please install yajl or equivalent]))
++PKG_CHECK_MODULES([OPENSSL], [openssl])
++PKG_CHECK_MODULES([YAJL], [yajl])
++PKG_CHECK_MODULES([LIBCURL], [libcurl])
+ 
+ # We support two yajl major versions. Version 1.x.x doesn't include yajl_version.h.
+ # If yajl_version.h is missing assume major version 1.  Otherwise we will get the
+ # major version from the header.
+ AC_CHECK_HEADERS([yajl/yajl_version.h], [], [ AC_DEFINE(YAJL_MAJOR, 1, [yajl version 1])], [])
+ 
+-AC_CHECK_LIB([curl], [curl_easy_perform],,
+-				 AC_MSG_ERROR([no curl; please install curl or equivalent]))
+-
+ LOCAL_CFLAGS="-Wall -Wno-pointer-sign"
+ AC_ARG_ENABLE([debug], [  --enable-debug    Turn on debugging],
+ [case "${enableval}" in
+@@ -38,4 +34,4 @@ AC_SUBST([AM_CFLAGS], [${LOCAL_CFLAGS}])
+ AC_PROG_CC
+ AC_PROG_LIBTOOL
+ 
+-AC_OUTPUT(Makefile src/Makefile test/Makefile)
++AC_OUTPUT(Makefile src/Makefile test/Makefile aws_dynamo.pc)
+--- origsrc/aws_dynamo/src/Makefile.am	2015-02-22 11:58:50.000000000 +0900
++++ src/aws_dynamo/src/Makefile.am	2015-02-22 12:08:14.922961000 +0900
+@@ -23,7 +23,8 @@ libaws_dynamo_la_SOURCES = aws.c aws_dyn
+ 	http.h
+ 
+ libaws_dynamo_la_CPPFLAGS = -I$(top_srcdir)/src
+-libaws_dynamo_la_LDFLAGS = -version-info 0:0:0
++libaws_dynamo_la_LDFLAGS = -no-undefined -version-info 0:0:0
++libaws_dynamo_la_LIBADD = $(OPENSSL_LIBS) $(YAJL_LIBS) $(LIBCURL_LIBS)
+ 
+ pkginclude_HEADERS=\
+ 	aws_dynamo_batch_get_item.h \
