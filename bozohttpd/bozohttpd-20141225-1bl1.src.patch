@@ -1,0 +1,40 @@
+--- origsrc/bozohttpd-20141225/Makefile.boot	2014-12-26 04:31:15.000000000 +0900
++++ src/bozohttpd-20141225/Makefile.boot	2015-02-25 22:23:14.404781300 +0900
+@@ -7,17 +7,19 @@ CC=	cc
+ OPT=	-O
+ LARGE_CFLAGS=	-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
+ LOCAL_CFLAGS=	-DNO_LUA_SUPPORT
+-CFLAGS=	$(OPT) $(LARGE_CFLAGS) $(LOCAL_CFLAGS)
++CFLAGS=	$(OPT) $(LARGE_CFLAGS)
+ 
+ GROFF=	groff -Tascii
+ CRYPTOLIBDIR=	# -L/usr/local/lib
+ CRYPTOLIBS=	$(CRYPTOLIBDIR) -lcrypto -lssl
+ 
++LUA_LIBS = -llua
++
+ FILES=	bozohttpd.c auth-bozo.c cgi-bozo.c content-bozo.c daemon-bozo.c \
+ 	dir-index-bozo.c lua-bozo.c ssl-bozo.c tilde-luzah-bozo.c main.c
+ 
+ all:
+-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o bozohttpd $(FILES) $(CRYPTOLIBS)
++	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o bozohttpd $(FILES) $(CRYPTOLIBS) $(LUA_LIBS)
+ 
+ man:
+ 	$(GROFF) -mandoc bozohttpd.8 > bozohttpd.cat8
+--- origsrc/bozohttpd-20141225/bozohttpd.c	2014-12-26 04:31:15.000000000 +0900
++++ src/bozohttpd-20141225/bozohttpd.c	2015-02-25 22:21:40.686031300 +0900
+@@ -1094,8 +1094,11 @@ check_virtual(bozo_httpreq_t *request)
+ 				}
+ 				debug((httpd, DEBUG_OBESE, "looking at dir``%s''",
+ 			 	   d->d_name));
+-				if (d->d_namlen == len && strcmp(d->d_name,
+-				    request->hr_host) == 0) {
++				if (
++#if !defined(__CYGWIN__)
++					d->d_namlen == len &&
++#endif
++					strcmp(d->d_name, request->hr_host) == 0) {
+ 					/* found it, punch it */
+ 					debug((httpd, DEBUG_OBESE, "found it punch it"));
+ 					request->hr_virthostname =
