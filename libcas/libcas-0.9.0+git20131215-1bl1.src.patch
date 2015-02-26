@@ -1,0 +1,62 @@
+--- origsrc/libcas/Makefile.am	2015-02-26 20:26:35.000000000 +0900
++++ src/libcas/Makefile.am	2015-02-26 20:50:47.603203100 +0900
+@@ -15,5 +15,8 @@
+ ACLOCAL_AMFLAGS = -I m4 --install
+ SUBDIRS = src . tests
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libcas.pc
++
+ autoclean: distclean
+ 	rm -rf autom4te.cache configure aclocal.m4 config.h.in config.sub depcomp install-sh missing config.guess Makefile.in src/Makefile.in ltmain.sh ${PACKAGE_NAME}-${PACKAGE_VERSION}.tar.gz ar-lib test-driver tests/Makefile.in m4/*.m4
+--- origsrc/libcas/configure.ac	2015-02-26 20:26:35.000000000 +0900
++++ src/libcas/configure.ac	2015-02-26 20:50:32.540703100 +0900
+@@ -22,6 +22,7 @@ AC_CONFIG_FILES([
+ 	Makefile
+ 	src/Makefile
+ 	tests/Makefile
++	libcas.pc
+ ])
+ 
+ AC_CONFIG_SRCDIR([src/cas.c])
+@@ -32,10 +33,10 @@ AM_PROG_AR
+ LT_INIT
+ 
+ # Checks for libraries.
+-LIBCURL_CHECK_CONFIG([yes],7.21.0,[],[AC_MSG_ERROR([libcurl not found])])
+-AM_PATH_XML2(2.7.8,[AC_DEFINE([HAVE_LIBXML2], [1], [Define to 1 if you have a functional libxml2 library.])],[AC_MSG_ERROR([libxml2 not found])])
++PKG_CHECK_MODULES([LIBCURL], [libcurl >= 7.21.0])
++PKG_CHECK_MODULES([LIBXML2], [libxml-2.0])
+ 
+-#PKG_CHECK_MODULES([CHECK], [check >= 0.9.4],,[AC_MSG_WARN([libcheck not found -- check unit tests will not be run])])
++PKG_CHECK_MODULES([CHECK], [check >= 0.9.4],,[AC_MSG_WARN([libcheck not found -- check unit tests will not be run])])
+ 
+ # Checks for header files.
+ 
+--- origsrc/libcas/libcas.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcas/libcas.pc.in	2015-02-26 20:49:59.775078100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcas
++Description: C Library to handle the JASIG CAS protocol(s)
++Version: 0.9.0+git20131215
++Libs: -L${libdir} -lcas
++Cflags: -I${includedir}
+--- origsrc/libcas/src/Makefile.am	2015-02-26 20:26:35.000000000 +0900
++++ src/libcas/src/Makefile.am	2015-02-26 20:30:05.747734400 +0900
+@@ -18,8 +18,9 @@ include_HEADERS = cas.h
+ #The primary library, libcas
+ lib_LTLIBRARIES = libcas.la
+ libcas_la_SOURCES = cas.c cas.h cas-int.h cas1.c cas2.c
+-libcas_la_CPPFLAGS=${XML_CPPFLAGS} ${LIBCURL_CPPFLAGS}
+-libcas_la_LIBADD=${XML_LIBS} ${LIBCURL}
++libcas_la_CFLAGS=$(LIBXML2_CFLAGS) $(LIBCURL_CFLAGS)
++libcas_la_LIBADD=$(LIBXML2_LIBS) $(LIBCURL_LIBS)
++libcas_la_LDFLAGS=-no-undefined
+ 
+ #A command line interface to libcas
+ bin_PROGRAMS=cascli
