@@ -1,0 +1,53 @@
+--- origsrc/ptex-2.0.62/ptex.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ptex-2.0.62/ptex.pc.in	2015-02-27 23:41:41.923351600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ptex
++Description: Per-Face Texture Mapping for Production Rendering
++Version: 2.0.62
++Libs: -L${libdir} -lPtex
++Cflags: -I${includedir}
+--- origsrc/ptex-2.0.62/src/CMakeLists.txt	2015-02-13 01:37:58.000000000 +0900
++++ src/ptex-2.0.62/src/CMakeLists.txt	2015-02-27 23:42:26.517101600 +0900
+@@ -15,3 +15,10 @@ add_subdirectory(ptex)
+ add_subdirectory(utils)
+ add_subdirectory(tests)
+ add_subdirectory(doc)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/../ptex.pc.in ${CMAKE_BINARY_DIR}/ptex.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ptex.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ptex-2.0.62/src/ptex/CMakeLists.txt	2015-02-13 01:37:58.000000000 +0900
++++ src/ptex-2.0.62/src/ptex/CMakeLists.txt	2015-02-27 23:39:22.470226600 +0900
+@@ -18,6 +18,15 @@ add_library(Ptex_static STATIC ${SRCS})
+ set_target_properties(Ptex_static PROPERTIES OUTPUT_NAME Ptex)
+ 
+ add_library(Ptex_dynamic SHARED ${SRCS})
+-set_target_properties(Ptex_dynamic PROPERTIES OUTPUT_NAME Ptex)
++set_target_properties(Ptex_dynamic PROPERTIES SOVERSION 0 OUTPUT_NAME Ptex)
+ 
+ target_link_libraries(Ptex_dynamic ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES})
++
++install(FILES
++        PtexHalf.h
++        PtexInt.h
++        Ptexture.h
++        PtexUtils.h
++        DESTINATION include/ptex)
++
++install(TARGETS Ptex_dynamic RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/ptex-2.0.62/src/utils/CMakeLists.txt	2015-02-13 01:37:58.000000000 +0900
++++ src/ptex-2.0.62/src/utils/CMakeLists.txt	2015-02-27 23:39:22.485851600 +0900
+@@ -9,3 +9,5 @@ execute_process(COMMAND git describe ${P
+ add_executable(ptxinfo ptxinfo.cpp)
+ add_definitions(-DPTEX_VER="${PTEX_VER} \(${PTEX_SHA}\)")
+ target_link_libraries(ptxinfo Ptex_dynamic)
++
++install(TARGETS ptxinfo RUNTIME DESTINATION bin)
