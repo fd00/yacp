@@ -1,0 +1,53 @@
+--- origsrc/Field3D-1.6.1/CMakeLists.txt	2015-02-12 05:12:19.000000000 +0900
++++ src/Field3D-1.6.1/CMakeLists.txt	2015-02-27 23:23:05.623546900 +0900
+@@ -71,7 +71,7 @@ LINK_DIRECTORIES ( ${HDF5_LIBRARY_DIRS}
+ LINK_DIRECTORIES ( ${ILMBASE_LIBRARY_DIRS} )
+ 
+ IF ( CMAKE_HOST_UNIX )
+-  ADD_DEFINITIONS ( -fPIC -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
++  ADD_DEFINITIONS ( -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
+ ENDIF ( )
+ IF ( CMAKE_HOST_WIN32 )
+   ADD_DEFINITIONS ( 
+@@ -118,7 +118,7 @@ IF ( CMAKE_HOST_UNIX )
+   LIST ( APPEND Field3D_Libraries_Shared
+     Iex Half IlmThread Imath
+     pthread dl z )
+-  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared} )
++  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared} ${Boost_LIBRARIES})
+   SET ( Field3D_BIN_Libraries Field3D ${Field3D_Libraries_Shared}
+         ${Boost_LIBRARIES} )
+ ENDIF ( )
+@@ -223,7 +223,8 @@ ENDIF (DOXYGEN_FOUND)
+ 
+ INSTALL ( TARGETS
+   Field3D
+-  DESTINATION lib${LIB_SUFFIX}
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib${LIB_SUFFIX}
+ )
+ 
+ FILE(GLOB Field3d_Includes  "${CMAKE_CURRENT_SOURCE_DIR}/export/*.h")
+@@ -237,3 +238,9 @@ INSTALL ( TARGETS f3dinfo
+   RUNTIME DESTINATION bin
+ )
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Field3D.pc.in ${CMAKE_BINARY_DIR}/Field3D.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Field3D.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Field3D-1.6.1/Field3D.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Field3D-1.6.1/Field3D.pc.in	2015-02-27 23:22:30.326671900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Field3D
++Description: Library for storing voxel data on disk and in memory
++Version: 1.6.1
++Libs: -L${libdir} -lField3D
++Cflags: -I${includedir}
