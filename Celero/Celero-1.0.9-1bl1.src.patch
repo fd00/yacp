@@ -1,5 +1,5 @@
---- origsrc/Celero-1.0.7/CMakeLists.txt	2014-12-09 23:26:06.000000000 +0900
-+++ src/Celero-1.0.7/CMakeLists.txt	2014-12-16 09:23:10.962354700 +0900
+--- origsrc/Celero-1.0.9/CMakeLists.txt	2015-02-09 09:30:32.000000000 +0900
++++ src/Celero-1.0.9/CMakeLists.txt	2015-02-28 11:32:07.744195300 +0900
 @@ -30,6 +30,8 @@ include(CheckFunctionExists)
  include(CheckCXXSourceCompiles)
  include(CheckIncludeFile)
@@ -26,8 +26,8 @@
   
  if(UNIX)
  	if(CMAKE_COMPILER_IS_GNUCXX) 
--	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall" CACHE STRING "Compiler Flags for All Builds" FORCE) 
-+	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall -fpermissive" CACHE STRING "Compiler Flags for All Builds" FORCE) 
+-	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall -O3" CACHE STRING "Compiler Flags for All Builds" FORCE) 
++	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall -O3 -fpermissive" CACHE STRING "Compiler Flags for All Builds" FORCE) 
  	  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pedantic" CACHE STRING "Compiler Flags for Debug Builds" FORCE) 
  	  set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Compiler Flags for Release Builds" FORCE) 
  	else()
@@ -46,17 +46,44 @@
  	ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
  
  # --------------------------------------------------------------------------- 
-@@ -540,7 +539,7 @@ if(CELERO_BUILD_EXAMPLES)
-     	include_directories(${GTEST_INCLUDE_DIR})
-     
-     	add_dependencies(${PROJECT_NAME} celero)
--    	target_link_libraries(${PROJECT_NAME} ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} celero)
-+    	target_link_libraries(${PROJECT_NAME} gtest gtest_main celero)
-     
-     	if(CELERO_ENABLE_AUTO_RUN_TESTS)
-     		add_test(${PROJECT_NAME} ${PROJECT_NAME})
---- origsrc/Celero-1.0.7/include/celero/Utilities.h	2014-12-09 23:26:06.000000000 +0900
-+++ src/Celero-1.0.7/include/celero/Utilities.h	2014-12-16 09:00:18.276242200 +0900
+@@ -218,7 +217,7 @@ if(CELERO_ENABLE_TESTS)
+ 	include_directories(${GTEST_INCLUDE_DIR})
+ 
+ 	add_dependencies(${PROJECT_NAME} celero)
+-	target_link_libraries(${PROJECT_NAME} ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} celero)
++	target_link_libraries(${PROJECT_NAME} gtest gtest_main celero)
+ 
+ 	if(CELERO_ENABLE_AUTO_RUN_TESTS)
+ 		add_test(${PROJECT_NAME} ${PROJECT_NAME})
+@@ -238,4 +237,11 @@ if(CELERO_ENABLE_FOLDERS)
+ 	set_property(TARGET celero PROPERTY FOLDER "Celero")
+ endif()
+ 
+-ADD_SUBDIRECTORY(experiments)
+\ No newline at end of file
++ADD_SUBDIRECTORY(experiments)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/celero.pc.in ${CMAKE_BINARY_DIR}/celero.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/celero.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Celero-1.0.9/celero.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Celero-1.0.9/celero.pc.in	2015-02-28 11:31:47.388726600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Celero
++Description: C++ Benchmark Authoring Library/Framework
++Version: 1.0.9
++Libs: -L${libdir} -lcelero
++Cflags: -I${includedir}
+--- origsrc/Celero-1.0.9/include/celero/Utilities.h	2015-02-09 09:30:32.000000000 +0900
++++ src/Celero-1.0.9/include/celero/Utilities.h	2015-02-28 11:05:47.590875000 +0900
 @@ -28,6 +28,7 @@
  #include <cstdlib>
  #include <thread>
@@ -65,8 +92,8 @@
  
  #include <celero/Export.h>
  
---- origsrc/Celero-1.0.7/src/Experiment.cpp	2014-12-09 23:26:06.000000000 +0900
-+++ src/Celero-1.0.7/src/Experiment.cpp	2014-12-16 08:53:59.703000000 +0900
+--- origsrc/Celero-1.0.9/src/Experiment.cpp	2015-02-09 09:30:32.000000000 +0900
++++ src/Celero-1.0.9/src/Experiment.cpp	2015-02-28 11:06:31.437554700 +0900
 @@ -26,6 +26,8 @@
  #include <algorithm>
  #include <cassert>
@@ -94,8 +121,8 @@
  
  	if(this->getCalls() == 1)
  	{
---- origsrc/Celero-1.0.7/src/Timer.cpp	2014-12-09 23:26:06.000000000 +0900
-+++ src/Celero-1.0.7/src/Timer.cpp	2014-12-16 08:56:33.421750000 +0900
+--- origsrc/Celero-1.0.9/src/Timer.cpp	2015-02-09 09:30:32.000000000 +0900
++++ src/Celero-1.0.9/src/Timer.cpp	2015-02-28 11:09:32.286187500 +0900
 @@ -19,6 +19,8 @@
  #include <celero/Timer.h>
  #include <celero/Print.h>
@@ -105,20 +132,16 @@
  #ifdef WIN32
  	#include <Windows.h>
  	LARGE_INTEGER QPCFrequency;
-@@ -57,9 +59,9 @@ void celero::timer::CachePerformanceFreq
- 
- 	#ifdef WIN32
- 		QueryPerformanceFrequency(&QPCFrequency);
--		ss << std::to_string((1.0/static_cast<double>(QPCFrequency.QuadPart)) * 1000000);
-+		ss << boost::lexical_cast<std::string>((1.0/static_cast<double>(QPCFrequency.QuadPart)) * 1000000);
- 	#else
--		ss << std::to_string(1.0/1.0e-6);
-+		ss << boost::lexical_cast<std::string>(1.0/1.0e-6);
+@@ -58,6 +60,6 @@ void celero::timer::CachePerformanceFreq
+ 			static_cast<double>(std::chrono::high_resolution_clock::period::den)) * 1000000.0;
  	#endif
  
- 	ss << " us";
---- origsrc/Celero-1.0.7/test/CMakeLists.txt	2014-12-09 23:26:06.000000000 +0900
-+++ src/Celero-1.0.7/test/CMakeLists.txt	2014-12-14 19:24:07.857242200 +0900
+-	ss << std::to_string(precision) << " us";
++	ss << boost::lexical_cast<std::string>(precision) << " us";
+ 	celero::print::Status(ss.str());
+ }
+--- origsrc/Celero-1.0.9/test/CMakeLists.txt	2015-02-09 09:30:32.000000000 +0900
++++ src/Celero-1.0.9/test/CMakeLists.txt	2015-02-28 11:07:55.424859400 +0900
 @@ -1,15 +1,6 @@
  
 -set(GTEST_DIRECTORY gtest-1.7.0)
