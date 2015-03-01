@@ -1,19 +1,61 @@
---- origsrc/lis-1.5.20/src/Makefile.am	2014-08-12 19:17:37.000000000 +0900
-+++ src/lis-1.5.20/src/Makefile.am	2014-11-24 08:33:51.781107400 +0900
-@@ -27,3 +27,4 @@ if ENABLE_FORTRAN
+--- origsrc/lis-1.5.51/Makefile.am	2015-02-06 02:32:45.000000000 +0900
++++ src/lis-1.5.51/Makefile.am	2015-03-01 21:21:05.863467700 +0900
+@@ -613,3 +613,6 @@ man_MANS =   doc/man/man1/lsolve.1 \
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ AUTOMAKE_OPTIONS = dist-zip
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = lis.pc
+--- origsrc/lis-1.5.51/configure.ac	2015-02-10 19:02:35.000000000 +0900
++++ src/lis-1.5.51/configure.ac	2015-03-01 21:20:45.732431500 +0900
+@@ -1161,6 +1161,7 @@ AC_CONFIG_FILES([Makefile
+                  include/Makefile
+                  test/Makefile
+                  include/lisf.h
++                 lis.pc
+                  ])
+ 
+ DEFS="$DEFSADD $DEFS"
+--- origsrc/lis-1.5.51/lis.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/lis-1.5.51/lis.pc.in	2015-03-01 21:20:28.162119000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: lis
++Description: Library of Iterative Solvers for Linear Systems
++Version: @VERSION@
++Libs: -L${libdir} -llis
++Cflags: -I${includedir}
+--- origsrc/lis-1.5.51/src/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/Makefile.am	2015-03-01 21:14:42.340830000 +0900
+@@ -19,11 +19,12 @@ liblis@LIBSUFFIX@_la_LIBADD = array/liba
+                    system/libsystem.la \
+                    vector/libvector.la
+ if ENABLE_SAAMG
+-  liblis@LIBSUFFIX@_la_LIBADD += fortran/amg/libsaamg.la
+-  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
++  liblis@LIBSUFFIX@_la_LIBADD += fortran/amg/libsaamg.la -lmpi_mpifh
++  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la -lgfortran
+ else
+ if ENABLE_FORTRAN
+-  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la
++  liblis@LIBSUFFIX@_la_LIBADD += fortran/libfortran.la -lgfortran
  endif
  endif
  liblis@LIBSUFFIX@_la_SOURCES = 
-+liblis@LIBSUFFIX@_la_LDFLAGS = -no-undefined $(FLIBS)
---- origsrc/lis-1.5.20/src/esolver/Makefile.am	2010-07-21 21:51:00.000000000 +0900
-+++ src/lis-1.5.20/src/esolver/Makefile.am	2014-11-24 08:34:11.032084000 +0900
-@@ -8,16 +8,5 @@ lis_esolver_cg.c	\
- lis_esolver_si.c	\
- lis_esolver_rqi.c	
++liblis@LIBSUFFIX@_la_LDFLAGS = -no-undefined
+--- origsrc/lis-1.5.51/src/esolver/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/esolver/Makefile.am	2015-03-01 20:45:33.557777900 +0900
+@@ -10,16 +10,4 @@ lis_esolver_pi.c \
+ lis_esolver_rqi.c \
+ lis_esolver_si.c	
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -25,12 +67,14 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/fortran/Makefile.am	2014-08-12 19:17:57.000000000 +0900
-+++ src/lis-1.5.20/src/fortran/Makefile.am	2014-11-24 08:34:34.555521500 +0900
-@@ -12,14 +12,3 @@ lisf_init.F
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/src/fortran/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/fortran/Makefile.am	2015-03-01 20:45:46.184731000 +0900
+@@ -11,15 +11,3 @@ lisf_vector.c
+ 
  
  AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -42,15 +86,42 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/matrix/Makefile.am	2013-01-17 18:19:44.000000000 +0900
-+++ src/lis-1.5.20/src/matrix/Makefile.am	2014-11-24 08:34:50.877787100 +0900
-@@ -18,16 +18,5 @@ lis_matrix_ops.c           \
- lis_matrix_rco.c           \
+--- origsrc/lis-1.5.51/src/fortran/amg/Makefile.am	2014-12-23 21:19:32.000000000 +0900
++++ src/lis-1.5.51/src/fortran/amg/Makefile.am	2015-03-01 21:12:46.474770100 +0900
+@@ -25,25 +25,6 @@ endif
+ 
+ CLEANFILES = *.mod
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+-FCCOMPILE = $(FC) $(AMDEFS) $(AM_FCFLAGS) $(FCFLAGS)
+-LTFCCOMPILE = $(LIBTOOL) --mode=compile $(FC) $(AMDEFS) $(AM_FCFLAGS) $(FCFLAGS)
+-FCLD = $(FC)
+-FCLINK = $(LIBTOOL) --mode=link $(FCLD) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+-PPFCCOMPILE = $(FC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+-        $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FCFLAGS) $(FCFLAGS)
+-LTPPFCCOMPILE = $(LIBTOOL) --mode=compile $(FC) $(AMDEFS) $(DEFS) \
+-        $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+-        $(AM_FCFLAGS) $(FCFLAGS)
+-PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
+-LTPPF77COMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(F77) $(AMDEFS) $(DEFS) \
+-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+-	$(AM_FFLAGS) $(FFLAGS)
+-COMPILE = $(CC) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+-LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
+-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+-	$(AM_CFLAGS) $(CFLAGS)
+ 
+ .NOTPARALLEL:
+ .NO_PARALLEL:
+--- origsrc/lis-1.5.51/src/matrix/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/matrix/Makefile.am	2015-03-01 20:46:01.593910700 +0900
+@@ -17,16 +17,4 @@ lis_matrix_ops.c \
+ lis_matrix_rco.c \
  lis_matrix_vbr.c           
  
 -AM_CFLAGS = -I$(top_srcdir)/include $(ILIBS)
-+AM_CPPFLAGS = -I$(top_srcdir)/include $(ILIBS)
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -62,15 +133,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/matvec/Makefile.am	2013-01-17 18:19:22.000000000 +0900
-+++ src/lis-1.5.20/src/matvec/Makefile.am	2014-11-24 08:35:05.403177800 +0900
-@@ -13,16 +13,5 @@ lis_matvec_msr.c \
++AM_CPPFLAGS = -I$(top_srcdir)/include $(ILIBS)
+--- origsrc/lis-1.5.51/src/matvec/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/matvec/Makefile.am	2015-03-01 20:46:18.158363900 +0900
+@@ -13,16 +13,4 @@ lis_matvec_msr.c \
  lis_matvec_vbr.c
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -82,15 +153,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/precision/Makefile.am	2007-10-31 14:58:42.000000000 +0900
-+++ src/lis-1.5.20/src/precision/Makefile.am	2014-11-24 08:35:18.282084000 +0900
-@@ -4,16 +4,5 @@ lis_precision_vec.c    \
- lis_precision_matvec.c    
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/src/precision/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/precision/Makefile.am	2015-03-01 20:46:36.590004500 +0900
+@@ -4,16 +4,4 @@ lis_precision_matvec.c \
+ lis_precision_vec.c
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include $(MPFLAG)
-+AM_CPPFLAGS = -I$(top_srcdir)/include $(MPFLAG)
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -102,15 +173,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/precon/Makefile.am	2007-10-31 14:58:42.000000000 +0900
-+++ src/lis-1.5.20/src/precon/Makefile.am	2014-11-24 08:35:30.541849600 +0900
-@@ -12,16 +12,5 @@ lis_precon_sainv.c  \
++AM_CPPFLAGS = -I$(top_srcdir)/include $(MPFLAG)
+--- origsrc/lis-1.5.51/src/precon/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/precon/Makefile.am	2015-03-01 20:46:46.349770100 +0900
+@@ -12,16 +12,4 @@ lis_precon_sainv.c \
  lis_precon_ssor.c  
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -122,15 +193,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/solver/Makefile.am	2008-10-07 20:06:44.000000000 +0900
-+++ src/lis-1.5.20/src/solver/Makefile.am	2014-11-24 08:35:48.356302800 +0900
-@@ -17,16 +17,5 @@ lis_solver_qmr.c       \
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/src/solver/Makefile.am	2015-01-08 23:07:02.000000000 +0900
++++ src/lis-1.5.51/src/solver/Makefile.am	2015-03-01 20:47:02.914223200 +0900
+@@ -17,16 +17,4 @@ lis_solver_qmr.c \
  lis_solver_sor.c       
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -142,15 +213,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/system/Makefile.am	2014-07-23 22:02:02.000000000 +0900
-+++ src/lis-1.5.20/src/system/Makefile.am	2014-11-25 19:56:59.140390900 +0900
-@@ -13,16 +13,5 @@ lis_time.c      \
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/src/system/Makefile.am	2015-01-08 23:07:03.000000000 +0900
++++ src/lis-1.5.51/src/system/Makefile.am	2015-03-01 20:47:13.322426400 +0900
+@@ -13,16 +13,4 @@ lis_time.c \
  mt19937ar.c
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -162,15 +233,15 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/src/vector/Makefile.am	2007-10-31 14:58:46.000000000 +0900
-+++ src/lis-1.5.20/src/vector/Makefile.am	2014-11-25 19:57:14.198008100 +0900
-@@ -4,16 +4,5 @@ lis_vector_ops.c  \
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/src/vector/Makefile.am	2015-01-08 23:07:03.000000000 +0900
++++ src/lis-1.5.51/src/vector/Makefile.am	2015-03-01 20:47:27.418129500 +0900
+@@ -4,16 +4,4 @@ lis_vector_ops.c \
  lis_vector_opv.c
  
  
 -AM_CFLAGS = -I$(top_srcdir)/include
-+AM_CPPFLAGS = -I$(top_srcdir)/include
- CLEANFILES = *.il
+-CLEANFILES = *.il
 -
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -182,8 +253,9 @@
 -LTCOMPILE = $(LIBTOOL) --mode=compile --tag=CC $(CC) $(AMDEFS) $(DEFS) \
 -	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
 -	$(AM_CFLAGS) $(CFLAGS)
---- origsrc/lis-1.5.20/test/Makefile.am	2014-11-04 16:40:33.000000000 +0900
-+++ src/lis-1.5.20/test/Makefile.am	2014-11-25 19:58:33.404062800 +0900
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/lis-1.5.51/test/Makefile.am	2015-01-08 23:07:03.000000000 +0900
++++ src/lis-1.5.51/test/Makefile.am	2015-03-01 20:48:38.233559200 +0900
 @@ -5,18 +5,19 @@ AM_LDFLAGS = $(AMDEFS)
  
  EXTRA_DIST = defs test.sh testmat.mtx testmat2.mtx
@@ -195,22 +267,22 @@
  
  test_SCRIPTS = defs test.sh
  
--test_PROGRAMS = test1 test2 test2b test3 test3b test4 test5 test6 etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
-+check_PROGRAMS = test1 test2 test2b test3 test3b test4 test5 test6 etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5
+-test_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 
++check_PROGRAMS = etest1 etest2 etest3 etest4 etest5 etest6 etest7 spmvtest1 spmvtest2 spmvtest2b spmvtest3 spmvtest3b spmvtest4 spmvtest5 test1 test2 test2b test3 test3b test4 test5 test6 
  if ENABLE_FORTRAN
--  test_PROGRAMS += test1f test4f etest1f etest4f
-+  check_PROGRAMS += test1f test4f etest1f etest4f
+-  test_PROGRAMS += etest1f etest4f test1f test4f 
++  check_PROGRAMS += etest1f etest4f test1f test4f
 +  LDADD += $(FLIBS)
  endif
  if ENABLE_F90
--  test_PROGRAMS += test2f
-+  check_PROGRAMS += test2f
+-  test_PROGRAMS += test2f test6f
++  check_PROGRAMS += test2f test6f
  endif
  
- test1_SOURCES  = test1.c
-@@ -58,33 +59,6 @@ esolve_SOURCES  = etest5.c
- hpcg_kernel_SOURCES    = test3b.c
- hpcg_spmvtest_SOURCES    = spmvtest3b.c
+ etest1_SOURCES = etest1.c
+@@ -59,33 +60,6 @@ hpcg_kernel_SOURCES = test3b.c
+ hpcg_spmvtest_SOURCES = spmvtest3b.c
+ lsolve_SOURCES = test1.c
  
 -PPF77COMPILE = $(F77) $(AMDEFS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 -	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_FFLAGS) $(FFLAGS)
@@ -242,9 +314,9 @@
  CLEANFILES = *.il
  
  
---- origsrc/lis-1.5.20/test/test.sh	2014-09-11 21:04:43.000000000 +0900
-+++ src/lis-1.5.20/test/test.sh	2014-11-26 07:52:06.961125000 +0900
-@@ -27,10 +27,10 @@ fi
+--- origsrc/lis-1.5.51/test/test.sh	2014-09-11 21:04:43.000000000 +0900
++++ src/lis-1.5.51/test/test.sh	2015-03-01 20:49:21.046059200 +0900
+@@ -27,25 +27,25 @@ fi
  
  echo ' '
  echo 'checking linear solvers...'
@@ -257,7 +329,10 @@
  
  if test "$enable_fortran" = "yes" || test "$enable_f90" = "yes"; then
    echo 'checking Fortran interface...'
-@@ -40,12 +40,12 @@ fi
+-  $MPIRUN $srcdir/test4f
++  $MPIRUN $top_builddir/test4f
+   echo ' '
+ fi
  
  if test "$enable_quad" = "yes"; then
    echo 'checking double-double precision operations...'
