@@ -1,0 +1,171 @@
+--- origsrc/libarc-0.2.0/Makefile.am	2004-05-29 15:02:32.000000000 +0900
++++ src/libarc-0.2.0/Makefile.am	2015-03-06 20:00:31.742879400 +0900
+@@ -4,6 +4,9 @@
+ 
+ SUBDIRS = src
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libarc.pc
++
+ dist-hook:
+ 	mkdir -p $(distdir)/doc/html
+ 	cp $(srcdir)/doc/html/* $(distdir)/doc/html
+--- origsrc/libarc-0.2.0/configure.ac	2004-05-29 14:47:30.000000000 +0900
++++ src/libarc-0.2.0/configure.ac	2015-03-06 20:00:04.414754400 +0900
+@@ -1,70 +1,10 @@
+ AC_PREREQ(2.57)
+-AC_INIT(libarc, 0.2.0, tree@basistech.com)
++AC_INIT([libarc], [0.2.0], [tree@basistech.com])
+ AC_CONFIG_SRCDIR([src/arc_file.cpp])
+ AM_CONFIG_HEADER(config.h)
+-
+-AC_DEFUN([CHECK_ZLIB],
+-#
+-# Handle user hints
+-#
+-[AC_MSG_CHECKING(if zlib is wanted)
+-AC_ARG_WITH(zlib,
+-[  --with-zlib=DIR root directory path of zlib installation [defaults to
+-                    /usr/local or /usr if not found in /usr/local]
+-  --without-zlib to disable zlib usage completely],
+-[if test "$withval" != no ; then
+-  AC_MSG_RESULT(yes)
+-  ZLIB_HOME="$withval"
+-else
+-  AC_MSG_RESULT(no)
+-fi], [
+-AC_MSG_RESULT(yes)
+-ZLIB_HOME=/usr/local
+-if test ! -f "${ZLIB_HOME}/include/zlib.h"
+-then
+-        ZLIB_HOME=/usr
+-fi
+-])
+-
+-#
+-# Locate zlib, if wanted
+-#
+-if test -n "${ZLIB_HOME}"
+-then
+-        ZLIB_OLD_LDFLAGS=$LDFLAGS
+-        ZLIB_OLD_CPPFLAGS=$LDFLAGS
+-        LDFLAGS="$LDFLAGS -L${ZLIB_HOME}/lib"
+-        CPPFLAGS="$CPPFLAGS -I${ZLIB_HOME}/include"
+-        AC_LANG_SAVE
+-        AC_LANG_C
+-        AC_CHECK_LIB(z, inflateEnd, [zlib_cv_libz=yes], [zlib_cv_libz=no])
+-        AC_CHECK_HEADER(zlib.h, [zlib_cv_zlib_h=yes], [zlib_cv_zlib_h=no])
+-        AC_LANG_RESTORE
+-        if test "$zlib_cv_libz" = "yes" -a "$zlib_cv_zlib_h" = "yes"
+-        then
+-                #
+-                # If both library and header were found, use them
+-                #
+-                AC_CHECK_LIB(z, inflateEnd)
+-                AC_MSG_CHECKING(zlib in ${ZLIB_HOME})
+-                AC_MSG_RESULT(ok)
+-        else
+-                #
+-                # If either header or library was not found, revert and bomb
+-                #
+-                AC_MSG_CHECKING(zlib in ${ZLIB_HOME})
+-                LDFLAGS="$ZLIB_OLD_LDFLAGS"
+-                CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
+-                AC_MSG_RESULT(failed)
+-                AC_MSG_ERROR(either specify a valid zlib installation with --with-zlib=DIR or disable zlib usage with --without-zlib)
+-        fi
+-fi
+-
+-])
+-
+ AM_INIT_AUTOMAKE
+ 
+-AC_PROG_RANLIB
++LT_INIT
+ AC_PROG_CXX
+ AC_PROG_CC
+ 
+@@ -85,7 +25,7 @@ AC_CHECK_FUNCS([munmap strerror strtol])
+ # We need to know out how big off_t is
+ AC_CHECK_SIZEOF(off_t)
+ 
+-CHECK_ZLIB()
++PKG_CHECK_MODULES([ZLIB], [zlib])
+ 
+-AC_CONFIG_FILES([Makefile src/Makefile])
++AC_CONFIG_FILES([Makefile src/Makefile libarc.pc])
+ AC_OUTPUT
+--- origsrc/libarc-0.2.0/libarc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libarc-0.2.0/libarc.pc.in	2015-03-06 19:59:40.352254400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libarc
++Description: C++ library for accessing the contents of GZIP compressed ARC files
++Version: @VERSION@
++Libs: -L${libdir} -larc
++Cflags: -I${includedir}
+--- origsrc/libarc-0.2.0/src/Makefile.am	2004-05-25 11:33:50.000000000 +0900
++++ src/libarc-0.2.0/src/Makefile.am	2015-03-06 19:56:57.776082600 +0900
+@@ -3,13 +3,12 @@
+ # Distributed under the BSD License. See COPYING for details.
+ 
+ bin_PROGRAMS = arcdump
+-lib_LIBRARIES = libarc.a
++lib_LTLIBRARIES = libarc.la
+ include_HEADERS = libarc.h
+ 
+-libarc_a_SOURCES = rfc1952.cpp rfc1952.h arc_file.cpp arc_file.h arc_member.cpp arc_member.h url_record.cpp url_record.h misc.cpp misc.h member_iterator.cpp member_iterator.h
++libarc_la_SOURCES = rfc1952.cpp rfc1952.h arc_file.cpp arc_file.h arc_member.cpp arc_member.h url_record.cpp url_record.h misc.cpp misc.h member_iterator.cpp member_iterator.h
++libarc_la_LDFLAGS = -no-undefined
++libarc_la_LIBADD = $(ZLIB_LIBS)
+ 
+ arcdump_SOURCES = arcdump.cpp
+-arcdump_LDADD = -larc -lz
+-arcdump_LDFLAGS = -L.
+-
+-
++arcdump_LDADD = libarc.la
+--- origsrc/libarc-0.2.0/src/arc_file.cpp	2004-05-24 23:22:08.000000000 +0900
++++ src/libarc-0.2.0/src/arc_file.cpp	2015-03-06 19:55:43.901082600 +0900
+@@ -46,13 +46,7 @@
+ #include <cstdio>
+ #include <iostream>
+ 
+-#ifdef HAVE_LIBZ
+ #include <zlib.h>
+-#endif
+-
+-#ifndef HAVE_LIBZ
+-#error "This version of libarc requires zlib"
+-#endif
+ 
+ // }}}
+ 
+--- origsrc/libarc-0.2.0/src/arc_member.cpp	2004-05-26 22:27:37.000000000 +0900
++++ src/libarc-0.2.0/src/arc_member.cpp	2015-03-06 19:56:29.807332600 +0900
+@@ -13,9 +13,7 @@
+ #include "config.h"
+ #endif
+ 
+-#ifdef HAVE_LIBZ
+ #include <zlib.h>
+-#endif
+ 
+ #include "arc_member.h"
+ 
+@@ -31,11 +29,6 @@
+ #include <cassert>
+ #include <iostream>
+ 
+-#ifndef HAVE_LIBZ
+-#error "This version of libarc requires zlib"
+-#endif
+-
+-
+ using namespace libarc;
+ 
+ static const std::string empty;
