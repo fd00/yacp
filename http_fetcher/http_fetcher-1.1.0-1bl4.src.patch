@@ -1,0 +1,97 @@
+--- origsrc/http_fetcher-1.1.0/Makefile.am	2004-03-09 10:57:49.000000000 +0900
++++ src/http_fetcher-1.1.0/Makefile.am	2015-03-07 02:26:34.020456300 +0900
+@@ -1,6 +1,6 @@
+ # $Id: Makefile.am,v 1.1.1.1 2003/10/14 21:44:46 lhanson Exp $
+ 
+-SUBDIRS = src include docs
++SUBDIRS = src include docs testfetch
+ 
+ EXTRA_DIST = README \
+ 			 CREDITS \
+@@ -19,6 +19,9 @@ DISTCLEANFILES = *~ *.~*
+ m4datadir = $(datadir)/aclocal
+ m4data_DATA = http-fetcher.m4
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = http-fetcher.pc
++
+ # Grab the test directory for the distribution
+ dist-hook:
+ 	if test -f testfetch/Makefile; then (cd testfetch; make distclean); fi
+--- origsrc/http_fetcher-1.1.0/configure.ac	2004-03-09 06:06:17.000000000 +0900
++++ src/http_fetcher-1.1.0/configure.ac	2015-03-07 02:26:47.819284500 +0900
+@@ -1,6 +1,6 @@
+ # Process this file with autoconf to produce a configure script.
+ # $Id: configure.ac,v 1.1 2004/03/03 15:41:57 lhanson Exp $
+-AC_INIT(README)
++AC_INIT([http_fetcher], [1.1.0])
+ 
+ # This version silliness is strict libtool versioning.  The project version
+ #	goes up a patchlevel but the libtool version goes up a "revision".
+@@ -19,7 +19,7 @@ AC_SUBST(VERSION_MICRO)
+ # Setup for automake
+ PROJ_NAME=http_fetcher
+ PROJ_VERSION="1.1.0"	# No longer taken from the libtool interface version..
+-AM_INIT_AUTOMAKE($PROJ_NAME, $PROJ_VERSION)
++AM_INIT_AUTOMAKE
+ 
+ # Turn on certain options only with --enable-maintainer-mode.  This should
+ # keep the auto-regeneration of autoconf/make files due to CVS not storing
+@@ -101,4 +101,6 @@ docs/html/Makefile
+ docs/man/Makefile 
+ src/Makefile 
+ include/Makefile 
++testfetch/Makefile
++http-fetcher.pc
+ )
+--- origsrc/http_fetcher-1.1.0/http-fetcher.m4	2004-03-09 06:06:17.000000000 +0900
++++ src/http_fetcher-1.1.0/http-fetcher.m4	2015-03-07 02:23:39.422800100 +0900
+@@ -10,7 +10,7 @@ dnl  understanding is that this should o
+ dnl  The macro also adds the appropriate -L and -I values to CFLAGS so that
+ dnl  headers are found and libraries are linked.
+ dnl
+-AC_DEFUN(AC_PATH_HFETCHER,
++AC_DEFUN([AC_PATH_HFETCHER],
+ [dnl
+ 
+ darwin=no;
+--- origsrc/http_fetcher-1.1.0/http-fetcher.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/http_fetcher-1.1.0/http-fetcher.pc.in	2015-03-07 02:25:45.875925100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: http_fetcher
++Description: Small, robust, flexible library for downloading files via HTTP using the GET method
++Version: @VERSION@
++Libs: -L${libdir} -lhttp_fetcher
++Cflags: -I${includedir}
+--- origsrc/http_fetcher-1.1.0/src/Makefile.am	2004-03-09 06:06:17.000000000 +0900
++++ src/http_fetcher-1.1.0/src/Makefile.am	2015-03-07 02:27:11.203073500 +0900
+@@ -6,6 +6,6 @@ lib_LTLIBRARIES = libhttp_fetcher.la
+ 
+ libhttp_fetcher_la_SOURCES = http_fetcher.c http_error_codes.c
+ 
+-INCLUDES = -I../include
++AM_CPPFLAGS = -I$(top_srcdir)/include
+ 
+-libhttp_fetcher_la_LDFLAGS = -version-info @VERSION_MAJOR@:@VERSION_MINOR@:@VERSION_MICRO@
++libhttp_fetcher_la_LDFLAGS = -no-undefined -version-info @VERSION_MAJOR@:@VERSION_MINOR@:@VERSION_MICRO@
+--- origsrc/http_fetcher-1.1.0/testfetch/Makefile.am	2004-03-09 06:06:18.000000000 +0900
++++ src/http_fetcher-1.1.0/testfetch/Makefile.am	2015-03-07 02:27:25.533151600 +0900
+@@ -1,7 +1,11 @@
+ noinst_PROGRAMS = testfetch
+ 
+ testfetch_SOURCES = testfetch.c
+-LDADD = @extra_libs@ -lhttp_fetcher
+-testfetch_LDFLAGS = @ld_rpath@
++LDADD = $(top_builddir)/src/libhttp_fetcher.la
++testfetch_LDFLAGS = 
++
++AM_CPPFLAGS = -I$(top_srcdir)/include
+ 
+ DISTCLEANFILES = *~ *.~*
++
++TESTS = testfetch
