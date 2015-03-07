@@ -1,15 +1,15 @@
 --- origsrc/libstrfunc-8.3/Makefile.am	2005-05-27 14:37:06.000000000 +0900
-+++ src/libstrfunc-8.3/Makefile.am	2011-05-31 01:00:06.982009800 +0900
++++ src/libstrfunc-8.3/Makefile.am	2015-03-07 19:57:44.193729500 +0900
 @@ -19,7 +19,7 @@ include_HEADERS = strfunc.h
  
  lib_LTLIBRARIES = libstrfunc.la
  
 -libstrfunc_la_LDFLAGS = -version-info 9:1
-+libstrfunc_la_LDFLAGS = -version-info 9:1 -no-undefined
++libstrfunc_la_LDFLAGS = -no-undefined -version-info 9:1
  
  libstrfunc_la_SOURCES =		\
  	libstrfunc.c strfunc.h	\
-@@ -71,12 +71,11 @@ libstrfunc_la_SOURCES =		\
+@@ -71,14 +71,16 @@ libstrfunc_la_SOURCES =		\
  BUILT_SOURCES = strfunc.h
  
  all-local:
@@ -23,8 +23,24 @@
  # this is needed because of a bug in Automake
  # related to processing of secondary ./configure's and 'make dist'
  EXTRA_DIST = config.h.in strfunc.h.in
+ 
+ CLEANFILES = sf_*.h base64.h memparam.h
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libstrfunc.pc
 --- origsrc/libstrfunc-8.3/configure.in	2007-04-28 09:08:13.000000000 +0900
-+++ src/libstrfunc-8.3/configure.in	2011-05-31 01:01:31.343315400 +0900
++++ src/libstrfunc-8.3/configure.in	2015-03-07 19:57:00.248417000 +0900
+@@ -1,8 +1,8 @@
+ dnl Process this file with autoconf to produce a configure script.
+ AC_PREREQ(2.13)
+-AC_INIT(libstrfunc.c)
++AC_INIT([libstrfunc], [8.3])
+ AC_CANONICAL_SYSTEM
+-AM_INIT_AUTOMAKE(libstrfunc, 8.3)
++AM_INIT_AUTOMAKE
+ 
+ PATH=${PATH}:/usr/ucb:/usr/ccs/bin
+ export PATH
 @@ -11,7 +11,7 @@ AC_SUBST(PATH)
  
  AM_MAINTAINER_MODE
@@ -34,8 +50,29 @@
  
  dnl *** Autoconf support ***
  AC_ARG_ENABLE(autoconf,
+@@ -178,6 +178,7 @@ sf_sed/Makefile		\
+ test/Makefile		\
+ bin/Makefile		\
+ man/Makefile		\
++libstrfunc.pc \
+ )
+ 
+ 
+--- origsrc/libstrfunc-8.3/libstrfunc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libstrfunc-8.3/libstrfunc.pc.in	2015-03-07 19:57:57.224979500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libstrfunc
++Description: Strings manipulations
++Version: @VERSION@
++Libs: -L${libdir} -lstrfunc
++Cflags: -I${includedir}
 --- origsrc/libstrfunc-8.3/man/Makefile.am	2004-01-17 19:13:12.000000000 +0900
-+++ src/libstrfunc-8.3/man/Makefile.am	2011-05-31 01:00:06.992024200 +0900
++++ src/libstrfunc-8.3/man/Makefile.am	2015-03-07 19:51:39.008225400 +0900
 @@ -64,43 +64,43 @@ man_MANS = $(real_mans) $(aliased_mans)
  # if anyone knows a way to compress these all 
  # to a single rule -- let the author know
