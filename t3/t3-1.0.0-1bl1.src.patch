@@ -1,0 +1,73 @@
+--- origsrc/t3-1.0.0/CMakeLists.txt	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/CMakeLists.txt	2015-03-08 23:29:26.916734300 +0900
+@@ -26,7 +26,7 @@ include_directories(. ${PROJECT_SOURCE_D
+ # http://www.openguru.com/2009/04/cmake-detecting-platformoperating.html
+ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+     set(CMAKE_CXX_FLAGS "-std=c++0x -arch x86_64 -stdlib=libc++ -Wall -Wno-long-long -Wno-unused-value -Wno-overloaded-virtual")
+-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
++elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR CYGWIN)
+     set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-long-long -Wno-unused-value -Wno-overloaded-virtual")
+ endif()
+ 
+@@ -38,11 +38,16 @@ else()
+ endif()
+ enable_testing()
+ 
+-set(ENV{GTEST_ROOT} ${PROJECT_SOURCE_DIR}/gtest-1.7.0)
+-# set(gtest_SOURCE_DIR gtest-1.7.0)
+-# add_subdirectory(${gtest_SOURCE_DIR})
+-# include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+-add_subdirectory(gtest-1.7.0)
+ add_subdirectory(src)
+-add_subdirectory(tests)
++option(ENABLE_TEST "enable test" OFF)
++if (ENABLE_TEST)
++    add_subdirectory(tests)
++endif()
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION 0)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/t3.pc.in ${CMAKE_BINARY_DIR}/t3.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/t3.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/t3-1.0.0/src/CMakeLists.txt	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/src/CMakeLists.txt	2015-03-08 23:28:22.785875000 +0900
+@@ -1,2 +1,5 @@
+-add_library(t3 thread_pool.cc thread_task.cc channel.cc wait_group.cc)
++add_library(t3 SHARED thread_pool.cc thread_task.cc channel.cc wait_group.cc)
+ target_link_libraries(t3 pthread)
++set_target_properties(t3 PROPERTIES SOVERSION 0)
++install(TARGETS t3 RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES thread_pool.h thread_task.h channel.h wait_group.h DESTINATION include/t3)
+--- origsrc/t3-1.0.0/t3.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/t3-1.0.0/t3.pc.in	2015-03-08 23:29:37.091539000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: t3
++Description: Lightweight C++ Thread Pool
++Version: @VERSION@
++Libs: -L${libdir} -lt3
++Cflags: -I${includedir}
+--- origsrc/t3-1.0.0/tests/CMakeLists.txt	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/tests/CMakeLists.txt	2015-03-08 23:15:56.677476500 +0900
+@@ -1,12 +1,10 @@
+ enable_testing()
+-find_package(GTest REQUIRED)
+ set(PROJECT_TEST_NAME "${PROJECT_NAME}_test")
+-include_directories(${GTEST_INCLUDE_DIRS})
+ 
+ add_executable(thread_pool_test thread_pool_test.cc)
+-target_link_libraries(thread_pool_test t3 ${GTEST_BOTH_LIBRARIES})
++target_link_libraries(thread_pool_test t3 gtest gtest_main)
+ add_test(thread_pool_test thread_pool_test)
+ 
+ add_executable(wait_group_test wait_group_test.cc)
+-target_link_libraries(wait_group_test t3 ${GTEST_BOTH_LIBRARIES})
++target_link_libraries(wait_group_test t3 gtest gtest_main)
+ add_test(wait_group_test wait_group_test)
