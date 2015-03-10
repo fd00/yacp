@@ -1,0 +1,61 @@
+--- origsrc/libnscd-2.0.2/Makefile.am	2006-10-05 20:24:45.000000000 +0900
++++ src/libnscd-2.0.2/Makefile.am	2015-03-10 22:37:25.313125700 +0900
+@@ -13,3 +13,5 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ CLEANFILES = *~
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libnscd.pc
+--- origsrc/libnscd-2.0.2/configure.in	2006-11-30 01:32:11.000000000 +0900
++++ src/libnscd-2.0.2/configure.in	2015-03-10 22:37:36.094375700 +0900
+@@ -42,4 +42,4 @@ JH_CHECK_XML_CATALOG([http://docbook.sou
+                 [DocBook XSL Stylesheets], [], enable_man=no)
+ AM_CONDITIONAL(ENABLE_REGENERATE_MAN, test x$enable_man != xno)
+ 
+-AC_OUTPUT([Makefile src/Makefile])
++AC_OUTPUT([Makefile src/Makefile libnscd.pc])
+--- origsrc/libnscd-2.0.2/libnscd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnscd-2.0.2/libnscd.pc.in	2015-03-10 22:37:07.656875700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnscd
++Description: Library to Allow Applications to Communicate with nscd
++Version: @VERSION@
++Libs: -L${libdir} -lnscd
++Cflags: -I${includedir}
+--- origsrc/libnscd-2.0.2/src/Makefile.am	2006-11-30 01:30:03.000000000 +0900
++++ src/libnscd-2.0.2/src/Makefile.am	2015-03-10 22:35:13.544571000 +0900
+@@ -12,8 +12,8 @@ XMLS = nscd_flush_cache.3.xml
+ 
+ include_HEADERS = libnscd.h
+ 
+-libnscd_la_LDFLAGS = -version-info 1:2:0 \
+-	-Wl,--version-script=$(srcdir)/libnscd.map
++libnscd_la_LDFLAGS = -no-undefined -version-info 1:2:0 \
++	-Wl,--version-script=$(srcdir)/libnscd.map 
+ 
+ lib_LTLIBRARIES = libnscd.la
+ 
+--- origsrc/libnscd-2.0.2/src/libnscd.c	2006-11-30 01:27:17.000000000 +0900
++++ src/libnscd-2.0.2/src/libnscd.c	2015-03-10 22:35:13.544571000 +0900
+@@ -95,6 +95,16 @@ nscd_open_socket (void)
+   return sock;
+ }
+ 
++#if !defined(TEMP_FAILURE_RETRY)
++#define TEMP_FAILURE_RETRY(expression) \
++    ({ \
++        long int _result; \
++        do _result = (long int) (expression); \
++        while (_result == -1L && errno == EINTR); \
++        _result; \
++    })
++#endif // !defined(TEMP_FAILURE_RETRY)
++
+ int
+ nscd_flush_cache (const char *service)
+ {
