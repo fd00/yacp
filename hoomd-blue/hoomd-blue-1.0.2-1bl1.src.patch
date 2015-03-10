@@ -1,0 +1,115 @@
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/CMake/CMakeLists.txt	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/CMake/CMakeLists.txt	2015-03-09 23:37:14.654582400 +0900
+@@ -14,7 +14,7 @@ if (NOT WIN32)
+ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cuda
+                   ${CMAKE_CURRENT_SOURCE_DIR}/hoomd
+                   ${CMAKE_CURRENT_SOURCE_DIR}/git
+-        DESTINATION ${DATA_INSTALL_DIR}/CMake
++        DESTINATION lib/cmake/hoomd
+         PATTERN ".svn" EXCLUDE
+         )
+ endif (NOT WIN32)
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/CMakeLists.txt	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/CMakeLists.txt	2015-03-10 09:10:55.225304700 +0900
+@@ -91,3 +91,11 @@ if (BUILD_TESTING)
+ endif (BUILD_TESTING)
+ 
+ add_subdirectory (packaging)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/hoomd-blue.pc.in ${CMAKE_BINARY_DIR}/hoomd-blue.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/hoomd-blue.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/hoomd-blue.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/hoomd-blue.pc.in	2015-03-10 09:10:26.787804700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: hoomd-blue
++Description: General-purpose particle simulation toolkit
++Version: @HOOMD_VERSION@
++Libs: -L${libdir} -lhoomd
++Cflags: -I${includedir}
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/libhoomd/CMakeLists.txt	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/libhoomd/CMakeLists.txt	2015-03-09 23:41:59.684855800 +0900
+@@ -60,7 +60,11 @@ if (NOT ENABLE_STATIC)
+     endif(ENABLE_MPI)
+ 
+     # tweak the properties of the output to make a functional python module
+-    set_target_properties(libhoomd PROPERTIES PREFIX "" OUTPUT_NAME "hoomd")
++    if (CYGWIN)
++        set_target_properties(libhoomd PROPERTIES OUTPUT_NAME "hoomd" SOVERSION 0)
++    else()
++        set_target_properties(libhoomd PROPERTIES PREFIX "" OUTPUT_NAME "hoomd")
++    endif()
+ 
+     # .dylib is not regognized as a python module by python on Mac OS X
+     if(APPLE)
+@@ -97,7 +101,7 @@ endif(ENABLE_APP_BUNDLE_INSTALL)
+ 
+ # install the library
+ install(TARGETS libhoomd
+-        LIBRARY DESTINATION ${_hoomd_so_install_dir}
++        RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+         ARCHIVE DESTINATION ${LIB_BASE_INSTALL_DIR}
+         )
+ 
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/libhoomd/computes/ConstraintSphere.cc	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/libhoomd/computes/ConstraintSphere.cc	2015-03-09 21:57:06.728336000 +0900
+@@ -55,6 +55,14 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAG
+ #endif
+ 
+ #include <boost/python.hpp>
++
++#if defined(_X)
++#undef _X
++#endif
++#if defined(_P)
++#undef _P
++#endif
++
+ using namespace boost::python;
+ 
+ #include "ConstraintSphere.h"
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/libhoomd/extern/cudacpu_host_defines.h	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/libhoomd/extern/cudacpu_host_defines.h	2015-03-09 21:41:59.130679700 +0900
+@@ -76,7 +76,9 @@
+         __thread
+ #define __import__
+ #define __export__
++#if !defined(__cdecl)
+ #define __cdecl
++#endif
+ #define __annotate__(a) \
+         __attribute__((a))
+ #define __location__(a) \
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/libhoomd/utils/PathUtils.cc	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/libhoomd/utils/PathUtils.cc	2015-03-09 22:18:37.700980900 +0900
+@@ -101,7 +101,7 @@ std::string getExePath()
+     result = std::string(realbuf);
+     free(realbuf);
+ 
+-    #elif __linux__
++    #elif __linux__ || __CYGWIN__
+ 
+     char buf[path_max];
+     memset(buf, 0, path_max);
+--- origsrc/glotzer-hoomd-blue-6413a77d30ac/test/unit/CMakeLists.txt	2015-01-22 01:41:35.000000000 +0900
++++ src/glotzer-hoomd-blue-6413a77d30ac/test/unit/CMakeLists.txt	2015-03-09 22:59:02.583687800 +0900
+@@ -16,6 +16,10 @@ if (NOT WIN32)
+     if("${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}" MATCHES "\\.so$")
+     add_definitions(-DBOOST_TEST_DYN_LINK)
+     endif("${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}" MATCHES "\\.so$")
++
++    if("${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}" MATCHES "\\.dll.a$")
++    add_definitions(-DBOOST_TEST_DYN_LINK)
++    endif("${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}" MATCHES "\\.dll.a$")
+ endif (NOT WIN32)
+ 
+ ####################################
