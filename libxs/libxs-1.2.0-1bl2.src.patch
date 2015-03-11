@@ -1,0 +1,68 @@
+--- origsrc/libxs-1.2.0/configure.ac	2012-06-13 18:08:53.000000000 +0900
++++ src/libxs-1.2.0/configure.ac	2015-03-11 23:26:50.561083500 +0900
+@@ -473,7 +473,7 @@ AS_IF([test "x$with_pgm_ext" != "xno"],
+ # Build with system openpgm
+ AS_IF([test "x$with_system_pgm_ext" != "xno"], [
+     m4_ifdef([PKG_CHECK_MODULES], [
+-        PKG_CHECK_MODULES([OpenPGM], [openpgm-5.1 >= 5.1])
++        PKG_CHECK_MODULES([OpenPGM], [openpgm-5.2])
+         AC_DEFINE([XS_HAVE_OPENPGM], [1], [Have OpenPGM extension])
+         LIBXS_EXTRA_CXXFLAGS="$OpenPGM_CFLAGS $LIBXS_EXTRA_CXXFLAGS"
+         LIBS="$OpenPGM_LIBS $LIBS"
+--- origsrc/libxs-1.2.0/doc/Makefile.am	2012-06-13 18:08:53.000000000 +0900
++++ src/libxs-1.2.0/doc/Makefile.am	2015-03-11 23:35:34.537156800 +0900
+@@ -35,9 +35,9 @@ SUFFIXES=.html .txt .xml .3 .7
+ 	asciidoc -d manpage -b docbook -f $(srcdir)/asciidoc.conf \
+ 		-axs_version=@PACKAGE_VERSION@ -o$@ $<
+ .xml.1:
+-	xmlto man $<
++	xmlto --skip-validation man $<
+ .xml.3:
+-	xmlto man $<
++	xmlto --skip-validation man $<
+ .xml.7:
+-	xmlto man $<
++	xmlto --skip-validation man $<
+ endif
+--- origsrc/libxs-1.2.0/src/Makefile.am	2012-06-13 18:08:53.000000000 +0900
++++ src/libxs-1.2.0/src/Makefile.am	2015-03-11 23:19:13.135813100 +0900
+@@ -148,10 +148,11 @@ libxs_la_SOURCES = \
+     xs.cpp
+ 
+ if ON_MINGW
+-libxs_la_LDFLAGS = -no-undefined -avoid-version -version-info @LIBXS_ABI_VERSION@ @LIBXS_EXTRA_LDFLAGS@
++libxs_la_LDFLAGS = -avoid-version -version-info @LIBXS_ABI_VERSION@ @LIBXS_EXTRA_LDFLAGS@
+ else
+ libxs_la_LDFLAGS = -version-info @LIBXS_ABI_VERSION@ @LIBXS_EXTRA_LDFLAGS@
+ endif
++libxs_la_LDFLAGS += -no-undefined
+ 
+ libxs_la_CPPFLAGS = -DXS_LIBDIR_PATH='"$(libdir)"'
+ libxs_la_CXXFLAGS = @LIBXS_EXTRA_CXXFLAGS@
+@@ -167,10 +168,11 @@ libzmq_la_CPPFLAGS = -DXS_BUILDING_LIBXS
+ libzmq_la_LIBADD = libxs.la
+ 
+ if ON_MINGW
+-libzmq_la_LDFLAGS = -no-undefined -avoid-version -version-info @LIBZMQ_ABI_VERSION@
++libzmq_la_LDFLAGS = -avoid-version -version-info @LIBZMQ_ABI_VERSION@
+ else
+ libzmq_la_LDFLAGS = -version-info @LIBZMQ_ABI_VERSION@
+ endif
++libzmq_la_LDFLAGS += -no-undefined
+ endif
+ 
+ dist-hook:
+--- origsrc/libxs-1.2.0/tests/Makefile.am	2012-06-13 18:08:53.000000000 +0900
++++ src/libxs-1.2.0/tests/Makefile.am	2015-03-11 23:19:13.135813100 +0900
+@@ -12,11 +12,8 @@ noinst_PROGRAMS = pair_inproc \
+                   sub_forward \
+                   invalid_rep \
+                   msg_flags \
+-                  reconnect \
+                   linger \
+                   shutdown_stress \
+-                  pair_ipc \
+-                  reqrep_ipc \
+                   timeo \
+                   max_sockets \
+                   emptyctx \
