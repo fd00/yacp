@@ -1,0 +1,43 @@
+--- origsrc/JAGS-3.4.0/configure.ac	2013-08-30 21:19:35.000000000 +0900
++++ src/JAGS-3.4.0/configure.ac	2015-03-14 10:38:54.983620800 +0900
+@@ -37,12 +37,19 @@ R_FUNC_ISFINITE
+ fi
+ 
+ case "${host_os}" in
+-  mingw*)
++  mingw*|cygwin*)
+     win=true ;;
+   *)
+     win=false ;;
+ esac
+ AM_CONDITIONAL(WINDOWS, test x$win = xtrue)
++case "${host_os}" in
++  cygwin*)
++    cyg=true ;;
++  *)
++    cyg=false ;;
++esac
++AM_CONDITIONAL(CYGWIN, test x$cyg = xtrue)
+ 
+ dnl fortran stuff
+ AC_F77_WRAPPERS
+--- origsrc/JAGS-3.4.0/src/terminal/Makefile.am	2013-05-01 00:19:32.000000000 +0900
++++ src/JAGS-3.4.0/src/terminal/Makefile.am	2015-03-14 10:52:31.949441100 +0900
+@@ -4,7 +4,7 @@ AM_YFLAGS = -d
+ libexec_PROGRAMS = jags-terminal
+ 
+ jags_terminal_SOURCES = parser.yy scanner.ll ReadData.cc 
+-if WINDOWS
++if !CYGWIN
+ ## 64-bit Windows build fails if we try pre-linking modules (although
+ ## 32-bit Windows allows it).  
+ jags_terminal_LDADD = $(LIBLTDL) ${top_builddir}/src/lib/libjags.la
+@@ -30,7 +30,7 @@ noinst_HEADERS = ReadData.h
+ ## The shell script is not required under Windows, so we do not
+ ## build or install it. Instead, we install a batch file 
+ 
+-if WINDOWS
++if !CYGWIN
+ 
+ dist_bin_SCRIPTS = jags.bat
+ 
