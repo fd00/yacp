@@ -1,5 +1,5 @@
 --- origsrc/libassa-3.5.0/Makefile.am	2008-02-10 22:48:12.000000000 +0900
-+++ src/libassa-3.5.0/Makefile.am	2012-06-23 18:41:47.988782000 +0900
++++ src/libassa-3.5.0/Makefile.am	2015-03-17 21:00:39.796350600 +0900
 @@ -1,5 +1,7 @@
  ## $Id: Makefile.am,v 1.14 2007/08/09 02:19:19 vlg Exp $
  
@@ -8,8 +8,18 @@
  SUBDIRS = . assa utils doc tests examples
  
  DIST_SUBDIRS = assa utils doc tests examples 
+--- origsrc/libassa-3.5.0/assa/CommonUtils.h	2006-07-20 11:30:53.000000000 +0900
++++ src/libassa-3.5.0/assa/CommonUtils.h	2015-03-17 21:32:16.433076800 +0900
+@@ -14,6 +14,7 @@
+ #ifndef COMMON_UTILS_H
+ #define COMMON_UTILS_H
+ 
++#include <unistd.h>
+ #include <sstream>
+ 
+ #include <string> 
 --- origsrc/libassa-3.5.0/assa/Logger_Impl.cpp	2006-07-20 11:30:54.000000000 +0900
-+++ src/libassa-3.5.0/assa/Logger_Impl.cpp	2012-06-23 18:57:40.998548800 +0900
++++ src/libassa-3.5.0/assa/Logger_Impl.cpp	2015-03-17 21:00:39.796350600 +0900
 @@ -12,6 +12,7 @@
  //  version 2 of the License, or (at your option) any later version.
  //------------------------------------------------------------------------------
@@ -18,8 +28,45 @@
  #include <iostream>
  #include <iomanip>
  #include <string.h>				// strerror(3)
+--- origsrc/libassa-3.5.0/assa/Logger_Impl.h	2006-07-20 11:30:54.000000000 +0900
++++ src/libassa-3.5.0/assa/Logger_Impl.h	2015-03-17 21:14:28.386229000 +0900
+@@ -21,7 +21,7 @@
+ #include <sys/varargs.h>		// va_list
+ #endif
+ 
+-#if defined (__CYGWIN32__) || defined (__NetBSD__) || defined (WIN32)
++#if defined (__CYGWIN__) || defined (__NetBSD__) || defined (WIN32)
+ # include <stdarg.h>
+ #endif
+ 
+--- origsrc/libassa-3.5.0/assa/Makefile.am	2008-02-10 22:48:30.000000000 +0900
++++ src/libassa-3.5.0/assa/Makefile.am	2015-03-17 21:20:06.845675200 +0900
+@@ -98,12 +98,12 @@ cpp_sources = \
+ library_includedir      = $(includedir)/assa-@ASSA_RELEASE@/assa
+ library_include_HEADERS = $(h_sources)
+ 
+-INCLUDES = -I$(top_srcdir)
++AM_CPPFLAGS = -I$(top_srcdir) $(LIBTIRPC_CFLAGS)
+ 
+ lib_LTLIBRARIES = libassa-3.5.la 
+ 
+ libassa_3_5_la_SOURCES = $(h_sources) $(cpp_sources)
+-
++libassa_3_5_la_LIBADD = $(LIBTIRPC_LIBS)
+ libassa_3_5_la_LDFLAGS = @WIN32_EXTRA_LDFLAGS@ \
+ 						 -version-info @LIBASSA_SO_VERSION@ 
+ 
 --- origsrc/libassa-3.5.0/assa/Socket.cpp	2006-09-25 02:35:33.000000000 +0900
-+++ src/libassa-3.5.0/assa/Socket.cpp	2012-06-23 18:44:39.645032000 +0900
++++ src/libassa-3.5.0/assa/Socket.cpp	2015-03-17 21:25:11.065889300 +0900
+@@ -15,7 +15,7 @@
+ //------------------------------------------------------------------------
+ 
+ #include <sstream>
+-#if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__CYGWIN32__)
++#if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__CYGWIN__)
+ #  include <sys/ioctl.h>
+ #endif
+ 
 @@ -734,11 +734,11 @@ decode_fcntl_flags (long mask_)
  	if (mask_ & O_SYNC) {
  		answer += "O_SYNC|";	// 010000
@@ -34,8 +81,19 @@
  	answer.erase (answer.end () - 1);
  
  #endif
+--- origsrc/libassa-3.5.0/assa/XDRHack.h	2006-07-20 11:30:54.000000000 +0900
++++ src/libassa-3.5.0/assa/XDRHack.h	2015-03-17 21:16:18.267063000 +0900
+@@ -28,7 +28,7 @@
+  *   xdr.h, External Data Representation Serialization Routines.
+  *   Copyright (C) 1984, Sun Microsystems, Inc.
+  */
+-#if defined (__CYGWIN32__)
++#if defined (__CYGWIN__)
+ extern "C" {
+ #include <rpc/types.h>
+ 
 --- origsrc/libassa-3.5.0/configure.in	2007-05-15 04:19:50.000000000 +0900
-+++ src/libassa-3.5.0/configure.in	2012-06-23 21:12:31.925217800 +0900
++++ src/libassa-3.5.0/configure.in	2015-03-17 21:19:00.514621200 +0900
 @@ -9,7 +9,6 @@ dnl Initialization
  dnl ----------------------------------------------------------------------------
  
@@ -44,17 +102,19 @@
  AM_CONFIG_HEADER(config.h)
  
  dnl ----------------------------------------------------------------------------
-@@ -139,7 +138,7 @@ AC_SUBST(LIBRPC)
+@@ -139,8 +138,8 @@ AC_SUBST(LIBRPC)
  AC_MSG_CHECKING([for win32 environment... ])
  case "$host_os" in
  	cygwin*)
 -		WIN32_EXTRA_LDFLAGS="--no-undefined"
+-		WIN32_EXTRA_LIBADD="$LIBRPC"
++		PKG_CHECK_MODULES([LIBTIRPC], [libtirpc])
 +		WIN32_EXTRA_LDFLAGS="-no-undefined"
- 		WIN32_EXTRA_LIBADD="$LIBRPC"
  		AC_MSG_RESULT([found cygwin: added -no-undefined to LDFLAGS])
  		;;
+ 	*mingw*)
 --- origsrc/libassa-3.5.0/doc/Makefile.am	2007-08-09 11:19:43.000000000 +0900
-+++ src/libassa-3.5.0/doc/Makefile.am	2012-06-23 18:45:26.309094500 +0900
++++ src/libassa-3.5.0/doc/Makefile.am	2015-03-17 21:00:39.811975600 +0900
 @@ -28,9 +28,9 @@ install-reference: html/index.html
  			basefile=`echo $$file | sed -e 's,^.*/,,'`; \
  			${INSTALL_DATA} $$file ${DESTDIR}${docdir}/html/$$basefile; \
@@ -69,7 +129,7 @@
  
  uninstall-reference: html/index.html
 --- origsrc/libassa-3.5.0/tests/Makefile.am	2006-07-20 11:30:55.000000000 +0900
-+++ src/libassa-3.5.0/tests/Makefile.am	2012-06-23 18:45:55.934094500 +0900
++++ src/libassa-3.5.0/tests/Makefile.am	2015-03-17 21:00:39.827600600 +0900
 @@ -15,7 +15,7 @@ EXTRA_DIST = \
  
  TESTS_ENVIRONMENT = top_builddir=$(top_builddir)
@@ -80,7 +140,7 @@
  
  testsubdir = testSubDir
 --- origsrc/libassa-3.5.0/tests/sighand_test.cpp	2006-07-20 11:30:56.000000000 +0900
-+++ src/libassa-3.5.0/tests/sighand_test.cpp	2012-06-23 18:46:27.152844500 +0900
++++ src/libassa-3.5.0/tests/sighand_test.cpp	2015-03-17 21:00:39.827600600 +0900
 @@ -19,6 +19,7 @@
  //
  //-----------------------------------------------------------------------
@@ -90,7 +150,7 @@
  using namespace std;
  
 --- origsrc/libassa-3.5.0/tests/ttcp_assa.cpp	2006-07-20 11:30:56.000000000 +0900
-+++ src/libassa-3.5.0/tests/ttcp_assa.cpp	2012-06-23 18:46:57.691907000 +0900
++++ src/libassa-3.5.0/tests/ttcp_assa.cpp	2015-03-17 21:00:39.827600600 +0900
 @@ -38,6 +38,8 @@
   *      Public Domain.  Distribution Unlimited.
   */
