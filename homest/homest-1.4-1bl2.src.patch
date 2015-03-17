@@ -1,0 +1,47 @@
+--- origsrc/homest-1.4/CMakeLists.txt	2011-12-09 00:52:02.000000000 +0900
++++ src/homest-1.4/CMakeLists.txt	2015-03-17 15:17:42.579554300 +0900
+@@ -51,11 +51,18 @@ IF(HAVE_PLASMA)
+  INCLUDE_DIRECTORIES(${PLASMA_DIR}/include ${PLASMA_DIR}/quark)
+ ENDIF(HAVE_PLASMA)
+ 
++install(FILES homest.h lqs.h maplefuncs.h util.h
++        DESTINATION include/homest
++        PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
++
+ # homest library source files
+-ADD_LIBRARY(homest STATIC
++ADD_LIBRARY(homest SHARED
+   calc_2Dhomog_coeffs.c homest.c lqs.c linalg.c norm.c buckets.c
+   compiler.h homest.h lqs.h maplefuncs.h util.h
+ )
++install(TARGETS homest RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++target_link_libraries(homest lapack levmar)
++set_target_properties(homest PROPERTIES SOVERSION 0)
+ 
+ # demo program
+ IF(BUILD_DEMO)
+@@ -88,3 +95,11 @@ IF(BUILD_DEMO)
+ ENDIF(BUILD_DEMO)
+ 
+ #ADD_SUBDIRECTORY(matlab)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.4")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/homest.pc.in ${CMAKE_BINARY_DIR}/homest.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/homest.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/homest-1.4/homest.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/homest-1.4/homest.pc.in	2015-03-17 15:17:55.360804300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: homest
++Description: C/C++ Library for Robust, Non-linear Homography Estimation
++Version: @VERSION@
++Libs: -L${libdir} -lhomest
++Cflags: -I${includedir}
