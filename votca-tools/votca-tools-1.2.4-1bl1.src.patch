@@ -1,20 +1,14 @@
---- origsrc/votca-tools-1.2.3/include/votca/tools/tokenizer.h	2012-08-15 13:26:25.000000000 +0900
-+++ src/votca-tools-1.2.3/include/votca/tools/tokenizer.h	2013-12-10 08:14:50.527359300 +0900
-@@ -93,8 +93,10 @@ public:
-         std::vector<std::string> tmp;
-         ToVector(tmp);
-         v.resize(tmp.size());
--        transform(tmp.begin(), tmp.end(), v.begin(),
--            boost::lexical_cast<T, std::string>);
-+        typename std::vector<T>::iterator viter = v.begin();
-+        typename std::vector<std::string>::iterator iter;
-+        for(iter = tmp.begin(); iter!=tmp.end(); ++iter, ++viter)
-+            *viter = boost::lexical_cast<T, std::string>(*iter);
-     }
-     
- private:
---- origsrc/votca-tools-1.2.3/src/CMakeLists.txt	2012-08-15 13:26:25.000000000 +0900
-+++ src/votca-tools-1.2.3/src/CMakeLists.txt	2013-12-10 08:03:39.718916600 +0900
+--- origsrc/votca-tools-1.2.4/scripts/CMakeLists.txt	2014-09-01 06:54:51.000000000 +0900
++++ src/votca-tools-1.2.4/scripts/CMakeLists.txt	2015-03-17 17:08:39.999441200 +0900
+@@ -20,5 +20,5 @@ if (WITH_RC_FILES)
+   configure_file(VOTCARC.csh.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh @ONLY)
+   configure_file(VOTCARC.bash.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash @ONLY)
+   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
+-    ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION bin)
++    ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION /etc/profile.d)
+ endif (WITH_RC_FILES)
+--- origsrc/votca-tools-1.2.4/src/CMakeLists.txt	2014-09-01 06:54:51.000000000 +0900
++++ src/votca-tools-1.2.4/src/CMakeLists.txt	2015-03-17 17:05:19.761160000 +0900
 @@ -8,7 +8,7 @@ if (EXTERNAL_BOOST)
    set (BOOST_LIBRARIES ${Boost_PROGRAM_OPTIONS_LIBRARY})
    set (BOOST_PKG)
@@ -24,8 +18,8 @@
  else(EXTERNAL_BOOST)
    include_directories(${CMAKE_SOURCE_DIR}/src/libboost)
    add_subdirectory(libboost)
---- origsrc/votca-tools-1.2.3/src/libtools/CMakeLists.txt	2012-08-15 13:26:25.000000000 +0900
-+++ src/votca-tools-1.2.3/src/libtools/CMakeLists.txt	2013-12-10 08:03:39.734541600 +0900
+--- origsrc/votca-tools-1.2.4/src/libtools/CMakeLists.txt	2014-09-01 06:54:51.000000000 +0900
++++ src/votca-tools-1.2.4/src/libtools/CMakeLists.txt	2015-03-17 17:06:14.371511500 +0900
 @@ -4,7 +4,7 @@ if(NOT EXPAT_FOUND)
  endif(NOT EXPAT_FOUND)
  include_directories(${EXPAT_INCLUDE_DIR})
@@ -40,7 +34,7 @@
  target_link_libraries(votca_tools ${BOOST_LIBRARIES} ${GSL_LIBRARIES} ${SQLITE3_LIBRARIES}
    ${FFTW3_LIBRARIES} ${EXPAT_LIBRARIES} ${THREAD_LIBRARIES} ${MATH_LIBRARIES})
 -install(TARGETS votca_tools LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
-+install(TARGETS votca_tools RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
++install(TARGETS votca_tools RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIB})
  
  configure_file(libvotca_tools.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc @ONLY)
  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc DESTINATION ${LIB}/pkgconfig)
