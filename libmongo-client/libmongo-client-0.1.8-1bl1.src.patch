@@ -1,0 +1,56 @@
+--- origsrc/libmongo-client-libmongo-client-0.1.8/examples/Makefile.am	2014-05-22 19:40:49.000000000 +0900
++++ src/libmongo-client-libmongo-client-0.1.8/examples/Makefile.am	2015-03-17 20:13:08.155167100 +0900
+@@ -1,8 +1,8 @@
+-noinst_PROGRAMS		= mongo-dump bson-inspect gridfs
++bin_PROGRAMS		= mongo-dump mongo-bson-inspect mongo-gridfs
+ 
+ AM_CFLAGS		= -I$(top_srcdir)/src/ @GLIB_CFLAGS@
+ LDADD			= $(top_builddir)/src/libmongo-client.la @GLIB_LIBS@
+ 
+ mongo_dump_SOURCES	= mongo-dump.c
+-bson_inspect_SOURCES	= bson-inspect.c
+-gridfs_SOURCES		= gridfs.c
++mongo_bson_inspect_SOURCES	= bson-inspect.c
++mongo_gridfs_SOURCES		= gridfs.c
+--- origsrc/libmongo-client-libmongo-client-0.1.8/src/Makefile.am	2014-05-22 19:40:49.000000000 +0900
++++ src/libmongo-client-libmongo-client-0.1.8/src/Makefile.am	2015-03-17 20:12:08.152237100 +0900
+@@ -5,7 +5,7 @@ LMC_AGE				= 5
+ lib_LTLIBRARIES			= libmongo-client.la
+ libmongo_client_la_LIBADD	= @GLIB_LIBS@ @OPENSSL_LIBS@
+ libmongo_client_la_CFLAGS	= @GLIB_CFLAGS@ @OPENSSL_CFLAGS@
+-libmongo_client_la_LDFLAGS	= -version-info ${LMC_CURRENT}:${LMC_REVISION}:${LMC_AGE}
++libmongo_client_la_LDFLAGS	= -no-undefined -version-info ${LMC_CURRENT}:${LMC_REVISION}:${LMC_AGE}
+ 
+ libmongo_client_la_SOURCES	= \
+ 	compat.c compat.h \
+--- origsrc/libmongo-client-libmongo-client-0.1.8/src/mongo-client.c	2014-05-22 19:40:49.000000000 +0900
++++ src/libmongo-client-libmongo-client-0.1.8/src/mongo-client.c	2015-03-17 20:18:03.791688200 +0900
+@@ -40,7 +40,7 @@
+ #include <stdlib.h>
+ #include <errno.h>
+ 
+-#ifndef HAVE_MSG_NOSIGNAL
++#ifndef MSG_NOSIGNAL
+ #define MSG_NOSIGNAL 0
+ #endif
+ 
+@@ -151,7 +151,7 @@ mongo_connect (const char *address, int
+   return mongo_tcp_connect (address, port);
+ }
+ 
+-#if VERSIONED_SYMBOLS
++#if VERSIONED_SYMBOLS && !defined(__CYGWIN__)
+ __asm__(".symver mongo_tcp_connect,mongo_connect@LMC_0.1.0");
+ #endif
+ 
+--- origsrc/libmongo-client-libmongo-client-0.1.8/src/mongo-sync.c	2014-05-22 19:40:49.000000000 +0900
++++ src/libmongo-client-libmongo-client-0.1.8/src/mongo-sync.c	2015-03-17 20:19:00.788369000 +0900
+@@ -211,7 +211,7 @@ mongo_sync_connect_0_1_0 (const gchar *h
+   return mongo_sync_connect (host, port, slaveok);
+ }
+ 
+-#if VERSIONED_SYMBOLS
++#if VERSIONED_SYMBOLS && !defined(__CYGWIN__)
+ __asm__(".symver mongo_sync_connect_0_1_0,mongo_sync_connect@LMC_0.1.0");
+ #endif
+ 
