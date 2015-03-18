@@ -1,0 +1,103 @@
+--- origsrc/dotconfpp-0.0.5/Makefile.am	2003-05-15 00:10:26.000000000 +0900
++++ src/dotconfpp-0.0.5/Makefile.am	2015-03-18 22:11:04.787914100 +0900
+@@ -1,4 +1,5 @@
+ SUBDIRS = src
+ EXTRA_DIST = doc/dotconfpp.html doc/insmtpd.conf doc/log.conf doc/ssl.conf doc/modules.conf
+     
+-
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = dotconfpp.pc
+--- origsrc/dotconfpp-0.0.5/configure.in	2005-09-13 16:41:38.000000000 +0900
++++ src/dotconfpp-0.0.5/configure.in	2015-03-18 22:11:30.303539100 +0900
+@@ -9,7 +9,7 @@ AC_CONFIG_HEADER([config.h])
+ 
+ AC_PROG_LIBTOOL
+ 
+-AM_INIT_AUTOMAKE(dotconfpp, 0.0.5, a.krivoshey@kharkiv.com.ua)
++AM_INIT_AUTOMAKE
+ 
+ 
+ # Checks for programs.
+@@ -19,7 +19,6 @@ AC_PROG_CPP
+ AC_PROG_INSTALL
+ AC_PROG_LN_S
+ AC_PROG_MAKE_SET
+-AC_PROG_RANLIB
+ 
+ # Checks for libraries.
+ 
+@@ -40,7 +39,7 @@ AC_FUNC_REALLOC
+ AC_FUNC_VPRINTF
+ AC_CHECK_FUNCS([memset realpath strchr strdup strerror])
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([dotconfpp.pc Makefile
+                  src/Makefile
+                  src/example1/Makefile
+ 		 src/example2/Makefile])
+--- origsrc/dotconfpp-0.0.5/dotconfpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/dotconfpp-0.0.5/dotconfpp.pc.in	2015-03-18 22:11:17.334789100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: dotconfpp
++Description: Dotconf like configuration file parser written in C++
++Version: @VERSION@
++Libs: -L${libdir} -ldotconfpp
++Cflags: -I${includedir}
+--- origsrc/dotconfpp-0.0.5/src/Makefile.am	2006-03-09 21:53:27.000000000 +0900
++++ src/dotconfpp-0.0.5/src/Makefile.am	2015-03-18 22:09:14.648265700 +0900
+@@ -1,15 +1,14 @@
+ EXTRA_DIST = dotconfpp.h mempool.h mempool.cc
+ 
+-LIBdir = ${prefix}/lib
+-includedir = /usr/local/include/dotconf++
++includedir = ${prefix}/include/dotconf++
+ SUBDIRS = . example1 example2
+ 
+-INCLUDES = -I.
+-AM_CPPFLAGS = -D_REENTRANT -pipe -Werror -Wall
++AM_CPPFLAGS = -I.
++AM_CPPFLAGS += -D_REENTRANT -pipe -Werror -Wall
+ 
+-LIB_LTLIBRARIES = libdotconfpp.la
++lib_LTLIBRARIES = libdotconfpp.la
+ 
+ libdotconfpp_la_SOURCES = dotconfpp.cc mempool.cc
+ include_HEADERS = dotconfpp.h mempool.h
+ 
+-libdotconfpp_la_LDFLAGS = -version-info 0:3:0 -export-dynamic
++libdotconfpp_la_LDFLAGS = -no-undefined -version-info 0:3:0 -export-dynamic
+--- origsrc/dotconfpp-0.0.5/src/example1/Makefile.am	2003-05-15 00:10:26.000000000 +0900
++++ src/dotconfpp-0.0.5/src/example1/Makefile.am	2015-03-18 22:08:35.550609400 +0900
+@@ -1,9 +1,9 @@
+ EXTRA_DIST = example1.conf
+ 
+-MLIBS = ../.libs/libdotconfpp.a
++MLIBS = ../libdotconfpp.la
+ 
+-INCLUDES = -I. -I..
+-AM_CPPFLAGS = -D_REENTRANT -fno-exceptions -fno-rtti -fomit-frame-pointer -fexpensive-optimizations -pipe -Werror -Wall
++AM_CPPFLAGS = -I. -I.. -I$(top_srcdir)/src
++AM_CPPFLAGS += -D_REENTRANT -fno-exceptions -fno-rtti -fomit-frame-pointer -fexpensive-optimizations -pipe -Werror -Wall
+ 
+ noinst_PROGRAMS = example1
+ 
+--- origsrc/dotconfpp-0.0.5/src/example2/Makefile.am	2003-05-15 00:10:26.000000000 +0900
++++ src/dotconfpp-0.0.5/src/example2/Makefile.am	2015-03-18 22:08:59.317211000 +0900
+@@ -1,9 +1,9 @@
+ EXTRA_DIST = example2.conf modules.conf
+ 
+-MLIBS = ../.libs/libdotconfpp.a
++MLIBS = ../libdotconfpp.la
+ 
+-INCLUDES = -I. -I..
+-AM_CPPFLAGS = -D_REENTRANT -fno-exceptions -fno-rtti -fomit-frame-pointer -fexpensive-optimizations -pipe -Werror -Wall -Wno-unused -Wno-uninitialized
++AM_CPPFLAGS = -I. -I.. -I$(top_srcdir)/src
++AM_CPPFLAGS += -D_REENTRANT -fno-exceptions -fno-rtti -fomit-frame-pointer -fexpensive-optimizations -pipe -Werror -Wall -Wno-unused -Wno-uninitialized
+ 
+ noinst_PROGRAMS = example2
+ 
