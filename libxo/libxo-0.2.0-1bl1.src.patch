@@ -1,0 +1,108 @@
+--- origsrc/libxo-0.2.0/libxo/Makefile.am	2014-10-21 10:33:31.000000000 +0900
++++ src/libxo-0.2.0/libxo/Makefile.am	2015-03-19 23:34:42.249157900 +0900
+@@ -25,25 +25,6 @@ libxoinc_HEADERS = \
+ 
+ libxo_la_SOURCES = \
+     libxo.c
+-
+-man_MANS = \
+-    libxo.3 \
+-    xo_attr.3 \
+-    xo_create.3 \
+-    xo_emit.3 \
+-    xo_err.3 \
+-    xo_finish.3 \
+-    xo_flush.3 \
+-    xo_format.5 \
+-    xo_no_setlocale.3 \
+-    xo_open_container.3 \
+-    xo_open_list.3 \
+-    xo_parse_args.3 \
+-    xo_set_allocator.3 \
+-    xo_set_flags.3 \
+-    xo_set_info.3 \
+-    xo_set_options.3 \
+-    xo_set_style.3 \
+-    xo_set_writer.3
++libxo_la_LDFLAGS = -no-undefined
+ 
+ EXTRA_DIST =
+--- origsrc/libxo-0.2.0/libxo/libxo.c	2015-01-16 06:12:53.000000000 +0900
++++ src/libxo-0.2.0/libxo/libxo.c	2015-03-19 23:33:47.986462600 +0900
+@@ -24,6 +24,10 @@
+ #include <wctype.h>
+ #include <getopt.h>
+ 
++#if defined(__CYGWIN__)
++typedef int64_t quad_t;
++#endif
++
+ #include "xoconfig.h"
+ #include "xo.h"
+ #include "xoversion.h"
+--- origsrc/libxo-0.2.0/libxo/xo.h	2015-01-16 06:12:53.000000000 +0900
++++ src/libxo-0.2.0/libxo/xo.h	2015-03-19 23:37:19.605428200 +0900
+@@ -17,6 +17,8 @@
+ #ifndef INCLUDE_XO_H
+ #define INCLUDE_XO_H
+ 
++#include <stdarg.h>
++
+ /** Formatting types */
+ typedef unsigned xo_style_t;
+ #define XO_STYLE_TEXT	0	/** Generate text output */
+--- origsrc/libxo-0.2.0/libxo-config.in	2014-07-11 11:01:42.000000000 +0900
++++ src/libxo-0.2.0/libxo-config.in	2015-03-19 23:51:34.798118100 +0900
+@@ -77,34 +77,34 @@ while test $# -gt 0; do
+ 	;;
+ 
+     --cflags)
+-       	echo -I@LIBXO_INCLUDEDIR@ @LIBXO_CFLAGS@
++       	echo -I@XO_INCLUDEDIR@
+        	;;
+ 
+ 
+     --share)
+-       	echo @LIBXO_SHAREDIR@
++       	echo @XO_SHAREDIR@
+        	;;
+ 
+     --bindir)
+-       	echo @LIBXO_BINDIR@
++       	echo @XO_BINDIR@
+        	;;
+ 
+     --libdir)
+-       	echo @LIBXO_LIBDIR@
++       	echo @XO_LIBDIR@
+        	;;
+ 
+ 
+     --libs)
+         if [ "`uname`" = "Linux" ]
+ 	then
+-	    if [ "@LIBXO_LIBDIR@" = "-L/usr/lib" -o "@LIBXO_LIBDIR@" = "-L/usr/lib64" ]
++	    if [ "@XO_LIBDIR@" = "-L/usr/lib" -o "@XO_LIBDIR@" = "-L/usr/lib64" ]
+ 	    then
+-		echo @LIBXO_LIBS@ 
++		echo -lxo
+ 	    else
+-		echo -L@LIBXO_LIBDIR@ @LIBXO_LIBS@ 
++		echo -L@XO_LIBDIR@ -lxo
+ 	    fi
+ 	else
+-	    echo -L@LIBXO_LIBDIR@ @LIBXO_LIBS@ @WIN32_EXTRA_LIBADD@
++	    echo -L@XO_LIBDIR@ -lxo
+ 	fi
+        	;;
+ 
+--- origsrc/libxo-0.2.0/packaging/libxo.pc.in	2014-07-11 10:27:55.000000000 +0900
++++ src/libxo-0.2.0/packaging/libxo.pc.in	2015-03-19 23:49:55.609641500 +0900
+@@ -7,5 +7,5 @@ includedir=@includedir@
+ Name: libxo
+ Version: @VERSION@
+ Description: The XML Output Library
+-Libs: @LIBXO_LIBDIR@ @LIBXO_LIBS@
+-Cflags: @LIBXO_INCLUDEDIR@
++Libs: @XO_LIBDIR@ -lxo
++Cflags: @XO_INCLUDEDIR@
