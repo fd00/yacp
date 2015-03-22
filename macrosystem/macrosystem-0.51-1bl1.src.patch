@@ -1,0 +1,92 @@
+--- origsrc/macrosystem-0.51/Makefile.am	2000-01-31 11:08:23.000000000 +0900
++++ src/macrosystem-0.51/Makefile.am	2015-03-22 02:00:17.108933400 +0900
+@@ -5,3 +5,6 @@
+ ##
+ 
+ SUBDIRS = src examples
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = macrosystem.pc
+--- origsrc/macrosystem-0.51/configure.in	2000-03-15 05:16:41.000000000 +0900
++++ src/macrosystem-0.51/configure.in	2015-03-22 02:01:18.437058400 +0900
+@@ -4,8 +4,8 @@ dnl $Revision: 1.2 $
+ dnl $Date: 2000/03/14 20:16:41 $
+ dnl
+ 
+-AC_INIT(src/macrosystem.cc)
+-AM_INIT_AUTOMAKE(macrosystem, 0.51)
++AC_INIT([macrosystem], [0.51])
++AM_INIT_AUTOMAKE
+ 
+ dnl Checks for programs.
+ AC_PROG_CXX
+@@ -22,6 +22,6 @@ dnl Checks for typedefs, structures, and
+ 
+ dnl Checks for library functions.
+ 
+-AC_OUTPUT([Makefile src/Makefile examples/Makefile])
++AC_OUTPUT([Makefile src/Makefile examples/Makefile macrosystem.pc])
+ 
+ 
+--- origsrc/macrosystem-0.51/examples/Makefile.am	2000-02-03 16:40:45.000000000 +0900
++++ src/macrosystem-0.51/examples/Makefile.am	2015-03-22 02:01:42.854050600 +0900
+@@ -9,4 +9,4 @@ simple_SOURCES = simple.cc simple.txt
+ simple_LDADD = ../src/libmacrosystem.la
+ macrofile_SOURCES = macrofile.cc macrofile.ms
+ macrofile_LDADD = ../src/libmacrosystem.la
+-INCLUDES = -I../src
++AM_CPPFLAGS = -I$(top_srcdir)/src
+--- origsrc/macrosystem-0.51/macrosystem.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/macrosystem-0.51/macrosystem.pc.in	2015-03-22 01:59:46.827683400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: macrosystem
++Description: Powerful C++ template system
++Version: @VERSION@
++Libs: -L${libdir} -lmacrosystem
++Cflags: -I${includedir}
+--- origsrc/macrosystem-0.51/src/Makefile.am	2000-03-15 05:15:27.000000000 +0900
++++ src/macrosystem-0.51/src/Makefile.am	2015-03-22 01:56:09.135300600 +0900
+@@ -6,5 +6,5 @@
+ 
+ lib_LTLIBRARIES = libmacrosystem.la
+ libmacrosystem_la_SOURCES = macrosystem.cc macrosystem.hh
+-libmacrosystem_la_LDFLAGS = -version-info 0:1:0
++libmacrosystem_la_LDFLAGS = -no-undefined -version-info 0:1:0
+ include_HEADERS = macrosystem.hh
+--- origsrc/macrosystem-0.51/src/macrosystem.cc	2000-03-15 05:02:52.000000000 +0900
++++ src/macrosystem-0.51/src/macrosystem.cc	2015-03-22 01:56:47.605027200 +0900
+@@ -243,7 +243,7 @@ MacroSystem::parse(const string& _s)
+ 		    if(macro_type == QUERY_INV) {
+ #ifdef DEBUG
+ 		      debug << "Action: popping macro from query list" << endl;
+-#endif DEBUG
++#endif
+ 		      query_list.pop_back();
+ 		    }
+ 
+@@ -475,7 +475,7 @@ istream& macrosystem::operator>>(istream
+ ostream& macrosystem::operator<<(ostream& _os, MacroSystem& _ms)
+ {
+   MacroSystem::iterator i;
+-  for(i=_ms.begin(); i!=_ms.end(); i++)
++  for(i=_ms.begin(); !(i==_ms.end()); i++)
+     {
+       if(i->parse_on())
+ 	_os << i->name() << ":";
+--- origsrc/macrosystem-0.51/src/macrosystem.hh	2000-02-03 15:25:49.000000000 +0900
++++ src/macrosystem-0.51/src/macrosystem.hh	2015-03-22 01:57:07.058152200 +0900
+@@ -39,7 +39,8 @@
+ 
+ namespace macrosystem
+ {
+-
++  using namespace std;
++  
+   class MacroSystem;
+ 
+   /** Manipulation of subscripting.
