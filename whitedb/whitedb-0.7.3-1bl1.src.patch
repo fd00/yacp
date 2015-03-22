@@ -1,0 +1,131 @@
+--- origsrc/whitedb-0.7.3/Db/Makefile.am	2014-10-21 23:47:56.000000000 +0900
++++ src/whitedb-0.7.3/Db/Makefile.am	2015-03-22 16:22:06.000945300 +0900
+@@ -18,6 +18,6 @@ libDb_la_SOURCES = dbmem.c dbmem.h\
+   dbschema.c dbschema.h
+ 
+ if RAPTOR
+-AM_CFLAGS += `$(RAPTOR_CONFIG) --cflags`
++AM_CFLAGS += $(RAPTOR_CFLAGS)
+ endif
+ 
+--- origsrc/whitedb-0.7.3/Examples/Makefile.am	2014-10-21 23:47:56.000000000 +0900
++++ src/whitedb-0.7.3/Examples/Makefile.am	2015-03-22 16:31:14.167937500 +0900
+@@ -17,7 +17,7 @@ noinst_PROGRAMS = demo query
+ 
+ LIBDEPS = -lm   # dependency from libm round() should be removed
+ if RAPTOR
+-LIBDEPS += `$(RAPTOR_CONFIG) --libs`
++LIBDEPS += $(RAPTOR_LIBS)
+ endif
+ 
+ #if RAPTOR
+@@ -35,4 +35,4 @@ demo_SOURCES = demo.c
+ demo_LDADD = ../Main/libwgdb.la
+ 
+ query_SOURCES = query.c
+-query_LDADD = ../Main/libwgdb.la ../Test/libTest.la
++query_LDADD = ../Test/libTest.la ../Main/libwgdb.la
+--- origsrc/whitedb-0.7.3/Main/Makefile.am	2014-10-21 23:47:56.000000000 +0900
++++ src/whitedb-0.7.3/Main/Makefile.am	2015-03-22 16:28:41.898406300 +0900
+@@ -26,22 +26,22 @@ pkginclude_HEADERS = $(dbdir)/dbapi.h  $
+ 
+ LIBDEPS =
+ if RAPTOR
+-LIBDEPS += `$(RAPTOR_CONFIG) --libs`
++LIBDEPS += $(RAPTOR_LIBS)
+ endif
+ 
+ AM_LDFLAGS = $(LIBDEPS)
+ 
+ stresstest_LIBS=$(PTHREAD_LIBS)
+ stresstest_CFLAGS=$(AM_CFLAGS) $(PTHREAD_CFLAGS)
+-stresstest_LDFLAGS= -static $(PTHREAD_CFLAGS) $(LIBDEPS)
++stresstest_LDFLAGS=$(PTHREAD_CFLAGS) $(LIBDEPS)
+ stresstest_CC=$(PTHREAD_CC)
+ 
+-libwgdb_la_LDFLAGS =
++libwgdb_la_LDFLAGS = -no-undefined
+ 
+ # ----- all sources for the created programs -----
+ 
+ libwgdb_la_SOURCES =
+-libwgdb_la_LIBADD = $(dbdir)/libDb.la ${jsondir}/libjson.la
++libwgdb_la_LIBADD = $(dbdir)/libDb.la $(YAJL_LIBS)
+ if REASONER
+ libwgdb_la_LIBADD += $(parserdir)/libParser.la \
+   $(printerdir)/libPrinter.la $(reasonerdir)/libReasoner.la
+--- origsrc/whitedb-0.7.3/Makefile.am	2014-11-05 04:24:14.000000000 +0900
++++ src/whitedb-0.7.3/Makefile.am	2015-03-22 16:37:08.931609400 +0900
+@@ -7,7 +7,7 @@
+ #AUTOMAKE_OPTIONS = foreign
+ AUTOMAKE_OPTIONS = subdir-objects
+ 
+-SUBDIRS = Db json
++SUBDIRS = Db
+ SUBDIRS += Test Main Examples
+ if PYTHON
+ SUBDIRS += Python
+@@ -49,3 +49,6 @@ EXTRA_DIST = Bootstrap README INSTALL MA
+ # this conflicts with the distcheck target, so disabled for now.
+ #dist-hook:
+ #	cp $(top_distdir)/config-gcc.h $(top_distdir)/config.h
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = whitedb.pc
+--- origsrc/whitedb-0.7.3/Python/Makefile.am	2013-10-24 20:55:06.000000000 +0900
++++ src/whitedb-0.7.3/Python/Makefile.am	2015-03-22 16:21:48.099578100 +0900
+@@ -19,11 +19,11 @@ dbdir=../Db
+ 
+ LIBDEPS = -lm   # dependency from libm round() should be removed
+ if RAPTOR
+-LIBDEPS += `$(RAPTOR_CONFIG) --libs`
++LIBDEPS += $(RAPTOR_LIBS)
+ endif
+ 
+ AM_CPPFLAGS = $(PYTHON_INCLUDES) -I $(dbdir)
+-wgdb_la_LDFLAGS = -module -avoid-version $(LIBDEPS)
++wgdb_la_LDFLAGS = -no-undefined -module -avoid-version $(LIBDEPS)
+ 
+ # ----- all sources for the created programs -----
+ 
+--- origsrc/whitedb-0.7.3/configure.ac	2014-11-05 04:24:14.000000000 +0900
++++ src/whitedb-0.7.3/configure.ac	2015-03-22 16:47:26.642546900 +0900
+@@ -72,13 +72,15 @@ AM_CONDITIONAL(PYTHON, [test "x$PYTHON"
+ 
+ #Check for Raptor (optional)
+ 
+-AC_CHECK_PROGS(RAPTOR_CONFIG, raptor-config, [])
+-AM_CONDITIONAL(RAPTOR, [test "x$RAPTOR_CONFIG" != "x"])
+-if test "x$RAPTOR_CONFIG" != "x"
++PKG_CHECK_MODULES([RAPTOR], [raptor], [raptor=yes], [raptor=no])
++AM_CONDITIONAL(RAPTOR, [test "x$raptor" = "xyes"])
++if test "x$raptor" = "xyes"
+ then
+     AC_DEFINE([HAVE_RAPTOR], [1], [Compile with raptor rdf library])
+ fi
+ 
++PKG_CHECK_MODULES([YAJL], [yajl])
++
+ # lex and bison (needed for reasoner)
+ 
+ AC_PROG_LEX
+@@ -278,4 +280,5 @@ Test/Makefile
+ Main/Makefile
+ Examples/Makefile
+ Python/Makefile
++whitedb.pc
+ ])
+--- origsrc/whitedb-0.7.3/whitedb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/whitedb-0.7.3/whitedb.pc.in	2015-03-22 16:37:33.900359400 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: whitedb
++Description: WhiteDB memory database
++Version: @VERSION@
++Libs: -L${libdir} -lwgdb
++Cflags: -I${includedir}
++Requires: yajl
