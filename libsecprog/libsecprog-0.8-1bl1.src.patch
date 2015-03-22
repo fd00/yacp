@@ -1,0 +1,100 @@
+--- origsrc/libsecprog/Makefile.am	2004-04-22 22:13:40.000000000 +0900
++++ src/libsecprog/Makefile.am	2015-03-22 15:58:13.953093800 +0900
+@@ -5,9 +5,11 @@ MAINTAINERCLEANFILES = Makefile.in
+ lib_LTLIBRARIES		= libsecprog.la
+ libsecprog_la_SOURCES	= libsecprog.c
+ libsecprog_la_LIBADD	=
+-libsecprog_la_LDFLAGS	= -version-info 0:7:0
++libsecprog_la_LDFLAGS	= -no-undefined -version-info 0:7:0
+ 
+ nobase_include_HEADERS	= secprog.h
+ 
+ man_MANS		= secprog.3
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libsecprog.pc
+--- origsrc/libsecprog/configure.ac	2004-04-23 01:21:50.000000000 +0900
++++ src/libsecprog/configure.ac	2015-03-22 15:51:33.109343800 +0900
+@@ -1,7 +1,7 @@
+ dnl Process this file with autoconf to create configure.
+ 
+-AC_INIT(libsecprog.c)
+-AM_INIT_AUTOMAKE(libsecprog,0.8)
++AC_INIT([libsecprog], [0.8])
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ AC_PROG_CC
+@@ -12,4 +12,4 @@ AM_PROG_LIBTOOL
+ AC_SUBST(LIBTOOL_DEPS)
+ 
+ dnl Output the makefile
+-AC_OUTPUT(Makefile)
++AC_OUTPUT(Makefile libsecprog.pc)
+--- origsrc/libsecprog/libsecprog.c	2004-04-23 01:22:28.000000000 +0900
++++ src/libsecprog/libsecprog.c	2015-03-22 15:57:07.828093800 +0900
+@@ -36,7 +36,9 @@ extern int setlimits(sl_limit slim)
+ 		return(-1);
+ 
+ 	rst.rlim_max = slim.rss;
++#if defined(RLIMIT_RSS)
+ 	if(setrlimit(RLIMIT_RSS, &rst) < 0)
++#endif
+ 		return(-1);
+ 
+ 	rst.rlim_max = slim.nofile;
+@@ -44,11 +46,15 @@ extern int setlimits(sl_limit slim)
+ 		return(-1);
+ 
+ 	rst.rlim_max = slim.nproc;
++#if defined(RLIMIT_NPROC)
+ 	if(setrlimit(RLIMIT_NPROC, &rst) < 0)
++#endif
+ 		return(-1);
+ 
+ 	rst.rlim_max = slim.memlock;
++#if defined(RLIMIT_MEMLOCK)
+ 	if(setrlimit(RLIMIT_MEMLOCK, &rst) < 0)
++#endif
+ 		return(-1);
+ 
+ 	return(0);
+@@ -77,10 +83,10 @@ extern char *s_strncpy(char *dest, char
+ {
+ 	char *s;
+ 
+-	if(strlen(src) < n)
++	if(n == 0)
+ 	{
+ #ifdef SS_DEBUG
+-		syslog(LOG_USER|LOG_INFO, "SECSTRNCPY: size n bigger then strlen(src)\n");
++		syslog(LOG_USER|LOG_INFO, "SECSTRNCPY: size n is 0\n");
+ #endif
+ 		return(NULL);
+ 	}
+@@ -97,10 +103,10 @@ extern char *s_strncat(char *dest, char
+ {
+ 	char *s;
+ 
+-	if(strlen(src) < n)
++	if(n == 0)
+ 	{
+ #ifdef SS_DEBUG
+-		syslog(LOG_USER|LOG_INFO, "SECSTRNCPY: size n bigger then strlen(src)\n");
++		syslog(LOG_USER|LOG_INFO, "SECSTRNCAT: size n is 0\n");
+ #endif
+ 		return(NULL);
+ 	}
+--- origsrc/libsecprog/libsecprog.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsecprog/libsecprog.pc.in	2015-03-22 15:52:04.265593800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsecprog
++Description: Secure Replacements for Problematic C Functions
++Version: @VERSION@
++Libs: -L${libdir} -lsecprog
++Cflags: -I${includedir}
