@@ -1,0 +1,77 @@
+--- origsrc/libpwq-0.9.2/Makefile.am	2014-07-28 10:11:31.000000000 +0900
++++ src/libpwq-0.9.2/Makefile.am	2015-03-23 21:06:09.239966000 +0900
+@@ -19,19 +19,24 @@ endif
+ 
+ libpthread_workqueue_la_LIBADD = -lpthread -lrt
+ 
+-libpthread_workqueue_la_CFLAGS = -I./include -I./src -Wall -Wextra -Werror -D_XOPEN_SOURCE=600 -D__EXTENSIONS__ -D_GNU_SOURCE -std=c99 -fvisibility=hidden
++libpthread_workqueue_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -Wall -Wextra -Werror -D_XOPEN_SOURCE=600 -D__EXTENSIONS__ -D_GNU_SOURCE -std=c99 -fvisibility=hidden
++
++libpthread_workqueue_la_LDFLAGS = -no-undefined
+ 
+ check_PROGRAMS = test_api test_latency test_witem_cache
+ TESTS = test_api test_latency test_witem_cache
+ 
+ test_api_SOURCES = testing/api/test.c ./testing/api/posix_semaphore.h
+-test_api_CFLAGS = -I./include
++test_api_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/testing/api
+ test_api_LDADD = libpthread_workqueue.la -lpthread -lrt
+ 
+ test_latency_SOURCES = testing/latency/latency.c ./testing/latency/latency.h
+-test_latency_CFLAGS = -I./include
++test_latency_CFLAGS = -I$(top_srcdir)/include
+ test_latency_LDADD = libpthread_workqueue.la -lpthread -lrt
+ 
+ test_witem_cache_SOURCES = testing/witem_cache/test.c
+-test_witem_cache_CFLAGS = -I./include
++test_witem_cache_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/testing/api
+ test_witem_cache_LDADD = libpthread_workqueue.la -lpthread -lrt
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libpwq.pc
+--- origsrc/libpwq-0.9.2/configure.ac	2014-07-28 10:11:31.000000000 +0900
++++ src/libpwq-0.9.2/configure.ac	2015-03-23 21:05:56.193091000 +0900
+@@ -7,6 +7,6 @@ AM_INIT_AUTOMAKE([foreign subdir-objects
+ AC_CONFIG_SRCDIR([configure.ac])
+ AC_CONFIG_HEADERS([config.h])
+ AC_PROG_CC
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([Makefile libpwq.pc])
+ AM_CONDITIONAL([LINUX], [test `uname` = 'Linux'])
+ AC_OUTPUT
+--- origsrc/libpwq-0.9.2/libpwq.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpwq-0.9.2/libpwq.pc.in	2015-03-23 21:06:25.739966000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpwq
++Description: POSIX threads workqueue library
++Version: @VERSION@
++Libs: -L${libdir} -lpthread_workqueue
++Cflags: -I${includedir}
+--- origsrc/libpwq-0.9.2/src/debug.h	2014-07-28 10:11:31.000000000 +0900
++++ src/libpwq-0.9.2/src/debug.h	2015-03-23 20:53:54.270239400 +0900
+@@ -31,7 +31,7 @@ extern char *WORKQUEUE_DEBUG_IDENT;
+ # define THREAD_ID ((pid_t)  syscall(__NR_gettid))
+ #elif defined(__sun)
+ # define THREAD_ID (pthread_self())
+-#elif defined(__FreeBSD__)  /* FIXME -- could use thr_self() */
++#elif defined(__FreeBSD__)  || defined(__CYGWIN__) /* FIXME -- could use thr_self() */
+ # define THREAD_ID (0)
+ #elif defined(_WIN32)
+ # define THREAD_ID (int)(GetCurrentThreadId())
+--- origsrc/libpwq-0.9.2/src/posix/manager.c	2014-07-28 10:11:31.000000000 +0900
++++ src/libpwq-0.9.2/src/posix/manager.c	2015-03-23 20:57:00.923559800 +0900
+@@ -866,6 +866,9 @@ get_runqueue_length(void)
+ 
+     /* Fallback to using the 1-minute load average if proper run queue length can't be determined. */
+ 
++#if defined(__CYGWIN__)
++#define getloadavg(l, n) (-1)
++#endif
+     /* TODO: proper error handling */
+     if (getloadavg(&loadavg, 1) != 1) {
+         dbg_perror("getloadavg(3)");
