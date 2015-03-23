@@ -1,0 +1,77 @@
+--- origsrc/libundo-libundo-0_8_2/Makefile.am	2005-05-01 08:01:30.000000000 +0900
++++ src/libundo-libundo-0_8_2/Makefile.am	2015-03-23 20:23:03.703826700 +0900
+@@ -1,6 +1,9 @@
+ EXTRA_DIST = ChangeLog
+ SUBDIRS = doc include src test
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libundo.pc
++
+ changelog :
+ 	cvs2cl.pl
+ 
+--- origsrc/libundo-libundo-0_8_2/configure.in	2005-05-01 08:01:30.000000000 +0900
++++ src/libundo-libundo-0_8_2/configure.in	2015-03-23 20:22:39.969451700 +0900
+@@ -1,5 +1,5 @@
+-AC_INIT(include/undo.h)
+-AM_INIT_AUTOMAKE(libundo, 0.8.2)
++AC_INIT([libunod], [0.8.2])
++AM_INIT_AUTOMAKE
+ 
+ AC_SUBST(UNDO_CURRENT)
+ AC_SUBST(UNDO_REVISION)
+@@ -31,4 +31,4 @@ fi
+ 
+ AM_PROG_LIBTOOL
+ 
+-AC_OUTPUT([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile])
++AC_OUTPUT([Makefile doc/Makefile include/Makefile src/Makefile test/Makefile libundo.pc])
+--- origsrc/libundo-libundo-0_8_2/doc/Makefile.am	2005-05-01 08:01:30.000000000 +0900
++++ src/libundo-libundo-0_8_2/doc/Makefile.am	2015-03-23 20:19:21.173553200 +0900
+@@ -1,3 +1,2 @@
+-docdir = $(prefix)/doc/libundo
+ doc_DATA = introduction.html roadmap.html libundo.png undo.png
+ EXTRA_DIST = $(doc_DATA)
+--- origsrc/libundo-libundo-0_8_2/libundo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libundo-libundo-0_8_2/libundo.pc.in	2015-03-23 20:21:55.031951700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libundo
++Description: Simple, easy-to-use library which manages recording and playback of undo/redo information for application developers
++Version: @VERSION@
++Libs: -L${libdir} -lundo
++Cflags: -I${includedir}
+--- origsrc/libundo-libundo-0_8_2/test/Makefile.am	2005-05-01 08:01:30.000000000 +0900
++++ src/libundo-libundo-0_8_2/test/Makefile.am	2015-03-23 20:12:39.953826700 +0900
+@@ -1,4 +1,4 @@
+-INCLUDES = -I${top_srcdir}/include
++AM_CPPFLAGS = -I${top_srcdir}/include
+ 
+ TESTS = test1$(EXEEXT) \
+ 	test2$(EXEEXT) \
+@@ -13,14 +13,13 @@ TESTS = test1$(EXEEXT) \
+ 	test11$(EXEEXT) \
+ 	test12$(EXEEXT)
+ 
+-noinst_LIBRARIES = libundo_test.a
+-libundo_test_a_SOURCES = undo_test.h undo_test.c
++noinst_LTLIBRARIES = libundo_test.la
++libundo_test_la_SOURCES = undo_test.h undo_test.c
+ 
+ check_PROGRAMS = $(TESTS)
++test1_LDADD = libundo_test.la
++test4_LDADD = libundo_test.la
++test5_LDADD = libundo_test.la
++test6_LDADD = libundo_test.la
+ 
+-AM_LDFLAGS = libundo_test.a ${top_srcdir}/src/libundo.la
+-
+-$(TESTS) : $(noinst_LIBRARIES)
+-
+-$(libundo_test_a_OBJECTS) : ${top_srcdir}/include/undoP.h \
+-	${top_srcdir}/include/undo.h
++AM_LDFLAGS = ${top_builddir}/src/libundo.la
