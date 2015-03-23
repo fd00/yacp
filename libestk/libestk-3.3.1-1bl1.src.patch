@@ -1,0 +1,40 @@
+--- origsrc/libestk-3.3.1/CMakeLists.txt	2014-08-24 18:49:22.000000000 +0900
++++ src/libestk-3.3.1/CMakeLists.txt	2015-03-23 15:45:46.773178500 +0900
+@@ -22,7 +22,12 @@ set_target_properties(${ESTK}
+ 	PROPERTIES VERSION ${VERSION}
+ 	SOVERSION ${MAJOR})
+ 
+-target_link_libraries(${ESTK} m GLEW SDL SDL_image SDL_mixer)
++include(FindPkgConfig)
++pkg_check_modules(GLEW glew)
++pkg_check_modules(SDL sdl)
++pkg_check_modules(SDL_IMAGE SDL_image)
++pkg_check_modules(SDL_MIXER SDL_mixer)
++target_link_libraries(${ESTK} m ${GLEW_LIBRARIES} ${SDL_LIBRARIES} ${SDL_IMAGE_LIBRARIES} ${SDL_MIXER_LIBRARIES})
+ 
+ # Demos
+ # =====
+@@ -49,3 +54,10 @@ install(FILES
+ 	src/estk.h
+ 	DESTINATION include)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libestk.pc.in ${CMAKE_BINARY_DIR}/libestk.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libestk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libestk-3.3.1/libestk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libestk-3.3.1/libestk.pc.in	2015-03-23 15:45:12.898178500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libestk
++Description: OpenGL ES Toolkit
++Version: @VERSION@
++Libs: -L${libdir} -lestk3
++Cflags: -I${includedir}
