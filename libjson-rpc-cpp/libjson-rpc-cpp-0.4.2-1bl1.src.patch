@@ -1,0 +1,120 @@
+--- origsrc/libjson-rpc-cpp-0.4.2/CMakeLists.txt	2015-01-22 03:56:33.000000000 +0900
++++ src/libjson-rpc-cpp-0.4.2/CMakeLists.txt	2015-03-25 08:06:51.943640100 +0900
+@@ -21,6 +21,11 @@ SET(HTTP_CLIENT YES CACHE BOOL "Include
+ SET(COMPILE_TESTS YES CACHE BOOL "Compile test framework")
+ SET(COMPILE_STUBGEN YES CACHE BOOL "Compile the stubgenerator")
+ SET(COMPILE_EXAMPLES YES CACHE BOOL "Compile example programs")
++OPTION(ENABLE_STATIC "enable static" OFF)
++
++IF(CYGWIN)
++  include_directories(/usr/include/jsoncpp)
++ENDIF()
+ 
+ IF(WIN32)
+ 	include_directories(${CMAKE_SOURCE_DIR}/win32-deps/include)
+--- origsrc/libjson-rpc-cpp-0.4.2/src/jsonrpccpp/CMakeLists.txt	2015-01-22 03:56:33.000000000 +0900
++++ src/libjson-rpc-cpp-0.4.2/src/jsonrpccpp/CMakeLists.txt	2015-03-25 07:52:51.429440800 +0900
+@@ -59,31 +59,47 @@ IF(HTTP_SERVER)
+ ENDIF()
+ 
+ add_library(jsonrpccommon SHARED ${jsonrpc_source_common} ${jsonrpc_header} ${jsonrpc_helper_source_common})
+-add_library(jsonrpccommonStatic STATIC ${jsonrpc_source_common} ${jsonrpc_header} ${jsonrpc_helper_source_common})
++IF(ENABLE_STATIC)
++    add_library(jsonrpccommonStatic STATIC ${jsonrpc_source_common} ${jsonrpc_header} ${jsonrpc_helper_source_common})
++ENDIF()
+ target_link_libraries(jsonrpccommon ${JSONCPP_LIBRARIES})
+-target_link_libraries(jsonrpccommonStatic ${JSONCPP_LIBRARIES})
+-set_target_properties(jsonrpccommonStatic PROPERTIES OUTPUT_NAME jsonrpccpp-common)
++IF(ENABLE_STATIC)
++    target_link_libraries(jsonrpccommonStatic ${JSONCPP_LIBRARIES})
++    set_target_properties(jsonrpccommonStatic PROPERTIES OUTPUT_NAME jsonrpccpp-common)
++ENDIF()
+ set_target_properties(jsonrpccommon PROPERTIES OUTPUT_NAME jsonrpccpp-common)
+ 
+ 
+ add_library(jsonrpcclient SHARED ${jsonrpc_source_client} ${jsonrpc_header} ${jsonrpc_header_client} ${client_connector_source})
+-add_library(jsonrpcclientStatic STATIC ${jsonrpc_source_client} ${jsonrpc_header} ${jsonrpc_header_client} ${client_connector_source})
++IF(ENABLE_STATIC)
++    add_library(jsonrpcclientStatic STATIC ${jsonrpc_source_client} ${jsonrpc_header} ${jsonrpc_header_client} ${client_connector_source})
++ENDIF()
+ target_link_libraries(jsonrpcclient jsonrpccommon ${client_connector_libs})
+-target_link_libraries(jsonrpcclientStatic jsonrpccommonStatic ${client_connector_libs})
+-set_target_properties(jsonrpcclientStatic PROPERTIES OUTPUT_NAME jsonrpccpp-client)
++IF(ENABLE_STATIC)
++    target_link_libraries(jsonrpcclientStatic jsonrpccommonStatic ${client_connector_libs})
++    set_target_properties(jsonrpcclientStatic PROPERTIES OUTPUT_NAME jsonrpccpp-client)
++ENDIF()
+ set_target_properties(jsonrpcclient PROPERTIES OUTPUT_NAME jsonrpccpp-client)
+ 
+ 
+ add_library(jsonrpcserver SHARED ${jsonrpc_source_server} ${jsonrpc_header} ${jsonrpc_header_server} ${server_connector_source})
+-add_library(jsonrpcserverStatic STATIC ${jsonrpc_source_server} ${jsonrpc_header} ${jsonrpc_header_server} ${server_connector_source})
++IF(ENABLE_STATIC)
++    add_library(jsonrpcserverStatic STATIC ${jsonrpc_source_server} ${jsonrpc_header} ${jsonrpc_header_server} ${server_connector_source})
++ENDIF()
+ target_link_libraries(jsonrpcserver jsonrpccommon ${server_connector_libs})
+-target_link_libraries(jsonrpcserverStatic jsonrpccommonStatic ${server_connector_libs})
+-set_target_properties(jsonrpcserverStatic PROPERTIES OUTPUT_NAME jsonrpccpp-server)
++IF(ENABLE_STATIC)
++    target_link_libraries(jsonrpcserverStatic jsonrpccommonStatic ${server_connector_libs})
++    set_target_properties(jsonrpcserverStatic PROPERTIES OUTPUT_NAME jsonrpccpp-server)
++ENDIF()
+ set_target_properties(jsonrpcserver PROPERTIES OUTPUT_NAME jsonrpccpp-server)
+ 
+ 
+ set(VERSION_STRING ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
+-set_target_properties(jsonrpccommon jsonrpccommonStatic jsonrpcclient jsonrpcclientStatic jsonrpcserver jsonrpcserverStatic PROPERTIES VERSION "${VERSION_STRING}" SOVERSION "${SO_VERSION}")
++IF(ENABLE_STATIC)
++    set_target_properties(jsonrpccommon jsonrpccommonStatic jsonrpcclient jsonrpcclientStatic jsonrpcserver jsonrpcserverStatic PROPERTIES VERSION "${VERSION_STRING}" SOVERSION "${SO_VERSION}")
++ELSE()
++    set_target_properties(jsonrpccommon jsonrpcclient jsonrpcserver PROPERTIES VERSION "${VERSION_STRING}" SOVERSION "${SO_VERSION}")
++ENDIF()
+ 
+ install(FILES ${jsonrpc_header}                 DESTINATION include/jsonrpccpp)
+ install(FILES ${jsonrpc_header_common}          DESTINATION include/jsonrpccpp/common)
+@@ -100,7 +116,14 @@ IF(WIN32)
+     install(DIRECTORY ${CMAKE_SOURCE_DIR}/win32-deps/include DESTINATION .)
+ ENDIF()
+ 
+-install(TARGETS jsonrpccommon jsonrpccommonStatic jsonrpcclient jsonrpcclientStatic jsonrpcserver jsonrpcserverStatic
++IF(ENABLE_STATIC)
++    install(TARGETS jsonrpccommon jsonrpccommonStatic jsonrpcclient jsonrpcclientStatic jsonrpcserver jsonrpcserverStatic
+                       LIBRARY DESTINATION lib
+                       ARCHIVE DESTINATION lib
+                       RUNTIME DESTINATION bin)
++ELSE()
++    install(TARGETS jsonrpccommon jsonrpcclient jsonrpcserver
++                      LIBRARY DESTINATION lib
++                      ARCHIVE DESTINATION lib
++                      RUNTIME DESTINATION bin)
++ENDIF()
+--- origsrc/libjson-rpc-cpp-0.4.2/src/jsonrpccpp/common/procedure.h	2015-01-22 03:56:33.000000000 +0900
++++ src/libjson-rpc-cpp-0.4.2/src/jsonrpccpp/common/procedure.h	2015-03-25 07:58:40.245379100 +0900
+@@ -12,6 +12,7 @@
+ 
+ #include <string>
+ #include <map>
++#include <vector>
+ 
+ #include "jsonparser.h"
+ #include "specification.h"
+--- origsrc/libjson-rpc-cpp-0.4.2/src/stubgenerator/CMakeLists.txt	2015-01-22 03:56:33.000000000 +0900
++++ src/libjson-rpc-cpp-0.4.2/src/stubgenerator/CMakeLists.txt	2015-03-25 07:53:42.924558600 +0900
+@@ -5,7 +5,7 @@ list(REMOVE_ITEM libstubgen_source "${CM
+ find_package(Argtable REQUIRED)
+ 
+ IF(COMPILE_TESTS)
+-    add_library(stubgen STATIC ${libstubgen_source})
++    add_library(stubgen ${libstubgen_source})
+     target_link_libraries(stubgen jsonrpccommon ${ARGTABLE_LIBRARIES})
+ ENDIF()
+ 
+@@ -13,7 +13,7 @@ add_executable(jsonrpcstub ${jsonrpcstub
+ target_link_libraries(jsonrpcstub jsonrpccommon ${ARGTABLE_LIBRARIES})
+ 
+ #Generate manpage
+-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
++IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR CYGWIN)
+     configure_file("${CMAKE_SOURCE_DIR}/doc/manpage.in" "${CMAKE_BINARY_DIR}/manpage" @ONLY)
+     add_custom_command(OUTPUT jsonrpcstub.1.gz
+                    COMMAND gzip -c "${CMAKE_BINARY_DIR}/manpage" > ${CMAKE_BINARY_DIR}/jsonrpcstub.1.gz
