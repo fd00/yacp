@@ -1,0 +1,82 @@
+--- origsrc/libdash-2.2/libdash/CMakeLists.txt	2013-04-03 18:40:41.000000000 +0900
++++ src/libdash-2.2/libdash/CMakeLists.txt	2015-03-24 17:57:21.114468700 +0900
+@@ -1,14 +1,16 @@
+ cmake_minimum_required(VERSION 2.8)
+ 
+-include_directories(libxml2/include)
+-include_directories(libdash/include)
+-include_directories(sdl/include)
+-include_directories(zlib/include)
+-include_directories(iconv/include)
+-
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+ 
+ add_subdirectory(libdash)
+-add_subdirectory(libdash_networkpart_test)
+\ No newline at end of file
++add_subdirectory(libdash_networkpart_test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "2.2")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libdash.pc.in ${CMAKE_BINARY_DIR}/libdash.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libdash.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libdash-2.2/libdash/libdash/CMakeLists.txt	2013-04-03 18:40:41.000000000 +0900
++++ src/libdash-2.2/libdash/libdash/CMakeLists.txt	2015-03-24 17:53:58.297085900 +0900
+@@ -6,9 +6,14 @@ find_package(CURL REQUIRED)
+ 
+ 
+ include_directories(include)
+-
++include_directories(${LIBXML2_INCLUDE_DIR})
+ 
+ file(GLOB_RECURSE libdash_source *.cpp)
+ 
+ add_library(dash SHARED ${libdash_source})
+-target_link_libraries(dash ${CURL_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBXML2_LIBRARIES})
+\ No newline at end of file
++target_link_libraries(dash ${CURL_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBXML2_LIBRARIES})
++set_target_properties(dash PROPERTIES SOVERSION 0)
++
++file(GLOB libdash_header include/*.h)
++install(FILES ${libdash_header} DESTINATION include/libdash)
++install(TARGETS dash RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/libdash-2.2/libdash/libdash/include/libdash.h	2013-04-03 18:40:41.000000000 +0900
++++ src/libdash-2.2/libdash/libdash/include/libdash.h	2015-03-24 17:44:37.642789000 +0900
+@@ -18,7 +18,7 @@
+ 
+ #include "config.h"
+ 
+-#if defined _WIN32 || defined _WIN64
++#if defined _WIN32 || defined _WIN64 || defined(__CYGWIN__)
+ #else
+ #define __declspec(dllexport)
+ #define __cdecl
+--- origsrc/libdash-2.2/libdash/libdash.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdash-2.2/libdash/libdash.pc.in	2015-03-24 17:56:48.348843700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdash
++Description: MPEG-DASH Access Library
++Version: @VERSION@
++Libs: -L${libdir} -ldash
++Cflags: -I${includedir}
+--- origsrc/libdash-2.2/libdash/libdash_networkpart_test/CMakeLists.txt	2013-04-03 18:40:41.000000000 +0900
++++ src/libdash-2.2/libdash/libdash_networkpart_test/CMakeLists.txt	2015-03-24 17:49:15.363492200 +0900
+@@ -4,4 +4,6 @@ cmake_minimum_required(VERSION 2.8)
+ file(GLOB_RECURSE networkpart_source *.cpp)
+ 
+ add_executable(libdash_networkpart_test ${networkpart_source})
+-target_link_libraries(libdash_networkpart_test dash)
+\ No newline at end of file
++target_link_libraries(libdash_networkpart_test dash)
++
++include_directories(${CMAKE_SOURCE_DIR}/libdash/include)
