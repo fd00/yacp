@@ -1,0 +1,70 @@
+--- origsrc/keybinder-0.3.0/configure.ac	2012-06-18 01:24:55.000000000 +0900
++++ src/keybinder-0.3.0/configure.ac	2015-03-25 01:53:11.231789100 +0900
+@@ -119,7 +119,7 @@ if test "x$enable_python" != "xno"; then
+ 
+ 	PKG_CHECK_MODULES(PYGTK,
+ 		pygtk-2.0				>= 2.12
+-		pygobject-2.0			>= 2.15.3
++		pygobject-3.0			>= 2.15.3
+ 	)
+ 	AC_SUBST(PYGTK_CFLAGS)
+ 	AC_SUBST(PYGTK_LIBS)
+@@ -181,6 +181,7 @@ if test "x$enable_lua" != "xno"; then
+     LUA_VERSION=[5.1]
+     AC_SUBST(LUA_VERSION)
+     AC_SUBST(LUA_INCLUDE)
++    PKG_CHECK_MODULES([LUA], [lua])
+     have_lua="yes"
+   else
+     have_lua="no"
+--- origsrc/keybinder-0.3.0/libkeybinder/Makefile.am	2012-06-18 01:24:55.000000000 +0900
++++ src/keybinder-0.3.0/libkeybinder/Makefile.am	2015-03-25 01:49:17.008156300 +0900
+@@ -1,4 +1,4 @@
+-INCLUDES = $(GTK_CFLAGS)
++AM_CPPFLAGS = $(GTK_CFLAGS)
+ 
+ AM_CFLAGS = -Wall
+ 
+@@ -9,7 +9,7 @@ LIBKEYBINDER_VERSION = $(LT_CURRENT):$(L
+ keybinderdir = $(libdir)
+ keybinder_LTLIBRARIES = libkeybinder.la
+ libkeybinder_la_SOURCES = bind.c
+-libkeybinder_la_LDFLAGS = $(GTK_LIBS)  -version-info $(LIBKEYBINDER_VERSION)
++libkeybinder_la_LDFLAGS = -no-undefined $(GTK_LIBS) -version-info $(LIBKEYBINDER_VERSION)
+ include_HEADERS = keybinder.h
+ 
+ pkgconffile = $(PACKAGE).pc
+--- origsrc/keybinder-0.3.0/lua-keybinder/Makefile.am	2012-06-18 01:24:55.000000000 +0900
++++ src/keybinder-0.3.0/lua-keybinder/Makefile.am	2015-03-25 01:47:33.059914100 +0900
+@@ -1,9 +1,9 @@
+-INCLUDES = $(LUA_INCLUDE) $(GTK_CFLAGS) -I../libkeybinder
++AM_CPPFLAGS = $(LUA_CFLAGS) $(GTK_CFLAGS) -I$(top_srcdir)/libkeybinder
+ 
+ AM_CFLAGS = -Wall
+ 
+ luakeybinderdir = $(libdir)/lua/$(LUA_VERSION)
+ luakeybinder_LTLIBRARIES = keybinder.la
+-keybinder_la_LDFLAGS = -module -avoid-version
+-keybinder_la_LIBADD = ../libkeybinder/libkeybinder.la $(LUA_LIB)
++keybinder_la_LDFLAGS = -no-undefined -module -avoid-version
++keybinder_la_LIBADD = ../libkeybinder/libkeybinder.la $(LUA_LIBS)
+ keybinder_la_SOURCES = lkeybinder.c
+--- origsrc/keybinder-0.3.0/python-keybinder/Makefile.am	2012-06-18 01:24:55.000000000 +0900
++++ src/keybinder-0.3.0/python-keybinder/Makefile.am	2015-03-25 01:56:38.856789100 +0900
+@@ -1,12 +1,12 @@
+-INCLUDES = $(PYTHON_INCLUDES) $(PYGTK_CFLAGS) -I$(top_srcdir)/libkeybinder
++AM_CPPFLAGS = $(PYTHON_INCLUDES) $(PYGTK_CFLAGS) -I$(top_srcdir)/libkeybinder
+ 
+ AM_CFLAGS = -Wall
+ 
+ _keybinderdir = $(pyexecdir)/keybinder
+ _keybinder_LTLIBRARIES = _keybinder.la
+-_keybinder_la_CPPFLAGS = $(X_CFLAGS) $(PYEXTRAFLAGS)
+-_keybinder_la_LDFLAGS = -module -avoid-version -export-symbols-regex init_keybinder $(X_LDFLAGS)
+-_keybinder_la_LIBADD = ../libkeybinder/libkeybinder.la $(PYGTK_LIBS)
++_keybinder_la_CPPFLAGS = $(X_CFLAGS) $(PYEXTRAFLAGS) $(AM_CPPFLAGS)
++_keybinder_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols-regex init_keybinder $(X_LDFLAGS)
++_keybinder_la_LIBADD = ../libkeybinder/libkeybinder.la $(PYGTK_LIBS) -lpython$(PYTHON_VERSION)
+ _keybinder_la_SOURCES = _keybindermodule.c
+ 
+ nodist__keybinder_la_SOURCES = _keybinder.c
