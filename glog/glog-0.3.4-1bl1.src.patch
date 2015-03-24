@@ -1,0 +1,109 @@
+--- origsrc/glog-0.3.4/Makefile.am	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/Makefile.am	2015-03-25 08:28:04.449044600 +0900
+@@ -40,7 +40,7 @@ gloginclude_HEADERS = src/glog/log_sever
+ nodist_gloginclude_HEADERS = src/glog/logging.h src/glog/raw_logging.h src/glog/vlog_is_on.h src/glog/stl_logging.h
+ noinst_HEADERS = src/glog/logging.h.in src/glog/raw_logging.h.in src/glog/vlog_is_on.h.in src/glog/stl_logging.h.in
+ 
+-docdir = $(prefix)/share/doc/$(PACKAGE)-$(VERSION)
++docdir = $(prefix)/share/doc/$(PACKAGE)
+ ## This is for HTML and other documentation you want to install.
+ ## Add your documentation files (in doc/) in addition to these
+ ## top-level boilerplate files.  Also add a TODO file if you have one.
+@@ -200,7 +200,7 @@ nodist_libglog_la_SOURCES = $(nodist_glo
+ 
+ libglog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(MINGW_CFLAGS) \
+                       $(AM_CXXFLAGS) -DNDEBUG
+-libglog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
++libglog_la_LDFLAGS = -no-undefined $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
+ libglog_la_LIBADD = $(COMMON_LIBS)
+ 
+ ## The location of the windows project file for each binary we make
+--- origsrc/glog-0.3.4/src/demangle_unittest.cc	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/src/demangle_unittest.cc	2015-03-25 08:39:01.574100200 +0900
+@@ -120,7 +120,7 @@ TEST(Demangle, FromFile) {
+ 
+ int main(int argc, char **argv) {
+ #ifdef HAVE_LIB_GFLAGS
+-  ParseCommandLineFlags(&argc, &argv, true);
++  gflags::ParseCommandLineFlags(&argc, &argv, true);
+ #endif
+   InitGoogleTest(&argc, argv);
+ 
+--- origsrc/glog-0.3.4/src/demangle_unittest.sh	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/src/demangle_unittest.sh	2015-03-25 08:29:31.872385000 +0900
+@@ -41,7 +41,12 @@ die () {
+ }
+ 
+ BINDIR=".libs"
++if test `uname -o` != Cygwin
++then
+ LIBGLOG="$BINDIR/libglog.so"
++else
++LIBGLOG="$BINDIR/cygglog-0.dll"
++fi
+ 
+ DEMANGLER="$BINDIR/demangle_unittest"
+ 
+--- origsrc/glog-0.3.4/src/googletest.h	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/src/googletest.h	2015-03-25 08:34:13.219266400 +0900
+@@ -521,7 +521,7 @@ class Thread {
+   virtual ~Thread() {}
+ 
+   void SetJoinable(bool) {}
+-#if defined(OS_WINDOWS) || defined(OS_CYGWIN)
++#if defined(OS_WINDOWS)
+   void Start() {
+     handle_ = CreateThread(NULL,
+                            0,
+@@ -554,7 +554,7 @@ class Thread {
+     return NULL;
+   }
+ 
+-#if defined(OS_WINDOWS) || defined(OS_CYGWIN)
++#if defined(OS_WINDOWS)
+   HANDLE handle_;
+   DWORD th_;
+ #else
+--- origsrc/glog-0.3.4/src/logging_unittest.cc	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/src/logging_unittest.cc	2015-03-25 08:38:01.966473500 +0900
+@@ -176,7 +176,7 @@ BENCHMARK(BM_vlog);
+ int main(int argc, char **argv) {
+   FLAGS_colorlogtostderr = false;
+ #ifdef HAVE_LIB_GFLAGS
+-  ParseCommandLineFlags(&argc, &argv, true);
++  gflags::ParseCommandLineFlags(&argc, &argv, true);
+ #endif
+   // Make sure stderr is not buffered as stderr seems to be buffered
+   // on recent windows.
+@@ -305,7 +305,7 @@ void TestRawLogging() {
+   string* foo = new string("foo ");
+   string huge_str(50000, 'a');
+ 
+-  FlagSaver saver;
++  gflags::FlagSaver saver;
+ 
+   // Check that RAW loggging does not use mallocs.
+   NewHook new_hook;
+@@ -360,7 +360,7 @@ void LogWithLevels(int v, int severity,
+           "Test: v=%d stderrthreshold=%d logtostderr=%d alsologtostderr=%d",
+           v, severity, err, alsoerr);
+ 
+-  FlagSaver saver;
++  gflags::FlagSaver saver;
+ 
+   FLAGS_v = v;
+   FLAGS_stderrthreshold = severity;
+--- origsrc/glog-0.3.4/src/utilities.cc	2015-03-11 13:02:27.000000000 +0900
++++ src/glog-0.3.4/src/utilities.cc	2015-03-25 08:31:16.746405500 +0900
+@@ -262,9 +262,9 @@ pid_t GetTID() {
+ #endif  // OS_LINUX || OS_MACOSX
+ 
+   // If gettid() could not be used, we use one of the following.
+-#if defined OS_LINUX
++#if defined OS_LINUX || defined OS_CYGWIN
+   return getpid();  // Linux:  getpid returns thread ID when gettid is absent
+-#elif defined OS_WINDOWS || defined OS_CYGWIN
++#elif defined OS_WINDOWS
+   return GetCurrentThreadId();
+ #else
+   // If none of the techniques above worked, we use pthread_self().
