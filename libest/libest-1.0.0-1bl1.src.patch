@@ -1,0 +1,84 @@
+--- origsrc/libest-1.0.0/Makefile.am	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/Makefile.am	2015-03-24 18:22:57.450406200 +0900
+@@ -2,3 +2,6 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ SUBDIRS = src example/client example/client-simple example/server example/proxy 
+ EXTRA_DIST = autogen.sh example/util LICENSE
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libest.pc
+--- origsrc/libest-1.0.0/configure.ac	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/configure.ac	2015-03-24 18:23:07.710171900 +0900
+@@ -19,6 +19,9 @@ case $host in
+     		AC_DEFINE([IS_FREEBSD],[1])
+                 AC_DEFINE([DISABLE_BACKTRACE],[1])
+             	;;
++        *cygwin*)
++            AC_DEFINE([DISABLE_BACKTRACE],[1])
++            ;;
+ esac
+ AC_MSG_CHECKING(Host OS is FreeBSD)
+ AM_CONDITIONAL([FREEBSD], [test x$OS_FREEBSD = xtrue])
+@@ -67,5 +70,5 @@ AC_PREFIX_DEFAULT([/usr/local/est])
+ 
+ cp confdefs.h est_config.h
+ 
+-AC_CONFIG_FILES([Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/server/Makefile example/proxy/Makefile])
++AC_CONFIG_FILES([Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/server/Makefile example/proxy/Makefile libest.pc])
+ AC_OUTPUT
+--- origsrc/libest-1.0.0/example/util/simple_server.c	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/example/util/simple_server.c	2015-03-24 18:21:18.330289000 +0900
+@@ -23,7 +23,7 @@
+ #include <arpa/inet.h>
+ #include <est.h>
+ #include <signal.h>
+-
++#include <sys/socket.h>
+ 
+ 
+ volatile int stop_flag = 0;
+--- origsrc/libest-1.0.0/libest.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libest-1.0.0/libest.pc.in	2015-03-24 18:22:36.497281200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libest
++Description: Library that implements RFC 7030 (Enrollment over Secure Transport)
++Version: @VERSION@
++Libs: -L${libdir} -lest
++Cflags: -I${includedir}
+--- origsrc/libest-1.0.0/src/est/Makefile.am	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/src/est/Makefile.am	2015-03-24 18:16:45.372281200 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES = libest.la
+ AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. 
+-libest_la_LDFLAGS = -version-info 1:0:0
++libest_la_LDFLAGS = -no-undefined -version-info 1:0:0
+ libest_la_SOURCES = est.c est_client.c est_server.c est_server_http.c \
+ 		    	est_proxy.c est_client_http.c est_ossl_util.c 
+ library_includedir=$(includedir)/est
+--- origsrc/libest-1.0.0/src/est/est_client_http.c	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/src/est/est_client_http.c	2015-03-24 18:18:46.459195300 +0900
+@@ -46,7 +46,9 @@
+ #include "est_server_http.h"
+ #include "est_ossl_util.h"
+ 
++#if !defined(INT_MAX)
+ #define INT_MAX         (  2147483647 )
++#endif
+ 
+ #ifdef RETRY_AFTER_DELAY_TIME_SUPPORT
+ 
+--- origsrc/libest-1.0.0/src/est/est_server_http.c	2014-04-18 09:15:33.000000000 +0900
++++ src/libest-1.0.0/src/est/est_server_http.c	2015-03-24 18:19:32.381070300 +0900
+@@ -78,6 +78,7 @@
+ #include <limits.h>
+ #include <stddef.h>
+ #include <stdio.h>
++#include <sys/socket.h>
+ #include "est.h"
+ #include "est_locl.h"
+ #include "est_ossl_util.h"
