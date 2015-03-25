@@ -1,0 +1,87 @@
+--- origsrc/klt/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/klt/Makefile.am	2015-03-25 13:50:21.225179800 +0900
+@@ -0,0 +1,11 @@
++
++pkginclude_HEADERS = base.h convolve.h error.h klt.h klt_util.h pnmio.h pyramid.h
++
++lib_LTLIBRARIES = libklt.la
++
++libklt_la_SOURCES = convolve.c error.c pnmio.c pyramid.c selectGoodFeatures.c \
++	storeFeatures.c trackFeatures.c klt.c klt_util.c writeFeatures.c
++libklt_la_LDFLAGS = -no-undefined -version-info 1
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = klt.pc
+--- origsrc/klt/base.h	2005-08-18 00:09:09.000000000 +0900
++++ src/klt/base.h	2015-03-25 13:54:23.173586300 +0900
+@@ -9,6 +9,8 @@
+ #define uchar unsigned char
+ #endif
+ 
++#if !defined(__CYGWIN__)
++
+ #ifndef schar
+ #define schar signed char
+ #endif
+@@ -24,12 +26,14 @@
+ #ifndef ulong
+ #define ulong unsigned long
+ #endif
+-
++
++#endif
++
+ #ifndef max
+-#define max(a,b)	((a) > (b) ? (a) : (b))
+-#endif
++#define max(a,b)	((a) > (b) ? (a) : (b))
++#endif
+ #ifndef min
+-#define min(a,b)	((a) < (b) ? (a) : (b))
++#define min(a,b)	((a) < (b) ? (a) : (b))
+ #endif
+ #define max3(a,b,c)	((a) > (b) ? max((a),(c)) : max((b),(c)))
+ #define min3(a,b,c)	((a) < (b) ? min((a),(c)) : min((b),(c)))
+--- origsrc/klt/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/klt/configure.ac	2015-03-25 13:51:06.134278000 +0900
+@@ -0,0 +1,27 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([klt], [1.3.4])
++AC_CONFIG_SRCDIR([base.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++LT_INIT
++
++# Checks for header files.
++AC_CHECK_HEADERS([stdlib.h string.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_SIZE_T
++
++# Checks for library functions.
++AC_FUNC_ERROR_AT_LINE
++AC_FUNC_MALLOC
++AC_CHECK_FUNCS([memset sqrt])
++
++AC_CONFIG_FILES([Makefile klt.pc])
++AC_OUTPUT
+--- origsrc/klt/klt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/klt/klt.pc.in	2015-03-25 13:55:30.022219200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: klt
++Description: Implementation of the Kanade-Lucas-Tomasi feature tracker
++Version: @VERSION@
++Libs: -L${libdir} -lklt
++Cflags: -I${includedir}
