@@ -1,0 +1,65 @@
+--- origsrc/libcxi/CMakeLists.txt	2015-03-26 17:52:11.000000000 +0900
++++ src/libcxi/CMakeLists.txt	2015-03-26 17:57:32.183910500 +0900
+@@ -12,6 +12,7 @@ find_package(HDF5 REQUIRED)
+ include_directories(${HDF5_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/include)
+ add_library(cxi SHARED src/cxi.c include/cxi.h)
+ target_link_libraries(cxi ${HDF5_LIBRARIES})
++set_target_properties(cxi PROPERTIES SOVERSION 0)
+ 
+ add_executable(simple EXCLUDE_FROM_ALL src/cxi.c tests/simple.c)
+ target_link_libraries(simple ${HDF5_LIBRARIES})
+@@ -19,18 +20,25 @@ target_link_libraries(simple ${HDF5_LIBR
+ add_executable(writer EXCLUDE_FROM_ALL src/cxi.c tests/writer.c)
+ target_link_libraries(writer ${HDF5_LIBRARIES})
+ 
+-add_executable(typical_reader  src/cxi.c examples/typical_reader.c)
+-target_link_libraries(typical_reader ${HDF5_LIBRARIES})
++add_executable(typical_reader examples/typical_reader.c)
++target_link_libraries(typical_reader cxi ${HDF5_LIBRARIES})
+ 
+-add_executable(typical_writer  src/cxi.c examples/typical_writer.c)
+-target_link_libraries(typical_writer ${HDF5_LIBRARIES})
++add_executable(minimal_reader examples/minimal_reader.c)
++target_link_libraries(minimal_reader cxi ${HDF5_LIBRARIES})
+ 
+-add_executable(minimal_reader  src/cxi.c examples/minimal_reader.c)
+-target_link_libraries(minimal_reader ${HDF5_LIBRARIES})
+-
+-add_executable(minimal_writer  src/cxi.c examples/minimal_writer.c)
+-target_link_libraries(minimal_writer ${HDF5_LIBRARIES})
++add_executable(minimal_writer examples/minimal_writer.c)
++target_link_libraries(minimal_writer cxi ${HDF5_LIBRARIES})
+ 
++install(FILES include/cxi.h DESTINATION include)
++install(TARGETS cxi RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libcxi.pc.in ${CMAKE_BINARY_DIR}/libcxi.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libcxi.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+ 
+ enable_testing()
+ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+@@ -38,6 +46,3 @@ add_test(simple simple ${CMAKE_SOURCE_DI
+ 
+ add_test(writer writer ${CMAKE_SOURCE_DIR}/data/dummy.cxi)
+ add_dependencies(check simple writer)
+-
+-
+-
+--- origsrc/libcxi/libcxi.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcxi/libcxi.pc.in	2015-03-26 17:58:02.393523000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcxi
++Description: Library to help read and write CXI files
++Version: @VERSION@
++Libs: -L${libdir} -lcxi
++Cflags: -I${includedir}
