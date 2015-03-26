@@ -1,0 +1,110 @@
+--- origsrc/libbrowserid-libbrowserid-22/Makefile.am	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/Makefile.am	2015-03-27 00:57:24.425946900 +0900
+@@ -9,3 +9,6 @@ if GSSBID_BUILD_MECH
+ SUBDIRS += mech_browserid
+ endif
+ EXTRA_DIST = mech_browserid.spec
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libbrowserid.pc
+--- origsrc/libbrowserid-libbrowserid-22/configure.ac	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/configure.ac	2015-03-27 00:57:47.669400900 +0900
+@@ -82,5 +82,5 @@ AM_CONDITIONAL(HEIMDAL, test "x$heimdal"
+ 
+ AC_CONFIG_FILES([Makefile libcfjson/Makefile libbrowserid/Makefile bidtool/Makefile
+ 		 sample/Makefile mech_browserid/Makefile
+-		 mech_browserid/mech_browserid.spec])
++		 mech_browserid/mech_browserid.spec libbrowserid.pc])
+ AC_OUTPUT
+--- origsrc/libbrowserid-libbrowserid-22/libbrowserid/Makefile.am	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/libbrowserid/Makefile.am	2015-03-27 00:44:17.915246500 +0900
+@@ -7,11 +7,11 @@ include_HEADERS = browserid.h
+ if CFBROWSERID
+ libbrowserid_la_EXPORTS = libbrowserid-cf.exports
+ else
+-libbrowserid_la_EXPORTS = libbrowserid.exports
++libbrowserid_la_EXPORTS = $(top_srcdir)/libbrowserid/libbrowserid.exports
+ endif
+ 
+-libbrowserid_la_CFLAGS   = -Werror -Wall -Wunused-parameter
+-libbrowserid_la_CXXFLAGS = -Werror -Wall -Wunused-parameter
++libbrowserid_la_CFLAGS   = -Wall -Wunused-parameter
++libbrowserid_la_CXXFLAGS = -Wall -Wunused-parameter
+ libbrowserid_la_DEPENDENCIES = $(libbrowserid_la_EXPORTS)
+ 
+ libbrowserid_la_CPPFLAGS = -DBUILD_GSSBID_LIB -I$(top_srcdir) -I$(top_srcdir)/libbrowserid
+@@ -86,4 +86,3 @@ vers.c: $(top_srcdir)/CVSVersionInfo.txt
+ 
+ clean-generic:
+ 	$(RM) vers.c
+-
+--- origsrc/libbrowserid-libbrowserid-22/libbrowserid/bid_private.h	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/libbrowserid/bid_private.h	2015-03-27 00:52:03.936676200 +0900
+@@ -405,7 +405,7 @@ _BIDDeriveSessionSubkey(
+ 
+ BIDError
+ _BIDImportSecretKey(
+-    BIDContext context, 
++    BIDContext context,
+     BIDJWK jwk,
+     BIDSecretHandle *pSecretHandle);
+ 
+@@ -572,7 +572,7 @@ _BIDDestroySecret(
+ 
+ BIDError
+ _BIDImportSecretKeyData(
+-    BIDContext context, 
++    BIDContext context,
+     unsigned char *pbSecret,
+     size_t cbSecret,
+     BIDSecretHandle *pSecretHandle);
+--- origsrc/libbrowserid-libbrowserid-22/libbrowserid/libbrowserid.exports	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/libbrowserid/libbrowserid.exports	2015-03-27 00:52:38.597919000 +0900
+@@ -39,9 +39,6 @@ _BIDGetJsonTimestampValue
+ _BIDJsonIntegerValue
+ _BIDJsonObjectGet
+ _BIDJsonStringValue
+-_BIDOutputDebugJson
+-_BIDOutputDebugJson
+-_BIDOutputDebugJson
+ _BIDPerformCacheObjects
+ _BIDPurgeCache
+ _BIDPurgeReplayCache
+--- origsrc/libbrowserid-libbrowserid-22/libbrowserid.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/libbrowserid.pc.in	2015-03-27 00:56:46.622178700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libbrowserid
++Description: BrowserID C library
++Version: @VERSION@
++Libs: -L${libdir} -lbrowserid
++Cflags: -I${includedir}
+--- origsrc/libbrowserid-libbrowserid-22/sample/Makefile.am	2013-12-03 09:14:31.000000000 +0900
++++ src/libbrowserid-libbrowserid-22/sample/Makefile.am	2015-03-27 00:53:32.206000900 +0900
+@@ -1,6 +1,6 @@
+ AUTOMAKE_OPTIONS = foreign
+ 
+-CFLAGS += -I../libbrowserid
++CFLAGS += -I$(top_srcdir)/libbrowserid
+ 
+ noinst_PROGRAMS = bidget bidverify
+ 
+@@ -13,12 +13,11 @@ bidverify_LDADD = ../libbrowserid/libbro
+ if CFBROWSERID
+ noinst_PROGRAMS += bidcfget bidcfverify
+ 
+-bidcfget_OBJCFLAGS = -I../libbrowserid
++bidcfget_OBJCFLAGS = -I$(top_srcdir)/libbrowserid
+ bidcfget_SOURCES = bidcfget.m
+ bidcfget_LDADD = ../libbrowserid/libbrowserid.la
+ 
+-bidcfverify_OBJCFLAGS = -I../libbrowserid
++bidcfverify_OBJCFLAGS = -I$(top_srcdir)/libbrowserid
+ bidcfverify_SOURCES = bidcfverify.m
+ bidcfverify_LDADD = ../libbrowserid/libbrowserid.la
+ endif
+-
