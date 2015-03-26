@@ -1,0 +1,62 @@
+--- origsrc/libfly-0.3.0/CMakeLists.txt	2013-05-20 04:14:49.000000000 +0900
++++ src/libfly-0.3.0/CMakeLists.txt	2015-03-27 00:03:47.859345800 +0900
+@@ -1,3 +1,11 @@
+ cmake_minimum_required(VERSION 2.6)
+ 
+ add_subdirectory(src)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.3.0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libfly.pc.in ${CMAKE_BINARY_DIR}/libfly.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libfly.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libfly-0.3.0/libfly.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libfly-0.3.0/libfly.pc.in	2015-03-27 00:03:23.337695400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libfly
++Description: Simple parallel for and parallel tasks execution library
++Version: @VERSION@
++Libs: -L${libdir} -lfly
++Cflags: -I${includedir}
+--- origsrc/libfly-0.3.0/src/CMakeLists.txt	2013-05-20 04:14:49.000000000 +0900
++++ src/libfly-0.3.0/src/CMakeLists.txt	2015-03-27 00:01:48.073051700 +0900
+@@ -53,7 +53,7 @@ else()
+ 	set_target_properties(fly PROPERTIES VERSION 0.3.0 SOVERSION 0)
+ 	install(FILES ${fly_pub_HEADERS}
+ 			DESTINATION include/libfly COMPONENT Devel)
+-	install(TARGETS fly LIBRARY DESTINATION lib COMPONENT Runtime)
++	install(TARGETS fly RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT Runtime)
+ endif()
+ target_link_libraries(fly pthread)
+ 
+--- origsrc/libfly-0.3.0/src/fly_thread.c	2013-05-20 04:14:49.000000000 +0900
++++ src/libfly-0.3.0/src/fly_thread.c	2015-03-26 23:59:13.926736400 +0900
+@@ -23,7 +23,9 @@
+ #include <libfly/fly_error.h>
+ #include "fly_globals.h"
+ 
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <stdio.h> /* for sprintf */
+@@ -49,7 +51,11 @@ static void *fly_thread_wrap_func(void *
+ 
+ 	char path[512] = {0};
+ 
++#if defined(__CYGWIN__)
++	thread->tid = getpid();
++#else
+ 	thread->tid = syscall(SYS_gettid);
++#endif
+ 	thread->state = FLY_THREAD_RUNNING;
+ 
+ 	sprintf(path, FLY_PROCFS_STATUS_FMT_STR, thread->tid);
