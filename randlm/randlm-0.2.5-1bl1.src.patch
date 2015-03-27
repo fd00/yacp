@@ -1,0 +1,207 @@
+--- origsrc/randlm-0.2.5/configure.in	2012-04-03 04:29:19.000000000 +0900
++++ src/randlm-0.2.5/configure.in	2015-03-27 22:36:33.005940500 +0900
+@@ -1,15 +1,14 @@
+-AC_INIT(src/RandLM/RandLM.cpp)
+-
+-PACKAGE=RandLM
+-VERSION=0.3
++AC_INIT([RandLM], [0.3])
+ 
+ AM_CONFIG_HEADER(config.h)
+-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
++AM_INIT_AUTOMAKE
+ 
+ AC_PROG_CXX
+ AC_PROG_CXXCPP
+ AC_PROG_LIBTOOL
+ AC_LANG_CPLUSPLUS
++BOOST_REQUIRE
++BOOST_THREADS
+ 
+ AC_CONFIG_FILES([
+     Makefile
+--- origsrc/randlm-0.2.5/hadoop/Makefile.am	2012-01-18 17:41:20.000000000 +0900
++++ src/randlm-0.2.5/hadoop/Makefile.am	2015-03-27 22:45:36.640806700 +0900
+@@ -7,9 +7,9 @@ bin_PROGRAMS = \
+ 	r_compute_ngram_counts
+ 
+ m_compute_ngram_counts_batch_SOURCES = \
+-	strings.cc \
++	strings.cpp \
+ 	m_compute_ngram_counts_batch.cpp
+ 
+ r_compute_ngram_counts_SOURCES = \
+-	strings.cc \
++	strings.cpp \
+ 	r_compute_ngram_counts.cpp
+--- origsrc/randlm-0.2.5/src/LDHT/Makefile.am	2012-04-04 00:12:29.000000000 +0900
++++ src/randlm-0.2.5/src/LDHT/Makefile.am	2015-03-27 14:34:09.899848000 +0900
+@@ -4,8 +4,8 @@ AM_LDFLAGS = -L./
+ lib_LTLIBRARIES = libticpp.la libLDHT.la
+ 
+ # Compile ticpp separately.
+-libticpp_la_CXXFLAGS = -fPIC -Wno-deprecated -Wall -ggdb -DTIXML_USE_TICPP
+-libticpp_la_LDFLAGS = -pthread -version-info 0:0:0 -export-dynamic
++libticpp_la_CXXFLAGS = -Wno-deprecated -Wall -DTIXML_USE_TICPP
++libticpp_la_LDFLAGS = -no-undefined -version-info 0:0:0 -export-dynamic
+ libticpp_la_includedir = $(includedir)/LDHT
+ libticpp_la_SOURCES = \
+ 	ticpp.cpp \
+@@ -20,9 +20,9 @@ libticpp_la_include_HEADERS = \
+ 	tinyxml.h
+ 
+ # Main Lossy Distributed Hash Table library.
+-libLDHT_la_CXXFLAGS = -fPIC -Wno-deprecated -Wall -ggdb -DTIXML_USE_TICPP
+-libLDHT_la_LDFLAGS = -pthread -version-info 0:0:0 -export-dynamic -L./
+-libLDHT_la_LIBADD = -lticpp
++libLDHT_la_CXXFLAGS = -Wno-deprecated -Wall -DTIXML_USE_TICPP
++libLDHT_la_LDFLAGS = -no-undefined -pthread -version-info 0:0:0 -export-dynamic
++libLDHT_la_LIBADD = libticpp.la
+ libLDHT_la_includedir = $(includedir)/LDHT
+ libLDHT_la_SOURCES = \
+ 	BitArray.cpp \
+@@ -100,16 +100,11 @@ noinst_PROGRAMS = \
+ # Test suite. Only compile if enabled in configure via --enable-tests.
+ if ENABLE_TESTS
+ noinst_PROGRAMS += libLDHT_test
+-libLDHT_test_CXXFLAGS  = -fPIC -Wno-deprecated -Wall -ggdb
+-libLDHT_test_CXXFLAGS += -I/home/wilson/src/gtest
+-libLDHT_test_CXXFLAGS += -I/home/wilson/src/gtest/include
+-libLDHT_test_CXXFLAGS += -I/home/wilson/src/gmock
+-libLDHT_test_CXXFLAGS += -I/home/wilson/src/gmock/include
++libLDHT_test_CXXFLAGS  = -Wno-deprecated -Wall -ggdb
++libLDHT_test_CXXFLAGS += -I/usr/include/gtest
++libLDHT_test_CXXFLAGS += -I/usr/include/gmock
+ libLDHT_test_LDFLAGS = $(libLDHT_la_LDFLAGS)
+-libLDHT_test_LDFLAGS += -L/home/wilson/src/gtest/lib
+-libLDHT_test_LDFLAGS += -L/home/wilson/src/gmock/lib
+-libLDHT_test_LDFLAGS += -L./
+-libLDHT_test_LDADD = $(libLDHT_la_LDADD) -lgtest -lgmock -lticpp -lLDHT
++libLDHT_test_LDADD = $(libLDHT_la_LDADD) -lgtest -lgmock libticpp.la libLDHT.la
+ libLDHT_test_SOURCES = \
+ 	BitArray_test.cpp \
+ 	BloomFilter_test.cpp \
+@@ -129,23 +124,18 @@ libLDHT_test_SOURCES = \
+ TESTS = libLDHT_test
+ endif
+ 
+-shard_CXXFLAGS = -ggdb -Wall -static
+-shard_SOURCES = shard.cpp 
+-shard_LDFLAGS = -L./
+-shard_LDADD = -lticpp -lLDHT
++shard_CXXFLAGS = -ggdb -Wall
++shard_SOURCES = shard.cpp
++shard_LDADD = libticpp.la libLDHT.la
+ 
+-server_CXXFLAGS = -ggdb -Wall -static ##-Wunused-but-set-variable
++server_CXXFLAGS = -ggdb -Wall ##-Wunused-but-set-variable
+ server_SOURCES =  server_main.cpp
+-server_LDFLAGS = -L./
+-server_LDADD = -lticpp -lLDHT
++server_LDADD = libticpp.la libLDHT.la
+ 
+ query_CXXFLAGS = -ggdb -Wall
+ query_SOURCES =  query.cpp
+-query_LDFLAGS = -L./
+-query_LDADD = -lticpp -lLDHT
++query_LDADD =  libticpp.la libLDHT.la
+ 
+ score_ngrams_CXXFLAGS = -ggdb -Wall
+ score_ngrams_SOURCES = score_ngrams.cpp
+-score_ngrams_LDFLAGS = -L./
+-score_ngrams_LDADD = -lticpp -lLDHT
+-
++score_ngrams_LDADD =  libticpp.la libLDHT.la
+--- origsrc/randlm-0.2.5/src/LDHT/TransportTCP.cpp	2012-03-30 19:53:05.000000000 +0900
++++ src/randlm-0.2.5/src/LDHT/TransportTCP.cpp	2015-03-27 22:42:12.544688600 +0900
+@@ -6,6 +6,7 @@
+ #include <netdb.h>
+ #include <sys/socket.h>
+ #include <sys/types.h>
++#include <unistd.h>
+ 
+ #include "TransportTCP.h"
+ #include "Util.h"
+@@ -95,4 +96,3 @@ int TransportTCP::getReadFd() {
+ }
+ 
+ }  // namespace LDHT.
+-
+--- origsrc/randlm-0.2.5/src/LDHT/server_main.cpp	2012-04-03 18:47:12.000000000 +0900
++++ src/randlm-0.2.5/src/LDHT/server_main.cpp	2015-03-27 22:42:41.807507600 +0900
+@@ -3,6 +3,7 @@
+ //
+ 
+ #include <signal.h>
++#include <unistd.h>
+ #if 0
+ #include <google/profiler.h>
+ #endif
+@@ -74,7 +75,7 @@ int main(int argc, char** argv) {
+     for (table = table.begin(root_element); table != table.end(); ++table) {
+         table_elements.push_back((*table));
+     }
+-    
++
+ 
+     // parse and vectorise table_elements
+ 
+@@ -88,4 +89,3 @@ int main(int argc, char** argv) {
+     //ProfilerStop();
+     delete server;
+ }
+-
+--- origsrc/randlm-0.2.5/src/RandLM/Makefile.am	2012-04-03 17:45:47.000000000 +0900
++++ src/randlm-0.2.5/src/RandLM/Makefile.am	2015-03-27 14:33:41.673511500 +0900
+@@ -5,6 +5,7 @@ lib_LTLIBRARIES = libRandLM.la
+ 
+ libRandLM_la_CXXFLAGS = -DMULTITHREADED
+ libRandLM_la_LIBADD = -lboost_thread
++libRandLM_la_LDFLAGS = -no-undefined
+ libRandLM_la_includedir = $(includedir)/RandLM
+ libRandLM_la_SOURCES = \
+ 	BloomMap.cpp \
+@@ -68,36 +69,32 @@ noinst_PROGRAMS = \
+ 	preprocessor \
+ 	resizetest
+ 
+-buildlm_LDADD = -lRandLM
++buildlm_LDADD = libRandLM.la
+ buildlm_SOURCES = \
+ 	RandLMBuilder.cpp \
+ 	RandLMBuilderMain.cpp
+ 
+-countngrams_LDADD = -lRandLM
++countngrams_LDADD = libRandLM.la
+ countngrams_SOURCES = \
+ 	countngrams.cc
+ 
+-errorrate_LDADD = -lRandLM
++errorrate_LDADD = libRandLM.la
+ errorrate_SOURCES = \
+ 	errorrate.cc
+ 
+-filtertest_LDADD = -lRandLM
++filtertest_LDADD = libRandLM.la
+ filtertest_SOURCES = \
+ 	RandLMFilterTest.cpp
+ 
+-preprocessor_LDADD = -lRandLM
++preprocessor_LDADD = libRandLM.la
+ preprocessor_SOURCES = \
+ 	RandLMPreprocessorMain.cpp
+ 
+-querylm_LDADD = -lRandLM
++querylm_LDADD = libRandLM.la
+ querylm_SOURCES = \
+ 	RandLMQuery.cpp \
+ 	RandLMQueryMain.cpp
+ 
+-resizetest_LDADD = -lRandLM
++resizetest_LDADD = libRandLM.la
+ resizetest_SOURCES = \
+ 	RandLMResizeFilterTest.cpp
+-
+-
+-
+-
