@@ -1,0 +1,113 @@
+--- origsrc/libopendrone/CMakeLists.txt	2015-03-28 11:29:15.000000000 +0900
++++ src/libopendrone/CMakeLists.txt	2015-03-28 14:30:50.463542900 +0900
+@@ -36,14 +36,18 @@ endmacro(addprefix)
+ 
+ set(OPENDRONE_VERSION_MAJOR 0)
+ set(OPENDRONE_VERSION_MINOR 1)
+-set(USE_UNIX_POLL 1)
++if(CYGWIN)
++  set(USE_UNIX_POLL 0)
++else()
++  set(USE_UNIX_POLL 1)
++endif()
+ 
+ configure_file (
+   "${PROJECT_SOURCE_DIR}/libopendrone/OpendroneConfig.h.in"
+   "${PROJECT_SOURCE_DIR}/libopendrone/OpendroneConfig.h"
+   )
+ 
+-set(OPENDRONE_HEADERS   OpendroneConfig.h ATCommand.h ATCommandFactory.h 
++set(OPENDRONE_HEADERS   OpendroneConfig.h ATCommand.h ATCommandFactory.h
+                         ATSequencer.h Timer.h DatagramSocket.h)
+ set(OPENDRONE_SOURCES   ATCommand.cpp ATCommandFactory.cpp ATSequencer.cpp
+                         Timer.cpp DatagramSocket.cpp)
+@@ -58,10 +62,23 @@ set(ODTEST_SOURCES odtest.cpp)
+ 
+ include_directories("${PROJECT_SOURCE_DIR}")
+ 
+-add_library(opendrone ${OPENDRONE_SOURCES} ${OPENDRONE_HEADERS})
++add_library(opendrone SHARED ${OPENDRONE_SOURCES} ${OPENDRONE_HEADERS})
++set_target_properties(opendrone PROPERTIES SOVERSION 0)
+ 
+ target_link_libraries(opendrone)
+ 
+ add_executable(odtest ${ODTEST_SOURCES} ${ODTEST_HEADERS})
+ 
+ target_link_libraries(odtest opendrone)
++
++install(FILES ${OPENDRONE_HEADERS} DESTINATION include/opendrone)
++install(TARGETS odtest RUNTIME DESTINATION bin)
++install(TARGETS opendrone RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${OPENDRONE_VERSION_MAJOR}.${OPENDRONE_VERSION_MINOR}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libopendrone.pc.in ${CMAKE_BINARY_DIR}/libopendrone.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libopendrone.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libopendrone/libopendrone/DatagramSocket.cpp	2015-03-28 11:29:15.000000000 +0900
++++ src/libopendrone/libopendrone/DatagramSocket.cpp	2015-03-28 11:32:01.123833500 +0900
+@@ -16,6 +16,7 @@
+  */
+ 
+ #include <libopendrone/DatagramSocket.h>
++#include <unistd.h>
+ 
+ namespace opendrone {
+     DatagramSocket::DatagramSocket(std::string address, uint32_t port)
+@@ -25,7 +26,7 @@ namespace opendrone {
+         /* empty */
+     }
+ 
+-    DatagramSocket::~DatagramSocket() 
++    DatagramSocket::~DatagramSocket()
+     {
+         if (Valid())
+         {
+@@ -45,14 +46,14 @@ namespace opendrone {
+         hints.ai_family = AF_UNSPEC;
+         hints.ai_socktype = SOCK_DGRAM;
+ 
+-        if ((ret = getaddrinfo(m_hostAddr.c_str(), TypeToString(m_hostPort).c_str(), 
++        if ((ret = getaddrinfo(m_hostAddr.c_str(), TypeToString(m_hostPort).c_str(),
+                                                 &hints, &serverInfo)) != 0) {
+             std::cerr << "getaddrinfo failed: " << gai_strerror(ret) << std::endl;
+             return false;
+         }
+ 
+         // Loop all the results from getaddrinfo until we get a valid connection
+-        for (; serverInfo != NULL; serverInfo = serverInfo->ai_next) 
++        for (; serverInfo != NULL; serverInfo = serverInfo->ai_next)
+         {
+             if ((fd = socket(serverInfo->ai_family, serverInfo->ai_socktype,
+                     serverInfo->ai_protocol)) < 0)
+@@ -70,7 +71,7 @@ namespace opendrone {
+ 
+         if (fd < 0)
+         {
+-            std::cerr << "Unable to connect to " << m_hostAddr << ":" << m_hostPort 
++            std::cerr << "Unable to connect to " << m_hostAddr << ":" << m_hostPort
+                 << std::endl;
+             return false;
+         }
+@@ -157,4 +158,4 @@ namespace opendrone {
+         }
+         return true;
+     }
+-}
+\ No newline at end of file
++}
+--- origsrc/libopendrone/libopendrone.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libopendrone/libopendrone.pc.in	2015-03-28 14:31:21.567112600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libopendrone
++Description: 3rd-party replacement for the Parrot AR.Drone API
++Version: @VERSION@
++Libs: -L${libdir} -lopendrone
++Cflags: -I${includedir}
