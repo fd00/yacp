@@ -1,0 +1,153 @@
+--- origsrc/ibp-1.4.0.6/doc/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/doc/Makefile.am	2015-03-28 16:28:55.329666400 +0900
+@@ -1,9 +1,8 @@
+ if CLIENTONLY
+-IBP_DOC = 
++IBP_DOC =
+ else
+ IBP_DOC = ibpservercfg.pdf ibpservercfg.ps IBP_NFU.pdf
+ endif
+-docdir=@prefix@/doc/@PACKAGE@
+ doc_DATA =  $(IBP_DOC)
+ 
+ EXTRA_DIST = ibpservercfg.pdf ibpservercfg.ps IBP_NFU.pdf
+--- origsrc/ibp-1.4.0.6/etc/nfu.cfg.in	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/etc/nfu.cfg.in	2015-03-28 16:42:45.732620000 +0900
+@@ -1,3 +1,3 @@
+ # format:
+ # OP       funcation_name  full_path_of_dynamic_library  run_as_thread
+-0x00000001 do_xor          @prefix@/lib/libnfuops.@DYN_LIB_SUFFIX@ 0
++0x00000001 do_xor          /usr/bin/cygnfuops-0.dll 0
+--- origsrc/ibp-1.4.0.6/src/BLASTER/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/BLASTER/Makefile.am	2015-03-28 16:24:16.981752800 +0900
+@@ -2,11 +2,11 @@ noinst_LTLIBRARIES = libudp.la
+ 
+ libudp_la_SOURCES = blastsubs.c
+ 
+-bin_PROGRAMS = blasterd blaster tblaster 
++bin_PROGRAMS = blasterd blaster tblaster
+ 
+-blasterd_SOURCES = blasterd.c 
++blasterd_SOURCES = blasterd.c
+ 
+-blasterd_LDADD = ../libibp.la libudp.la  
++blasterd_LDADD = ../libibp.la libudp.la
+ 
+ blaster_SOURCES = blaster.c
+ 
+@@ -17,3 +17,5 @@ tblaster_SOURCES = tblaster.c
+ tblaster_LDADD = ../libibp.la libudp.la
+ 
+ EXTRA_DIST = udplib.h
++
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/ibp-1.4.0.6/src/MULTICAST/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/MULTICAST/Makefile.am	2015-03-28 16:26:52.949375200 +0900
+@@ -16,4 +16,4 @@ tservMCAST_SOURCES = tservMCAST.c
+ 
+ tservMCAST_LDADD = ../libibp.la libmcast.la
+ 
+- 
++AM_CPPFLAGS = -I$(top_srcdir)/include 
+--- origsrc/ibp-1.4.0.6/src/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/Makefile.am	2015-03-28 16:16:47.856260300 +0900
+@@ -5,16 +5,17 @@ lib_LTLIBRARIES = libibp.la
+ endif
+ 
+ libibp_la_SOURCES = ibp_ClientLib.c ibp_ComMod.c ibp_net.c ibp_uri.c ibp_errno.c ibp_nfu.c ibp_authentication.c
+-libibp_la_LDFLAGS = -release $(VERSION) 
++libibp_la_LDFLAGS = -no-undefined -release $(VERSION)
+ 
+ if BONJOUR
+ libmdns_la_SOURCES = mDNS.c mDNSPosix.c mDNSUNP.c Responder.c
+ else
+-libmdns_la_SOURCES = 
++libmdns_la_SOURCES =
+ endif
++libmdns_la_LDFLAGS = -no-undefined
+ 
+ if CLIENTONLY
+-PRGS = 
++PRGS =
+ else
+ PRGS = ibpd ibp-slm DM makefs readfat
+ endif
+@@ -25,14 +26,14 @@ else
+ EFENCE =
+ endif
+ 
+-AM_CPPFLAGS = -g -D_LARGEFILE64_SOURCE -D__USE_LARGEFILE64 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE @MDNS_FLAGS@
++AM_CPPFLAGS = -I$(top_srcdir)/include -g -D_LARGEFILE64_SOURCE -D__USE_LARGEFILE64 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE @MDNS_FLAGS@
+ 
+ bin_PROGRAMS = $(PRGS) ibp-dmtest ibp-test
+ 
+ ibpd_SOURCES = ibp_main.c ibp_handle.c ibp_request.c ibp_request_queue.c ibp_thread_pool.c ibp_connection.c ibp_log.c ibp_server_lib.c ibp_vol_allocation.c ibp-lib.c  ibp_unixlib.c ibp_resources.c ibp_ram.c ibp_load.c ibp_manage.c ibp_ct_copy.c ibp_copy.c ibp_nfud.c jrb.c fields.c dlist.c fat.c fs.c ibp_ulfs.c ibp_mDNS.c  ibp_server_auth.c
+ 
+ if BONJOUR
+-ibpd_LDADD = libibp.la libmdns.la ${EFENCE} 
++ibpd_LDADD = libibp.la libmdns.la ${EFENCE}
+ else
+ ibpd_LDADD = libibp.la ${EFENCE}
+ endif
+@@ -46,7 +47,7 @@ DM_SOURCES = DM.c dlist.c fields.c jrb.c
+ 
+ DM_LDADD = libibp.la
+ 
+-ibp_test_SOURCES = ibp-smoketest.c 
++ibp_test_SOURCES = ibp-smoketest.c
+ 
+ ibp_test_LDADD = libibp.la ${EFENCE}
+ 
+@@ -65,7 +66,7 @@ install-exec-hook:
+ 	cd $(DESTDIR)$(bindir) && \
+ 	mv -f ibpd ibpd-$(VERSION) && \
+ 	$(LN_S) ibpd-$(VERSION) ibpd && \
+-	$(LN_S) -f ibpd-$(VERSION) ibp_server_mt 
++	$(LN_S) -f ibpd-$(VERSION) ibp_server_mt
+ 
+ if CLIENTONLY
+ DIRS = .
+--- origsrc/ibp-1.4.0.6/src/TCP/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/TCP/Makefile.am	2015-03-28 16:26:11.446250600 +0900
+@@ -4,7 +4,7 @@ libtcp_la_SOURCES = subs.c
+ 
+ bin_PROGRAMS = serverTCP clientTCP mclientTCP smclientTCP pmclientTCP
+ 
+-serverTCP_SOURCES = serverTCP.c 
++serverTCP_SOURCES = serverTCP.c
+ 
+ serverTCP_LDADD = ../libibp.la libtcp.la
+ 
+@@ -12,7 +12,7 @@ clientTCP_SOURCES = clientTCP.c
+ 
+ clientTCP_LDADD = ../libibp.la libtcp.la
+ 
+-mclientTCP_SOURCES = mclientTCP.c 
++mclientTCP_SOURCES = mclientTCP.c
+ 
+ mclientTCP_LDADD = ../libibp.la libtcp.la
+ 
+@@ -25,3 +25,5 @@ pmclientTCP_SOURCES = pmclientTCP.c
+ pmclientTCP_LDADD = ../libibp.la libtcp.la
+ 
+ EXTRA_DIST = mylib.h
++
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/ibp-1.4.0.6/src/nfuops/Makefile.am	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/nfuops/Makefile.am	2015-03-28 16:23:26.851828100 +0900
+@@ -1,3 +1,6 @@
+ lib_LTLIBRARIES = libnfuops.la
+ 
+ libnfuops_la_SOURCES =  nfu_xor.c
++libnfuops_la_LDFLAGS = -no-undefined
++
++AM_CPPFLAGS = -I$(top_srcdir)/include
+--- origsrc/ibp-1.4.0.6/src/nfuops/nfu_xor.c	2007-01-19 13:06:53.000000000 +0900
++++ src/ibp-1.4.0.6/src/nfuops/nfu_xor.c	2015-03-28 16:23:12.599851200 +0900
+@@ -1,5 +1,5 @@
+ #include <stdio.h>
+-#include "../include/ibp_nfu_para.h"
++#include "ibp_nfu_para.h"
+ 
+ int do_xor( int npara , NFU_PARA *paras){
+     int i,j;
