@@ -1,0 +1,59 @@
+--- origsrc/libdbh2-5.0.17/configure.ac	2015-03-12 06:20:54.000000000 +0900
++++ src/libdbh2-5.0.17/configure.ac	2015-03-29 12:14:08.246851700 +0900
+@@ -324,8 +324,10 @@ AC_CHECK_LIB([m],[pow])
+ 
+ 
+ AC_CHECK_HEADERS([gdbm.h sys/select.h sys/types.h sys/wait.h unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h sys/mman.h sys/resource.h])
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADERS([windows.h process.h conio.h tchar.h])
+-AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes"])
++fi
++AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes" -a "$host_os" != "cygwin"])
+ 
+ AC_SUBST(PARALLEL_SAFE)
+ if test "x$ac_cv_header_sys_mman_h" = "xyes"; then
+--- origsrc/libdbh2-5.0.17/examples/Makefile.am	2015-03-12 06:27:25.000000000 +0900
++++ src/libdbh2-5.0.17/examples/Makefile.am	2015-03-29 12:29:39.698537900 +0900
+@@ -19,18 +19,18 @@ bin_PROGRAMS = simple_hash
+ if WANT_GLIB
+ bin_PROGRAMS += filesystem
+ filesystem_SOURCES = filesystem.c ../src/dbh.c
+-filesystem_CFLAGS = -g @GLIB_CFLAGS@ -I../src `pkg-config gthread-2.0 --cflags`
++filesystem_CFLAGS = -g @GLIB_CFLAGS@ -I../src -I$(top_srcdir) `pkg-config gthread-2.0 --cflags`
+ filesystem_LDFLAGS = @GLIB_LIBS@ -lm -lpthread `pkg-config gthread-2.0 --libs`
+ endif
+ 
+ bin_PROGRAMS += performance
+ performance_SOURCES = performance.c ../src/dbh.c 
+ performance_LDFLAGS = -lm `pkg-config gthread-2.0 --libs` -lgdbm
+-performance_CFLAGS = -g -I../src `pkg-config gthread-2.0 --cflags`
++performance_CFLAGS = -g -I$(top_srcdir) -I../src `pkg-config gthread-2.0 --cflags`
+ 
+ simple_hash_SOURCES =  simple_hash.c ../src/dbh.c ../src/dbh.h ../src/dbh_static.i  ../src/dbh_exported.i
+ 
+-simple_hash_CFLAGS = -g -I../src @GLIB_CFLAGS@ 
++simple_hash_CFLAGS = -g -I../src -I$(top_srcdir) @GLIB_CFLAGS@
+ simple_hash_LDADD =  -lm -lpthread @GLIB_LIBS@
+ 
+ if WANT_GLIB
+@@ -41,4 +41,3 @@ test: filesystem
+ 	./filesystem /usr/bin compare
+ 	./filesystem /usr/bin thread
+ endif
+-
+--- origsrc/libdbh2-5.0.17/src/Makefile.am	2014-04-02 02:25:18.000000000 +0900
++++ src/libdbh2-5.0.17/src/Makefile.am	2015-03-29 12:09:31.590153700 +0900
+@@ -22,11 +22,12 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ EXTRA_DIST = dbh.h.in 
+ 
+ if WINDOZE
+-#no_undefined = -no-undefined
+ #FIXME: list symbols to export here
+ export_symbols = -export-symbols 
+ endif
+ 	
++no_undefined = -no-undefined
++
+ lib_LTLIBRARIES=libdbh.la
+ libdbh_la_SOURCES = dbh.c  		\
+ 		    dbh_static.i dbh_exported.i \
