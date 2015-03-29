@@ -1,0 +1,116 @@
+--- origsrc/libsign/CMakeLists.txt	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/CMakeLists.txt	2015-03-29 23:44:04.132204700 +0900
+@@ -72,3 +72,11 @@ install(FILES
+     DESTINATION ${CMAKE_INSTALL_PATH})
+ 
+ install(EXPORT signTargets DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT dev)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION ${LIBRARY_VERSION})
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libsign.pc.in ${CMAKE_BINARY_DIR}/libsign.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libsign.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsign/libsign.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsign/libsign.pc.in	2015-03-29 23:45:20.694159300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsign
++Description: Simple library to perform common PGP operations
++Version: @VERSION@
++Libs: -L${libdir} -lsign -lgmp
++Cflags: -I${includedir}/libsign
+--- origsrc/libsign/src/CMakeLists.txt	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/src/CMakeLists.txt	2015-03-29 23:33:03.244938300 +0900
+@@ -34,7 +34,7 @@ set(LIB_HEADERS
+         verify.h
+         pgp.h)
+ 
+-add_library(sign STATIC ${LIB_SOURCES})
++add_library(sign SHARED ${LIB_SOURCES})
+ target_link_libraries(sign ${GMP_LIBRARIES})
+ 
+ # compile with -fPIC if we need to
+--- origsrc/libsign/src/public_key.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/src/public_key.c	2015-03-29 23:36:54.500214000 +0900
+@@ -13,8 +13,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ void public_key_init(libsign_public_key *pub)
+ {
+--- origsrc/libsign/src/signature.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/src/signature.c	2015-03-29 23:36:41.236578900 +0900
+@@ -13,8 +13,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ void signature_init(libsign_signature *sig)
+ {
+--- origsrc/libsign/src/verify.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/src/verify.c	2015-03-29 23:36:25.690064600 +0900
+@@ -12,8 +12,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ int verify(libsign_public_key *public_key, libsign_signature *signature, const char *filename)
+ {
+--- origsrc/libsign/tests/test-parse-pubkey-buffer.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/tests/test-parse-pubkey-buffer.c	2015-03-29 23:35:29.459313100 +0900
+@@ -9,8 +9,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ int main()
+ {
+--- origsrc/libsign/tests/test-parse-signature-buffer.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/tests/test-parse-signature-buffer.c	2015-03-29 23:35:16.146766900 +0900
+@@ -9,8 +9,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ int main()
+ {
+--- origsrc/libsign/tests/test-verify.c	2015-03-29 23:31:54.000000000 +0900
++++ src/libsign/tests/test-verify.c	2015-03-29 23:34:29.723066900 +0900
+@@ -12,8 +12,10 @@
+ 
+ #ifndef _MSC_VER
+ #include <unistd.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
+ #endif
++#endif
+ 
+ int main()
+ {
