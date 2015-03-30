@@ -1,0 +1,55 @@
+--- origsrc/libgibsonclient/CMakeLists.txt	2015-03-30 09:39:58.000000000 +0900
++++ src/libgibsonclient/CMakeLists.txt	2015-03-30 12:29:58.751633200 +0900
+@@ -51,12 +51,14 @@ set_target_properties( ${PROJECT} PROPER
+ 					   # Install name directory (for Mac OS X install_name_tool)
+ 					   INSTALL_NAME_DIR ${PREFIX}/lib )
+ 
+-add_executable( gibson-cli src/linenoise/linenoise.c src/gibson-cli.c )
++include(FindPkgConfig)
++pkg_check_modules(LINENOISE REQUIRED linenoise)
++add_executable( gibson-cli src/gibson-cli.c )
+ set_source_files_properties( src/gibson-cli.c PROPERTIES COMPILE_FLAGS ${COMMON_CFLAGS} )
+-target_link_libraries( gibson-cli libgibsonclient )
++target_link_libraries( gibson-cli libgibsonclient ${LINENOISE_LIBRARIES})
+ 
+ install( FILES ${HEADERS} DESTINATION ${PREFIX}/include/ )
+-install( FILES gibson-cli DESTINATION ${PREFIX}/bin/
++install( TARGETS gibson-cli DESTINATION ${PREFIX}/bin/
+  PERMISSIONS
+  OWNER_READ 
+  OWNER_WRITE 
+@@ -68,7 +70,8 @@ install( FILES gibson-cli DESTINATION ${
+ )
+ 
+ install( TARGETS ${PROJECT} 
+-		 DESTINATION ${PREFIX}/lib 
++		 RUNTIME DESTINATION ${PREFIX}/bin
++     ARCHIVE DESTINATION ${PREFIX}/lib
+ 		 PERMISSIONS
+ 		 OWNER_READ 
+ 		 OWNER_WRITE 
+@@ -99,3 +102,11 @@ if (UNIX)
+     include(CPack)
+ 
+ endif (UNIX)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgibsonclient.pc.in ${CMAKE_BINARY_DIR}/libgibsonclient.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libgibsonclient.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgibsonclient/libgibsonclient.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgibsonclient/libgibsonclient.pc.in	2015-03-30 12:29:25.858155800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgibsonclient
++Description: Gibson cache server native client library
++Version: @VERSION@
++Libs: -L${libdir} -lgibsonclient
++Cflags: -I${includedir}
