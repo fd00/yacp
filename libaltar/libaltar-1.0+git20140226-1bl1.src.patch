@@ -1,0 +1,62 @@
+--- origsrc/libaltar/CMakeLists.txt	2015-03-30 21:53:06.000000000 +0900
++++ src/libaltar/CMakeLists.txt	2015-03-30 22:03:00.176732200 +0900
+@@ -14,7 +14,7 @@ set(LIBALTAR_HEADERS_DIR "${PROJECT_SOUR
+ set(LIBALTAR_SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+ 
+ if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+-  add_definitions(-Wall -Wextra -pedantic)
++  add_definitions(-Wall -Wextra)
+ endif()
+ 
+ include_directories("${LIBALTAR_HEADERS_DIR}")
+@@ -22,5 +22,16 @@ include_directories("${LIBALTAR_HEADERS_
+ add_subdirectory("${LIBALTAR_HEADERS_DIR}")
+ add_subdirectory("${LIBALTAR_SRC_DIR}")
+ 
+-add_library(altar ${LIBALTAR_SRC_FILES} ${LIBALTAR_HEADER_FILES})
++add_library(altar SHARED ${LIBALTAR_SRC_FILES} ${LIBALTAR_HEADER_FILES})
++set_target_properties(altar PROPERTIES SOVERSION 0)
++install(TARGETS altar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
++install(DIRECTORY ${LIBALTAR_HEADERS_DIR}/altar DESTINATION include FILES_MATCHING PATTERN "*.h")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION ${PACKAGE_VERSION})
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libaltar.pc.in ${CMAKE_BINARY_DIR}/libaltar.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libaltar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libaltar/libaltar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libaltar/libaltar.pc.in	2015-03-30 21:55:12.977117800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libaltar
++Description: Library for processing GameMaker: Studio binary file formats
++Version: @VERSION@
++Libs: -L${libdir} -laltar
++Cflags: -I${includedir}
+--- origsrc/libaltar/src/win/file.c	2015-03-30 21:53:06.000000000 +0900
++++ src/libaltar/src/win/file.c	2015-03-30 21:59:21.868450800 +0900
+@@ -3,6 +3,12 @@
+ 
+ #include "altar/win/file.h"
+ 
++#include <string.h>
++#include <unistd.h>
++
++#if !defined(MAP_POPULATE)
++#define MAP_POPULATE (0)
++#endif
+ 
+ static error_t win_bookmark(win_file_t *file) {
+   section_header_t *hdr, *hdr_end;
+@@ -166,4 +172,3 @@ void win_close(win_file_t* file) {
+ void *win_ptr_from_offset(win_file_t *in, uintptr_t offset) {
+   return (void*)((uintptr_t)in->base + offset);
+ }
+-
