@@ -1,0 +1,86 @@
+--- origsrc/libsocketcpp-1.0.7/Makefile.am	2001-02-16 16:06:50.000000000 +0900
++++ src/libsocketcpp-1.0.7/Makefile.am	2015-03-31 00:18:45.020381400 +0900
+@@ -25,3 +25,5 @@ EXTRA_DIST = \
+ 	Makefile.extra \
+ 	build-rpm 
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libsocketcpp.pc
+--- origsrc/libsocketcpp-1.0.7/configure.in	2002-02-18 11:23:42.000000000 +0900
++++ src/libsocketcpp-1.0.7/configure.in	2015-03-31 00:21:05.995839800 +0900
+@@ -2,7 +2,7 @@ dnl configure.in source file; run autoco
+ 
+ AC_REVISION($Revision: 1.8 $)dnl this revision of this configure.in
+ 
+-AC_INIT(configure.in)
++AC_INIT([libsocketcpp], [1.0.7])
+ AC_PREREQ(2.13)
+ AC_CONFIG_AUX_DIR(aux)
+ 
+@@ -22,7 +22,7 @@ PROJECT_VERSION="$MAJOR_VERSION.$MINOR_V
+ AC_DEFINE_UNQUOTED(PROJECT_VERSION, "$PROJECT_VERSION")
+ AC_SUBST(PROJECT_VERSION)
+ 
+-AM_INIT_AUTOMAKE(libsocketcpp, $PROJECT_VERSION)
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ AM_MAINTAINER_MODE
+@@ -118,6 +118,5 @@ AC_OUTPUT(
+ Makefile
+ src/Makefile
+ project.spec
++libsocketcpp.pc
+ )
+-
+-
+--- origsrc/libsocketcpp-1.0.7/libsocketcpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsocketcpp-1.0.7/libsocketcpp.pc.in	2015-03-31 00:20:46.383354800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsocketcpp
++Description: C++ class/library which allows you to easily create client/server applications for either TCP or UDP
++Version: @VERSION@
++Libs: -L${libdir} -lsocketcpp
++Cflags: -I${includedir}
+--- origsrc/libsocketcpp-1.0.7/src/Makefile.am	2001-02-16 15:20:39.000000000 +0900
++++ src/libsocketcpp-1.0.7/src/Makefile.am	2015-03-31 00:16:23.528329200 +0900
+@@ -13,8 +13,12 @@ tcpservertest_SOURCES = \
+ libsocketcpp_la_SOURCES = \
+         tcpsocket.cpp
+ 
++libsocketcpp_la_LDFLAGS = -no-undefined
++
+ pkincludedir = ${includedir}/libsocketcpp
+ pkginclude_HEADERS = \
+         tcpsocket.h
+ 
++MAINTAINERCLEANFILES =
++
+ include $(top_srcdir)/Makefile.extra
+--- origsrc/libsocketcpp-1.0.7/src/tcpservertest.cpp	2002-02-18 11:19:47.000000000 +0900
++++ src/libsocketcpp-1.0.7/src/tcpservertest.cpp	2015-03-31 00:16:23.528329200 +0900
+@@ -22,7 +22,7 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <iostream.h>
++#include <iostream>
+ #include <unistd.h>
+ #include <sys/wait.h>
+ #include <sys/types.h>
+--- origsrc/libsocketcpp-1.0.7/src/tcpsocket.cpp	2002-02-18 11:19:47.000000000 +0900
++++ src/libsocketcpp-1.0.7/src/tcpsocket.cpp	2015-03-31 00:16:23.528329200 +0900
+@@ -212,7 +212,7 @@ bool TCPSocket::Listen() {
+ }
+ 
+ bool TCPSocket::Accept() {
+-   size_t sin_size = sizeof(struct sockaddr_in);
++   socklen_t sin_size = sizeof(struct sockaddr_in);
+    //sockaddr_in RemoteAddress;
+    if((newfd = accept(sockfd, (struct sockaddr *)&RemoteAddress, &sin_size)) == -1) {
+       perror("accept");
