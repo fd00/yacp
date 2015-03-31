@@ -1,0 +1,77 @@
+--- origsrc/libptp2-1.1.10/Makefile.am	2005-02-14 23:48:11.000000000 +0900
++++ src/libptp2-1.1.10/Makefile.am	2015-03-31 18:21:26.072713200 +0900
+@@ -1,3 +1,7 @@
+ 
+ SUBDIRS = src
+ 
++ACLOCAL_AMFLAGS = -I m4
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libptp2.pc
+--- origsrc/libptp2-1.1.10/configure.in	2015-03-31 18:19:35.635905700 +0900
++++ src/libptp2-1.1.10/configure.in	2015-03-31 18:21:53.295246300 +0900
+@@ -185,5 +185,6 @@ AC_NEED_STDINT_H(src/libptp-stdint.h)
+ AC_CONFIG_FILES([ 
+ Makefile
+ src/Makefile
++libptp2.pc
+ ])
+ AC_OUTPUT
+--- origsrc/libptp2-1.1.10/libptp2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libptp2-1.1.10/libptp2.pc.in	2015-03-31 18:21:35.884265500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libptp2
++Description: Library and client for communicating with PTP enabled devices
++Version: @VERSION@
++Libs: -L${libdir} -lptp2
++Cflags: -I${includedir}
+--- origsrc/libptp2-1.1.10/src/Makefile.am	2015-03-31 18:19:35.552521700 +0900
++++ src/libptp2-1.1.10/src/Makefile.am	2015-03-31 18:19:36.302977700 +0900
+@@ -3,7 +3,7 @@ EXTRA_DIST = ptp-pack.c
+ lib_LTLIBRARIES = libptp2.la
+ 
+ libptp2_la_SOURCES = ptp.c ptp.h properties.c
+-libptp2_la_LDFLAGS = -version-info @LIBPTP2_VERSION_INFO@
++libptp2_la_LDFLAGS = -version-info @LIBPTP2_VERSION_INFO@ -no-undefined
+ 
+ libptp2includedir = $(includedir)/libptp2
+ libptp2include_HEADERS = ptp.h libptp-endian.h libptp-stdint.h
+--- origsrc/libptp2-1.1.10/src/libptp-endian.h	2007-08-27 00:08:51.000000000 +0900
++++ src/libptp2-1.1.10/src/libptp-endian.h	2015-03-31 18:30:37.272379700 +0900
+@@ -29,10 +29,18 @@
+ /* Define aliases for the standard byte swapping macros */
+ /* Arguments to these macros must be properly aligned on natural word */
+ /* boundaries in order to work properly on all architectures */
++#if !defined(htobe16)
+ #define htobe16(x) htons(x)
++#endif
++#if !defined(htobe32)
+ #define htobe32(x) htonl(x)
++#endif
++#if !defined(be16toh)
+ #define be16toh(x) ntohs(x)
++#endif
++#if !defined(be32toh)
+ #define be32toh(x) ntohl(x)
++#endif
+ 
+ #define HTOBE16(x) (x) = htobe16(x)
+ #define HTOBE32(x) (x) = htobe32(x)
+@@ -55,8 +63,12 @@
+ #define LE64TOH(x)      (void) (x)
+ 
+ /* These don't have standard aliases */
++#if !defined(htobe64)
+ #define htobe64(x)      swap64(x)
++#endif
++#if !defined(be64toh)
+ #define be64toh(x)      swap64(x)
++#endif
+ 
+ #define HTOBE64(x)      (x) = htobe64(x)
+ #define BE64TOH(x)      (x) = be64toh(x)
