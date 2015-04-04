@@ -1,5 +1,5 @@
---- origsrc/uterus-0.2.8/build-aux/yuck.mk	2014-09-17 19:53:55.000000000 +0900
-+++ src/uterus-0.2.8/build-aux/yuck.mk	2015-01-08 15:56:09.216694300 +0900
+--- origsrc/uterus-0.2.9/build-aux/yuck.mk	2015-02-24 21:32:22.000000000 +0900
++++ src/uterus-0.2.9/build-aux/yuck.mk	2015-04-04 22:40:15.187891900 +0900
 @@ -1,6 +1,6 @@
  ## bootstrapping rules, made for inclusion in your own Makefiles
  yuck.m4i: yuck.yuck
@@ -8,43 +8,41 @@
  	$(AM_V_GEN) $(builddir)/yuck-bootstrap$(EXEEXT) $(srcdir)/yuck.yuck > $@ \
  		|| { rm -f -- $@; false; }
  
---- origsrc/uterus-0.2.8/m4/sxe-compiler.m4	2014-09-17 19:53:55.000000000 +0900
-+++ src/uterus-0.2.8/m4/sxe-compiler.m4	2015-01-08 18:16:27.054433900 +0900
-@@ -366,10 +366,14 @@ AC_DEFUN([SXE_FEATFLAGS], [dnl
+--- origsrc/uterus-0.2.9/m4/sxe-compiler.m4	2015-02-24 21:32:22.000000000 +0900
++++ src/uterus-0.2.9/m4/sxe-compiler.m4	2015-04-04 22:41:03.845660700 +0900
+@@ -446,9 +446,12 @@ AC_DEFUN([SXE_FEATFLAGS], [dnl
+ 	SXE_CHECK_COMPILER_FLAG([-static-intel], [
  		featflags="${featflags} -static-intel"
- 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-intel"], [:],
- 		[${SXE_CFLAGS}])
-+
+ 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-intel"], [:])
 +	if test $host_os != cygwin
 +	then
  	SXE_CHECK_COMPILER_FLAG([-static-libgcc], [
  		featflags="${featflags} -static-libgcc"
- 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-libgcc"], [:],
- 		[${SXE_CFLAGS}])
+ 		XCCLDFLAGS="${XCCLDFLAGS} \${XCCFLAG} -static-libgcc"], [:])
 +	fi
  
  	SXE_CHECK_COMPILER_FLAG([-intel-extensions], [dnl
  		featflags="${featflags} -intel-extensions"])
---- origsrc/uterus-0.2.8/src/Makefile.am	2014-09-17 19:53:55.000000000 +0900
-+++ src/uterus-0.2.8/src/Makefile.am	2015-01-08 16:01:03.562397400 +0900
-@@ -5,7 +5,7 @@
- ## Author:  Sebastian Freundt <hroptatyr@fresse.org>
- ##
- ## This file is part of uterus.
--## 
-+##
- ## Redistribution and use in source and binary forms, with or without
- ## modification, are permitted provided that the following conditions
- ## are met:
+--- origsrc/uterus-0.2.9/src/Makefile.am	2015-02-24 21:32:22.000000000 +0900
++++ src/uterus-0.2.9/src/Makefile.am	2015-04-04 23:24:12.298545300 +0900
 @@ -40,7 +40,7 @@ include $(top_builddir)/version.mk
  AM_CPPFLAGS = -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=201001L
  AM_CPPFLAGS += -DTIMESTAMPS
  AM_CPPFLAGS += -DHAVE_VERSION_H
 -AM_LDFLAGS = $(XCCLDFLAGS)
-+AM_LDFLAGS = $(XCCLDFLAGS) -no-undefined
++AM_LDFLAGS = -no-undefined $(XCCLDFLAGS)
  
  ## headerdir and utedir are defined in c.ac
  
+@@ -52,7 +52,7 @@ ute_PROGRAMS =
+ ute_LTLIBRARIES =
+ lib_LTLIBRARIES =
+ header_HEADERS =
+-noinst_LIBRARIES =
++noinst_LTLIBRARIES =
+ EXTRA_DIST = $(BUILT_SOURCES)
+ CLEANFILES =
+ BUILT_SOURCES =
 @@ -60,9 +60,9 @@ BUILT_SOURCES =
  DSO_LDFLAGS = -shared -avoid-version -module
  
@@ -52,12 +50,21 @@
 -noinst_LIBRARIES += libversion.a
 -libversion_a_SOURCES =
 -libversion_a_SOURCES += version.c version.h version.c.in
-+noinst_LTLIBRARIES = libversion.la
++noinst_LTLIBRARIES += libversion.la
 +libversion_la_SOURCES =
 +libversion_la_SOURCES += version.c version.h version.c.in
  
  ## the main thing
  lib_LTLIBRARIES += libuterus.la
+@@ -102,7 +102,7 @@ libuterus_la_SOURCES += m62.c
+ libuterus_la_CPPFLAGS += -DSTATIC_TRIE_GUTS
+ libuterus_la_SOURCES += uteslut-trie-glue.h
+ libuterus_la_SOURCES += trie.c trie.h
+-libuterus_la_CPPFLAGS += -DLIBMODE -fPIC
++libuterus_la_CPPFLAGS += -DLIBMODE
+ libuterus_la_CPPFLAGS += -DUSE_DATRIE -DUSE_UTE_SORT
+ libuterus_la_CPPFLAGS += $(lzma_CFLAGS)
+ libuterus_la_LDFLAGS = $(AM_LDFLAGS)
 @@ -118,13 +118,13 @@ EXTRA_libuterus_la_SOURCES += nifty.h
  EXTRA_libuterus_la_SOURCES += cmd-aux.c
  
@@ -145,19 +152,18 @@
  dukas_la_SOURCES = dukas.c
 -dukas_la_LIBADD = libversion.a
 -dukas_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
-+dukas_la_LIBADD = $(uterus_LIBS)
++dukas_la_LIBADD = libversion.la libuterus.la
 +dukas_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
 +
  ## dukas has a binary too
  noinst_PROGRAMS += ute-mux-dukas
  ute_mux_dukas_SOURCES = dukas.c dukas.yuck
-@@ -224,41 +226,47 @@ BUILT_SOURCES += dukas.yucc
+@@ -224,41 +226,46 @@ BUILT_SOURCES += dukas.yucc
  
  ute_LTLIBRARIES += mat.la
  mat_la_SOURCES = mat.c
 -mat_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
 +mat_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
-+mat_la_LIBADD = libuterus.la
  
  if HAVE_HDF5
  ute_LTLIBRARIES += hdf5.la
@@ -165,7 +171,7 @@
  hdf5_la_CPPFLAGS = $(AM_CPPFLAGS) $(HDF5_CPPFLAGS)
 -hdf5_la_LIBADD = libversion.a
 -hdf5_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS) $(HDF5_LDFLAGS)
-+hdf5_la_LIBADD = $(uterus_LIBS)
++hdf5_la_LIBADD = libversion.la libuterus.la
 +hdf5_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS) $(HDF5_LDFLAGS)
  endif  ## HAVE_HDF5
  BUILT_SOURCES += hdf5.yucc
@@ -174,13 +180,13 @@
  ariva_la_SOURCES = ariva.c
 -ariva_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
 +ariva_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
-+ariva_la_LIBADD = libuterus.la
++ariva_la_LIBADD =  libuterus.la
  
  ute_LTLIBRARIES += truefx.la
  truefx_la_SOURCES = truefx.c
 -truefx_la_LDFLAGS = $(DSO_LDFLAGS) $(XCCLDFLAGS)
 +truefx_la_LDFLAGS = $(DSO_LDFLAGS) $(AM_LDFLAGS)
-+truefx_la_LIBADD = libuterus.la
++truefx_la_LIBADD =  libuterus.la
  
  if HAVE_EXPAT
  ute_LTLIBRARIES += ibhist.la
@@ -207,18 +213,14 @@
  
  ## version rules
  version.c: version.c.in $(top_builddir)/.version
-@@ -282,7 +290,7 @@ $(LTDLDEPS):
- 	cd ../libltdl && $(MAKE)
- endif
- 
--# 
-+#
- # Help the developers get nice post-processed source files
- 
- ## Create preprocessor output (debugging purposes only)
---- origsrc/uterus-0.2.8/test/Makefile.am	2014-09-17 19:53:55.000000000 +0900
-+++ src/uterus-0.2.8/test/Makefile.am	2015-01-08 16:11:56.387592800 +0900
-@@ -178,13 +178,13 @@ check_PROGRAMS += core-file-2
+@@ -292,4 +299,3 @@ endif
+ ## Create assembler output (debugging purposes only)
+ .c.s:
+ 	$(COMPILE) -S -c $(cflags) $<
+-
+--- origsrc/uterus-0.2.9/test/Makefile.am	2015-02-24 21:32:22.000000000 +0900
++++ src/uterus-0.2.9/test/Makefile.am	2015-04-04 22:46:11.825865300 +0900
+@@ -187,13 +187,13 @@ check_PROGRAMS += core-file-2
  check_PROGRAMS += core-file-3
  check_PROGRAMS += core-file-4
  
@@ -236,7 +238,7 @@
  core_file_4_LDADD = $(uterus_LIBS)
  bin_tests += core-file-1
  bin_tests += core-file-2
-@@ -193,142 +193,142 @@ bin_tests += core-file-4
+@@ -202,142 +202,142 @@ bin_tests += core-file-4
  
  ## testing headers and stuff
  check_PROGRAMS += m30-1
@@ -406,13 +408,4 @@
 +stream_02_LDFLAGS = $(AM_LDFLAGS)
  stream_02_LDADD = $(m30_LIBS)
  
- 
-@@ -337,7 +337,7 @@ check_PROGRAMS += clitoris
- clitoris_SOURCES = clitoris.c clitoris.yuck
- clitoris_CPPFLAGS = $(AM_CPPFLAGS)
- clitoris_CPPFLAGS += -D_GNU_SOURCE
--clitoris_LDFLAGS = $(AM_LDFLAGS) -static
-+clitoris_LDFLAGS = $(AM_LDFLAGS)
- clitoris_LDADD = -lutil
- BUILT_SOURCES += clitoris.yucc
  
