@@ -1,0 +1,110 @@
+--- origsrc/libfprint-0.6.0/examples/Makefile.am	2013-11-21 21:43:23.000000000 +0900
++++ src/libfprint-0.6.0/examples/Makefile.am	2015-04-04 12:51:38.820275100 +0900
+@@ -1,4 +1,4 @@
+-AM_CFLAGS = -I$(top_srcdir)
++AM_CPPFLAGS = -I$(top_srcdir)
+ noinst_PROGRAMS = verify_live enroll verify img_capture cpp-test
+ 
+ verify_live_SOURCES = verify_live.c
+@@ -23,4 +23,3 @@ img_capture_continuous_CFLAGS = $(X_CFLA
+ img_capture_continuous_SOURCES = img_capture_continuous.c
+ img_capture_continuous_LDADD = ../libfprint/libfprint.la $(X_LIBS) $(X_PRE_LIBS) $(XV_LIBS) -lX11 $(X_EXTRA_LIBS);
+ endif
+-
+--- origsrc/libfprint-0.6.0/libfprint/Makefile.am	2015-02-04 00:26:43.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/Makefile.am	2015-04-01 23:51:57.259730300 +0900
+@@ -92,7 +92,7 @@ NBIS_SRC = \
+ 	nbis/mindtct/util.c
+ 
+ libfprint_la_CFLAGS = -fvisibility=hidden -I$(srcdir)/nbis/include $(LIBUSB_CFLAGS) $(GLIB_CFLAGS) $(CRYPTO_CFLAGS) $(AM_CFLAGS)
+-libfprint_la_LDFLAGS = -version-info @lt_major@:@lt_revision@:@lt_age@
++libfprint_la_LDFLAGS = -no-undefined -version-info @lt_major@:@lt_revision@:@lt_age@
+ libfprint_la_LIBADD = -lm $(LIBUSB_LIBS) $(GLIB_LIBS) $(CRYPTO_LIBS)
+ 
+ fprint_list_udev_rules_SOURCES = fprint-list-udev-rules.c
+--- origsrc/libfprint-0.6.0/libfprint/drivers/vfs101.c	2013-11-21 21:43:23.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/drivers/vfs101.c	2015-04-04 12:35:00.642091700 +0900
+@@ -136,6 +136,10 @@ struct vfs101_dev
+ 	int height;
+ };
+ 
++#if defined(__CYGWIN__)
++#define byte(p,v) byte_(p,v)
++#endif
++
+ /* Return byte at specified position */
+ static inline unsigned char byte(int position, int value)
+ {
+--- origsrc/libfprint-0.6.0/libfprint/drivers/vfs5011.c	2015-02-04 00:26:43.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/drivers/vfs5011.c	2015-04-04 12:35:50.770264400 +0900
+@@ -341,8 +341,6 @@ void interpolate_lines(unsigned char *li
+ 			    + (yi-y1)/(y2-y1)*(line2[i]-line1[i]);
+ }
+ 
+-int min(int a, int b) {return (a < b) ? a : b; }
+-
+ /* Rescale image to account for variable swiping speed */
+ int vfs5011_rescale_image(unsigned char *image, int input_lines,
+ 			  unsigned char *output, int max_output_lines)
+@@ -1017,4 +1015,3 @@ struct fp_img_driver vfs5011_driver = {
+ 	.activate = dev_activate,
+ 	.deactivate = dev_deactivate,
+ };
+-
+--- origsrc/libfprint-0.6.0/libfprint/nbis/include/bz_array.h	2013-06-26 21:13:00.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/nbis/include/bz_array.h	2015-04-04 12:30:57.801451600 +0900
+@@ -37,6 +37,9 @@ identified are necessarily the best avai
+ #define SCOLPT_SIZE 20000
+ #define FCOLPT_SIZE 20000
+ 
++#if defined(__CYGWIN__) && defined(SC_SIZE)
++#undef SC_SIZE
++#endif
+ #define SC_SIZE 20000
+ 
+ 
+--- origsrc/libfprint-0.6.0/libfprint/nbis/include/lfs.h	2013-11-21 21:43:23.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/nbis/include/lfs.h	2015-04-04 12:32:27.669586100 +0900
+@@ -68,8 +68,12 @@ identified are necessarily the best avai
+ /*        MACRO DEFINITIONS                                              */
+ /*************************************************************************/
+ 
++#if !defined(max)
+ #define max(a, b)   ((a) > (b) ? (a) : (b))
++#endif
++#if !defined(min)
+ #define min(a, b)   ((a) < (b) ? (a) : (b))
++#endif
+ #define sround(x) ((int) (((x)<0) ? (x)-0.5 : (x)+0.5))
+ #define trunc_dbl_precision(x, scale) ((double) (((x)<0.0) \
+                  ? ((int)(((x)*(scale))-0.5))/(scale) \
+@@ -644,6 +648,9 @@ typedef struct lfsparms{
+ 
+ #define HOOK_FOUND               1
+ #define LOOP_FOUND               1
++#if defined(__CYGWIN__) && defined(IGNORE)
++#undef IGNORE
++#endif
+ #define IGNORE                   2
+ #define LIST_FULL                3
+ #define INCOMPLETE               3
+--- origsrc/libfprint-0.6.0/libfprint/poll.c	2013-06-26 21:13:00.000000000 +0900
++++ src/libfprint-0.6.0/libfprint/poll.c	2015-04-04 12:34:03.574150600 +0900
+@@ -108,6 +108,12 @@ struct fpi_timeout *fpi_timeout_add(unsi
+ 	timeout = g_malloc(sizeof(*timeout));
+ 	timeout->callback = callback;
+ 	timeout->data = data;
++#if defined(__CYGWIN__) && !defined(TIMESPEC_TO_TIMEVAL)
++#define TIMESPEC_TO_TIMEVAL(tv, ts) do {                                \
++        (tv)->tv_sec = (ts)->tv_sec;                                    \
++        (tv)->tv_usec = (suseconds_t)(ts)->tv_nsec / 1000;              \
++} while (0)
++#endif
+ 	TIMESPEC_TO_TIMEVAL(&timeout->expiry, &ts);
+ 
+ 	/* calculate timeout expiry by adding delay to current monotonic clock */
+@@ -359,4 +365,3 @@ void fpi_poll_exit(void)
+ 	fd_removed_cb = NULL;
+ 	libusb_set_pollfd_notifiers(fpi_usb_ctx, NULL, NULL, NULL);
+ }
+-
