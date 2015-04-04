@@ -1,0 +1,44 @@
+--- origsrc/cmocka-1.0.1/DefineOptions.cmake	2015-02-13 00:59:22.000000000 +0900
++++ src/cmocka-1.0.1/DefineOptions.cmake	2015-04-04 17:00:35.157118800 +0900
+@@ -1,7 +1,3 @@
+ option(WITH_STATIC_LIB "Build with a static library" OFF)
+ option(WITH_CMOCKERY_SUPPORT "Install a cmockery header" OFF)
+ option(UNIT_TESTING "Build with unit testing" OFF)
+-
+-if (UNIT_TESTING)
+-    set(WITH_STATIC_LIB ON)
+-endif()
+--- origsrc/cmocka-1.0.1/cmake/Modules/DefineCompilerFlags.cmake	2015-02-11 15:57:11.000000000 +0900
++++ src/cmocka-1.0.1/cmake/Modules/DefineCompilerFlags.cmake	2015-04-04 16:54:12.403014700 +0900
+@@ -16,10 +16,12 @@ if (UNIX AND NOT WIN32)
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-format-attribute -Wundef")
+ 
+         # with -fPIC
++        if (NOT CYGWIN)
+         check_c_compiler_flag("-fPIC" WITH_FPIC)
+         if (WITH_FPIC)
+             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+         endif (WITH_FPIC)
++        endif()
+ 
+         check_c_compiler_flag_ssp("-fstack-protector" WITH_STACK_PROTECTOR)
+         if (WITH_STACK_PROTECTOR)
+--- origsrc/cmocka-1.0.1/tests/CMakeLists.txt	2015-02-13 03:07:57.000000000 +0900
++++ src/cmocka-1.0.1/tests/CMakeLists.txt	2015-04-04 17:00:27.917798900 +0900
+@@ -19,14 +19,14 @@ set(CMOCKA_TESTS
+     test_setup_fail)
+ 
+ foreach(_CMOCKA_TEST ${CMOCKA_TESTS})
+-    add_cmocka_test(${_CMOCKA_TEST} ${_CMOCKA_TEST}.c ${CMOCKA_STATIC_LIBRARY})
++    add_cmocka_test(${_CMOCKA_TEST} ${_CMOCKA_TEST}.c ${CMOCKA_SHARED_LIBRARY})
+ endforeach()
+ 
+ ### Special Cases
+ if (${CMAKE_C_COMPILER_ID} MATCHES "(GNU|Clang)")
+     set_source_files_properties(test_cmockery.c PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
+ endif()
+-add_cmocka_test(test_cmockery test_cmockery.c ${CMOCKA_STATIC_LIBRARY})
++add_cmocka_test(test_cmockery test_cmockery.c ${CMOCKA_SHARED_LIBRARY})
+ 
+ ### Exceptions
+ 
