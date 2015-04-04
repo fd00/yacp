@@ -1,6 +1,24 @@
---- origsrc/ucommon-6.3.0/commoncpp/udp.cpp	2014-08-31 19:51:41.000000000 +0900
-+++ src/ucommon-6.3.0/commoncpp/udp.cpp	2014-12-29 15:01:00.160983600 +0900
-@@ -316,7 +316,7 @@ Socket::Error UDPSocket::join(const ucom
+--- origsrc/ucommon-6.3.1/Makefile.am	2015-03-24 18:19:30.000000000 +0900
++++ src/ucommon-6.3.1/Makefile.am	2015-04-04 15:28:08.686404900 +0900
+@@ -29,8 +29,8 @@ pkgconfig_DATA = ucommon.pc @COMPAT_PC@
+ scriptdir = $(bindir)
+ script_SCRIPTS = ucommon-config @COMPAT_CONFIG@
+ 
+-cmakedir = $(datadir)/ucommon/cmake
+-cmake_DATA = cmake/Cape*.cmake
++cmakedir = $(libdir)/cmake/$(PACKAGE)
++cmake_DATA = $(top_srcdir)/cmake/Cape*.cmake
+ 
+ man_MANS = ucommon-config.1 commoncpp-config.1
+ 
+@@ -68,4 +68,3 @@ cleandist:
+ 	@rm -f ${PACKAGE}_*.gz
+ 	@rm -f ${PACKAGE}_*.dsc
+ 	@rm -f *.changes
+-
+--- origsrc/ucommon-6.3.1/commoncpp/udp.cpp	2015-03-25 08:28:03.000000000 +0900
++++ src/ucommon-6.3.1/commoncpp/udp.cpp	2015-04-04 15:18:10.866318200 +0900
+@@ -317,7 +317,7 @@ Socket::Error UDPSocket::join(const ucom
  Socket::Error UDPSocket::getInterfaceIndex(const char *DeviceName,int& InterfaceIndex)
  {
  #ifndef _MSWINDOWS_
@@ -9,9 +27,9 @@
  
      struct ip_mreqn  mreqn;
      struct ifreq       m_ifreq;
---- origsrc/ucommon-6.3.0/configure.ac	2014-12-13 04:00:57.000000000 +0900
-+++ src/ucommon-6.3.0/configure.ac	2014-12-29 15:05:15.661960100 +0900
-@@ -58,6 +58,7 @@ have_gettext="no"
+--- origsrc/ucommon-6.3.1/configure.ac	2015-04-04 15:18:09.569052600 +0900
++++ src/ucommon-6.3.1/configure.ac	2015-04-04 15:18:10.880380700 +0900
+@@ -63,6 +63,7 @@ have_gettext="no"
  socket_lib=""
  posix4_lib=""
  rt_lib=""
@@ -19,7 +37,7 @@
  
  test -z "$localedir" && localedir='${datadir}/locale'
  
-@@ -185,6 +186,47 @@ AC_CHECK_HEADER(regex.h, [
+@@ -190,6 +191,47 @@ AC_CHECK_HEADER(regex.h, [
      ])
  ])
  
@@ -67,7 +85,7 @@
  AC_CHECK_LIB(msvcrt, fopen, [
      threading="msw"
      clib="msvcrt"
-@@ -233,6 +275,7 @@ AC_CHECK_LIB(msvcrt, fopen, [
+@@ -238,6 +280,7 @@ AC_CHECK_LIB(msvcrt, fopen, [
          socket_lib="-lsocket"
      ])
  ])
@@ -75,7 +93,7 @@
  
  AC_ARG_ENABLE(socks,
      AC_HELP_STRING([--enable-socks],
-@@ -392,6 +435,11 @@ for func in ftok shm_open nanosleep cloc
+@@ -397,6 +440,11 @@ for func in ftok shm_open nanosleep cloc
                  if test ! -z "$tlib" ; then
                      AC_CHECK_LIB($tlib, $func, [
                          found=$func
@@ -87,7 +105,7 @@
                      ])
                  fi
              ])
-@@ -468,8 +516,8 @@ for func in ftok shm_open nanosleep cloc
+@@ -473,8 +521,8 @@ for func in ftok shm_open nanosleep cloc
      esac
  done
  
@@ -98,7 +116,7 @@
  
  if test "$UCOMMON_MODEL" = "CC" ; then
      AC_CHECK_LIB(Systemstubs, printf, [
-@@ -570,6 +618,9 @@ AC_ARG_WITH(pkg-config,
+@@ -575,6 +623,9 @@ AC_ARG_WITH(pkg-config,
          AC_CHECK_HEADERS(openssl/fips.h)
      ])
      PKG_CHECK_MODULES(GNUTLS, [gnutls >= 3.0.0], [], [GNUTLS_LIBS=""])
@@ -108,3 +126,15 @@
  ],[
      AC_CHECK_HEADERS(openssl/ssl.h, [
          OPENSSL_LIBS="-lssl -lcrypto -lz $OPENSSL_LINK"
+--- origsrc/ucommon-6.3.1/inc/ucommon/platform.h	2015-03-24 18:26:12.000000000 +0900
++++ src/ucommon-6.3.1/inc/ucommon/platform.h	2015-04-04 15:24:21.058971400 +0900
+@@ -173,7 +173,9 @@ typedef int pid_t;
+ #endif
+ 
+ #else
++#if !defined(__EXPORT)
+ #define __EXPORT    __attribute__ ((visibility("default")))
++#endif
+ #define __LOCAL     __attribute__ ((visibility("hidden")))
+ #define __SHARED    __attribute__ ((visibility("default")))
+ #endif
