@@ -1,0 +1,197 @@
+--- origsrc/signon-8.56/common-project-config.pri	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/common-project-config.pri	2015-04-05 14:27:16.289155200 +0900
+@@ -65,11 +65,7 @@ exists( meego-release ) {
+     ARCH = $$system(uname -m)
+ }
+ 
+-contains( ARCH, x86_64 ) {
+-    INSTALL_LIBDIR = $${INSTALL_PREFIX}/lib64
+-} else {
+     INSTALL_LIBDIR = $${INSTALL_PREFIX}/lib
+-}
+ 
+ # default library directory can be overriden by defining LIBDIR when
+ # running qmake
+--- origsrc/signon-8.56/lib/SignOn/SignOn.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/lib/SignOn/SignOn.pro	2015-04-05 14:31:04.959663000 +0900
+@@ -1,7 +1,6 @@
+ TEMPLATE = subdirs
+ CONFIG   += ordered
+ SUBDIRS = \
+-    libsignon-qt-shared.pro \
+-    libsignon-qt-static.pro
++    libsignon-qt-shared.pro
+ 
+ include(doc/doc.pri)
+--- origsrc/signon-8.56/lib/plugins/signon-plugins.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/lib/plugins/signon-plugins.pro	2015-04-05 13:58:25.707772900 +0900
+@@ -5,8 +5,6 @@ include( ../../common-project-config.pri
+ include($${TOP_SRC_DIR}/common-installs-config.pri)
+ include($${TOP_SRC_DIR}/common-vars.pri)
+ 
+-CONFIG += static
+-
+ HEADERS = \
+     SignOn/authpluginif.h \
+     SignOn/uisessiondata.h \
+--- origsrc/signon-8.56/signon.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/signon.pro	2015-04-05 14:29:19.473064200 +0900
+@@ -7,7 +7,7 @@ tests.depends = lib src
+ 
+ include( common-installs-config.pri )
+ 
+-include( doc/doc.pri )
++# include( doc/doc.pri )
+ 
+ DISTNAME = $${PROJECT_NAME}-$${PROJECT_VERSION}
+ dist.commands = "git archive --format=tar --prefix=$${DISTNAME}/ HEAD | bzip2 -9 > $${DISTNAME}.tar.bz2"
+--- origsrc/signon-8.56/src/plugins/example/example.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/plugins/example/example.pro	2015-04-05 14:01:39.932761500 +0900
+@@ -16,3 +16,5 @@ example.files = exampleplugin.h \
+     exampleplugin.pro \
+     exampledata.h
+ INSTALLS += example
++
++LIBS += -L../../../lib/plugins
+--- origsrc/signon-8.56/src/plugins/password/password.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/plugins/password/password.pro	2015-04-05 14:00:21.165549100 +0900
+@@ -9,3 +9,4 @@ SOURCES += passwordplugin.cpp
+ headers.files = $$HEADERS
+ INSTALLS += headers
+ 
++LIBS += -L../../../lib/plugins
+--- origsrc/signon-8.56/src/plugins/test/ssotest.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/plugins/test/ssotest.pro	2015-04-05 14:05:12.190294700 +0900
+@@ -9,3 +9,4 @@ SOURCES += ssotestplugin.cpp
+ headers.files = $$HEADERS
+ INSTALLS += headers
+ 
++LIBS += -L../../../lib/plugins
+--- origsrc/signon-8.56/src/plugins/test/ssotest2.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/plugins/test/ssotest2.pro	2015-04-05 14:05:42.038026500 +0900
+@@ -14,3 +14,4 @@ INSTALLS += headers
+ 
+ RESOURCES += captcha-images.qrc
+ 
++LIBS += -L../../../lib/plugins
+--- origsrc/signon-8.56/src/remotepluginprocess/main.cpp	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/remotepluginprocess/main.cpp	2015-04-05 14:07:52.820854700 +0900
+@@ -30,6 +30,7 @@ extern "C" {
+ #include <sys/poll.h>
+ #include <syslog.h>
+ }
++#include <cstdio>
+ 
+ #define QT_DISABLE_DEPRECATED_BEFORE QT_VERSION_CHECK(4, 0, 0)
+ 
+--- origsrc/signon-8.56/src/remotepluginprocess/remotepluginprocess.pro	2015-04-05 13:41:57.415439000 +0900
++++ src/signon-8.56/src/remotepluginprocess/remotepluginprocess.pro	2015-04-05 14:09:46.078329600 +0900
+@@ -35,10 +35,10 @@ QMAKE_LIBDIR += \
+     $${TOP_BUILD_DIR}/lib/plugins \
+     $${TOP_BUILD_DIR}/lib/plugins/signon-plugins-common
+ 
+-LIBS += -lsignon-plugins -lsignon-plugins-common
++LIBS += -L../../lib/plugins -lsignon-plugins -L../../lib/plugins/signon-plugins-common -lsignon-plugins-common
+ 
+ QMAKE_CXXFLAGS += -fno-exceptions \
+-                  -fno-rtti
++                  -fno-rtti -std=gnu++11
+ 
+ #DEFINES += QT_NO_CAST_TO_ASCII \
+ #    QT_NO_CAST_FROM_ASCII
+--- origsrc/signon-8.56/src/signond/signond.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/src/signond/signond.pro	2015-04-05 13:53:26.568225000 +0900
+@@ -83,7 +83,9 @@ DEFINES += "SIGNOND_EXTENSIONS_DIR=$${SI
+ DEFINES += SIGNOND_TRACE
+ LIBS += \
+     -lrt \
++    -L../../lib/plugins/signon-plugins-common \
+     -lsignon-plugins-common \
++    -L../../lib/signond/SignOn \
+     -lsignon-extension
+ 
+ QMAKE_DISTCLEAN += \
+--- origsrc/signon-8.56/tests/extensions/tst_access_control_manager.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/extensions/tst_access_control_manager.pro	2015-04-05 14:22:01.339284300 +0900
+@@ -7,3 +7,5 @@ SOURCES += \
+ 
+ check.depends = $$TARGET
+ check.commands = "./$$TARGET"
++
++LIBS += -L../../lib/signond/SignOn -lsignon-extension
+--- origsrc/signon-8.56/tests/libsignon-qt-tests/libsignon-qt-tests.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/libsignon-qt-tests/libsignon-qt-tests.pro	2015-04-05 14:11:47.820783700 +0900
+@@ -12,7 +12,7 @@ QT += \
+ QT -= gui
+ 
+ greaterThan(QT_MAJOR_VERSION, 4) {
+-    LIBS *= -lsignon-qt5
++    LIBS *= -L../../lib/SignOn -lsignon-qt5
+ } else {
+     LIBS *= -lsignon-qt
+ }
+--- origsrc/signon-8.56/tests/signond-tests/identity-tool.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/identity-tool.pro	2015-04-05 14:20:35.906688900 +0900
+@@ -7,7 +7,7 @@ QT += core
+ QT -= gui
+ 
+ greaterThan(QT_MAJOR_VERSION, 4) {
+-    LIBS += -lsignon-qt5
++    LIBS += -L../../lib/SignOn -lsignon-qt5
+ } else {
+     LIBS += -lsignon-qt
+ }
+--- origsrc/signon-8.56/tests/signond-tests/mock-ac-plugin/identity-ac-helper.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/mock-ac-plugin/identity-ac-helper.pro	2015-04-05 14:20:01.017448200 +0900
+@@ -7,7 +7,7 @@ QT += core
+ QT -= gui
+ 
+ greaterThan(QT_MAJOR_VERSION, 4) {
+-    LIBS += -lsignon-qt5
++    LIBS += -L../../../lib/SignOn -lsignon-qt5
+ } else {
+     LIBS += -lsignon-qt
+ }
+--- origsrc/signon-8.56/tests/signond-tests/mock-ac-plugin/plugin.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/mock-ac-plugin/plugin.pro	2015-04-05 14:19:00.046717700 +0900
+@@ -24,7 +24,7 @@ CONFIG(enable-p2p) {
+ QMAKE_CXXFLAGS += \
+     -fvisibility=hidden
+ 
+-LIBS += -lsignon-extension
++LIBS += -L../../../lib/signond/SignOn -lsignon-extension
+ INCLUDEPATH += . \
+     $$TOP_SRC_DIR/lib/signond
+ 
+--- origsrc/signon-8.56/tests/signond-tests/tst_access_control.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/tst_access_control.pro	2015-04-05 14:21:00.730229900 +0900
+@@ -6,3 +6,5 @@ SOURCES = \
+     tst_access_control.cpp
+ 
+ check.commands = "SSO_PLUGINS_DIR=$${TOP_BUILD_DIR}/src/plugins/test SSO_EXTENSIONS_DIR=$${TOP_BUILD_DIR}/tests/signond-tests/mock-ac-plugin SSO_CONFIG_FILE_DIR=$${TOP_SRC_DIR}/tests/signond-tests/mock-ac-plugin $$RUN_WITH_SIGNOND ./$$TARGET"
++
++LIBS += -L../../lib/signond/SignOn -lsignon-extension -L../../lib/SignOn -lsignon-qt5
+--- origsrc/signon-8.56/tests/signond-tests/tst_database.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/tst_database.pro	2015-04-05 14:17:48.669143500 +0900
+@@ -11,3 +11,5 @@ SOURCES = \
+     databasetest.cpp \
+     $$TOP_SRC_DIR/src/signond/credentialsdb.cpp \
+     $$TOP_SRC_DIR/src/signond/default-secrets-storage.cpp
++
++LIBS += -L../../lib/signond/SignOn -lsignon-extension -L../../lib/SignOn -lsignon-qt5
+--- origsrc/signon-8.56/tests/signond-tests/tst_pluginproxy.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/tst_pluginproxy.pro	2015-04-05 14:17:09.006957200 +0900
+@@ -10,3 +10,5 @@ HEADERS += \
+ SOURCES = \
+     testpluginproxy.cpp \
+     include.cpp
++
++LIBS += -L../../lib/signond/SignOn -lsignon-extension -L../../lib/SignOn -lsignon-qt5
+--- origsrc/signon-8.56/tests/signond-tests/tst_timeouts.pro	2014-02-13 23:49:01.000000000 +0900
++++ src/signon-8.56/tests/signond-tests/tst_timeouts.pro	2015-04-05 14:16:20.488943000 +0900
+@@ -7,3 +7,5 @@ HEADERS += \
+ 
+ SOURCES = \
+     timeouts.cpp
++
++LIBS += -L../../lib/signond/SignOn -lsignon-extension -L../../lib/SignOn -lsignon-qt5
