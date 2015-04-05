@@ -1,0 +1,78 @@
+--- origsrc/SKV/CMakeLists.txt	2015-04-05 17:21:29.000000000 +0900
++++ src/SKV/CMakeLists.txt	2015-04-05 22:04:31.192974700 +0900
+@@ -20,9 +20,9 @@ option( BUILD_TESTS "Build skv unit test
+ set( CMAKE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build )
+ set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_OUTPUT_DIRECTORY}/lib )
+ if( NOT LIB_INSTALL_DIR )
+-    set( libdir "${CMAKE_INSTALL_PREFIX}lib${LIB_SUFFIX}" )
++    set( libdir "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}" )
+ else( NOT LIB_INSTALL_DIR )
+-    set( libdir "${CMAKE_INSTALL_PREFIX}${LIB_INSTALL_DIR}" )
++    set( libdir "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}" )
+ endif( NOT LIB_INSTALL_DIR )
+ set( CMAKE_INSTALL_RPATH "${libdir}" )
+ set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+@@ -46,3 +46,11 @@ endif( BUILD_TESTS )
+ 
+ add_subdirectory (library/src)
+ 
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${LIBRARY_VERSION}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/SKV.pc.in ${CMAKE_BINARY_DIR}/SKV.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/SKV.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/SKV/SKV.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SKV/SKV.pc.in	2015-04-05 22:04:07.605262800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SKV
++Description: Silly Key Value store
++Version: @VERSION@
++Libs: -L${libdir} -lskv
++Cflags: -I${includedir}
+--- origsrc/SKV/library/src/CMakeLists.txt	2015-04-05 17:21:29.000000000 +0900
++++ src/SKV/library/src/CMakeLists.txt	2015-04-05 17:27:51.030390800 +0900
+@@ -1,5 +1,5 @@
+ add_library(skv SHARED btree.c disktree.c pagemanager.c llist.c)
+-install( TARGETS skv LIBRARY DESTINATION ${libdir} )
++install( TARGETS skv RUNTIME DESTINATION bin ARCHIVE DESTINATION ${libdir} )
+ file( GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+ install( FILES ${files} DESTINATION include/libskv)
+ 
+@@ -14,3 +14,4 @@ set_target_properties( skv
+         SOVERSION ${LIBRARY_SOVERSION}
+ )
+ 
++set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+--- origsrc/SKV/library/test/CMakeLists.txt	2015-04-05 17:21:29.000000000 +0900
++++ src/SKV/library/test/CMakeLists.txt	2015-04-05 17:30:58.059993000 +0900
+@@ -5,7 +5,6 @@ find_package(Check REQUIRED)
+ 
+ include_directories(
+     ${CMAKE_SOURCE_DIR}/library/src
+-    ${CHECK_LIBRARIES}
+ )
+ 
+ 
+@@ -16,7 +15,7 @@ set( SOURCES
+     ${CMAKE_SOURCE_DIR}/library/src/llist.c
+ )
+ 
+-set( LIBS ${LIBS} ${CHECK_LIBRARIES} )
++set( LIBS ${LIBS} ${CHECK_LIBRARY} )
+ 
+ foreach( TEST_EXECUTABLE ${TEST_EXECUTABLES} )
+     add_executable(
+@@ -27,3 +26,5 @@ foreach( TEST_EXECUTABLE ${TEST_EXECUTAB
+     target_link_libraries( ${TEST_EXECUTABLE} ${LIBS} )
+     add_test( ${TEST_EXECUTABLE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_EXECUTABLE} )
+ endforeach( TEST_EXECUTABLE )
++
++set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
