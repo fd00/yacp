@@ -1,0 +1,93 @@
+--- origsrc/libtta-c-2.3/Makefile.am	2015-02-20 15:16:38.000000000 +0900
++++ src/libtta-c-2.3/Makefile.am	2015-04-08 21:42:09.675262000 +0900
+@@ -1,13 +1,14 @@
+ AUTOMAKE_OPTIONS = no-dependencies foreign
+ 
+-lib_LIBRARIES = libtta.a
++lib_LTLIBRARIES = libtta.la
+ 
+-libtta_a_SOURCES = libtta.c libtta.h filter.h
++libtta_la_SOURCES = libtta.c libtta.h filter.h
++libtta_la_LDFLAGS = -no-undefined
+ 
+ if ENABLE_ASM
+ if CPU_ARM
+-EXTRA_libtta_a_SOURCES = filter_arm.S
+-libtta_a_LIBADD = filter_arm.o
++EXTRA_libtta_la_SOURCES = filter_arm.S
++libtta_la_LIBADD = filter_arm.o
+ endif
+ endif
+ 
+@@ -21,3 +22,8 @@ console:
+ 
+ SUBDIRS = . console
+ EXTRA_DIST = config.h Makefile.rm Makefile.mipsel libtta.sln libtta.vcxproj*
++
++include_HEADERS = libtta.h
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libtta-c.pc
+--- origsrc/libtta-c-2.3/configure.ac	2015-02-20 15:37:12.000000000 +0900
++++ src/libtta-c-2.3/configure.ac	2015-04-08 21:39:31.947571800 +0900
+@@ -6,7 +6,7 @@ AC_CONFIG_HEADER([config.h])
+ AM_INIT_AUTOMAKE
+ 
+ # Initialize ranlib
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ # Common compiler flags
+ CFLAGS="-Wall -O2 -funroll-loops -fomit-frame-pointer"
+@@ -70,5 +70,5 @@ if false; then
+ AC_DEFINE(ENABLE_FRW,, [Define to enable FRW optimization])
+ fi
+ 
+-AC_CONFIG_FILES(Makefile console/Makefile)
++AC_CONFIG_FILES(libtta-c.pc Makefile console/Makefile)
+ AC_OUTPUT
+--- origsrc/libtta-c-2.3/console/Makefile.am	2015-02-20 15:21:27.000000000 +0900
++++ src/libtta-c-2.3/console/Makefile.am	2015-04-08 21:27:42.469615000 +0900
+@@ -4,6 +4,6 @@ AM_CFLAGS = -D_LARGEFILE64_SOURCE
+ 
+ tta_SOURCES = tta.c tta.h
+ 
+-tta_LDADD = $(top_builddir)/libtta.a
++tta_LDADD = $(top_builddir)/libtta.la
+ 
+ EXTRA_DIST = Makefile.mipsel console.sln console.vcxproj*
+--- origsrc/libtta-c-2.3/console/tta.h	2015-02-20 12:49:17.000000000 +0900
++++ src/libtta-c-2.3/console/tta.h	2015-04-08 21:32:39.265151200 +0900
+@@ -62,7 +62,7 @@ typedef RMfile (HANDLE);
+ typedef int (HANDLE);
+ #define INVALID_HANDLE_VALUE (-1)
+ #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || \
+-	(defined(__APPLE__) && defined(__MACH__))
++	(defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #endif
+ #ifndef aligned_alloc
+@@ -122,8 +122,10 @@ TTAuint32 GetTickCount() {
+ 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+ }
+ 
++#if !defined(__CYGWIN__)
+ extern TTAwchar *optarg;
+ extern int optind;
++#endif
+ 
+ #else // MSVC
+ 
+--- origsrc/libtta-c-2.3/libtta-c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtta-c-2.3/libtta-c.pc.in	2015-04-08 21:39:42.269154900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtta-c
++Description: TTA ANSI-C library
++Version: @VERSION@
++Libs: -L${libdir} -ltta
++Cflags: -I${includedir}
