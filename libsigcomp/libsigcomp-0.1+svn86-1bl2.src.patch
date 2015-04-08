@@ -1,20 +1,26 @@
 --- origsrc/libsigcomp/Makefile.am	2009-10-02 23:07:58.000000000 +0900
-+++ src/libsigcomp/Makefile.am	2013-10-20 12:45:05.186554700 +0900
-@@ -1,7 +1,9 @@
++++ src/libsigcomp/Makefile.am	2015-04-09 00:40:34.617419500 +0900
+@@ -1,7 +1,15 @@
 -lib_LIBRARIES = libsigcomp.a
 +lib_LTLIBRARIES = libsigcomp.la
  
  AM_CXXFLAGS = $(CXX_CFLAGS)
  
 -libsigcomp_a_SOURCES = src/adler32.c src/binary_utils.cxx src/compress.c src/c_wrapper.cxx src/deflate.c src/DeflateCompressor.cxx src/DeflateData.cxx src/DeflateData.Ghost.cxx src/DeflateData.zlib.cxx src/DummyCompressor.cxx src/Mutex.cxx src/PresenceDictionaryState.cxx src/rfc1662_ppfcs16.cxx src/rfc3174_us-sha1.cxx src/SafeObject.cxx src/SigCompBuffer.cxx src/SigCompCompartment.cxx src/SigCompCompressor.cxx src/SigCompCompressorData.cxx src/SigCompCompressorDisp.cxx src/SigCompDecompressorDisp.cxx src/SigCompManager.cxx src/SigCompMessage.cxx src/SigCompState.cxx src/SigCompStateHandler.cxx src/SigCompUDVM.ByteCopy.cxx src/SigCompUDVM.cxx src/SigCompUDVM.Instructions.cxx src/SigCompUDVM.Nack.cxx src/SigCompUDVM.Operands.cxx src/SigCompUDVM.StateManagement.cxx src/SipDictionaryState.cxx src/trees.c src/zutil.c
-+libsigcomp_la_SOURCES = src/adler32.c src/binary_utils.cxx src/compress.c src/c_wrapper.cxx src/deflate.c src/DeflateCompressor.cxx src/DeflateData.cxx src/DeflateData.Ghost.cxx src/DeflateData.zlib.cxx src/DummyCompressor.cxx src/Mutex.cxx src/PresenceDictionaryState.cxx src/rfc1662_ppfcs16.cxx src/rfc3174_us-sha1.cxx src/SafeObject.cxx src/SigCompBuffer.cxx src/SigCompCompartment.cxx src/SigCompCompressor.cxx src/SigCompCompressorData.cxx src/SigCompCompressorDisp.cxx src/SigCompDecompressorDisp.cxx src/SigCompManager.cxx src/SigCompMessage.cxx src/SigCompState.cxx src/SigCompStateHandler.cxx src/SigCompUDVM.ByteCopy.cxx src/SigCompUDVM.cxx src/SigCompUDVM.Instructions.cxx src/SigCompUDVM.Nack.cxx src/SigCompUDVM.Operands.cxx src/SigCompUDVM.StateManagement.cxx src/SipDictionaryState.cxx src/trees.c src/zutil.c
++AM_CPPFLAGS =
++if HAS_ZLIB
++AM_CPPFLAGS += -DHAS_ZLIB
++libsigcomp_la_LIBADD = $(ZLIB_LIBS)
++endif
  
 -pkginclude_HEADERS = src/*.h
++libsigcomp_la_SOURCES = src/adler32.c src/binary_utils.cxx src/compress.c src/c_wrapper.cxx src/deflate.c src/DeflateCompressor.cxx src/DeflateData.cxx src/DeflateData.Ghost.cxx src/DeflateData.zlib.cxx src/DummyCompressor.cxx src/Mutex.cxx src/PresenceDictionaryState.cxx src/rfc1662_ppfcs16.cxx src/rfc3174_us-sha1.cxx src/SafeObject.cxx src/SigCompBuffer.cxx src/SigCompCompartment.cxx src/SigCompCompressor.cxx src/SigCompCompressorData.cxx src/SigCompCompressorDisp.cxx src/SigCompDecompressorDisp.cxx src/SigCompManager.cxx src/SigCompMessage.cxx src/SigCompState.cxx src/SigCompStateHandler.cxx src/SigCompUDVM.ByteCopy.cxx src/SigCompUDVM.cxx src/SigCompUDVM.Instructions.cxx src/SigCompUDVM.Nack.cxx src/SigCompUDVM.Operands.cxx src/SigCompUDVM.StateManagement.cxx src/SipDictionaryState.cxx src/trees.c src/zutil.c
++
 +libsigcomp_la_LDFLAGS = -no-undefined
 +
 +pkginclude_HEADERS = $(top_srcdir)/src/*.h
 --- origsrc/libsigcomp/configure.in	2009-10-02 23:07:58.000000000 +0900
-+++ src/libsigcomp/configure.in	2013-10-20 12:44:38.530304700 +0900
++++ src/libsigcomp/configure.in	2015-04-09 00:35:38.712145600 +0900
 @@ -6,7 +6,7 @@ AC_INIT(libsigcomp, 0.1, diopmamadou@yah
  AM_INIT_AUTOMAKE
  AC_CONFIG_SRCDIR([src/DeflateCompressor.cxx])
@@ -24,3 +30,13 @@
  
  # Checks for programs.
  AC_PROG_CXX
+@@ -71,6 +71,9 @@ else
+    fi
+ fi
+ 
++PKG_CHECK_MODULES([ZLIB], [zlib], [has_zlib=yes], [has_zlib=no])
++AM_CONDITIONAL([HAS_ZLIB], test $has_zlib = yes)
++
+ dnl enable win32 threading or pthread
+ if test "$WIN32THREAD" = "yes"; then
+    CXXFLAGS="$CXXFLAGS -DWIN32"
