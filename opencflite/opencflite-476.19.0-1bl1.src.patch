@@ -1,0 +1,174 @@
+--- origsrc/opencflite-476.19.0/CFBase.c	2011-09-08 02:44:49.000000000 +0900
++++ src/opencflite-476.19.0/CFBase.c	2015-04-10 14:37:49.126285600 +0900
+@@ -44,7 +44,9 @@
+ #include <mach/mach.h>
+ #include <dlfcn.h>
+ #elif DEPLOYMENT_TARGET_LINUX
++#if !defined(__CYGWIN__)
+ #include <mcheck.h>
++#endif
+ #include <pthread.h>
+ #elif DEPLOYMENT_TARGET_WINDOWS
+ #include <windows.h>
+@@ -282,7 +284,7 @@ static void *__CFAllocatorSystemRealloca
+ }
+ 
+ static void __CFAllocatorSystemDeallocate(void *ptr, void *info) {
+-#if defined(DEBUG)
++#if defined(DEBUG) && !defined(__CYGWIN__)
+     const enum mcheck_status status = mprobe(ptr);
+ 
+     CFAssert3(status == MCHECK_OK || status == MCHECK_DISABLED,
+@@ -1088,4 +1090,3 @@ __asm__ (
+ "   bkpt 0xCF\n"
+ );
+ #endif /* defined(__arm__) */
+-
+--- origsrc/opencflite-476.19.0/CFBundle.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFBundle.c	2015-04-10 14:22:19.066759000 +0900
+@@ -3991,11 +3991,13 @@ static void *_CFBundleDlfcnGetSymbolByNa
+ 
+ static CFStringRef _CFBundleDlfcnCopyLoadedImagePathForPointer(void *p) {
+     CFStringRef result = NULL;
++#if !defined(__CYGWIN__)
+     Dl_info info;
+     if (0 != dladdr(p, &info) && info.dli_fname) result = CFStringCreateWithFileSystemRepresentation(kCFAllocatorSystemDefault, info.dli_fname);
+ #if LOG_BUNDLE_LOAD
+     printf("dlfcn image path for pointer %p is %p\n", p, result);
+ #endif /* LOG_BUNDLE_LOAD */
++#endif
+     return result;
+ }
+ 
+@@ -4050,4 +4052,3 @@ extern void _CFStringSetCompatibility(CF
+ 
+ static void _CFBundleCheckWorkarounds(CFBundleRef bundle) {
+ }
+-
+--- origsrc/opencflite-476.19.0/CFFileUtilities.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFFileUtilities.c	2015-04-10 14:25:30.545106700 +0900
+@@ -35,6 +35,9 @@
+ 	Copyright 1999-2002, Apple, Inc. All rights reserved.
+ 	Responsibility: Christopher Kane
+ */
++#if defined(__CYGWIN__)
++#define stat64 stat
++#endif
+ 
+ #include "CFInternal.h"
+ #include "CFPriv.h"
+@@ -780,4 +783,3 @@ __private_extern__ CFIndex _CFLengthAfte
+ #undef HAS_DRIVE
+ #undef HAS_NET
+ #undef IS_SLASH
+-
+--- origsrc/opencflite-476.19.0/CFRunLoop.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFRunLoop.c	2015-04-10 14:30:20.544076600 +0900
+@@ -2607,8 +2607,12 @@ static CFStringRef __CFRunLoopSourceCopy
+     if (NULL == contextDesc) {
+ 	void *addr = rls->_context.version0.version == 0 ? (void *)rls->_context.version0.perform : (rls->_context.version0.version == 1 ? (void *)rls->_context.version1.perform : NULL);
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX
++#if defined(__CYGWIN__)
++    const char* name = "???";
++#else
+ 	Dl_info info;
+ 	const char *name = (dladdr(addr, &info) && info.dli_saddr == addr && info.dli_sname) ? info.dli_sname : "???";
++#endif
+ 	contextDesc = CFStringCreateWithFormat(CFGetAllocator(rls), NULL, CFSTR("<CFRunLoopSource context>{version = %ld, info = %p, callout = %s (%p)}"), rls->_context.version0.version, rls->_context.version0.info, name, addr);
+ #elif DEPLOYMENT_TARGET_WINDOWS
+    const char *name = "???";
+@@ -2794,8 +2798,12 @@ static CFStringRef __CFRunLoopObserverCo
+     }
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX
+     void *addr = (void*)rlo->_callout;
++#if defined(__CYGWIN__)
++const char *name = "???";
++#else
+     Dl_info info;
+     const char *name = (dladdr(addr, &info) && info.dli_saddr == addr && info.dli_sname) ? info.dli_sname : "???";
++#endif
+     result = CFStringCreateWithFormat(CFGetAllocator(rlo), NULL, CFSTR("<CFRunLoopObserver %p [%p]>{locked = %s, valid = %s, activities = 0x%x, repeats = %s, order = %d, callout = %s (%p), context = %@}"), cf, CFGetAllocator(rlo), lockCount(rlo->_lock) ? "Yes" : "No", __CFIsValid(rlo) ? "Yes" : "No", rlo->_activities, __CFRunLoopObserverRepeats(rlo) ? "Yes" : "No", rlo->_order, name, addr, contextDesc);
+ #elif DEPLOYMENT_TARGET_WINDOWS
+     void *addr = rlo->_callout;
+@@ -2952,8 +2960,12 @@ static CFStringRef __CFRunLoopTimerCopyD
+     CFAbsoluteTime now1 = CFAbsoluteTimeGetCurrent();
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX
+     void *addr = (void*)rlt->_callout;
++#if defined(__CYGWIN__)
++    const char *name = "???";
++#else
+     Dl_info info;
+     const char *name = (dladdr(addr, &info) && info.dli_saddr == addr && info.dli_sname) ? info.dli_sname : "???";
++#endif
+     result = CFStringCreateWithFormat(CFGetAllocator(rlt), NULL, CFSTR("<CFRunLoopTimer %p [%p]>{locked = %s, valid = %s, interval = %0.09g, next fire date = %0.09g, order = %d, callout = %s (%p), context = %@}"), cf, CFGetAllocator(rlt), lockCount(rlt->_lock) ? "Yes" : "No", __CFIsValid(rlt) ? "Yes" : "No", __CFTSRToTimeInterval(rlt->_intervalTSR), now1 + __CFTSRToTimeInterval(fireTime - now2), rlt->_order, name, addr, contextDesc);
+ #elif DEPLOYMENT_TARGET_WINDOWS
+     void *addr = rlt->_callout;
+--- origsrc/opencflite-476.19.0/CFSocket.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFSocket.c	2015-04-10 14:31:03.570434800 +0900
+@@ -1380,7 +1380,7 @@ static CFStringRef __CFSocketCopyDescrip
+     result = CFStringCreateMutable(CFGetAllocator(s), 0);
+     __CFSocketLock(s);
+     void *addr = (void*)s->_callout;
+-#if DEPLOYMENT_TARGET_WINDOWS
++#if DEPLOYMENT_TARGET_WINDOWS || defined(__CYGWIN__)
+     // FIXME:  Get name using win32 analog of dladdr?
+     const char* name = "???";
+ #else
+@@ -2383,5 +2383,3 @@ CF_EXPORT void CFSocketSetDefaultNameReg
+ CF_EXPORT uint16_t CFSocketGetDefaultNameRegistryPortNumber(void) {
+     return __CFSocketDefaultNameRegistryPortNumber;
+ }
+-
+-
+--- origsrc/opencflite-476.19.0/CFTimeZone.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFTimeZone.c	2015-04-10 14:35:50.059959700 +0900
+@@ -289,7 +289,7 @@ CF_INLINE void __CFEntzcode(int32_t valu
+     bufp[3] = (value >> 0) & 0xff;
+ }
+ 
+-#if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX
++#if (DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX) && !defined(__CYGWIN__)
+ static Boolean __CFParseTimeZoneData(CFAllocatorRef allocator, CFDataRef data, CFTZPeriod **tzpp, CFIndex *cntp) {
+     int32_t len, timecnt, typecnt, charcnt, idx, cnt;
+     const uint8_t *p, *timep, *typep, *ttisp, *charp;
+@@ -406,7 +406,7 @@ static Boolean __CFParseTimeZoneData(CFA
+     }
+     return result;
+ }
+-#elif DEPLOYMENT_TARGET_WINDOWS || 0
++#elif DEPLOYMENT_TARGET_WINDOWS || defined(__CYGWIN__)
+ static Boolean __CFParseTimeZoneData(CFAllocatorRef allocator, CFDataRef data, CFTZPeriod **tzpp, CFIndex *cntp) {
+ /* We use Win32 function to find TimeZone
+  * (Aleksey Dukhnyakov)
+@@ -1284,4 +1284,3 @@ static CFDictionaryRef __CFTimeZoneCopyC
+ 
+ #undef TZZONEINFO
+ #undef TZZONELINK
+-
+--- origsrc/opencflite-476.19.0/Makefile.am	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/Makefile.am	2015-04-10 14:08:50.290907000 +0900
+@@ -49,7 +49,7 @@ CF_COMMON_CPPFLAGS		= $(AM_CPPFLAGS)			\
+ CF_COMMON_CFLAGS		= $(AM_CFLAGS)
+ 
+ CF_COMMON_LDFLAGS		= $(AM_LDFLAGS)				\
+-				  -version-info $(CF_VERSION_INFO)
++				  -no-undefined -version-info $(CF_VERSION_INFO)
+ 
+ CF_COMMON_LIBADD		= $(AM_LDADD) compat/libcompat.la 
+ 
+@@ -379,4 +379,3 @@ EXTRA_DIST			= APPLE_LICENSE	\
+ 				  XCode_Configs/Config_Master.xcconfig \
+ 				  XCode_Configs/ConfigRelease.xcconfig \
+ 				  ${libCoreFoundation_la_data_DATA}
+-
+--- origsrc/opencflite-476.19.0/configure.ac	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/configure.ac	2015-04-10 14:14:11.932825100 +0900
+@@ -82,7 +82,7 @@ case ${host_os} in
+ 		deployment_target="FreeBSD"
+ 		;;
+ 
+-	*linux*)
++	*linux*|*cygwin*)
+ 		CPPFLAGS="-DDEPLOYMENT_TARGET_LINUX=1 ${CPPFLAGS}"
+ 		deployment_target="Linux"
+ 		;;
