@@ -1,0 +1,72 @@
+--- origsrc/libnabo-1.0.6/CMakeLists.txt	2015-03-07 06:53:08.000000000 +0900
++++ src/libnabo-1.0.6/CMakeLists.txt	2015-04-13 16:47:23.540749300 +0900
+@@ -111,7 +111,7 @@ set(NABO_SRC
+ set(SHARED_LIBS "false" CACHE BOOL "To build shared (true) or static (false) library")
+ if (SHARED_LIBS)
+ 	add_library(${LIB_NAME} SHARED ${NABO_SRC})
+-	install(TARGETS ${LIB_NAME} LIBRARY DESTINATION lib)
++	install(TARGETS ${LIB_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ else(SHARED_LIBS)
+ 	add_library(${LIB_NAME} ${NABO_SRC})
+ 	add_definitions(-fPIC)
+@@ -124,12 +124,13 @@ export(TARGETS ${LIB_NAME}
+ 
+ # create doc before installing
+ set(DOC_INSTALL_TARGET "share/doc/${PROJECT_NAME}/api" CACHE STRING "Target where to install doxygen documentation")
++option(ENABLE_DOC "enable doc" OFF)
+ add_dependencies(${LIB_NAME} doc)
+ install(FILES nabo/nabo.h DESTINATION include/nabo)
+ install(FILES README.md DESTINATION share/doc/${PROJECT_NAME})
+-if (DOXYGEN_FOUND)
++if (DOXYGEN_FOUND AND ENABLE_DOC)
+ 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html DESTINATION ${DOC_INSTALL_TARGET})
+-endif(DOXYGEN_FOUND)
++endif(DOXYGEN_FOUND AND ENABLE_DOC)
+ 
+ enable_testing()
+ 
+@@ -188,7 +189,7 @@ install(FILES
+   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libnaboConfig.cmake"
+   "${PROJECT_BINARY_DIR}/libnaboConfigVersion.cmake"
+   "${PROJECT_BINARY_DIR}/libnaboTargets.cmake"
+-  DESTINATION share/libnabo/cmake COMPONENT dev)
++  DESTINATION lib/cmake/libnabo COMPONENT dev)
+ 
+ 
+ 
+@@ -202,3 +203,11 @@ configure_file(
+ 
+ add_custom_target(uninstall
+     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.0.6")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libnabo.pc.in ${CMAKE_BINARY_DIR}/libnabo.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libnabo.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libnabo-1.0.6/libnabo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnabo-1.0.6/libnabo.pc.in	2015-04-13 16:46:38.153114700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnabo
++Description: Fast K Nearset Neighbor library for low-dimensional spaces
++Version: @VERSION@
++Libs: -L${libdir} -lnabo
++Cflags: -I${includedir}
+--- origsrc/libnabo-1.0.6/python/CMakeLists.txt	2015-03-07 06:53:08.000000000 +0900
++++ src/libnabo-1.0.6/python/CMakeLists.txt	2015-04-13 10:05:11.380420500 +0900
+@@ -56,7 +56,7 @@ if (PYTHONLIBS_FOUND AND PYTHONINTERP_FO
+ 				set(PYTHON_COMMAND "from distutils.sysconfig import get_python_lib; print get_python_lib(prefix='${CMAKE_INSTALL_PREFIX}')")
+ 			endif (PYTHON_DEB_INSTALL_TARGET)
+ 			execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c" "${PYTHON_COMMAND}" OUTPUT_VARIABLE PYTHON_SITE_MODULES OUTPUT_STRIP_TRAILING_WHITESPACE)
+-			install(TARGETS pynabo LIBRARY DESTINATION ${PYTHON_SITE_MODULES})
++			install(TARGETS pynabo RUNTIME DESTINATION ${PYTHON_SITE_MODULES})
+ 		endif (PYTHON_CUSTOM_TARGET)
+ 	elseif (Boost_FOUND AND NUMPY_FOUND)
+ 		message("You need numpy and boost::python to generate python bindings")
