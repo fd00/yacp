@@ -1,0 +1,57 @@
+--- origsrc/libkafka-0.5.0/Makefile.am	2013-12-19 03:25:45.000000000 +0900
++++ src/libkafka-0.5.0/Makefile.am	2015-04-16 20:37:36.085000500 +0900
+@@ -47,7 +47,8 @@ lib_libkafka_la_SOURCES = \
+ 
+ LIBKAFKA_LIBRARY_VERSION = 0:5:0
+ lib_libkafka_la_CPPFLAGS = $(AM_CPPFLAGS) $(COVERAGE_CFLAGS)
+-lib_libkafka_la_LDFLAGS = -version-info $(LIBKAFKA_LIBRARY_VERSION) $(COVERAGE_LDFLAGS)
++lib_libkafka_la_LDFLAGS = -no-undefined -version-info $(LIBKAFKA_LIBRARY_VERSION) $(COVERAGE_LDFLAGS)
++lib_libkafka_la_LIBADD = -lz -lsnappy
+ 
+ lib_libkafka_ladir = $(includedir)/libkafka
+ 
+@@ -172,6 +173,9 @@ MAINTAINERCLEANFILES = \
+ 
+ APP_NAME=libkafka
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libkafka.pc
++
+ # Create a deb package
+ DEB_DIR=deb
+ deb: dist
+--- origsrc/libkafka-0.5.0/configure.ac	2013-12-19 03:25:45.000000000 +0900
++++ src/libkafka-0.5.0/configure.ac	2015-04-16 20:37:54.342765300 +0900
+@@ -13,7 +13,7 @@ AC_CONFIG_SRCDIR([lib/src])
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_CONFIG_AUX_DIR([config])
+ AC_CONFIG_HEADERS([config/config.h])
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([Makefile libkafka.pc])
+ 
+ # Initialize Automake with various options. We require at least v1.9, prevent
+ # pedantic complaints about package files, and enable various distribution
+--- origsrc/libkafka-0.5.0/lib/src/Packet.cc	2013-10-16 04:54:04.000000000 +0900
++++ src/libkafka-0.5.0/lib/src/Packet.cc	2015-04-16 20:21:46.371232400 +0900
+@@ -270,7 +270,7 @@ int Packet::writeCompressedBytes(unsigne
+ 
+   if (codec == COMPRESSION_SNAPPY)
+   {
+-    unsigned long compressionBufferSize = snappy::MaxCompressedLength(numBytes);
++    size_t compressionBufferSize = snappy::MaxCompressedLength(numBytes);
+     unsigned char* compressionBuffer = new unsigned char[compressionBufferSize];
+     snappy::RawCompress((const char *)bytes, numBytes, (char *)compressionBuffer, &compressionBufferSize);
+     this->writeBytes(compressionBuffer, (long)compressionBufferSize);
+--- origsrc/libkafka-0.5.0/libkafka.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libkafka-0.5.0/libkafka.pc.in	2015-04-16 20:37:01.116354300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libkafka
++Description: C++ client library for Apache Kafka v0.8+
++Version: @VERSION@
++Libs: -L${libdir} -lkafka
++Cflags: -I${includedir}
