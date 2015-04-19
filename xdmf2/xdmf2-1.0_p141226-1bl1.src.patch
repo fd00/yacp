@@ -1,0 +1,151 @@
+--- origsrc/xdmf2-1.0_p141226/CMake/FindExodus.cmake	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/CMake/FindExodus.cmake	2015-04-19 22:09:55.218402100 +0900
+@@ -9,7 +9,7 @@ FIND_PACKAGE(NetCDF REQUIRED)
+ 
+ FIND_PATH(EXODUS_INCLUDE_DIR NAMES exodusII.h)
+ 
+-FIND_LIBRARY(EXODUS_LIBRARIES NAMES exodusii exodusIIv2c)
++FIND_LIBRARY(EXODUS_LIBRARIES NAMES exodusii exodusIIv2c exodus exodusIIv2for)
+ 
+ INCLUDE(FindPackageHandleStandardArgs)
+ 
+@@ -18,4 +18,3 @@ INCLUDE(FindPackageHandleStandardArgs)
+ FIND_PACKAGE_HANDLE_STANDARD_ARGS(Exodus DEFAULT_MSG EXODUS_LIBRARIES EXODUS_INCLUDE_DIR)
+ 
+ MARK_AS_ADVANCED(EXODUS_INCLUDE_DIR EXODUS_LIBRARIES)
+-
+--- origsrc/xdmf2-1.0_p141226/CMakeLists.txt	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/CMakeLists.txt	2015-04-19 22:56:25.835397000 +0900
+@@ -323,7 +323,11 @@ if(NOT XDMF_BUILD_CORE_ONLY)
+   endif(WIN32)
+   
+   if(UNIX)
++	if(CYGWIN)
++    	set(XDMF_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libXdmf.dll.a)
++	else()
+     set(XDMF_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libXdmf.so)
++	endif()
+   endif(UNIX)
+ 
+   if(APPLE)
+@@ -337,13 +341,14 @@ if(NOT XDMF_BUILD_CORE_ONLY)
+     "CMake/VersionSuite/*.hpp"
+     "${CMAKE_BINARY_DIR}/*.hpp"
+   )
+-  install(FILES ${XdmfHeaders} DESTINATION include)
++  install(FILES ${XdmfHeaders} DESTINATION include/xmdf2)
+   install(TARGETS Xdmf
+     RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib)
++  SET_TARGET_PROPERTIES(Xdmf PROPERTIES SOVERSION 0)
+ endif(NOT XDMF_BUILD_CORE_ONLY)
+ 
+ xdmf_create_config_file(${PROJECT_NAME})
+ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+-  DESTINATION ${CMAKE_INSTALL_PREFIX})
++DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/xdmf2)
+--- origsrc/xdmf2-1.0_p141226/core/CMakeLists.txt	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/core/CMakeLists.txt	2015-04-19 22:57:14.778055800 +0900
+@@ -168,8 +168,13 @@ if(WIN32)
+ endif(WIN32)
+ 
+ if(UNIX)
++    if(CYGWIN)
++        set(XDMFCORE_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libXdmfCore.dll.a
++            PARENT_SCOPE)
++    else()
+     set(XDMFCORE_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libXdmfCore.so
+         PARENT_SCOPE)
++    endif()
+ endif(UNIX)
+ 
+ if(APPLE)
+@@ -182,12 +187,13 @@ file(GLOB_RECURSE
+   "*.hpp" "*.tpp" "*.i"
+   "../CMake/VersionSuite/*.hpp")
+ file(GLOB LokiHeaders loki/*.h)
+-install(FILES ${XdmfCoreHeaders} DESTINATION include)
+-install(FILES ${LokiHeaders} DESTINATION include/loki)
++install(FILES ${XdmfCoreHeaders} DESTINATION include/xdmf2)
++install(FILES ${LokiHeaders} DESTINATION include/xdmf2/loki)
+ install(TARGETS XdmfCore
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib)
++SET_TARGET_PROPERTIES(XdmfCore PROPERTIES SOVERSION 0)
+ 
+ set(XdmfCore_INCLUDE_DIRS
+   ${Boost_INCLUDE_DIRS}
+@@ -197,7 +203,7 @@ set(XdmfCore_INCLUDE_DIRS
+   ${PYTHON_INCLUDE_DIRS}
+   CACHE INTERNAL "")
+ 
+-set(XDMF_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include PARENT_SCOPE)
++set(XDMF_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include/xdmf2 PARENT_SCOPE)
+ set(XDMF_LIBRARIES ${XDMF_LIBRARIES} ${CMAKE_INSTALL_PREFIX}/lib)
+ set(XDMF_DIR ${CMAKE_INSTALL_PREFIX} PARENT_SCOPE)
+ set(XDMF_BINARIES ${XDMF_BINARIES} ${CMAKE_INSTALL_PREFIX}/bin)
+@@ -212,4 +218,3 @@ endif(BUILD_TESTING)
+ 
+ set(XDMF_LIBRARIES ${XDMF_LIBRARIES} PARENT_SCOPE)
+ set(XDMF_BINARIES ${XDMF_BINARIES} PARENT_SCOPE)
+-
+--- origsrc/xdmf2-1.0_p141226/core/dsm/CMakeLists.txt	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/core/dsm/CMakeLists.txt	2015-04-19 22:29:49.195266700 +0900
+@@ -123,7 +123,7 @@ file(GLOB_RECURSE
+   XdmfDSMHeaders
+   "*.hpp" "*.tpp" "*.i"
+   "../../CMake/VersionSuite/*.hpp")
+-install(FILES ${XdmfDSMHeaders} DESTINATION include)
++install(FILES ${XdmfDSMHeaders} DESTINATION include/xdmf2)
+ install(TARGETS XdmfDSM
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+--- origsrc/xdmf2-1.0_p141226/utils/CMakeLists.txt	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/utils/CMakeLists.txt	2015-04-19 22:28:50.291938900 +0900
+@@ -145,7 +145,7 @@ if(XDMF_BUILD_FORTRAN)
+   set(XdmfUtilsHeaders ${XdmfUtilsHeaders} Xdmf.f)
+ endif(XDMF_BUILD_FORTRAN)
+ 
+-install(FILES ${XdmfUtilsHeaders} DESTINATION include)
++install(FILES ${XdmfUtilsHeaders} DESTINATION include/xdmf2)
+ install(TARGETS XdmfUtils 
+     RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+@@ -154,3 +154,4 @@ install(TARGETS ${XdmfUtilsExecutables}
+     RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib)
++SET_TARGET_PROPERTIES(XdmfUtils PROPERTIES SOVERSION 0)
+--- origsrc/xdmf2-1.0_p141226/utils/tests/Fortran/CMakeLists.txt	2014-07-22 00:44:59.000000000 +0900
++++ src/xdmf2-1.0_p141226/utils/tests/Fortran/CMakeLists.txt	2015-04-19 22:12:31.344629700 +0900
+@@ -21,14 +21,16 @@ if (MPIEXEC_MAX_NUMPROCS STRGREATER 5)
+     ERROR_VARIABLE MPI_TYPE_ERROR
+   )
+   STRING(REGEX MATCH "Open" IS_OPENMPI "${MPI_TYPE_ERROR}")
+-  IF ("${IS_OPENMPI}" STREQUAL "")
++  IF ("${IS_OPENMPI}" STREQUAL "" AND NOT CYGWIN)
+     ADD_MPI_TEST_FORTRAN(ConnectDSMFortran.sh AcceptDSMFortran,ConnectDSMFortran2,ConnectDSMFortran)
+-  ENDIF ("${IS_OPENMPI}" STREQUAL "")
++  ENDIF ("${IS_OPENMPI}" STREQUAL "" AND NOT CYGWIN)
+ endif(MPIEXEC_MAX_NUMPROCS STRGREATER 5)
++IF (NOT CYGWIN)
+ ADD_TEST_FORTRAN(OutputTestXdmfFortran)
+ ADD_TEST_FORTRAN(EditTestXdmfFortran)
+ ADD_TEST_FORTRAN(TestXdmfFortran)
+ ADD_TEST_FORTRAN(NestedInfoFortran)
++ENDIF ()
+ #if GCC
+ STRING(REGEX MATCH "gfortran" IS_GCC "${CMAKE_Fortran_COMPILER}")
+ IF ("${IS_GCC}" STREQUAL "gfortran")
+@@ -39,7 +41,9 @@ STRING(REGEX MATCH "ifort" IS_INTEL "${C
+ IF ("${IS_INTEL}" STREQUAL "ifort")
+   SET_SOURCE_FILES_PROPERTIES(FixedOutputTestXdmfFortran.f90 PROPERTIES COMPILE_FLAGS "-fixed")
+ ENDIF ("${IS_INTEL}" STREQUAL "ifort")
++IF (NOT CYGWIN)
+ ADD_TEST_FORTRAN(FixedOutputTestXdmfFortran)
++ENDIF()
+ 
+ # Add any cxx cleanup here:
+ # Note: We don't want to use a foreach loop to test the files incase we
