@@ -1,0 +1,55 @@
+--- origsrc/librgs/CMakeLists.txt	2015-04-20 14:23:14.000000000 +0900
++++ src/librgs/CMakeLists.txt	2015-04-20 14:40:23.487711100 +0900
+@@ -3,7 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+ PROJECT(rgs)
+ 
+ SET(RGS_RELEASE_DIR ${rgs_SOURCE_DIR}/release/${CMAKE_SYSTEM_NAME})
+-SET(CMAKE_INSTALL_PREFIX ${RGS_RELEASE_DIR})
+ 
+ FIND_PACKAGE(SDL REQUIRED)
+ 
+@@ -63,13 +62,14 @@ SET(rgs_HDRS
+ )
+ 
+ SET(CMAKE_DEBUG_POSTFIX "_d")
+-ADD_LIBRARY(rgs ${rgs_SRCS} ${rgs_HDRS})
++ADD_LIBRARY(rgs SHARED ${rgs_SRCS} ${rgs_HDRS})
++TARGET_LINK_LIBRARIES(rgs ${SDL_LIBRARY})
++SET_TARGET_PROPERTIES(rgs PROPERTIES SOVERSION 0)
+ 
++INSTALL(FILES ${rgs_HDRS} DESTINATION include/librgs)
++INSTALL(TARGETS rgs EXPORT rgs-targets RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+-INSTALL(FILES ${rgs_HDRS} DESTINATION include)
+-INSTALL(TARGETS rgs EXPORT rgs-targets DESTINATION lib)
+-
+-INSTALL(FILES LICENSE.txt DESTINATION ./)
++INSTALL(FILES LICENSE.txt DESTINATION "share/doc/${PACKAGE}")
+ 
+ SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+ SET(CPACK_PACKAGE_VERSION_MINOR "9")
+@@ -82,3 +82,11 @@ ELSE(WIN32)
+ ENDIF(WIN32)
+ 
+ INCLUDE(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/librgs.pc.in ${CMAKE_BINARY_DIR}/librgs.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/librgs.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/librgs/librgs.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/librgs/librgs.pc.in	2015-04-20 14:41:42.697000900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: librgs
++Description: Retro game engine
++Version: @VERSION@
++Libs: -L${libdir} -lrgs
++Cflags: -I${includedir}
