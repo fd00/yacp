@@ -1,0 +1,158 @@
+--- origsrc/socket++-1.12.13/Makefile.am	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/Makefile.am	2015-04-20 09:37:05.189689200 +0900
+@@ -1,2 +1,4 @@
+ SUBDIRS = socket++ doc
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = socket++.pc
+--- origsrc/socket++-1.12.13/configure.in	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/configure.in	2015-04-20 09:33:48.525923000 +0900
+@@ -3,7 +3,7 @@ dnl Use autoheader on this file to produ
+ dnl Then use configure script to generate makefile from Makefile.in
+ 
+ dnl a distinct socket++ file
+-AC_INIT(configure.in)
++AC_INIT([socket++], [1.12.13])
+ 
+ # Details: http://sources.redhat.com/autobook/autobook/autobook_91.html
+ # +1 : ? : +1  == new interface that does not break old one
+@@ -23,7 +23,7 @@ VERSION=$SOCKET_VERSION
+ PACKAGE=socket
+ 
+ dnl Inititalize automake stuff
+-AM_INIT_AUTOMAKE(socket++,$SOCKET_VERSION)
++AM_INIT_AUTOMAKE
+ 
+ dnl Specify a configuration file
+ AM_CONFIG_HEADER(socket++/config.h)
+@@ -190,4 +190,4 @@ AC_MSG_RESULT($bz_cv_cplusplus_needexter
+ dnl check for system
+ 
+ dnl generate output files
+-AC_OUTPUT(Makefile socket++/Makefile doc/Makefile test/Makefile)
++AC_OUTPUT(Makefile socket++/Makefile doc/Makefile test/Makefile socket++.pc)
+--- origsrc/socket++-1.12.13/doc/Makefile.am	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/doc/Makefile.am	2015-04-20 09:11:17.687873600 +0900
+@@ -1,2 +1 @@
+-info_TEXINFOS = socket++.texi
+-
++# info_TEXINFOS = socket++.texi
+--- origsrc/socket++-1.12.13/socket++/Makefile.am	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/socket++/Makefile.am	2015-04-20 06:42:50.742669100 +0900
+@@ -24,6 +24,6 @@ libsocketinclude_HEADERS = \
+ 	smtp.h \
+ 	ftp.h \
+ 	sig.h
+-libsocket___la_LDFLAGS = -version-info @LIBSOCKET_SO_VERSION@
++libsocket___la_LDFLAGS = -no-undefined -version-info @LIBSOCKET_SO_VERSION@
+ libsocket___la_LIBADD =
+ 
+--- origsrc/socket++-1.12.13/socket++/local.h	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/socket++/local.h	2015-04-20 09:05:04.643999300 +0900
+@@ -89,12 +89,14 @@ extern "C" unsigned long inet_addr (cons
+ // arpa/in.h does not provide a protype for the following
+ extern "C" char* inet_ntoa (in_addr ina);
+ 
++#if !defined(__CYGWIN__)
+ #if !(defined (__linux__) || defined(__FreeBSD__))
+   extern "C" int gethostname (char* hostname, int len);
+ #if !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__APPLE__))
+   extern char* SYS_SIGLIST [];
+ #endif
+ #endif
++#endif
+ 
+ #ifdef __osf__
+   extern "C" {
+--- origsrc/socket++-1.12.13/socket++/sig.cpp	2011-12-27 20:23:48.000000000 +0900
++++ src/socket++-1.12.13/socket++/sig.cpp	2015-04-20 09:09:04.138346100 +0900
+@@ -153,6 +153,7 @@ void sig::sysresume (int signo, bool set
+     sa.sa_flags = 0;
+   }
+ 
++#if defined(SA_INTERRUPT)
+ #if !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__sun__) || defined(__linux__) || defined(__APPLE))
+ // Early SunOS versions may have SA_INTERRUPT. I can't confirm.
+   if (set == false)
+@@ -161,6 +162,7 @@ void sig::sysresume (int signo, bool set
+     sa.sa_flags &= ~SA_INTERRUPT;
+   if (sigaction (signo, &sa, 0) == -1) throw sigerr();
+ #endif
++#endif
+ }
+ 
+ struct procsig {
+--- origsrc/socket++-1.12.13/socket++/sockstream.cpp	2011-12-27 20:25:33.000000000 +0900
++++ src/socket++-1.12.13/socket++/sockstream.cpp	2015-04-20 09:08:06.409503500 +0900
+@@ -233,8 +233,10 @@ bool sockerr::benign () const
+ // On FreeBSD (and probably on Linux too) 
+ // EAGAIN has the same value as EWOULDBLOCK
+ #if !defined(__linux__) && !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__APPLE__)) // LN
++#if !defined(__CYGWIN__)
+   case EAGAIN:
+ #endif
++#endif
+     return true;
+   }
+   return false;
+@@ -908,7 +910,9 @@ int sockbuf::pgrp () const
+ // signals
+ {
+   int arg;
++#if defined(SIOCGPGRP)
+   if (::ioctl (rep->sock, SIOCGPGRP, &arg) == -1)
++#endif
+     throw sockerr (errno, "sockbuf::pgrp", sockname.c_str());
+   return arg;
+ }
+@@ -918,7 +922,9 @@ int sockbuf::pgrp (int new_pgrp) const
+ // return the old pgrp
+ {
+   int old = pgrp ();
++#if defined(SIOCGPGRP)
+   if (::ioctl (rep->sock, SIOCSPGRP, &new_pgrp) == -1)
++#endif
+     throw sockerr (errno, "sockbuf::pgrp", sockname.c_str());
+   return old;
+ }
+@@ -928,10 +934,14 @@ void sockbuf::closeonexec (bool set) con
+ // else clear close on exec flag
+ {
+   if (set) {
++#if defined(FIOCLEX)
+     if (::ioctl (rep->sock, FIOCLEX, 0) == -1)
++#endif
+       throw sockerr (errno, "sockbuf::closeonexec", sockname.c_str());
+   } else {
++#if defined(FIONCLEX)
+     if (::ioctl (rep->sock, FIONCLEX, 0) == -1)
++#endif
+       throw sockerr (errno, "sockbuf::closeonexec", sockname.c_str());
+   }
+ }
+--- origsrc/socket++-1.12.13/socket++/sockstream.h	2011-12-27 20:26:23.000000000 +0900
++++ src/socket++-1.12.13/socket++/sockstream.h	2015-04-20 09:04:35.012022700 +0900
+@@ -138,8 +138,10 @@ public:
+     msg_dontroute	= MSG_DONTROUTE,
+ 
+ #if !(defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__APPLE__))
++#if !defined(__CYGWIN__)
+     msg_maxiovlen	= MSG_MAXIOVLEN
+ #endif
++#endif
+   };
+   enum shuthow {
+     shut_read,
+--- origsrc/socket++-1.12.13/socket++.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/socket++-1.12.13/socket++.pc.in	2015-04-20 09:31:50.451542900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: socket++
++Description: C++ interface for sockets
++Version: @VERSION@
++Libs: -L${libdir} -lsocket++
++Cflags: -I${includedir}
