@@ -1,5 +1,5 @@
 --- origsrc/stringencoders-v3.10.3/Makefile.am	2007-06-27 22:16:38.000000000 +0900
-+++ src/stringencoders-v3.10.3/Makefile.am	2012-12-24 08:58:22.058262500 +0900
++++ src/stringencoders-v3.10.3/Makefile.am	2015-04-21 12:37:28.698877400 +0900
 @@ -1,4 +1,6 @@
  
 +AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/test
@@ -16,6 +16,15 @@
  libmodpbase64_la_DEPENDENCIES = \
  	modp_b2_data.h modp_b2_gen \
  	modp_b16_data.h modp_b16_gen \
+@@ -22,7 +26,7 @@ libmodpbase64_la_DEPENDENCIES = \
+ 	modp_bjavascript_data.h modp_bjavascript_gen \
+ 	modp_ascii_data.h modp_ascii_gen
+ 
+-include_HEADERS = \
++pkginclude_HEADERS = \
+ 	src/modp_b16.h src/modp_b64.h src/modp_b64w.h \
+ 	src/modp_b85.h src/modp_burl.h src/modp_bjavascript.h \
+ 	src/modp_numtoa.h src/modp_ascii.h src/modp_b2.h
 @@ -47,7 +51,8 @@ src/modp_b16.c: src/modp_b16.h modp_b16_
  src/modp_b64.c: src/modp_b64.h modp_b64_data.h
  
@@ -76,8 +85,14 @@
  
  modp_b64w_test_SOURCES = test/modp_b64w_test.c
  modp_b64w_test_LDADD = libmodpbase64.la
+@@ -194,3 +200,5 @@ perftest: speedtest speedtest_numtoa spe
+ doxy: ${SOURCES} doxy/header.html doxy/footer.html Doxyfile
+ 	doxygen Doxyfile
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/stringencoders-v3.10.3/configure.ac	2010-04-06 06:37:39.000000000 +0900
-+++ src/stringencoders-v3.10.3/configure.ac	2012-12-24 08:59:46.382735100 +0900
++++ src/stringencoders-v3.10.3/configure.ac	2015-04-21 12:37:05.975674300 +0900
 @@ -18,7 +18,7 @@ B64WCHARS="-_."
  AC_ARG_WITH([b64wchars], AC_HELP_STRING([--with-b64wchars=3CHARS],[change b64 web extra chars, default is '-_.']),
            [B64WCHARS=$withval], [])
@@ -87,8 +102,16 @@
  
  if test "x$enable_gcov" = "xyes";
  then
+@@ -31,6 +31,6 @@ fi
+ CFLAGS="$EXTRACFLAGS $CFLAGS"
+ CXXFLAGS="$CFLAGS"
+ AC_SUBST(B64WCHARS)
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([Makefile stringencoders.pc])
+ AC_PROG_MAKE_SET
+ AC_OUTPUT
 --- origsrc/stringencoders-v3.10.3/src/modp_numtoa.c	2010-03-20 00:09:46.000000000 +0900
-+++ src/stringencoders-v3.10.3/src/modp_numtoa.c	2012-12-24 08:56:43.777012500 +0900
++++ src/stringencoders-v3.10.3/src/modp_numtoa.c	2015-04-21 11:50:42.471020100 +0900
 @@ -19,7 +19,7 @@
   * Powers of 10
   * 10^0 to 10^9
@@ -132,3 +155,16 @@
              frac = 0;
              ++whole;
          }
+--- origsrc/stringencoders-v3.10.3/stringencoders.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/stringencoders-v3.10.3/stringencoders.pc.in	2015-04-21 12:39:40.808152600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: stringencoders
++Description: Collection of high performance c-string transformations
++Version: @VERSION@
++Libs: -L${libdir} -lmodpbase64
++Cflags: -I${includedir}/@PACKAGE@
