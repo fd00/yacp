@@ -1,0 +1,135 @@
+--- origsrc/rudedatabase-4.1.0/Makefile.am	2008-01-09 07:48:53.000000000 +0900
++++ src/rudedatabase-4.1.0/Makefile.am	2015-04-25 12:20:32.130135200 +0900
+@@ -28,7 +28,7 @@ librudedatabase_la_SOURCES = 	src/databa
+ 	src/implementation.cpp \
+ 	src/implementation.h
+ 
+-librudedatabase_la_LDFLAGS = -version-info 4:1:0
++librudedatabase_la_LDFLAGS = -no-undefined -version-info 4:1:0
+ 
+ #  -------------------------------------
+ librudedatabase_la_LIBADD = -lmysqlclient
+@@ -45,3 +45,5 @@ AM_CPPFLAGS = -I/usr/include/mysql
+ 
+ AUTOMAKE_OPTIONS = gnits dist-bzip2 dist-shar dist-zip
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = rudedatabase.pc
+--- origsrc/rudedatabase-4.1.0/configure.ac	2008-01-09 07:49:20.000000000 +0900
++++ src/rudedatabase-4.1.0/configure.ac	2015-04-25 12:57:13.662613300 +0900
+@@ -44,80 +44,6 @@ dnl Foundation, Inc., 59 Temple Place, S
+ dnl
+ dnl $Id: acinclude.m4,v 1.10 2004/04/10 03:55:37 cinergi Exp $
+ 
+-AC_DEFUN([FIND_MYSQL],[
+-
+-baselist="$with_mysql \
+-          /usr \
+-          /usr/local \
+-          /usr/local/mysql \
+-          /opt/local \
+-          /opt/local/mysql"
+-
+-AC_MSG_CHECKING([for MySQL headers])
+-for f in $baselist; do
+-    if test -f "$f/include/mysql/mysql.h"
+-    then
+-        MYSQL_INC_DIR="$f/include/mysql"
+-        break
+-    fi
+-
+-    if test -f "$f/include/mysql.h"
+-    then
+-        MYSQL_INC_DIR="$f/include"
+-        break
+-    fi
+-done
+-
+-if test -n "$MYSQL_INC_DIR"
+-then
+-    AC_MSG_RESULT([$MYSQL_INC_DIR])
+-    CPPFLAGS="-I $MYSQL_INC_DIR $CPPFLAGS"
+-else
+-    AC_MSG_ERROR([Cannot locate MySQL headers.  Try using --with-mysql=DIR])
+-fi
+-
+-AC_MSG_CHECKING([for MySQL libraries])
+-dnl Check for share first, then static, such that static
+-dnl will take precedence
+-for f in $baselist; do
+-    if test -f "$f/lib/libmysqlclient.so"
+-    then
+-        MYSQL_LIB_DIR="$f/lib"
+-        break
+-    fi
+-
+-    if test -f "$f/lib/mysql/libmysqlclient.so"
+-    then
+-        MYSQL_LIB_DIR="$f/lib/mysql"
+-        break
+-    fi
+-done
+-
+-for f in $baselist; do
+-    if test -f "$f/lib/libmysqlclient.a"
+-    then
+-        MYSQL_LIB_DIR="$f/lib"
+-        break
+-    fi
+-
+-    if test -f "$f/lib/mysql/libmysqlclient.a"
+-    then
+-        MYSQL_LIB_DIR="$f/lib/mysql"
+-        break
+-    fi
+-done
+-
+-if test -n "$MYSQL_LIB_DIR"
+-then
+-    AC_MSG_RESULT([$MYSQL_LIB_DIR])
+-    LDFLAGS="-L$MYSQL_LIB_DIR $LDFLAGS"
+-else
+-    AC_MSG_ERROR([Cannot locate MySQL libraries.  Try using --with-mysql=DIR])
+-fi
+-
+- ])
+-
+-
+ # Checks for programs.
+ AC_PROG_CXX
+ AC_PROG_CC
+@@ -128,8 +54,16 @@ AM_PROG_LIBTOOL
+ # Checks for header files.
+ AC_HEADER_STDC
+ 
+-
+-FIND_MYSQL()
++MYSQL_CFLAGS=
++MYSQL_LIBS=
++if ! mysql_config --version &> /dev/null ; then
++	AC_MSG_ERROR([mysql_config is required.])
++else
++        MYSQL_CFLAGS=`mysql_config --cflags`
++        MYSQL_LIBS=`mysql_config --libs`
++fi
++AC_SUBST(MYSQL_CFLAGS)
++AC_SUBST(MYSQL_LIBS)
+ 
+ AC_CHECK_HEADERS([mysql/mysql.h])
+ 
+@@ -138,6 +72,4 @@ AC_C_CONST
+ AC_C_INLINE
+ AC_TYPE_SIZE_T
+ 
+-AC_OUTPUT(Makefile )
+-
+-
++AC_OUTPUT(rudedatabase.pc Makefile )
+--- origsrc/rudedatabase-4.1.0/rudedatabase.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/rudedatabase-4.1.0/rudedatabase.pc.in	2015-04-25 12:19:45.155687600 +0900
+@@ -0,0 +1,5 @@
++Name: rudedatabase
++Description: Library (C++ API) for MySQL
++Version: @VERSION@
++Libs: -L@libdir@ -lrudedatabase
++Cflags: -I@includedir@
