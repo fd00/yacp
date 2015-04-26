@@ -1,0 +1,164 @@
+--- origsrc/eiskaltdcpp-2.2.10/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/CMakeLists.txt	2015-04-26 22:38:32.292181400 +0900
+@@ -274,7 +274,7 @@ add_definitions (-D_LARGEFILE_SOURCE -D_
+                  -D_DATADIR="${CLIENT_DATA_DIR}" -DLOCALE_DIR="${LOCALE_DIR}" -DBUILDING_DCPP)
+ 
+ if (CMAKE_CXX_COMPILER_ID STREQUAL GNU OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pipe -Wformat -Werror=format-security")
++    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -pipe -Wformat -Werror=format-security")
+     if (USE_GOLD)
+         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-linker-plugin")
+         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-linker-plugin")
+@@ -402,3 +402,8 @@ CONFIGURE_FILE(
+   IMMEDIATE @ONLY)
+ ADD_CUSTOM_TARGET(uninstall
+   "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/cmake_uninstall.cmake")
++
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME_GLOBAL}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME_GLOBAL}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_GLOBAL}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/eiskaltdcpp-2.2.10/dcpp/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/dcpp/CMakeLists.txt	2015-04-26 20:35:30.525460700 +0900
+@@ -77,15 +77,15 @@ if (HAVE_IFADDRS_H)
+   set_property(SOURCE ${PROJECT_SOURCE_DIR}/Util.cpp PROPERTY COMPILE_DEFINITIONS HAVE_IFADDRS_H APPEND)
+ endif (HAVE_IFADDRS_H)
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+    set_property(TARGET dcpp PROPERTY COMPILE_FLAGS)
+-else(WIN32)
++else(WIN32 OR CYGWIN)
+    set_property(TARGET dcpp PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif (WIN32 OR CYGWIN)
+ 
+ target_link_libraries (dcpp ${DHT_LIB} ${PTHREADS} ${BZIP2_LIBRARIES} ${ZLIB_LIBRARIES}
+ ${OPENSSL_LIBRARIES} ${GETTEXT_LIBRARIES} ${ICONV_LIBRARIES} ${APPLE_LIBS} ${LUA_LIBRARIES} ${UPNP} ${PCRE} ${IDNA_LIBRARIES} ${XATTR_LIBRARIES} ${HAIKU_LIB} ${Boost_LIBRARIES})
+-set_target_properties(dcpp PROPERTIES VERSION ${SOVERSION} OUTPUT_NAME "eiskaltdcpp")
++set_target_properties(dcpp PROPERTIES VERSION ${SOVERSION} SOVERSION ${SOVERSION} OUTPUT_NAME "eiskaltdcpp")
+ 
+ if (APPLE)
+   set (LIBDIR1 .)
+@@ -94,7 +94,8 @@ endif(APPLE)
+ 
+ if (LINK STREQUAL SHARED)
+ install (TARGETS dcpp
+-            LIBRARY DESTINATION ${LIBDIR} NAMELINK_SKIP
++            RUNTIME DESTINATION ${BINDIR}
++            ARCHIVE DESTINATION ${LIBDIR}
+             BUNDLE DESTINATION ${LIBDIR1})
+ endif (LINK STREQUAL SHARED)
+ 
+--- origsrc/eiskaltdcpp-2.2.10/dcpp/Util.h	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/dcpp/Util.h	2015-04-26 18:56:58.042733100 +0900
+@@ -263,7 +263,7 @@ public:
+ #ifdef _WIN32
+         return _atoi64(aString.c_str());
+ #else
+-    #ifndef __HAIKU__
++    #if !defined(__HAIKU__) && !defined(__CYGWIN__)
+         return strtoq(aString.c_str(), (char **)NULL, 10);
+     #else
+         return strtoll(aString.c_str(), (char **)NULL, 10);
+--- origsrc/eiskaltdcpp-2.2.10/dht/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/dht/CMakeLists.txt	2015-04-26 18:52:17.251046600 +0900
+@@ -16,8 +16,8 @@ set (LINK STATIC)
+ 
+ add_library (dht ${LINK} ${dht_srcs})
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+     set_property(TARGET dht PROPERTY COMPILE_FLAGS)
+-else(WIN32)
++else(WIN32 OR CYGWIN)
+     set_property(TARGET dht PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif (WIN32 OR CYGWIN)
+--- origsrc/eiskaltdcpp-2.2.10/eiskaltdcpp-daemon/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/eiskaltdcpp-daemon/CMakeLists.txt	2015-04-26 20:32:00.643703400 +0900
+@@ -71,7 +71,7 @@ list(APPEND LIBS
+         ${ICONV_LIBRARIES}
+         )
+ 
+-target_link_libraries (${PROJECT_NAME} dcpp ${LIBS})
++target_link_libraries (${PROJECT_NAME} extra dcpp ${LIBS})
+ 
+ if (CMAKE_BUILD_TYPE STREQUAL Debug)
+     add_definitions(-D_DEBUG)
+--- origsrc/eiskaltdcpp-2.2.10/eiskaltdcpp-daemon/utility.cpp	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/eiskaltdcpp-daemon/utility.cpp	2015-04-26 20:31:26.513366300 +0900
+@@ -86,7 +86,9 @@ bool splitMagnet(const string &magnet, s
+     StringMap params;
+     if (magnet::parseUri(magnet,params)) {
+         tth=params["xt"];
+-#if defined(USE_BOOST_LEXICAL_CAST)
++#if defined(__CYGWIN__)
++        size = atoll(params["xl"].c_str());
++#elif defined(USE_BOOST_LEXICAL_CAST)
+         size = boost::lexical_cast<long long>(params["xl"]);
+ #else
+         size = stoll(params["xl"]);
+--- origsrc/eiskaltdcpp-2.2.10/eiskaltdcpp-qt/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/eiskaltdcpp-qt/CMakeLists.txt	2015-04-26 20:27:29.041862900 +0900
+@@ -345,6 +345,8 @@ if (APPLE)
+   target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp iconv)
+ elseif (HAIKU)
+   target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp be)
++elseif (CYGWIN)
++  target_link_libraries (${PROJECT_NAME} ${LIBS} extra dcpp)
+ else (APPLE)
+   target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp)
+ endif (APPLE)
+@@ -357,6 +359,7 @@ endif (APPLE)
+ 
+   install (TARGETS ${PROJECT_NAME}
+     RUNTIME DESTINATION ${BINDIR}
++    ARCHIVE DESTINATION ${LIBDIR}
+     BUNDLE DESTINATION ${BUNDLEDIR})
+ if (APPLE)
+ 
+--- origsrc/eiskaltdcpp-2.2.10/eiskaltdcpp-qt/src/main.cpp	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/eiskaltdcpp-qt/src/main.cpp	2015-04-26 19:58:15.124716300 +0900
+@@ -72,7 +72,7 @@ void parseCmdLine(const QStringList &);
+ #if !defined(Q_WS_WIN)
+ #include <unistd.h>
+ #include <signal.h>
+-#if !defined (__HAIKU__)
++#if !defined (__HAIKU__) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ 
+ #ifdef ENABLE_STACKTRACE
+@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
+         return 0;
+     }
+ 
+-#if !defined (Q_WS_WIN) && !defined (__HAIKU__)
++#if !defined (Q_WS_WIN) && !defined (__HAIKU__) && !defined(__CYGWIN__)
+     installHandlers();
+ #endif
+ 
+--- origsrc/eiskaltdcpp-2.2.10/eiskaltdcpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/eiskaltdcpp.pc.in	2015-04-26 22:39:01.839772000 +0900
+@@ -0,0 +1,5 @@
++Name: eiskaltdcpp
++Description: Cross-platform program that uses the Direct Connect and ADC protocols
++Version: @VERSION@
++Libs: -L@libdir@ -leiskaltdcpp
++Cflags: -I@includedir@
+--- origsrc/eiskaltdcpp-2.2.10/extra/CMakeLists.txt	2015-04-20 06:57:16.000000000 +0900
++++ src/eiskaltdcpp-2.2.10/extra/CMakeLists.txt	2015-04-26 18:48:49.669505500 +0900
+@@ -35,10 +35,10 @@ elseif (USE_MINIUPNP AND LOCAL_MINIUPNP)
+ endif (USE_MINIUPNP AND NOT LOCAL_MINIUPNP)
+ 
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+     set_property(TARGET extra PROPERTY COMPILE_FLAGS)
+-else(WIN32)
++else(WIN32 OR CYGWIN)
+     set_property(TARGET extra PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif (WIN32 OR CYGWIN)
+ 
+ target_link_libraries (extra ${MINIUPNP_LIBRARY} ${GETTEXT_LIBRARIES} ${ICONV_LIBRARIES})
