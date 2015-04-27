@@ -1,0 +1,226 @@
+--- origsrc/NHI1-0.17/Makefile.am	2013-04-23 22:51:53.000000000 +0900
++++ src/NHI1-0.17/Makefile.am	2015-04-27 16:10:17.769047100 +0900
+@@ -32,11 +32,11 @@ endif
+ CTAGSFLAGS = --c-kinds=+p
+ EXTRA_DIST = README_windows
+ 
+-install-data-local:
+-	echo $$(pwd)
+-	rm -fr $(DESTDIR)$(datarootdir)/html/theLink
+-	mkdir -p $(DESTDIR)$(datarootdir)/html
+-	cp -pr $(srcdir)/html/theLink $(DESTDIR)$(datarootdir)/html
++#install-data-local:
++#	echo $$(pwd)
++#	rm -fr $(DESTDIR)$(datarootdir)/html/theLink
++#	mkdir -p $(DESTDIR)$(datarootdir)/html
++#	cp -pr $(srcdir)/html/theLink $(DESTDIR)$(datarootdir)/html
+ 
+ uninstall-local:
+ 	chmod -R u+rwx $(DESTDIR)$(datarootdir)/html/theLink
+@@ -69,4 +69,3 @@ install-files:
+ #	rm -rf html
+ 
+ all-local: $(patsubst $(srcdir)/%.in, %, $(wildcard $(srcdir)/*.in))
+-
+--- origsrc/NHI1-0.17/configure.ac	2013-04-30 19:53:13.000000000 +0900
++++ src/NHI1-0.17/configure.ac	2015-04-27 15:57:57.589572700 +0900
+@@ -237,6 +237,8 @@ AC_SUBST([abs_top_srcdir_m], "$($CYGPATH
+ AC_SUBST([path],[$PATH])
+ AC_SUBST([ld_library_path],[$LD_LIBRARY_PATH])
+ 
++PKG_CHECK_MODULES([SQLITE3], [sqlite3])
++
+ AC_CONFIG_FILES([Makefile tests/Makefile sbin/winsdk.bat sbin/wincl.bat sbin/winlink.bat sbin/winlib.bat sbin/wincrt.bat
+   theLink/Makefile theLink/acmds/Makefile theLink/sqlite/Makefile theLink/tests/Makefile 
+     theLink/docs/Makefile bin/Makefile sbin/Makefile etc/Makefile tests/TestControl.bash
+@@ -257,4 +259,3 @@ AC_CONFIG_FILES([Makefile tests/Makefile
+ 				  theGuard/Makefile theGuard/aguard/Makefile theGuard/tests/Makefile ])
+ 
+ AC_OUTPUT
+-
+--- origsrc/NHI1-0.17/theBrain/abrain/Makefile.am	2013-04-23 22:35:25.000000000 +0900
++++ src/NHI1-0.17/theBrain/abrain/Makefile.am	2015-04-27 16:07:02.333180500 +0900
+@@ -12,9 +12,8 @@
+ 
+ bin_PROGRAMS = abrain
+ 
+-abrain_SOURCES = abrain.c $(srcdir)/../../theLink/sqlite/sqlite3.c
+-abrain_CPPFLAGS = -I$(srcdir)/../../theLink/libmsgque -I$(srcdir)/../../theLink/sqlite -DMQ_IGNORE_EXTERN -D_HAVE_SQLITE_CONFIG_H
+-abrain_CFLAGS = -static
+-abrain_LDLAGS = -static
+-abrain_LDADD = ../../theLink/libmsgque/libmsgque.la
+-
++abrain_SOURCES = abrain.c
++abrain_CPPFLAGS = -I$(srcdir)/../../theLink/libmsgque $(SQLITE3_CFLAGS) -DMQ_IGNORE_EXTERN -D_HAVE_SQLITE_CONFIG_H
++abrain_CFLAGS =
++abrain_LDFLAGS =
++abrain_LDADD = ../../theLink/libmsgque/libmsgque.la $(SQLITE3_LIBS)
+--- origsrc/NHI1-0.17/theBrain/atrans/Makefile.am	2013-04-23 22:35:25.000000000 +0900
++++ src/NHI1-0.17/theBrain/atrans/Makefile.am	2015-04-27 16:07:09.018033900 +0900
+@@ -14,7 +14,6 @@ bin_PROGRAMS = atrans
+ 
+ atrans_SOURCES = atrans.cc
+ atrans_CPPFLAGS = -I$(srcdir)/../../theLink/ccmsgque -I$(srcdir)/../../theLink/libmsgque -DMQ_IGNORE_EXTERN
+-atrans_CFLAGS = -static
+-atrans_LDFLAGS = -static
++atrans_CFLAGS =
++atrans_LDFLAGS =
+ atrans_LDADD = ../../theLink/ccmsgque/libccmsgque.la
+-
+--- origsrc/NHI1-0.17/theLink/Makefile.am	2013-04-23 22:35:25.000000000 +0900
++++ src/NHI1-0.17/theLink/Makefile.am	2015-04-27 15:57:06.574350400 +0900
+@@ -10,7 +10,7 @@
+ #:              please contact AUTHORS for additional information
+ #:
+ 
+-SUBDIRS = sqlite libmsgque
++SUBDIRS = libmsgque
+ SUBDIRS += example/c
+ if USE_CXX
+ SUBDIRS += ccmsgque
+--- origsrc/NHI1-0.17/theLink/acmds/Makefile.am	2013-04-23 22:51:53.000000000 +0900
++++ src/NHI1-0.17/theLink/acmds/Makefile.am	2015-04-27 16:01:45.198925000 +0900
+@@ -48,7 +48,6 @@ html-local: $(HTMLFILES)
+ CLEANFILES = $(HTMLFILES)
+ 
+ atool_SOURCES = atool.c ajoin.c acut.c asort.c asplit.c optionL.c optionL.h
+-atool_CFLAGS = -static -I$(srcdir)/../libmsgque -DMQ_IGNORE_EXTERN
+-atool_LDFLAGS = -static
++atool_CFLAGS = -I$(srcdir)/../libmsgque -DMQ_IGNORE_EXTERN
++atool_LDFLAGS = 
+ atool_LDADD = ../libmsgque/libmsgque.la
+-
+--- origsrc/NHI1-0.17/theLink/ccmsgque/Makefile.am	2013-04-23 22:35:25.000000000 +0900
++++ src/NHI1-0.17/theLink/ccmsgque/Makefile.am	2015-04-27 16:12:10.403472100 +0900
+@@ -46,7 +46,7 @@ CC_FILES = buffer.cc cache.cc event.cc \
+     \
+     ccmsgque.cc ccsend.cc ccmisc.cc ccservice.cc
+ 
+-C_FILES = ../sqlite/sqlite3.c
++C_FILES =
+ 
+ H_FILES = ccmsgque.h ccmsgque_private.h
+ 
+@@ -54,11 +54,11 @@ lib_LTLIBRARIES = libccmsgque.la
+ 
+ libccmsgque_la_SOURCES = $(CC_FILES) $(C_FILES) $(H_FILES)
+ 
+-libccmsgque_la_CPPFLAGS = -DMQ_COMPILE_AS_CC -DMQ_BUILD_LIBMSGQUE_DLL -D_HAVE_SQLITE_CONFIG_H -I$(srcdir)/../libmsgque -I$(srcdir)/../sqlite $(WINDEFS)
++libccmsgque_la_CPPFLAGS = -DMQ_COMPILE_AS_CC -DMQ_BUILD_LIBMSGQUE_DLL -D_HAVE_SQLITE_CONFIG_H -I$(srcdir)/../libmsgque $(SQLITE3_CFLAGS) $(WINDEFS)
+ libccmsgque_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
+-libccmsgque_la_LIBADD = $(WINLIBS)
++libccmsgque_la_LIBADD = $(WINLIBS) $(SQLITE3_LIBS)
+ 
+-include_HEADERS = ccmsgque.h
++pkginclude_HEADERS = ccmsgque.h
+ 
+ ## ===========================================================================================
+ ## windows with SDK
+@@ -89,4 +89,3 @@ sdkbindir = $(bindir)
+ sdkbin_DATA = .libs/ccmsgque.dll .libs/ccmsgque.pdb
+ 
+ endif
+-
+--- origsrc/NHI1-0.17/theLink/ccmsgque/sys.cc	2013-04-23 22:35:22.000000000 +0900
++++ src/NHI1-0.17/theLink/ccmsgque/sys.cc	2015-04-27 16:03:47.601154200 +0900
+@@ -493,6 +493,9 @@ static enum MqErrorE SysServerSpawn (
+       cmd="posix_spawnattr_init";
+       goto error;
+     }
++#if defined(__CYGWIN__)
++#define __environ environ
++#endif
+     if (unlikely ((err=posix_spawnp(&pid, name, NULL, &sa, (char *const *) argv, __environ)) != 0)) {
+       posix_spawnattr_destroy(&sa);
+       cmd="posix_spawnp";
+@@ -866,4 +869,3 @@ void SysDelete(void) {
+ }
+ 
+ END_C_DECLS
+-
+--- origsrc/NHI1-0.17/theLink/example/c/Makefile.am	2013-04-23 22:35:23.000000000 +0900
++++ src/NHI1-0.17/theLink/example/c/Makefile.am	2015-04-27 16:01:24.822067200 +0900
+@@ -15,8 +15,8 @@ noinst_PROGRAMS = mulclient mulserver ma
+ 			Filter1 Filter2 Filter3 Filter4 Filter5 \
+ 			    Filter6 server client
+ 
+-AM_CFLAGS = -static -I$(srcdir)/../../libmsgque -DMQ_IGNORE_EXTERN
+-AM_LDFLAGS = -static
++AM_CFLAGS = -I$(srcdir)/../../libmsgque -DMQ_IGNORE_EXTERN
++AM_LDFLAGS = 
+ LDADD = ../../libmsgque/libmsgque.la
+ 
+ client_SOURCES = client.c stat.c stat.h
+@@ -41,4 +41,3 @@ HTMLFILES = ./docs/server.help ./docs/cl
+ html-local: $(HTMLFILES)
+ 
+ CLEANFILES = $(HTMLFILES)
+-
+--- origsrc/NHI1-0.17/theLink/example/cc/Makefile.am	2013-04-23 22:35:23.000000000 +0900
++++ src/NHI1-0.17/theLink/example/cc/Makefile.am	2015-04-27 16:01:13.203734600 +0900
+@@ -19,8 +19,8 @@ noinst_PROGRAMS = Filter1 mulserver mulc
+       testserver testclient MyClient  MyServer Filter2 \
+ 	Filter3 Filter4 Filter5 Filter6 server
+ 
+-AM_CXXFLAGS = -static -I$(srcdir)/../../libmsgque -I$(srcdir)/../../ccmsgque -DMQ_IGNORE_EXTERN
+-AM_LDFLAGS = -static
++AM_CXXFLAGS = -I$(srcdir)/../../libmsgque -I$(srcdir)/../../ccmsgque -DMQ_IGNORE_EXTERN
++AM_LDFLAGS = 
+ LDADD = ../../ccmsgque/libccmsgque.la
+ 
+ Filter1_SOURCES = Filter1.cc
+@@ -37,4 +37,3 @@ MyServer_SOURCES = MyServer.cc
+ testclient_SOURCES = testclient.cc
+ testserver_SOURCES = testserver.cc
+ server_SOURCES = server.cc
+-
+--- origsrc/NHI1-0.17/theLink/libmsgque/Makefile.am	2013-04-23 22:51:53.000000000 +0900
++++ src/NHI1-0.17/theLink/libmsgque/Makefile.am	2015-04-27 16:12:23.380016300 +0900
+@@ -13,8 +13,7 @@
+ C_FILES = buffer.c cache.c event.c log.c \
+     send.c swap.c sys_com.c token.c uds_io.c bufferL.c error.c generic_io.c \
+     io.c msgque.c read.c sys.c tcp_io.c pipe_io.c trans.c slave.c config.c \
+-    service.c link.c factory.c sql.c \
+-    ../sqlite/sqlite3.c
++    service.c link.c factory.c sql.c
+ 
+ H_FILES = msgque.h debug.h msgque_private.h sys_com.h main.h
+ 
+@@ -22,12 +21,12 @@ lib_LTLIBRARIES = libmsgque.la
+ 
+ libmsgque_la_SOURCES = $(C_FILES) $(H_FILES)
+ 
+-libmsgque_la_CPPFLAGS = -DMQ_BUILD_LIBMSGQUE_DLL -D_HAVE_SQLITE_CONFIG_H -I$(srcdir)/../sqlite $(WINDEFS)
++libmsgque_la_CPPFLAGS = -DMQ_BUILD_LIBMSGQUE_DLL -D_HAVE_SQLITE_CONFIG_H $(SQLITE3_CFLAGS) $(WINDEFS)
+ libmsgque_la_CFLAGS = -Wstrict-prototypes 
+ libmsgque_la_LDFLAGS = -version-info @VERSION_INFO@ -no-undefined
+-libmsgque_la_LIBADD = $(WINLIBS)
++libmsgque_la_LIBADD = $(WINLIBS) $(SQLITE3_LIBS)
+ 
+-include_HEADERS = msgque.h
++pkginclude_HEADERS = msgque.h
+ 
+ html-local: libmsgque.la
+ 
+@@ -57,4 +56,3 @@ sdkbindir = $(bindir)
+ sdkbin_DATA = .libs/msgque.dll .libs/msgque.pdb
+ 
+ endif
+-
+--- origsrc/NHI1-0.17/theLink/libmsgque/sys.c	2013-04-23 22:35:22.000000000 +0900
++++ src/NHI1-0.17/theLink/libmsgque/sys.c	2015-04-27 15:55:55.928284100 +0900
+@@ -493,6 +493,9 @@ static enum MqErrorE SysServerSpawn (
+       cmd="posix_spawnattr_init";
+       goto error;
+     }
++#if defined(__CYGWIN__)
++#define __environ environ
++#endif
+     if (unlikely ((err=posix_spawnp(&pid, name, NULL, &sa, (char *const *) argv, __environ)) != 0)) {
+       posix_spawnattr_destroy(&sa);
+       cmd="posix_spawnp";
+@@ -866,4 +869,3 @@ void SysDelete(void) {
+ }
+ 
+ END_C_DECLS
+-
