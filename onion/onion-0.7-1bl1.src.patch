@@ -1,0 +1,344 @@
+--- origsrc/onion-0.7/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/CMakeLists.txt	2015-05-02 16:54:45.298345900 +0900
+@@ -39,11 +39,13 @@ IF (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR
+ SET(CMAKE_INSTALL_INCLUDEDIR include/onion)
+ ENDIF(NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
+ 
++INCLUDE(FindPkgConfig)
+ if (${ONION_POLLER} STREQUAL "default")
+ 	if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+ 		set (ONION_POLLER "epoll")
+ 	else(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+ 		set (ONION_POLLER "libev")
++                PKG_CHECK_MODULES(LIBEV REQUIRED libev)
+ 	endif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+ endif (${ONION_POLLER} STREQUAL "default")
+ 
+@@ -149,16 +151,20 @@ if (SYSTEMD_ENABLED)
+ 	add_definitions(-DHAVE_SYSTEMD)
+ endif (SYSTEMD_ENABLED)
+ add_definitions(-D_BSD_SOURCE)
++IF(NOT CYGWIN)
+ add_definitions(-D_POSIX_C_SOURCE=200112L)
++ENDIF()
+ 
+ ##
+ IF (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+ 	add_definitions(-D__DEBUG__)
+-	SET(CMAKE_C_FLAGS "-Wall -Werror -O0 -fPIC")
++	SET(CMAKE_C_FLAGS "-Wall -O0")
+ ELSE (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+-	SET(CMAKE_C_FLAGS "-Wall -Werror -O2 -fPIC")
++	SET(CMAKE_C_FLAGS "-Wall -O2")
+ ENDIF (${CMAKE_BUILD_TYPE} MATCHES "Debug")
+-
++IF(NOT CYGWIN)
++        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -fPIC")
++ENDIF()
+ 
+ project (onion)
+ 
+@@ -168,7 +174,9 @@ INCLUDE(CPack)
+ add_subdirectory(src)
+ add_subdirectory(tools)
+ 
++IF (NOT CYGWIN)
+ SET(OTEMPLATE otemplate)
++ENDIF ()
+ SET(OPACK opack)
+ 
+ if (${ONION_EXAMPLES})
+--- origsrc/onion-0.7/examples/cairo/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/examples/cairo/CMakeLists.txt	2015-05-02 21:11:42.395762900 +0900
+@@ -2,5 +2,3 @@ include_directories (${PROJECT_SOURCE_DI
+ 
+ add_executable(cairo_example cairo.c)
+ target_link_libraries(cairo_example onion onion_extras cairo m)
+-
+-install(TARGETS cairo_example DESTINATION ${CMAKE_INSTALL_BINDIR})
+--- origsrc/onion-0.7/examples/interactive/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/examples/interactive/CMakeLists.txt	2015-05-02 21:11:31.920686200 +0900
+@@ -2,7 +2,4 @@ include_directories (${PROJECT_SOURCE_DI
+ 
+ add_executable(interactive interactive.c)
+ 
+-target_link_libraries(interactive onion_static)
+-
+-install(TARGETS interactive DESTINATION ${CMAKE_INSTALL_BINDIR})
+-
++target_link_libraries(interactive onion)
+--- origsrc/onion-0.7/examples/multiport/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/examples/multiport/CMakeLists.txt	2015-05-02 16:55:37.323770300 +0900
+@@ -2,5 +2,4 @@ include_directories (${PROJECT_SOURCE_DI
+ 
+ add_executable(multiport multiport.c)
+ 
+-target_link_libraries(multiport onion_static onion_handlers)
+-
++target_link_libraries(multiport onion onion_handlers)
+--- origsrc/onion-0.7/examples/userver/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/examples/userver/CMakeLists.txt	2015-05-02 16:51:58.346753400 +0900
+@@ -1,3 +1,3 @@
+ 
+ add_executable(userver userver.c)
+-target_link_libraries(userver onion_handlers_static onion_static)
++target_link_libraries(userver onion_handlers onion)
+--- origsrc/onion-0.7/src/bindings/cpp/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/bindings/cpp/CMakeLists.txt	2015-05-02 16:59:57.317389700 +0900
+@@ -1,11 +1,17 @@
+ include_directories(${PROJECT_SOURCE_DIR}/src/)
+ add_library(onioncpp SHARED dict.cpp handler.cpp extrahandlers.cpp url.cpp)
++SET_TARGET_PROPERTIES(onioncpp PROPERTIES SOVERSION 0)
++target_link_libraries(onioncpp onion)
++if (ENABLE_STATIC)
+ add_library(onioncpp_static STATIC dict.cpp handler.cpp extrahandlers.cpp url.cpp)
+-SET(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++0x")
++endif()
++SET(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=gnu++0x")
+ 
+ SET(INCLUDES_ONIONCPP onion.hpp dict.hpp request.hpp response.hpp url.hpp handler.hpp extrahandlers.hpp)
+ MESSAGE(STATUS "Found include files ${INCLUDES_ONIONCPP}")
+ 
+ install(FILES ${INCLUDES_ONIONCPP} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+-install(TARGETS onioncpp EXPORT onioncpp DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS onioncpp EXPORT onioncpp RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (ENABLE_STATIC)
+ install(TARGETS onioncpp_static EXPORT onioncpp_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+--- origsrc/onion-0.7/src/bindings/cpp/extrahandlers.hpp	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/bindings/cpp/extrahandlers.hpp	2015-05-02 16:43:24.326602100 +0900
+@@ -25,7 +25,7 @@
+ #define ONION_EXTRAHANDLERS_HPP
+ 
+ #include <string>
+-#include <string.h>
++#include <cstring>
+ #include <onion/shortcuts.h>
+ 
+ #include "handler.hpp"
+@@ -76,4 +76,3 @@ namespace Onion{
+ };
+ 
+ #endif
+-
+--- origsrc/onion-0.7/src/bindings/cpp/onion.hpp	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/bindings/cpp/onion.hpp	2015-05-02 16:48:23.103322000 +0900
+@@ -28,6 +28,8 @@
+ #include <onion/onion.h>
+ #include "handler.hpp"
+ 
++#include <boost/lexical_cast.hpp>
++
+ /**
+ 	* This are the C++ Bindings to the C onion HTTP library.
+ 	* 
+@@ -144,7 +146,7 @@ namespace Onion{
+ 		* Its a convenience function that converts the integer to a string.
+ 		*/
+ 		void setPort(int port){
+-			std::string port_str=std::to_string(port);
++			std::string port_str=boost::lexical_cast<std::string>(port);
+ 			onion_set_port(ptr,port_str.c_str());
+ 		}
+ 		
+--- origsrc/onion-0.7/src/onion/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/onion/CMakeLists.txt	2015-05-02 16:58:45.836254000 +0900
+@@ -1,5 +1,7 @@
+ # the lib itself. Two versions, static and shared.
+ 
++option(ENABLE_STATIC "enable static" OFF)
++
+ if (SYSTEMD_ENABLED)
+ 	set(SYSTEMD_C sd-daemon.c)
+ endif(SYSTEMD_ENABLED)
+@@ -17,14 +19,7 @@ endif (${ONION_POLLER} STREQUAL libevent
+ 
+ if (${ONION_POLLER} STREQUAL libev)
+ 	set(POLLER_C poller_libev.c)
+-	find_path(LIBEV_HEADER ev.h ${CMAKE_INCLUDE_PATH} /usr/local/include/)
+-	find_library(LIBEV_LIB NAMES ev PATH /usr/local/lib/)
+-	if (LIBEV_LIB)
+-		message(STATUS "libev found at ${LIBEV_LIB}")
+-	else (LIBEV_LIB)
+-		message(FATAL_ERROR "libev not found. Cant compile. ${LIBEV_HEADER} ${LIBEV_LIB}")
+-	endif (LIBEV_LIB)
+-	include_directories(${LIBEV_HEADER})
++	include_directories(${LIBEV_INCLUDE_DIRS})
+ endif (${ONION_POLLER} STREQUAL libev)
+ 
+ if (${ONION_POLLER} STREQUAL epoll)
+@@ -44,32 +39,47 @@ IF (${CMAKE_BUILD_TYPE} MATCHES "Fast")
+    )
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  add_library(onion SHARED ${CMAKE_CURRENT_BINARY_DIR}/all-onion.c)
++ if (ENABLE_STATIC)
+  add_library(onion_static STATIC ${CMAKE_CURRENT_BINARY_DIR}/all-onion.c)
++ endif()
+ ELSE (${CMAKE_BUILD_TYPE} MATCHES "Fast")
+  add_library(onion SHARED ${SOURCES})
++ if (ENABLE_STATIC)
+  add_library(onion_static STATIC  ${SOURCES})
++ endif()
+ ENDIF (${CMAKE_BUILD_TYPE} MATCHES "Fast")
++SET_TARGET_PROPERTIES(onion PROPERTIES SOVERSION 0)
+ 
+ # library dependencies
+ if (GNUTLS_ENABLED)
+ 	target_link_libraries(onion ${GNUTLS_LIB} gcrypt)
++	if (ENABLE_STATIC)
+ 	target_link_libraries(onion_static ${GNUTLS_LIB} gcrypt)
++	endif()
+ endif(GNUTLS_ENABLED)
+ if (PTHREADS)
+ 	target_link_libraries(onion pthread)
++	if (ENABLE_STATIC)
+ 	target_link_libraries(onion_static pthread)
++	endif()
+ endif(PTHREADS)
+ if (SYSTEMD_ENABLED)
+ 	target_link_libraries(onion ${RT_LIB})
++	if (ENABLE_STATIC)
+ 	target_link_libraries(onion_static ${RT_LIB})
++	endif()
+ endif(SYSTEMD_ENABLED)
+ if (${ONION_POLLER} STREQUAL libevent)
+ 	target_link_libraries(onion event_core event_pthreads)
++	if (ENABLE_STATIC)
+ 	target_link_libraries(onion_static event_core event_pthreads)
++	endif()
+ endif (${ONION_POLLER} STREQUAL libevent)
+ if (${ONION_POLLER} STREQUAL libev)
+-	target_link_libraries(onion ${LIBEV_LIB})
+-	target_link_libraries(onion_static ${LIBEV_LIB})
++	target_link_libraries(onion ${LIBEV_LIBRARIES})
++	if (ENABLE_STATIC)
++		target_link_libraries(onion_static ${LIBEV_LIBRARIES})
++	endif()
+ endif (${ONION_POLLER} STREQUAL libev)
+ 
+ 
+@@ -85,10 +95,12 @@ SET(INCLUDES_ONION block.h codecs.h dict
+ MESSAGE(STATUS "Found include files ${INCLUDES_ONION}")
+ 
+ install(FILES ${INCLUDES_ONION} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+-install(TARGETS onion onion_static EXPORT onion DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS onion EXPORT onion RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (ENABLE_STATIC)
++	install(TARGETS onion_static EXPORT onion DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+ 
+ if (${ARM})
+ elseif (${ARM})
+-install(EXPORT onion DESTINATION share/cmake)
++install(EXPORT onion DESTINATION lib/cmake/onion)
+ endif (${ARM})
+-
+--- origsrc/onion-0.7/src/onion/extras/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/onion/extras/CMakeLists.txt	2015-05-02 16:59:39.293972600 +0900
+@@ -9,7 +9,9 @@ else (${PNG_ENABLED})
+ endif  (${PNG_ENABLED})
+ 
+ 
+-add_library(onion_extras STATIC ${PNG})
++add_library(onion_extras SHARED ${PNG})
++target_link_libraries(onion_extras onion)
++SET_TARGET_PROPERTIES(onion_extras PROPERTIES SOVERSION 0)
+ 
+ if (${PNG_ENABLED})
+ target_link_libraries(onion_extras ${PNG_LIB})
+@@ -19,8 +21,8 @@ SET(INCLUDES_EXTRAS png.h)
+ MESSAGE(STATUS "Found include files ${INCLUDES_EXTRAS}")
+ 
+ install(FILES ${INCLUDES_EXTRAS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/extras/)
+-install(TARGETS onion_extras EXPORT onion_extras DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS onion_extras EXPORT onion_extras RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ if (${ARM})
+ elseif (${ARM})
+-install(EXPORT onion_extras DESTINATION share/cmake)
++	install(EXPORT onion_extras DESTINATION lib/cmake/onion)
+ endif (${ARM})
+--- origsrc/onion-0.7/src/onion/handlers/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/onion/handlers/CMakeLists.txt	2015-05-02 16:59:20.424810500 +0900
+@@ -22,20 +22,22 @@ add_library(onion_handlers SHARED static
+ 																	${PAM} ${WEBDAV})
+ target_link_libraries(onion_handlers ${PAMLIBS} ${XMLLIBS} onion)
+ 
++if (ENABLE_STATIC)
+ add_library(onion_handlers_static STATIC static.c exportlocal.c opack.c path.c internal_status.c
+ 																	${PAM} ${WEBDAV})
+ target_link_libraries(onion_handlers_static ${PAMLIBS} ${XMLLIBS})
+-
+-
++endif()
++SET_TARGET_PROPERTIES(onion_handlers PROPERTIES SOVERSION 0)
+ 
+ SET(INCLUDES_HANDLERS static.h exportlocal.h auth_pam.h opack.h path.h webdav.h internal_status.h)
+ MESSAGE(STATUS "Found include files ${INCLUDES_HANDLERS}")
+ 
+ install(FILES ${INCLUDES_HANDLERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/handlers/)
+-install(TARGETS onion_handlers EXPORT onion_handlers DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS onion_handlers EXPORT onion_handlers RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (ENABLE_STATIC)
+ install(TARGETS onion_handlers_static EXPORT onion_handlers_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+ if (${ARM})
+ elseif (${ARM})
+-install(EXPORT onion_handlers_static DESTINATION share/cmake)
++	install(EXPORT onion_handlers DESTINATION lib/cmake/onion)
+ endif (${ARM})
+-
+--- origsrc/onion-0.7/src/onion/log.c	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/src/onion/log.c	2015-05-02 16:40:54.877239500 +0900
+@@ -32,7 +32,9 @@
+ #ifdef HAVE_PTHREADS
+ #include <pthread.h>
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/types.h>
+ #endif
+ 
+--- origsrc/onion-0.7/tests/04-prerecorded/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/tests/04-prerecorded/CMakeLists.txt	2015-05-02 16:56:28.217043900 +0900
+@@ -2,5 +2,4 @@
+ include_directories (${PROJECT_SOURCE_DIR}/src/) 
+ 
+ add_executable(prerecorded prerecorded.c ../01-internal/buffer_listen_point.c)
+-target_link_libraries(prerecorded onion_handlers onion_static)
+-
++target_link_libraries(prerecorded onion_handlers onion)
+--- origsrc/onion-0.7/tests/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/tests/CMakeLists.txt	2015-05-02 16:57:19.803836700 +0900
+@@ -12,7 +12,9 @@ add_subdirectory(05-sessions)
+ 
+ #add_subdirectory(06-handlers)
+ 
++IF (OTEMPLATE)
+ add_subdirectory(07-tools)
++ENDIF ()
+ 
+ ADD_CUSTOM_TARGET(auto.sh ALL DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/auto.sh
+ 	COMMAND [ "${CMAKE_CURRENT_SOURCE_DIR}" = "${CMAKE_CURRENT_BINARY_DIR}" ] || cp ${CMAKE_CURRENT_SOURCE_DIR}/auto.sh  ${CMAKE_CURRENT_BINARY_DIR}/auto.sh
+@@ -29,4 +31,3 @@ add_subdirectory(09-webdav)
+ else (${XML2_ENABLED})
+ message(STATUS "No 09-webdav example as no libxml2 available")
+ endif (${XML2_ENABLED})
+-
+--- origsrc/onion-0.7/tools/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/tools/CMakeLists.txt	2015-05-02 16:55:20.555227100 +0900
+@@ -2,4 +2,6 @@
+ 
+ add_subdirectory(opack)
+ add_subdirectory(compilerunloop)
++IF (NOT CYGWIN)
+ add_subdirectory(otemplate)
+\ No newline at end of file
++ENDIF ()
+--- origsrc/onion-0.7/tools/otemplate/templatetags/CMakeLists.txt	2014-02-20 02:13:35.000000000 +0900
++++ src/onion-0.7/tools/otemplate/templatetags/CMakeLists.txt	2015-05-02 16:50:30.394292600 +0900
+@@ -1,3 +1,4 @@
+ add_library(i18n SHARED i18n.c)
++target_link_libraries(i18n onion)
+ 
+ install(TARGETS i18n DESTINATION ${CMAKE_INSTALL_LIBDIR}/otemplate/templatetags)
