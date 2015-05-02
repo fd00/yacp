@@ -1,0 +1,78 @@
+--- origsrc/evbsc/Makefile.am	2015-05-02 14:11:43.000000000 +0900
++++ src/evbsc/Makefile.am	2015-05-02 14:21:56.925766400 +0900
+@@ -5,3 +5,6 @@ MAYBE_OPT = . tests
+ endif
+ 
+ SUBDIRS = src $(MAYBE_OPT)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = evbsc.pc
+--- origsrc/evbsc/configure.ac	2015-05-02 14:11:43.000000000 +0900
++++ src/evbsc/configure.ac	2015-05-02 14:22:02.314595300 +0900
+@@ -2,7 +2,7 @@ AC_PREREQ([2.59])
+ AC_INIT([libevbsc], [1.0], [roey.berman@gmail.com])
+ AC_CONFIG_SRCDIR([src/evbsc.c])
+ AC_CONFIG_HEADERS([config.h])
+-AM_INIT_AUTOMAKE([foreign -Wall -Werror])
++AM_INIT_AUTOMAKE([foreign -Wall])
+ 
+ AC_ARG_ENABLE(tests,[  --enable-tests          build tests],[ 
+ 	PKG_CHECK_MODULES([CHECK], [check >= 0.9.4]) 
+@@ -23,9 +23,9 @@ AM_PROG_CC_C_O
+ AC_SUBST(LIBTOOL_DEPS)
+ 
+ # Checks for libraries.
+-AC_CHECK_LIB([beanstalkclient], [bsc_new])
+-AC_CHECK_LIB([check], [tcase_create])
+-AC_CHECK_LIB([ev], [ev_loop])
++PKG_CHECK_MODULES([LIBBEANSTALKCLIENT], [libbeanstalkclient])
++PKG_CHECK_MODULES([CHECK], [check])
++PKG_CHECK_MODULES([LIBEV], [libev])
+ 
+ # Checks for header files.
+ AC_CHECK_HEADERS([stdlib.h string.h])
+@@ -37,7 +37,7 @@ AC_TYPE_SIZE_T
+ # Checks for library functions.
+ AC_FUNC_MALLOC
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([evbsc.pc Makefile
+                  src/Makefile
+                  tests/Makefile])
+ 
+--- origsrc/evbsc/evbsc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/evbsc/evbsc.pc.in	2015-05-02 14:21:38.988043400 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: evbsc
++Description: Beanstalkclient library embeded into libev
++Version: @VERSION@
++Libs: -L${libdir} -levbsc
++Cflags: -I${includedir}
+--- origsrc/evbsc/src/Makefile.am	2015-05-02 14:11:43.000000000 +0900
++++ src/evbsc/src/Makefile.am	2015-05-02 14:20:03.615133300 +0900
+@@ -3,4 +3,6 @@ LIBEVBSC_VERSION = 1:0:0
+ lib_LTLIBRARIES     = libevbsc.la
+ libevbsc_la_SOURCES = evbsc.c
+ include_HEADERS     = evbsc.h
+-libevbsc_la_LDFLAGS = -version-info $(LIBEVBSC_VERSION)
++libevbsc_la_LDFLAGS = -no-undefined -version-info $(LIBEVBSC_VERSION)
++libevbsc_la_CPPFLAGS = $(LIBBEANSTALKCLIENT_CFLAGS) $(LIBEV_CFLAGS)
++libevbsc_la_LIBADD = $(LIBBEANSTALKCLIENT_LIBS) $(LIBEV_LIBS)
+--- origsrc/evbsc/tests/Makefile.am	2015-05-02 14:11:43.000000000 +0900
++++ src/evbsc/tests/Makefile.am	2015-05-02 14:20:25.940895600 +0900
+@@ -1,9 +1,8 @@
+ TESTS = evbsc.t
+ check_PROGRAMS = $(TESTS)
+ 
+-srcdir = $(top_builddir)/src
+-AM_CFLAGS = -I$(srcdir) 
++AM_CFLAGS = -I$(top_srcdir)/src $(LIBBEANSTALKCLIENT_CFLAGS) $(LIBEV_CFLAGS)
+ 
+ evbsc_t_SOURCES = check_evbsc.c evbsc.h
+ evbsc_t_CFLAGS  = @CHECK_CFLAGS@ $(AM_CFLAGS)
+-evbsc_t_LDADD   = @CHECK_LIBS@ $(srcdir)/*.o
++evbsc_t_LDADD   = @CHECK_LIBS@ $(top_builddir)/src/libevbsc.la
