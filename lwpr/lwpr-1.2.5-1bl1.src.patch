@@ -1,0 +1,97 @@
+--- origsrc/lwpr-1.2.5/Makefile.am	2012-02-04 03:35:52.000000000 +0900
++++ src/lwpr-1.2.5/Makefile.am	2015-05-03 19:06:46.834750800 +0900
+@@ -2,6 +2,9 @@ SUBDIRS = src include example_c example_
+ EXTRA_DIST = html Doxyfile README.TXT INSTALL.TXT
+ TESTS = tests/crosscheck
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
++
+ dist-hook:
+ 	mkdir $(distdir)/doc
+ 	cp -p $(top_srcdir)/doc/lwpr_doc.tex $(distdir)/doc
+--- origsrc/lwpr-1.2.5/configure.ac	2013-04-10 01:48:33.000000000 +0900
++++ src/lwpr-1.2.5/configure.ac	2015-05-03 19:07:00.372019000 +0900
+@@ -8,9 +8,10 @@ LT_INIT
+ AC_PROG_CC
+ CFLAGS=-O3 -g
+ AC_PROG_CXX
++AM_PROG_CC_C_O
+ AC_PROG_LIBTOOL
+ 
+-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AM_INIT_AUTOMAKE([-Wall foreign])
+ 
+ AC_CHECK_LIB([expat], [XML_ParserCreate])
+ AC_CHECK_LIB([m], [sqrt])
+@@ -61,7 +62,7 @@ else
+       MATLAB_PATH=$with_matlab
+       MEXSUB=mexsrc
+       echo Include path for Matlab MEX files is $with_matlab/extern/include
+-      AC_CONFIG_FILES([mexsrc/Makefile])
++      # AC_CONFIG_FILES([mexsrc/Makefile])
+    else
+       echo ERROR: At least one of the following files 
+       echo *  $with_matlab/extern/include/mex.h 
+@@ -125,5 +126,5 @@ AC_SUBST([MEXSUB])
+ AC_SUBST([OCTSUB])
+ AC_SUBST([OCTINCLUDEPATH])
+ 
+-AC_CONFIG_FILES([Makefile src/Makefile include/Makefile example_c/Makefile example_cpp/Makefile tests/Makefile])
++AC_CONFIG_FILES([lwpr.pc Makefile src/Makefile include/Makefile example_c/Makefile example_cpp/Makefile tests/Makefile])
+ AC_OUTPUT
+--- origsrc/lwpr-1.2.5/example_c/Makefile.am	2012-02-04 03:35:51.000000000 +0900
++++ src/lwpr-1.2.5/example_c/Makefile.am	2015-05-03 17:16:04.338774400 +0900
+@@ -1,4 +1,4 @@
+ noinst_PROGRAMS = cross
+ cross_SOURCES = cross.c
+ cross_LDADD = ../src/liblwpr.la
+-cross_CFLAGS = -I$(top_srcdir)/../include
++cross_CFLAGS = -I$(top_srcdir)/include
+--- origsrc/lwpr-1.2.5/lwpr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/lwpr-1.2.5/lwpr.pc.in	2015-05-03 19:06:29.797924500 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: lwpr
++Description: Locally Weighted Projection Regression Library
++Version: @VERSION@
++Libs: -L${libdir} -llwpr
++Cflags: -I${includedir}
+--- origsrc/lwpr-1.2.5/mexoct/Makefile.am	2013-04-10 01:34:30.000000000 +0900
++++ src/lwpr-1.2.5/mexoct/Makefile.am	2015-05-03 17:10:23.661324000 +0900
+@@ -9,7 +9,7 @@ liblwproctave_la_SOURCES = $(top_srcdir)
+                      $(top_srcdir)/src/lwpr_matlab.c
+              
+ liblwproctave_la_CFLAGS = -I$(top_srcdir)/include -I$(OCTINCLUDEPATH) -DMATLAB
+-liblwproctave_la_LDFLAGS = -version-info 1:1:0
++liblwproctave_la_LDFLAGS = -no-undefined -version-info 1:1:0
+ 
+ mexsources=lwpr_predict lwpr_predict_J lwpr_predict_JcJ lwpr_predict_JH lwpr_update lwpr_num_rfs lwpr_num_data lwpr_storage lwpr_write_xml lwpr_read_xml lwpr_write_binary lwpr_read_binary
+ mexsources+=lwpr_x_check_add_projection lwpr_x_compute_projection lwpr_x_compute_projection_d lwpr_x_compute_projection_r lwpr_x_dist_derivatives lwpr_x_init_rf lwpr_x_predict_one lwpr_x_update_distance_metric lwpr_x_update_means lwpr_x_update_one lwpr_x_update_regression 
+@@ -22,5 +22,3 @@ install-exec-hook:
+ 	@echo ===========================================================================   
+ 	@for x in $(mexsources); do echo Building Octave MEX file $$x; $(OCTAVE_PATH)/bin/mkoctfile --mex -o ../matlab/$$x.mex $(mexflags) ../mexsrc/$$x.c; done
+ 	@echo ===========================================================================
+-	
+-
+--- origsrc/lwpr-1.2.5/src/Makefile.am	2012-02-04 03:35:51.000000000 +0900
++++ src/lwpr-1.2.5/src/Makefile.am	2015-05-03 17:10:08.695084600 +0900
+@@ -8,6 +8,4 @@ liblwpr_la_SOURCES = lwpr.c \
+                      lwpr_xml.c
+              
+ liblwpr_la_CFLAGS = -I$(srcdir)/../include
+-liblwpr_la_LDFLAGS = -version-info 1:2:0
+-
+-
++liblwpr_la_LDFLAGS = -no-undefined -version-info 1:2:0
+--- origsrc/lwpr-1.2.5/tests/Makefile.am	2012-02-04 03:35:51.000000000 +0900
++++ src/lwpr-1.2.5/tests/Makefile.am	2015-05-03 17:16:34.865756600 +0900
+@@ -1,4 +1,4 @@
+ check_PROGRAMS = crosscheck
+ crosscheck_SOURCES = cross_check.c
+ crosscheck_LDADD = ../src/liblwpr.la
+-crosscheck_CFLAGS = -I$(top_srcdir)/../include
++crosscheck_CFLAGS = -I$(top_srcdir)/include
