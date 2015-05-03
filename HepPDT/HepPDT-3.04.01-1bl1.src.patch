@@ -1,0 +1,276 @@
+--- origsrc/HepPDT-3.04.01/HepPDT.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/HepPDT-3.04.01/HepPDT.pc.in	2015-05-03 09:32:34.725324600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: HepPDT
++Description: Data about each particle from the Review of Particle Properties
++Version: @VERSION@
++Libs: -L${libdir} -lHepPDT
++Cflags: -I${includedir}
++Requires: HepPID
+--- origsrc/HepPDT-3.04.01/HepPID.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/HepPDT-3.04.01/HepPID.pc.in	2015-05-03 09:32:46.355716600 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: HepPDT
++Description: Data about each particle from the Review of Particle Properties
++Version: @VERSION@
++Libs: -L${libdir} -lHepPID
++Cflags: -I${includedir}
+--- origsrc/HepPDT-3.04.01/Makefile.am	2009-09-19 01:57:23.000000000 +0900
++++ src/HepPDT-3.04.01/Makefile.am	2015-05-03 09:33:45.195563000 +0900
+@@ -12,3 +12,7 @@ SUBDIRS = include/HepPID include/HepPDT
+ DIST_SUBDIRS = include/HepPID include/HepPDT src/HepPID src/HepPDT data \
+          tests/HepPID tests/HepPDT doc/HepPID doc/HepPDT \
+          examples/HepPID examples/HepPDT examples/data 
++
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc HepPID.pc
+--- origsrc/HepPDT-3.04.01/configure.ac	2009-12-02 08:04:51.000000000 +0900
++++ src/HepPDT-3.04.01/configure.ac	2015-05-03 09:33:16.150906500 +0900
+@@ -66,7 +66,7 @@ AC_ARG_ENABLE(static,
+ AC_PROG_CXX
+ AC_PROG_CC
+ AC_PROG_MAKE_SET
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ # ----------------------------------------------------------------------
+ # Checks for libraries.
+@@ -186,7 +186,7 @@ AM_CONDITIONAL(BUILD_VISUAL, test x$buil
+ # ----------------------------------------------------------------------
+ 
+ # Makefiles:
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([HepPDT.pc HepPID.pc Makefile
+                  include/HepPDT/Makefile
+                  include/HepPID/Makefile
+                  src/HepPDT/Makefile
+--- origsrc/HepPDT-3.04.01/data/Makefile.am	2009-01-07 00:35:32.000000000 +0900
++++ src/HepPDT-3.04.01/data/Makefile.am	2015-05-03 09:22:45.455337800 +0900
+@@ -15,7 +15,6 @@ EXTRA_DIST = $(PDG_TABLES)
+       
+ 
+ install-data-local:
+-	$(mkinstalldirs) $(DESTDIR)$(prefix)/data
++	$(mkinstalldirs) $(DESTDIR)$(datadir)/$(PACKAGE)/data
+ 	for file in $(PDG_TABLES); do \
+-	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(prefix)/data/$$file; done
+-
++	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(datadir)/$(PACKAGE)/data/$$file; done
+--- origsrc/HepPDT-3.04.01/doc/HepPDT/Makefile.am	2009-11-24 02:16:12.000000000 +0900
++++ src/HepPDT-3.04.01/doc/HepPDT/Makefile.am	2015-05-03 09:17:35.906567600 +0900
+@@ -6,7 +6,7 @@ if USE_GMAKE
+   MAKE = gmake
+ endif
+ 
+-doc_installdir = $(prefix)/doc/HepPDT
++doc_installdir = $(docdir)/HepPDT
+ 
+ HEPPDT_DOC = HepPDT.pdf HepPDT_reference_manual.pdf
+ 
+@@ -21,4 +21,3 @@ install-data-local:
+ 
+ # Identify generated file(s) to be removed when 'make clean' is requested:
+ CLEANFILES = *.aux *.log *.toc *.dvi
+-
+--- origsrc/HepPDT-3.04.01/doc/HepPID/Makefile.am	2009-11-25 11:20:37.000000000 +0900
++++ src/HepPDT-3.04.01/doc/HepPID/Makefile.am	2015-05-03 09:17:42.826074100 +0900
+@@ -6,7 +6,7 @@ if USE_GMAKE
+   MAKE = gmake
+ endif
+ 
+-doc_installdir = $(prefix)/doc/HepPID
++doc_installdir = $(docdir)/HepPID
+ 
+ HEPPID_DOC = HepPID.pdf montecarlorpp.pdf montecarlo_2010_draft.pdf
+ 
+@@ -21,4 +21,3 @@ install-data-local:
+ 
+ # Identify generated file(s) to be removed when 'make clean' is requested:
+ CLEANFILES = *.aux *.log *.toc *.dvi
+-
+--- origsrc/HepPDT-3.04.01/examples/HepPDT/Makefile.am	2007-03-01 07:58:19.000000000 +0900
++++ src/HepPDT-3.04.01/examples/HepPDT/Makefile.am	2015-05-03 09:21:44.363448600 +0900
+@@ -10,7 +10,7 @@ EXTRA_DIST = \
+     examMyPDT.out.save
+ 
+ install-data-local:
+-	$(mkinstalldirs) $(DESTDIR)$(prefix)/examples/@PACKAGE@
+-	$(INSTALL_DATA) GNUmakefile.example $(DESTDIR)$(prefix)/examples/@PACKAGE@/GNUmakefile
++	$(mkinstalldirs) $(DESTDIR)$(datadir)/$(PACKAGE)/examples
++	$(INSTALL_DATA) GNUmakefile.example $(DESTDIR)$(datadir)/$(PACKAGE)/examples/GNUmakefile
+ 	for file in $(EXTRA_DIST); do \
+-	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(prefix)/examples/@PACKAGE@/$$file; done
++	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(datadir)/$(PACKAGE)/examples/$$file; done
+--- origsrc/HepPDT-3.04.01/examples/HepPID/Makefile.am	2007-05-12 01:27:18.000000000 +0900
++++ src/HepPDT-3.04.01/examples/HepPID/Makefile.am	2015-05-03 09:23:28.932895400 +0900
+@@ -4,7 +4,7 @@ if USE_GMAKE
+   MAKE = gmake
+ endif
+ 
+-pkgexamdir = $(prefix)/examples/HepPID
++pkgexamdir = $(datadir)/HepPID/examples
+ 
+ # files to distribute
+ EXTRA_DIST = \
+--- origsrc/HepPDT-3.04.01/examples/data/Makefile.am	2009-01-10 05:28:34.000000000 +0900
++++ src/HepPDT-3.04.01/examples/data/Makefile.am	2015-05-03 09:20:57.893432800 +0900
+@@ -12,6 +12,6 @@ EXTRA_DIST = \
+     evt.pdl
+ 
+ install-data-local:
+-	$(mkinstalldirs) $(DESTDIR)$(prefix)/examples/@PACKAGE@/data
++	$(mkinstalldirs) $(DESTDIR)$(datadir)/$(PACKAGE)/examples/data
+ 	for file in $(EXTRA_DIST); do \
+-	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(prefix)/examples/@PACKAGE@/data/$$file; done
++	  $(INSTALL_DATA) $(srcdir)/$$file $(DESTDIR)$(datadir)/$(PACKAGE)/examples/data/$$file; done
+--- origsrc/HepPDT-3.04.01/src/HepPDT/Makefile.am	2009-11-21 07:54:28.000000000 +0900
++++ src/HepPDT-3.04.01/src/HepPDT/Makefile.am	2015-05-03 09:15:29.982144200 +0900
+@@ -6,7 +6,7 @@ endif
+ 
+ INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+-libHepPDT_a_SOURCES = \
++libHepPDT_la_SOURCES = \
+ 	Constituent.cc		\
+ 	DefTable.cc		\
+ 	HeavyIonUnknownID.cc	\
+@@ -36,6 +36,8 @@ libHepPDT_a_SOURCES = \
+ 	stringtodouble.cc	\
+ 	write.cc
+ 
++libHepPDT_la_LDFLAGS = -no-undefined
++
+ libHepPDT_so_OBJECTS = $(patsubst %.cc,$(shareddir)/%.$(OBJEXT),$(libHepPDT_a_SOURCES))
+ 
+ # these if/else blocks will be parsed by automake and translated
+@@ -45,52 +47,15 @@ if BUILD_VISUAL
+   lib_shared = HepPDT.$(SHEXT)
+ else
+   lib_shared = libHepPDT.$(SHEXT)
+-  LDADD = -L${top_builddir}/src/HepPID -lHepPID
++  libHepPDT_la_LIBADD = ${top_builddir}/src/HepPID/libHepPID.la
+ endif
+   SHFLAGS = @MY_SHFLAGS@
+   SHLINK = @MY_SHLINK@
+   SHNAME = @MY_SHNAME@
++  lib_LTLIBRARIES = libHepPDT.la
+ endif
+ if BUILD_STATIC
+   lib_LIBRARIES = libHepPDT.a
+ endif
+ 
+-#libHepPDT_a_LIBADD = -L${top_builddir}/src/HepPID -lHepPID
+-
+ CLEANFILES =  $(lib_shared)
+-CYGPATH_W = @CYGPATH_W@
+-
+-all-local: $(shareddir) $(lib_shared)
+-
+-$(shareddir):
+-	test -d $(shareddir) || mkdir $(shareddir)
+-
+-if BUILD_VISUAL
+-$(lib_shared): $(libHepPDT_so_OBJECTS)
+-	lib $(SHLINK) $(SHNAME)`$(CYGPATH_W) '$@'` $(libHepPDT_so_OBJECTS)
+-
+-$(shareddir)/%.$(OBJEXT): %.cc
+-	$(CXXCOMPILE) $(SHFLAGS) /c /Fo$@ `$(CYGPATH_W) '$<'`
+-else
+-$(lib_shared): $(libHepPDT_so_OBJECTS)
+-	$(CXXLINK) $(SHLINK) $(SHNAME)$@ $(libHepPDT_so_OBJECTS) $(LDADD) -o $@
+-
+-$(shareddir)/%.$(OBJEXT): %.cc
+-	$(CXXCOMPILE) $(SHFLAGS) -c -o $@ $<
+-endif
+-
+-install-exec-local: $(lib_shared)
+-	@$(NORMAL_INSTALL)
+-	test -z "$(libdir)" || $(mkdir_p) "$(DESTDIR)$(libdir)"
+-	@list='$(lib_shared)'; for p in $$list; do \
+-	  if test -f $$p; then \
+-	    echo " $(INSTALL) '$$p' '$(DESTDIR)$(libdir)/$$p'"; \
+-	    $(INSTALL) "$$p" "$(DESTDIR)$(libdir)/$$f"; \
+-	  else :; fi; \
+-	done
+-
+-clean-local:
+-	-test -d $(shareddir) && rm -f $(shareddir)/*.$(OBJEXT)
+-
+-distclean-local:
+-	-test -d $(shareddir) && rm -rf ./$(shareddir)
+--- origsrc/HepPDT-3.04.01/src/HepPID/Makefile.am	2009-11-21 07:54:28.000000000 +0900
++++ src/HepPDT-3.04.01/src/HepPID/Makefile.am	2015-05-03 09:14:36.644574400 +0900
+@@ -6,7 +6,7 @@ endif
+ 
+ INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+-libHepPID_a_SOURCES = \
++libHepPID_la_SOURCES = \
+ 	ParticleName.cc		\
+ 	translateEvtGen.cc	\
+ 	translateGeanttoPDT.cc	\
+@@ -19,6 +19,8 @@ libHepPID_a_SOURCES = \
+ 	ParticleIDMethods.cc	\
+ 	Version.cc
+ 
++libHepPID_la_LDFLAGS = -no-undefined
++
+ libHepPID_so_OBJECTS = $(patsubst %.cc,$(shareddir)/%.$(OBJEXT),$(libHepPID_a_SOURCES))
+ 
+ # these if/else blocks will be parsed by automake and translated
+@@ -32,45 +34,10 @@ endif
+   SHFLAGS = @MY_SHFLAGS@
+   SHLINK = @MY_SHLINK@
+   SHNAME = @MY_SHNAME@
++  lib_LTLIBRARIES = libHepPID.la
+ endif
+ if BUILD_STATIC
+   lib_LIBRARIES = libHepPID.a
+ endif
+ 
+ CLEANFILES =  $(lib_shared)
+-CYGPATH_W = @CYGPATH_W@
+-
+-all-local: $(shareddir) $(lib_shared)
+-
+-$(shareddir):
+-	test -d $(shareddir) || mkdir $(shareddir)
+-
+-if BUILD_VISUAL
+-$(lib_shared): $(libHepPID_so_OBJECTS)
+-	lib $(SHLINK) $(SHNAME)`$(CYGPATH_W) '$@'` $(libHepPID_so_OBJECTS)
+-
+-$(shareddir)/%.$(OBJEXT): %.cc
+-	$(CXXCOMPILE) $(SHFLAGS) /c /Fo$@ `$(CYGPATH_W) '$<'`
+-else
+-$(lib_shared): $(libHepPID_so_OBJECTS)
+-	$(CXXLINK) $(SHLINK) $(SHNAME)$@ $(libHepPID_so_OBJECTS) -o $@
+-
+-$(shareddir)/%.$(OBJEXT): %.cc
+-	$(CXXCOMPILE) $(SHFLAGS) -c -o $@ $<
+-endif
+-
+-install-exec-local: $(lib_shared)
+-	@$(NORMAL_INSTALL)
+-	test -z "$(libdir)" || $(mkdir_p) "$(DESTDIR)$(libdir)"
+-	@list='$(lib_shared)'; for p in $$list; do \
+-	  if test -f $$p; then \
+-	    echo " $(INSTALL) '$$p' '$(DESTDIR)$(libdir)/$$p'"; \
+-	    $(INSTALL) "$$p" "$(DESTDIR)$(libdir)/$$f"; \
+-	  else :; fi; \
+-	done
+-
+-clean-local:
+-	-test -d $(shareddir) && rm -f $(shareddir)/*.$(OBJEXT)
+-
+-distclean-local:
+-	-test -d $(shareddir) && rm -rf ./$(shareddir)
