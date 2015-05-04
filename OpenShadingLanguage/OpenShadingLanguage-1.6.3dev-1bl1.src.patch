@@ -1,0 +1,88 @@
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/doc/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/doc/CMakeLists.txt	2015-05-04 05:13:34.227438500 +0900
+@@ -1,11 +1,10 @@
+ set (public_docs osl-languagespec.pdf)
+ # Some day: CLA-INDIVIDUAL CLA-CORPORATE
+ 
+-install (FILES ${public_docs} DESTINATION doc COMPONENT documentation)
++install (FILES ${public_docs} DESTINATION share/doc/OpenShadingLanguage COMPONENT documentation)
+ 
+ install ( FILES "${PROJECT_SOURCE_DIR}/LICENSE"
+                 "${PROJECT_SOURCE_DIR}/INSTALL"
+                 "${PROJECT_SOURCE_DIR}/CHANGES"
+                 "${PROJECT_SOURCE_DIR}/README.md"
+-          DESTINATION . )
+-
++        DESTINATION share/doc/OpenShadingLanguage )
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/liboslcomp/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/liboslcomp/CMakeLists.txt	2015-05-04 05:17:03.690043600 +0900
+@@ -20,8 +20,8 @@ else ()
+     ADD_LIBRARY ( oslcomp SHARED ${liboslcomp_srcs} )
+ endif ()
+ 
++SET_TARGET_PROPERTIES( oslcomp PROPERTIES SOVERSION 0)
+ TARGET_LINK_LIBRARIES ( oslcomp ${OPENIMAGEIO_LIBRARY} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
+ LINK_ILMBASE ( oslcomp )
+ 
+ INSTALL ( TARGETS oslcomp RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
+-
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/CMakeLists.txt	2015-05-04 05:17:18.958131700 +0900
+@@ -140,6 +140,7 @@ else ()
+     ADD_LIBRARY ( oslexec SHARED ${liboslexec_srcs} )
+ endif ()
+ 
++SET_TARGET_PROPERTIES( oslexec PROPERTIES SOVERSION 0)
+ TARGET_LINK_LIBRARIES ( oslexec
+                         ${VISIBILITY_COMMAND} ${VISIBILITY_MAP_COMMAND}
+                         ${OPENIMAGEIO_LIBRARY} ${PUGIXML_LIBRARIES}
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/llvm_ops.cpp	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/llvm_ops.cpp	2015-05-04 04:41:21.325645700 +0900
+@@ -1531,5 +1531,3 @@ OSL_SHADEOP int osl_raytype_bit (void *s
+     ShaderGlobals *sg = (ShaderGlobals *)sg_;
+     return (sg->raytype & bit) != 0;
+ }
+-
+-
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/shadingsys.cpp	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/liboslexec/shadingsys.cpp	2015-05-04 04:31:11.711435900 +0900
+@@ -3013,4 +3013,3 @@ osl_get_trace_options (void *sg_)
+     new (opt) RendererServices::TraceOpt;
+     return opt;
+ }
+-
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/liboslquery/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/liboslquery/CMakeLists.txt	2015-05-04 05:17:31.867525900 +0900
+@@ -12,6 +12,7 @@ else ()
+     ADD_LIBRARY ( oslquery SHARED ${liboslquery_srcs} )
+ endif ()
+ 
++SET_TARGET_PROPERTIES( oslquery PROPERTIES SOVERSION 0)
+ TARGET_LINK_LIBRARIES ( oslquery ${OPENIMAGEIO_LIBRARY} ${Boost_LIBRARIES} )
+ LINK_ILMBASE ( oslquery )
+ 
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/shaders/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/shaders/CMakeLists.txt	2015-05-04 05:26:43.152224800 +0900
+@@ -27,7 +27,7 @@ macro (osl_compile oslsrc objlist header
+         message (STATUS "cmd: ${CMAKE_CURRENT_BINARY_DIR}/../oslc/oslc ${oslsrc}")
+     endif ()
+     add_custom_command (OUTPUT ${osofile}
+-        COMMAND "${CMAKE_CURRENT_BINARY_DIR}/../oslc/oslc" ${oslsrc}
++        COMMAND "env" "PATH=../liboslcomp:\${PATH}" "${CMAKE_CURRENT_BINARY_DIR}/../oslc/oslc" ${oslsrc}
+         MAIN_DEPENDENCY ${oslsrc}
+         DEPENDS ${${headers}} ${oslsrc} "${CMAKE_CURRENT_BINARY_DIR}/stdosl.h" "${CMAKE_CURRENT_BINARY_DIR}/../oslc/oslc"
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+@@ -49,5 +49,4 @@ add_custom_target (shaders ALL
+                    SOURCES ${shader_source} ${shader_headers})
+ 
+ install (FILES ${shader_headers} ${shader_source} ${shader_objs}
+-         DESTINATION shaders)
+-
++DESTINATION lib/OpenShadingLanguage/shaders)
+--- origsrc/OpenShadingLanguage-Release-1.6.3dev/src/testshade/CMakeLists.txt	2015-03-11 07:39:05.000000000 +0900
++++ src/OpenShadingLanguage-Release-1.6.3dev/src/testshade/CMakeLists.txt	2015-05-04 05:15:33.852440800 +0900
+@@ -23,4 +23,3 @@ LINK_ILMBASE ( testshade_dso )
+ TARGET_LINK_LIBRARIES ( testshade_dso ${OPENIMAGEIO_LIBRARY} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} )
+ #oslexec oslcomp oslquery ${OPENIMAGEIO_LIBRARY} ${Boost_LIBRARIES} ${CMAKE_DL_LIBS})
+ INSTALL ( TARGETS testshade_dso RUNTIME DESTINATION bin )
+-
