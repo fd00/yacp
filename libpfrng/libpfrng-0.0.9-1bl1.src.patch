@@ -1,0 +1,57 @@
+--- origsrc/libpfrng-0.0.9/CMakeLists.txt	2014-05-16 17:18:50.000000000 +0900
++++ src/libpfrng-0.0.9/CMakeLists.txt	2015-05-04 14:17:04.501789400 +0900
+@@ -18,14 +18,20 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUA
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -openmp -static-intel")
+ endif()
+ 
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
+ add_library(pfrng_static STATIC libpfrng.c)
++endif()
+ add_library(pfrng SHARED libpfrng.c)
++SET_TARGET_PROPERTIES(pfrng PROPERTIES SOVERSION 0)
+ 
+ target_link_libraries(pfrng
+ 	${linking_libraries})
+ 
++if(ENABLE_STATIC)
+ install(TARGETS pfrng_static DESTINATION lib)
+-install(TARGETS pfrng DESTINATION lib)
++endif()
++install(TARGETS pfrng RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES libpfrng.h DESTINATION include)
+ 
+ MACRO(CONFIGURE_DOXYGEN_FILE DOXYGEN_CONFIG_FILE FILE_NAME_SUFFIX)
+@@ -63,6 +69,20 @@ ENDMACRO(ADD_DOCUMENTATION)
+ 
+ SET(DOXY_OUTPUT_LANGUAGE "English")
+ SET(DOXY_INPUT ${PROJECT_SOURCE_DIR})
++
++option(ENABLE_DOC "enable doc" OFF)
++if(ENABLE_DOC)
+ ADD_DOCUMENTATION(doc Doxyfile)
++endif()
+ 
++option(BUILD_EXAMPLES "build examples" OFF)
++if(BUILD_EXAMPLES)
+ add_subdirectory(examples)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libpfrng-0.0.9/libpfrng.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpfrng-0.0.9/libpfrng.pc.in	2015-05-04 14:19:49.983520100 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: libpfrng
++Description: CPU jitter-based RNG
++Version: @VERSION@
++Libs: -L${libdir} -lpfrng
++Cflags: -I${includedir}
