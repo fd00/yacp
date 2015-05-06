@@ -1,0 +1,54 @@
+--- origsrc/obfsclient-0.0.2/Makefile.am	2014-03-28 17:35:09.000000000 +0900
++++ src/obfsclient-0.0.2/Makefile.am	2015-05-07 07:36:07.865611800 +0900
+@@ -6,7 +6,7 @@
+ AUTOMAKE_OPTIONS = subdir-objects
+ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
+ 
+-AM_CXXFLAGS = -Wall -Werror -fno-exceptions -fno-rtti ${PTHREAD_CFLAGS}
++AM_CXXFLAGS = -Wall -fno-exceptions -fno-rtti ${PTHREAD_CFLAGS} -std=gnu++0x
+ 
+ common_sources = src/schwanenlied/crypto/base32.cc \
+ 	src/schwanenlied/crypto/hkdf_sha256.cc \
+@@ -37,7 +37,7 @@ check_PROGRAMS = obfsclient_test
+ 
+ obfsclient_test_CPPFLAGS = -I$(srcdir)/src -I$(srcdir)
+ obfsclient_test_CXXFLAGS = ${AM_CXXFLAGS} ${libevent_CFLAGS} ${liballium_CFLAGS} ${OPENSSL_INCLUDES}
+-obfsclient_test_LDADD = ${libevent_LIBS} ${liballium_LIBS} ${OPENSSL_LIBS} ${OPENSSL_LDFLAGS} ${PTHREAD_LIBS}
++obfsclient_test_LDADD = ${libevent_LIBS} ${liballium_LIBS} ${OPENSSL_LIBS} ${OPENSSL_LDFLAGS} ${PTHREAD_LIBS} -lgtest -lgtest_main
+ obfsclient_test_SOURCES = ${common_sources} \
+ 	src/schwanenlied/crypto/aes_test.cc \
+ 	src/schwanenlied/crypto/base32_test.cc \
+@@ -46,9 +46,7 @@ obfsclient_test_SOURCES = ${common_sourc
+         src/schwanenlied/crypto/rand_ctr_drbg_test.cc \
+ 	src/schwanenlied/crypto/sha256_test.cc \
+ 	src/schwanenlied/crypto/uniform_dh_test.cc \
+-	src/schwanenlied/crypto/utils_test.cc \
+-	src/gtest/gtest-all.cc \
+-	src/gtest/gtest_main.cc
++	src/schwanenlied/crypto/utils_test.cc
+ 
+ # Documentation
+ if HAVE_DOXYGEN
+--- origsrc/obfsclient-0.0.2/configure.ac	2014-03-28 17:35:09.000000000 +0900
++++ src/obfsclient-0.0.2/configure.ac	2015-05-07 07:30:38.109548100 +0900
+@@ -50,20 +50,8 @@ PKG_CHECK_MODULES([liballium], [liballiu
+ 
+ # Ensure that pkg-config (or the user) actually found/specified the correct
+ # paths for the dependencies instead of taking PKG_CHECK_MODULE's word for it.
+-oldCPPFLAGS=$CPPFLAGS
+-oldLDFLAGS=$LDFLAGS
+ CPPFLAGS="$CPPFLAGS $liballium_CFLAGS $libevent_CFLAGS"
+ LDFLAGS="$LDFLAGS $liballium_LIBS $libevent_LIBS"
+-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <allium/allium.h>],
+-                                [(void)allium_ptcfg_init();])],
+-               [],
+-               [AC_MSG_ERROR([liballium headers or library missing.])])
+-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <event2/event.h>],
+-                                [(void)event_base_dispatch(NULL);])],
+-               [],
+-               [AC_MSG_ERROR([libevent2 headers or libraries missing.])])
+-CPPFLAGS=$oldCPPFLAGS
+-LDFLAGS=$oldLDFLAGS
+ 
+ # Ensure that the barest minimum of stuff works
+ #  - Not going to bother checking for the crap that gtest want
