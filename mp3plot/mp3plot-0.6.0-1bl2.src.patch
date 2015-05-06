@@ -1,0 +1,175 @@
+--- origsrc/mp3plot-0.6.0/configure.ac	2009-06-22 10:11:09.000000000 +0900
++++ src/mp3plot-0.6.0/configure.ac	2015-05-06 13:30:17.203286300 +0900
+@@ -58,7 +58,7 @@ AC_PROG_LN_S
+ AC_PROG_MKDIR_P
+ dnl Used for sub-subdirectory linking
+ dnl Ref: <http://www.openismus.com/documents/linux/automake/automake.shtml>
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ dnl Probably unneeded
+ AC_TYPE_SIZE_T
+@@ -82,29 +82,10 @@ AC_CHECK_HEADERS(sysexits.h)
+ ##
+ ###############################################################################
+ 
+-dnl Reference:
+-dnl http://randspringer.de/boost/ucl-sbs.html
+-dnl FIXME: The AX_BOOST_* macros allow disabling boost (--without...) which
+-dnl        isn't really desired
+-dnl http://autoconf-archive.cryp.to/ax_boost_base.html
+-dnl My use of Boost.Thread requires 1.34.1 at least
+-AX_BOOST_BASE([1.34.1])
+-
+-dnl If boost_base is present then shared_ptr should be
+-
+-dnl http://autoconf-archive.cryp.to/ax_boost_program_options.html
+-AX_BOOST_PROGRAM_OPTIONS
+-dnl Check manually for appearance
+-dnl These are the cached values used in the AX_BOOST_* macros
+-if test x$ax_cv_boost_program_options != xyes ; then
+-	AC_MSG_ERROR([Boost.Program_Options is a mandatory requirement])
+-fi
+-
+-dnl http://autoconf-archive.cryp.to/ax_boost_thread.html
+-AX_BOOST_THREAD
+-if test x$ax_cv_boost_thread != xyes ; then
+-	AC_MSG_ERROR([Boost.Thread is a mandatory requirement])
+-fi
++BOOST_REQUIRE
++BOOST_PROGRAM_OPTIONS
++BOOST_SYSTEM
++BOOST_THREADS
+ 
+ ##########################################################
+ # Initial values (needed to "pretty-print" config results)
+@@ -122,6 +103,7 @@ have_graphics="no"
+ ##
+ ###############################################################################
+ 
++enableval= # unset
+ dnl Allow disabling gd support (--disable-gd)
+ AC_ARG_ENABLE(gd,
+ 		AC_HELP_STRING([--enable-gd],
+@@ -131,59 +113,7 @@ AC_ARG_ENABLE(gd,
+ 
+ # If GD is not disabled...
+ if test x$enableval != xno ; then
+-
+-	dnl Allow specifying GD prefix
+-	dnl http://www.bioinf.uni-freiburg.de/~mmann/HowTo/automake.html
+-	AC_ARG_WITH(gd,
+-				AC_HELP_STRING([--with-gd=prefix],
+-							   [where to find gd library]),,
+-				with_gdpath=no,
+-	)
+-	dnl FIXME: When no argument is given (--with-gd) it defaults to "yes", which
+-	dnl        doesn't make sense for the following block
+-
+-	dnl Try to use the gdlib-config if the provided prefix, or use
+-	dnl a system-wide one if there's none in the prefix
+-	dnl TODO: Is it fine to use the system version silently?
+-	if test x$with_gdpath != xno ; then
+-		extrapath="$with_gd/bin"
+-	fi
+-	AC_PATH_PROG([GDLIB_CONFIG], [gdlib-config], ,[$extrapath$PATH_SEPARATOR$PATH])
+-	extrapath=""
+-
+-	if ! test -x "$GDLIB_CONFIG" ; then
+-		AC_MSG_WARN([gdlib-config not found[,] GD support disabled])
+-	else
+-		gdlib_CPPFLAGS=`$GDLIB_CONFIG --cflags`
+-		gdlib_LDFLAGS=`$GDLIB_CONFIG --ldflags`
+-		gdlib_LIBS=`$GDLIB_CONFIG --libs`
+-		oldCPPFLAGS="$CPPFLAGS"
+-		# Instruct AC_CHECK_HEADERS where to search
+-		CPPFLAGS="$CPPFLAGS $gdlib_CPPFLAGS"
+-
+-		# if more than one header is used on the same AC_CHECK_HEADERS,
+-		# the actions ("if-found") are run for each header provided
+-		AC_CHECK_HEADERS(gd.h,
+-			[
+-			 AC_CHECK_HEADER(gdfontl.h,
+-				[have_gd=yes],
+-			 )
+-			],
+-		)
+-
+-		if test x$have_gd = xyes ; then
+-		  LDFLAGS="$LDFLAGS $gdlib_LDFLAGS"
+-		  LIBS="$LIBS $gdlib_LIBS -lgd" # -lgd!!
+-		else
+-		  CPPFLAGS="$oldCPPFLAGS"
+-		  AC_MSG_WARN([GD not found[,] module disabled])
+-		fi
+-	fi # GDLIB_CONFIG present
+-
+-	if test x$have_gd = xyes ; then
+-		AC_DEFINE(HAVE_GD,1,[Set to 1 if gdlib is present])
+-	fi
+-
++	PKG_CHECK_MODULES([GD], [gdlib], AC_DEFINE(HAVE_GD,1,[Set to 1 if gdlib is present]))
+ fi # gd enabled
+ 
+ ###############################################################################
+@@ -469,8 +399,8 @@ extra_LDFLAGS="-Wl,--as-needed"
+ 
+ CXXFLAGS="$bldtype_CXXFLAGS"
+ CPPFLAGS="$bldtype_CPPFLAGS $CPPFLAGS"
+-LDFLAGS="$BOOST_LDFLAGS $extra_LDFLAGS $LDFLAGS"
+-LIBS="$BOOST_THREAD_LIB $BOOST_PROGRAM_OPTIONS_LIB $LIBS"
++LDFLAGS="$extra_LDFLAGS $LDFLAGS"
++LIBS="$LIBS"
+ 
+ cat <<EOF
+ 
+--- origsrc/mp3plot-0.6.0/src/Makefile.am	2009-06-23 01:10:00.000000000 +0900
++++ src/mp3plot-0.6.0/src/Makefile.am	2015-05-06 14:36:16.638363900 +0900
+@@ -9,7 +9,8 @@ mp3plot_SOURCES = main.cc \
+ 
+ # Recurse into subdirs before compiling in this directory
+ SUBDIRS = mp3 utils plotters
+-LDADD = mp3/libmp3plot_mp3.a plotters/libmp3plot_plotters.a utils/libmp3plot_utils.a
++LDADD = mp3/libmp3plot_mp3.a plotters/libmp3plot_plotters.a utils/libmp3plot_utils.a \
++	$(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_THREAD_LIBS) $(GD_LIBS)
+ #INCLUDES = -I@top_srcdir@/src/mp3 -I@top_srcdir@/src/plotters
+ 
+ # Headers to be distributed along sources but *not* installed to /usr/include
+@@ -28,4 +29,3 @@ mp3plot-manpage.pdf: mp3plot.1
+ 	man -l -t $(PWD)/$< | ps2pdf14 - > $@
+ 
+ # vim:set ts=4 noet ai: #
+-
+--- origsrc/mp3plot-0.6.0/src/mp3/Makefile.am	2009-04-25 05:18:17.000000000 +0900
++++ src/mp3plot-0.6.0/src/mp3/Makefile.am	2015-05-06 11:59:51.169022700 +0900
+@@ -8,7 +8,7 @@ noinst_LIBRARIES = libmp3plot_mp3.a
+ 
+ libmp3plot_mp3_a_SOURCES = element.cc frame.cc tags.cc bitrate.cc
+ 
+-noinst_HEADERS = *.h
++noinst_HEADERS = bitrate.h element.h frame.h tags.h
+ 
+ # vim:set ts=4 noet ai: #
+ 
+--- origsrc/mp3plot-0.6.0/src/plotters/Makefile.am	2009-04-25 22:49:36.000000000 +0900
++++ src/mp3plot-0.6.0/src/plotters/Makefile.am	2015-05-06 11:59:51.169022700 +0900
+@@ -15,7 +15,7 @@ libmp3plot_plotters_a_SOURCES = bitrate_
+ 						   magickpp_plotter.cc \
+                            colour.cc
+ 
+-noinst_HEADERS = *.h
++noinst_HEADERS = bitrate_plotter.h colour.h console_plotter.h gd_image.h gd_plotter.h graphics_lib_interface.h image_plotter.h init_plotters.h magickpp_plotter.h plotter_features.h
+ 
+ EXTRA_DIST = old_colourscheme.inc.cc colourscheme.inc.cc colourschemegen.pl
+ 
+--- origsrc/mp3plot-0.6.0/src/utils/Makefile.am	2009-04-25 05:17:10.000000000 +0900
++++ src/mp3plot-0.6.0/src/utils/Makefile.am	2015-05-06 11:59:51.169022700 +0900
+@@ -8,7 +8,7 @@ noinst_LIBRARIES = libmp3plot_utils.a
+ 
+ libmp3plot_utils_a_SOURCES = str_utils.cc logger.cc
+ 
+-noinst_HEADERS = *.h *.hxx
++noinst_HEADERS = algo.hxx byteswap.hxx constraints.hxx logger.h named_file.hxx named_fstream.hxx str_utils.h
+ 
+ # vim:set ts=4 noet ai: #
+ 
