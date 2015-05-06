@@ -1,0 +1,52 @@
+HOMEPAGE="http://www.nongnu.org/${PN}/"
+SRC_URI="mirror://savannah/${PN}/${P}.tar.gz"
+PATCH_URI="
+	http://pkgs.fedoraproject.org/cgit/${PN}.git/plain/${P}-no-bundled-libs.patch
+"
+
+CATEGORY="Devel"
+SUMMARY="Z80 Assembler"
+DESCRIPTION="z80asm is an assembler for the Z80 microprocessor. The assembler aims to be
+portable and complete. Of course it assembles all official mnemonics, but it
+also aims to assemble the unofficial mnemonics. The assembler was written with
+the MSX computer in mind as the target platform, but it can be used for any
+system with a Z80 in it. Some header files with labels of MSX specific
+addresses (BIOS, BDOS, system variables) are included."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -fr gnulib
+}
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}/tests
+	../z80asm -I ../header pass.asm -o pass.bin 2> pass.err
+	diff pass.correct-bin pass.bin
+	diff pass.correct-err pass.err
+	rm -f pass.bin pass.err
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ${PN}.exe
+	doman ${PN}.1
+	insinto /usr/share/${PN}
+	doins headers/*.asm
+	insinto /usr/share/doc/${PN}/examples
+	doins examples/*
+}
+
+DOCS="
+	GPL3
+"
