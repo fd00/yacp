@@ -1,0 +1,147 @@
+--- origsrc/oggvideotools-0.8a/CMakeLists.txt	2010-05-31 04:11:10.000000000 +0900
++++ src/oggvideotools-0.8a/CMakeLists.txt	2015-05-07 15:08:27.026057800 +0900
+@@ -167,3 +167,10 @@ ELSE(WIN32 AND NOT UNIX)
+ ENDIF(WIN32 AND NOT UNIX)
+ SET(CPACK_PACKAGE_EXECUTABLES ${EXECUTABLES} )
+ INCLUDE(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/oggvideotools-0.8a/docs/CMakeLists.txt	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/docs/CMakeLists.txt	2015-05-07 15:09:29.249364800 +0900
+@@ -8,5 +8,5 @@ IF ( $ENV{MAKE_PACKAGE} )
+  INSTALL ( FILES ${MAN_SRC} DESTINATION doc )
+  INSTALL ( FILES ${HTML_SRC} DESTINATION doc )
+ ELSE ( $ENV{MAKE_PACKAGE} )
+-INSTALL ( FILES ${MAN_SRC} DESTINATION man/man1 )
++INSTALL ( FILES ${MAN_SRC} DESTINATION share/man/man1 )
+ ENDIF ( $ENV{MAKE_PACKAGE} )
+--- origsrc/oggvideotools-0.8a/oggvideotools.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/oggvideotools-0.8a/oggvideotools.pc.in	2015-05-07 15:08:44.879617600 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: oggvideotools
++Description: Toolbox for manipulating Ogg video files
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -loggvideotools
++Cflags: -I${includedir}
+--- origsrc/oggvideotools-0.8a/src/CMakeLists.txt	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/CMakeLists.txt	2015-05-07 14:59:13.038145000 +0900
+@@ -153,6 +153,7 @@ ELSE ( $ENV{MAKE_PACKAGE} )
+ ENDIF ( $ENV{MAKE_PACKAGE} )
+ 
+ INSTALL ( TARGETS ${EXECUTABLES} DESTINATION bin )
+-INSTALL ( TARGETS oggvideotools DESTINATION lib )
++INSTALL ( TARGETS oggvideotools RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ INSTALL ( FILES ${HEADER} DESTINATION include/oggvt )
+ 
++SET_TARGET_PROPERTIES(oggvideotools PROPERTIES SOVERSION 0)
+--- origsrc/oggvideotools-0.8a/src/oggCat.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggCat.cpp	2015-05-07 15:04:58.369095800 +0900
+@@ -29,7 +29,7 @@
+ #include <vector>
+ #include <string>
+ #include <fstream>
+-
++#include <getopt.h>
+ #include <cstdlib>
+ #include <ctime>
+ 
+@@ -792,4 +792,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
+--- origsrc/oggvideotools-0.8a/src/oggCut.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggCut.cpp	2015-05-07 15:05:07.987669200 +0900
+@@ -29,6 +29,7 @@
+ #include <map>
+ #include <cstdlib>
+ #include <ctime>
++#include <getopt.h>
+ 
+ #include "fileRepository.h"
+ #include "streamSerializer.h"
+@@ -319,4 +320,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
+--- origsrc/oggvideotools-0.8a/src/oggDump.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggDump.cpp	2015-05-07 15:05:38.285756900 +0900
+@@ -31,6 +31,7 @@
+ #include <fstream>
+ #include <ostream>
+ #include <cstdlib>
++#include <getopt.h>
+ 
+ #include "fileRepository.h"
+ #include "rawMediaPacket.h"
+@@ -363,4 +364,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
+--- origsrc/oggvideotools-0.8a/src/oggLength.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggLength.cpp	2015-05-07 15:05:55.747586400 +0900
+@@ -27,6 +27,7 @@
+ #include <iostream>
+ #include <string>
+ #include <cstdlib>
++#include <getopt.h>
+ 
+ #include "fileRepository.h"
+ #include "streamSerializer.h"
+@@ -138,4 +139,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
+--- origsrc/oggvideotools-0.8a/src/oggSilence.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggSilence.cpp	2015-05-07 15:06:08.891362600 +0900
+@@ -30,6 +30,7 @@
+ #include <sstream>
+ #include <cstdlib>
+ #include <ctime>
++#include <getopt.h>
+ 
+ #include "vorbisEncoder.h"
+ #include "streamMux.h"
+@@ -215,4 +216,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
+--- origsrc/oggvideotools-0.8a/src/oggSlideshow.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggSlideshow.cpp	2015-05-07 15:06:21.930352500 +0900
+@@ -36,6 +36,7 @@
+ #include <cstring>
+ #include <ctime>
+ #include <exception>
++#include <getopt.h>
+ 
+ #include "th_helper.h"
+ 
+--- origsrc/oggvideotools-0.8a/src/oggTranscode.cpp	2010-05-31 04:11:11.000000000 +0900
++++ src/oggvideotools-0.8a/src/oggTranscode.cpp	2015-05-07 15:06:45.032190000 +0900
+@@ -29,7 +29,7 @@
+ #include <vector>
+ #include <string>
+ #include <sstream>
+-
++#include <getopt.h>
+ #include <cstring>
+ #include <cstdlib>
+ #include <cmath>
+@@ -744,4 +744,3 @@ int main(int argc, char* argv[])
+     return -1;
+   }
+ }
+-
