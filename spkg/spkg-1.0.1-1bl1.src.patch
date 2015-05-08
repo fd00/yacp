@@ -1,0 +1,79 @@
+--- origsrc/spkg-1.0.1/Makefile.am	2013-04-02 15:29:01.000000000 +0900
++++ src/spkg-1.0.1/Makefile.am	2015-05-09 07:22:29.492150300 +0900
+@@ -14,5 +14,5 @@ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libspkg.pc
+ endif
+ 
+-docdir = $(prefix)/doc/spkg-$(VERSION)
++docdir = $(datadir)/doc/spkg
+ doc_DATA = COPYING INSTALL NEWS TODO README BENCHMARKS README.cs
+--- origsrc/spkg-1.0.1/configure.ac	2013-04-02 15:29:01.000000000 +0900
++++ src/spkg-1.0.1/configure.ac	2015-05-09 07:16:12.541480800 +0900
+@@ -77,7 +77,7 @@ AC_ARG_ENABLE(legacy,
+ AM_CONDITIONAL([LEGACY_CHECKS],[test x$legacy_checks = xyes])
+ 
+ # Windows
+-AM_CONDITIONAL(WINDOWS, test "x$version_type" = xwindows)
++AM_CONDITIONAL(WINDOWS, test "x$version_type" = xwindows -a x"$host_os" != xcygwin)
+ 
+ # Output
+ AC_CONFIG_FILES([
+--- origsrc/spkg-1.0.1/src/Makefile.am	2013-04-02 15:29:01.000000000 +0900
++++ src/spkg-1.0.1/src/Makefile.am	2015-05-09 07:20:52.354355200 +0900
+@@ -36,12 +36,14 @@ SPKG_LIB_SRC = \
+ 	cmd-list.c
+ 
+ # Library build reciepe
+-libspkg_a_SOURCES = $(SPKG_LIB_SRC)
++libspkg_la_SOURCES = $(SPKG_LIB_SRC)
++libspkg_la_LDFLAGS = -no-undefined
++libspkg_la_LIBADD = -lJudy $(GLIB_LIBS) -lz
+ spkg_SOURCES = main.c
+ if WINDOWS
+-spkg_LDADD = libspkg.a win32/libwin32.a -lpopt $(GLIB_LIBS) -lJudy -lz
++spkg_LDADD = libspkg.la win32/libwin32.a -lpopt
+ else
+-spkg_LDADD = libspkg.a -lpopt $(GLIB_LIBS) -lJudy -lz
++spkg_LDADD = libspkg.la -lpopt
+ endif
+ 
+ # Build only static spkg as spkg
+@@ -67,7 +69,7 @@ else
+ # Build dynamic spkg binary
+ 
+ bin_PROGRAMS = spkg
+-lib_LIBRARIES = libspkg.a
++lib_LTLIBRARIES = libspkg.la
+ 
+ endif
+ 
+--- origsrc/spkg-1.0.1/src/win32/Makefile.am	2013-04-02 15:29:01.000000000 +0900
++++ src/spkg-1.0.1/src/win32/Makefile.am	2015-05-09 07:13:08.602867600 +0900
+@@ -6,7 +6,7 @@ AM_CFLAGS = \
+ 	-D_GNU_SOURCE
+ 
+ # Library build reciepe
+-libwin32_a_SOURCES = \
++libwin32_la_SOURCES = \
+ 	win32.c \
+ 	flock.h \
+ 	flock.c \
+@@ -16,5 +16,6 @@ libwin32_a_SOURCES = \
+ 	ansidecl.h \
+ 	safe-ctype.h \
+ 	safe-ctype.c
++libwin32_la_LDFLAGS = -no-undefined
+ 
+-lib_LIBRARIES = libwin32.a
++lib_LTLIBRARIES = libwin32.la
+--- origsrc/spkg-1.0.1/tests/Makefile.am	2013-04-02 15:29:01.000000000 +0900
++++ src/spkg-1.0.1/tests/Makefile.am	2015-05-09 07:21:15.869515300 +0900
+@@ -12,7 +12,7 @@ noinst_PROGRAMS = \
+   test-blacklist \
+   test-rm
+ 
+-LDADD = $(top_builddir)/src/libspkg.a $(GLIB_LIBS) -lz -lJudy
++LDADD = $(top_builddir)/src/libspkg.la $(GLIB_LIBS) -lz -lJudy
+ 
+ test_blacklist_SOURCES = test-blacklist.c
+ test_untgz_SOURCES = test-untgz.c
