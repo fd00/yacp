@@ -1,0 +1,183 @@
+--- origsrc/quickfix-v.1.14.4/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/Makefile.am	2015-05-08 12:09:31.108375200 +0900
+@@ -1,4 +1,4 @@
+-SUBDIRS = UnitTest++ src bin spec test examples doc
++SUBDIRS = src bin spec test doc
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+@@ -9,4 +9,3 @@ pkgconf_DATA = quickfix.pc
+ 
+ generate:
+ 	cd spec && bash generate.sh
+-
+--- origsrc/quickfix-v.1.14.4/configure.ac	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/configure.ac	2015-05-08 09:10:32.726955100 +0900
+@@ -246,9 +246,11 @@ AC_DEFINE(_REENTRANT, 1, enable reentran
+ # Checks for library functions.
+ AC_LANG_RESTORE
+ 
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_LIB(iberty, cplus_demangle,    
+   AC_DEFINE(HAVE_CPLUS_DEMANGLE,1,whether or not we have to demangle names)
+   LIBS="$LIBS -liberty")
++fi
+ 
+ # Checks for runtime behavior
+ AC_MSG_CHECKING(if select modifies timeval parameter)
+--- origsrc/quickfix-v.1.14.4/src/C++/HttpConnection.cpp	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/HttpConnection.cpp	2015-05-08 09:18:25.943259200 +0900
+@@ -28,6 +28,7 @@
+ #include "HtmlBuilder.h"
+ #include "Session.h"
+ #include "Utility.h"
++#include <sys/select.h>
+ 
+ using namespace HTML;
+ 
+--- origsrc/quickfix-v.1.14.4/src/C++/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/Makefile.am	2015-05-08 12:12:56.046751000 +0900
+@@ -120,16 +120,8 @@ Allocator.h: Makefile
+ 	grep "_ALLOCATOR" $(top_builddir)/config.h >$@
+ 
+ all-local:
+-	rm -rf $(top_builddir)/lib/libquickfix.a
+-	rm -rf $(top_builddir)/lib/libquickfix.la
+-	rm -rf $(top_builddir)/lib/libquickfix.so
+-	rm -rf $(top_builddir)/lib/libquickfix.dylib
+-	ln -s ../src/C++/.libs/libquickfix.a $(top_builddir)/lib/libquickfix.a
+-	ln -s ../src/C++/.libs/libquickfix.la $(top_builddir)/lib/libquickfix.la
+-	ln -s ../src/C++/.libs/libquickfix.so $(top_builddir)/lib/libquickfix.so
+-	ln -s ../src/C++/.libs/libquickfix.dylib $(top_builddir)/lib/libquickfix.dylib
+-	bash ./copy.sh $(top_builddir)/include/quickfix *.h
+-	bash ./copy.sh $(top_builddir)/include/quickfix fix*/*.h
++	bash $(srcdir)/copy.sh $(top_builddir)/include/quickfix $(srcdir)/*.h
++	bash $(srcdir)/copy.sh $(top_builddir)/include/quickfix $(srcdir)/fix*/*.h
+ 
+ clean-local:
+ 	rm -rf $(top_builddir)/lib/libquickfix.a
+@@ -148,22 +140,22 @@ install-exec-local: *.h
+ 	mkdir $(DESTDIR)$(pkgincludedir)/fix50sp1
+ 	mkdir $(DESTDIR)$(pkgincludedir)/fix50sp2
+ 	mkdir $(DESTDIR)$(pkgincludedir)/fixt11
+-	cp *.h $(DESTDIR)$(pkgincludedir)
+-	cp fix40/*.h $(DESTDIR)$(pkgincludedir)/fix40
+-	cp fix41/*.h $(DESTDIR)$(pkgincludedir)/fix41
+-	cp fix42/*.h $(DESTDIR)$(pkgincludedir)/fix42
+-	cp fix43/*.h $(DESTDIR)$(pkgincludedir)/fix43
+-	cp fix44/*.h $(DESTDIR)$(pkgincludedir)/fix44
+-	cp fix50/*.h $(DESTDIR)$(pkgincludedir)/fix50
+-	cp fix50sp1/*.h $(DESTDIR)$(pkgincludedir)/fix50sp1
+-	cp fix50sp2/*.h $(DESTDIR)$(pkgincludedir)/fix50sp2
+-	cp fixt11/*.h $(DESTDIR)$(pkgincludedir)/fixt11
++	cp $(srcdir)/*.h $(DESTDIR)$(pkgincludedir)
++	cp $(srcdir)/fix40/*.h $(DESTDIR)$(pkgincludedir)/fix40
++	cp $(srcdir)/fix41/*.h $(DESTDIR)$(pkgincludedir)/fix41
++	cp $(srcdir)/fix42/*.h $(DESTDIR)$(pkgincludedir)/fix42
++	cp $(srcdir)/fix43/*.h $(DESTDIR)$(pkgincludedir)/fix43
++	cp $(srcdir)/fix44/*.h $(DESTDIR)$(pkgincludedir)/fix44
++	cp $(srcdir)/fix50/*.h $(DESTDIR)$(pkgincludedir)/fix50
++	cp $(srcdir)/fix50sp1/*.h $(DESTDIR)$(pkgincludedir)/fix50sp1
++	cp $(srcdir)/fix50sp2/*.h $(DESTDIR)$(pkgincludedir)/fix50sp2
++	cp $(srcdir)/fixt11/*.h $(DESTDIR)$(pkgincludedir)/fixt11
+ 
+ uninstall-local:
+ 	rm -rf $(DESTDIR)$(pkgincludedir)
+ 
+ EXTRA_DIST = strptime.c strptime.h
+ 
+-libquickfix_la_LDFLAGS = -version-info 16:1:0
++libquickfix_la_LDFLAGS = -no-undefined -version-info 16:1:0
+ 
+ INCLUDES =-I. -I.. -I../..
+--- origsrc/quickfix-v.1.14.4/src/C++/SocketConnection.cpp	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/SocketConnection.cpp	2015-05-08 09:16:58.167532700 +0900
+@@ -29,6 +29,7 @@
+ #include "SocketInitiator.h"
+ #include "Session.h"
+ #include "Utility.h"
++#include <sys/select.h>
+ 
+ namespace FIX
+ {
+--- origsrc/quickfix-v.1.14.4/src/C++/SocketMonitor.cpp	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/SocketMonitor.cpp	2015-05-08 09:16:35.167749800 +0900
+@@ -29,6 +29,7 @@
+ #include <set>
+ #include <algorithm>
+ #include <iostream>
++#include <sys/select.h>
+ 
+ namespace FIX
+ {
+--- origsrc/quickfix-v.1.14.4/src/C++/ThreadedSocketConnection.cpp	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/ThreadedSocketConnection.cpp	2015-05-08 09:17:23.978265400 +0900
+@@ -28,6 +28,7 @@
+ #include "ThreadedSocketInitiator.h"
+ #include "Session.h"
+ #include "Utility.h"
++#include <sys/select.h>
+ 
+ namespace FIX
+ {
+--- origsrc/quickfix-v.1.14.4/src/C++/strptime.h	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/strptime.h	2015-05-08 11:29:14.455372100 +0900
+@@ -1,4 +1,4 @@
+-#ifdef _MSC_VER
++#if defined(_MSC_VER) || defined(__CYGWIN__)
+ 
+ extern "C"
+   char *
+--- origsrc/quickfix-v.1.14.4/src/C++/test/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/C++/test/Makefile.am	2015-05-08 09:13:53.881444100 +0900
+@@ -38,4 +38,4 @@ libquickfixcpptest_la_SOURCES = \
+ 	UtcTimeOnlyTestCase.cpp \
+ 	UtcTimeStampTestCase.cpp
+ 
+-INCLUDES = -I.. -I../../../UnitTest++/src
++INCLUDES = -I$(top_srcdir)/src/C++ -I/usr/include/UnitTest++
+--- origsrc/quickfix-v.1.14.4/src/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/Makefile.am	2015-05-08 09:22:53.402619100 +0900
+@@ -20,8 +20,8 @@ at_LDADD = C++/libquickfix.la
+ ut_LDADD = C++/test/libquickfixcpptest.la C++/libquickfix.la
+ pt_LDADD = C++/libquickfix.la
+ 
+-INCLUDES =-IC++ -IC++/test -I../UnitTest++/src
+-LDFLAGS =-L../UnitTest++ -lUnitTest++
++INCLUDES =-I$(srcdir)/C++ -I$(srcdir)/C++/test -I/usr/include/UnitTest++
++LDFLAGS = -lUnitTest++
+ 
+ all-local:
+ 	rm -f ../test/ut ../test/pt ../test/at ../test/ut_debug
+--- origsrc/quickfix-v.1.14.4/src/python/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/python/Makefile.am	2015-05-08 11:46:09.534730200 +0900
+@@ -5,10 +5,10 @@ _quickfix_la_SOURCES = \
+ 
+ python_DATA = quickfix.py quickfix40.py quickfix41.py quickfix42.py quickfix43.py quickfix44.py quickfix50.py quickfix50sp1.py quickfix50sp2.py quickfixt11.py
+ 
+-_quickfix_la_LDFLAGS = -version-info 12:0:0 -module
+-_quickfix_la_LIBADD = $(top_builddir)/src/C++/libquickfix.la 
++_quickfix_la_LDFLAGS = -no-undefined -version-info 12:0:0 -module
++_quickfix_la_LIBADD = $(top_builddir)/src/C++/libquickfix.la -lpython2.7
+ 
+-INCLUDES =-I. -I.. -I../.. -I../C++
++INCLUDES =-I. -I.. -I../.. -I$(top_srcdir)/src/C++
+ 
+ local_python_src=$(top_builddir)/src/python
+ local_python_lib=$(top_builddir)/lib/python
+--- origsrc/quickfix-v.1.14.4/src/ruby/Makefile.am	2014-09-16 02:22:31.000000000 +0900
++++ src/quickfix-v.1.14.4/src/ruby/Makefile.am	2015-05-08 11:50:16.794156800 +0900
+@@ -7,7 +7,7 @@ local_ruby_lib=$(top_builddir)/lib/ruby
+ 
+ all-local:
+ 	mkdir -p $(local_ruby_lib)
+-	bash ./make_ruby.sh "$(CXX)" "$(CXXFLAGS)" "$(LIBS)"
++	bash $(srcdir)/make_ruby.sh "$(CXX)" "$(CXXFLAGS)" "$(LIBS)"
+ 	ln -sf $(local_ruby_src)/quickfix* $(local_ruby_lib)
+ 	ln -sf $(top_builddir)/spec spec
+ 
+@@ -24,4 +24,3 @@ uninstall-local:
+ 	rm -rf $(RUBY_SITE_PACKAGES)/quickfix*.rb
+ 	rm -rf $(RUBY_SITE_PACKAGES)/quickfix*.so
+ 	rm -rf $(RUBY_SITE_PACKAGES)/quickfix.bundle
+-
