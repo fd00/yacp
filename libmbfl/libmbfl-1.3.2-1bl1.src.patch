@@ -1,0 +1,109 @@
+--- origsrc/libmbfl-libmbfl-1.3.2/Makefile.am	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/Makefile.am	2015-05-12 20:28:13.426788600 +0900
+@@ -7,3 +7,6 @@ EXTRA_DIST=AUTHORS DISCLAIMER LICENSE Ma
+ 	libmbfl.dsp libmbfl.dsw libmbfl.sln libmbfl.vcproj mbfl.rc \
+ 	mksbcc32.bat rules.mak.bcc32
+ SUBDIRS = nls filters mbfl tests
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libmbfl-libmbfl-1.3.2/configure.in	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/configure.in	2015-05-12 20:28:02.188075900 +0900
+@@ -1,6 +1,6 @@
+ # Process this file with autoconf to produce a configure script.
+-AC_INIT(mbfl/mbfilter.c)
+-AM_INIT_AUTOMAKE(libmbfl, 1.1.0)
++AC_INIT([libmbfl], [1.3.2])
++AM_INIT_AUTOMAKE
+ AC_CONFIG_SRCDIR(mbfl/mbfilter.c)
+ AM_CONFIG_HEADER(config.h)
+ 
+@@ -13,7 +13,6 @@ AC_SUBST(SHLIB_VERSION)
+ AC_PROG_CC
+ AC_PROG_CXX
+ AC_PROG_LIBTOOL
+-AC_PROG_RANLIB
+ 
+ # Checks for libraries.
+ 
+@@ -36,7 +35,7 @@ if test "$FETCH_VIA_FTP" = "curl"; then
+   FETCH_VIA_FTP="curl -O"
+ fi
+ 
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([libmbfl.pc
+   Makefile
+   mbfl/Makefile
+   filters/Makefile
+--- origsrc/libmbfl-libmbfl-1.3.2/filters/Makefile.am	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/filters/Makefile.am	2015-05-12 20:24:00.906244900 +0900
+@@ -1,6 +1,6 @@
+ EXTRA_DIST=Makefile.bcc32 mk_sb_tbl.awk
+ noinst_LTLIBRARIES=libmbfl_filters.la
+-INCLUDES=-I../mbfl
++INCLUDES=-I$(top_srcdir)/mbfl
+ PERL=perl
+ libmbfl_filters_la_LDFLAGS=-version-info $(SHLIB_VERSION)
+ libmbfl_filters_la_SOURCES=mbfilter_cp936.c \
+@@ -55,7 +55,7 @@ libmbfl_filters_la_SOURCES=mbfilter_cp93
+ 	mbfilter_euc_kr.c \
+ 	mbfilter_uhc.c \
+ 	mbfilter_iso2022_jp_ms.c \
+-	mbfilter_iso2022_jp_2004.c \
++	mbfilter_iso2022jp_2004.c \
+ 	mbfilter_gb18030.c \
+ 	mbfilter_iso2022_kr.c \
+ 	mbfilter_cp866.c \
+@@ -90,7 +90,7 @@ libmbfl_filters_la_SOURCES=mbfilter_cp93
+ 	mbfilter_htmlent.h \
+ 	mbfilter_hz.h \
+ 	mbfilter_iso2022_jp_ms.h \
+-	mbfilter_iso2022_jp_2004.h \
++	mbfilter_iso2022jp_2004.h \
+ 	mbfilter_iso2022_kr.h \
+ 	mbfilter_iso8859_1.h \
+ 	mbfilter_iso8859_10.h \
+--- origsrc/libmbfl-libmbfl-1.3.2/libmbfl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/libmbfl.pc.in	2015-05-12 20:27:52.778322300 +0900
+@@ -0,0 +1,9 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++Name: libmbfl
++Description: Library for handling various encoding, used in PHP's mbstring extension
++Version: @VERSION@
++Libs: -L${libdir} -lmbfl
++Cflags: -I${includedir}/mbfl
+--- origsrc/libmbfl-libmbfl-1.3.2/mbfl/Makefile.am	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/mbfl/Makefile.am	2015-05-12 20:24:44.187749700 +0900
+@@ -1,3 +1,4 @@
++AM_CPPFLAGS = -I$(top_srcdir)
+ EXTRA_DIST=mk_eaw_tbl.awk
+ lib_LTLIBRARIES=libmbfl.la
+ libmbfl_la_SOURCES=mbfilter.c \
+@@ -16,7 +17,7 @@ libmbfl_la_SOURCES=mbfilter.c \
+ libmbfl_filters_la=../filters/libmbfl_filters.la
+ libmbfl_nls_la=../nls/libmbfl_nls.la
+ libmbfl_la_LIBADD=$(libmbfl_filters_la) $(libmbfl_nls_la)
+-libmbfl_la_LDFLAGS=-version-info $(SHLIB_VERSION)
++libmbfl_la_LDFLAGS=-no-undefined -version-info $(SHLIB_VERSION)
+ libmbfl_includedir=$(includedir)/mbfl
+ libmbfl_include_HEADERS=mbfilter.h \
+ 	mbfl_consts.h \
+--- origsrc/libmbfl-libmbfl-1.3.2/nls/Makefile.am	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/nls/Makefile.am	2015-05-12 20:18:10.873864100 +0900
+@@ -1,5 +1,5 @@
+ noinst_LTLIBRARIES=libmbfl_nls.la
+-INCLUDES=-I../mbfl
++INCLUDES=-I$(top_srcdir)/mbfl
+ libmbfl_nls_la_LDFLAGS=-version-info $(SHLIB_VERSION)
+ libmbfl_nls_la_SOURCES=nls_ja.c \
+ 	nls_de.c \
+--- origsrc/libmbfl-libmbfl-1.3.2/tests/Makefile.am	2011-08-20 15:47:16.000000000 +0900
++++ src/libmbfl-libmbfl-1.3.2/tests/Makefile.am	2015-05-12 20:25:40.291623200 +0900
+@@ -1,3 +1,4 @@
++AM_CPPFLAGS = -I$(top_srcdir)
+ SUBDIRS=conv_encoding.tests conv_kana.tests strwidth.tests strcut.tests
+ noinst_PROGRAMS=conv_encoding conv_kana strwidth strcut
+ conv_encoding_SOURCES=conv_encoding.c
