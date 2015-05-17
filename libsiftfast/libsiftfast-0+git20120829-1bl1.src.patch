@@ -1,0 +1,94 @@
+--- origsrc/libsiftfast/CMakeLists.txt	2015-05-17 19:43:50.000000000 +0900
++++ src/libsiftfast/CMakeLists.txt	2015-05-17 19:44:50.170110400 +0900
+@@ -39,7 +39,7 @@ include(CheckCXXSourceRuns)
+ 
+ if( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g")
+-  add_definitions(" -Wall -fPIC -v ")
++  add_definitions(" -Wall -v ")
+ 
+   # check for x86-64 system
+   check_cxx_source_runs("
+@@ -169,7 +169,6 @@ endif()
+ #)
+ 
+ add_library(libsiftfast SHARED libsiftfast.cpp)
+-add_library(libsiftfast-static STATIC libsiftfast.cpp)
+ 
+ 
+ 
+@@ -180,13 +179,12 @@ endif()
+ 
+ target_link_libraries(libsiftfast m stdc++ dl python2.7)
+ 
+-set_target_properties(libsiftfast PROPERTIES OUTPUT_NAME  siftfast CLEAN_DIRECT_OUTPUT 1)
++set_target_properties(libsiftfast PROPERTIES OUTPUT_NAME  siftfast CLEAN_DIRECT_OUTPUT 1 SOVERSION 0)
+ if( MSVC )
+   set(LIBSIFTFAST_NAME libsiftfast-s)
+ else()
+   set(LIBSIFTFAST_NAME siftfast)
+ endif()
+-set_target_properties(libsiftfast-static PROPERTIES OUTPUT_NAME ${LIBSIFTFAST_NAME} CLEAN_DIRECT_OUTPUT 1)
+ 
+ #if(UNIX AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+ #  set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "libsiftfast install prefix" FORCE )
+@@ -307,7 +305,6 @@ if( NOT DEFINED USE_OPENMP OR USE_OPENMP
+       add_definitions("-fopenmp")
+       target_link_libraries(siftfast gomp)
+       target_link_libraries(libsiftfast gomp)
+-      target_link_libraries(libsiftfast-static gomp)
+       if( BUILD_SIFTFASTPY )
+         target_link_libraries(siftfastpy gomp)
+       endif()
+@@ -388,7 +385,7 @@ if(USE_MATLAB)
+     OUTPUT ${MATLAB_MEX_OUT}/${MATLAB_MEX}
+     COMMAND mex
+     ARGS -I\"${CMAKE_SOURCE_DIR}\" -L\"${libsiftfast_BINARY_DIR}\" ${MEX_LIBS} ${MEX_CXXFLAGS} -lsiftfast -outdir \"${MATLAB_MEX_OUT}\" -output \"${MATLAB_MEX}\" \"${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp\"
+-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp libsiftfast libsiftfast-static
++    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp libsiftfast
+   )
+   add_custom_target(siftfast_matlab ALL DEPENDS ${MATLAB_MEX_OUT}/${MATLAB_MEX})
+   install(FILES ${MATLAB_MEX_OUT}/${MATLAB_MEX} siftfast.m DESTINATION share/siftfast/matlab)
+@@ -410,7 +407,7 @@ endif(USE_MATLAB)
+ #     OUTPUT ${OCTAVE_MEX}
+ #     COMMAND ${MKOCTFILE_EXECUTABLE}
+ #     ARGS --mex -I${CMAKE_SOURCE_DIR} -L\"${libsiftfast_BINARY_DIR}\" ${MEX_LIBS} ${MEX_CXXFLAGS} -lsiftfast -o \"${OCTAVE_MEX}\" \"${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp\"
+-#     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp libsiftfast libsiftfast-static
++#     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/siftmex.cpp libsiftfast
+ #   )
+ #
+ #   add_custom_target(siftfast_octave ALL DEPENDS ${OCTAVE_MEX})
+@@ -435,7 +432,7 @@ install(TARGETS siftfast DESTINATION bin
+ if( MSVC )
+   install(TARGETS libsiftfast RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
+ else()
+-  install(TARGETS libsiftfast DESTINATION lib PERMISSIONS
++  install(TARGETS libsiftfast RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PERMISSIONS
+                   OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                   GROUP_READ GROUP_EXECUTE
+                   WORLD_READ WORLD_EXECUTE)
+@@ -453,3 +450,11 @@ CONFIGURE_FILE(
+ 
+ ADD_CUSTOM_TARGET(uninstall
+   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsiftfast/libsiftfast.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsiftfast/libsiftfast.pc.in	2015-05-17 19:45:08.858291100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsiftfast
++Description: Fork of zerofrog's fast SIFT C++ reimplementation of Bill Lowe's original smash-hit image-analysis algorithm
++Version: @VERSION@
++Libs: -L${libdir} -lsiftfast
++Cflags: -I${includedir}
