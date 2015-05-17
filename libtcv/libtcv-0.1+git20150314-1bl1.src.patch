@@ -1,0 +1,42 @@
+--- origsrc/libtcv/CMakeLists.txt	2015-05-18 05:22:42.000000000 +0900
++++ src/libtcv/CMakeLists.txt	2015-05-18 05:26:14.584622700 +0900
+@@ -211,7 +211,7 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIB
+ # Create a Library with all object files of project except main
+ add_library( ${LIBRARY_NAME} SHARED ${LIB_SRCS})
+ SET_TARGET_PROPERTIES(${LIBRARY_NAME}  PROPERTIES
+-    VERSION ${VERSION})
++    VERSION ${VERSION} SOVERSION 0)
+ #SET_TARGET_PROPERTIES(${LIBRARY_NAME}  PROPERTIES
+ #    LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR})
+ #SET_TARGET_PROPERTIES(${LIBRARY_NAME}  PROPERTIES
+@@ -273,9 +273,16 @@ INSTALL(DIRECTORY
+    DESTINATION include/${TARGET_SUBDIR_NAME})
+ 
+ # library
+-INSTALL(TARGETS ${LIBRARY_NAME} LIBRARY DESTINATION  lib)
++INSTALL(TARGETS ${LIBRARY_NAME} RUNTIME DESTINATION ${BIN_DIR} ARCHIVE DESTINATION ${LIB_DIR})
+ 
+ #Demo binary
+ if(BUILD_DEMO)
+     INSTALL(TARGETS ${BINARY_NAME} RUNTIME DESTINATION  bin )
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libtcv/libtcv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtcv/libtcv.pc.in	2015-05-18 05:25:37.324605900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtcv
++Description: Library Transceiver
++Version: @VERSION@
++Libs: -L${libdir} -ltcv
++Cflags: -I${includedir}
