@@ -1,0 +1,62 @@
+--- origsrc/xmlppm-0.98.3/src/Args.cpp	2008-02-18 20:36:47.000000000 +0900
++++ src/xmlppm-0.98.3/src/Args.cpp	2015-05-17 09:59:17.773525700 +0900
+@@ -34,12 +34,18 @@ jcheney@cs.cornell.edu
+ #include "Args.h"
+ #include "Version.h"
+ 
+-extern "C"
+-{
++#include <cstdio>
++
++#if !defined(_O_BINARY)
++#define _O_BINARY O_BINARY
++#endif
++
+ #if defined(__CYGWIN__)
+-  int _setmode (int handle, int mode);
+-  int _fileno (FILE * stream);
++#define _fileno fileno
+ #endif
++
++extern "C"
++{
+   char *strdup (const char *);
+ }
+ 
+--- origsrc/xmlppm-0.98.3/src/IFile.cpp	2004-06-10 04:23:19.000000000 +0900
++++ src/xmlppm-0.98.3/src/IFile.cpp	2015-05-17 10:04:31.721656700 +0900
+@@ -32,16 +32,14 @@ jcheney@cs.cornell.edu
+ #include <string.h>
+ #include "IFile.h"
+ 
+-#if defined (__CYGWIN__) 
+-extern "C" {
+-    int _vsnprintf(char*, size_t, const char*, va_list);  
+-}
+-#endif
+-#if defined(__CYGWIN__) || defined (WIN32)
++#if defined (WIN32)
+ #define VSNPRINTF(a,b,c,d) _vsnprintf((a),(b),(c),(d))
+-#define ICONV(a,b,c,d,e) iconv((a),((const char**)b),(c),(d),(e))
+ #else 
+ #define VSNPRINTF(a,b,c,d) vsnprintf((a),(b),(c),(d))
++#endif
++#if defined (WIN32)
++#define ICONV(a,b,c,d,e) iconv((a),((const char**)b),(c),(d),(e))
++#else
+ #define ICONV(a,b,c,d,e) iconv((a),(b),(c),(d),(e))
+ #endif
+ 
+--- origsrc/xmlppm-0.98.3/src/Makefile.am	2008-02-26 21:58:27.000000000 +0900
++++ src/xmlppm-0.98.3/src/Makefile.am	2015-05-17 10:01:11.641293500 +0900
+@@ -2,8 +2,8 @@ bin_PROGRAMS = xmlppm xmlunppm
+ xmlppm_SOURCES = xmlppm.cpp Args.cpp Args.h Version.h
+ xmlppm_LDADD = libxmlppm.a 
+ AM_CFLAGS = -Wall -ansi -pedantic -Wno-sign-compare -Wno-unknown-pragmas -Wno-conversion
+-AM_CXXFLAGS = -fno-exceptions -fno-rtti -fcheck-new -Wall -ansi -pedantic -Wno-sign-compare -Wno-unknown-pragmas -Wno-conversion
++AM_CXXFLAGS = -fno-exceptions -fno-rtti -fcheck-new -Wall -pedantic -Wno-sign-compare -Wno-unknown-pragmas -Wno-conversion
+ xmlunppm_SOURCES = xmlunppm.cpp Args.cpp Args.h Version.h
+ xmlunppm_LDADD = libxmlppm.a
+-lib_LIBRARIES = libxmlppm.a 
++noinst_LIBRARIES = libxmlppm.a
+ libxmlppm_a_SOURCES = Coder.cpp Coder.h Model.cpp Model.h PrintSax.cpp PrintSax.h EncodeSax.cpp EncodeSax.h StringArray.cpp StringArray.h XmlModel.cpp XmlModel.h IFile.cpp IFile.h SubAlloc.hpp PPMdType.h DecodeSax.cpp DecodeSax.h
