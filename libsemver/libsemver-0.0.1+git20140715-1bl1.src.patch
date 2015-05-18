@@ -1,0 +1,48 @@
+--- origsrc/attic/libsemver/CMakeLists.txt	2015-05-19 07:44:50.000000000 +0900
++++ src/attic/libsemver/CMakeLists.txt	2015-05-19 07:55:02.247435600 +0900
+@@ -5,7 +5,7 @@ enable_testing()
+ if(WIN32)
+     set(CMAKE_C_FLAGS "/Tp")
+ else()
+-    set(CMAKE_C_FLAGS "-std=c99 -Wall -Wextra -Werror -pedantic-errors")
++    set(CMAKE_C_FLAGS "-std=gnu99 -Wall -Wextra -pedantic-errors")
+     add_definitions(-D_BSD_SOURCE)
+ endif()
+ 
+@@ -16,3 +16,10 @@ set(LIBSEMVER_VERSION "${LIBSEMVER_MAJOR
+ 
+ add_subdirectory(src)
+ add_subdirectory(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/attic/libsemver/libsemver.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/attic/libsemver/libsemver.pc.in	2015-05-19 07:57:46.262713100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsemver
++Description: C library which implements the Semantic Versioning specification
++Version: @LIBSEMVER_VERSION@
++Libs: -L${libdir} -lsemver
++Cflags: -I${includedir}
+--- origsrc/attic/libsemver/src/CMakeLists.txt	2015-05-19 07:44:50.000000000 +0900
++++ src/attic/libsemver/src/CMakeLists.txt	2015-05-19 07:58:16.340245400 +0900
+@@ -2,9 +2,5 @@ add_library(semver SHARED semver.c)
+ target_link_libraries(semver)
+ set_target_properties(semver PROPERTIES SOVERSION ${LIBSEMVER_VERSION})
+ 
+-add_library(semver_static STATIC semver.c)
+-target_link_libraries(semver_static)
+-set_target_properties(semver_static PROPERTIES OUTPUT_NAME semver)
+-
+ install(FILES semver.h DESTINATION include)
+-install(TARGETS semver semver_static DESTINATION lib)
++install(TARGETS semver RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
