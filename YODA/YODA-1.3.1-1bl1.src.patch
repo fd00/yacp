@@ -1,0 +1,70 @@
+--- origsrc/YODA-1.3.1/bin/yoda-config	2015-03-19 10:07:22.000000000 +0900
++++ src/YODA-1.3.1/bin/yoda-config	2015-05-19 17:41:01.424267400 +0900
+@@ -4,8 +4,8 @@
+ ## These variables need to exist
+ ## Note no use of $DESTDIR... we ignore it so that destdir can be used
+ ## for temp installs later copied to /
+-prefix=/home/andy/heplocal
+-exec_prefix=${prefix}
++prefix=/usr
++exec_prefix=/usr
+ datarootdir=${prefix}/share
+ 
+ tmp=$(echo $* | egrep -- '--\<help\>|-\<h\>')
+@@ -35,7 +35,7 @@ OUT=""
+ 
+ ## "Atomic" build info
+ tmp=$( echo "$*" | egrep -- '--\<prefix\>')
+-test -n "$tmp" && OUT="$OUT /home/andy/heplocal"
++test -n "$tmp" && OUT="$OUT /usr"
+ 
+ tmp=$( echo "$*" | egrep -- '--\<includedir\>')
+ test -n "$tmp" && OUT="$OUT ${prefix}/include"
+@@ -44,7 +44,7 @@ tmp=$( echo "$*" | egrep -- '--\<libdir\
+ test -n "$tmp" && OUT="$OUT ${exec_prefix}/lib"
+ 
+ tmp=$( echo "$*" | egrep -- '--\<pythonpath\>')
+-test -n "$tmp" && OUT="$OUT /home/andy/heplocal/lib/python2.7/site-packages"
++test -n "$tmp" && OUT="$OUT "
+ 
+ ## "Pre-rolled" build info
+ tmp=$( echo "$*" | egrep -- '--\<cppflags|cxxflags\>')
+--- origsrc/YODA-1.3.1/include/YODA/Utils/BinSearcher.h	2015-01-17 03:05:02.000000000 +0900
++++ src/YODA-1.3.1/include/YODA/Utils/BinSearcher.h	2015-05-19 17:32:36.002888100 +0900
+@@ -15,6 +15,10 @@
+ #include <boost/shared_ptr.hpp>
+ #include <boost/shared_array.hpp>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace YODA {
+   namespace Utils {
+ 
+--- origsrc/YODA-1.3.1/src/Makefile.am	2014-08-15 07:03:21.000000000 +0900
++++ src/YODA-1.3.1/src/Makefile.am	2015-05-19 17:34:55.669237800 +0900
+@@ -1,4 +1,3 @@
+-SUBDIRS = tinyxml .
+ 
+ lib_LTLIBRARIES = libYODA.la
+ 
+@@ -24,6 +23,6 @@ libYODA_la_SOURCES = \
+     Scatter3D.cc
+ 
+ 
+-libYODA_la_LDFLAGS = -avoid-version
+-libYODA_la_LIBADD = tinyxml/libtinyxml.la
++libYODA_la_LDFLAGS = -no-undefined
++libYODA_la_LIBADD = -ltinyxml
+ libYODA_la_CPPFLAGS = $(AM_CPPFLAGS) -DTIXML_USE_STL
+--- origsrc/YODA-1.3.1/yoda.pc	2015-03-19 10:07:22.000000000 +0900
++++ src/YODA-1.3.1/yoda.pc	2015-05-19 17:41:01.782092700 +0900
+@@ -1,5 +1,5 @@
+-prefix=/home/andy/heplocal
+-exec_prefix=${prefix}
++prefix=/usr
++exec_prefix=/usr
+ libdir=${exec_prefix}/lib
+ includedir=${prefix}/include
+ datarootdir=${prefix}/share
