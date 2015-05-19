@@ -1,0 +1,54 @@
+--- origsrc/ecm-6.4.4/Makefile.am	2013-02-28 00:11:54.000000000 +0900
++++ src/ecm-6.4.4/Makefile.am	2015-05-19 20:20:55.831838900 +0900
+@@ -39,8 +39,8 @@ libecm_la_SOURCES = ecm.c ecm2.c pm1.c p
+ # Link the asm redc code (if we use it) into libecm.la
+ libecm_la_CPPFLAGS = $(MULREDCINCPATH)
+ libecm_la_CFLAGS = $(OPENMP_CFLAGS)
+-libecm_la_LDFLAGS = '-version-info 0:0:0'
+-libecm_la_LIBADD = $(MULREDCLIBRARY)
++libecm_la_LDFLAGS = -no-undefined -version-info 0:0:0
++libecm_la_LIBADD = $(MULREDCLIBRARY) $(GMPLIB) -lgomp
+ 
+ bin_PROGRAMS = ecm
+ noinst_PROGRAMS = tune ecmfactor bench_mulredc
+@@ -147,3 +147,6 @@ if MAKE_MANPAGE
+ ecm.1: $(srcdir)/ecm.xml
+ 	xsltproc -o ecm.1 $(XSLDIR)/manpages/docbook.xsl $(srcdir)/ecm.xml
+ endif
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/ecm-6.4.4/configure.in	2013-02-27 03:47:08.000000000 +0900
++++ src/ecm-6.4.4/configure.in	2015-05-19 20:25:13.079301700 +0900
+@@ -362,7 +362,9 @@ dnl Checks for header files.
+ AC_FUNC_ALLOCA
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS([math.h limits.h malloc.h strings.h sys/time.h unistd.h io.h signal.h fcntl.h])
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADERS([windows.h])
++fi
+ AC_CHECK_HEADERS([ctype.h sys/types.h sys/resource.h])
+ 
+ dnl Checks for library functions that are not in GMP
+@@ -634,7 +636,7 @@ fi
+ LIBS="$LIBS $GWLIB"
+ 
+ GMP_FINISH
+-AC_CONFIG_FILES([Makefile athlon/Makefile pentium4/Makefile x86_64/Makefile powerpc64/Makefile build.vc10/Makefile build.vc10/assembler/Makefile build.vc10/ecm/Makefile build.vc10/libecm/Makefile build.vc10/tune/Makefile build.vc10/bench_mulredc/Makefile])
++AC_CONFIG_FILES([ecm.pc Makefile athlon/Makefile pentium4/Makefile x86_64/Makefile powerpc64/Makefile build.vc10/Makefile build.vc10/assembler/Makefile build.vc10/ecm/Makefile build.vc10/libecm/Makefile build.vc10/tune/Makefile build.vc10/bench_mulredc/Makefile])
+ AC_CONFIG_LINKS([ecm-params.h:ecm-params.h.$config_arch])
+ MUL_FFT_PARAMS="mul_fft-params.h.$config_arch"
+ if ! test -f "$MUL_FFT_PARAMS"
+--- origsrc/ecm-6.4.4/ecm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ecm-6.4.4/ecm.pc.in	2015-05-19 20:31:53.994061300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ecm
++Description: Elliptic Curve Method for Integer Factorization
++Version: @VERSION@
++Libs: -L${libdir} -lecm
++Cflags: -I${includedir}
