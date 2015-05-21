@@ -1,0 +1,60 @@
+--- origsrc/uripp-1.0.0/Makefile.am	2009-05-02 03:00:54.000000000 +0900
++++ src/uripp-1.0.0/Makefile.am	2015-05-21 09:37:49.016318400 +0900
+@@ -1,2 +1,5 @@
+ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = src test
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/uripp-1.0.0/configure.ac	2009-05-02 03:00:54.000000000 +0900
++++ src/uripp-1.0.0/configure.ac	2015-05-21 09:37:48.975358400 +0900
+@@ -10,7 +10,7 @@ AC_PROG_LIBTOOL
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_CONFIG_SRCDIR([src/fragment.h])
+ AC_CONFIG_HEADER([config.h])
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([uripp.pc 
+     Makefile
+     src/Makefile
+     test/Makefile
+--- origsrc/uripp-1.0.0/src/Makefile.am	2009-05-02 03:00:54.000000000 +0900
++++ src/uripp-1.0.0/src/Makefile.am	2015-05-21 07:18:21.238803900 +0900
+@@ -2,3 +2,4 @@
+ lib_LTLIBRARIES = liburipp.la
+ pkginclude_HEADERS = apidefs.h authority.h domain_name.h fragment.h ip_address.h ipv6_address.h path.h query.h scheme.h uri.h urisyn.h utils.h
+ liburipp_la_SOURCES = authority.cpp domain_name.cpp fragment.cpp ip_address.cpp ipv6_address.cpp path.cpp query.cpp scheme.cpp uri.cpp urisyn.cpp utils.cpp
++liburipp_la_LDFLAGS = -no-undefined
+--- origsrc/uripp-1.0.0/src/query.cpp	2009-05-02 03:00:54.000000000 +0900
++++ src/uripp-1.0.0/src/query.cpp	2015-05-21 07:19:45.455824800 +0900
+@@ -21,6 +21,7 @@ THE SOFTWARE.
+ */
+ #include "query.h"
+ #include "urisyn.h"
++#include <algorithm>
+ #include <stdexcept>
+ namespace uripp {
+     const char query::PAIRS_SEP_CHAR = '&';
+--- origsrc/uripp-1.0.0/src/utils.cpp	2009-05-02 03:00:54.000000000 +0900
++++ src/uripp-1.0.0/src/utils.cpp	2015-05-21 09:36:30.503223600 +0900
+@@ -137,7 +137,7 @@ namespace uripp {
+         v = t;
+         return true;
+     }
+-#	ifndef _WIN32
++#if !defined(_WIN32)
+     std::string convert(ptrdiff_t v) {
+ 		if (sizeof(ptrdiff_t) == sizeof(unsigned int)) return convert((unsigned int)v);
+ 		return convert((unsigned long long int)v);
+--- origsrc/uripp-1.0.0/uripp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/uripp-1.0.0/uripp.pc.in	2015-05-21 09:40:00.035137800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: uripp
++Description: URI C++ library
++Version: @VERSION@
++Libs: -L${libdir} -luripp
++Cflags: -I${includedir}/uripp
