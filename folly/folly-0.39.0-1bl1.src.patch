@@ -1,0 +1,268 @@
+--- origsrc/folly-0.39.0/folly/Conv.h	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/Conv.h	2015-05-22 05:30:25.992374100 +0900
+@@ -47,7 +47,7 @@
+ #define FOLLY_RANGE_CHECK_STRINGIZE2(x) FOLLY_RANGE_CHECK_STRINGIZE(x)
+ 
+ // Android doesn't support std::to_string so just use a placeholder there.
+-#ifdef __ANDROID__
++#if defined(__ANDROID__) || defined(__CYGWIN__)
+ #define FOLLY_RANGE_CHECK_TO_STRING(x) std::string("N/A")
+ #else
+ #define FOLLY_RANGE_CHECK_TO_STRING(x) std::to_string(x)
+--- origsrc/folly-0.39.0/folly/Makefile.am	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/Makefile.am	2015-05-22 06:22:50.865609800 +0900
+@@ -2,6 +2,9 @@ SUBDIRS = . test
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
++AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/../
++AM_LDFLAGS = -no-undefined
++
+ CLEANFILES =
+ 
+ noinst_PROGRAMS = generate_fingerprint_tables
+@@ -317,15 +320,15 @@ nobase_follyinclude_HEADERS = \
+ 	wangle/ssl/TLSTicketKeySeeds.h
+ 
+ FormatTables.cpp: build/generate_format_tables.py
+-	build/generate_format_tables.py
++	$(top_srcdir)/build/generate_format_tables.py
+ CLEANFILES += FormatTables.cpp
+ 
+ EscapeTables.cpp: build/generate_escape_tables.py
+-	build/generate_escape_tables.py
++	$(top_srcdir)/build/generate_escape_tables.py
+ CLEANFILES += EscapeTables.cpp
+ 
+ GroupVarintTables.cpp: build/generate_varint_tables.py
+-	build/generate_varint_tables.py
++	$(top_srcdir)/build/generate_varint_tables.py
+ CLEANFILES += GroupVarintTables.cpp
+ 
+ libfollybase_la_SOURCES = \
+@@ -429,7 +432,6 @@ libfolly_la_SOURCES += \
+ endif
+ 
+ if !HAVE_LINUX
+-nobase_follyinclude_HEADERS += detail/Clock.h
+ libfollybase_la_SOURCES += detail/Clock.cpp
+ endif
+ 
+@@ -443,10 +445,10 @@ endif
+ 
+ libfollybase_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION)
+ 
+-libfolly_la_LIBADD = libfollybase.la
+-libfolly_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION) -lssl
++libfolly_la_LIBADD = libfollybase.la $(BOOST_CONTEXT_LIB) -lboost_context $(BOOST_FILESYSTEM_LIB) $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) $(OPENSSL_LIBS) $(LIBEVENT_LIBS)
++libfolly_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION)
+ 
+-FingerprintTables.cpp: generate_fingerprint_tables
++FingerprintTables.cpp: generate_fingerprint_tables$(EXEEXT)
+ 	./generate_fingerprint_tables
+ CLEANFILES += FingerprintTables.cpp
+ 
+--- origsrc/folly-0.39.0/folly/Subprocess.h	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/Subprocess.h	2015-05-22 06:02:03.233724100 +0900
+@@ -116,6 +116,16 @@
+ #include <folly/Portability.h>
+ #include <folly/Range.h>
+ 
++#if defined(stdin)
++#undef stdin
++#endif
++#if defined(stdout)
++#undef stdout
++#endif
++#if defined(stderr)
++#undef stderr
++#endif
++
+ namespace folly {
+ 
+ /**
+--- origsrc/folly-0.39.0/folly/configure.ac	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/configure.ac	2015-05-22 06:08:48.641075000 +0900
+@@ -58,10 +58,7 @@ AC_CHECK_LIB([glog],[openlog],[],[AC_MSG
+ AC_CHECK_LIB([gflags],[getenv],[],[AC_MSG_ERROR(
+              [Please install google-gflags library])])
+ 
+-AC_CHECK_LIB(ssl,
+-        SSL_ctrl,
+-        [],
+-        [AC_MSG_ERROR(["Error: libssl required"])])
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+ # check for boost libs
+ AX_BOOST_BASE([1.51.0], [], [AC_MSG_ERROR(
+@@ -82,7 +79,7 @@ AC_CHECK_HEADER(double-conversion/double
+ AC_CHECK_LIB([double-conversion],[ceil],[],[AC_MSG_ERROR(
+              [Please install double-conversion library])])
+ 
+-AC_CHECK_LIB([event], [event_set], [], [AC_MSG_ERROR([Unable to find libevent])])
++PKG_CHECK_MODULES([LIBEVENT], [libevent])
+ 
+ AC_CHECK_LIB([jemalloc], [xallocx])
+ 
+@@ -250,11 +247,13 @@ if test "$folly_cv_prog_cc_weak_symbols"
+             [Define to 1 if the linker supports weak symbols.])
+ fi
+ 
++if test "$host_os" != "cygwin"; then
+ AC_SEARCH_LIBS([cplus_demangle_v3_callback], [iberty_pic iberty])
+ if test "$ac_cv_search_cplus_demangle_v3_callback" != "no" ; then
+   AC_DEFINE([HAVE_CPLUS_DEMANGLE_V3_CALLBACK], [1],
+             [Define to 1 if we have cplus_demangle_v3_callback.])
+ fi
++fi
+ 
+ # Check for clock_gettime(2). This is not in an AC_CHECK_FUNCS() because we
+ # want to link with librt if necessary.
+--- origsrc/folly-0.39.0/folly/detail/Clock.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/detail/Clock.cpp	2015-05-22 05:37:10.062372900 +0900
+@@ -52,6 +52,6 @@ int clock_getres(clockid_t clk_id, struc
+ // using winpthreads from mingw-w64
+ // <pthreads_time.h> has clock_gettime and friends
+ // make sure to include <pthread.h> as well for typedefs of timespec/etc
+-#else
++#elif !defined(__CYGWIN__)
+ #error No clock_gettime(2) compatibility wrapper available for this platform.
+ #endif
+--- origsrc/folly-0.39.0/folly/detail/Clock.h	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/detail/Clock.h	2015-05-22 05:38:18.469760000 +0900
+@@ -22,7 +22,7 @@
+ 
+ #include <folly/Portability.h>
+ 
+-#if FOLLY_HAVE_CLOCK_GETTIME
++#if FOLLY_HAVE_CLOCK_GETTIME && !defined(__CYGWIN__)
+ #error This should only be used as a workaround for platforms \
+           that do not support clock_gettime(2).
+ #endif
+@@ -32,7 +32,12 @@
+ #include <pthread.h>
+ #include <pthread_time.h>
+ #else
++#if !defined(__CYGWIN__)
+ typedef uint8_t clockid_t;
++#endif
++#if defined(CLOCK_REALTIME)
++#undef CLOCK_REALTIME
++#endif
+ #define CLOCK_REALTIME 0
+ 
+ int clock_gettime(clockid_t clk_id, struct timespec* ts);
+--- origsrc/folly-0.39.0/folly/experimental/JSONSchema.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/experimental/JSONSchema.cpp	2015-05-22 06:05:06.305919500 +0900
+@@ -134,7 +134,7 @@ struct MultipleOfValidator final : IVali
+       return none;
+     }
+     if (schema_.isDouble() || value.isDouble()) {
+-      const auto rem = std::remainder(value.asDouble(), schema_.asDouble());
++      const auto rem = ::remainder(value.asDouble(), schema_.asDouble());
+       if (std::abs(rem) > std::numeric_limits<double>::epsilon()) {
+         return makeError("a multiple of ", schema_, value);
+       }
+--- origsrc/folly-0.39.0/folly/experimental/fibers/Fiber.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/experimental/fibers/Fiber.cpp	2015-05-22 06:03:43.403239300 +0900
+@@ -15,7 +15,9 @@
+  */
+ #include "Fiber.h"
+ 
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <unistd.h>
+ 
+ #include <algorithm>
+@@ -34,7 +36,11 @@ namespace {
+ static const uint64_t kMagic8Bytes = 0xfaceb00cfaceb00c;
+ 
+ pid_t localThreadId() {
++#if defined(__CYGWIN__)
++  static thread_local pid_t threadId = getpid();
++#else
+   static thread_local pid_t threadId = syscall(SYS_gettid);
++#endif
+   return threadId;
+ }
+ 
+--- origsrc/folly-0.39.0/folly/experimental/fibers/FiberManager.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/experimental/fibers/FiberManager.cpp	2015-05-22 06:04:10.135124100 +0900
+@@ -15,7 +15,9 @@
+  */
+ #include "FiberManager.h"
+ 
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <unistd.h>
+ 
+ #include <cassert>
+--- origsrc/folly-0.39.0/folly/io/async/AsyncSSLSocket.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/io/async/AsyncSSLSocket.cpp	2015-05-22 05:45:45.885907000 +0900
+@@ -1381,6 +1381,9 @@ int AsyncSSLSocket::eorAwareBioWrite(BIO
+   if (tsslSock &&
+       tsslSock->minEorRawByteNo_ &&
+       tsslSock->minEorRawByteNo_ <= BIO_number_written(b) + inl) {
++#if !defined(MSG_EOR)
++#define MSG_EOR (0)
++#endif
+     flags = MSG_EOR;
+   }
+ 
+--- origsrc/folly-0.39.0/folly/io/async/AsyncSocket.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/io/async/AsyncSocket.cpp	2015-05-22 05:45:04.711509900 +0900
+@@ -1674,11 +1674,17 @@ ssize_t AsyncSocket::performWrite(const
+     // MSG_MORE tells the kernel we have more data to send, so wait for us to
+     // give it the rest of the data rather than immediately sending a partial
+     // frame, even when TCP_NODELAY is enabled.
++#if !defined(MSG_MORE)
++#define MSG_MORE (0)
++#endif
+     msg_flags |= MSG_MORE;
+   }
+ #endif
+   if (isSet(flags, WriteFlags::EOR)) {
+     // marks that this is the last byte of a record (response)
++#if !defined(MSG_EOR)
++#define MSG_EOR (0)
++#endif
+     msg_flags |= MSG_EOR;
+   }
+   ssize_t totalWritten = ::sendmsg(fd_, &msg, msg_flags);
+--- origsrc/folly-0.39.0/folly/io/async/SSLContext.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/io/async/SSLContext.cpp	2015-05-22 05:51:32.103361400 +0900
+@@ -649,7 +649,7 @@ static void callbackLocking(int mode, in
+ }
+ 
+ static unsigned long callbackThreadID() {
+-  return static_cast<unsigned long>(
++  return reinterpret_cast<unsigned long>(
+ #ifdef __APPLE__
+     pthread_mach_thread_np(pthread_self())
+ #else
+--- origsrc/folly-0.39.0/folly/io/async/test/TimeUtil.cpp	2015-05-21 02:57:38.000000000 +0900
++++ src/folly-0.39.0/folly/io/async/test/TimeUtil.cpp	2015-05-22 05:58:32.397096500 +0900
+@@ -22,7 +22,9 @@
+ #include <chrono>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/utsname.h>
+ #include <errno.h>
+ #include <glog/logging.h>
+@@ -40,7 +42,11 @@ namespace folly {
+  * glibc doesn't provide gettid(), so define it ourselves.
+  */
+ static pid_t gettid() {
++#if defined(__CYGWIN__)
++  return getpid();
++#else
+   return syscall(SYS_gettid);
++#endif
+ }
+ 
+ /**
