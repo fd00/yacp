@@ -1,0 +1,45 @@
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x snappystreamcfg.hpp origsrc/snappystream-0.2.1/CMakeLists.txt src/snappystream-0.2.1/CMakeLists.txt
+--- origsrc/snappystream-0.2.1/CMakeLists.txt	2014-12-27 18:30:11.000000000 +0900
++++ src/snappystream-0.2.1/CMakeLists.txt	2015-05-31 23:22:31.946309600 +0900
+@@ -78,8 +78,15 @@ set(SRC ./include/osnappystream.hpp
+         ./include/snappystreamcfg.hpp
+         ./src/snappystreamcfg.cpp
+         ./src/endians.hpp)
++if (BUILD_SHARED_LIBS)
++	add_library(${PROJECT_NAME} SHARED "${SRC}")
++endif()
++if (CYGWIN)
++	SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
+ nx_add_library(${PROJECT_NAME} ${SNSTRM_FORCE_SHARED_CRT} ${BUILD_STATIC_LIBS} ${BUILD_SHARED_LIBS}
+ 	"SNSTRM_SHARED" "ver" "${SRC}")
++endif()
+ target_link_libraries(${PROJECT_NAME} ${SNAPPY_LIBRARIES})
+ list(APPEND LIBRARIES ${SNAPPY_LIBRARIES})
+ 
+@@ -193,3 +200,11 @@ if(NOT WITHOUT_CRC32C)
+ 	add_executable(crc32c ./misc/calc-crc32c.cpp)
+ 	target_link_libraries(crc32c ${SNAPPY_LIBRARIES} snappystream)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${SNSTRM_VERSION_MAJOR}.${SNSTRM_VERSION_MINOR}.${SNSTRM_VERSION_PATCH}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x snappystreamcfg.hpp origsrc/snappystream-0.2.1/snappystream.pc.in src/snappystream-0.2.1/snappystream.pc.in
+--- origsrc/snappystream-0.2.1/snappystream.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/snappystream-0.2.1/snappystream.pc.in	2015-05-31 23:21:58.600058000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: snappystream
++Description: C++ snappy stream realisation
++Version: @VERSION@
++Libs: -L${libdir} -lsnappystream
++Cflags: -I${includedir}
