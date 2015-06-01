@@ -1,0 +1,114 @@
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libminizinc-2.0.2/CMakeLists.txt src/libminizinc-2.0.2/CMakeLists.txt
+--- origsrc/libminizinc-2.0.2/CMakeLists.txt	2015-05-12 16:30:14.000000000 +0900
++++ src/libminizinc-2.0.2/CMakeLists.txt	2015-06-02 06:56:37.313908700 +0900
+@@ -32,9 +32,9 @@ if (HAS_WERROR)
+   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+ endif()
+ 
+-check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
++check_cxx_compiler_flag(-std=gnu++11 HAS_STDCPP11)
+ if (HAS_STDCPP11)
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+ else()
+   check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
+   if (HAS_STDCPP0X)
+@@ -176,7 +176,7 @@ else(BISON_EXEC)
+ endif(BISON_EXEC)
+ 
+ 
+-add_library(minizinc
++add_library(minizinc SHARED
+ lib/ast.cpp
+ lib/astexception.cpp
+ lib/aststring.cpp
+@@ -245,6 +245,7 @@ INSTALL(TARGETS mzn2fzn solns2out mzn2do
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+ )
++SET_TARGET_PROPERTIES(minizinc PROPERTIES SOVERSION 0)
+ 
+ option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
+ 
+@@ -279,10 +280,9 @@ INSTALL(DIRECTORY include/minizinc
+         PATTERN config.hh.in EXCLUDE
+ )
+ INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
+-INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
+-INSTALL(DIRECTORY doc/pdf DESTINATION doc)
+-INSTALL(DIRECTORY share/examples DESTINATION share)
+-INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
++INSTALL(DIRECTORY doc/pdf DESTINATION share/doc/minizinc)
++INSTALL(DIRECTORY share/examples DESTINATION share/minizinc)
++INSTALL(DIRECTORY lib/cached DESTINATION lib/minizinc PATTERN md5_cached.cmake EXCLUDE)
+ INSTALL(FILES "${parser_hh}" DESTINATION include/minizinc)
+ 
+ SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
+@@ -308,3 +308,11 @@ set(CPACK_SOURCE_IGNORE_FILES
+   "${CMAKE_CURRENT_BINARY_DIR}/;/tests/;/.git/;/.gitignore;~$;${CPACK_SOURCE_IGNORE_FILES}")
+ 
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${libminizinc_VERSION_MAJOR}.${libminizinc_VERSION_MINOR}.${libminizinc_VERSION_PATCH}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libminizinc-2.0.2/lib/file_utils.cpp src/libminizinc-2.0.2/lib/file_utils.cpp
+--- origsrc/libminizinc-2.0.2/lib/file_utils.cpp	2015-05-12 16:30:14.000000000 +0900
++++ src/libminizinc-2.0.2/lib/file_utils.cpp	2015-06-02 06:46:22.443266800 +0900
+@@ -22,9 +22,10 @@
+ #include <string.h>
+ #include <libproc.h>
+ #include <unistd.h>
+-#elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
++#elif (defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)) && !defined(__CYGWIN__)
+ #include <windows.h>
+ #else
++#include <stdlib.h>
+ #include <unistd.h>
+ #endif
+ #include <sys/types.h>
+@@ -48,7 +49,7 @@ namespace MiniZinc { namespace FileUtils
+       return p;
+     }
+   }
+-#elif defined(HAS_GETMODULEFILENAME)
++#elif defined(HAS_GETMODULEFILENAME) && !defined(__CYGWIN__)
+   std::string progpath(void) {
+     char path[MAX_PATH];
+     int ret = GetModuleFileName(NULL, path, MAX_PATH);
+@@ -83,7 +84,7 @@ namespace MiniZinc { namespace FileUtils
+ #endif
+   
+   bool file_exists(const std::string& filename) {
+-#if defined(HAS_GETFILEATTRIBUTES)
++#if defined(HAS_GETFILEATTRIBUTES) && !defined(__CYGWIN__)
+     DWORD dwAttrib = GetFileAttributes(filename.c_str());
+     
+     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+@@ -95,7 +96,7 @@ namespace MiniZinc { namespace FileUtils
+   }
+   
+   bool directory_exists(const std::string& dirname) {
+-#if defined(HAS_GETFILEATTRIBUTES)
++#if defined(HAS_GETFILEATTRIBUTES) && !defined(__CYGWIN__)
+     DWORD dwAttrib = GetFileAttributes(dirname.c_str());
+       
+     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libminizinc-2.0.2/libminizinc.pc.in src/libminizinc-2.0.2/libminizinc.pc.in
+--- origsrc/libminizinc-2.0.2/libminizinc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libminizinc-2.0.2/libminizinc.pc.in	2015-06-02 06:56:55.326348600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libminizinc
++Description: Medium-level constraint modelling language
++Version: @VERSION@
++Libs: -L${libdir} -lminizinc
++Cflags: -I${includedir}
