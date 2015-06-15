@@ -1,0 +1,109 @@
+--- origsrc/nestedsums-1.4.12/Makefile.am	2003-08-20 21:06:36.000000000 +0900
++++ src/nestedsums-1.4.12/Makefile.am	2015-06-15 22:09:02.502497100 +0900
+@@ -8,14 +8,14 @@
+ SUBDIRS = nestedsums checks
+ 
+ # runtime configuration script
+-bin_SCRIPTS = nestedsums-config                                                                                        
++bin_SCRIPTS = nestedsums-config
+ 
+ # M4 macro file for inclusion with autoconf
+ m4datadir = $(datadir)/aclocal
+ m4data_DATA = nestedsums.m4
+ 
+ # All the rest of the distributed files
+-EXTRA_DIST = autogen.sh Doxyfile nestedsums.m4 nestedsums.spec 
++EXTRA_DIST = autogen.sh Doxyfile nestedsums.m4 nestedsums.spec
+ 
+ # Rule to build tar-bzipped distribution package
+ $(PACKAGE)-$(VERSION).tar.gz: dist
+@@ -23,3 +23,6 @@ $(PACKAGE)-$(VERSION).tar.gz: dist
+ # Rule to build RPM distribution package
+ rpm: $(PACKAGE)-$(VERSION).tar.gz
+ 	rpmbuild -ta --clean $(PACKAGE)-$(VERSION).tar.gz
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = nestedsums.pc
+--- origsrc/nestedsums-1.4.12/checks/Makefile.am	2003-08-21 17:52:31.000000000 +0900
++++ src/nestedsums-1.4.12/checks/Makefile.am	2015-06-15 22:02:53.468079900 +0900
+@@ -18,6 +18,6 @@ benchmark_LDADD = ../nestedsums/libneste
+ examples_SOURCES = examples.cc
+ examples_LDADD = ../nestedsums/libnestedsums.la
+ 
+-INCLUDES = @GINACLIB_CPPFLAGS@ -I$(srcdir)/..
++INCLUDES = @GINACLIB_CPPFLAGS@ -I$(top_srcdir)/nestedsums
+ 
+ CXXFLAGS = -g
+--- origsrc/nestedsums-1.4.12/configure.ac	2009-06-11 05:44:46.000000000 +0900
++++ src/nestedsums-1.4.12/configure.ac	2015-06-15 22:08:45.263237000 +0900
+@@ -1,4 +1,4 @@
+-dnl 
++dnl
+ dnl configure.in for gTybalt library nestedsums
+ dnl
+ dnl written by Stefan Weinzierl
+@@ -39,7 +39,7 @@ AC_PROG_CXXCPP
+ AC_PROG_INSTALL
+ AC_PROG_LIBTOOL
+ 
+-dnl Check for data types which are needed by the hash function 
++dnl Check for data types which are needed by the hash function
+ dnl (golden_ratio_hash).
+ AC_CHECK_SIZEOF(int)
+ AC_CHECK_SIZEOF(long)
+@@ -53,11 +53,11 @@ AC_LANG_CPLUSPLUS
+ dnl check libraries
+ dnl GiNaC
+ dnl this defines GINACLIB_LIBS and GINACLIB_CPPFLAGS
+-dnl AM_PATH_GINAC(1.5.0, [], 
++dnl AM_PATH_GINAC(1.5.0, [],
+ dnl              AC_MSG_ERROR([need to have at least GiNaC 1.5.0 installed]))
+ 
+ dnl PKG_CHECK_MODULES defines GINACLIB_LIBS and GINACLIB_CFLAGS
+-PKG_CHECK_MODULES(GINACLIB, ginac >= 1.5.0, [], 
++PKG_CHECK_MODULES(GINACLIB, ginac >= 1.5.0, [],
+                   AC_MSG_ERROR([need to have at least GiNaC 1.5.0 installed]))
+ GINACLIB_CPPFLAGS="$GINACLIB_CFLAGS"
+ AC_SUBST(GINACLIB_CPPFLAGS)
+@@ -69,11 +69,10 @@ NESTEDSUMSLIB_LIBS="$LIBS $GINACLIB_LIBS
+ AC_SUBST(NESTEDSUMSLIB_CPPFLAGS)
+ AC_SUBST(NESTEDSUMSLIB_LIBS)
+ 
+-AC_OUTPUT(Makefile 
+-          nestedsums-config 
+-          nestedsums.spec 
+-          nestedsums/Makefile 
+-          nestedsums/nestedsums.h 
+-          nestedsums/version.h 
++AC_OUTPUT(nestedsums.pc Makefile 
++          nestedsums-config
++          nestedsums.spec
++          nestedsums/Makefile
++          nestedsums/nestedsums.h
++          nestedsums/version.h
+           checks/Makefile)
+-
+--- origsrc/nestedsums-1.4.12/nestedsums/Makefile.am	2006-05-11 04:27:45.000000000 +0900
++++ src/nestedsums-1.4.12/nestedsums/Makefile.am	2015-06-15 22:02:53.468079900 +0900
+@@ -82,7 +82,7 @@ nestedsumsinclude_HEADERS = \
+ 	version.h
+ 
+ 
+-libnestedsums_la_LDFLAGS = -version-info @NESTEDSUMS_LIBVERSION@
++libnestedsums_la_LDFLAGS = -version-info @NESTEDSUMS_LIBVERSION@ -no-undefined
+ 
+ LIBS          = @GINACLIB_LIBS@
+ 
+--- origsrc/nestedsums-1.4.12/nestedsums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/nestedsums-1.4.12/nestedsums.pc.in	2015-06-15 22:09:22.203383400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: nestedsums
++Description: GiNaC-based library for symbolic expansion of certain transcendental functions
++Version: @VERSION@
++Libs: -L${libdir} -lnestedsums -lginac -lcln -lgmp
++Cflags: -I${includedir}
