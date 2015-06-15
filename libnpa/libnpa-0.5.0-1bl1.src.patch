@@ -1,0 +1,48 @@
+--- origsrc/libnpa-0.5.0/CMakeLists.txt	2015-01-02 03:48:53.000000000 +0900
++++ src/libnpa-0.5.0/CMakeLists.txt	2015-06-15 11:33:33.736119300 +0900
+@@ -22,7 +22,7 @@ message(STATUS "Configuring libnpa versi
+ project (libnpa CXX)
+ 
+ set(CMAKE_BUILD_TYPE Debug)
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+ 
+ # include version number in header
+ configure_file(${PROJECT_SOURCE_DIR}/include/npaversion.hpp.in
+@@ -67,14 +67,22 @@ add_library(npa SHARED
+     src/nsbconstants.cpp
+ )
+ target_link_libraries(npa ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
++set_target_properties(npa PROPERTIES SOVERSION 0)
+ 
+ # install headers and library
+ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+     DESTINATION include/libnpa
+     FILES_MATCHING PATTERN "*.hpp")
+-install(TARGETS npa DESTINATION lib)
++install(TARGETS npa RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # create packages
+ set(CPACK_GENERATOR "TBZ2")
+ set(CPACK_PACKAGE_VERSION ${LIBNPA_VERSION})
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libnpa-0.5.0/libnpa.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnpa-0.5.0/libnpa.pc.in	2015-06-15 19:46:12.932984900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnpa
++Description: Free library for manipulating Nitroplus game files
++Version: @LIBNPA_VERSION@
++Libs: -L${libdir} -lnpa
++Cflags: -I${includedir}/libnpa
