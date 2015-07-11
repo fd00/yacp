@@ -1,0 +1,68 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/QGitHubReleaseAPI-0.6-qt5/CMakeLists.txt src/QGitHubReleaseAPI-0.6-qt5/CMakeLists.txt
+--- origsrc/QGitHubReleaseAPI-0.6-qt5/CMakeLists.txt	2015-07-10 20:51:57.000000000 +0900
++++ src/QGitHubReleaseAPI-0.6-qt5/CMakeLists.txt	2015-07-11 23:44:19.488857000 +0900
+@@ -11,7 +11,10 @@ set(CMAKE_AUTOMOC ON)
+ 
+ include(GenerateExportHeader)
+ include(CheckIncludeFile)
++option(ENABLE_DOC OFF "enable doc")
++if(ENABLE_DOC)
+ include(FindDoxygen)
++endif()
+ 
+ find_package(Qt5Gui)
+ find_package(Qt5Network)
+@@ -35,11 +38,15 @@ endif(${HAVE_MKDIO_H})
+ set(LIB_SRCS src/qgithubreleaseapi.cpp src/qgithubreleaseapi_p.cpp src/filedownloader.cpp)
+ 
+ add_compiler_export_flags(EXPORT_FLAGS)
+-add_library(qgithubreleaseapi_static STATIC ${LIB_SRCS})
+ 
++option(BUILD_SHARED_LIBS ON "build shared libs")
++
++if(NOT BUILD_SHARED_LIBS)
++add_library(qgithubreleaseapi_static STATIC ${LIB_SRCS})
+ set_property(TARGET qgithubreleaseapi_static PROPERTY COMPILE_DEFINITIONS QT_STATIC)
++endif()
+ 
+-if(${BUILD_SHARED_LIBS})
++if(BUILD_SHARED_LIBS)
+ add_library(qgithubreleaseapi SHARED ${LIB_SRCS})
+ set_property(TARGET qgithubreleaseapi  PROPERTY COMPILE_FLAGS ${EXPORT_FLAGS})
+ 
+@@ -49,16 +56,18 @@ set_target_properties(qgithubreleaseapi
+ 
+ target_link_libraries(qgithubreleaseapi Qt5::Gui)
+ target_link_libraries(qgithubreleaseapi Qt5::Network)
+-endif(${BUILD_SHARED_LIBS})
++endif(BUILD_SHARED_LIBS)
+ 
++if(NOT BUILD_SHARED_LIBS)
+ target_link_libraries(qgithubreleaseapi_static Qt5::Gui)
+ target_link_libraries(qgithubreleaseapi_static Qt5::Network)
++endif()
+ 
+-if(${BUILD_SHARED_LIBS})
++if(BUILD_SHARED_LIBS)
+ if(${HAVE_MKDIO_H})
+ target_link_libraries(qgithubreleaseapi ${MARKDOWN_LIBRARIES})
+ endif(${HAVE_MKDIO_H})
+-endif(${BUILD_SHARED_LIBS})
++endif(BUILD_SHARED_LIBS)
+ 
+ if(${DOXYGEN_FOUND})
+ configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.in ${PROJECT_BINARY_DIR}/Doxyfile @ONLY)
+@@ -71,10 +80,12 @@ configure_file(${CMAKE_SOURCE_DIR}/qgith
+ 			   ${PROJECT_BINARY_DIR}/qgithubreleaseapi.prf @ONLY)
+ 
+ if(${BUILD_SHARED_LIBS})
+-install(TARGETS qgithubreleaseapi DESTINATION lib)
++install(TARGETS qgithubreleaseapi RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ endif(${BUILD_SHARED_LIBS})
+ 
++if(NOT BUILD_SHARED_LIBS)
+ install(TARGETS qgithubreleaseapi_static DESTINATION lib)
++endif()
+ install(FILES src/qgithubreleaseapi.h DESTINATION include/qgithubreleaseapi)
+ install(FILES ${PROJECT_BINARY_DIR}/qgithubreleaseapi.pc DESTINATION lib/pkgconfig)
+ install(FILES ${PROJECT_BINARY_DIR}/qgithubreleaseapi.prf
