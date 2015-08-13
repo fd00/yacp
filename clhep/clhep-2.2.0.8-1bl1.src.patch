@@ -1,26 +1,42 @@
---- origsrc/2.2.0.6/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2015-05-28 07:56:25.000000000 +0900
-+++ src/2.2.0.6/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2015-05-30 06:13:00.089499700 +0900
-@@ -29,25 +29,18 @@ macro(clhep_build_library package)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake src/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake
+--- origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2015-06-19 00:52:58.000000000 +0900
++++ src/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2015-08-13 22:53:25.757466800 +0900
+@@ -5,6 +5,8 @@
+ # clhep_build_library( <package> <source code files> )
+ # 
+ 
++option(ENABLE_STATIC "enable static" OFF)
++
+ macro(clhep_build_library package)
+   set( CLHEP_${package}_SOURCES ${ARGN} )
+ 
+@@ -29,25 +31,29 @@ macro(clhep_build_library package)
  
    # Add the libraries and set properties
    ADD_LIBRARY(${package}  SHARED ${CLHEP_${package}_SOURCES})
--  ADD_LIBRARY(${package}S STATIC ${CLHEP_${package}_SOURCES})
++  if(ENABLE_STATIC)
+   ADD_LIBRARY(${package}S STATIC ${CLHEP_${package}_SOURCES})
++  endif()
    SET_TARGET_PROPERTIES (${package}
        PROPERTIES 
 -        OUTPUT_NAME CLHEP-${package}-${VERSION}
--	CLEAN_DIRECT_OUTPUT 1
--      )
--  SET_TARGET_PROPERTIES(${package}S
--      PROPERTIES 
--        OUTPUT_NAME CLHEP-${package}-${VERSION}
 +        OUTPUT_NAME CLHEP-${package}
  	CLEAN_DIRECT_OUTPUT 1
-+        SOVERSION 0
++    SOVERSION 0
        )
- 
++  if(ENABLE_STATIC)
+   SET_TARGET_PROPERTIES(${package}S
+       PROPERTIES 
+         OUTPUT_NAME CLHEP-${package}-${VERSION}
+ 	CLEAN_DIRECT_OUTPUT 1
+       )
+-
++  endif()
    target_link_libraries(${package}  ${package_library_list} )
--  target_link_libraries(${package}S ${package_library_list} )
- 
++  if(ENABLE_STATIC)
+   target_link_libraries(${package}S ${package_library_list} )
+-
++  endif()
    # Install the libraries
 -  INSTALL (TARGETS ${package} ${package}S
 +  INSTALL (TARGETS ${package}
@@ -29,25 +45,29 @@
        ARCHIVE DESTINATION lib${LIB_SUFFIX}
        ) 
  endmacro(clhep_build_library)
-@@ -61,24 +54,18 @@ macro(clhep_build_libclhep )
+@@ -61,24 +67,26 @@ macro(clhep_build_libclhep )
    ##message( STATUS "clheplib source list ${clhep_sources}" )
  
    ADD_LIBRARY (CLHEP  SHARED ${clhep_sources})
--  ADD_LIBRARY (CLHEPS STATIC ${clhep_sources})
- 
++  if(ENABLE_STATIC)
+   ADD_LIBRARY (CLHEPS STATIC ${clhep_sources})
+-
++  endif()
    SET_TARGET_PROPERTIES(CLHEP
        PROPERTIES 
--        OUTPUT_NAME CLHEP-${VERSION}
--        CLEAN_DIRECT_OUTPUT 1
--      )
--  SET_TARGET_PROPERTIES(CLHEPS
--      PROPERTIES 
 -        OUTPUT_NAME CLHEP-${VERSION}
 +        OUTPUT_NAME CLHEP
          CLEAN_DIRECT_OUTPUT 1
 +        SOVERSION 0
        )
- 
++  if(ENABLE_STATIC)
+   SET_TARGET_PROPERTIES(CLHEPS
+       PROPERTIES 
+         OUTPUT_NAME CLHEP-${VERSION}
+         CLEAN_DIRECT_OUTPUT 1
+       )
+-
++  endif()
    # export creates library dependency files for CLHEPConfig.cmake
 -  INSTALL(TARGETS CLHEP CLHEPS
 +  INSTALL(TARGETS CLHEP
@@ -57,20 +77,19 @@
        ARCHIVE DESTINATION lib${LIB_SUFFIX}
        ) 
  
-@@ -96,7 +83,9 @@ macro(clhep_build_libclhep )
+@@ -96,7 +104,8 @@ macro(clhep_build_libclhep )
          	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP${CMAKE_SHARED_LIBRARY_SUFFIX} WORKING_DIRECTORY \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}\" )" )
    endif()
  
--  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
--  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
-+  if (NOT CYGWIN)
-+      INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
-+      INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
-+  endif (NOT CYGWIN)
- 
++  if(NOT CYGWIN)
+   INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
+   INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
+-
++  endif()
  endmacro(clhep_build_libclhep )
---- origsrc/2.2.0.6/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2015-05-28 07:56:25.000000000 +0900
-+++ src/2.2.0.6/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2015-05-30 06:13:00.089499700 +0900
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildTest.cmake src/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildTest.cmake
+--- origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2015-06-19 00:52:58.000000000 +0900
++++ src/2.2.0.8/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2015-08-13 22:37:27.170204000 +0900
 @@ -26,14 +26,14 @@ macro( clhep_test testname )
    if( CTST_NOLIB )
      set(package_library_list)
@@ -88,8 +107,9 @@
  	#list(APPEND package_library_list  ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${dep}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
       endforeach()
    endif()
---- origsrc/2.2.0.6/CLHEP/cmake/Modules/ClhepToolchain.cmake	2015-05-28 07:56:25.000000000 +0900
-+++ src/2.2.0.6/CLHEP/cmake/Modules/ClhepToolchain.cmake	2015-05-30 06:13:00.089499700 +0900
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepToolchain.cmake src/2.2.0.8/CLHEP/cmake/Modules/ClhepToolchain.cmake
+--- origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepToolchain.cmake	2015-06-19 00:52:58.000000000 +0900
++++ src/2.2.0.8/CLHEP/cmake/Modules/ClhepToolchain.cmake	2015-08-13 22:38:27.176004100 +0900
 @@ -52,7 +52,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
  
  # We 'export' the main CLHEP library targets from the build tree.
@@ -112,9 +132,10 @@
  
  # Install the pkg-config file. The choice of 'lib${LIB_SUFFIX}/pkgconfig' for the 
  # installation seems fairly standard.
---- origsrc/2.2.0.6/CLHEP/cmake/Modules/ClhepVariables.cmake	2015-05-28 07:56:25.000000000 +0900
-+++ src/2.2.0.6/CLHEP/cmake/Modules/ClhepVariables.cmake	2015-05-30 06:13:00.089499700 +0900
-@@ -236,12 +236,12 @@ macro( clhep_set_compiler_flags )
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepVariables.cmake src/2.2.0.8/CLHEP/cmake/Modules/ClhepVariables.cmake
+--- origsrc/2.2.0.8/CLHEP/cmake/Modules/ClhepVariables.cmake	2015-06-19 00:52:58.000000000 +0900
++++ src/2.2.0.8/CLHEP/cmake/Modules/ClhepVariables.cmake	2015-08-13 22:39:45.385390000 +0900
+@@ -237,12 +237,12 @@ macro( clhep_set_compiler_flags )
    if( ${clhep_c_compiler} STREQUAL "clang" )
      set(CMAKE_C_FLAGS "-O -pedantic -Wall ${CMAKE_C_FLAGS}")
    elseif( CMAKE_COMPILER_IS_GNUCC )
@@ -129,7 +150,7 @@
    endif()
    if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
      ##message( STATUS "system is Windows" )
-@@ -266,7 +266,7 @@ macro( clhep_package_config_no_lib )
+@@ -267,7 +267,7 @@ macro( clhep_package_config_no_lib )
    ## don't install <package>-config on Windows
    if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
      install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
@@ -138,7 +159,7 @@
  	    )
    endif()
  endmacro( clhep_package_config_no_lib )
-@@ -274,11 +274,11 @@ endmacro( clhep_package_config_no_lib )
+@@ -275,11 +275,11 @@ endmacro( clhep_package_config_no_lib )
  macro( clhep_package_config )
    set( ${PACKAGE}_CPPFLAGS "-I${includedir}" )
    set( ${PACKAGE}_LDFLAGS  "-L\${exec_prefix}/lib${LIB_SUFFIX}" )
@@ -152,7 +173,7 @@
       endforeach()
    endif()
    configure_file ( ${CLHEP_SOURCE_DIR}/${PACKAGE}/${PACKAGE}-config.in
-@@ -288,7 +288,7 @@ macro( clhep_package_config )
+@@ -289,7 +289,7 @@ macro( clhep_package_config )
    ## don't install <package>-config on Windows
    if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
      install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
