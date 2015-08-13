@@ -1,0 +1,47 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/hackrf-2015.07.2/host/libhackrf/src/CMakeLists.txt src/hackrf-2015.07.2/host/libhackrf/src/CMakeLists.txt
+--- origsrc/hackrf-2015.07.2/host/libhackrf/src/CMakeLists.txt	2015-07-25 00:54:23.000000000 +0900
++++ src/hackrf-2015.07.2/host/libhackrf/src/CMakeLists.txt	2015-08-13 22:00:38.041139300 +0900
+@@ -31,34 +31,37 @@ add_library(hackrf SHARED ${c_sources})
+ set_target_properties(hackrf PROPERTIES VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.0 SOVERSION 0)
+ 
+ # Static library
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
+ add_library(hackrf-static STATIC ${c_sources})
+ if(MSVC)
+ 	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf_static")
+ else()
+ 	set_target_properties(hackrf-static PROPERTIES OUTPUT_NAME "hackrf")
+ endif()
++endif()
+ 
+ set_target_properties(hackrf PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++if(ENABLE_STATIC)
+ set_target_properties(hackrf-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++endif()
+ 
+ # Dependencies
+ target_link_libraries(hackrf ${LIBUSB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    
+ # For cygwin just force UNIX OFF and WIN32 ON
+-if( ${CYGWIN} )
+-  SET(UNIX OFF)
+-  SET(WIN32 ON)
+-endif( ${CYGWIN} )
+-
+ if( ${UNIX} )
+    install(TARGETS hackrf
+-           LIBRARY DESTINATION lib${LIB_SUFFIX}
++	   	   RUNTIME DESTINATION bin
++           ARCHIVE DESTINATION lib
+            COMPONENT sharedlibs
+            )
++if(ENABLE_STATIC)
+    install(TARGETS hackrf-static
+            ARCHIVE DESTINATION lib${LIB_SUFFIX}
+            COMPONENT staticlibs
+            )
++endif()
+    install(FILES ${c_headers}
+            DESTINATION include/${PROJECT_NAME}
+            COMPONENT headers
