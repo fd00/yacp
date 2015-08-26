@@ -1,0 +1,67 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x setenv origsrc/nghttp2-1.2.1/configure.ac src/nghttp2-1.2.1/configure.ac
+--- origsrc/nghttp2-1.2.1/configure.ac	2015-08-15 00:08:49.000000000 +0900
++++ src/nghttp2-1.2.1/configure.ac	2015-08-26 21:40:14.777814000 +0900
+@@ -166,7 +166,7 @@ else
+   AC_DEFINE([_U_], , [Hint to the compiler that a function parameters is not used])
+ fi
+ 
+-AX_CXX_COMPILE_STDCXX_11([noext], [optional])
++AX_CXX_COMPILE_STDCXX_11([ext], [optional])
+ 
+ AC_LANG_PUSH(C++)
+ 
+@@ -219,6 +219,8 @@ case "$host" in
+     # android does not need -pthread, but needs followng 3 libs for C++
+     APPLDFLAGS="$APPLDFLAGS -lstdc++ -latomic -lsupc++"
+     ;;
++  *cygwin*)
++    ;;
+   *)
+     PTHREAD_LDFLAGS="-pthread"
+     APPLDFLAGS="$APPLDFLAGS $PTHREAD_LDFLAGS"
+@@ -263,19 +265,7 @@ AM_CONDITIONAL([HAVE_CUNIT], [ test "x${
+ 
+ # libev (for src)
+ # libev does not have pkg-config file.  Check it in an old way.
+-LIBS_OLD=$LIBS
+-# android requires -lm for floor
+-AC_CHECK_LIB([ev], [ev_time], [have_libev=yes], [have_libev=no], [-lm])
+-if test "x${have_libev}" = "xyes"; then
+-  AC_CHECK_HEADER([ev.h], [have_libev=yes], [have_libev=no])
+-  if test "x${have_libev}" = "xyes"; then
+-    LIBEV_LIBS=-lev
+-    LIBEV_CFLAGS=
+-    AC_SUBST([LIBEV_LIBS])
+-    AC_SUBST([LIBEV_CFLAGS])
+-  fi
+-fi
+-LIBS=$LIBS_OLD
++PKG_CHECK_MODULES([LIBEV], [libev], [have_libev=yes], [have_libev=no])
+ 
+ # openssl (for src)
+ PKG_CHECK_MODULES([OPENSSL], [openssl >= 1.0.1],
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x setenv origsrc/nghttp2-1.2.1/src/shrpx.cc src/nghttp2-1.2.1/src/shrpx.cc
+--- origsrc/nghttp2-1.2.1/src/shrpx.cc	2015-08-15 00:08:49.000000000 +0900
++++ src/nghttp2-1.2.1/src/shrpx.cc	2015-08-26 21:40:14.793439000 +0900
+@@ -92,6 +92,10 @@
+ 
+ extern char **environ;
+ 
++extern "C" {
++    int initgroups (const char *, gid_t);
++}
++
+ using namespace nghttp2;
+ 
+ namespace shrpx {
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x setenv origsrc/nghttp2-1.2.1/tests/Makefile.am src/nghttp2-1.2.1/tests/Makefile.am
+--- origsrc/nghttp2-1.2.1/tests/Makefile.am	2015-08-15 00:08:49.000000000 +0900
++++ src/nghttp2-1.2.1/tests/Makefile.am	2015-08-26 21:40:14.809064000 +0900
+@@ -50,7 +50,6 @@ HFILES = nghttp2_pq_test.h nghttp2_map_t
+ main_SOURCES = $(HFILES) $(OBJECTS)
+ 
+ main_LDADD = ${top_builddir}/lib/libnghttp2.la @CUNIT_LIBS@ @TESTLDADD@
+-main_LDFLAGS = -static
+ 
+ if ENABLE_FAILMALLOC
+ failmalloc_SOURCES = failmalloc.c failmalloc_test.c failmalloc_test.h \
