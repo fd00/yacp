@@ -1,0 +1,47 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/liblaxjson-1.0.5/CMakeLists.txt src/liblaxjson-1.0.5/CMakeLists.txt
+--- origsrc/liblaxjson-1.0.5/CMakeLists.txt	2015-05-05 19:01:41.000000000 +0900
++++ src/liblaxjson-1.0.5/CMakeLists.txt	2015-09-06 20:10:52.568925300 +0900
+@@ -15,10 +15,13 @@ set(LIB_CFLAGS "-pedantic -Werror -Wall
+ set(EXAMPLE_CFLAGS "-pedantic -Werror -Wall")
+ include_directories("${PROJECT_SOURCE_DIR}/include")
+ 
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
+ add_library(laxjson_static STATIC ${SOURCES} ${HEADERS})
+ set_target_properties(laxjson_static PROPERTIES
+   OUTPUT_NAME laxjson
+   COMPILE_FLAGS ${LIB_CFLAGS})
++endif()
+ 
+ add_library(laxjson SHARED ${SOURCES} ${HEADERS})
+ set_target_properties(laxjson PROPERTIES
+@@ -40,4 +43,14 @@ target_link_libraries(primitives_test la
+ add_test(DetectPrimitives primitives_test)
+ 
+ install(FILES "include/laxjson.h" DESTINATION include)
+-install(TARGETS laxjson laxjson_static DESTINATION lib)
++install(TARGETS laxjson RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++if(ENABLE_STATIC)
++install(TARGETS laxjson_static DESTINATION lib)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/liblaxjson-1.0.5/laxjson.pc.in src/liblaxjson-1.0.5/laxjson.pc.in
+--- origsrc/liblaxjson-1.0.5/laxjson.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liblaxjson-1.0.5/laxjson.pc.in	2015-09-06 20:10:34.107308100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liblaxjson
++Description: Relaxed Streaming JSON Parser C Library
++Version: @VERSION@
++Libs: -L${libdir} -llaxjson
++Cflags: -I${includedir}
