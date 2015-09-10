@@ -1,0 +1,63 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libktomgirl/CMakeLists.txt src/libktomgirl/CMakeLists.txt
+--- origsrc/libktomgirl/CMakeLists.txt	2015-09-08 23:41:26.000000000 +0900
++++ src/libktomgirl/CMakeLists.txt	2015-09-10 18:49:08.408229300 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 2.8)
+-project(libtomgirl)
++project(libktomgirl)
+ 
+ find_package(PkgConfig REQUIRED)
+ pkg_check_modules(SIGC2 REQUIRED sigc++-2.0)
+@@ -10,9 +10,9 @@ include_directories(${LibXML2_INCLUDE_DI
+ include_directories("/usr/include/libxml2") # should be a variable but fixes broken build now...
+ 
+ #set (CXX_LIBS "-lboost_filesystem-mt ${CXX_LIBS} -lboost_date_time-mt -lpcrecpp -lxml2") # BAD. Should find each and every lib. Works for now...
+-set (CXX_LIBS "-lboost_filesystem ${CXX_LIBS} -lboost_date_time -lpcrecpp -lxml2") # BAD. Should find each and every lib. Works for now...
++set (CXX_LIBS "-lboost_filesystem ${CXX_LIBS} -lboost_date_time -lpcrecpp -lxml2 -lboost_system") # BAD. Should find each and every lib. Works for now...
+ 
+-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions ${CXX_LIBS}")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions ${CXX_LIBS} -fpermissive")
+ 
+ set(ktomgirl_HEADERS
+ ktglib.hpp
+@@ -87,4 +87,13 @@ target_link_libraries(ktomgirl ${CXX_LIB
+ install(FILES ${ktomgirl_HEADERS} DESTINATION include/libktomgirl)
+ # stupid bug means we can't glob subdirs so we need to so this one separately
+ install(FILES base/singleton.hpp DESTINATION include/libktomgirl/base)
+-INSTALL( TARGETS ktomgirl LIBRARY DESTINATION lib COMPONENT library)
++INSTALL( TARGETS ktomgirl RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT library)
++SET_TARGET_PROPERTIES(ktomgirl PROPERTIES SOVERSION 0)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.0.13")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libktomgirl/ktglib.cpp src/libktomgirl/ktglib.cpp
+--- origsrc/libktomgirl/ktglib.cpp	2015-09-08 23:41:26.000000000 +0900
++++ src/libktomgirl/ktglib.cpp	2015-09-08 23:46:11.298986800 +0900
+@@ -23,6 +23,8 @@
+ 
+ #include "ktglib.hpp"
+ 
++#include <cstdlib>
++
+ namespace KTGlib {
+ ustring::ustring() : m_qs() {}
+ ustring::~ustring() {}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libktomgirl/libktomgirl.pc.in src/libktomgirl/libktomgirl.pc.in
+--- origsrc/libktomgirl/libktomgirl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libktomgirl/libktomgirl.pc.in	2015-09-10 18:48:07.662755100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libktomgirl
++Description: Library the provides Tomboy like capabilities into an application
++Version: @VERSION@
++Libs: -L${libdir} -lktomgirl
++Cflags: -I${includedir}/libktomgirl
