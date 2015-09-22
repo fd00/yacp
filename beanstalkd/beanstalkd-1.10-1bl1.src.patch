@@ -1,0 +1,54 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkd-1.10/Makefile src/beanstalkd-1.10/Makefile
+--- origsrc/beanstalkd-1.10/Makefile	2014-08-05 12:39:54.000000000 +0900
++++ src/beanstalkd-1.10/Makefile	2015-09-22 12:33:53.474371700 +0900
+@@ -1,12 +1,13 @@
+ DESTDIR=
+-PREFIX=/usr/local
++PREFIX=/usr
+ BINDIR=$(DESTDIR)$(PREFIX)/bin
+-CFLAGS=-Wall -Werror\
++CFLAGS=-Wall\
+ 	-Wformat=2\
+ 	-g\
+ 
+ LDFLAGS=
+-OS=$(shell uname|tr A-Z a-z)
++LDLIBS=-lepoll
++OS=$(shell uname|tr A-Z a-z|sed -e 's/_.*//')
+ INSTALL=install
+ 
+ VERS=$(shell ./vers.sh)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkd-1.10/ct/ct.c src/beanstalkd-1.10/ct/ct.c
+--- origsrc/beanstalkd-1.10/ct/ct.c	2014-08-05 12:39:54.000000000 +0900
++++ src/beanstalkd-1.10/ct/ct.c	2015-09-22 12:30:40.132876700 +0900
+@@ -24,7 +24,7 @@ static int64 bstart, bdur;
+ static int btiming; // bool
+ static int64 bbytes;
+ static const int64 Second = 1000 * 1000 * 1000;
+-static const int64 BenchTime = Second;
++static const int64 BenchTime = 1000 * 1000 * 1000;
+ static const int MaxN = 1000 * 1000 * 1000;
+ 
+ 
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkd-1.10/cygwin.c src/beanstalkd-1.10/cygwin.c
+--- origsrc/beanstalkd-1.10/cygwin.c	1970-01-01 09:00:00.000000000 +0900
++++ src/beanstalkd-1.10/cygwin.c	2015-09-22 12:27:24.988547700 +0900
+@@ -0,0 +1 @@
++#include "linux.c"
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkd-1.10/linux.c src/beanstalkd-1.10/linux.c
+--- origsrc/beanstalkd-1.10/linux.c	2014-08-05 12:39:54.000000000 +0900
++++ src/beanstalkd-1.10/linux.c	2015-09-22 12:28:47.240448000 +0900
+@@ -10,6 +10,13 @@
+ #define EPOLLRDHUP 0x2000
+ #endif
+ 
++#ifndef EPOLLPRI
++#define EPOLLPRI 0
++#endif
++#ifndef EPOLLHUP
++#define EPOLLHUP 0
++#endif
++
+ static int epfd;
+ 
+ 
