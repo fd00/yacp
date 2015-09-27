@@ -1,0 +1,124 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libgpkg/CMakeLists.txt src/libgpkg/CMakeLists.txt
+--- origsrc/libgpkg/CMakeLists.txt	2015-09-27 11:54:00.000000000 +0900
++++ src/libgpkg/CMakeLists.txt	2015-09-27 11:56:33.959970200 +0900
+@@ -44,9 +44,16 @@ endif()
+ 
+ add_subdirectory( gpkg )
+ add_subdirectory( shell )
+-add_subdirectory( sqlite )
+ 
+ if( GPKG_TEST )
+   include( CTest )
+   add_subdirectory( test )
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION ${gpkg_BUILD_VERSION})
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libgpkg/gpkg/CMakeLists.txt src/libgpkg/gpkg/CMakeLists.txt
+--- origsrc/libgpkg/gpkg/CMakeLists.txt	2015-09-27 11:54:00.000000000 +0900
++++ src/libgpkg/gpkg/CMakeLists.txt	2015-09-27 11:54:04.664228900 +0900
+@@ -53,13 +53,6 @@ if( GPKG_GEOS )
+ endif()
+ 
+ #
+-# Static library of libgpkg
+-#
+-add_library( gpkg_static STATIC ${GPKG_SOURCE_FILES} )
+-set_target_properties( gpkg_static PROPERTIES OUTPUT_NAME "gpkg" )
+-set_target_properties( gpkg_static PROPERTIES COMPILE_DEFINITIONS "SQLITE_CORE=1" )
+-
+-#
+ # SQLite loadable extension version of libgpkg
+ #
+ add_library( gpkg_ext SHARED ${GPKG_SOURCE_FILES} gpkg.c )
+@@ -67,14 +60,12 @@ set_target_properties( gpkg_ext PROPERTI
+ 
+ if ( GPKG_GEOS AND GEOS_FOUND )
+   target_link_libraries( gpkg_ext ${GEOS_LIBRARY} )
+-  target_link_libraries( gpkg_static ${GEOS_LIBRARY} )
+ endif()
+ 
+ if(NOT WIN32)
+   find_library( M_LIB NAMES m PATHS /usr/lib /usr/local/lib )
+   if(M_LIB)
+     target_link_libraries( gpkg_ext ${M_LIB} )
+-    target_link_libraries( gpkg_static ${M_LIB} )
+   else()
+     message(FATAL_ERROR "math library 'libm' not found")
+   endif()
+@@ -85,7 +76,7 @@ configure_file( "${CMAKE_CURRENT_SOURCE_
+ include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
+ 
+ set_target_properties(
+-  gpkg_ext gpkg_static PROPERTIES
++  gpkg_ext PROPERTIES
+   VERSION ${gpkg_BUILD_VERSION}
+   SOVERSION ${gpkg_INTERFACE_VERSION}
+ )
+@@ -123,6 +114,6 @@ if ( ${CMAKE_C_COMPILER_ID} MATCHES "GNU
+ endif()
+ 
+ if ( UNIX )
+-  install( TARGETS gpkg_ext LIBRARY DESTINATION lib )
++  install( TARGETS gpkg_ext RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+   install( FILES gpkg.h DESTINATION include )
+ endif()
+\ No newline at end of file
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libgpkg/gpkg/cmake/FindGEOS.cmake src/libgpkg/gpkg/cmake/FindGEOS.cmake
+--- origsrc/libgpkg/gpkg/cmake/FindGEOS.cmake	2015-09-27 11:54:00.000000000 +0900
++++ src/libgpkg/gpkg/cmake/FindGEOS.cmake	2015-09-27 11:54:04.679853900 +0900
+@@ -138,9 +138,9 @@ ELSE(WIN32)
+         ## split off the name
+         ## use regular expression to match wildcard equivalent "-l*<endchar>"
+         ## with <endchar> is a space or a semicolon
+-        #STRING(REGEX MATCHALL "[-][l]([^ ;])+"
+-        #  GEOS_LIB_NAME_WITH_PREFIX
+-        #  "${GEOS_CONFIG_LIBS}" )
++        STRING(REGEX MATCHALL "[-][l]([^ ;])+"
++          GEOS_LIB_NAME_WITH_PREFIX
++          "${GEOS_CONFIG_LIBS}" )
+         #MESSAGE("DBG  GEOS_CONFIG_LIBS=${GEOS_CONFIG_LIBS}")
+         #MESSAGE("DBG  GEOS_LIB_NAME_WITH_PREFIX=${GEOS_LIB_NAME_WITH_PREFIX}")
+         SET(GEOS_LIB_NAME_WITH_PREFIX -lgeos_c CACHE STRING INTERNAL)
+@@ -159,6 +159,8 @@ ELSE(WIN32)
+             # ***FIXME*** need to improve framework check so below not needed
+             SET(GEOS_LIBRARY ${GEOS_LINK_DIRECTORIES}/lib${GEOS_LIB_NAME}.dylib CACHE STRING INTERNAL FORCE)
+           ENDIF (NOT GEOS_LIBRARY)
++        ELSEIF (CYGWIN)
++          SET(GEOS_LIBRARY ${GEOS_LIB_NAME})
+         ELSE (APPLE)
+           SET(GEOS_LIBRARY ${GEOS_LINK_DIRECTORIES}/lib${GEOS_LIB_NAME}.so CACHE STRING INTERNAL)
+         ENDIF (APPLE)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libgpkg/libgpkg.pc.in src/libgpkg/libgpkg.pc.in
+--- origsrc/libgpkg/libgpkg.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgpkg/libgpkg.pc.in	2015-09-27 11:55:44.602324700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgpkg
++Description: SQLite 3 extension that provides a minimal OGC GeoPackage implementation
++Version: @VERSION@
++Libs: -L${libdir} -lgpkg
++Cflags: -I${includedir}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libgpkg/shell/CMakeLists.txt src/libgpkg/shell/CMakeLists.txt
+--- origsrc/libgpkg/shell/CMakeLists.txt	2015-09-27 11:54:00.000000000 +0900
++++ src/libgpkg/shell/CMakeLists.txt	2015-09-27 11:54:04.679853900 +0900
+@@ -9,8 +9,8 @@ find_package( Readline )
+ #
+ add_executable( gpkg_shell shell.c )
+ 
+-include_directories( "${PROJECT_SOURCE_DIR}/sqlite" "${PROJECT_SOURCE_DIR}/gpkg" "${PROJECT_BINARY_DIR}" )
+-target_link_libraries ( gpkg_shell gpkg_static sqlite_static )
++include_directories( "${PROJECT_SOURCE_DIR}/gpkg" "${PROJECT_BINARY_DIR}" )
++target_link_libraries ( gpkg_shell gpkg_ext sqlite3 )
+ 
+ if ( READLINE_FOUND )
+   set ( HAVE_READLINE 1 )
