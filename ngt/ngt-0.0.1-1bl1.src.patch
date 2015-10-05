@@ -1,0 +1,73 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ngt-0.0.1/CMakeLists.txt src/ngt-0.0.1/CMakeLists.txt
+--- origsrc/ngt-0.0.1/CMakeLists.txt	2015-09-28 09:58:24.000000000 +0900
++++ src/ngt-0.0.1/CMakeLists.txt	2015-10-05 23:11:28.413838600 +0900
+@@ -19,9 +19,17 @@ if( ${UNIX} )
+ 	set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+ 	set(CMAKE_INSTALL_RPATH "/home/y/lib64")
+ 
+-	set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -std=gnu++0x") # for std::unordered_set
+-	set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2 -std=gnu++0x") # for std::unordered_set
++	set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -std=gnu++0x -fpermissive") # for std::unordered_set
++	set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2 -std=gnu++0x -fpermissive") # for std::unordered_set
+ 
+ 	add_subdirectory("${PROJECT_SOURCE_DIR}/lib")
+ 	add_subdirectory("${PROJECT_SOURCE_DIR}/bin")
+ endif( ${UNIX} )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION ${ngt_VERSION})
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ngt-0.0.1/lib/NGT/CMakeLists.txt src/ngt-0.0.1/lib/NGT/CMakeLists.txt
+--- origsrc/ngt-0.0.1/lib/NGT/CMakeLists.txt	2015-09-28 09:58:24.000000000 +0900
++++ src/ngt-0.0.1/lib/NGT/CMakeLists.txt	2015-10-05 23:08:10.605668300 +0900
+@@ -8,20 +8,28 @@ if( ${UNIX} )
+ 
+ 	file(GLOB NGT_SOURCES *.cpp)
+ 
++	option(ENABLE_STATIC "enable static" OFF)
++	if(ENABLE_STATIC)
+ 	add_library(ngtstatic STATIC ${NGT_SOURCES})
+ 	set_target_properties(ngtstatic PROPERTIES OUTPUT_NAME ngt) 
+ 	
+ 	
+ 	target_link_libraries(ngtstatic)
+-
++	endif()
+ 
+ 	add_library(ngt SHARED ${NGT_SOURCES})
+ 	set_target_properties(ngt PROPERTIES VERSION ${ngt_VERSION}) 
+ 	set_target_properties(ngt PROPERTIES SOVERSION ${ngt_SOVERSION}) 
++	if(ENABLE_STATIC)
+ 	add_dependencies(ngt ngtstatic) 
+-	
++	endif()
+ 	target_link_libraries(ngt)
+ 
+-	install(TARGETS ngt LIBRARY DESTINATION lib64)
+-	install(TARGETS ngtstatic ARCHIVE DESTINATION lib64)
++	install(TARGETS ngt RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++	if(ENABLE_STATIC)
++		install(TARGETS ngtstatic ARCHIVE DESTINATION lib)
++	endif()
++
++	file(GLOB NGT_HEADERS *.h)
++	install(FILES ${NGT_HEADERS} DESTINATION include/ngt)
+ endif()
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ngt-0.0.1/ngt.pc.in src/ngt-0.0.1/ngt.pc.in
+--- origsrc/ngt-0.0.1/ngt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ngt-0.0.1/ngt.pc.in	2015-10-05 23:11:38.537302900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ngt
++Description: Neighborhood Graph and Tree for Indexing
++Version: @VERSION@
++Libs: -L${libdir} -lngt
++Cflags: -I${includedir}/ngt
