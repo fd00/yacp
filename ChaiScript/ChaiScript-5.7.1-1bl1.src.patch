@@ -1,0 +1,174 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/CMakeLists.txt src/ChaiScript-5.7.1/CMakeLists.txt
+--- origsrc/ChaiScript-5.7.1/CMakeLists.txt	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/CMakeLists.txt	2015-10-24 00:01:18.511958700 +0900
+@@ -224,15 +224,17 @@ if(CMAKE_HOST_UNIX)
+       execute_process(COMMAND ${CMAKE_C_COMPILER} --version OUTPUT_VARIABLE GCC_FULL_VERSION)
+       if(GCC_FULL_VERSION MATCHES "4.8.1.*ubuntu")
+         set(LINKER_FLAGS "${LINKER_FLAGS} -Wl,--no-as-needed -pthread")
+-      else()
++      elseif(NOT CYGWIN)
+         set(LINKER_FLAGS "${LINKER_FLAGS} -pthread")
+       endif()
+     else()
+       set(LINKER_FLAGS "${LINKER_FLAGS} -pthread")
+     endif()
+ 
++    if (NOT CYGWIN)
+     add_definitions(-pthread)
+   endif()
++  endif()
+ 
+ endif()
+ 
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/include/chaiscript/dispatchkit/bootstrap.hpp src/ChaiScript-5.7.1/include/chaiscript/dispatchkit/bootstrap.hpp
+--- origsrc/ChaiScript-5.7.1/include/chaiscript/dispatchkit/bootstrap.hpp	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/include/chaiscript/dispatchkit/bootstrap.hpp	2015-10-24 00:13:54.772421100 +0900
+@@ -18,6 +18,8 @@
+ #include <vector>
+ #include <iterator>
+ 
++#include <boost/lexical_cast.hpp>
++
+ #include "bad_boxed_cast.hpp"
+ #include "boxed_cast.hpp"
+ #include "boxed_number.hpp"
+@@ -60,7 +62,7 @@ namespace chaiscript
+         m->add(fun(
+               [extent](T& t, size_t index)->ReturnType &{
+                 if (extent > 0 && index >= extent) {
+-                  throw std::range_error("Array index out of range. Received: " + std::to_string(index)  + " expected < " + std::to_string(extent));
++                  throw std::range_error("Array index out of range. Received: " + boost::lexical_cast<std::string>(index)  + " expected < " + boost::lexical_cast<std::string>(extent));
+                 } else {
+                   return t[index];
+                 }
+@@ -71,7 +73,7 @@ namespace chaiscript
+         m->add(fun(
+               [extent](const T &t, size_t index)->const ReturnType &{
+                 if (extent > 0 && index >= extent) {
+-                  throw std::range_error("Array index out of range. Received: " + std::to_string(index)  + " expected < " + std::to_string(extent));
++                  throw std::range_error("Array index out of range. Received: " + boost::lexical_cast<std::string>(index)  + " expected < " + boost::lexical_cast<std::string>(extent));
+                 } else {
+                   return t[index];
+                 }
+@@ -612,4 +614,3 @@ namespace chaiscript
+ }
+ 
+ #endif
+-
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/include/chaiscript/dispatchkit/boxed_number.hpp src/ChaiScript-5.7.1/include/chaiscript/dispatchkit/boxed_number.hpp
+--- origsrc/ChaiScript-5.7.1/include/chaiscript/dispatchkit/boxed_number.hpp	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/include/chaiscript/dispatchkit/boxed_number.hpp	2015-10-24 00:05:25.370492500 +0900
+@@ -11,6 +11,8 @@
+ #include <sstream>
+ #include <string>
+ 
++#include <boost/lexical_cast.hpp>
++
+ #include "../language/chaiscript_algebraic.hpp"
+ #include "any.hpp"
+ #include "boxed_cast.hpp"
+@@ -595,21 +597,21 @@ namespace chaiscript
+       {
+         switch (get_common_type(bv)) {
+           case Common_Types::t_int32:
+-            return std::to_string(get_as<int32_t>());
++            return boost::lexical_cast<std::string>(get_as<int32_t>());
+           case Common_Types::t_uint8:
+-            return std::to_string(get_as<uint32_t>());
++            return boost::lexical_cast<std::string>(get_as<uint32_t>());
+           case Common_Types::t_int8:
+-            return std::to_string(get_as<int32_t>());
++            return boost::lexical_cast<std::string>(get_as<int32_t>());
+           case Common_Types::t_uint16:
+-            return std::to_string(get_as<uint16_t>());
++            return boost::lexical_cast<std::string>(get_as<uint16_t>());
+           case Common_Types::t_int16:
+-            return std::to_string(get_as<int16_t>());
++            return boost::lexical_cast<std::string>(get_as<int16_t>());
+           case Common_Types::t_uint32:
+-            return std::to_string(get_as<uint32_t>());
++            return boost::lexical_cast<std::string>(get_as<uint32_t>());
+           case Common_Types::t_uint64:
+-            return std::to_string(get_as<uint64_t>());
++            return boost::lexical_cast<std::string>(get_as<uint64_t>());
+           case Common_Types::t_int64:
+-            return std::to_string(get_as<int64_t>());
++            return boost::lexical_cast<std::string>(get_as<int64_t>());
+           case Common_Types::t_double:
+             return to_string_aux<double>(bv);
+           case Common_Types::t_float:
+@@ -1019,4 +1021,3 @@ namespace chaiscript
+ 
+ 
+ #endif
+-
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/include/chaiscript/language/chaiscript_parser.hpp src/ChaiScript-5.7.1/include/chaiscript/language/chaiscript_parser.hpp
+--- origsrc/ChaiScript-5.7.1/include/chaiscript/language/chaiscript_parser.hpp	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/include/chaiscript/language/chaiscript_parser.hpp	2015-10-24 00:10:44.942674300 +0900
+@@ -543,6 +543,9 @@ namespace chaiscript
+           }
+         }
+ 
++#if defined(__CYGWIN__)
++          return const_var(std::atof(t_val.substr(0,i).c_str()));
++#else
+         if (float_)
+         {
+           return const_var(std::stof(t_val.substr(0,i)));
+@@ -551,10 +554,9 @@ namespace chaiscript
+         } else {
+           return const_var(std::stod(t_val.substr(0,i)));
+         }
++#endif
+       }
+ 
+-
+-
+       template<typename IntType>
+       static Boxed_Value buildInt(const IntType &t_type, const std::string &t_val)
+       {
+@@ -2328,4 +2330,3 @@ namespace chaiscript
+ }
+ 
+ #endif /* CHAISCRIPT_PARSER_HPP_ */
+-
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/unittests/catch.hpp src/ChaiScript-5.7.1/unittests/catch.hpp
+--- origsrc/ChaiScript-5.7.1/unittests/catch.hpp	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/unittests/catch.hpp	2015-10-24 00:21:27.177640800 +0900
+@@ -1785,7 +1785,7 @@ namespace Catch {
+ // #included from: catch_timer.h
+ #define TWOBLUECUBES_CATCH_TIMER_H_INCLUDED
+ 
+-#ifdef CATCH_PLATFORM_WINDOWS
++#if defined(CATCH_PLATFORM_WINDOWS) && !defined(__CYGWIN__)
+ typedef unsigned long long uint64_t;
+ #else
+ #include <stdint.h>
+@@ -9424,4 +9424,3 @@ using Catch::Detail::Approx;
+ #endif
+ 
+ #endif // TWOBLUECUBES_SINGLE_INCLUDE_CATCH_HPP_INCLUDED
+-
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ChaiScript-5.7.1/unittests/compiled_tests.cpp src/ChaiScript-5.7.1/unittests/compiled_tests.cpp
+--- origsrc/ChaiScript-5.7.1/unittests/compiled_tests.cpp	2015-07-18 05:58:40.000000000 +0900
++++ src/ChaiScript-5.7.1/unittests/compiled_tests.cpp	2015-10-24 00:20:15.111329200 +0900
+@@ -23,7 +23,7 @@
+ #pragma clang diagnostic ignored "-Wunreachable-code"
+ #endif
+ 
+-
++#include <boost/lexical_cast.hpp>
+ 
+ #define CATCH_CONFIG_MAIN
+ 
+@@ -461,8 +461,8 @@ TEST_CASE("Simultaneous ChaiScript tests
+     chaiscript::ChaiScript chai2;
+     chai2.add(chaiscript::fun(&simultaneous_chaiscript_do_something_else), "do_something_else");
+ 
+-    CHECK(chai.eval<int>("do_something(" + std::to_string(i) + ")") == i + 2);
+-    CHECK(chai2.eval<int>("do_something_else(" + std::to_string(i) + ")") == i * 2);
++    CHECK(chai.eval<int>("do_something(" + boost::lexical_cast<std::string>(i) + ")") == i + 2);
++    CHECK(chai2.eval<int>("do_something_else(" + boost::lexical_cast<std::string>(i) + ")") == i * 2);
+ 
+     CHECK_THROWS_AS(chai2.eval("do_something(1)"), chaiscript::exception::eval_error &);
+     CHECK_THROWS_AS(chai2.eval("i"), chaiscript::exception::eval_error &);
