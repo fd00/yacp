@@ -1,0 +1,71 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ua/Makefile.am src/ua/Makefile.am
+--- origsrc/ua/Makefile.am	2015-10-28 22:57:42.000000000 +0900
++++ src/ua/Makefile.am	2015-10-28 22:57:43.969084800 +0900
+@@ -1,7 +1,9 @@
+ bin_PROGRAMS = ua kua
+ 
+ ua_SOURCES = filei.cc filei.h ua.cc 
++ua_LDADD = $(OPENSSL_LIBADD)
+ kua_SOURCES = filei.cc filei.h kua.cc
++kua_LDADD = $(OPENSSL_LIBADD)
+ man_MANS = ua.1 kua.1
+ 
+ EXTRA_DIST = $(man_MANS)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ua/configure.in src/ua/configure.in
+--- origsrc/ua/configure.in	2015-10-28 22:57:42.000000000 +0900
++++ src/ua/configure.in	2015-10-28 22:57:43.979631600 +0900
+@@ -9,5 +9,6 @@ AC_PROG_INSTALL
+ AC_CHECK_LIB(crypto, MD5_Init)
+ AC_CHECK_LIB(crypto, MD5_Update)
+ AC_CHECK_LIB(crypto, MD5_Final)
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+ AC_OUTPUT(Makefile)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ua/filei.cc src/ua/filei.cc
+--- origsrc/ua/filei.cc	2015-10-28 22:57:42.000000000 +0900
++++ src/ua/filei.cc	2015-10-28 22:57:43.983147200 +0900
+@@ -40,6 +40,7 @@ extern "C" {
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <openssl/md5.h>
++void bzero(void *s, size_t n);
+ }
+ 
+ #include <fstream>
+@@ -51,7 +52,7 @@ char filei::_buffer[__UABUFFSIZE];
+      
+ filei::filei(const std::string& path, bool ic, bool iw, size_t m, size_t bs)
+ throw(const char*):_path(path),_h(0)  {
+-   ::bzero(_md5,16); // zero out
++   bzero(_md5,16); // zero out
+    calc(ic,iw,bs,m);
+ }
+ 
+@@ -333,5 +334,3 @@ bool filei::md5eq::operator()(const file
+    }
+    return true;
+ }
+-
+-
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ua/kua.cc src/ua/kua.cc
+--- origsrc/ua/kua.cc	2015-10-28 22:57:42.000000000 +0900
++++ src/ua/kua.cc	2015-10-28 22:57:43.986662800 +0900
+@@ -49,6 +49,7 @@
+ 
+ extern "C" {
+ #include <stdio.h>
++#include <getopt.h>
+ }
+ 
+ static char __help[] = 
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/ua/ua.cc src/ua/ua.cc
+--- origsrc/ua/ua.cc	2015-10-28 22:57:42.000000000 +0900
++++ src/ua/ua.cc	2015-10-28 22:57:43.990178400 +0900
+@@ -57,6 +57,7 @@
+ 
+ extern "C" {
+ #include <stdio.h>
++#include <getopt.h>
+ }
+ 
+ static char __help[] = 
