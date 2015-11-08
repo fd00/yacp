@@ -1,0 +1,89 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test.avro -x test6.df origsrc/avro-cpp-1.7.7/CMakeLists.txt src/avro-cpp-1.7.7/CMakeLists.txt
+--- origsrc/avro-cpp-1.7.7/CMakeLists.txt	2014-07-19 04:20:04.000000000 +0900
++++ src/avro-cpp-1.7.7/CMakeLists.txt	2015-11-08 17:31:34.794421600 +0900
+@@ -81,22 +81,26 @@ add_library (avrocpp SHARED ${AVRO_SOURC
+ set_property (TARGET avrocpp
+     APPEND PROPERTY COMPILE_DEFINITIONS AVRO_DYN_LINK)
+ 
++if (NOT CYGWIN)
+ add_library (avrocpp_s STATIC ${AVRO_SOURCE_FILES})
+ 
+ set_property (TARGET avrocpp avrocpp_s
+     APPEND PROPERTY COMPILE_DEFINITIONS AVRO_SOURCE)
++endif (NOT CYGWIN)
+ 
+ set_target_properties (avrocpp PROPERTIES
+-    VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
+-
+-set_target_properties (avrocpp_s PROPERTIES
+-    VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
++    VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR}
++    SOVERSION 0)
+ 
+ target_link_libraries (avrocpp ${Boost_LIBRARIES})
+ 
+ add_executable (precompile test/precompile.cc)
+ 
++if (NOT CYGWIN)
+ target_link_libraries (precompile avrocpp_s ${Boost_LIBRARIES})
++else (NOT CYGWIN)
++target_link_libraries (precompile avrocpp ${Boost_LIBRARIES})
++endif (NOT CYGWIN)
+ 
+ macro (gen file ns)
+     add_custom_command (OUTPUT ${file}.hh
+@@ -121,7 +125,11 @@ gen (reuse ru)
+ gen (circulardep cd)
+ 
+ add_executable (avrogencpp impl/avrogencpp.cc)
++if (CYGWIN)
++target_link_libraries (avrogencpp avrocpp ${Boost_LIBRARIES})
++else (CYGWIN)
+ target_link_libraries (avrogencpp avrocpp_s ${Boost_LIBRARIES})
++endif (CYGWIN)
+ 
+ enable_testing()
+ 
+@@ -154,10 +162,17 @@ set (CPACK_PACKAGE_FILE_NAME "avrocpp-${
+ 
+ include (CPack)
+ 
++if (CYGWIN)
++install (TARGETS avrocpp
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin)
++else (CYGWIN)
+ install (TARGETS avrocpp avrocpp_s
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+     RUNTIME DESTINATION lib)
++endif (CYGWIN)
+ 
+ install (TARGETS avrogencpp RUNTIME DESTINATION bin)
+ 
+@@ -169,3 +184,10 @@ if (NOT CMAKE_BUILD_TYPE)
+       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+       FORCE)
+ endif (NOT CMAKE_BUILD_TYPE)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/avro-cpp.pc.in ${CMAKE_BINARY_DIR}/avro-cpp.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/avro-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test.avro -x test6.df origsrc/avro-cpp-1.7.7/avro-cpp.pc.in src/avro-cpp-1.7.7/avro-cpp.pc.in
+--- origsrc/avro-cpp-1.7.7/avro-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/avro-cpp-1.7.7/avro-cpp.pc.in	2015-11-08 17:30:27.890204300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: avro-cpp
++Description: Data serialization system (C++)
++Version: @AVRO_VERSION@
++Libs: -L${libdir} -lavro-cpp
++Cflags: -I${includedir}/avro
