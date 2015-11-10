@@ -1,0 +1,60 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libringbuffer/CMakeLists.txt src/libringbuffer/CMakeLists.txt
+--- origsrc/libringbuffer/CMakeLists.txt	2015-11-10 23:48:06.000000000 +0900
++++ src/libringbuffer/CMakeLists.txt	2015-11-10 23:52:43.783662300 +0900
+@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -p
+ 
+ include_directories(${LIBRINGBUFFER_SRC_ROOT})
+ add_subdirectory(src)
+-add_subdirectory(bench)
++# add_subdirectory(bench)
+ add_subdirectory(example)
+ 
+ find_package(GTest)
+@@ -38,3 +38,11 @@ configure_file(
+ 
+ add_custom_target(uninstall
+     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+\ No newline at end of file
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libringbuffer.pc.in ${CMAKE_BINARY_DIR}/libringbuffer.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libringbuffer.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libringbuffer/libringbuffer.pc.in src/libringbuffer/libringbuffer.pc.in
+--- origsrc/libringbuffer/libringbuffer.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libringbuffer/libringbuffer.pc.in	2015-11-10 23:52:49.877735100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libringbuffer
++Description: Non-blocking ring buffer in C
++Version: @VERSION@
++Libs: -L${libdir} -lringbuffer
++Cflags: -I${includedir}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libringbuffer/src/CMakeLists.txt src/libringbuffer/src/CMakeLists.txt
+--- origsrc/libringbuffer/src/CMakeLists.txt	2015-11-10 23:48:06.000000000 +0900
++++ src/libringbuffer/src/CMakeLists.txt	2015-11-10 23:49:32.670968700 +0900
+@@ -2,12 +2,13 @@ set(TITLE ringbuffer)
+ 
+ #set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/libfolder") 
+ 
+-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -pthread -D_REENTRANT -fPIC" )
++set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -pthread -D_REENTRANT" )
+ set( SOURCES ringbuffer.c )
+ 
+ FILE( GLOB LIBCMDLINE_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h" )
+ INSTALL( FILES ${LIBCMDLINE_HEADERS} DESTINATION include)
+ 
+-add_library(${TITLE} STATIC ${SOURCES})
+-INSTALL( TARGETS ${TITLE} DESTINATION lib )
++add_library(${TITLE} SHARED ${SOURCES})
++SET_TARGET_PROPERTIES(${TITLE} PROPERTIES SOVERSION 0)
++INSTALL( TARGETS ${TITLE} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ #target_link_libraries( ${TITLE} benchmark)
+\ No newline at end of file
