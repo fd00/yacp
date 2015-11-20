@@ -1,0 +1,51 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkpp/CMakeLists.txt src/beanstalkpp/CMakeLists.txt
+--- origsrc/beanstalkpp/CMakeLists.txt	2015-11-20 23:18:15.000000000 +0900
++++ src/beanstalkpp/CMakeLists.txt	2015-11-20 23:23:49.817915700 +0900
+@@ -28,6 +28,8 @@ INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR
+ ADD_LIBRARY(
+   beanstalkpp SHARED tokenizedstream.cpp serverexception.cpp exception.cpp client.cpp job.cpp 
+ )
++TARGET_LINK_LIBRARIES(beanstalkpp ${Boost_SYSTEM_LIBRARY})
++SET_TARGET_PROPERTIES(beanstalkpp PROPERTIES SOVERSION 0)
+ 
+ ADD_EXECUTABLE(
+   test test.cpp
+@@ -54,14 +56,22 @@ ADD_EXECUTABLE(
+ )
+ TARGET_LINK_LIBRARIES(beanspeek ${Boost_LIBRARIES} beanstalkpp pthread)
+ 
+-INSTALL(TARGETS beanstalkpp LIBRARY DESTINATION lib)
++INSTALL(TARGETS beanstalkpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ if(APPLE)
+   set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+ endif(APPLE)
+-INSTALL(DIRECTORY . DESTINATION include/beanstalk++ FILES_MATCHING PATTERN "*.h" PATTERN "beanstalkpp.h" EXCLUDE PATTERN "*~" EXCLUDE PATTERN "*.git*" EXCLUDE PATTERN "*build*" EXCLUDE)
++INSTALL(DIRECTORY . DESTINATION include/beanstalk++ FILES_MATCHING PATTERN "*.h" PATTERN "beanstalkpp.h" EXCLUDE PATTERN "*~" EXCLUDE PATTERN "*.git*" EXCLUDE PATTERN "*build*" EXCLUDE PATTERN "CYGWIN-PATCHES" EXCLUDE)
+ INSTALL(FILES "beanstalkpp.h" DESTINATION include)
+ 
+ SET(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic -g -O0 -std=c++11")
+ SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O2")
+ SET(CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++")
+ SET(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/beanstalkpp/beanstalkpp.pc.in src/beanstalkpp/beanstalkpp.pc.in
+--- origsrc/beanstalkpp/beanstalkpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/beanstalkpp/beanstalkpp.pc.in	2015-11-20 23:24:03.953423100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: beanstalkpp
++Description: C++ client library for beanstalk
++Version: @VERSION@
++Libs: -L${libdir} -lbeanstalkpp
++Cflags: -I${includedir}
