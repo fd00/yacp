@@ -1,0 +1,34 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libbbs/CMakeLists.txt src/libbbs/CMakeLists.txt
+--- origsrc/libbbs/CMakeLists.txt	2016-01-08 22:57:39.000000000 +0900
++++ src/libbbs/CMakeLists.txt	2016-01-08 23:02:31.300868400 +0900
+@@ -11,7 +11,10 @@ include(FindPkgConfig)
+ include(GNUInstallDirs)
+ 
+ if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+-    set(CMAKE_C_FLAGS "-g -O2 -Wall -Werror -fPIC -std=c99 ${CMAKE_C_FLAGS}")
++    set(CMAKE_C_FLAGS "-g -O2 -Wall -std=c99 ${CMAKE_C_FLAGS}")
++    if(NOT CYGWIN)
++        set(CMAKE_C_FLAGS "-Werror -fPIC ${CMAKE_C_FLAGS}")
++    endif()
+ 
+     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=${PROJECT_SOURCE_DIR}/libbbs.ver ${CMAKE_SHARED_LINKER_FLAGS}")
+ 
+@@ -62,7 +65,8 @@ set_target_properties(bbs_shared PROPERT
+ # testing
+ pkg_check_modules(CHECK check)
+ 
+-if ("${CHECK_FOUND}")
++option(ENABLE_TESTS "enable tests" OFF)
++if (ENABLE_TESTS AND "${CHECK_FOUND}")
+     include_directories(${CHECK_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/src)
+ 
+     enable_testing()
+@@ -106,7 +110,7 @@ endif()
+ # install
+ install(FILES ${bbs_inc} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/bbs)
+ install(FILES ${pkgconfig} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-install(TARGETS bbs_shared DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS bbs_shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ # package
+ set(CPACK_SOURCE_GENERATOR TGZ)
