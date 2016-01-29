@@ -1,0 +1,83 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x version.hpp origsrc/ponder-1.0.1/CMakeLists.txt src/ponder-1.0.1/CMakeLists.txt
+--- origsrc/ponder-1.0.1/CMakeLists.txt	2016-01-07 04:42:46.000000000 +0900
++++ src/ponder-1.0.1/CMakeLists.txt	2016-01-30 02:14:09.248257900 +0900
+@@ -69,7 +69,11 @@ add_library(ponder ${PONDER_SRCS})
+ 
+ # required standard level (needed to pass -std=c++11 to gcc and clang)
+ set_property(TARGET ponder PROPERTY CXX_STANDARD 11) # fails silently
++if(CYGWIN)
++    set_target_properties(ponder PROPERTIES SOVERSION 0)
++else()
+ target_compile_features(ponder PRIVATE cxx_range_for cxx_variable_templates) # required
++endif()
+ 
+ # define the export macro
+ if(BUILD_SHARED_LIBS)
+@@ -159,9 +163,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR
+     COMPONENT devel
+ )
+ 
++if(NOT CYGWIN)
+ install(FILES README.md COPYING.txt
+     DESTINATION ${INSTALL_MISC_DIR}
+ )
++endif()
+ 
+ install(DIRECTORY cmake
+     DESTINATION ${INSTALL_MISC_DIR}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x version.hpp origsrc/ponder-1.0.1/src/util.cpp src/ponder-1.0.1/src/util.cpp
+--- origsrc/ponder-1.0.1/src/util.cpp	2016-01-07 04:42:46.000000000 +0900
++++ src/ponder-1.0.1/src/util.cpp	2016-01-30 02:11:10.650439500 +0900
+@@ -27,6 +27,7 @@
+  **
+  ****************************************************************************/
+ 
++#include <strings.h>
+ 
+ #include <ponder/detail/util.hpp>
+ 
+@@ -49,7 +50,7 @@ template <typename T>
+ static bool parse_integer(const std::string& from, T& to)
+ {
+     try {
+-        const long p = std::stol(from.c_str());
++        const long p = atol(from.c_str());
+         to = static_cast<T>(p);
+     } catch (std::logic_error&) {
+         return false;
+@@ -109,7 +110,7 @@ bool conv(const std::string& from, unsig
+ bool conv(const std::string& from, long long& to)
+ {
+     try {
+-        to = std::stoll(from.c_str());
++        to = atol(from.c_str());
+     } catch (std::logic_error&) {
+         return false;
+     }
+@@ -119,7 +120,7 @@ bool conv(const std::string& from, long
+ bool conv(const std::string& from, unsigned long long& to)
+ {
+     try {
+-        to = std::stoull(from.c_str());
++        to = atol(from.c_str());
+     } catch (std::logic_error&) {
+         return false;
+     }
+@@ -145,7 +146,7 @@ bool conv(const std::string& from, bool&
+ bool conv(const std::string& from, float& to)
+ {
+     try {
+-        to = std::stof(from.c_str());
++        to = atof(from.c_str());
+     } catch (std::logic_error&) {
+         return false;
+     }
+@@ -155,7 +156,7 @@ bool conv(const std::string& from, float
+ bool conv(const std::string& from, double& to)
+ {
+     try {
+-        to = std::stod(from.c_str());
++        to = atof(from.c_str());
+     } catch (std::logic_error&) {
+         return false;
+     }
