@@ -1,0 +1,68 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x doc origsrc/SQLiteCpp-1.2.0/CMakeLists.txt src/SQLiteCpp-1.2.0/CMakeLists.txt
+--- origsrc/SQLiteCpp-1.2.0/CMakeLists.txt	2015-09-10 02:02:34.000000000 +0900
++++ src/SQLiteCpp-1.2.0/CMakeLists.txt	2016-02-05 20:43:20.859773900 +0900
+@@ -43,7 +43,7 @@ else (MSVC)
+     if (CMAKE_COMPILER_IS_GNUCXX)
+         # GCC flags
+        #add_compile_options() is not supported with CMake 2.8.7 of Ubuntu 12.04 on Travis-CI
+-        add_definitions(-rdynamic -fstack-protector-all -Wall -Wextra -pedantic -Wformat-security -Winit-self -Wswitch-default -Wswitch-enum -Wfloat-equal -Wshadow -Wcast-qual -Wconversion -Wlogical-op -Winline)
++        add_definitions(-Wall -Wextra -pedantic -Wformat-security -Winit-self -Wswitch-default -Wswitch-enum -Wfloat-equal -Wshadow -Wcast-qual -Wconversion -Wlogical-op -Winline)
+     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+         # Clang flags
+         add_definitions(-fstack-protector-all -Wall -Wextra -pedantic -Wformat-security -Winit-self -Wswitch-default -Wswitch-enum -Wfloat-equal -Wshadow -Wcast-qual -Wconversion -Winline)
+@@ -136,12 +136,9 @@ source_group(scripts FILES ${SQLITECPP_S
+ include_directories("${PROJECT_SOURCE_DIR}/include")
+ 
+ # add sources of the wrapper as a "SQLiteCpp" static library
+-add_library(SQLiteCpp ${SQLITECPP_SRC} ${SQLITECPP_INC} ${SQLITECPP_DOC} ${SQLITECPP_SCRIPT})
+-
+-if (UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+-    set_target_properties(SQLiteCpp PROPERTIES COMPILE_FLAGS "-fPIC")
+-endif (UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+-
++add_library(SQLiteCpp SHARED ${SQLITECPP_SRC} ${SQLITECPP_INC} ${SQLITECPP_DOC} ${SQLITECPP_SCRIPT})
++set_target_properties(SQLiteCpp PROPERTIES SOVERSION 0)
++target_link_libraries(SQLiteCpp sqlite3)
+ 
+ # SQLite3 library (mostly usefull under Windows)
+ 
+@@ -223,7 +220,7 @@ if (SQLITECPP_BUILD_TESTS)
+ 
+     # add the unit test executable
+     add_executable(SQLiteCpp_tests ${SQLITECPP_TESTS})
+-    target_link_libraries(SQLiteCpp_tests gtest_main SQLiteCpp sqlite3)
++    target_link_libraries(SQLiteCpp_tests gtest gtest_main SQLiteCpp sqlite3)
+ 
+     # add a "test" target:
+     enable_testing()
+@@ -256,3 +253,16 @@ else (NOT BIICODE)
+     endif ()
+ 
+ endif (NOT BIICODE)
++
++install(TARGETS SQLiteCpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++file(GLOB headers "include/SQliteCpp/*.h")
++install(FILES ${headers} DESTINATION include/${PROJECT_NAME})
++install(FILES FindSQLiteCpp.cmake DESTINATION lib/cmake/${PROJECT_NAME})
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.2.0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x doc origsrc/SQLiteCpp-1.2.0/SQLiteCpp.pc.in src/SQLiteCpp-1.2.0/SQLiteCpp.pc.in
+--- origsrc/SQLiteCpp-1.2.0/SQLiteCpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SQLiteCpp-1.2.0/SQLiteCpp.pc.in	2016-02-05 20:41:51.584014400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SQLiteCpp
++Description: Smart and easy to use C++ SQLite3 wrapper
++Version: @VERSION@
++Libs: -L${libdir} -lSQLiteCpp
++Cflags: -I${includedir}
