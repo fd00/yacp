@@ -1,0 +1,52 @@
+--- origsrc/CheMPS2-1.6/CMakeLists.txt	2015-08-27 07:55:19.000000000 +0900
++++ src/CheMPS2-1.6/CMakeLists.txt	2016-03-12 17:57:08.756733300 +0900
+@@ -50,7 +50,7 @@ check_cxx_compiler_flag (-flto HAS_FLTO)
+ if (HAS_FLTO)
+     set (CMAKE_CXX_FLAGS "-flto ${CMAKE_CXX_FLAGS}")
+ endif (HAS_FLTO)
+- 
++
+ if (ENABLE_GENERIC)
+     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++ -static-libgcc")
+     check_cxx_compiler_flag (-static-intel HAS_INTEL_COMPILERS)
+@@ -106,3 +106,10 @@ if (BUILD_DOXYGEN)
+     add_custom_target (doc COMMAND ${DOXYGEN_EXECUTABLE} ${CheMPS2_BINARY_DIR}/Doxyfile SOURCES ${CheMPS2_BINARY_DIR}/Doxyfile)
+ endif (BUILD_DOXYGEN)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.6")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/CheMPS2-1.6/CheMPS2/CMakeLists.txt	2015-08-27 07:55:19.000000000 +0900
++++ src/CheMPS2-1.6/CheMPS2/CMakeLists.txt	2016-03-12 17:55:22.576281500 +0900
+@@ -16,7 +16,8 @@ target_link_libraries (chemps2-static ${
+ set_target_properties (chemps2-static PROPERTIES CLEAN_DIRECT_OUTPUT 1 OUTPUT_NAME "chemps2")
+ 
+ if (NOT STATIC_ONLY)
+-    install (TARGETS chemps2-shared DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
++    install (TARGETS chemps2-shared RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}
++                                    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+ endif (NOT STATIC_ONLY)
+ install (TARGETS chemps2-static DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+ install (DIRECTORY include/chemps2/ DESTINATION include/chemps2 FILES_MATCHING PATTERN "*.h")
+@@ -33,4 +34,3 @@ endif (STATIC_ONLY)
+ set_target_properties (chemps2bin PROPERTIES OUTPUT_NAME "chemps2")
+ 
+ install (TARGETS chemps2bin DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR})
+-
+--- origsrc/CheMPS2-1.6/CheMPS2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/CheMPS2-1.6/CheMPS2.pc.in	2016-03-12 17:57:19.269574100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: CheMPS2
++Description: Spin-adapted implementation of DMRG for ab initio quantum chemistry
++Version: @VERSION@
++Libs: -L${libdir} -lchemps2
++Cflags: -I${includedir}/chemps2
