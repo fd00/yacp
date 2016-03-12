@@ -1,0 +1,76 @@
+--- origsrc/Bento4-1.4.3-608/CMakeLists.txt	2016-03-05 09:24:15.000000000 +0900
++++ src/Bento4-1.4.3-608/CMakeLists.txt	2016-03-12 17:09:54.690155800 +0900
+@@ -10,6 +10,7 @@ set(SOURCE_CORE ${SOURCE_ROOT}/Core)
+ set(SOURCE_CRYPTO ${SOURCE_ROOT}/Crypto)
+ set(SOURCE_METADATA ${SOURCE_ROOT}/MetaData)
+ set(SOURCE_SYSTEM ${SOURCE_ROOT}/System)
++set(SOURCE_CAPI ${SOURCE_ROOT}/CApi)
+ 
+ # Compiler warning and optimization flags
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+@@ -25,7 +26,19 @@ file(GLOB AP4_SOURCES
+   ${SOURCE_CRYPTO}/*.cpp
+   ${SOURCE_METADATA}/*.cpp
+   ${SOURCE_SYSTEM}/StdC/*.cpp
++  ${SOURCE_CAPI}/*.cpp
+ )
++file(GLOB AP4_HEADERS_CODES ${SOURCE_CODECS}/*.h)
++file(GLOB AP4_HEADERS_CORE ${SOURCE_CORE}/*.h)
++file(GLOB AP4_HEADERS_CRYPTO ${SOURCE_CRYPTO}/*.h)
++file(GLOB AP4_HEADERS_METADATA ${SOURCE_METADATA}/*.h)
++file(GLOB AP4_HEADERS_CAPI ${SOURCE_CAPI}/*.h)
++
++install(FILES ${AP4_HEADERS_CODES} DESTINATION include/bento4/Codes)
++install(FILES ${AP4_HEADERS_CORE} DESTINATION include/bento4/Core)
++install(FILES ${AP4_HEADERS_CRYPTO} DESTINATION include/bento4/Crypto)
++install(FILES ${AP4_HEADERS_METADATA} DESTINATION include/bento4/Metadata)
++install(FILES ${AP4_HEADERS_CAPI} DESTINATION include/bento4/Capi)
+ 
+ if(WIN32)
+   set(AP4_SOURCES ${AP4_SOURCES} ${SOURCE_SYSTEM}/Win32/Ap4Win32Random.cpp)
+@@ -33,7 +46,9 @@ else()
+   set(AP4_SOURCES ${AP4_SOURCES} ${SOURCE_SYSTEM}/Posix/Ap4PosixRandom.cpp)
+ endif()
+ 
+-add_library(ap4 STATIC ${AP4_SOURCES})
++add_library(ap4 SHARED ${AP4_SOURCES})
++set_target_properties(ap4 PROPERTIES SOVERSION 0)
++install(TARGETS ap4 RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # Includes
+ include_directories(
+@@ -41,6 +56,7 @@ include_directories(
+   ${SOURCE_CODECS}
+   ${SOURCE_CRYPTO}
+   ${SOURCE_METADATA}
++  ${SOURCE_CAPI}
+ )
+ 
+ # Apps
+@@ -49,4 +65,13 @@ foreach(app ${BENTO4_APPS})
+   string(TOLOWER ${app} binary_name)
+   add_executable(${binary_name} ${SOURCE_ROOT}/Apps/${app}/${app}.cpp)
+   target_link_libraries(${binary_name} ap4)
++  install(TARGETS ${binary_name} RUNTIME DESTINATION bin)
+ endforeach()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.4.3-608")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Bento4-1.4.3-608/bento4.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Bento4-1.4.3-608/bento4.pc.in	2016-03-12 17:10:12.355332500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bento4
++Description: Full-featured MP4 format and MPEG DASH library and tools
++Version: @VERSION@
++Libs: -L${libdir} -lap4
++Cflags: -I${includedir}/bento4
