@@ -1,0 +1,414 @@
+--- origsrc/libCello-2.0.3/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.0.3/Makefile.am	2016-03-13 14:13:12.568815600 +0900
+@@ -0,0 +1,22 @@
++
++check_PROGRAMS = Cello_test
++Cello_test_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/tests
++Cello_test_SOURCES = tests/test.c tests/ptest.c
++Cello_test_LDADD = libCello.la
++TESTS = $(check_PROGRAMS)
++
++include_HEADERS = include/Cello.h
++
++lib_LTLIBRARIES = libCello.la
++libCello_la_CPPFLAGS = -I$(top_srcdir)/include
++libCello_la_SOURCES = \
++src/Alloc.c  src/Array.c      src/Assign.c  src/Cmp.c       src/Concat.c \
++src/Doc.c    src/Exception.c  src/File.c    src/Function.c  src/GC.c \
++src/Get.c    src/Hash.c       src/Iter.c    src/Len.c       src/List.c \
++src/Num.c    src/Pointer.c    src/Push.c    src/Resize.c    src/Show.c \
++src/Start.c  src/String.c     src/Table.c   src/Thread.c    src/Tree.c \
++src/Tuple.c  src/Type.c
++libCello_la_LDFLAGS = -no-undefined
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libCello-2.0.3/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.0.3/configure.ac	2016-03-13 14:08:16.655089100 +0900
+@@ -0,0 +1,30 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([libCello], [2.0.3])
++AC_CONFIG_SRCDIR([examples/cello_world.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++LT_INIT
++
++# Checks for header files.
++AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_CHECK_HEADER_STDBOOL
++AC_TYPE_INT64_T
++AC_TYPE_SIZE_T
++AC_TYPE_UINT64_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([atexit memmove memset strchr strstr])
++
++AC_CONFIG_FILES([libCello.pc Makefile])
++AC_OUTPUT
+--- origsrc/libCello-2.0.3/include/Cello.h	2015-06-22 19:43:44.000000000 +0900
++++ src/libCello-2.0.3/include/Cello.h	2016-03-13 14:09:52.140968800 +0900
+@@ -94,7 +94,7 @@
+ #define popen _popen
+ #define pclose _pclose
+ #define __func__ __FUNCTION__
+-#ifndef CELLO_NSTRACE 
++#ifndef CELLO_NSTRACE
+ #pragma comment(lib, "DbgHelp.lib")
+ #endif
+ #endif
+@@ -123,7 +123,7 @@
+ 
+ #ifdef CELLO_UNIX
+ #include <pthread.h>
+-#ifndef CELLO_NSTRACE
++#if !defined(CELLO_NSTRACE) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ #endif
+@@ -418,7 +418,7 @@ struct Iter {
+   var (*iter_next)(var, var);
+   var (*iter_last)(var);
+   var (*iter_prev)(var, var);
+-  var (*iter_type)(var);  
++  var (*iter_type)(var);
+ };
+ 
+ struct Sort {
+@@ -515,14 +515,14 @@ bool type_implements(var type, var cls);
+ 
+ #define implements_method(X, C, M) \
+   implements_method_at_offset(X, C, offsetof(struct C, M))
+-  
++
+ #define type_method(T, C, M, ...) \
+   ((struct C*)type_method_at_offset(T, C, \
+   offsetof(struct C, M), #M))->M(__VA_ARGS__)
+-  
++
+ #define type_implements_method(T, C, M) \
+   type_implements_method_at_offset(T, C, offsetof(struct C, M))
+-  
++
+ var method_at_offset(var self, var cls, size_t offset, const char* method);
+ bool implements_method_at_offset(var self, var cls, size_t offset);
+ 
+@@ -755,5 +755,5 @@ void Cello_Exit(void);
+   int Cello_Main(__VA_ARGS__)
+ 
+ #endif
+-  
++
+ #endif
+--- origsrc/libCello-2.0.3/libCello.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.0.3/libCello.pc.in	2016-03-13 14:07:14.825411700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libCello
++Description: Higher level programming in C
++Version: @VERSION@
++Libs: -L${libdir} -lCello
++Cflags: -I${includedir}
+--- origsrc/libCello-2.0.3/src/Exception.c	2015-06-22 19:43:44.000000000 +0900
++++ src/libCello-2.0.3/src/Exception.c	2016-03-13 14:11:02.969008000 +0900
+@@ -30,7 +30,7 @@ struct Exception {
+   var      msg;
+   size_t   depth;
+   bool     active;
+-  jmp_buf* buffers[EXCEPTION_MAX_DEPTH];  
++  jmp_buf* buffers[EXCEPTION_MAX_DEPTH];
+ };
+ 
+ static const char* Exception_Name(void) {
+@@ -63,14 +63,14 @@ static const char* Exception_Description
+ }
+ 
+ static struct Method* Exception_Methods(void) {
+-  
++
+   static struct Method methods[] = {
+     {
+-      "try", 
++      "try",
+       "#define try",
+       "Start an exception `try` block."
+     }, {
+-      "catch", 
++      "catch",
+       "#define catch(...)",
+       "Start an exception `catch` block, catching any objects listed in `...` "
+       "as the first name given. To catch any exception object leave argument "
+@@ -93,12 +93,12 @@ static struct Method* Exception_Methods(
+       "Retrieve the current exception message."
+     }, {NULL, NULL, NULL}
+   };
+-  
++
+   return methods;
+ }
+ 
+ static struct Example* Exception_Examples(void) {
+-  
++
+   static struct Example examples[] = {
+     {
+       "Usage",
+@@ -115,7 +115,7 @@ static struct Example* Exception_Example
+   };
+ 
+   return examples;
+-  
++
+ }
+ 
+ static void Exception_New(var self, var args) {
+@@ -181,43 +181,43 @@ static bool Exception_Running(var self)
+ #if defined(CELLO_UNIX)
+ 
+ static void Exception_Backtrace(void) {
+-  
++#if !defined(__CYGWIN__)
+   var trace[EXCEPTION_MAX_STRACE];
+   size_t trace_count = backtrace(trace, EXCEPTION_MAX_STRACE);
+-  char** symbols = backtrace_symbols(trace, trace_count);  
+-  
++  char** symbols = backtrace_symbols(trace, trace_count);
++
+   print_to($(File, stderr), 0, "!!\tStack Trace: \n");
+   print_to($(File, stderr), 0, "!!\t\n");
+ 
+   for (size_t i = 0; i < trace_count; i++) {
+-    print_to($(File, stderr), 0, "!!\t\t[%i] %s\n", 
++    print_to($(File, stderr), 0, "!!\t\t[%i] %s\n",
+       $(Int, i), $(String, symbols[i]));
+   }
+   print_to($(File, stderr), 0, "!!\t\n");
+-  
++
+   free(symbols);
+-  
++#endif
+ }
+ 
+ #elif defined(CELLO_WINDOWS)
+ 
+ static void Exception_Backtrace(void) {
+-  
++
+   HANDLE process = GetCurrentProcess();
+   HANDLE thread = GetCurrentThread();
+-  
++
+   CONTEXT context;
+   memset(&context, 0, sizeof(CONTEXT));
+   context.ContextFlags = CONTEXT_FULL;
+   RtlCaptureContext(&context);
+-  
++
+   SymSetOptions(SYMOPT_UNDNAME|SYMOPT_LOAD_LINES);
+   SymInitialize(process, NULL, TRUE);
+-  
++
+   DWORD image;
+   STACKFRAME64 stackframe;
+   ZeroMemory(&stackframe, sizeof(STACKFRAME64));
+-  
++
+ #ifdef _M_IX86
+   image = IMAGE_FILE_MACHINE_I386;
+   stackframe.AddrPC.Offset = context.Eip;
+@@ -250,35 +250,35 @@ static void Exception_Backtrace(void) {
+   print_to($(File, stderr), 0, "!!\t\n");
+ 
+   for (size_t i = 0; i < EXCEPTION_MAX_STRACE; i++) {
+-    
++
+     BOOL result = StackWalk64(
+       image, process, thread,
+-      &stackframe, &context, NULL, 
++      &stackframe, &context, NULL,
+       SymFunctionTableAccess64, SymGetModuleBase64, NULL);
+-    
++
+     if (!result) { break; }
+-    
++
+     char* filename = "";
+     char* symbolname = "???";
+     int lineno = 0;
+-    
++
+     char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+     PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
+     symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+     symbol->MaxNameLen = MAX_SYM_NAME;
+-    
++
+     DWORD64 displacement = 0;
+     if (SymFromAddr(process, stackframe.AddrPC.Offset, &displacement, symbol)) {
+       symbolname = symbol->Name;
+     } else {
+       symbolname = "???";
+     }
+-      
++
+     IMAGEHLP_LINE64 line;
+     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+-    
++
+     DWORD displacementline = 0;
+-    if (SymGetLineFromAddr64(process, 
++    if (SymGetLineFromAddr64(process,
+       stackframe.AddrPC.Offset, &displacementline, &line)) {
+       lineno = line.LineNumber;
+       filename = line.FileName;
+@@ -286,21 +286,21 @@ static void Exception_Backtrace(void) {
+       lineno = 0;
+       filename = "";
+     }
+-    
++
+     if (strcmp(filename, "") == 0) {
+       print_to($(File, stderr), 0, "!!\t\t[%i] %s\n",
+-        $I(i), $S(symbolname));      
++        $I(i), $S(symbolname));
+     } else {
+       print_to($(File, stderr), 0, "!!\t\t[%i] %s:%i %s\n",
+         $I(i), $S(filename), $I(lineno), $S(symbolname));
+     }
+-    
++
+   }
+-  
++
+   print_to($(File, stderr), 0, "!!\t\n");
+-  
++
+   SymCleanup(process);
+-  
++
+ }
+ 
+ #else
+@@ -312,33 +312,33 @@ static void Exception_Backtrace(void) {}
+ #else
+ 
+ static void Exception_Backtrace(void) {}
+-  
++
+ #endif
+ 
+ static void Exception_Error(struct Exception* e)  {
+-  
++
+   print_to($(File, stderr), 0, "\n");
+   print_to($(File, stderr), 0, "!!\t\n");
+   print_to($(File, stderr), 0, "!!\tUncaught %$\n", e->obj);
+   print_to($(File, stderr), 0, "!!\t\n");
+   print_to($(File, stderr), 0, "!!\t\t %s\n", e->msg);
+   print_to($(File, stderr), 0, "!!\t\n");
+-  
++
+   Exception_Backtrace();
+-  
++
+   exit(EXIT_FAILURE);
+-  
++
+ }
+ 
+ static int Exception_Show(var self, var out, int pos) {
+   struct Exception* e = self;
+-  return print_to(out, pos, 
++  return print_to(out, pos,
+     "<'Exception' At 0x%p %$ - %$>", self, e->obj, e->msg);
+ }
+ 
+ var Exception = Cello(Exception,
+   Instance(Doc,
+-    Exception_Name, Exception_Brief,    Exception_Description, 
++    Exception_Name, Exception_Brief,    Exception_Description,
+     NULL,           Exception_Examples, Exception_Methods),
+   Instance(New,     Exception_New, Exception_Del),
+   Instance(Assign,  Exception_Assign),
+@@ -363,54 +363,54 @@ void exception_try(jmp_buf* env) {
+     abort();
+   }
+   e->depth++;
+-  e->active = false; 
++  e->active = false;
+   e->buffers[e->depth-1] = env;
+ }
+ 
+ var exception_throw(var obj, const char* fmt, var args) {
+ 
+   struct Exception* e = current(Exception);
+-  
++
+   e->obj = obj;
+   print_to_with(e->msg, 0, fmt, args);
+-  
++
+   if (Exception_Len(e) >= 1) {
+     longjmp(*Exception_Buffer(e), 1);
+   } else {
+     Exception_Error(e);
+   }
+-  
++
+   return NULL;
+-  
++
+ }
+ 
+ var exception_catch(var args) {
+-  
++
+   struct Exception* e = current(Exception);
+-  
++
+   if (not e->active) { return NULL; }
+-  
++
+   /* If no Arguments catch all */
+   if (len(args) is 0) {
+     return e->obj;
+   }
+-  
++
+   /* Check Exception against Arguments */
+   foreach(arg in args) {
+     if (eq(arg, e->obj)) {
+       return e->obj;
+     }
+   }
+-  
++
+   /* No matches found. Propagate to outward block */
+   if (e->depth >= 1) {
+     longjmp(*Exception_Buffer(e), 1);
+   } else {
+     Exception_Error(e);
+   }
+-  
++
+   return NULL;
+-  
++
+ }
+ 
+ void exception_try_end(void) {
