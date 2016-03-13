@@ -1,0 +1,55 @@
+--- origsrc/libam7xxx/doc/CMakeLists.txt	2016-03-13 13:08:40.000000000 +0900
++++ src/libam7xxx/doc/CMakeLists.txt	2016-03-13 13:11:29.912745700 +0900
+@@ -1,6 +1,7 @@
+ # add a target to generate API documentation with Doxygen
++option(ENABLE_DOXYGEN "enable doxygen" OFF)
+ find_package(Doxygen)
+-if(DOXYGEN_FOUND)
++if(ENABLE_DOXYGEN AND DOXYGEN_FOUND)
+   configure_file("Doxyfile.in" "Doxyfile" @ONLY IMMEDIATE)
+ 
+   add_custom_target(doc
+--- origsrc/libam7xxx/doc/man/CMakeLists.txt	2016-03-13 13:08:40.000000000 +0900
++++ src/libam7xxx/doc/man/CMakeLists.txt	2016-03-13 13:13:15.549796800 +0900
+@@ -1,6 +1,7 @@
+ # add a target to generate man pages with asciidoc
++option(ENABLE_ASCIIDOC "enable asciidoc" OFF)
+ find_package(Asciidoc)
+-if(ASCIIDOC_FOUND)
++if(ENABLE_ASCIIDOC AND ASCIIDOC_FOUND)
+   add_custom_target(manpages
+     ${ASCIIDOC_A2X_EXECUTABLE} -f manpage ${CMAKE_CURRENT_SOURCE_DIR}/am7xxx-play.1.txt -D ${DOC_OUTPUT_PATH}/man
+     COMMAND ${ASCIIDOC_A2X_EXECUTABLE} -f manpage ${CMAKE_CURRENT_SOURCE_DIR}/am7xxx-modeswitch.1.txt -D ${DOC_OUTPUT_PATH}/man
+--- origsrc/libam7xxx/src/CMakeLists.txt	2016-03-13 13:08:40.000000000 +0900
++++ src/libam7xxx/src/CMakeLists.txt	2016-03-13 13:13:57.719513900 +0900
+@@ -13,8 +13,11 @@ set_target_properties(am7xxx PROPERTIES
+   VERSION ${PROJECT_VER}
+   SOVERSION ${PROJECT_APIVER})
+ install(TARGETS am7xxx
+-  DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib)
+ 
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
+ add_library(am7xxx-static STATIC ${SRC})
+ set_target_properties(am7xxx-static PROPERTIES OUTPUT_NAME am7xxx)
+ if(UNIX AND NOT APPLE)
+@@ -22,6 +25,7 @@ if(UNIX AND NOT APPLE)
+ endif()
+ install(TARGETS am7xxx-static
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
++endif()
+ 
+ if(NOT WIN32)
+   find_library(MATH_LIB m)
+@@ -31,7 +35,9 @@ else()
+ endif()
+ 
+ target_link_libraries(am7xxx ${MATH_LIB} ${LIBUSB_1_LIBRARIES})
++if(ENABLE_STATIC)
+ target_link_libraries(am7xxx-static ${MATH_LIB} ${LIBUSB_1_LIBRARIES})
++endif()
+ 
+ # Install the header files
+ install(FILES "am7xxx.h"
