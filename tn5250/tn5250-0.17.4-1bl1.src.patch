@@ -1,0 +1,97 @@
+--- origsrc/tn5250-0.17.4/Makefile.am	2008-11-21 09:53:32.000000000 +0900
++++ src/tn5250-0.17.4/Makefile.am	2016-03-13 10:25:15.478056900 +0900
+@@ -34,3 +34,6 @@ bin_SCRIPTS = xt5250
+ pkgdata_DATA = XTerm
+ 
+ CLEANFILES = *~
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/tn5250-0.17.4/configure.ac	2008-11-21 09:53:32.000000000 +0900
++++ src/tn5250-0.17.4/configure.ac	2016-03-13 10:25:51.613920500 +0900
+@@ -74,7 +74,7 @@ else
+ fi
+ 
+ ## SLang support is suffering from bit-rot. Nobody is maintaining it, and
+-## to the best of my knowledge, nobody is using it.  
++## to the best of my knowledge, nobody is using it.
+ ## Therefore, I'm disabling it, for now. -SK
+ ## # AC_ARG_WITH([slang],AS_HELP_STRING([--with-slang],[slang terminal support (default=no)]),[ac_cv_use_slang=$withval],[ac_cv_use_slang=no]) AC_CACHE_CHECK([whether to build slang terminal],[ac_cv_use_slang], [ac_cv_use_slang=no])
+ 
+@@ -91,12 +91,13 @@ fi
+ ## else
+ ## 	MAYBE_SLANG=
+ ## fi
+-## 
++##
+ AC_ARG_WITH([python],AS_HELP_STRING([--with-python],[python terminal support (default=no)]),[ac_cv_use_python=$withval],[ac_cv_use_python=no]) AC_CACHE_CHECK([whether to build python terminal],[ac_cv_use_python], [ac_cv_use_python=no])
+-## 
++##
+ if test "$ac_cv_use_python" = "yes"
+ then
+ 	MAYBE_PYTHON=python
++	AM_PATH_PYTHON
+ else
+ 	MAYBE_PYTHON=
+ fi
+@@ -233,7 +234,7 @@ AC_SUBST([MAYBE_CURSES])
+ ## AC_SUBST([MAYBE_SLANG])
+ AC_SUBST([MAYBE_PYTHON])
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([tn5250.pc Makefile
+ 		 curses/Makefile
+ 		 doc/Makefile
+ 		 lib5250/Makefile
+--- origsrc/tn5250-0.17.4/lib5250/Makefile.am	2006-01-14 13:47:19.000000000 +0900
++++ src/tn5250-0.17.4/lib5250/Makefile.am	2016-03-13 10:11:38.726928200 +0900
+@@ -24,6 +24,8 @@ lib5250_la_SOURCES =	buffer.c\
+ 			window.c\
+ 			wtd.c
+ 
++lib5250_la_LDFLAGS = -no-undefined
++
+ INCLUDES = -DSYSCONFDIR=\"$(sysconfdir)\"
+ 
+ pkginclude_HEADERS = 	buffer.h\
+--- origsrc/tn5250-0.17.4/python/Makefile.am	2006-01-14 13:47:19.000000000 +0900
++++ src/tn5250-0.17.4/python/Makefile.am	2016-03-13 10:21:20.846355300 +0900
+@@ -1,20 +1,18 @@
+ ## Process this file with automake to produce Makefile.in
+ 
+-INCLUDES = @PYTHON_CFLAGS@ \
++INCLUDES = -I$(top_srcdir)/lib5250 -I/usr/include/python$(PYTHON_VERSION) \
+ 	-DSYSCONFDIR=\"$(sysconfdir)\"
+ 
+ # Here's where we build the python module.
+ pysodir =		@PYTHON_PREFIX@/lib/python@PYTHON_VERSION@/lib-dynload
+-pyso_LTLIBRARIES =	libtn5250module.la
++python_LTLIBRARIES =	libtn5250module.la
+ 
+ # For some icky reason, automake or libtool pukes on the below line.  So we
+ # just add all the SOURCES (sigh).
+ # libtn5250module_la_LIBADD =	lib5250.la
+ 
+-libtn5250module_la_LIBADD =	@with_exra_libs@
++libtn5250module_la_LIBADD =	@with_exra_libs@ $(top_builddir)/lib5250/lib5250.la
+ 
+-libtn5250module_la_SOURCES =	tn5250-python.c\
+-			$(lib5250_la_SOURCES)
++libtn5250module_la_SOURCES = tn5250-python.c
+ 
+-install-exec-local:
+-	( cd $(pysodir) && ln -sf libtn5250module.so tn5250module.so )
++libtn5250module_la_LDFLAGS = -no-undefined
+--- origsrc/tn5250-0.17.4/tn5250.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tn5250-0.17.4/tn5250.pc.in	2016-03-13 10:26:10.204641900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tn5250
++Description: Linux tn5250 emulator
++Version: @VERSION@
++Libs: -L${libdir} -l5250
++Cflags: -I${includedir}
