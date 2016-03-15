@@ -1,0 +1,55 @@
+--- origsrc/libvaht/Makefile.am	2016-03-15 19:49:10.000000000 +0900
++++ src/libvaht/Makefile.am	2016-03-15 19:53:59.978294500 +0900
+@@ -7,3 +7,5 @@ include $(top_srcdir)/am/doxygen.am
+ 
+ MOSTLYCLEANFILES = -r $(DX_DOCDIR)
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libvaht/configure.ac	2016-03-15 19:49:10.000000000 +0900
++++ src/libvaht/configure.ac	2016-03-15 19:54:14.623394400 +0900
+@@ -38,4 +38,4 @@ DX_PS_FEATURE(OFF)
+ DX_INIT_DOXYGEN([$PACKAGE_NAME],[include/doxygen.cfg])
+ 
+ # substitute our stuff!
+-AC_OUTPUT(Makefile src/Makefile include/Makefile src/vahttool/Makefile)
++AC_OUTPUT(libvaht.pc Makefile src/Makefile include/Makefile src/vahttool/Makefile)
+--- origsrc/libvaht/libvaht.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libvaht/libvaht.pc.in	2016-03-15 19:54:43.681728400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libvaht
++Description: Library for reading Riven MHK archives
++Version: @VERSION@
++Libs: -L${libdir} -lvaht
++Cflags: -I${includedir}
+--- origsrc/libvaht/src/Makefile.am	2016-03-15 19:49:10.000000000 +0900
++++ src/libvaht/src/Makefile.am	2016-03-15 19:49:29.350422300 +0900
+@@ -6,4 +6,4 @@ lib_LTLIBRARIES = libvaht.la
+ libvaht_la_SOURCES = vaht_swap.c vaht_archive.c vaht_resource.c vaht_bmp.c vaht_mov.c vaht_wav.c vaht_name.c vaht_card.c vaht_plst.c vaht_script.c vaht_blst.c vaht_hspt.c vaht_rmap.c vaht_slst.c
+ noinst_HEADERS = vaht_intern.h
+ libvaht_la_CFLAGS = -I@top_srcdir@/include/ -fpack-struct=1 -Wall -Werror
+-libvaht_la_LDFLAGS = -version-info 0:0:0
++libvaht_la_LDFLAGS = -no-undefined -version-info 0:0:0
+--- origsrc/libvaht/src/vaht_swap.c	2016-03-15 19:49:10.000000000 +0900
++++ src/libvaht/src/vaht_swap.c	2016-03-15 19:51:55.428220500 +0900
+@@ -1,8 +1,10 @@
+ #include "vaht_intern.h"
+ 
+ #define UNKNOWN_ENDIAN 0
++#if !defined(__CYGWIN__)
+ #define BIG_ENDIAN 1
+ #define LITTLE_ENDIAN 2
++#endif
+ 
+ static int vaht_swap_endian = UNKNOWN_ENDIAN;
+ 
+@@ -22,4 +24,3 @@ uint32_t vaht_swap_uint32(uint32_t in)
+ {
+     return (vaht_swap_endian == LITTLE_ENDIAN) ? (((in & 0x000000FF) << 24) + ((in & 0x0000FF00) << 8) + ((in & 0x00FF0000) >> 8) + ((in & 0xFF000000) >> 24)) : in;
+ }
+-
