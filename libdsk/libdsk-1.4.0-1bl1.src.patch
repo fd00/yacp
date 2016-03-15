@@ -1,0 +1,95 @@
+--- origsrc/libdsk-1.4.0/Makefile.am	2014-03-02 10:15:29.000000000 +0900
++++ src/libdsk-1.4.0/Makefile.am	2016-03-15 13:10:30.498656600 +0900
+@@ -39,9 +39,10 @@ EXTRA_DIST= $(srcdir)/config/* \
+ 	    $(srcdir)/win32vc6/*.rgs         \
+ 	    $(srcdir)/win32vc6/*.cpp         \
+ 	    $(srcdir)/win32vc6/vbclient/*    \
+-	    $(srcdir)/win32vc6/*.dsw         
++	    $(srcdir)/win32vc6/*.dsw
+ 
+ install-man:
+ 	cd man && make install-man
+ 
+-
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdsk-1.4.0/configure.ac	2015-12-16 05:00:54.000000000 +0900
++++ src/libdsk-1.4.0/configure.ac	2016-03-15 13:10:46.399113100 +0900
+@@ -53,11 +53,13 @@ AC_CHECK_HEADERS(errno.h limits.h sys/io
+ AC_CHECK_HEADERS(unistd.h termios.h libgen.h assert.h)
+ AC_CHECK_HEADERS(dirent.h fcntl.h utime.h pwd.h time.h dir.h direct.h)
+ AC_CHECK_HEADERS(linux/fd.h linux/fdreg.h shlobj.h)
+-AC_CHECK_HEADERS([windows.h winioctl.h], [], [], 
++if test "$host_os" != "cygwin"; then
++AC_CHECK_HEADERS([windows.h winioctl.h], [], [],
+ [[#ifdef HAVE_WINDOWS_H
+ #include <windows.h>
+ #endif
+ ]])
++fi
+ 
+ dnl Checks for functions
+ AC_CHECK_FUNCS(strcmpi stricmp strcasecmp, break)
+@@ -95,12 +97,12 @@ if test x$with_jni = xyes; then
+      done
+ 	AC_CHECK_HEADERS(jni.h)
+ 	LIBDSKJAR=libdsk.jar
+-	TOOLCLASSES="DskFormat.class DskID.class DskTrans.class" 
++	TOOLCLASSES="DskFormat.class DskID.class DskTrans.class"
+ else
+ 	LIBDSKJAR=
+ 	TOOLCLASSES=
+-	JAVAH=true 
+-	JAVAC=true 
++	JAVAH=true
++	JAVAC=true
+ 	JAVA=true
+ 	JAVADOC=true
+ 	JAR=true
+@@ -124,4 +126,4 @@ AC_CHECK_FUNCS(strerror)
+ AC_SUBST(LIBDSKJAR)
+ AC_SUBST(TOOLCLASSES)
+ AC_SUBST(CLASSPATH)
+-AC_OUTPUT(Makefile doc/Makefile include/Makefile lib/Makefile tools/Makefile man/Makefile)
++AC_OUTPUT(libdsk.pc Makefile doc/Makefile include/Makefile lib/Makefile tools/Makefile man/Makefile)
+--- origsrc/libdsk-1.4.0/lib/Makefile.am	2015-06-07 08:23:09.000000000 +0900
++++ src/libdsk-1.4.0/lib/Makefile.am	2016-03-15 11:50:11.519226300 +0900
+@@ -28,9 +28,9 @@ EXTRA_DIST=$(CLASSDPRE)/Drive.java \
+ # first number and set the middle one to 0.
+ # If interfaces have been added increment the right-hand number.
+ # If interfaces have been removed set the right-hand number to 0.
+-# 
+ #
+-libdsk_la_LDFLAGS = -version-info 6:12:3
++#
++libdsk_la_LDFLAGS = -no-undefined -version-info 6:12:3
+ libdsk_la_SOURCES = dskread.c  dskwrite.c dskcheck.c dskstat.c \
+ 		   dsklphys.c dskfmt.c   dskopen.c  dskpars.c \
+ 		   dskerror.c dskseek.c  dsksecid.c dskgeom.c \
+@@ -73,7 +73,7 @@ libdsk_la_SOURCES = dskread.c  dskwrite.
+ 		   drvmyz80.h drvmyz80.c \
+ 		   drvydsk.h  drvydsk.c \
+ 		   drvcfi.h   drvcfi.c \
+-		   drvqm.h    drvqm.c 
++		   drvqm.h    drvqm.c
+ 
+ JARCLASSES=$(CLASSDPRE)/Drive.class \
+ 	   $(CLASSDPRE)/DskException.class \
+@@ -108,4 +108,3 @@ $(srcdir)/dskjni.c:	$(JARHEADERS)
+ install-exec-local:
+ 	$(mkinstalldirs) $(libdir)
+ 	if test x@LIBDSKJAR@ = x; then true; else $(INSTALL_DATA) @LIBDSKJAR@ $(DESTDIR)/$(libdir); fi
+-
+--- origsrc/libdsk-1.4.0/libdsk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdsk-1.4.0/libdsk.pc.in	2016-03-15 13:10:24.879908400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdsk
++Description: Library for accessing discs and disc image files
++Version: @VERSION@
++Libs: -L${libdir} -ldsk
++Cflags: -I${includedir}
