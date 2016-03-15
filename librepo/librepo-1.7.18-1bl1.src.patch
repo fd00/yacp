@@ -1,0 +1,135 @@
+--- origsrc/librepo-librepo-1.7.18/CMakeLists.txt	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/CMakeLists.txt	2016-03-15 19:14:06.989694100 +0900
+@@ -7,7 +7,7 @@ OPTION (ENABLE_DOCS "Build docs?" ON)
+ INCLUDE (${CMAKE_SOURCE_DIR}/VERSION.cmake)
+ SET (VERSION "${LIBREPO_MAJOR}.${LIBREPO_MINOR}.${LIBREPO_PATCH}")
+ 
+-SET (CMAKE_C_FLAGS          "${CMAKE_C_FLAGS} -std=c99 -Wall")
++SET (CMAKE_C_FLAGS          "${CMAKE_C_FLAGS} -std=gnu11 -Wall")
+ SET (CMAKE_C_FLAGS_DEBUG    "${CMAKE_C_FLAGS} -ggdb -O0 -Wall -Wextra -DDEBUG")
+ 
+ IF(CMAKE_BUILD_TYPE AND (CMAKE_BUILD_TYPE STREQUAL "DEBUG" OR CMAKE_BUILD_TYPE STREQUAL "debug"))
+@@ -33,6 +33,7 @@ FIND_PACKAGE(EXPAT REQUIRED)
+ FIND_PACKAGE(CURL REQUIRED)
+ FIND_PACKAGE(Gpgme REQUIRED)
+ FIND_PACKAGE(Xattr REQUIRED)
++FIND_PACKAGE(OpenSSL REQUIRED)
+ 
+ INCLUDE_DIRECTORIES(${GLIB2_INCLUDE_DIRS})
+ 
+--- origsrc/librepo-librepo-1.7.18/librepo/CMakeLists.txt	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/CMakeLists.txt	2016-03-15 19:01:07.484488700 +0900
+@@ -49,6 +49,7 @@ TARGET_LINK_LIBRARIES(librepo
+                         ${LIBCRYPTO_LIBRARIES}
+                         ${GPGME_VANILLA_LIBRARIES}
+                         ${GLIB2_LIBRARIES}
++                        ${OPENSSL_LIBRARIES}
+                      )
+ SET_TARGET_PROPERTIES(librepo PROPERTIES OUTPUT_NAME "repo")
+ SET_TARGET_PROPERTIES(librepo PROPERTIES SOVERSION 0)
+@@ -57,13 +58,13 @@ SET_TARGET_PROPERTIES(librepo PROPERTIES
+ CONFIGURE_FILE("librepo.pc.cmake" "${CMAKE_BINARY_DIR}/librepo.pc" @ONLY)
+ CONFIGURE_FILE("version.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/version.h" @ONLY)
+ 
+-IF (CMAKE_SIZEOF_VOID_P MATCHES "8")
++IF (CMAKE_SIZEOF_VOID_P MATCHES "8" AND NOT CYGWIN)
+   SET (LIB_SUFFIX "64")
+-ENDIF (CMAKE_SIZEOF_VOID_P MATCHES "8")
++ENDIF (CMAKE_SIZEOF_VOID_P MATCHES "8" AND NOT CYGWIN)
+ SET (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}")
+ 
+ INSTALL(FILES ${librepo_HEADERS} DESTINATION include/librepo)
+-INSTALL(TARGETS librepo LIBRARY DESTINATION ${LIB_INSTALL_DIR})
++INSTALL(TARGETS librepo RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+ INSTALL(FILES "${CMAKE_BINARY_DIR}/librepo.pc"
+        DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
+ 
+--- origsrc/librepo-librepo-1.7.18/librepo/downloader.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/downloader.c	2016-03-15 19:05:24.782309900 +0900
+@@ -29,6 +29,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
++#include <sys/select.h>
+ #include <curl/curl.h>
+ #include <attr/xattr.h>
+ 
+--- origsrc/librepo-librepo-1.7.18/librepo/handle.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/handle.c	2016-03-15 19:03:41.439803600 +0900
+@@ -27,6 +27,7 @@
+ #include <string.h>
+ #include <assert.h>
+ #include <stdarg.h>
++#include <sys/select.h>
+ #include <curl/curl.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+--- origsrc/librepo-librepo-1.7.18/librepo/mirrorlist.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/mirrorlist.c	2016-03-15 19:06:14.661531500 +0900
+@@ -18,13 +18,16 @@
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+  */
+ 
++#if !defined(__CYGWIN__)
+ #define _POSIX_SOURCE
++#endif
+ 
+ #include <errno.h>
+ #include <assert.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <sys/select.h>
+ 
+ #include "rcodes.h"
+ #include "util.h"
+--- origsrc/librepo-librepo-1.7.18/librepo/python/python2/CMakeLists.txt	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/python/python2/CMakeLists.txt	2016-03-15 19:01:07.484488700 +0900
+@@ -23,4 +23,4 @@ TARGET_LINK_LIBRARIES(_librepomodule
+                      )
+ 
+ INSTALL(FILES ${pylibrepo_SRCDIR}/__init__.py DESTINATION ${PYTHON_INSTALL_DIR}/librepo)
+-INSTALL(TARGETS _librepomodule LIBRARY DESTINATION ${PYTHON_INSTALL_DIR}/librepo)
++INSTALL(TARGETS _librepomodule RUNTIME DESTINATION ${PYTHON_INSTALL_DIR}/librepo)
+--- origsrc/librepo-librepo-1.7.18/librepo/repoutil_yum.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/repoutil_yum.c	2016-03-15 19:06:32.974755000 +0900
+@@ -27,6 +27,7 @@
+ #include <string.h>
+ #include <errno.h>
+ #include <assert.h>
++#include <sys/select.h>
+ 
+ #include "rcodes.h"
+ #include "util.h"
+--- origsrc/librepo-librepo-1.7.18/librepo/util.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/util.c	2016-03-15 19:14:34.000013600 +0900
+@@ -22,6 +22,7 @@
+ #define _XOPEN_SOURCE 500
+ #include <glib.h>
+ #include <glib/gprintf.h>
++#include <sys/select.h>
+ #include <curl/curl.h>
+ #include <assert.h>
+ #include <errno.h>
+--- origsrc/librepo-librepo-1.7.18/librepo/yum.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/librepo/yum.c	2016-03-15 19:01:07.500113700 +0900
+@@ -18,7 +18,9 @@
+  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+  */
+ 
++#if !defined(__CYGWIN__)
+ #define _POSIX_SOURCE
++#endif
+ #define _BSD_SOURCE
+ 
+ #include <stdio.h>
+--- origsrc/librepo-librepo-1.7.18/tests/fixtures.c	2016-03-04 17:51:19.000000000 +0900
++++ src/librepo-librepo-1.7.18/tests/fixtures.c	2016-03-15 19:14:48.996573100 +0900
+@@ -3,6 +3,7 @@
+ #include <stdio.h>
+ #include <check.h>
+ #include <unistd.h>
++#include <sys/select.h>
+ 
+ #include "librepo/util.h"
+ #include "fixtures.h"
