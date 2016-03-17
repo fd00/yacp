@@ -1,0 +1,168 @@
+--- origsrc/libminizinc-2.0.12/CMakeLists.txt	2016-02-25 14:40:46.000000000 +0900
++++ src/libminizinc-2.0.12/CMakeLists.txt	2016-03-17 23:33:20.584990100 +0900
+@@ -32,13 +32,13 @@ if (HAS_WERROR)
+   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
+ endif()
+ 
+-check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
++check_cxx_compiler_flag(-std=gnu++11 HAS_STDCPP11)
+ if (HAS_STDCPP11)
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+ else()
+-  check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
++  check_cxx_compiler_flag(-std=gnu++0x HAS_STDCPP0X)
+   if (HAS_STDCPP0X)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+   endif()
+ endif()
+ 
+@@ -65,7 +65,7 @@ if (NOT HAS_CPP11)
+     message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
+   endif()
+ endif()
+-   
++
+ CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
+ 
+ if (NOT HAS_ATTR_THREAD)
+@@ -82,7 +82,7 @@ CHECK_CXX_SOURCE_COMPILES("
+ 
+ int main (int argc, char* argv[])
+ {
+-    pid_t pid = getpid(); 
++    pid_t pid = getpid();
+     char path[PROC_PIDPATHINFO_MAXSIZE];
+     (void) proc_pidpath (pid, path, sizeof(path));
+     return 0;
+@@ -182,7 +182,7 @@ else(BISON_EXEC)
+ endif(BISON_EXEC)
+ 
+ 
+-add_library(minizinc
++add_library(minizinc SHARED
+ lib/ast.cpp
+ lib/astexception.cpp
+ lib/aststring.cpp
+@@ -251,6 +251,7 @@ INSTALL(TARGETS mzn2fzn solns2out mzn2do
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+ )
++SET_TARGET_PROPERTIES(minizinc PROPERTIES SOVERSION 0)
+ 
+ option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
+ 
+@@ -296,9 +297,9 @@ INSTALL(DIRECTORY include/minizinc
+ )
+ INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
+ INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
+-INSTALL(DIRECTORY doc/pdf DESTINATION doc)
+-INSTALL(DIRECTORY share/examples DESTINATION share)
+-INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
++INSTALL(DIRECTORY doc/pdf DESTINATION share/doc/minizinc)
++INSTALL(DIRECTORY share/examples DESTINATION share/minizinc)
++INSTALL(DIRECTORY lib/cached DESTINATION lib/minizinc PATTERN md5_cached.cmake EXCLUDE)
+ INSTALL(FILES ${parser_hh} DESTINATION include/minizinc)
+ 
+ SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
+@@ -324,3 +325,11 @@ set(CPACK_SOURCE_IGNORE_FILES
+   "${CMAKE_CURRENT_BINARY_DIR}/;/tests/;/.git/;/.gitignore;~$;${CPACK_SOURCE_IGNORE_FILES}")
+ 
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${libminizinc_VERSION_MAJOR}.${libminizinc_VERSION_MINOR}.${libminizinc_VERSION_PATCH}")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libminizinc-2.0.12/lib/file_utils.cpp	2016-02-25 14:40:46.000000000 +0900
++++ src/libminizinc-2.0.12/lib/file_utils.cpp	2016-03-17 23:32:38.884448800 +0900
+@@ -9,7 +9,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+-#ifdef _MSC_VER 
++#ifdef _MSC_VER
+ #define _CRT_SECURE_NO_WARNINGS
+ #endif
+ 
+@@ -22,7 +22,7 @@
+ #include <string.h>
+ #include <libproc.h>
+ #include <unistd.h>
+-#elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
++#elif (defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)) && !defined(__CYGWIN__)
+ #include <windows.h>
+ #else
+ #include <unistd.h>
+@@ -31,7 +31,7 @@
+ #include <sys/stat.h>
+ 
+ namespace MiniZinc { namespace FileUtils {
+-  
++
+ #ifdef HAS_PIDPATH
+   std::string progpath(void) {
+     pid_t pid = getpid();
+@@ -48,7 +48,7 @@ namespace MiniZinc { namespace FileUtils
+       return p;
+     }
+   }
+-#elif defined(HAS_GETMODULEFILENAME)
++#elif defined(HAS_GETMODULEFILENAME) && !defined(__CYGWIN__)
+   std::string progpath(void) {
+     char path[MAX_PATH];
+     int ret = GetModuleFileName(NULL, path, MAX_PATH);
+@@ -81,11 +81,11 @@ namespace MiniZinc { namespace FileUtils
+     }
+   }
+ #endif
+-  
++
+   bool file_exists(const std::string& filename) {
+-#if defined(HAS_GETFILEATTRIBUTES)
++#if defined(HAS_GETFILEATTRIBUTES) && !defined(__CYGWIN__)
+     DWORD dwAttrib = GetFileAttributes(filename.c_str());
+-    
++
+     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+             !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+ #else
+@@ -93,11 +93,11 @@ namespace MiniZinc { namespace FileUtils
+     return stat(filename.c_str(), &info)==0 && (info.st_mode & S_IFREG);
+ #endif
+   }
+-  
++
+   bool directory_exists(const std::string& dirname) {
+-#if defined(HAS_GETFILEATTRIBUTES)
++#if defined(HAS_GETFILEATTRIBUTES) && !defined(__CYGWIN__)
+     DWORD dwAttrib = GetFileAttributes(dirname.c_str());
+-      
++
+     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+             (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+ #else
+@@ -127,5 +127,5 @@ namespace MiniZinc { namespace FileUtils
+     return rp_s;
+ #endif
+   }
+-  
++
+ }}
+--- origsrc/libminizinc-2.0.12/libminizinc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libminizinc-2.0.12/libminizinc.pc.in	2016-03-17 23:33:32.286947800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libminizinc
++Description: Medium-level constraint modelling language
++Version: @VERSION@
++Libs: -L${libdir} -lminizinc
++Cflags: -I${includedir}
