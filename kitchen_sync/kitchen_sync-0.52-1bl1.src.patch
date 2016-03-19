@@ -1,0 +1,117 @@
+--- origsrc/kitchen_sync-0.52/CMakeLists.txt	2016-02-25 12:01:24.000000000 +0900
++++ src/kitchen_sync-0.52/CMakeLists.txt	2016-03-19 09:12:24.785623400 +0900
+@@ -55,9 +55,10 @@ if(NOT APPLE)
+ 	include_directories(${OPENSSL_INCLUDE_DIRS})
+ endif()
+ 
++
+ # the endpoints do the actual work
+-set(ks_endpoint_SRCS src/schema.cpp src/filters.cpp src/abortable_barrier.cpp src/sync_queue.cpp src/xxHash/xxhash.cpp)
+-set(ks_endpoint_LIBS ${OPENSSL_LIBRARIES} ${YamlCPP_LIBRARIES} ${Boost_LIBRARIES})
++set(ks_endpoint_SRCS src/schema.cpp src/filters.cpp src/abortable_barrier.cpp src/sync_queue.cpp)
++set(ks_endpoint_LIBS ${OPENSSL_LIBRARIES} ${YamlCPP_LIBRARIES} ${Boost_LIBRARIES} xxhash)
+ 
+ # turn on debugging symbols
+ set(CMAKE_BUILD_TYPE Debug)
+@@ -87,16 +88,16 @@ if (PostgreSQL_FOUND)
+ endif()
+ 
+ # tests require ruby and various extra gems.  to run the suite, run
+-#   cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make test
++#   cmake ${CMAKE_SOURCE_DIR} && CTEST_OUTPUT_ON_FAILURE=1 make test
+ enable_testing()
+-add_test(protocol_version_test   env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/protocol_version_test.rb)
+-add_test(snapshot_from_test      env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/snapshot_from_test.rb)
+-add_test(schema_from_test        env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/schema_from_test.rb)
+-add_test(schema_to_test          env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/schema_to_test.rb)
+-add_test(hash_from_test          env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/hash_from_test.rb)
+-add_test(rows_from_test          env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/rows_from_test.rb)
+-add_test(rows_and_hash_from_test env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/rows_and_hash_from_test.rb)
+-add_test(filter_from_test        env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/filter_from_test.rb)
+-add_test(column_types_to_test    env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/column_types_to_test.rb)
+-add_test(column_types_from_test  env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/column_types_from_test.rb)
+-add_test(sync_to_test            env BUNDLE_GEMFILE=../test/Gemfile bundle exec ruby ../test/sync_to_test.rb)
++add_test(protocol_version_test   env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/protocol_version_test.rb)
++add_test(snapshot_from_test      env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/snapshot_from_test.rb)
++add_test(schema_from_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_from_test.rb)
++add_test(schema_to_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_to_test.rb)
++add_test(hash_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/hash_from_test.rb)
++add_test(rows_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/rows_from_test.rb)
++add_test(rows_and_hash_from_test env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/rows_and_hash_from_test.rb)
++add_test(filter_from_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/filter_from_test.rb)
++add_test(column_types_to_test    env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_to_test.rb)
++add_test(column_types_from_test  env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_from_test.rb)
++add_test(sync_to_test            env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/sync_to_test.rb)
+--- origsrc/kitchen_sync-0.52/src/backtrace.h	2016-02-25 12:01:24.000000000 +0900
++++ src/kitchen_sync-0.52/src/backtrace.h	2016-03-19 09:01:15.243880000 +0900
+@@ -1,7 +1,9 @@
+ #ifndef BACKTRACE_H
+ #define BACKTRACE_H
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdlib.h> /* for free() */
+ #include <iostream>
+ 
+@@ -9,11 +11,13 @@ using namespace std;
+ 
+ static void backtrace()
+ {
++#if !defined(__CYGWIN__)
+ 	void *callers[100];
+ 	size_t size = backtrace(callers, 100);
+ 	char **symbols = backtrace_symbols(callers, size);
+ 	for (size_t i = 0; i < size; i++) cerr << symbols[i] << endl;
+ 	free(symbols);
++#endif
+ }
+ 
+ #endif
+--- origsrc/kitchen_sync-0.52/src/env.h	2016-02-25 12:01:24.000000000 +0900
++++ src/kitchen_sync-0.52/src/env.h	2016-03-19 09:08:25.968859900 +0900
+@@ -4,6 +4,10 @@
+ #include <cstdlib>
+ #include <string>
+ 
++#if defined(__CYGWIN__)
++extern "C" int setenv(const char *name, const char *value, int overwrite);
++#endif
++
+ const char *getenv_default(const char *name, const char *default_value) {
+ 	return getenv(name) ? getenv(name) : default_value;
+ }
+--- origsrc/kitchen_sync-0.52/src/ks.cpp	2016-02-25 12:01:24.000000000 +0900
++++ src/kitchen_sync-0.52/src/ks.cpp	2016-03-19 09:08:03.227292900 +0900
+@@ -78,9 +78,9 @@ int main(int argc, char *argv[]) {
+ 		setenv("ENDPOINT_WORKERS", to_string(options.workers));
+ 		setenv("ENDPOINT_STARTFD", to_string(to_descriptor_list_start));
+ 		setenv("ENDPOINT_VERBOSE", to_string(options.verbose));
+-		setenv("ENDPOINT_PROGRESS", options.progress ? "1" : "0", 1);
+-		setenv("ENDPOINT_SNAPSHOT", options.snapshot ? "1" : "0", 1);
+-		setenv("ENDPOINT_ALTER", options.alter ? "1" : "0", 1);
++		setenv("ENDPOINT_PROGRESS", to_string(options.progress ? "1" : "0"));
++		setenv("ENDPOINT_SNAPSHOT", to_string(options.snapshot ? "1" : "0"));
++		setenv("ENDPOINT_ALTER", to_string(options.alter ? "1" : "0"));
+ 		setenv("ENDPOINT_COMMIT_LEVEL", to_string(options.commit_level));
+ 		setenv("ENDPOINT_HASH_ALGORITHM", to_string(options.hash_algorithm));
+ 		setenv("ENDPOINT_STRUCTURE_ONLY", to_string(options.structure_only));
+@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
+ 		for (pid_t pid : child_pids) {
+ 			success &= Process::wait_for_and_check(pid);
+ 		}
+-		
++
+ 		if (success) {
+ 			cout << "Finished Kitchen Syncing." << endl;
+ 			time_t t = time(NULL);
+--- origsrc/kitchen_sync-0.52/src/options.h	2016-02-25 12:01:24.000000000 +0900
++++ src/kitchen_sync-0.52/src/options.h	2016-03-19 09:01:15.263344500 +0900
+@@ -2,6 +2,7 @@
+ #define OPTIONS_H
+ 
+ #include <getopt.h>
++#include <cstdlib>
+ #include <cstring>
+ #include <stdexcept>
+ #include "commit_level.h"
