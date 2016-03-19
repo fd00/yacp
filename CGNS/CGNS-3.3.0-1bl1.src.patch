@@ -1,0 +1,195 @@
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/CMakeLists.txt src/CGNS-3.3.0/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/CMakeLists.txt	2016-03-19 20:39:48.626244000 +0900
+@@ -361,3 +361,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TR
+ # Include the src directory
+ add_subdirectory(src)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/cgns.pc.in src/CGNS-3.3.0/cgns.pc.in
+--- origsrc/CGNS-3.3.0/cgns.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/CGNS-3.3.0/cgns.pc.in	2016-03-19 20:39:42.596623700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: CGNS
++Description: Computational Fluid Dynamics General Notation System
++Version: @CGNS_VERSION@
++Libs: -L${libdir} -lcgns
++Cflags: -I${includedir}
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/CMakeLists.txt src/CGNS-3.3.0/src/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/CMakeLists.txt	2016-03-19 20:15:50.333763200 +0900
+@@ -461,7 +461,9 @@ set(CGNS_BUILD_SHARED "ON" CACHE BOOL "B
+ option(CGNS_USE_SHARED "Link programs to the CGNS shared library" "ON")
+ 
+ # Build a static version of the library
++if (NOT CGNS_BUILD_SHARED)
+ add_library(cgns_static STATIC ${cgns_FILES})
++endif (NOT CGNS_BUILD_SHARED)
+ 
+ # Build a shared version of the library
+ if(CGNS_BUILD_SHARED)
+@@ -490,22 +492,26 @@ else(CGNS_BUILD_SHARED)
+ endif(CGNS_BUILD_SHARED)
+ 
+ # Change the output name of the library to be libcgns
++if (NOT CGNS_BUILD_SHARED)
+ set_target_properties(cgns_static PROPERTIES OUTPUT_NAME cgns)
+ set_target_properties(cgns_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++endif (NOT CGNS_BUILD_SHARED)
+ if(CGNS_BUILD_SHARED)
+   # for windows we need to change the name of the shared library
+   # for both static and shared version to exist
+-  if (WIN32 OR CYGWIN)
++  if (WIN32)
+     set_target_properties(cgns_shared PROPERTIES OUTPUT_NAME cgnsdll)
+-  else (WIN32 OR CYGWIN)
++  else (WIN32)
+     set_target_properties(cgns_shared PROPERTIES OUTPUT_NAME cgns)
+-  endif (WIN32 OR CYGWIN)
++  endif (WIN32)
+   set_target_properties(cgns_shared PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ endif(CGNS_BUILD_SHARED)
+ 
+ # Set the version numbers
++if (NOT CGNS_BUILD_SHARED)
+ set_target_properties(cgns_static PROPERTIES VERSION "${CGNS_VERSION}")
+ set_target_properties(cgns_static PROPERTIES SOVERSION "${CGNS_VERSION}")
++endif (NOT CGNS_BUILD_SHARED)
+ 
+ if(CGNS_BUILD_SHARED)
+   set_target_properties(cgns_shared PROPERTIES VERSION "${CGNS_VERSION}")
+@@ -513,16 +519,21 @@ if(CGNS_BUILD_SHARED)
+ endif(CGNS_BUILD_SHARED)
+ 
+ # Set the install path of the static library
++if (NOT CGNS_BUILD_SHARED)
+ install(TARGETS cgns_static ARCHIVE DESTINATION lib)
++endif (NOT CGNS_BUILD_SHARED)
+ # Set the install path of the shared library
+ if(CGNS_BUILD_SHARED)
+   # for windows, need to install both cgnsdll.dll and cgnsdll.lib
+-  if (WIN32 OR CYGWIN)
++  if (WIN32)
+     install(TARGETS cgns_shared ARCHIVE DESTINATION lib)
+     install(TARGETS cgns_shared RUNTIME DESTINATION lib)
+-  else (WIN32 OR CYGWIN)
++  elseif (CYGWIN)
++    install(TARGETS cgns_shared ARCHIVE DESTINATION lib)
++    install(TARGETS cgns_shared RUNTIME DESTINATION bin)
++  else (WIN32)
+     install(TARGETS cgns_shared LIBRARY DESTINATION lib)
+-  endif (WIN32 OR CYGWIN)
++  endif (WIN32)
+ endif(CGNS_BUILD_SHARED)
+ 
+ # Set the install path of the header files
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/Test_UserGuideCode/C_code/CMakeLists.txt src/CGNS-3.3.0/src/Test_UserGuideCode/C_code/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2016-03-19 20:32:08.067298800 +0900
+@@ -4,7 +4,11 @@
+ 
+ # Link all the executables to cgns and hdf5
+ link_directories(.)
++if (CGNS_BUILD_SHARED)
++  link_libraries(cgns_shared)
++else (CGNS_BUILD_SHARED)
+ link_libraries(cgns_static)
++endif (CGNS_BUILD_SHARED)
+ 
+ if (CGNS_ENABLE_HDF5 AND HDF5_LIBRARY)
+   link_libraries(${HDF5_LIBRARY})
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/cgnstools/cgnscalc/CMakeLists.txt src/CGNS-3.3.0/src/cgnstools/cgnscalc/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/cgnstools/cgnscalc/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/cgnstools/cgnscalc/CMakeLists.txt	2016-03-19 20:35:01.836557300 +0900
+@@ -5,12 +5,12 @@
+ include_directories(${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH})
+ include_directories(../calclib)
+ link_directories(.)
+-if (CGNS_USE_SHARED)
++link_libraries(calclib ${TCL_LIBRARY} ${TK_LIBRARY})
++if (CGNS_BUILD_SHARED)
+   link_libraries(cgns_shared)
+-else (CGNS_USE_SHARED)
++else (CGNS_BUILD_SHARED)
+   link_libraries(cgns_static)
+-endif (CGNS_USE_SHARED)
+-link_libraries(calclib ${TCL_LIBRARY} ${TK_LIBRARY})
++endif (CGNS_BUILD_SHARED)
+ 
+ if (CGNS_ENABLE_HDF5 AND HDF5_LIBRARY)
+   link_libraries(${HDF5_LIBRARY})
+@@ -93,4 +93,3 @@ else (WIN32)
+ 	unitconv.xbm
+ 	DESTINATION share/cgnstools)
+ endif (WIN32)
+-
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/cgnstools/cgnsplot/CMakeLists.txt src/CGNS-3.3.0/src/cgnstools/cgnsplot/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/cgnstools/cgnsplot/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/cgnstools/cgnsplot/CMakeLists.txt	2016-03-19 20:17:37.726147900 +0900
+@@ -5,11 +5,11 @@
+ include_directories(${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH} ${OPENGL_INCLUDE_DIR})
+ include_directories(../common)
+ link_directories(. ../tkogl)
+-if (CGNS_USE_SHARED)
++if (CGNS_BUILD_SHARED)
+   link_libraries(cgns_shared)
+-else (CGNS_USE_SHARED)
++else (CGNS_BUILD_SHARED)
+   link_libraries(cgns_static)
+-endif (CGNS_USE_SHARED)
++endif (CGNS_BUILD_SHARED)
+ link_libraries(tkogl ${TCL_LIBRARY} ${TK_LIBRARY}
+ 	${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
+ 
+@@ -82,4 +82,3 @@ else (WIN32)
+ 	cgnsplot-mask.xbm
+ 	DESTINATION share/cgnstools)
+ endif (WIN32)
+-
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/cgnstools/utilities/CMakeLists.txt src/CGNS-3.3.0/src/cgnstools/utilities/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/cgnstools/utilities/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/cgnstools/utilities/CMakeLists.txt	2016-03-19 20:35:42.200160700 +0900
+@@ -8,12 +8,12 @@ include_directories(../common)
+ 
+ # cgns_info
+ link_directories(.)
++link_libraries(calclib)
+ if (CGNS_USE_SHARED)
+   link_libraries(cgns_shared)
+ else (CGNS_USE_SHARED)
+   link_libraries(cgns_static)
+ endif (CGNS_USE_SHARED)
+-link_libraries(calclib)
+ if (NOT WIN32)
+   link_libraries(m)
+ endif (NOT WIN32)
+@@ -287,4 +287,3 @@ else (WIN32)
+ 	vtk.tcl
+ 	DESTINATION share/cgnstools)
+ endif (WIN32)
+-
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/CGNS-3.3.0/src/tests/CMakeLists.txt src/CGNS-3.3.0/src/tests/CMakeLists.txt
+--- origsrc/CGNS-3.3.0/src/tests/CMakeLists.txt	2016-01-26 08:22:32.000000000 +0900
++++ src/CGNS-3.3.0/src/tests/CMakeLists.txt	2016-03-19 20:18:14.809871700 +0900
+@@ -4,7 +4,11 @@
+ 
+ # Link all the executables to cgns and hdf5
+ link_directories(.)
++if (CGNS_BUILD_SHARED)
++  link_libraries(cgns_shared)
++else (CGNS_BUILD_SHARED)
+ link_libraries(cgns_static)
++endif (CGNS_BUILD_SHARED)
+ 
+ if (CGNS_ENABLE_HDF5 AND HDF5_LIBRARY)
+   link_libraries(${HDF5_LIBRARY})
