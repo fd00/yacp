@@ -1,5 +1,6 @@
 HOMEPAGE="https://software.ecmwf.int/wiki/display/GRIB/Home"
-SRC_URI="https://software.ecmwf.int/wiki/download/attachments/3473437/${P}.tar.gz"
+SRC_URI="https://software.ecmwf.int/wiki/download/attachments/3473437/${P}-Source.tar.gz?api=v2"
+SRC_DIR="${P}-Source"
 
 CATEGORY="Science"
 SUMMARY="Library for decoding WMO FM-92 GRIB messages"
@@ -12,7 +13,7 @@ CYGPORT_USE_UNSTABLE_API=1
 src_patch_hook()
 {
 	cd ${origsrcdir}/${SRC_DIR}
-	chmod -R u+w *
+	rm -f config.status
 }
 
 CYGCONF_ARGS="
@@ -24,51 +25,28 @@ CYGCONF_ARGS="
 	--with-png-support
 "
 
-MAKEOPTS="-j1"
-
-src_test()
-{
-	cd ${B}
-	ln -sf ${S}/data data
-	cp ${S}/tests/*.sh tests/
-	rm -f tests/include.sh
-	touch tests/include.sh
-	cp ${S}/examples/C/*.sh examples/C/
-	cp ${S}/examples/F90/*.sh examples/F90/
-	rm -f ${B}/examples/C/include.sh
-	rm -f ${B}/examples/F90/include.sh
-	touch examples/C/include.sh
-	touch examples/F90/include.sh
-	cygtest
-	rm -f data
-	rm -f ${B}/tests/*.sh
-	rm -f ${B}/examples/C/*.sh
-	rm -f ${B}/examples/F90/*.sh
-}
-
 DIFF_EXCLUDES="
 	data
+	perl
+	*.pc
 "
 
 PKG_NAMES="
 	${PN}
-	lib${PN}0
+	lib${PN}1
 	lib${PN}-devel
 "
 grib_api_CONTENTS="
-	usr/bin/[bgt]*
-	usr/share/doc/Cygwin
-	usr/share/doc/${PN}/[A-Z]*
-	usr/share/${PN}
+	usr/bin --exclude=*.dll
+	usr/share
 "
-libgrib_api0_CONTENTS="
+libgrib_api1_CONTENTS="
 	usr/bin/*.dll
 "
 libgrib_api_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-
 grib_api_SUMMARY="${SUMMARY} (utilities)"
-libgrib_api0_SUMMARY="${SUMMARY} (runtime)"
+libgrib_api1_SUMMARY="${SUMMARY} (runtime)"
 libgrib_api_devel_SUMMARY="${SUMMARY} (development)"
