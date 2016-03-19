@@ -1,0 +1,126 @@
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x tap-driver.sh origsrc/cdo-1.7.1/libcdi/app/cdi.c src/cdo-1.7.1/libcdi/app/cdi.c
+--- origsrc/cdo-1.7.1/libcdi/app/cdi.c	2016-01-29 19:21:29.000000000 +0900
++++ src/cdo-1.7.1/libcdi/app/cdi.c	2016-03-19 17:24:13.678999400 +0900
+@@ -56,9 +56,10 @@ void cdiDefTableID(int tableID);
+ 
+ int getopt(int argc, char *const argv[], const char *optstring);
+ 
++#if !defined(__CYGWIN__)
+ extern char *optarg;
+ extern int optind, opterr, optopt;
+-
++#endif
+ 
+ static char *Progname;
+ 
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x tap-driver.sh origsrc/cdo-1.7.1/libcdi/m4/acx_options.m4 src/cdo-1.7.1/libcdi/m4/acx_options.m4
+--- origsrc/cdo-1.7.1/libcdi/m4/acx_options.m4	2016-01-29 19:21:29.000000000 +0900
++++ src/cdo-1.7.1/libcdi/m4/acx_options.m4	2016-03-19 17:16:28.940146100 +0900
+@@ -35,9 +35,7 @@ AC_ARG_WITH([zlib],
+             [AS_CASE(["$with_zlib"],
+                      [no],[AC_MSG_CHECKING([for ZLIB library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(zlib.h)
+-                            AC_SEARCH_LIBS([deflate],[z],[AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])
+-                            ZLIB_LIBS=" -lz"],
++                     [yes],[PKG_CHECK_MODULES([ZLIB], [zlib], [AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])],
+                      [*],[ZLIB_ROOT=$with_zlib
+                           LDFLAGS="-L$ZLIB_ROOT/lib $LDFLAGS"
+                           CPPFLAGS="-I$ZLIB_ROOT/include $CPPFLAGS"
+@@ -60,7 +58,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+@@ -214,10 +212,7 @@ AC_ARG_WITH([jasper],
+             [AS_CASE(["$with_jasper"],
+                      [no],[AC_MSG_CHECKING([for jasper library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([jasper.h])
+-                            AC_SEARCH_LIBS([jas_init],[jasper],[AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])],
+-                                           [AC_MSG_ERROR([Could not link to jasper library! Required for GRIB_API])])
+-                            AC_SUBST([JASPER_LIBS],[" -ljasper"])],
++                     [yes],[PKG_CHECK_MODULES([JASPER], [jasper], [AC_DEFINE([HAVE_LIBJASPER],[1],[Define to 1 for JPEG compression for GRIB2])])],
+                      [*],[JASPER_ROOT=$with_jasper
+                           AS_IF([test -d "$JASPER_ROOT"],
+                                 [LDFLAGS="$LDFLAGS -L$JASPER_ROOT/lib"
+@@ -240,10 +235,7 @@ AC_ARG_WITH([openjpeg],
+             [AS_CASE(["$with_openjpeg"],
+                      [no],[AC_MSG_CHECKING([for openjpeg library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([openjpeg.h])
+-                            AC_SEARCH_LIBS([opj_image_create],[openjpeg],[AC_DEFINE([HAVE_LIBOPENJPEG],[1],[Define to 1 for JPEG compression for GRIB2])],
+-                                           [AC_MSG_ERROR([Could not link to openjpeg library! Required for GRIB_API])])
+-                            AC_SUBST([openjpeg_LIBS],[" -lopenjpeg"])],
++                     [yes],[PKG_CHECK_MODULES([LIBOPENJPEG], [libopenjpeg], [AC_DEFINE([HAVE_LIBOPENJPEG],[1],[Define to 1 for JPEG compression for GRIB2])])],
+                      [*],[OPENJPEG_ROOT=$with_openjpeg
+                           AS_IF([test -d "$OPENJPEG_ROOT"],
+                                 [LDFLAGS="$LDFLAGS -L$OPENJPEG_ROOT/lib"
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x tap-driver.sh origsrc/cdo-1.7.1/libcdi/src/Makefile.am src/cdo-1.7.1/libcdi/src/Makefile.am
+--- origsrc/cdo-1.7.1/libcdi/src/Makefile.am	2016-01-29 19:21:30.000000000 +0900
++++ src/cdo-1.7.1/libcdi/src/Makefile.am	2016-03-19 17:17:03.505092000 +0900
+@@ -7,6 +7,7 @@ noinst_LTLIBRARIES = libcdiresunpack.la
+ if ENABLE_CDI_LIB
+   lib_LTLIBRARIES = libcdi.la
+   include_HEADERS = cdi.h cdi.inc
++  libcdi_la_LDFLAGS = -no-undefined
+ else
+   noinst_LTLIBRARIES += libcdi.la
+ endif
+@@ -162,6 +163,7 @@ if USE_MPI
+ if ENABLE_CDI_LIB
+ lib_LTLIBRARIES += libcdipio.la
+ include_HEADERS += cdipio.h cdipio.inc
++libcdipio_la_LDFLAGS = -no-undefined
+ else
+ noinst_LTLIBRARIES += libcdipio.la
+ endif
+@@ -287,4 +289,3 @@ install-exec-hook:
+ 	-@rmdir "$(DESTDIR)$(libdir)"
+ install-data-hook:
+ 	-@rmdir "$(DESTDIR)$(includedir)"
+-
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x tap-driver.sh origsrc/cdo-1.7.1/libcdi/src/cgribexlib.c src/cdo-1.7.1/libcdi/src/cgribexlib.c
+--- origsrc/cdo-1.7.1/libcdi/src/cgribexlib.c	2016-02-19 19:20:15.000000000 +0900
++++ src/cdo-1.7.1/libcdi/src/cgribexlib.c	2016-03-19 17:17:42.699904500 +0900
+@@ -5992,7 +5992,7 @@ extern "C" {
+ #if defined (HAVE_LIBAEC)
+ #  include <libaec.h>
+ #else
+-#  include <szlib.h>
++#  include <szip/szlib.h>
+ #endif
+ #if defined (__cplusplus)
+ }
+@@ -13794,4 +13794,3 @@ cgribexLibraryVersion(void)
+ #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 5)
+ #pragma GCC diagnostic pop
+ #endif
+-
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x tap-driver.sh origsrc/cdo-1.7.1/m4/acx_options.m4 src/cdo-1.7.1/m4/acx_options.m4
+--- origsrc/cdo-1.7.1/m4/acx_options.m4	2016-02-11 19:44:33.000000000 +0900
++++ src/cdo-1.7.1/m4/acx_options.m4	2016-03-19 17:14:59.283135300 +0900
+@@ -39,9 +39,7 @@ AC_ARG_WITH([zlib],
+             [AS_CASE(["$with_zlib"],
+                      [no],[AC_MSG_CHECKING([for ZLIB library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(zlib.h)
+-                            AC_SEARCH_LIBS([deflate],[z],[AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])
+-                            ZLIB_LIBS=" -lz"],
++                     [yes],[PKG_CHECK_MODULES([ZLIB], [zlib], [AC_DEFINE([HAVE_LIBZ],[1],[Define 1 for ZLIB support])])],
+                      [*],[ZLIB_ROOT=$with_zlib
+                           LDFLAGS="-L$ZLIB_ROOT/lib $LDFLAGS"
+                           CPPFLAGS="-I$ZLIB_ROOT/include $CPPFLAGS"
+@@ -64,7 +62,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
