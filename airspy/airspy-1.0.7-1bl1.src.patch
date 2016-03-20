@@ -1,0 +1,56 @@
+diff -wuprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/host-1.0.7/libairspy/src/CMakeLists.txt src/host-1.0.7/libairspy/src/CMakeLists.txt
+--- origsrc/host-1.0.7/libairspy/src/CMakeLists.txt	2015-12-04 06:06:56.000000000 +0900
++++ src/host-1.0.7/libairspy/src/CMakeLists.txt	2016-03-20 13:08:14.836963000 +0900
+@@ -58,6 +58,8 @@ set_target_properties(airspy PROPERTIES
+ endif( ${WIN32} )
+ 
+ # Static library
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
+ add_library(airspy-static STATIC ${c_sources})
+ if(MSVC)
+ 	set_target_properties(airspy-static PROPERTIES OUTPUT_NAME "airspy_static")
+@@ -67,25 +69,23 @@ endif()
+ 
+ set_target_properties(airspy PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ set_target_properties(airspy-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++endif()
+ 
+ # Dependencies
+ target_link_libraries(airspy ${LIBUSB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    
+-# For cygwin just force UNIX OFF and WIN32 ON
+-if( ${CYGWIN} )
+-  SET(UNIX OFF)
+-  SET(WIN32 ON)
+-endif( ${CYGWIN} )
+-
+ if( ${UNIX} )
+    install(TARGETS airspy
+-           LIBRARY DESTINATION lib${LIB_SUFFIX}
++           RUNTIME DESTINATION bin
++           ARCHIVE DESTINATION lib
+            COMPONENT sharedlibs
+            )
++    if(ENABLE_STATIC)
+    install(TARGETS airspy-static
+            ARCHIVE DESTINATION lib${LIB_SUFFIX}
+            COMPONENT staticlibs
+            )
++    endif()
+    install(FILES ${c_headers}
+            DESTINATION include/${PROJECT_NAME}
+            COMPONENT headers
+@@ -97,10 +97,12 @@ if( ${WIN32} )
+            DESTINATION bin
+            COMPONENT sharedlibs
+            )
++    if(ENABLE_STATIC)
+    install(TARGETS airspy-static
+            DESTINATION bin
+            COMPONENT staticlibs
+            )
++    endif()
+    install(FILES ${c_headers}
+            DESTINATION include/${PROJECT_NAME}
+            COMPONENT headers
