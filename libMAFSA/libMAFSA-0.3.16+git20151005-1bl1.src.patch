@@ -1,5 +1,5 @@
---- origsrc/libMAFSA/CMakeLists.txt	2014-07-22 23:41:49.000000000 +0900
-+++ src/libMAFSA/CMakeLists.txt	2014-07-22 23:45:11.141072400 +0900
+--- origsrc/libMAFSA/CMakeLists.txt	2016-03-31 09:17:57.000000000 +0900
++++ src/libMAFSA/CMakeLists.txt	2016-03-31 09:20:53.821323200 +0900
 @@ -4,12 +4,12 @@ PROJECT (libMAFSA)
  SET (LIBMAFSA_VERSION 0.3.16)
  SET (LIBMAFSA_RPM_RELEASE 16)
@@ -25,23 +25,37 @@
  
  SET (SMAFSA_EXLS src/test/exls_test.cpp)
  SET (SMAFSA_UNIT src/test/unit_test.cpp src/test/unit_adapter.c)
-@@ -33,11 +33,11 @@ TARGET_LINK_LIBRARIES (MAFSA_exls MAFSA)
- TARGET_LINK_LIBRARIES (MAFSA_unit MAFSA)
- 
- SET (LIBDIR lib)
--IF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-+IF (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND NOT CYGWIN)
-   SET (LIBDIR lib64)
--ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-+ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND NOT CYGWIN)
+@@ -37,7 +37,7 @@ SET (LIBDIR lib)
+ #  SET (LIBDIR lib64)
+ #ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
  
 -INSTALL (TARGETS MAFSA DESTINATION ${LIBDIR})
 +INSTALL (TARGETS MAFSA RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIBDIR})
  INSTALL (DIRECTORY include/MAFSA DESTINATION include PATTERN ".*" EXCLUDE)
  
  # test from coda (TODO make this more general)
-@@ -46,3 +46,4 @@ TARGET_LINK_LIBRARIES (dic_compiler MAFS
+@@ -46,3 +46,11 @@ TARGET_LINK_LIBRARIES (dic_compiler MAFS
  ADD_EXECUTABLE (dic_finder test/dic_finder.c test/dic_adapter.c)
  TARGET_LINK_LIBRARIES (dic_finder MAFSA)
  
-+set_target_properties(MAFSA PROPERTIES SOVERSION 0)
++SET_TARGET_PROPERTIES(MAFSA PROPERTIES SOVERSION 0)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libMAFSA/libMAFSA.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libMAFSA/libMAFSA.pc.in	2016-03-31 09:21:07.336149000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libMAFSA
++Description: Minimal Acyclic Finite-State Automata
++Version: @LIBMAFSA_VERSION@
++Libs: -L${libdir} -lMAFSA
++Cflags: -I${includedir}
