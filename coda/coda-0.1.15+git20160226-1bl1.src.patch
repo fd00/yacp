@@ -1,0 +1,44 @@
+--- origsrc/coda/CMakeLists.txt	2016-03-31 20:21:58.000000000 +0900
++++ src/coda/CMakeLists.txt	2016-03-31 20:28:33.077654800 +0900
+@@ -2,12 +2,13 @@ PROJECT (coda)
+ CMAKE_MINIMUM_REQUIRED (VERSION 2.6)
+ INCLUDE (CMakeMacro.cmake)
+ 
+-USE_PACKAGE (expat expat.h)
++FIND_PACKAGE (PkgConfig)
++PKG_CHECK_MODULES (EXPAT expat)
+ 
+ AUX_SOURCE_DIRECTORY (coda/ SRC_coda)
+-ADD_LIBRARY (coda ${SRC_coda})
+-TARGET_LINK_LIBRARIES (coda ${LIB_expat} pthread)
+-INSTALL (TARGETS coda DESTINATION ${LIBDIR})
++ADD_LIBRARY (coda SHARED ${SRC_coda})
++TARGET_LINK_LIBRARIES (coda ${EXPAT_LIBRARIES} pthread)
++INSTALL (TARGETS coda RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIBDIR})
+ INSTALL (DIRECTORY coda/ DESTINATION include/coda FILES_MATCHING PATTERN "*.h")
+ INSTALL (DIRECTORY coda/ DESTINATION include/coda FILES_MATCHING PATTERN "*.hpp")
+ INSTALL (DIRECTORY coda/ DESTINATION include/coda FILES_MATCHING PATTERN "*.tcc")
+@@ -23,3 +24,10 @@ TARGET_LINK_LIBRARIES (test_cache coda)
+ ADD_EXECUTABLE (test_stringstorage tests/stringstorage/test.c)
+ TARGET_LINK_LIBRARIES (test_stringstorage coda)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.1.15")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/coda/coda.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/coda/coda.pc.in	2016-03-31 20:32:16.488723000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: coda
++Description: Aux library used in bachan projects
++Version: @VERSION@
++Libs: -L${libdir} -lcoda
++Cflags: -I${includedir}/coda
