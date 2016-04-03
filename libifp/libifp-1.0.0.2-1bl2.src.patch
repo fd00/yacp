@@ -1,0 +1,152 @@
+--- origsrc/libifp-1.0.0.2/Makefile.am	2004-12-02 13:39:18.000000000 +0900
++++ src/libifp-1.0.0.2/Makefile.am	2016-04-03 22:24:29.103241400 +0900
+@@ -29,3 +29,5 @@ test: check
+ 
+ .PHONY: docs deb test
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libifp-1.0.0.2/configure.in	2005-08-22 11:46:01.000000000 +0900
++++ src/libifp-1.0.0.2/configure.in	2016-04-03 22:24:30.912423000 +0900
+@@ -22,7 +22,7 @@ LIBUSB=""
+ AC_MSG_CHECKING([libusb])
+ AC_ARG_WITH(libusb,
+ 	AC_HELP_STRING([--with-libusb=PATH],[libusb path (default /usr)]),
+-	ac_libusb=$enableval, ac_libusb=no)
++	ac_libusb=$with_libusb, ac_libusb=no)
+ if test "x${ac_libusb}" != "xno" ; then
+ 		case ${with_libusb} in
+ 			"" | "yes" | "YES")
+@@ -43,7 +43,7 @@ dnl check if libusb is available
+ if test "x${ac_libusb}" != "xno" ; then
+ 	build_userland=yes
+ 	AC_CHECK_HEADERS(usb.h, [],
+-		[ AC_MSG_WARN([usb.h not found, use --with-libusb=PATH]) ]; 
++		[ AC_MSG_WARN([usb.h not found, use --with-libusb=PATH]) ];
+ 		build_userland=no )
+ 
+ 	ac_save_LIBS="$LIBS"
+@@ -59,7 +59,7 @@ dnl misc headers needed by the userland
+ 		[], [ AC_MSG_WARN([missing header, not building useland library]) ]; build_userland=no)
+ dnl AC_SUBST(LIBUSB)
+ 	AC_C_INLINE
+-	
++
+ 	LIBS="$ac_save_LIBS $LIBUSB"
+ fi
+ AM_CONDITIONAL(WANT_USERLAND, test x$build_userland = xyes)
+@@ -112,9 +112,9 @@ if test "x$ac_kmodule" != "xno" ; then
+ 
+ 	AC_MSG_CHECKING(kernel is version 2.6.0+)
+ 	AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
+-	#include <$KERNEL_SOURCE/include/linux/version.h> 
+-	#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0) 
+-	#error unsupported kernel version 
++	#include <$KERNEL_SOURCE/include/linux/version.h>
++	#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
++	#error unsupported kernel version
+ 	#endif
+ 	]])], , [AC_MSG_WARN([*** unsupported kernel version source])]; ac_kmodule="no" )
+ 	AC_MSG_RESULT($ac_kmodule)
+@@ -131,11 +131,8 @@ AC_SUBST(LIBUSB)
+ AC_SUBST(CCFLAGS)
+ AC_SUBST(KERNEL_SOURCE)
+ AC_CONFIG_FILES(Makefile)
+-AC_CONFIG_FILES(docs/Makefile)
+-AC_CONFIG_FILES(dpkg/Makefile)
+-AC_CONFIG_FILES([docs/doxygen.cfg:docs/doxygen.in])
++AC_CONFIG_FILES([libifp.pc docs/doxygen.cfg:docs/doxygen.in])
+ AC_CONFIG_FILES(examples/Makefile)
+-AC_CONFIG_FILES(kbuild/Makefile)
+ AC_CONFIG_FILES(src/Makefile)
+ AC_OUTPUT
+ 
+@@ -149,5 +146,3 @@ echo "	documentation:        $have_doxyg
+ echo "-----------------------------------------------------"
+ echo "type 'make' to build"
+ echo ""
+-
+-
+--- origsrc/libifp-1.0.0.2/examples/ifpline.c	2004-11-19 02:12:37.000000000 +0900
++++ src/libifp-1.0.0.2/examples/ifpline.c	2016-04-03 22:23:02.219455900 +0900
+@@ -19,6 +19,7 @@ static const char rcsid[] = "$Id: ifplin
+ #include <fts.h>
+ #include <unistd.h>
+ #include <usb.h>
++#include <limits.h>
+ 
+ #include "ifp.h"
+ 
+@@ -100,7 +101,7 @@ int upload(struct ifp_device *dev, int a
+ 	fprintf(stderr, "ifp upload: Not enough space on device.\n");
+ 	return -1;
+     }
+-	
++
+     return retval;
+ }
+ 
+@@ -206,7 +207,7 @@ int download(struct ifp_device * dev, in
+ 	    strncpy(path_buf, argv[1], PATH_MAX - 2);
+ 	    strncat(path_buf, "/", 1);
+ 	    strncat(path_buf, get_basename(ifp_path), PATH_MAX - strlen(path_buf) - 1);
+-	    
++
+ 	    i = ifp_download_dir(dev, ifp_path, path_buf, progress, p_context);
+ 	    ifp_err_expect(i, i==-ENOENT||i==-EACCES||i==-ENOSPC||i==IFP_ERR_USER_CANCEL,
+ 		err, "problem downloading directory ifp:\\%s to %s", ifp_path, path_buf);
+@@ -757,7 +758,7 @@ int main(int argc, char **argv)
+ 	help(argv[0]);
+ 	return 0;
+     }
+-	    
++
+     usb_init();
+ 
+     retval = load_device(dev, is_mc == IS_MC);
+@@ -824,7 +825,7 @@ int main(int argc, char **argv)
+ 	    retval = -1;
+ 	} else {
+ 	    // suppress to upload file with name of MC_INFO
+-	    if (!strstr(cur_arg[0], MC_INFO)) { 
++	    if (!strstr(cur_arg[0], MC_INFO)) {
+ 		if ( (fp = fopen(cur_arg[1], "r")) == NULL) {
+ 		    perror(cur_arg[1]);
+ 		    retval = -1;
+@@ -884,7 +885,7 @@ int main(int argc, char **argv)
+ 
+     if (retval != 0 && retval != 1) {
+ 	    printf("%s\n", ifp_error_message(retval));
+-	
++
+     }
+ 
+ //out_1:
+@@ -923,4 +924,3 @@ void help(char *prog) {
+     printf("Note: This program cannot work with UMS firmware.\n");
+     printf("\n");
+ }
+-
+--- origsrc/libifp-1.0.0.2/libifp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libifp-1.0.0.2/libifp.pc.in	2016-04-03 22:24:38.767256500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libifp
++Description: General-purpose library-driver for iRiver iFP portable audio players
++Version: @VERSION@
++Libs: -L${libdir} -lifp
++Cflags: -I${includedir}
+--- origsrc/libifp-1.0.0.2/src/Makefile.am	2005-02-21 05:28:53.000000000 +0900
++++ src/libifp-1.0.0.2/src/Makefile.am	2016-04-03 22:20:50.306226400 +0900
+@@ -1,6 +1,7 @@
+ lib_LTLIBRARIES = libifp.la
+ libifp_la_SOURCES = prim.c comp.c readwrite.c userfile.c ifp_os_libusb.c error_strings.c tuner.c
+ libifp_la_LDFLAGS = -version-info 5:4:1 -no-undefined $(LIBUSB)
++libifp_la_LIBADD = -liconv
+ 
+ include_HEADERS = $(top_srcdir)/include/ifp.h
+ 
