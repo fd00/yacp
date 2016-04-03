@@ -1,0 +1,90 @@
+--- origsrc/libnatpmp-20150609/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libnatpmp-20150609/Makefile.am	2016-04-03 18:51:58.019762200 +0900
+@@ -0,0 +1,20 @@
++
++bin_PROGRAMS = natpmpc
++natpmpc_LDADD = libnatpmp.la
++natpmpc_SOURCES = natpmpc.c
++
++check_PROGRAMS = testgetgateway
++testgetgateway_LDADD = libnatpmp.la
++testgetgateway_SOURCES = testgetgateway.c
++
++include_HEADERS = natpmp.h
++
++lib_LTLIBRARIES = libnatpmp.la
++libnatpmp_la_CPPFLAGS = -DENABLE_STRNATPMPERR
++libnatpmp_la_LDFLAGS = -no-undefined -version-info 1
++libnatpmp_la_SOURCES = natpmp.c getgateway.c
++
++man_MANS = natpmpc.1
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libnatpmp-20150609/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libnatpmp-20150609/configure.ac	2016-04-03 18:51:23.341163400 +0900
+@@ -0,0 +1,31 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([libnatpmp], [20150609])
++AC_CONFIG_SRCDIR([declspec.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++AC_PROG_LN_S
++LT_INIT
++
++# Checks for header files.
++AC_CHECK_HEADERS([arpa/inet.h fcntl.h netinet/in.h stdint.h stdlib.h string.h sys/param.h sys/socket.h sys/time.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_PID_T
++AC_TYPE_SIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_CHECK_FUNCS([gettimeofday inet_ntoa memmove memset select socket strcasecmp strerror strncasecmp])
++
++AC_CONFIG_FILES([libnatpmp.pc Makefile])
++AC_OUTPUT
+--- origsrc/libnatpmp-20150609/getgateway.c	2014-05-06 23:42:48.000000000 +0900
++++ src/libnatpmp-20150609/getgateway.c	2016-04-03 21:58:26.107921500 +0900
+@@ -75,17 +75,6 @@ POSSIBILITY OF SUCH DAMAGE.
+ #define USE_WIN32_CODE_2
+ #endif
+ 
+-#ifdef __CYGWIN__
+-#undef USE_PROC_NET_ROUTE
+-#undef USE_SOCKET_ROUTE
+-#undef USE_SYSCTL_NET_ROUTE
+-#define USE_WIN32_CODE
+-#include <stdarg.h>
+-#include <w32api/windef.h>
+-#include <w32api/winbase.h>
+-#include <w32api/winreg.h>
+-#endif
+-
+ #ifdef __HAIKU__
+ #include <stdlib.h>
+ #include <unistd.h>
+--- origsrc/libnatpmp-20150609/libnatpmp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnatpmp-20150609/libnatpmp.pc.in	2016-04-03 18:51:37.499785800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnatpmp
++Description: Library for NAT Port Mapping Protocol
++Version: @VERSION@
++Libs: -L${libdir} -lnatpmp
++Cflags: -I${includedir}
