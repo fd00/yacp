@@ -1,17 +1,17 @@
---- origsrc/imageworsener-1.2.0/Makefile.am	2014-02-17 02:44:11.000000000 +0900
-+++ src/imageworsener-1.2.0/Makefile.am	2015-01-02 22:47:16.470907700 +0900
+--- origsrc/imageworsener-1.3.0/Makefile.am	2015-11-02 06:44:23.000000000 +0900
++++ src/imageworsener-1.3.0/Makefile.am	2016-04-10 16:18:04.279782900 +0900
 @@ -14,8 +14,8 @@ libimageworsener_la_SOURCES=src/imagew-m
   src/imagew-webp.c \
   src/imagew-pnm.c \
   src/imagew-util.c
 -libimageworsener_la_LIBADD=-lm
--libimageworsener_la_LDFLAGS=-version-info 2:0:1
-+libimageworsener_la_LIBADD=-lm $(LIBPNG_LIBS) $(LIBWEBP_LIBS)
-+libimageworsener_la_LDFLAGS=-no-undefined -version-info 2:0:1
+-libimageworsener_la_LDFLAGS=-release 1.2.0
++libimageworsener_la_LIBADD=-lm $(LIBPNG_LIBS) $(LIBWEBP_LIBS) $(ZLIB_LIBS)
++libimageworsener_la_LDFLAGS=-no-undefined -release 1.2.0
  bin_PROGRAMS=imagew
  imagew_SOURCES=src/imagew-cmd.c
  imagew_LDADD=libimageworsener.la
-@@ -34,9 +34,9 @@ ACLOCAL_AMFLAGS = -I m4
+@@ -34,11 +34,14 @@ ACLOCAL_AMFLAGS = -I m4
  
  check-local:  # Run test suite with support for VPATH builds (e.g. make distcheck)
  	mkdir -p tests
@@ -24,8 +24,22 @@
  	rm tests/expected 2>/dev/null ; true
  	rm tests/srcimg 2>/dev/null ; true
  
---- origsrc/imageworsener-1.2.0/configure.ac	2014-02-17 02:15:23.000000000 +0900
-+++ src/imageworsener-1.2.0/configure.ac	2015-01-02 22:45:25.267782700 +0900
+ distclean-local:  # Clean up after so distcleancheck is happy
+ 	rm -Rf tests/actual/
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/imageworsener-1.3.0/configure.ac	2015-11-04 20:29:52.000000000 +0900
++++ src/imageworsener-1.3.0/configure.ac	2016-04-10 16:18:01.063842900 +0900
+@@ -16,7 +16,7 @@ dnl AM_PROG_CC_C_O is required by the "s
+ AM_PROG_CC_C_O
+ AM_PROG_LIBTOOL
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([imageworsener.pc Makefile])
+ dnl "foreign" removes the need for some files (NEWS, AUTHORS, ...).
+ dnl "subdir-options" puts object files in subdirectories, instead of in
+ dnl the current directory.
 @@ -25,51 +25,16 @@ AM_INIT_AUTOMAKE([foreign subdir-objects
  dnl Checks for libraries.
  
@@ -53,8 +67,8 @@
 - AC_CHECK_LIB(z,deflate)
 -fi
 +PKG_CHECK_MODULES([ZLIB], [zlib], [
-+  AC_DEFINE([HAVE_LIBZ], [1], [have libz])
-+  AC_DEFINE([HAVE_ZLIB_H], [1], [have zlib.h])
++    AC_DEFINE([HAVE_LIBZ], [1], [have libz])
++    AC_DEFINE([HAVE_ZLIB_H], [1], [have zlib.h])
 +])
  
  dnl ---------- libpng ----------
@@ -80,8 +94,8 @@
 - AC_CHECK_LIB(png,png_read_png)
 -fi
 +PKG_CHECK_MODULES([LIBPNG], [libpng], [
-+  AC_DEFINE([HAVE_LIBPNG], [1], [have libpng])
-+  AC_DEFINE([HAVE_PNG_H], [1], [have png.h])
++    AC_DEFINE([HAVE_LIBPNG], [1], [have libpng])
++    AC_DEFINE([HAVE_PNG_H], [1], [have png.h])
 +])
  
  dnl ---------- libjpeg ----------
@@ -112,9 +126,22 @@
 - AC_CHECK_LIB(webp,WebPGetDecoderVersion)
 -fi
 +PKG_CHECK_MODULES([LIBWEBP], [libwebp], [
-+  AC_DEFINE([HAVE_LIBWEBP], [1], [have libwebp])
-+  AC_DEFINE([HAVE_WEBP_DECODE_H], [1], [have webp/decode.h])
++    AC_DEFINE([HAVE_LIBWEBP], [1], [have libwebp])
++    AC_DEFINE([HAVE_WEBP_DECODE_H], [1], [have webp/decode.h])
 +])
  
  dnl ---------------------------
  
+--- origsrc/imageworsener-1.3.0/imageworsener.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/imageworsener-1.3.0/imageworsener.pc.in	2016-04-10 16:18:12.722038300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: imageworsener
++Description: Cross-platform command-line utility for image processing
++Version: @VERSION@
++Libs: -L${libdir} -limageworsener
++Cflags: -I${includedir}
