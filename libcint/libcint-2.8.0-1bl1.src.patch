@@ -1,0 +1,53 @@
+--- origsrc/libcint-2.8.0/CMakeLists.txt	2016-03-29 05:02:02.000000000 +0900
++++ src/libcint-2.8.0/CMakeLists.txt	2016-04-11 13:30:11.515775800 +0900
+@@ -27,11 +27,11 @@ configure_file(
+   "${PROJECT_SOURCE_DIR}/include/cint.h.in"
+   "${PROJECT_BINARY_DIR}/include/cint.h")
+ 
+-set(cintSrc 
++set(cintSrc
+   src/c2f.c src/cart2sph.c src/cint1e.c src/cint2e.c src/cint_bas.c
+   src/fblas.c src/g1e.c src/g2e.c src/misc.c src/optimizer.c
+   src/rys_roots.c
+-  src/cint2c2e.c src/g2c2e.c src/cint3c2e.c src/g3c2e.c src/optimizer_3c2e.c 
++  src/cint2c2e.c src/g2c2e.c src/cint3c2e.c src/g3c2e.c src/optimizer_3c2e.c
+   src/cint3c1e.c src/g3c1e.c src/breit.c
+   src/autocode/auto_intor1.c src/autocode/auto_intor2.c
+   src/autocode/auto_intor3.c src/autocode/grad1.c
+@@ -49,10 +49,11 @@ endif()
+ add_library(cint ${cintSrc})
+ set_target_properties(cint PROPERTIES
+   VERSION ${cint_VERSION}
++  SOVERSION 0
+   LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+ target_link_libraries(cint ${BLAS_LIBRARIES})
+ 
+-install(TARGETS cint DESTINATION lib)
++install(TARGETS cint RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES ${PROJECT_BINARY_DIR}/include/cint.h DESTINATION include)
+ 
+ 
+@@ -70,3 +71,10 @@ if(BUILD_SHARED_LIBS AND ENABLE_EXAMPLE)
+       COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/testsuite/test_3c2e.py)
+   endif()
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libcint.pc.in ${CMAKE_BINARY_DIR}/libcint.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libcint.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcint-2.8.0/libcint.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcint-2.8.0/libcint.pc.in	2016-04-11 13:30:20.949886200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcint
++Description: General GTO integrals for quantum chemistry
++Version: @cint_VERSION@
++Libs: -L${libdir} -lcint
++Cflags: -I${includedir}
