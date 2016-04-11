@@ -1,16 +1,16 @@
-diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test.avro -x test6.df origsrc/avro-cpp-1.7.7/CMakeLists.txt src/avro-cpp-1.7.7/CMakeLists.txt
---- origsrc/avro-cpp-1.7.7/CMakeLists.txt	2014-07-19 04:20:04.000000000 +0900
-+++ src/avro-cpp-1.7.7/CMakeLists.txt	2015-11-08 17:31:34.794421600 +0900
-@@ -81,22 +81,26 @@ add_library (avrocpp SHARED ${AVRO_SOURC
+--- origsrc/avro-cpp-1.8.0/CMakeLists.txt	2016-01-22 23:47:08.000000000 +0900
++++ src/avro-cpp-1.8.0/CMakeLists.txt	2016-04-11 15:54:14.285159300 +0900
+@@ -81,22 +81,27 @@ add_library (avrocpp SHARED ${AVRO_SOURC
  set_property (TARGET avrocpp
      APPEND PROPERTY COMPILE_DEFINITIONS AVRO_DYN_LINK)
  
-+if (NOT CYGWIN)
++option(ENABLE_STATIC "Enable static" OFF)
++if (ENABLE_STATIC)
  add_library (avrocpp_s STATIC ${AVRO_SOURCE_FILES})
  
  set_property (TARGET avrocpp avrocpp_s
      APPEND PROPERTY COMPILE_DEFINITIONS AVRO_SOURCE)
-+endif (NOT CYGWIN)
++endif (ENABLE_STATIC)
  
  set_target_properties (avrocpp PROPERTIES
 -    VERSION ${AVRO_VERSION_MAJOR}.${AVRO_VERSION_MINOR})
@@ -24,45 +24,45 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
  
  add_executable (precompile test/precompile.cc)
  
-+if (NOT CYGWIN)
++if (ENABLE_STATIC)
  target_link_libraries (precompile avrocpp_s ${Boost_LIBRARIES})
-+else (NOT CYGWIN)
++else (ENABLE_STATIC)
 +target_link_libraries (precompile avrocpp ${Boost_LIBRARIES})
-+endif (NOT CYGWIN)
++endif (ENABLE_STATIC)
  
  macro (gen file ns)
      add_custom_command (OUTPUT ${file}.hh
-@@ -121,7 +125,11 @@ gen (reuse ru)
+@@ -121,7 +126,11 @@ gen (reuse ru)
  gen (circulardep cd)
  
  add_executable (avrogencpp impl/avrogencpp.cc)
-+if (CYGWIN)
++if (NOT ENABLE_STATIC)
 +target_link_libraries (avrogencpp avrocpp ${Boost_LIBRARIES})
-+else (CYGWIN)
++else (NOT ENABLE_STATIC)
  target_link_libraries (avrogencpp avrocpp_s ${Boost_LIBRARIES})
-+endif (CYGWIN)
++endif (NOT ENABLE_STATIC)
  
  enable_testing()
  
-@@ -154,10 +162,17 @@ set (CPACK_PACKAGE_FILE_NAME "avrocpp-${
+@@ -154,10 +163,17 @@ set (CPACK_PACKAGE_FILE_NAME "avrocpp-${
  
  include (CPack)
  
-+if (CYGWIN)
++if (NOT ENABLE_STATIC)
 +install (TARGETS avrocpp
 +    LIBRARY DESTINATION lib
 +    ARCHIVE DESTINATION lib
 +    RUNTIME DESTINATION bin)
-+else (CYGWIN)
++else (NOT ENABLE_STATIC)
  install (TARGETS avrocpp avrocpp_s
      LIBRARY DESTINATION lib
      ARCHIVE DESTINATION lib
      RUNTIME DESTINATION lib)
-+endif (CYGWIN)
++endif (NOT ENABLE_STATIC)
  
  install (TARGETS avrogencpp RUNTIME DESTINATION bin)
  
-@@ -169,3 +184,10 @@ if (NOT CMAKE_BUILD_TYPE)
+@@ -169,3 +185,10 @@ if (NOT CMAKE_BUILD_TYPE)
        "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
        FORCE)
  endif (NOT CMAKE_BUILD_TYPE)
@@ -73,9 +73,8 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/avro-cpp.pc.in ${CMAKE_BINARY_DIR}/avro-cpp.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/avro-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x test.avro -x test6.df origsrc/avro-cpp-1.7.7/avro-cpp.pc.in src/avro-cpp-1.7.7/avro-cpp.pc.in
---- origsrc/avro-cpp-1.7.7/avro-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/avro-cpp-1.7.7/avro-cpp.pc.in	2015-11-08 17:30:27.890204300 +0900
+--- origsrc/avro-cpp-1.8.0/avro-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/avro-cpp-1.8.0/avro-cpp.pc.in	2016-04-11 15:51:43.243283700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
