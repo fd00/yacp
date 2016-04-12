@@ -1,0 +1,119 @@
+--- origsrc/Field3D-1.7.1/CMakeLists.txt	2016-02-17 08:32:23.000000000 +0900
++++ src/Field3D-1.7.1/CMakeLists.txt	2016-04-12 21:13:04.589378300 +0900
+@@ -1,11 +1,11 @@
+ # Copyright (c) 2009 Sony Pictures Imageworks Inc. et al.
+-# 
++#
+ # All rights reserved.
+-# 
++#
+ # Redistribution and use in source and binary forms, with or without
+ # modification, are permitted provided that the following conditions
+ # are met:
+-# 
++#
+ # Redistributions of source code must retain the above copyright
+ # notice, this list of conditions and the following disclaimer.
+ # Redistributions in binary form must reproduce the above copyright
+@@ -15,7 +15,7 @@
+ # names of its contributors may be used to endorse or promote
+ # products derived from this software without specific prior written
+ # permission.
+-# 
++#
+ # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+@@ -67,6 +67,7 @@ INCLUDE_DIRECTORIES ( export )
+ INCLUDE_DIRECTORIES ( ${ILMBASE_INCLUDE_DIRS} )
+ INCLUDE_DIRECTORIES ( ${HDF5_INCLUDE_DIRS} )
+ INCLUDE_DIRECTORIES ( ${Boost_INCLUDE_DIR} )
++INCLUDE_DIRECTORIES ( include )
+ 
+ # link directories
+ LINK_DIRECTORIES ( ${Boost_LIBRARY_DIRS} )
+@@ -74,11 +75,11 @@ LINK_DIRECTORIES ( ${HDF5_LIBRARY_DIRS}
+ LINK_DIRECTORIES ( ${ILMBASE_LIBRARY_DIRS} )
+ 
+ IF ( CMAKE_HOST_UNIX )
+-  ADD_DEFINITIONS ( -fPIC -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
++  ADD_DEFINITIONS ( -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
+ ENDIF ( )
+ IF ( CMAKE_HOST_WIN32 )
+   ADD_DEFINITIONS (
+-    -D_HAS_ITERATOR_DEBUGGING=0 
++    -D_HAS_ITERATOR_DEBUGGING=0
+     -D_CRT_SECURE_NO_WARNINGS=1
+     )
+ ENDIF ( )
+@@ -148,7 +149,7 @@ IF ( CMAKE_HOST_UNIX )
+   LIST ( APPEND Field3D_Libraries_Shared
+     Iex Half IlmThread Imath
+     pthread dl z )
+-  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared} )
++  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared} ${Boost_LIBRARIES})
+   SET ( Field3D_BIN_Libraries Field3D ${Field3D_Libraries_Shared}
+         ${Boost_LIBRARIES} )
+ ENDIF ( )
+@@ -241,33 +242,41 @@ ADD_EXECUTABLE ( create_and_write
+ 
+ TARGET_LINK_LIBRARIES ( create_and_write ${Field3D_BIN_Libraries} )
+ 
+-IF (DOXYGEN_FOUND)
++IF (INSTALL_DOC AND DOXYGEN_FOUND)
+   ADD_CUSTOM_TARGET ( doc
+     ALL
+     ${DOXYGEN_EXECUTABLE} Field3D.doxyfile
+     WORKING_DIRECTORY ${CMAKE_HOME_DIRECTORY}
+     )
+   IF (INSTALL_DOCS)
+-    INSTALL (DIRECTORY 
++    INSTALL (DIRECTORY
+       ${CMAKE_HOME_DIRECTORY}/docs
+       DESTINATION ${CMAKE_INSTALL_PREFIX}
+     )
+   ENDIF (INSTALL_DOCS)
+-ENDIF (DOXYGEN_FOUND)
++ENDIF (INSTALL_DOC AND DOXYGEN_FOUND)
+ 
+ INSTALL ( TARGETS
+   Field3D
+-  DESTINATION lib${LIB_SUFFIX}
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib${LIB_SUFFIX}
+ )
+ 
+ FILE(GLOB Field3d_Includes  "${CMAKE_CURRENT_SOURCE_DIR}/export/*.h")
+ 
+-INSTALL ( FILES 
+-  ${Field3d_Includes} 
++INSTALL ( FILES
++  ${Field3d_Includes}
+   DESTINATION include/Field3D
+ )
+ 
+-INSTALL ( TARGETS f3dinfo 
++INSTALL ( TARGETS f3dinfo
+   RUNTIME DESTINATION bin
+ )
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.7.1")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Field3D.pc.in ${CMAKE_BINARY_DIR}/Field3D.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Field3D.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Field3D-1.7.1/Field3D.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Field3D-1.7.1/Field3D.pc.in	2016-04-12 20:55:23.807137200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Field3D
++Description: Library for storing voxel data on disk and in memory
++Version: @VERSION@
++Libs: -L${libdir} -lField3D
++Cflags: -I${includedir}
