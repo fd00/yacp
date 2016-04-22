@@ -1,0 +1,54 @@
+--- origsrc/tlog-2/Makefile.am	2016-04-08 20:18:58.000000000 +0900
++++ src/tlog-2/Makefile.am	2016-04-22 19:23:14.680385500 +0900
+@@ -23,3 +23,6 @@ ACLOCAL_AMFLAGS = -Im4/autotools
+ SUBDIRS = m4 include lib src doc man
+ dist_doc_DATA = README.md
+ dist_noinst_DATA = tlog.spec
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/tlog-2/configure.ac	2016-04-08 20:18:58.000000000 +0900
++++ src/tlog-2/configure.ac	2016-04-22 19:23:03.771023800 +0900
+@@ -61,7 +61,7 @@ LIBCURL_CHECK_CONFIG([yes], [7.15.4], ,
+                      AC_MSG_ERROR([libcurl not found]))
+ 
+ # Output
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([tlog.pc Makefile
+                  m4/Makefile
+                  m4/tlog/Makefile
+                  include/Makefile
+--- origsrc/tlog-2/include/tlog/pkt.h	2016-04-08 20:18:58.000000000 +0900
++++ src/tlog-2/include/tlog/pkt.h	2016-04-22 12:16:43.916408600 +0900
+@@ -33,6 +33,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdlib.h>
++#include <sys/time.h>
+ 
+ /** Packet type */
+ enum tlog_pkt_type {
+--- origsrc/tlog-2/lib/Makefile.am	2016-04-08 20:18:58.000000000 +0900
++++ src/tlog-2/lib/Makefile.am	2016-04-22 12:18:22.651464800 +0900
+@@ -107,6 +107,8 @@ libtlog_la_SOURCES = \
+ 
+ libtlog_la_LIBADD = $(JSON_LIBS) $(LIBCURL) -lrt
+ 
++libtlog_la_LDFLAGS = -no-undefined
++
+ libtlog_test_la_SOURCES = \
+     test_json_sink.c        \
+     test_json_source.c      \
+--- origsrc/tlog-2/tlog.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tlog-2/tlog.pc.in	2016-04-22 19:23:45.308456300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tlog
++Description: Terminal I/O logger
++Version: @VERSION@
++Libs: -L${libdir} -ltlog
++Cflags: -I${includedir}
