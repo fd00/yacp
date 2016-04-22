@@ -1,0 +1,93 @@
+--- origsrc/gperftools-gperftools-2.5/Makefile.am	2016-03-13 04:59:05.000000000 +0900
++++ src/gperftools-gperftools-2.5/Makefile.am	2016-04-22 20:22:52.449210500 +0900
+@@ -580,7 +580,7 @@ noinst_SCRIPTS += $(maybe_threads_unitte
+ # TODO(csilvers): replace by 'if ! cmp $^ $@ >/dev/null 2>&; then ...; fi'
+ maybe_threads_unittest.sh$(EXEEXT): $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) \
+                            $(LIBTCMALLOC_MINIMAL) \
+-                           low_level_alloc_unittest
++                           low_level_alloc_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) $@
+ endif !ENABLE_STATIC
+@@ -944,7 +944,7 @@ libtcmalloc_internal_la_LIBADD = libstac
+ lib_LTLIBRARIES += libtcmalloc.la
+ libtcmalloc_la_SOURCES = $(TCMALLOC_CC) $(TCMALLOC_INCLUDES)
+ libtcmalloc_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG $(AM_CXXFLAGS) $(EMERGENCY_MALLOC_DEFINE)
+-libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
++libtcmalloc_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
+ libtcmalloc_la_LIBADD = libtcmalloc_internal.la libmaybe_threads.la $(PTHREAD_LIBS)
+ 
+ if WITH_HEAP_CHECKER
+@@ -1288,7 +1288,7 @@ libprofiler_la_SOURCES = src/profiler.cc
+ libprofiler_la_LIBADD = libstacktrace.la libmaybe_threads.la libfake_stacktrace_scope.la
+ # We have to include ProfileData for profiledata_unittest
+ CPU_PROFILER_SYMBOLS = '(ProfilerStart|ProfilerStartWithOptions|ProfilerStop|ProfilerFlush|ProfilerEnable|ProfilerDisable|ProfilingIsEnabledForAllThreads|ProfilerRegisterThread|ProfilerGetCurrentState|ProfilerState|ProfileData|ProfileHandler)'
+-libprofiler_la_LDFLAGS = -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
++libprofiler_la_LDFLAGS = -no-undefined -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
+                          -version-info @PROFILER_SO_VERSION@
+ 
+ # See discussion above (under LIBTCMALLOC_MINIMAL) for why we do this.
+@@ -1381,7 +1381,7 @@ libtcmalloc_and_profiler_la_CXXFLAGS = $
+ # Since this library is meant to be used as a .a, I don't worry as much
+ # about .so versioning.  I just give the libtcmalloc version number.
+ # TODO(csilvers): use -export-symbols-regex?
+-libtcmalloc_and_profiler_la_LDFLAGS = $(PTHREAD_CFLAGS) \
++libtcmalloc_and_profiler_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) \
+                                       -version-info @TCMALLOC_SO_VERSION@
+ # We don't include libprofiler_la_LIBADD here because all it adds is
+ # libstacktrace.la, which we already get via libtcmalloc.  Trying to
+--- origsrc/gperftools-gperftools-2.5/src/fake_stacktrace_scope.cc	2016-03-13 04:59:05.000000000 +0900
++++ src/gperftools-gperftools-2.5/src/fake_stacktrace_scope.cc	2016-04-22 20:32:13.575274600 +0900
+@@ -31,9 +31,9 @@
+ #include "base/basictypes.h"
+ 
+ namespace tcmalloc {
+-  ATTRIBUTE_WEAK bool EnterStacktraceScope(void) {
++  bool EnterStacktraceScope(void) {
+     return true;
+   }
+-  ATTRIBUTE_WEAK void LeaveStacktraceScope(void) {
++  void LeaveStacktraceScope(void) {
+   }
+ }
+--- origsrc/gperftools-gperftools-2.5/src/maybe_threads.cc	2016-03-13 04:59:05.000000000 +0900
++++ src/gperftools-gperftools-2.5/src/maybe_threads.cc	2016-04-22 20:24:19.436781300 +0900
+@@ -1,11 +1,11 @@
+ // -*- Mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*-
+ // Copyright (c) 2005, Google Inc.
+ // All rights reserved.
+-// 
++//
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are
+ // met:
+-// 
++//
+ //     * Redistributions of source code must retain the above copyright
+ // notice, this list of conditions and the following disclaimer.
+ //     * Redistributions in binary form must reproduce the above
+@@ -15,7 +15,7 @@
+ //     * Neither the name of Google Inc. nor the names of its
+ // contributors may be used to endorse or promote products derived from
+ // this software without specific prior written permission.
+-// 
++//
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+@@ -57,6 +57,7 @@
+ # define __THROW   // __THROW is just an optimization, so ok to make it ""
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ // These are the methods we're going to conditionally include.
+ extern "C" {
+   int pthread_key_create (pthread_key_t*, void (*)(void*))
+@@ -74,6 +75,7 @@ extern "C" {
+                      void (*__child) (void))
+     __THROW ATTRIBUTE_WEAK;
+ }
++#endif
+ 
+ #define MAX_PERTHREAD_VALS 16
+ static void *perftools_pthread_specific_vals[MAX_PERTHREAD_VALS];
