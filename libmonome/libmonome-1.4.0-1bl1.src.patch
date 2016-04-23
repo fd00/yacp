@@ -1,0 +1,54 @@
+--- origsrc/libmonome-1.4.0/libmonome.pc	1970-01-01 09:00:00.000000000 +0900
++++ src/libmonome-1.4.0/libmonome.pc	2016-04-23 16:36:57.109312300 +0900
+@@ -0,0 +1,10 @@
++prefix=/usr
++exec_prefix=/usr
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
++
++Name: libmonome
++Description: Library for easy interaction with monome devices
++Version: 1.4.0
++Libs: -L${libdir} -lmonome
++Cflags: -I${includedir}
+--- origsrc/libmonome-1.4.0/src/platform/posix.c	2015-06-03 22:10:21.000000000 +0900
++++ src/libmonome-1.4.0/src/platform/posix.c	2016-04-23 16:20:43.409554600 +0900
+@@ -1,10 +1,10 @@
+ /**
+  * Copyright (c) 2010 William Light <wrl@illest.net>
+- * 
++ *
+  * Permission to use, copy, modify, and/or distribute this software for any
+  * purpose with or without fee is hereby granted, provided that the above
+  * copyright notice and this permission notice appear in all copies.
+- * 
++ *
+  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+@@ -47,7 +47,11 @@ monome_t *monome_platform_load_protocol(
+ 	monome_t *monome;
+ 	char *buf;
+ 
++#if defined(__CYGWIN__)
++	if( asprintf(&buf, LIBDIR "/monome/cygprotocol_%s" LIBSUFFIX, proto) < 0 )
++#else
+ 	if( asprintf(&buf, LIBDIR "/monome/protocol_%s" LIBSUFFIX, proto) < 0 )
++#endif
+ 		return NULL;
+ 
+ 	dl_handle = dlopen(buf, RTLD_LAZY);
+--- origsrc/libmonome-1.4.0/src/wscript	2015-06-03 22:10:21.000000000 +0900
++++ src/libmonome-1.4.0/src/wscript	2016-04-23 16:13:07.775705600 +0900
+@@ -73,6 +73,11 @@ def build(bld):
+ 	elif bld.env.DEST_OS == "win32":
+ 		obj("platform/windows.c")
+ 
++	elif bld.env.DEST_OS == "cygwin":
++		obj("platform/linux_sysfs.c")
++		obj("platform/linux.c")
++		obj("platform/posix.c")
++
+ 	if bld.env.EMBED_PROTOS:
+ 		obj("platform/embed.c")
+ 	#
