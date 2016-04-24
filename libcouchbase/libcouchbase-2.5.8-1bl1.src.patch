@@ -1,0 +1,70 @@
+--- origsrc/libcouchbase-2.5.8/CMakeLists.txt	2016-03-23 05:49:37.000000000 +0900
++++ src/libcouchbase-2.5.8/CMakeLists.txt	2016-04-24 15:56:39.442415900 +0900
+@@ -328,8 +328,6 @@ ELSE()
+     SET(LCB_SNAPPY_LINK "")
+ ENDIF()
+ 
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
+ SET(LCB_LINK_DEPS ${lcb_plat_libs} ${lcb_ssl_libs} ${LCB_SNAPPY_LINK} ${LCB_HDR_HISTOGRAM_LINK})
+ IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     SET(LCB_LINK_DEPS ${LCB_LINK_DEPS} rt)
+@@ -381,7 +379,6 @@ ADD_SUBDIRECTORY(plugins/io/select)
+ ADD_SUBDIRECTORY(plugins/io/iocp)
+ INSTALL(TARGETS couchbase
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ INSTALL(DIRECTORY include/libcouchbase ${LCB_GENSRCDIR}/libcouchbase
+--- origsrc/libcouchbase-2.5.8/example/subdoc/subdoc-multi.cc	2016-02-19 09:30:50.000000000 +0900
++++ src/libcouchbase-2.5.8/example/subdoc/subdoc-multi.cc	2016-04-24 15:59:58.811534700 +0900
+@@ -4,6 +4,7 @@
+ #include <libcouchbase/couchbase.h>
+ #include <libcouchbase/api3.h>
+ #include <assert.h>
++#include <stdlib.h>
+ #include <string.h>
+ #include <string>
+ #include <vector>
+--- origsrc/libcouchbase-2.5.8/plugins/io/libev/CMakeLists.txt	2014-11-26 10:13:31.000000000 +0900
++++ src/libcouchbase-2.5.8/plugins/io/libev/CMakeLists.txt	2016-04-24 15:57:03.968852700 +0900
+@@ -12,8 +12,6 @@ ENDIF()
+ ADD_LIBRARY(couchbase_libev SHARED plugin-libev.c)
+ SET_TARGET_PROPERTIES(couchbase_libev
+     PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+     COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
+ TARGET_LINK_LIBRARIES(couchbase_libev ${LIBEV_LIBRARIES})
+ INCLUDE_DIRECTORIES(AFTER ${LIBEV_INCLUDE_DIR})
+@@ -26,4 +24,5 @@ ENDIF()
+ 
+ INSTALL(TARGETS
+     couchbase_libev
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+--- origsrc/libcouchbase-2.5.8/plugins/io/libevent/CMakeLists.txt	2015-06-18 06:26:07.000000000 +0900
++++ src/libcouchbase-2.5.8/plugins/io/libevent/CMakeLists.txt	2016-04-24 15:57:36.357740400 +0900
+@@ -22,7 +22,9 @@ IF(LCB_EMBED_PLUGIN_LIBEVENT)
+     SET(LCB_LINK_SPEC "${LCB_LINKS_SPEC} ${LIBEVENT_LIBRARIES}")
+ ELSE()
+     ADD_LIBRARY(couchbase_libevent SHARED plugin-libevent.c)
+-    INSTALL(TARGETS couchbase_libevent LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    INSTALL(TARGETS couchbase_libevent
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     TARGET_LINK_LIBRARIES(couchbase_libevent ${LIBEVENT_LIBRARIES})
+ ENDIF()
+ 
+--- origsrc/libcouchbase-2.5.8/src/iofactory.c	2015-04-14 23:42:10.000000000 +0900
++++ src/libcouchbase-2.5.8/src/iofactory.c	2016-04-24 16:10:33.760004000 +0900
+@@ -68,6 +68,8 @@ typedef struct {
+ #else
+     #define PLUGIN_SO(NAME) "libcouchbase_"NAME".dll."
+ #endif /* _DEBUG */
++#elif defined(__CYGWIN__)
++#define PLUGIN_SO(NAME) "cygcouchbase_"NAME".dll"
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_"NAME".so"
+ #endif
