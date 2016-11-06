@@ -1,0 +1,306 @@
+--- origsrc/libxo-0.6.5/configure.ac	2016-10-23 07:01:12.000000000 +0900
++++ src/libxo-0.6.5/configure.ac	2016-11-06 21:35:47.889557600 +0900
+@@ -75,6 +75,9 @@ AC_CHECK_HEADERS([sys/sysctl.h])
+ AC_CHECK_HEADERS([threads.h])
+ AC_CHECK_HEADERS([monitor.h])
+ 
++PKG_CHECK_MODULES([LIBBSD], [libbsd], [have_bsd=yes], [have_bsd=no])
++AC_DEFINE([HAVE_LIBBSD], [1], [libbsd])
++
+ dnl humanize_number(3) is a great function, but it's not standard.
+ dnl Note Macosx has the function in libutil.a but doesn't ship the
+ dnl header file, so I'll need to carry my own implementation.  See:
+@@ -213,7 +216,7 @@ if test "$THREAD_LOCAL" = "unknown"; the
+ fi
+ 
+ if test "$THREAD_LOCAL" != "unknown"; then
+-    AC_DEFINE_UNQUOTED([HAVE_THREAD_LOCAL], 
++    AC_DEFINE_UNQUOTED([HAVE_THREAD_LOCAL],
+               THREAD_LOCAL_${THREAD_LOCAL}, [thread-local setting])
+ fi
+ 
+@@ -244,7 +247,7 @@ AC_ARG_WITH(libslax-prefix,
+         LIBSLAX_CONFIG_PREFIX=$withval
+ )
+ 
+-AC_MSG_CHECKING(for libslax) 
++AC_MSG_CHECKING(for libslax)
+ if test "x$LIBSLAX_CONFIG_PREFIX" != "x"
+ then
+         SLAX_CONFIG=${LIBSLAX_CONFIG_PREFIX}/bin/slax-config
+--- origsrc/libxo-0.6.5/libxo/Makefile.am	2015-08-23 23:53:57.000000000 +0900
++++ src/libxo-0.6.5/libxo/Makefile.am	2016-11-06 21:37:21.843893300 +0900
+@@ -43,6 +43,10 @@ libxo_la_SOURCES = \
+     xo_encoder.c \
+     xo_syslog.c
+ 
++libxo_la_LDFLAGS = -no-undefined
++
++libxo_la_LIBADD = $(LIBBSD_LIBS)
++
+ man3_files = \
+     libxo.3 \
+     xo_attr.3 \
+--- origsrc/libxo-0.6.5/libxo/libxo.c	2016-10-19 13:59:05.000000000 +0900
++++ src/libxo-0.6.5/libxo/libxo.c	2016-11-06 21:44:29.351942500 +0900
+@@ -43,6 +43,10 @@
+ #include <wctype.h>
+ #include <getopt.h>
+ 
++#if defined(__CYGWIN__)
++typedef int64_t quad_t;
++#endif
++
+ #include "xo_config.h"
+ #include "xo.h"
+ #include "xo_encoder.h"
+@@ -86,7 +90,10 @@
+  */
+ #ifdef HAVE_HUMANIZE_NUMBER
+ #include <libutil.h>
+-#define xo_humanize_number humanize_number 
++#define xo_humanize_number humanize_number
++#elif defined(HAVE_LIBBSD)
++#include <bsd/libutil.h>
++#define xo_humanize_number humanize_number
+ #else /* HAVE_HUMANIZE_NUMBER */
+ #include "xo_humanize.h"
+ #endif /* HAVE_HUMANIZE_NUMBER */
+@@ -352,7 +359,7 @@ typedef unsigned long xo_xff_flags_t;
+  * pitches on its ear.  It may take 40 bytes of data to populate 14
+  * columns, but we can't go off looking at 40 bytes of data without the
+  * caller's permission for fear/knowledge that we'll generate core files.
+- * 
++ *
+  * So we make three values, distinguishing between "max column" and
+  * "number of bytes that we will inspect inspect safely" We call the
+  * later "size", and make the format "%[[<min>].[[<size>].<max>]]s".
+@@ -551,7 +558,7 @@ xo_printable (const char *str)
+ 	} else if (*str == '\"') {
+ 	    *cp++ = '\\';
+ 	    *cp = '"';
+-	} else 
++	} else
+ 	    *cp = *str;
+     }
+ 
+@@ -672,7 +679,7 @@ xo_init_handle (xo_handle_t *xop)
+ 	char *env = getenv("LIBXO_OPTIONS");
+ 	if (env)
+ 	    xo_set_options(xop, env);
+-	    
++
+     }
+ #endif /* NO_GETENV */
+ 
+@@ -800,7 +807,7 @@ xo_escape_xml (xo_buffer_t *xbp, int len
+ 	slen = strlen(sp);
+ 	ip -= slen - 1;
+ 	memcpy(ip, sp, slen);
+-	
++
+     } while (cp > ep && cp != ip);
+ 
+     return len + delta;
+@@ -844,7 +851,7 @@ xo_escape_json (xo_buffer_t *xbp, int le
+ 	} else {
+ 	    *ip = *cp;
+ 	}
+-	
++
+     } while (cp > ep && cp != ip);
+ 
+     return len + delta;
+@@ -884,7 +891,7 @@ xo_escape_sdparams (xo_buffer_t *xbp, in
+ 	} else {
+ 	    *ip = *cp;
+ 	}
+-	
++
+     } while (cp > ep && cp != ip);
+ 
+     return len + delta;
+@@ -1383,7 +1390,7 @@ xo_retain_hash (const char *fmt)
+     val &= RETAIN_HASH_SIZE - 1;
+ 
+     return val;
+-}	
++}
+ 
+ /*
+  * Walk all buckets, clearing all retained entries
+@@ -2937,7 +2944,7 @@ xo_dngettext (xo_handle_t *xop, const ch
+     if (XOF_ISSET(xop, XOF_LOG_GETTEXT))
+ 	fprintf(stderr, "xo: gettext: %s%s%s"
+ 		"msgid \"%s\", msgid_plural \"%s\" (%lu) returns \"%s\"\n",
+-		domainname ? "domain \"" : "", 
++		domainname ? "domain \"" : "",
+ 		xo_printable(domainname), domainname ? "\", " : "",
+ 		xo_printable(sing),
+ 		xo_printable(plural), n, xo_printable(res));
+@@ -2977,7 +2984,7 @@ xo_format_gettext (xo_handle_t *xop, xo_
+ 	return cols;
+ 
+     xbp->xb_curp[0] = '\0'; /* NUL-terminate the input string */
+-    
++
+     char *cp = xbp->xb_bufp + start_offset;
+     int len = xbp->xb_curp - cp;
+     const char *newstr = NULL;
+@@ -3267,7 +3274,7 @@ xo_do_format_field (xo_handle_t *xop, xo
+ 		for (s = 0; s < XF_WIDTH_NUM; s++) {
+ 		    if (xf.xf_star[s]) {
+ 			xf.xf_width[s] = va_arg(xop->xo_vap, int);
+-			
++
+ 			/* Normalize a negative width value */
+ 			if (xf.xf_width[s] < 0) {
+ 			    if (s == 0) {
+@@ -3461,7 +3468,7 @@ xo_do_format_field (xo_handle_t *xop, xo
+ 	 */
+ 	int new_cols = xo_format_gettext(xop, flags, start_offset,
+ 					 old_cols, real_need_enc);
+-	
++
+ 	if (XOF_ISSET(xop, XOF_COLUMNS))
+ 	    xop->xo_columns += new_cols - old_cols;
+ 	if (XOIF_ISSET(xop, XOIF_ANCHOR))
+@@ -3529,7 +3536,7 @@ xo_humanize (char *buf, int len, uint64_
+ 	}
+ 	scale -= 1;
+     }
+-    
++
+     return xo_humanize_number(buf, len, value, "", scale, flags);
+ }
+ 
+@@ -3634,7 +3641,7 @@ xo_buf_append_div (xo_handle_t *xop, con
+      * Display-only keys implies that we've got an encode-only key
+      * elsewhere, so we don't use them from making predicates.
+      */
+-    int need_predidate = 
++    int need_predidate =
+ 	(name && (flags & XFF_KEY) && !(flags & XFF_DISPLAY_ONLY)
+ 	     && XOF_ISSET(xop, XOF_XPATH));
+ 
+@@ -5623,8 +5630,8 @@ xo_dump_fields (xo_field_info_t *fields)
+ 	       (unsigned long) xfip->xfi_flags,
+ 	       isprint((int) xfip->xfi_ftype) ? xfip->xfi_ftype : ' ',
+ 	       xfip->xfi_ftype,
+-	       xfip->xfi_clen, xfip->xfi_content ?: "", 
+-	       xfip->xfi_flen, xfip->xfi_format ?: "", 
++	       xfip->xfi_clen, xfip->xfi_content ?: "",
++	       xfip->xfi_flen, xfip->xfi_format ?: "",
+ 	       xfip->xfi_elen, xfip->xfi_encoding ?: "");
+     }
+ }
+@@ -6136,7 +6143,7 @@ xo_do_emit_fields (xo_handle_t *xop, xo_
+ 
+     /* If we don't have an anchor, write the text out */
+     if (flush && !XOIF_ISSET(xop, XOIF_ANCHOR)) {
+-	if (xo_write(xop) < 0) 
++	if (xo_write(xop) < 0)
+ 	    rc = -1;		/* Report failure */
+ 	else if (xo_flush_h(xop) < 0)
+ 	    rc = -1;
+@@ -6536,7 +6543,7 @@ xo_depth_change (xo_handle_t *xop, const
+ 		xo_failure(xop, "incorrect close: '%s' .vs. '%s'",
+ 			      name, top);
+ 		return;
+-	    } 
++	    }
+ 	    if ((xsp->xs_flags & XSF_LIST) != (flags & XSF_LIST)) {
+ 		xo_failure(xop, "list close on list confict: '%s'",
+ 			      name);
+@@ -7257,7 +7264,7 @@ xo_do_close (xo_handle_t *xop, const cha
+ 	    }
+ 	    break;
+ 	}
+-	
++
+ 	if (xsp->xs_state != need_state)
+ 	    continue;
+ 
+@@ -7704,7 +7711,7 @@ xo_error_hv (xo_handle_t *xop, const cha
+ 
+     case XO_STYLE_HTML:
+ 	va_copy(xop->xo_vap, vap);
+-	
++
+ 	xo_buf_append_div(xop, "error", 0, NULL, 0, fmt, strlen(fmt), NULL, 0);
+ 
+ 	if (XOIF_ISSET(xop, XOIF_DIV_OPEN))
+@@ -7792,7 +7799,7 @@ xo_parse_args (int argc, char **argv)
+ 		xo_warnx("missing libxo option");
+ 		return -1;
+ 	    }
+-		
++
+ 	    if (xo_set_options(NULL, cp) < 0)
+ 		return -1;
+ 	} else if (*cp == ':') {
+--- origsrc/libxo-0.6.5/libxo/xo_syslog.c	2015-08-22 16:18:11.000000000 +0900
++++ src/libxo-0.6.5/libxo/xo_syslog.c	2016-11-06 21:50:03.313647700 +0900
+@@ -57,7 +57,9 @@
+ #include <stdarg.h>
+ #include <sys/time.h>
+ #include <sys/types.h>
++#if !defined(__CYGWIN__)
+ #include <sys/sysctl.h>
++#endif
+ 
+ #include "xo_config.h"
+ #include "xo.h"
+@@ -149,7 +151,7 @@ static char xo_syslog_enterprise_id[12];
+ /*
+  * Record an enterprise ID, which functions as a namespace for syslog
+  * messages.  The value is pre-formatted into a string.  This allows
+- * applications to customize their syslog message set, when needed. 
++ * applications to customize their syslog message set, when needed.
+  */
+ void
+ xo_set_syslog_enterprise_id (unsigned short eid)
+@@ -197,7 +199,7 @@ xo_send_syslog (char *full_msg, char *v0
+     xo_connect_log();
+ 
+     /*
+-     * If the send() fails, there are two likely scenarios: 
++     * If the send() fails, there are two likely scenarios:
+      *  1) syslogd was restarted
+      *  2) /var/run/log is out of socket buffer space, which
+      *     in most cases means local DoS.
+@@ -256,6 +258,10 @@ xo_send_syslog (char *full_msg, char *v0
+     flags |= O_CLOEXEC;
+ #endif /* O_CLOEXEC */
+ 
++#if !defined(_PATH_CONSOLE)
++#define _PATH_CONSOLE "/dev/console"
++#endif
++
+     if (xo_logstat & LOG_CONS
+         && (fd = open(_PATH_CONSOLE, flags, 0)) >= 0) {
+         struct iovec iov[2];
+@@ -389,7 +395,7 @@ xo_open_log (const char *ident, int logs
+ 
+ 
+ void
+-xo_close_log (void) 
++xo_close_log (void)
+ {
+     THREAD_LOCK();
+     if (xo_logfile != -1) {
+--- origsrc/libxo-0.6.5/tests/core/test_02.c	2016-06-29 10:36:19.000000000 +0900
++++ src/libxo-0.6.5/tests/core/test_02.c	2016-11-06 21:39:04.156748300 +0900
+@@ -15,7 +15,12 @@
+ 
+ #include "xo.h"
+ 
++#if defined(__CYGWIN__)
++#include <bsd/libutil.h>
++#define xo_humanize_number humanize_number
++#else
+ #include "xo_humanize.h"
++#endif
+ 
+ int
+ main (int argc, char **argv)
