@@ -1,0 +1,53 @@
+--- origsrc/cpp/CMakeLists.txt	2016-11-27 14:45:50.690680400 +0900
++++ src/cpp/CMakeLists.txt	2016-11-27 14:55:02.134333500 +0900
+@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 2.8)
+ 
+ INCLUDE(GNUInstallDirs)
+ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/src)
+-SET(VERSION 3.8.2)
+-SET(SOVERSION 3.8)
++SET(VERSION 3.10.0)
++SET(SOVERSION 3.10)
+ 
+ option(BUILD_TEST "Build tests" OFF)
+ 
+@@ -12,12 +12,12 @@ FILE(GLOB ALGLIB_SRC_LIB "src/*.cpp")
+ FILE(GLOB ALGLIB_HDR_LIB "src/*.h")
+ 
+ ADD_LIBRARY(alglib SHARED ${ALGLIB_SRC_LIB})
+-SET_TARGET_PROPERTIES(alglib PROPERTIES 
++SET_TARGET_PROPERTIES(alglib PROPERTIES
+   VERSION ${VERSION}
+   SOVERSION ${SOVERSION})
+ 
+-INSTALL(TARGETS alglib DESTINATION ${CMAKE_INSTALL_LIBDIR}/)
+-INSTALL(FILES ${ALGLIB_HDR_LIB} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++INSTALL(TARGETS alglib RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++INSTALL(FILES ${ALGLIB_HDR_LIB} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/alglib)
+ 
+ if (BUILD_TEST)
+ 	#===========================================================
+@@ -34,3 +34,10 @@ if (BUILD_TEST)
+ endif (BUILD_TEST)
+ add_test( test_c ${CMAKE_BUILD_DIR}/test_c)
+ add_test( test_i ${CMAKE_BUILD_DIR}/test_i)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpp/alglib.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpp/alglib.pc.in	2016-11-27 14:55:32.845780900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: alglib
++Description: Numerical analysis and data processing library
++Version: @VERSION@
++Libs: -L${libdir} -lalglib
++Cflags: -I${includedir}/alglib
