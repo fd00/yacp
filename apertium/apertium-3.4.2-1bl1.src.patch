@@ -1,33 +1,33 @@
---- origsrc/apertium-3.2.0/Makefile.am	2010-03-01 02:24:47.000000000 +0900
-+++ src/apertium-3.2.0/Makefile.am	2014-06-29 09:45:44.737718800 +0900
-@@ -10,4 +10,4 @@ EXTRA_DIST=autogen.sh README-MODES
+--- origsrc/apertium-3.4.2/Makefile.am	2016-02-09 22:20:10.000000000 +0900
++++ src/apertium-3.4.2/Makefile.am	2016-11-27 12:55:29.087056100 +0900
+@@ -13,4 +13,4 @@ EXTRA_DIST=autogen.sh README-MODES apert
  
  install-data-local:
- 	mkdir -p $(modesdir)
--	$(INSTALL_DATA) README-MODES  $(modesdir)/README
-+	$(INSTALL_DATA) $(top_srcdir)/README-MODES $(modesdir)/README
---- origsrc/apertium-3.2.0/apertium/Makefile.am	2009-12-10 21:51:19.000000000 +0900
-+++ src/apertium-3.2.0/apertium/Makefile.am	2014-06-29 09:45:44.753343800 +0900
-@@ -42,7 +42,7 @@ GENERATEDSCRIPTS = apertium-gen-deformat
+ 	mkdir -p $(DESTDIR)$(modesdir)
+-	$(INSTALL_DATA) README-MODES  $(DESTDIR)$(modesdir)/README
++	$(INSTALL_DATA) $(top_srcdir)/README-MODES  $(DESTDIR)$(modesdir)/README
+--- origsrc/apertium-3.4.2/apertium/Makefile.am	2016-05-16 00:04:09.000000000 +0900
++++ src/apertium-3.4.2/apertium/Makefile.am	2016-11-27 13:11:44.344086800 +0900
+@@ -170,7 +170,7 @@ GENERATEDSCRIPTS = apertium-gen-deformat
  
  lib_LTLIBRARIES = libapertium3.la
  libapertium3_la_SOURCES = $(h_sources) $(cc_sources)
 -libapertium3_la_LDFLAGS = -version-info $(GENERIC_LIBRARY_VERSION) -release $(GENERIC_RELEASE)
-+libapertium3_la_LDFLAGS = -version-info $(GENERIC_LIBRARY_VERSION) -release $(GENERIC_RELEASE) -no-undefined
++libapertium3_la_LDFLAGS = -no-undefined -version-info $(GENERIC_LIBRARY_VERSION) -release $(GENERIC_RELEASE)
  
- bin_PROGRAMS = apertium-pretransfer apertium-destxt apertium-retxt \
-                apertium-deshtml apertium-rehtml \
-@@ -139,7 +139,7 @@ apertium_tagger_apply_new_rules_LDADD =
- apertium_gen_wlist_lextor_translation_SOURCES = apertium_gen_wlist_lextor_translation.cc
- apertium_gen_wlist_lextor_translation_LDADD = $(APERTIUM_LIBS) -lapertium$(GENERIC_MAJOR_VERSION)
- 
+ bin_PROGRAMS = apertium-deshtml \
+ 	       apertium-deslatex \
+@@ -303,7 +303,7 @@ apertium_tagger_readwords_LDADD = $(APER
+ if WINDOWS
+ INCLUDES = -I$(top_srcdir)/apertium/win32 -I$(top_srcdir) $(APERTIUM_CFLAGS)
+ else
 -INCLUDES = -I$(top_srcdir) $(APERTIUM_CFLAGS)
 +INCLUDES = -I$(top_builddir) -I$(top_srcdir) $(APERTIUM_CFLAGS)
+ endif
  CLEANFILES = *~ apertium_destxt.cc apertium_retxt.cc apertium_deshtml.cc \
               apertium_rehtml.cc apertium_desrtf.cc apertium_rertf.cc \
-              apertium_deswxml.cc apertium_rewxml.cc \
-@@ -150,157 +150,157 @@ CLEANFILES = *~ apertium_destxt.cc apert
-              apertium_desmediawiki.cc apertium_remediawiki.cc \
+@@ -318,110 +318,110 @@ CLEANFILES = *~ apertium_destxt.cc apert
+              apertium_prelatex.cc apertium_postlatex.cc \
               $(GENERATEDSCRIPTS)
  
 -apertium_destxt.cc: txt-format.xml Makefile.am deformat.xsl
@@ -49,7 +49,7 @@
 +apertium_rexpresstag.cc: $(srcdir)/xpresstag-format.xml Makefile.am $(srcdir)/reformat.xsl
 +	$(XSLTPROC) $(srcdir)/reformat.xsl $(srcdir)/xpresstag-format.xml >$@tmp
  	$(FLEX) -Cfer -o$@ $@tmp
- 	rm $@tmp	
+ 	rm $@tmp
  
 -apertium_retxt.cc: txt-format.xml Makefile.am reformat.xsl
 -	$(XSLTPROC) reformat.xsl txt-format.xml >$@tmp
@@ -69,6 +69,13 @@
 -	$(XSLTPROC) reformat.xsl html-format.xml >$@tmp
 +apertium_rehtml.cc: $(srcdir)/html-format.xml Makefile.am $(srcdir)/reformat.xsl
 +	$(XSLTPROC) $(srcdir)/reformat.xsl $(srcdir)/html-format.xml >$@tmp
+ 	$(FLEX) -Cfer -o$@ $@tmp
+ 	rm $@tmp
+ 
+-apertium_rehtml_noent.cc: html-noent-format.xml Makefile.am reformat.xsl
+-	$(XSLTPROC) reformat.xsl html-noent-format.xml >$@tmp
++apertium_rehtml_noent.cc: $(srcdir)/html-noent-format.xml Makefile.am $(srcdir)/reformat.xsl
++	$(XSLTPROC) $(srcdir)/reformat.xsl $(srcdir)/html-noent-format.xml >$@tmp
  	$(FLEX) -Cfer -o$@ $@tmp
  	rm $@tmp
  
@@ -114,6 +121,22 @@
  	$(FLEX) -Cfer -o$@ $@tmp
  	rm $@tmp
  
+-apertium_deslatex.cc: latex-format.xml Makefile.am deformat.xsl
+-	$(XSLTPROC) deformat.xsl latex-format.xml >$@tmp
++apertium_deslatex.cc: $(srcdir)/latex-format.xml Makefile.am $(srcdir)/deformat.xsl
++	$(XSLTPROC) $(srcdir)/deformat.xsl $(srcdir)/latex-format.xml >$@tmp
+ 	$(FLEX) -Cfer -o$@ $@tmp
+ 	rm $@tmp
+ 
+-apertium_relatex.cc: latex-format.xml Makefile.am reformat.xsl
+-	$(XSLTPROC) reformat.xsl latex-format.xml >$@tmp
++apertium_relatex.cc: $(srcdir)/latex-format.xml Makefile.am $(srcdir)/reformat.xsl
++	$(XSLTPROC) $(srcdir)/reformat.xsl $(srcdir)/latex-format.xml >$@tmp
+ 	$(FLEX) -Cfer -o$@ $@tmp
+ 	rm $@tmp
+ 
+ 
+ 
 -apertium_desxlsx.cc: xlsx-format.xml Makefile.am deformat.xsl
 -	$(XSLTPROC) deformat.xsl xlsx-format.xml >$@tmp
 +apertium_desxlsx.cc: $(srcdir)/xlsx-format.xml Makefile.am $(srcdir)/deformat.xsl
@@ -156,14 +179,17 @@
  	$(FLEX) -Cfer -o$@ $@tmp
  	rm $@tmp
  
+@@ -434,62 +434,62 @@ apertium_postlatex.cc: apertium-postlate
+ apertium_postlatex_raw.cc: apertium-postlatex-raw.l
+ 	$(FLEX) -Cfer -o$@ apertium-postlatex-raw.l
+ 
 -apertium-validate-tagger: Makefile.am validate-header.sh
 +apertium-validate-tagger: Makefile.am $(srcdir)/validate-header.sh
  	@echo "Creating apertium-validate-tagger script"
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/tagger.dtd --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/tagger.dtd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
 -apertium-validate-transfer: Makefile.am validate-header.sh
@@ -172,8 +198,7 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/transfer.dtd --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/transfer.dtd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
 -apertium-validate-interchunk: Makefile.am validate-header.sh
@@ -182,8 +207,7 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/interchunk.dtd --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/interchunk.dtd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
 -apertium-validate-postchunk: Makefile.am validate-header.sh
@@ -192,8 +216,7 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/postchunk.dtd --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/postchunk.dtd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
 -apertium-validate-acx: Makefile.am validate-header.sh
@@ -202,8 +225,7 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --relaxng $(apertiumdir)/acx.rng --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --relaxng $(prefix)/share/lttoolbox/acx.rng --schema $(prefix)/share/lttoolbox/acx.xsd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
 -apertium-validate-modes: Makefile.am validate-header.sh
@@ -212,8 +234,7 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/modes.dtd --noout \$$FILE1 && exit 0;" >>$@
- 	@echo "exit 1;" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/modes.dtd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
  
@@ -223,8 +244,9 @@
  	@echo "#!$(BASH)" > $@
 -	@cat validate-header.sh >> $@
 +	@cat $(srcdir)/validate-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/dix.dtd --noout \$$FILE1 && exit 0;" >> $@
- 	@echo "exit 1;" >> $@
+ 	@echo "# xsd is a non-final command, so just treated as a warning when compiling:" >> $@
+ 	@echo "$(XMLLINT) --schema $(prefix)/share/lttoolbox/dix.xsd --noout \"\$$FILE1\"" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid $(prefix)/share/lttoolbox/dix.dtd --noout \"\$$FILE1\"" >> $@
  	@chmod a+x $@
  
 -apertium-gen-deformat: Makefile.am deformat-header.sh
@@ -236,7 +258,7 @@
  	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/format.dtd --noout \$$FILE1 && \\" >> $@
  	@if [ `basename $(XSLTPROC)` == xsltproc ]; \
  	  then echo "$(XSLTPROC) --stringparam mode \$$MODE $(apertiumdir)/deformat.xsl \$$FILE1 >/tmp/\$$\$$.deformat.l && \\"; \
-@@ -311,10 +311,10 @@ apertium-gen-deformat: Makefile.am defor
+@@ -500,10 +500,10 @@ apertium-gen-deformat: Makefile.am defor
  	@echo "rm /tmp/\$$\$$.deformat.l /tmp/\$$\$$.lex.cc" >> $@
  	@chmod a+x $@
  
@@ -249,22 +271,16 @@
  	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/format.dtd --noout \$$FILE1 && \\" >> $@
  	@echo "$(XSLTPROC) $(apertiumdir)/reformat.xsl \$$FILE1 >/tmp/\$$\$$.reformat.l && \\" >> $@
  	@echo "$(FLEX) \$$FLEXOPTS -o/tmp/\$$\$$.lex.cc /tmp/\$$\$$.reformat.l && \\" >> $@
-@@ -322,11 +322,11 @@ apertium-gen-reformat: Makefile.am gen-h
- 	@echo "rm /tmp/\$$\$$.reformat.l /tmp/\$$\$$.lex.cc" >> $@
+@@ -519,50 +519,50 @@ apertium-gen-modes: apertium-gen-modes.i
+ 	cat $< >> $@
  	@chmod a+x $@
  
--apertium-gen-modes: Makefile.am modes-header.sh
-+apertium-gen-modes: Makefile.am $(srcdir)/modes-header.sh
- 	@echo "Creating apertium-gen-modes script"
+-apertium-utils-fixlatex: Makefile.am utils-fixlatex-header.sh
++apertium-utils-fixlatex: Makefile.am $(srcdir)/utils-fixlatex-header.sh
+ 	@echo "Creating apertium-utils-fixlatex script"
  	@echo "#!$(BASH)" > $@
- 	@echo "APERTIUMDIR="$(apertiumdir) >> $@
--	@cat modes-header.sh >> $@
-+	@cat $(srcdir)/modes-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid $(apertiumdir)/modes.dtd --noout \$$FILE1 && \\" >> $@
- 	@if [ `basename $(XSLTPROC)` == xsltproc ]; \
- 	  then echo "$(XSLTPROC) --stringparam prefix $(prefix)/bin --stringparam dataprefix \$$FULLDIRNAME  $(apertiumdir)/modes2bash.xsl \$$FILE1 | awk -f $(apertiumdir)/apertium-createmodes.awk PARAM=\$$FULLDIRNAME"; \
-@@ -334,44 +334,44 @@ apertium-gen-modes: Makefile.am modes-he
-           fi >> $@ 
+-	@cat utils-fixlatex-header.sh >> $@
++	@cat $(srcdir)/utils-fixlatex-header.sh >> $@
  	@chmod a+x $@
  
 -apertium: Makefile.am apertium-header.sh
@@ -288,7 +304,7 @@
 -	@cat apertium-unformat-header.sh >>$@
 +	@cat $(srcdir)/apertium-unformat-header.sh >>$@
  	@chmod a+x $@
- 	
+ 
  
 -#apertium-translator-lextor: Makefile.am trans-lextor-header.sh
 +#apertium-translator-lextor: Makefile.am $(srcdir)/trans-lextor-header.sh
@@ -317,7 +333,7 @@
  	@echo "Creating apertium-gen-lextorbil script"
  	@echo "#!$(BASH)" >$@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
-@@ -379,10 +379,10 @@ apertium-gen-lextorbil: Makefile.am tran
+@@ -570,10 +570,10 @@ apertium-gen-lextorbil: Makefile.am tran
  	@echo "XSLTPROC_OPTIONS_LR=\"\"">>$@
  	@echo "XSLTPROC_OPTIONS_RL=\"--stringparam r2l yes\"">>$@
  	@echo "STYLESHEET=\"$(apertiumdir)/lexchoicebil.xsl\"">>$@
@@ -330,7 +346,7 @@
  	@echo "Creating apertium-gen-lextormono script"
  	@echo "#!$(BASH)" >$@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
-@@ -390,28 +390,28 @@ apertium-gen-lextormono: Makefile.am tra
+@@ -581,28 +581,28 @@ apertium-gen-lextormono: Makefile.am tra
  	@echo "XSLTPROC_OPTIONS_LR=\"\"">>$@
  	@echo "XSLTPROC_OPTIONS_RL=\"--stringparam r2l yes\"">>$@
  	@echo "STYLESHEET=\"$(apertiumdir)/lexchoice.xsl\"">>$@
@@ -366,38 +382,14 @@
  	@chmod a+x $@
  
  man_MANS=apertium.1 apertium-deshtml.1 apertium-desrtf.1 apertium-destxt.1 \
---- origsrc/apertium-3.2.0/apertium/constant_manager.h	2009-12-10 21:51:19.000000000 +0900
-+++ src/apertium-3.2.0/apertium/constant_manager.h	2014-06-29 09:45:44.768968800 +0900
-@@ -19,6 +19,7 @@
- #ifndef _CONSTANTMANAGER_
- #define _CONSTANTMANAGER_
+--- origsrc/apertium-3.4.2/configure.ac	2016-05-16 00:42:10.000000000 +0900
++++ src/apertium-3.4.2/configure.ac	2016-11-27 13:11:30.871266100 +0900
+@@ -183,7 +183,7 @@ AC_CHECK_DECLS([fread_unlocked, fwrite_u
  
-+#include <cstdio>
- #include <map>
- #include <string>
+ AC_CHECK_FUNCS([setlocale strdup getopt_long snprintf mbtowc])
  
---- origsrc/apertium-3.2.0/configure.ac	2010-03-15 00:14:34.000000000 +0900
-+++ src/apertium-3.2.0/configure.ac	2014-06-29 10:09:38.345143100 +0900
-@@ -64,11 +64,10 @@ case "${target_os}" in
-   mingw*)
-     MinGW=yes
-   ;;
--  cygwin*)
--    Cygwin=yes
--  ;;
- esac
+-AM_CONDITIONAL([WINDOWS], [test x$version_type = xwindows])
++AM_CONDITIONAL([WINDOWS], [test x$version_type = xwindows -a x$host_os != xcygwin])
+ AS_IF([test x$version_type = xwindows], [AC_DEFINE(HAVE_GETOPT_LONG,0)], [])
  
-+CXXFLAGS="$CXXFLAGS -std=gnu++11"
-+
- if test x$ARCH = xppc
- then
-   AC_MSG_RESULT([PowerPC])
-@@ -184,7 +183,7 @@ AC_CHECK_FUNCS(strcasecmp)
- if test x$(uname) != xDarwin;
- then 
- AC_CHECK_HEADER(pcreposix.h,
--  AC_CHECK_LIB(pcre, pcre_info,[
-+  AC_CHECK_LIB(pcre, pcre_fullinfo,[
-   LIBS="$LIBS -lpcreposix -lpcre"
-   no_comp_check=yes],
-   AC_MSG_ERROR([*** unable to locate pcre library ***])),
+ AC_OUTPUT([Makefile apertium.pc apertium/Makefile])
