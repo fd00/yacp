@@ -1,0 +1,253 @@
+--- origsrc/tools-1.4/scripts/CMakeLists.txt	2016-10-30 01:47:46.000000000 +0900
++++ src/tools-1.4/scripts/CMakeLists.txt	2016-12-01 16:40:30.367718000 +0900
+@@ -20,5 +20,5 @@ if (WITH_RC_FILES)
+   configure_file(VOTCARC.csh.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh @ONLY)
+   configure_file(VOTCARC.bash.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash @ONLY)
+   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
+-    ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION bin)
++  ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION /etc/profile.d)
+ endif (WITH_RC_FILES)
+--- origsrc/tools-1.4/src/libtools/CMakeLists.txt	2016-10-30 01:47:46.000000000 +0900
++++ src/tools-1.4/src/libtools/CMakeLists.txt	2016-12-01 16:41:28.362169600 +0900
+@@ -52,7 +52,7 @@ add_dependencies(votca_tools gitversion)
+ set_target_properties(votca_tools PROPERTIES SOVERSION ${SOVERSION})
+ target_link_libraries(votca_tools ${Boost_LIBRARIES} ${LINALG_LIBRARIES} ${SQLITE3_LIBRARIES}
+   ${FFTW3_LIBRARIES} ${EXPAT_LIBRARIES} ${THREAD_LIBRARIES} ${MATH_LIBRARIES})
+-install(TARGETS votca_tools LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
++install(TARGETS votca_tools RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
+ 
+ configure_file(libvotca_tools.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc @ONLY)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc DESTINATION ${LIB}/pkgconfig)
+--- origsrc/tools-1.4/src/libtools/linalg/gsl/eigensystems.cc	2016-10-30 01:47:46.000000000 +0900
++++ src/tools-1.4/src/libtools/linalg/gsl/eigensystems.cc	2016-12-01 16:21:03.995612100 +0900
+@@ -1,4 +1,4 @@
+-/* 
++/*
+  * Copyright 2009-2015 The VOTCA Development Team (http://www.votca.org)
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+@@ -23,26 +23,29 @@
+ #include <gsl/gsl_errno.h>
+ #include <gsl/gsl_eigen.h>
+ 
++#if defined(_B)
++#undef _B
++#endif
+ 
+ namespace votca { namespace tools {
+ 
+ using namespace std;
+- 
++
+ /**
+ *
+ * ublas binding for gsl_eigen_symmv
+-* note that the eigenvalues/eigenvectors are UNSORTED 
+-* 
++* note that the eigenvalues/eigenvectors are UNSORTED
++*
+ */
+ bool linalg_eigenvalues_symmetric( ub::symmetric_matrix<double> &A, ub::vector<double> &E, ub::matrix<double> &V)
+ {
+ 	gsl_error_handler_t *handler = gsl_set_error_handler_off();
+ 	const size_t N = A.size1();
+-        
+-        // gsl does not handle conversion of a symmetric_matrix 
++
++        // gsl does not handle conversion of a symmetric_matrix
+         ub::matrix<double> _A( N,N );
+         _A = A;
+-        
++
+ 	E.resize(N, false);
+ 	V.resize(N, N, false);
+ 	gsl_matrix_view A_view = gsl_matrix_view_array(&_A(0,0), N, N);
+@@ -54,7 +57,7 @@ bool linalg_eigenvalues_symmetric( ub::s
+ 	//gsl_eigen_symmv_sort(&E_view.vector, &V_view.matrix, GSL_EIGEN_SORT_ABS_ASC);
+ 	gsl_eigen_symmv_free(w);
+ 	gsl_set_error_handler(handler);
+-        
++
+ 	return (status != 0);
+ };
+ 
+@@ -63,18 +66,18 @@ bool linalg_eigenvalues_symmetric( ub::s
+ *
+ * ublas binding for gsl_eigen_symmv
+ * input matrix type general matrix!
+-* wrapping gsl_eigen_symmv 
+-* 
++* wrapping gsl_eigen_symmv
++*
+ */
+ bool linalg_eigenvalues( ub::matrix<double> &A, ub::vector<double> &E, ub::matrix<double> &V)
+ {
+ 	gsl_error_handler_t *handler = gsl_set_error_handler_off();
+ 	const size_t N = A.size1();
+-        
+-        // gsl does not handle conversion of a symmetric_matrix 
++
++        // gsl does not handle conversion of a symmetric_matrix
+         ub::matrix<double> _A( N,N );
+         _A = A;
+-        
++
+ 	E.resize(N, false);
+ 	V.resize(N, N, false);
+ 	gsl_matrix_view A_view = gsl_matrix_view_array(&_A(0,0), N, N);
+@@ -86,7 +89,7 @@ bool linalg_eigenvalues( ub::matrix<doub
+ 	gsl_eigen_symmv_sort(&E_view.vector, &V_view.matrix, GSL_EIGEN_SORT_VAL_ASC);
+ 	gsl_eigen_symmv_free(w);
+ 	gsl_set_error_handler(handler);
+-        
++
+ 	return (status != 0);
+ };
+ 
+@@ -94,14 +97,14 @@ bool linalg_eigenvalues( ub::matrix<doub
+ *
+ * ublas binding for gsl_eigen_symmv
+ * input matrix type general matrix single precision!
+-* wrapping gsl_eigen_symmv 
+-* 
++* wrapping gsl_eigen_symmv
++*
+ */
+ bool linalg_eigenvalues( ub::matrix<float> &A, ub::vector<float> &E, ub::matrix<float> &V)
+ {
+ 	gsl_error_handler_t *handler = gsl_set_error_handler_off();
+ 	const size_t N = A.size1();
+-        
++
+         // gsl does not handle symmetric_matrix and floats, so this is super stupid
+         ub::matrix<double> _A( N,N );
+         _A = A;
+@@ -121,20 +124,20 @@ bool linalg_eigenvalues( ub::matrix<floa
+ 	//V.resize(N, N, false);
+         E = _E;
+         V = _V;
+-        
++
+ 	return (status != 0);
+ };
+ 
+ bool linalg_eigenvalues(  ub::vector<float> &E, ub::matrix<float> &V)
+ {
+         /* on input V is the matrix that shall be diagonalized
+-         * GSL does not provide an in-place routine, so we wrap 
++         * GSL does not provide an in-place routine, so we wrap
+          * gsl_eigen_symmv for compatibility
+          */
+-    
++
+          // make a copy of E
+          ub::matrix<float> A = V;
+-    
++
+          // now call wrapper for gsl_eigen_symmv
+          bool status = linalg_eigenvalues( A , E, V );
+ 	return (status != 0);
+@@ -145,19 +148,19 @@ bool linalg_eigenvalues(  ub::vector<flo
+ *
+ * ublas binding for gsl_eigen_symm
+ * input matrix type general matrix!
+-* wrapping gsl_eigen_symm leaves input matrix 
+-* 
++* wrapping gsl_eigen_symm leaves input matrix
++*
+ */
+ bool linalg_eigenvalues( ub::vector<double> &E, ub::matrix<double> &V)
+ {
+         /* on input V is the matrix that shall be diagonalized
+-         * GSL does not provide an in-place routine, so we wrap 
++         * GSL does not provide an in-place routine, so we wrap
+          * gsl_eigen_symmv for compatibility
+          */
+-    
++
+          // make a copy of E
+          ub::matrix<double> A = V;
+-    
++
+          // now call wrapper for gsl_eigen_symmv
+          bool status = linalg_eigenvalues( A , E, V );
+ 
+@@ -188,14 +191,14 @@ bool linalg_eigenvalues_general(const ub
+ {
+ 	gsl_error_handler_t *handler = gsl_set_error_handler_off();
+ 	const size_t N = A.size1();
+-        
++
+         // gsl destroys A so use copy
+         ub::matrix<double> _A( N,N );
+         _A = A;
+-        
++
+         ub::matrix<double> _B( N,N );
+         _B=B;
+-        
++
+ 	E.resize(N, false);
+ 	V.resize(N, N, false);
+ 	gsl_matrix_view A_view = gsl_matrix_view_array(&_A(0,0), N, N);
+@@ -208,34 +211,34 @@ bool linalg_eigenvalues_general(const ub
+ 	gsl_eigen_gensymmv_sort(&E_view.vector, &V_view.matrix, GSL_EIGEN_SORT_VAL_ASC);
+ 	gsl_eigen_gensymmv_free(w);
+ 	gsl_set_error_handler(handler);
+-        
+-      
+ 
+-    
++
++
++
+         ub::matrix<double> _temp= ub::prod(B,V);
+         ub::matrix<double> n=ub::prod(ub::trans(V),_temp);
+-      /*  
++      /*
+         for (int i=0;i<n.size1();i++){
+-          
++
+                 for (int j=0;j<n.size2();j++){
+-                cout <<"n("<< i << ":"<< j <<")= " <<n(i,j)<< endl;      
++                cout <<"n("<< i << ":"<< j <<")= " <<n(i,j)<< endl;
+                 }}
+-        
+-       */ 
+-        
++
++       */
++
+         for (unsigned int i=0;i<n.size1();i++){
+             ub::matrix_range<ub::matrix<double> > column=ub::subrange( V, 0, V.size2(),i, i+1 );
+-            //cout <<"n("<< i << ":"<< i <<")= " <<n(i,i) <<":" <<sqrt(n(i,i))<< endl; 
++            //cout <<"n("<< i << ":"<< i <<")= " <<n(i,i) <<":" <<sqrt(n(i,i))<< endl;
+             //for (int j=0;j<column.size1();j++){
+-                
+-           
++
++
+             //cout <<"V("<<i<<":"<<j<<")="<<column(j,0)<< endl;
+-                    
++
+               //}
+             column=column/sqrt(n(i,i));
+-  
++
+         }
+-    
++
+ 	return (status == 0);
+ };
+ 
+--- origsrc/tools-1.4/src/tools/CMakeLists.txt	2016-10-30 01:47:46.000000000 +0900
++++ src/tools-1.4/src/tools/CMakeLists.txt	2016-12-01 16:38:49.993818200 +0900
+@@ -7,7 +7,7 @@ foreach(PROG votca_property)
+ 
+   if (BUILD_MANPAGES)
+      add_custom_command(OUTPUT ${PROG}.man
+-       COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${PROG} --man > ${PROG}.man
++       COMMAND PATH=${CMAKE_CURRENT_BINARY_DIR}/../libtools:$ENV{PATH} ${CMAKE_CURRENT_BINARY_DIR}/${PROG} --man > ${PROG}.man
+        COMMENT "Building ${PROG} manpage"
+        DEPENDS ${PROG})
+      add_custom_target(${PROG}_manpage DEPENDS ${PROG}.man)
