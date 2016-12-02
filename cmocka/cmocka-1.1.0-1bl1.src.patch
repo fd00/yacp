@@ -1,0 +1,49 @@
+--- origsrc/cmocka-1.1.0/DefineOptions.cmake	2015-02-13 00:59:22.000000000 +0900
++++ src/cmocka-1.1.0/DefineOptions.cmake	2016-12-02 15:35:38.975644900 +0900
+@@ -2,6 +2,6 @@ option(WITH_STATIC_LIB "Build with a sta
+ option(WITH_CMOCKERY_SUPPORT "Install a cmockery header" OFF)
+ option(UNIT_TESTING "Build with unit testing" OFF)
+ 
+-if (UNIT_TESTING)
++if (UNIT_TESTING AND NOT CYGWIN)
+     set(WITH_STATIC_LIB ON)
+ endif()
+--- origsrc/cmocka-1.1.0/cmake/Modules/DefineCompilerFlags.cmake	2015-02-11 15:57:11.000000000 +0900
++++ src/cmocka-1.1.0/cmake/Modules/DefineCompilerFlags.cmake	2016-12-02 15:36:20.174694200 +0900
+@@ -16,11 +16,13 @@ if (UNIX AND NOT WIN32)
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-format-attribute -Wundef")
+ 
+         # with -fPIC
+-        check_c_compiler_flag("-fPIC" WITH_FPIC)
+-        if (WITH_FPIC)
++        if (NOT CYGWIN)
++          check_c_compiler_flag("-fPIC" WITH_FPIC)
++          if (WITH_FPIC)
+             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+-        endif (WITH_FPIC)
+-
++          endif (WITH_FPIC)
++        endif()
++        
+         check_c_compiler_flag_ssp("-fstack-protector" WITH_STACK_PROTECTOR)
+         if (WITH_STACK_PROTECTOR)
+             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+--- origsrc/cmocka-1.1.0/tests/CMakeLists.txt	2016-09-21 22:31:28.000000000 +0900
++++ src/cmocka-1.1.0/tests/CMakeLists.txt	2016-12-02 15:36:42.096917600 +0900
+@@ -25,14 +25,14 @@ set(CMOCKA_TESTS
+     test_returns_fail)
+ 
+ foreach(_CMOCKA_TEST ${CMOCKA_TESTS})
+-    add_cmocka_test(${_CMOCKA_TEST} ${_CMOCKA_TEST}.c ${CMOCKA_STATIC_LIBRARY})
++    add_cmocka_test(${_CMOCKA_TEST} ${_CMOCKA_TEST}.c ${CMOCKA_SHARED_LIBRARY})
+ endforeach()
+ 
+ ### Special Cases
+ if (${CMAKE_C_COMPILER_ID} MATCHES "(GNU|Clang)")
+     set_source_files_properties(test_cmockery.c PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
+ endif()
+-add_cmocka_test(test_cmockery test_cmockery.c ${CMOCKA_STATIC_LIBRARY})
++add_cmocka_test(test_cmockery test_cmockery.c ${CMOCKA_SHARED_LIBRARY})
+ 
+ ### Exceptions
+ 
