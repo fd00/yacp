@@ -1,0 +1,75 @@
+--- origsrc/SuperLU_5.2.1/CMakeLists.txt	2016-05-23 00:58:44.000000000 +0900
++++ src/SuperLU_5.2.1/CMakeLists.txt	2016-12-02 09:43:45.254054500 +0900
+@@ -7,7 +7,7 @@
+ # Required version
+ cmake_minimum_required(VERSION 2.8.12)
+ 
+-# Project Version	
++# Project Version
+ project(SuperLU NONE)
+ set(VERSION_MAJOR "5")
+ set(VERSION_MINOR "2")
+@@ -140,4 +140,11 @@ endif()
+ # file(WRITE "make.defs" "# can be exposed to users"
+ #  ${CMAKE_C_COMPILER}  )
+ configure_file(${CMAKE_SOURCE_DIR}/make.inc.in ${CMAKE_SOURCE_DIR}/make.inc)
+- 
++
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/superlu.pc.in ${CMAKE_BINARY_DIR}/superlu.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/superlu.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/SuperLU_5.2.1/SRC/CMakeLists.txt	2016-05-23 00:58:44.000000000 +0900
++++ src/SuperLU_5.2.1/SRC/CMakeLists.txt	2016-12-02 09:26:00.956511700 +0900
+@@ -1,5 +1,5 @@
+ 
+-set(headers 
++set(headers
+     supermatrix.h
+     slu_Cnames.h
+     slu_dcomplex.h
+@@ -226,9 +226,9 @@ if(enable_complex16)
+   )
+ endif()
+ 
+-add_library(superlu ${sources} ${HEADERS})
++add_library(superlu SHARED ${sources} ${HEADERS})
+ 
+-target_link_libraries(superlu ${BLAS_LIB} m)
++target_link_libraries(superlu ${TPL_BLAS_LIBRARIES} m)
+ set_target_properties(superlu PROPERTIES
+   VERSION ${PROJECT_VERSION} SOVERSION ${VERSION_MAJOR}
+   )
+@@ -237,7 +237,8 @@ include(GNUInstallDirs)
+ 
+ install(TARGETS superlu
+ #  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+ install(FILES ${headers}
+--- origsrc/SuperLU_5.2.1/TESTING/MATGEN/CMakeLists.txt	2016-05-23 00:58:44.000000000 +0900
++++ src/SuperLU_5.2.1/TESTING/MATGEN/CMakeLists.txt	2016-12-02 09:30:54.400157800 +0900
+@@ -97,3 +97,4 @@ if(enable_complex16)
+ endif()
+ 
+ add_library(matgen ${sources})
++target_link_libraries(matgen superlu)
+--- origsrc/SuperLU_5.2.1/superlu.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SuperLU_5.2.1/superlu.pc.in	2016-12-02 09:42:36.560686300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: superlu
++Description: Sparse LU factorization library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lsuperlu
++Cflags: -I${includedir}
