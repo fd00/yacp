@@ -1,0 +1,59 @@
+--- origsrc/libqb-1.0.1/lib/Makefile.am	2016-11-24 18:43:55.000000000 +0900
++++ src/libqb-1.0.1/lib/Makefile.am	2016-12-04 11:47:49.897778100 +0900
+@@ -29,7 +29,7 @@ AM_CPPFLAGS             = -I$(top_buildd
+ 
+ lib_LTLIBRARIES		= libqb.la
+ 
+-libqb_la_LDFLAGS	= -version-info 18:1:18
++libqb_la_LDFLAGS	= -no-undefined -version-info 18:1:18
+ 
+ source_to_lint		= util.c hdb.c ringbuffer.c ringbuffer_helper.c \
+ 			  array.c loop.c loop_poll.c loop_job.c \
+--- origsrc/libqb-1.0.1/tests/check_ipc.c	2016-11-08 20:15:16.000000000 +0900
++++ src/libqb-1.0.1/tests/check_ipc.c	2016-12-04 12:00:03.826957500 +0900
+@@ -504,7 +504,7 @@ verify_graceful_stop(pid_t pid)
+ 	} else {
+ 		fail_if(rc == 0);
+ 	}
+-	
++
+ 	return 0;
+ }
+ 
+@@ -1005,7 +1005,7 @@ test_ipc_stress_connections(void)
+ 			}
+ 		} while (conn == NULL && c < 5);
+ 		fail_if(conn == NULL);
+-		
++
+ 		if (((connections+1) % 1000) == 0) {
+ 			qb_log(LOG_INFO, "%d ipc connections made", connections+1);
+ 		}
+@@ -1331,14 +1331,18 @@ test_ipc_server_fail(void)
+ 	fail_if(conn == NULL);
+ 
+ 	request_server_exit();
++#if defined(HAVE_FAILURE_INJECTION)
+ 	if (_fi_unlink_inject_failure == QB_TRUE) {
+ 		_fi_truncate_called = _fi_openat_called = 0;
+ 	}
++#endif
+ 	ck_assert_int_eq(QB_FALSE, qb_ipcc_is_connected(conn));
+ 	qb_ipcc_disconnect(conn);
++#if defined(HAVE_FAILURE_INJECTION)
+ 	if (_fi_unlink_inject_failure == QB_TRUE) {
+ 		ck_assert_int_ne(_fi_truncate_called + _fi_openat_called, 0);
+ 	}
++#endif
+ 	verify_graceful_stop(pid);
+ }
+ 
+@@ -1481,7 +1485,7 @@ END_TEST
+ 
+ static void test_max_dgram_size(void)
+ {
+-	/* most implementations will not let you set a dgram buffer 
++	/* most implementations will not let you set a dgram buffer
+ 	 * of 1 million bytes. This test verifies that the we can detect
+ 	 * the max dgram buffersize regardless, and that the value we detect
+ 	 * is consistent. */
