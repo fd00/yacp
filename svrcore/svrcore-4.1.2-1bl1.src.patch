@@ -1,0 +1,30 @@
+--- origsrc/svrcore-4.1.2/src/Makefile.am	2016-04-22 05:30:23.000000000 +0900
++++ src/svrcore-4.1.2/src/Makefile.am	2016-12-05 23:25:54.197820500 +0900
+@@ -25,5 +25,5 @@ libsvrcore_la_SOURCES =	alt.c \
+ 			std-systemd.c \
+ 			user.c
+ 
+-libsvrcore_la_LDFLAGS = -version-info 0:0:0 @NSS_LIBS@ @NSPR_LIBS@
++libsvrcore_la_LDFLAGS = -no-undefined -version-info 0:0:0 @NSS_LIBS@ @NSPR_LIBS@
+ libsvrcore_la_CFLAGS = @NSS_CFLAGS@ @NSPR_CFLAGS@ @SYSTEMD_CFLAGS@
+--- origsrc/svrcore-4.1.2/src/systemd-ask-pass.c	2016-04-22 05:30:23.000000000 +0900
++++ src/svrcore-4.1.2/src/systemd-ask-pass.c	2016-12-05 23:30:21.736988700 +0900
+@@ -116,11 +116,13 @@ _create_socket(char **path, int *sfd)
+         goto out;
+     }
+ 
++#if !defined(__CYGWIN__)
+     // set options. Why do we need SO_PASSCRED? I think this makes systemd happy
+     if (setsockopt(*sfd, SOL_SOCKET, SO_PASSCRED, &one, sizeof(one)) != 0) {
+         err = SVRCORE_SocketError;
+         goto out;
+     }
++#endif
+ 
+ out:
+ 
+@@ -469,4 +471,3 @@ destroyObject(SVRCOREPinObj *obj)
+ 
+ static const SVRCOREPinMethods vtable =
+ { 0, 0, destroyObject, getPin };
+-
