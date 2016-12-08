@@ -1,0 +1,363 @@
+--- origsrc/2.3.4.3/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2016-12-08 16:38:36.323521900 +0900
+@@ -3,7 +3,7 @@
+ #
+ # Recommended use:
+ # clhep_build_library( <package> <source code files> )
+-# 
++#
+ 
+ macro(clhep_build_library package)
+   set( CLHEP_${package}_SOURCES ${ARGN} )
+@@ -11,9 +11,9 @@ macro(clhep_build_library package)
+   # build up the source list for CLHEP
+   set( CLHEP_${package}_list CACHE INTERNAL "${package} sources" FORCE )
+   foreach( file ${ARGN} )
+-    set( CLHEP_${package}_list 
++    set( CLHEP_${package}_list
+          ${CLHEP_${package}_list} ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+-         CACHE INTERNAL "${package} sources" 
++         CACHE INTERNAL "${package} sources"
+ 	 )
+   endforeach()
+   ##message( STATUS "in ${package}, clheplib source list ${CLHEP_${package}_list}" )
+@@ -31,27 +31,21 @@ macro(clhep_build_library package)
+ 
+   # Add the libraries and set properties
+   ADD_LIBRARY(${package}  SHARED ${CLHEP_${package}_SOURCES})
+-  ADD_LIBRARY(${package}S STATIC ${CLHEP_${package}_SOURCES})
+   SET_TARGET_PROPERTIES (${package}
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${package}-${VERSION}
+-      )
+-  SET_TARGET_PROPERTIES(${package}S
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${package}-${VERSION}
++      PROPERTIES
++        OUTPUT_NAME CLHEP-${package}
++        SOVERSION 0
+       )
+ 
+   target_link_libraries(${package}  ${package_library_list} )
+-  target_link_libraries(${package}S ${package_library_list_static} )
+ 
+   # Install the libraries
+-  INSTALL (TARGETS ${package} ${package}S
++  INSTALL (TARGETS ${package}
+       EXPORT CLHEPLibraryDepends
+       RUNTIME DESTINATION bin
+-      LIBRARY DESTINATION lib${LIB_SUFFIX}
+       ARCHIVE DESTINATION lib${LIB_SUFFIX}
+       INCLUDES DESTINATION include
+-      ) 
++      )
+ endmacro(clhep_build_library)
+ 
+ macro(clhep_build_libclhep )
+@@ -63,41 +57,19 @@ macro(clhep_build_libclhep )
+   ##message( STATUS "clheplib source list ${clhep_sources}" )
+ 
+   ADD_LIBRARY (CLHEP  SHARED ${clhep_sources})
+-  ADD_LIBRARY (CLHEPS STATIC ${clhep_sources})
+ 
+   SET_TARGET_PROPERTIES(CLHEP
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${VERSION}
+-      )
+-  SET_TARGET_PROPERTIES(CLHEPS
+-      PROPERTIES 
+-        OUTPUT_NAME CLHEP-${VERSION}
++      PROPERTIES
++        OUTPUT_NAME CLHEP
++        SOVERSION 0
+       )
+ 
+   # export creates library dependency files for CLHEPConfig.cmake
+-  INSTALL(TARGETS CLHEP CLHEPS
++  INSTALL(TARGETS CLHEP
+       EXPORT CLHEPLibraryDepends
+       RUNTIME DESTINATION bin
+-      LIBRARY DESTINATION lib${LIB_SUFFIX}
+       ARCHIVE DESTINATION lib${LIB_SUFFIX}
+       INCLUDES DESTINATION include
+-      ) 
+-
+-  if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+-      # copy
+-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink 
+-        	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy ${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP${CMAKE_STATIC_LIBRARY_SUFFIX} WORKING_DIRECTORY \"$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}\" )" )
+-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink 
+-        	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP${CMAKE_SHARED_LIBRARY_SUFFIX} WORKING_DIRECTORY \"$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin\" )" )
+-  else()
+-      # create the symbolic links
+-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink 
+-        	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP${CMAKE_STATIC_LIBRARY_SUFFIX} WORKING_DIRECTORY \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}\" )" )
+-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink 
+-        	 "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP-${VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CLHEP${CMAKE_SHARED_LIBRARY_SUFFIX} WORKING_DIRECTORY \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}\" )" )
+-  endif()
+-
+-  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_static_symlink )
+-  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
++      )
+ 
+ endmacro(clhep_build_libclhep )
+--- origsrc/2.3.4.3/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2016-12-08 16:39:09.957142400 +0900
+@@ -1,6 +1,6 @@
+ # Create the tests
+ #
+-# clhep_test( testname 
++# clhep_test( testname
+ #                [LIBS] <library_list>
+ #                [DEPENDS] <another_testname>
+ #                [SIMPLE] - this test does not require a shell script
+@@ -19,21 +19,21 @@ include(ClhepParseArgs)
+ macro( clhep_test testname )
+   clhep_parse_args( CTST "LIBS;DEPENDS" "SIMPLE;FAIL;NOLIB" ${ARGN})
+ 
+-  # automake/autoconf variables for ${testname}.sh.in 
++  # automake/autoconf variables for ${testname}.sh.in
+   set(srcdir ${CMAKE_CURRENT_SOURCE_DIR})
+   set(builddir ${CMAKE_CURRENT_BINARY_DIR})
+ 
+   if( CTST_NOLIB )
+     set(package_library_list)
+   else()
+-    set( package_library_list ${PACKAGE}S)
++    set( package_library_list ${PACKAGE})
+     #set( package_library_list ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${PACKAGE}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
+   endif()
+ 
+   if( ${PACKAGE}_DEPS )
+      foreach ( dep ${${PACKAGE}_DEPS} )
+         ##message( STATUS "clhep_test ${testname} will use ${dep}")
+-	list(APPEND package_library_list ${PACKAGE}S)
++	list(APPEND package_library_list ${PACKAGE})
+ 	#list(APPEND package_library_list  ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${dep}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
+      endforeach()
+   endif()
+@@ -56,7 +56,7 @@ macro( clhep_test testname )
+     if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+       message( STATUS "skipping ${testname}.sh on ${CMAKE_SYSTEM_NAME}")
+     else()
+-      configure_file( ${testname}.sh.in 
++      configure_file( ${testname}.sh.in
+                       ${CMAKE_CURRENT_BINARY_DIR}/${testname}.sh  @ONLY )
+       add_test( ${testname}.sh ${CMAKE_CURRENT_BINARY_DIR}/${testname}.sh )
+       if( CTST_FAIL )
+@@ -67,5 +67,5 @@ macro( clhep_test testname )
+       endif( CTST_DEPENDS )
+     endif()
+   endif()
+-  
++
+ endmacro( clhep_test )
+--- origsrc/2.3.4.3/CLHEP/cmake/Modules/ClhepToolchain.cmake	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Modules/ClhepToolchain.cmake	2016-12-08 17:01:49.351188800 +0900
+@@ -8,7 +8,7 @@
+ #
+ # We only do this for the main CLHEP library to illustrate the basic
+ # pattern. It can be extended to handle the component packages, but this
+-# is more complex and would hide the basic concepts. 
++# is more complex and would hide the basic concepts.
+ #
+ # Both are fully relocatable, like clhep-config, so can be distributed in
+ # relocatable binary packages.
+@@ -30,7 +30,7 @@ set(CLHEP_INCLUDE_DIR ${PROJECT_BINARY_D
+ # Now we configure the CLHEPConfig and CLHEPConfigVersion file templates,
+ # outputting to the top level of the build tree.
+ # This allows users to 'point' CMake to the build by something like
+-#  
++#
+ #  # Some CMakeLists.txt
+ #  ...
+ #  find_package(CLHEP 2.1.0.1 REQUIRED)
+@@ -40,12 +40,12 @@ set(CLHEP_INCLUDE_DIR ${PROJECT_BINARY_D
+ #  cmake -DCLHEP_DIR=/path/to/clhep/build  /path/to/source/of/app
+ #
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/CLHEPConfigVersion.cmake.in
+-  ${PROJECT_BINARY_DIR}/CLHEPConfigVersion.cmake 
++  ${PROJECT_BINARY_DIR}/CLHEPConfigVersion.cmake
+   @ONLY
+   )
+ 
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/CLHEPConfig.cmake.in
+-  ${PROJECT_BINARY_DIR}/CLHEPConfig.cmake 
++  ${PROJECT_BINARY_DIR}/CLHEPConfig.cmake
+   @ONLY
+   )
+ 
+@@ -53,11 +53,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+ # This file is include()d by CLHEPConfig.cmake
+ # First build up list of all modular targets, static and shared
+ set(CLHEP_libraries_all ${CLHEP_libraries})
+-foreach(_lib ${CLHEP_libraries})
+-  list(APPEND CLHEP_libraries_all "${_lib}S")
+-endforeach()
+-
+-export(TARGETS CLHEP CLHEPS ${CLHEP_libraries_all}
++export(TARGETS CLHEP ${CLHEP_libraries_all}
+   NAMESPACE "CLHEP::"
+   FILE ${PROJECT_BINARY_DIR}/CLHEPLibraryDepends.cmake
+   )
+@@ -65,7 +61,7 @@ export(TARGETS CLHEP CLHEPS ${CLHEP_libr
+ 
+ #-----------------------------------------------------------------------
+ # Pkg-config setup
+- 
++
+ # Full clhep.pc.
+ # In the build tree we hardcode all paths, as we never need to relocate
+ # a build tree
+@@ -107,8 +103,8 @@ set(CLHEP_VERSION ${VERSION})
+ # The setup of the include dir is slightly different because we want
+ # to make the install relocatable (Current CLHEP setup *is* relocatable).
+ # We use a relative path from the directory where the CLHEPConfig.cmake
+-# file is installed to the actual include dir. 
+-file(RELATIVE_PATH _relincpath 
++# file is installed to the actual include dir.
++file(RELATIVE_PATH _relincpath
+   ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/CLHEP-${VERSION}
+   ${CMAKE_INSTALL_PREFIX}/include
+   )
+@@ -116,14 +112,14 @@ set(CLHEP_INCLUDE_DIR "\${_thisdir}/${_r
+ 
+ # Now we configure the CLHEPConfig and CLHEPConfigVersion file templates,
+ # outputting to a directory in the build directory. This is simply a
+-# placeholder to store them until we install later.  
++# placeholder to store them until we install later.
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/CLHEPConfigVersion.cmake.in
+-  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake 
++  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake
+   @ONLY
+   )
+ 
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/CLHEPConfig.cmake.in
+-  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake 
++  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake
+   @ONLY
+   )
+ 
+@@ -158,28 +154,28 @@ endforeach()
+ 
+ # - Install the config files, and 'install export' the library depends file
+ #   The choice of 'lib/CLHEP-<VERSION>' is based on the recommendations
+-#   in the CMake documentation for find_package on UNIX so that 
++#   in the CMake documentation for find_package on UNIX so that
+ #   CMake can potentially find the Config file automatically. We don't
+ #   consider the Apple case because we don't (yet) build CLHEP as a Framework.
+ #   The Windows case can be easily added later.
+ #   The location can of course be modified if you wish.
+ install(FILES
+-  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake 
+-  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake 
+-  DESTINATION lib${LIB_SUFFIX}/CLHEP-${VERSION}
++  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake
++  ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake
++  DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP
+   )
+ 
+-install(EXPORT CLHEPLibraryDepends 
++install(EXPORT CLHEPLibraryDepends
+         NAMESPACE "CLHEP::"
+-        DESTINATION lib${LIB_SUFFIX}/CLHEP-${VERSION})
++      DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP)
+ 
+-# Install the pkg-config file. The choice of 'lib${LIB_SUFFIX}/pkgconfig' for the 
++# Install the pkg-config file. The choice of 'lib${LIB_SUFFIX}/pkgconfig' for the
+ # installation seems fairly standard.
+ install(FILES
+   ${PROJECT_BINARY_DIR}/InstallTreeFiles/clhep.pc
+   DESTINATION lib${LIB_SUFFIX}/pkgconfig
+   )
+- 
++
+ foreach(_lib ${CLHEP_libraries})
+   string(TOLOWER ${_lib} _pcfilename)
+   install(FILES
+--- origsrc/2.3.4.3/CLHEP/cmake/Modules/ClhepVariables.cmake	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Modules/ClhepVariables.cmake	2016-12-08 16:42:21.861492600 +0900
+@@ -1,5 +1,5 @@
+ #
+-# clhep_set_compiler_flags() 
++# clhep_set_compiler_flags()
+ #    sets the default compiler flags
+ #    calls clhep_autoconf_variables
+ #
+@@ -58,11 +58,11 @@ macro( clhep_autoconf_variables )
+   #   CXXFLAGS = -g -O2
+   #   CXX = g++
+   #   CXXCPP = g++ -E
+-  #   CPPFLAGS = 
++  #   CPPFLAGS =
+   #   CXXLD = $(CXX)
+-  #   AM_LDFLAGS = 
+-  #   LDFLAGS = 
+-  #   LIBS = 
++  #   AM_LDFLAGS =
++  #   LDFLAGS =
++  #   LIBS =
+ 
+   # automake/autoconf variables
+   set( prefix      ${CMAKE_INSTALL_PREFIX} )
+@@ -230,7 +230,7 @@ macro( _clhep_use_pthread )
+     find_package(Threads)
+     ##message(STATUS "clhep_set_compiler_flags debug: CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+     message(STATUS "cmake build type is ${CMAKE_BUILD_TYPE}")
+-    if(THREADS_HAVE_PTHREAD_ARG) 
++    if(THREADS_HAVE_PTHREAD_ARG)
+       set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
+     elseif(CMAKE_COMPILER_IS_GNUCXX)
+       # needed when building with gcc on OSX
+@@ -326,7 +326,7 @@ macro( clhep_package_config_no_lib )
+   ## don't install <package>-config on Windows
+   if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+     install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
+-              DESTINATION bin
++              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
+ 	    )
+   endif()
+ endmacro( clhep_package_config_no_lib )
+@@ -334,11 +334,11 @@ endmacro( clhep_package_config_no_lib )
+ macro( clhep_package_config )
+   set( ${PACKAGE}_CPPFLAGS "-I${includedir}" )
+   set( ${PACKAGE}_LDFLAGS  "-L\${exec_prefix}/lib${LIB_SUFFIX}" )
+-  set( ${PACKAGE}_LIBS     "-lCLHEP-${PACKAGE}-${VERSION}" )
++  set( ${PACKAGE}_LIBS     "-lCLHEP-${PACKAGE}" )
+   if( ${PACKAGE}_DEPS )
+      foreach ( dep ${${PACKAGE}_DEPS} )
+         message( STATUS "${PACKAGE} depends on ${dep}")
+-	set( ${PACKAGE}_LIBS     "${${PACKAGE}_LIBS} -lCLHEP-${dep}-${VERSION}" )
++	set( ${PACKAGE}_LIBS     "${${PACKAGE}_LIBS} -lCLHEP-${dep}" )
+      endforeach()
+   endif()
+   configure_file ( ${CLHEP_SOURCE_DIR}/${PACKAGE}/${PACKAGE}-config.in
+@@ -348,7 +348,7 @@ macro( clhep_package_config )
+   ## don't install <package>-config on Windows
+   if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+     install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
+-              DESTINATION bin
++              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
+ 	    )
+   endif()
+ endmacro( clhep_package_config )
+--- origsrc/2.3.4.3/CLHEP/cmake/Templates/clhep-component.pc.in	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Templates/clhep-component.pc.in	2016-12-08 17:49:48.610083500 +0900
+@@ -9,6 +9,5 @@ Name: CLHEP-@CLHEP_PC_COMPONENT@
+ Description: Class Library for High Energy Physics, @CLHEP_PC_COMPONENT@ Component
+ Version: @CLHEP_VERSION@
+ Requires: @CLHEP_PC_COMPONENT_REQUIRES@
+-Libs: -L${libdir} -lCLHEP-@CLHEP_PC_COMPONENT@-@CLHEP_VERSION@
++Libs: -L${libdir} -lCLHEP-@CLHEP_PC_COMPONENT@
+ Cflags: -I${includedir}
+-
+--- origsrc/2.3.4.3/CLHEP/cmake/Templates/clhep.pc.in	2016-12-01 06:29:25.000000000 +0900
++++ src/2.3.4.3/CLHEP/cmake/Templates/clhep.pc.in	2016-12-08 17:49:40.110106700 +0900
+@@ -8,6 +8,5 @@ includedir=@CLHEP_PKGCONFIG_INCLUDEDIR@
+ Name: CLHEP
+ Description: Class Library for High Energy Physics
+ Version: @CLHEP_VERSION@
+-Libs: -L${libdir} -lCLHEP-@CLHEP_VERSION@
++Libs: -L${libdir} -lCLHEP
+ Cflags: -I${includedir}
+-
