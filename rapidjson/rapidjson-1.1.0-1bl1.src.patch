@@ -1,0 +1,101 @@
+--- origsrc/rapidjson-1.1.0/CMakeLists.txt	2016-08-25 16:59:05.000000000 +0900
++++ src/rapidjson-1.1.0/CMakeLists.txt	2016-12-11 21:30:34.716505400 +0900
+@@ -53,9 +53,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -Werror")
+     if (RAPIDJSON_BUILD_CXX11)
+         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7.0")
+-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
++            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+         else()
+-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+         endif()
+     endif()
+     if (RAPIDJSON_BUILD_ASAN)
+--- origsrc/rapidjson-1.1.0/test/CMakeLists.txt	2016-08-25 16:59:05.000000000 +0900
++++ src/rapidjson-1.1.0/test/CMakeLists.txt	2016-12-11 21:27:35.364611300 +0900
+@@ -1,20 +1,30 @@
+-find_package(GTestSrc)
++IF(RAPIDJSON_BUILD_THIRDPARTY_GTEST)
+ 
+-IF(GTESTSRC_FOUND)
+-    enable_testing()
++    find_package(GTestSrc)
+ 
+-    if (WIN32 AND (NOT CYGWIN) AND (NOT MINGW))
+-        set(gtest_disable_pthreads ON)
+-        set(gtest_force_shared_crt ON)
+-    endif()
++    IF(GTESTSRC_FOUND)
++        enable_testing()
+ 
+-    add_subdirectory(${GTEST_SOURCE_DIR} ${CMAKE_BINARY_DIR}/googletest)
+-    include_directories(SYSTEM ${GTEST_INCLUDE_DIR})
++        if (WIN32 AND (NOT CYGWIN) AND (NOT MINGW))
++            set(gtest_disable_pthreads ON)
++            set(gtest_force_shared_crt ON)
++        endif()
+ 
+-    set(TEST_LIBRARIES gtest gtest_main)
++        add_subdirectory(${GTEST_SOURCE_DIR} ${CMAKE_BINARY_DIR}/googletest)
++        include_directories(SYSTEM ${GTEST_INCLUDE_DIR})
+ 
+-    add_custom_target(tests ALL)
+-    add_subdirectory(perftest)
+-    add_subdirectory(unittest)
++        set(TEST_LIBRARIES gtest gtest_main)
+ 
+-ENDIF(GTESTSRC_FOUND)
++        add_custom_target(tests ALL)
++        add_subdirectory(perftest)
++        add_subdirectory(unittest)
++
++    ENDIF(GTESTSRC_FOUND)
++
++ELSE()
++  enable_testing()
++  set(TEST_LIBRARIES gtest gtest_main)
++  add_custom_target(tests ALL)
++  add_subdirectory(perftest)
++  add_subdirectory(unittest)
++ENDIF()
+--- origsrc/rapidjson-1.1.0/test/unittest/unittest.h	2016-08-25 16:59:05.000000000 +0900
++++ src/rapidjson-1.1.0/test/unittest/unittest.h	2016-12-11 21:29:36.257050400 +0900
+@@ -1,5 +1,5 @@
+ // Tencent is pleased to support the open source community by making RapidJSON available.
+-// 
++//
+ // Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+ //
+ // Licensed under the MIT License (the "License"); you may not use this file except
+@@ -7,9 +7,9 @@
+ //
+ // http://opensource.org/licenses/MIT
+ //
+-// Unless required by applicable law or agreed to in writing, software distributed 
+-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
+-// CONDITIONS OF ANY KIND, either express or implied. See the License for the 
++// Unless required by applicable law or agreed to in writing, software distributed
++// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
++// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ // specific language governing permissions and limitations under the License.
+ 
+ #ifndef UNITTEST_H_
+@@ -44,7 +44,7 @@
+ #pragma GCC diagnostic ignored "-Weffc++"
+ #endif
+ 
+-#include "gtest/gtest.h"
++#include <gtest/gtest.h>
+ #include <stdexcept>
+ 
+ #if defined(__clang__) || defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
+@@ -85,7 +85,7 @@ inline FILE* TempFile(char *filename) {
+     if (filename[0] == '\\')
+         for (int i = 0; filename[i] != '\0'; i++)
+             filename[i] = filename[i + 1];
+-        
++
+     return fopen(filename, "wb");
+ #else
+     strcpy(filename, "/tmp/fileXXXXXX");
