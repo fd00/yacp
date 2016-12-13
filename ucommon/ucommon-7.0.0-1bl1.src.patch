@@ -1,0 +1,295 @@
+--- origsrc/ucommon-7.0.0/Makefile.am	2015-08-30 07:29:15.000000000 +0900
++++ src/ucommon-7.0.0/Makefile.am	2016-12-13 00:32:52.151106200 +0900
+@@ -29,8 +29,8 @@ pkgconfig_DATA = ucommon.pc @COMPAT_PC@
+ scriptdir = $(bindir)
+ script_SCRIPTS = ucommon-config @COMPAT_CONFIG@
+ 
+-cmakedir = $(datadir)/ucommon/cmake
+-cmake_DATA = cmake/CapeConfig.cmake cmake/CapeMakeTargets.cmake
++cmakedir = $(libdir)/cmake/$(PACKAGE)
++cmake_DATA = $(top_srcdir)/cmake/CapeConfig.cmake $(top_srcdir)/cmake/CapeMakeTargets.cmake
+ 
+ man_MANS = ucommon-config.1 commoncpp-config.1
+ 
+@@ -71,4 +71,3 @@ cleandist:
+ 	@rm -f ${PACKAGE}_*.gz
+ 	@rm -f ${PACKAGE}_*.dsc
+ 	@rm -f *.changes
+-
+--- origsrc/ucommon-7.0.0/commoncpp/udp.cpp	2015-11-03 17:30:33.000000000 +0900
++++ src/ucommon-7.0.0/commoncpp/udp.cpp	2016-12-13 00:33:53.013892900 +0900
+@@ -317,7 +317,7 @@ Socket::Error UDPSocket::join(const ucom
+ Socket::Error UDPSocket::getInterfaceIndex(const char *DeviceName,int& InterfaceIndex)
+ {
+ #ifndef _MSWINDOWS_
+-#if defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__) && !defined(__NetBSD__)
++#if defined(IP_ADD_MEMBERSHIP) && defined(SIOCGIFINDEX) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && !defined(_OSF_SOURCE) && !defined(__hpux) && !defined(__GNU__) && !defined(__NetBSD__) && !defined(__CYGWIN__)
+ 
+     struct ip_mreqn  mreqn;
+     struct ifreq       m_ifreq;
+--- origsrc/ucommon-7.0.0/configure.ac	2015-11-08 03:15:59.000000000 +0900
++++ src/ucommon-7.0.0/configure.ac	2016-12-13 00:36:59.102753200 +0900
+@@ -59,6 +59,7 @@ have_gettext="no"
+ socket_lib=""
+ posix4_lib=""
+ rt_lib=""
++intl_lib=""
+ 
+ test -z "$localedir" && localedir='${datadir}/locale'
+ 
+@@ -186,6 +187,47 @@ AC_CHECK_HEADER(regex.h, [
+     ])
+ ])
+ 
++if test "$host_os" = "cygwin"
++then
++AC_CHECK_LIB(gcc, __modsi3, [
++    UCOMMON_LIBC="$UCOMMON_LIBC -lgcc"
++])
++AC_CHECK_LIB($clib, socketpair, [
++    AC_DEFINE(HAVE_SOCKETPAIR, [1], [have socketpair])
++],[
++        AC_CHECK_LIB(socket, socketpair, [AC_DEFINE(HAVE_SOCKETPAIR, [1], [have socketpair])])
++])
++AC_CHECK_LIB($clib, getaddrinfo, [
++    AC_DEFINE(HAVE_GETADDRINFO, [1], [have getaddrinfo])
++],[
++        AC_CHECK_LIB(socket, getaddrinfo, [AC_DEFINE(HAVE_GETADDRINFO, [1], [have getaddrinfo])])
++])
++AC_CHECK_LIB($clib, gethostbyname2, [
++    AC_DEFINE(HAVE_GETHOSTBYNAME2, [1], [have gethostbyname2])
++],[
++        AC_CHECK_LIB(socket, gethostbyname2, [AC_DEFINE(HAVE_GETHOSTBYNAME2, [1], [have gethostbyname2])])
++])
++
++AC_CHECK_LIB($clib, inet_ntop, [
++    AC_DEFINE(HAVE_INET_NTOP, [1], [have inet ntop])
++],[
++    AC_CHECK_LIB(socket, inet_ntop, [
++        AC_DEFINE(HAVE_INET_NTOP, [1], [have inet ntop])
++    ],[
++        AC_CHECK_LIB(nsl, inet_ntop, [
++            AC_DEFINE(HAVE_INET_NTOP, [1], [have inet_ntop])
++            socket_lib="$socket_lib -lnsl"
++        ])
++    ])
++])
++
++AC_CHECK_LIB(socket, socket,[
++    AC_CHECK_LIB(socket, socketpair,[
++        AC_DEFINE(HAVE_SOCKETPAIR, [1], [have socketpair in libsocket])
++    ])
++    socket_lib="-lsocket"
++])
++else
+ AC_CHECK_LIB(msvcrt, fopen, [
+     threading="msw"
+     clib="msvcrt"
+@@ -234,6 +276,7 @@ AC_CHECK_LIB(msvcrt, fopen, [
+         socket_lib="-lsocket"
+     ])
+ ])
++fi
+ 
+ AC_CHECK_LIB($clib, lstat, [
+     AC_DEFINE(HAVE_LSTAT, [1], [have lstat])
+@@ -363,6 +406,11 @@ for func in ftok shm_open nanosleep cloc
+                 if test ! -z "$tlib" ; then
+                     AC_CHECK_LIB($tlib, $func, [
+                         found=$func
++                        ],[
++                        AC_CHECK_LIB(intl, $func, [
++                            found=$func
++                            intl_lib="-lintl"
++                        ])
+                     ])
+                 fi
+             ])
+@@ -439,8 +487,8 @@ for func in ftok shm_open nanosleep cloc
+     esac
+ done
+ 
+-UCOMMON_LINKED="$socket_lib $posix4_lib $rt_lib $UCOMMON_LIBS"
+-UCOMMON_LIBS="$socket_lib $posix4_lib $rt_lib $UCOMMON_LIBS $UCOMMON_LIBC"
++UCOMMON_LINKED="$socket_lib $posix4_lib $rt_lib $intl_lib $UCOMMON_LIBS"
++UCOMMON_LIBS="$socket_lib $posix4_lib $rt_lib $intl_lib $UCOMMON_LIBS $UCOMMON_LIBC"
+ 
+ if test "$UCOMMON_MODEL" = "CC" ; then
+     AC_CHECK_LIB(Systemstubs, printf, [
+@@ -665,4 +713,3 @@ AC_OUTPUT(Makefile corelib/Makefile comm
+ openssl/Makefile gnutls/Makefile nossl/Makefile utils/Makefile Doxyfile
+ inc/Makefile inc/ucommon/Makefile inc/commoncpp/Makefile test/Makefile
+ directive commoncpp.pc ucommon.pc ucommon.spec ucommon-config commoncpp-config)
+-
+--- origsrc/ucommon-7.0.0/corelib/memory.cpp	2015-11-03 17:30:33.000000000 +0900
++++ src/ucommon-7.0.0/corelib/memory.cpp	2016-12-13 12:26:39.796186700 +0900
+@@ -42,6 +42,10 @@
+ #define aligned_alloc(a, s) _aligned_malloc(s, a)
+ #endif
+ 
++#if defined(__CYGWIN__)
++extern "C" char* strcasestr(const char *, const char *);
++#endif
++
+ namespace ucommon {
+ 
+ extern "C" {
+@@ -234,7 +238,7 @@ memalloc(ps)
+ }
+ 
+ mempager::mempager(const mempager& copy) :
+-memalloc(copy) 
++memalloc(copy)
+ {
+     pthread_mutex_init(&mutex, NULL);
+ }
+--- origsrc/ucommon-7.0.0/corelib/string.cpp	2015-11-15 21:36:38.000000000 +0900
++++ src/ucommon-7.0.0/corelib/string.cpp	2016-12-13 12:26:13.775693100 +0900
+@@ -27,6 +27,10 @@
+ #endif
+ #include <limits.h>
+ 
++#if defined(__CYGWIN__)
++extern "C" char* strcasestr(const char *, const char *);
++#endif
++
+ namespace ucommon {
+ 
+ String::cstring::cstring(size_t size) :
+@@ -782,7 +786,7 @@ void String::set(const char *s, char ove
+ void String::rset(const char *s, char overflow, size_t offset, size_t size)
+ {
+     size_t len = count(s);
+-    
++
+     if(!s || !*s || !str)
+         return;
+ 
+@@ -1919,7 +1923,7 @@ String String::hex(const uint8_t *binary
+         buf += 2;
+     }
+     return out;
+-} 
++}
+ 
+ size_t String::hexdump(const uint8_t *binary, char *string, const char *format)
+ {
+--- origsrc/ucommon-7.0.0/corelib/thread.cpp	2015-12-13 20:28:25.000000000 +0900
++++ src/ucommon-7.0.0/corelib/thread.cpp	2016-12-13 12:28:28.847447200 +0900
+@@ -996,6 +996,10 @@ void Thread::setPriority(void)
+ void Thread::setPriority(void) {}
+ #endif
+ 
++#if defined(__CYGWIN__)
++extern "C" int pthread_setconcurrency(int);
++#endif
++
+ void Thread::concurrency(int level)
+ {
+ #if defined(HAVE_PTHREAD_SETCONCURRENCY) && !defined(_MSTHREADS_)
+@@ -1054,6 +1058,10 @@ void Thread::sleep(timeout_t timeout)
+ #endif
+ }
+ 
++#if defined(__CYGWIN__)
++extern "C" int pthread_yield(void);
++#endif
++
+ void Thread::yield(void)
+ {
+ #if defined(_MSTHREADS_)
+--- origsrc/ucommon-7.0.0/inc/ucommon/platform.h	2015-11-08 03:15:59.000000000 +0900
++++ src/ucommon-7.0.0/inc/ucommon/platform.h	2016-12-13 00:38:57.380046600 +0900
+@@ -160,7 +160,7 @@ T protocol_cast(S *s) {
+ #define __DELETE_COPY(x)        inline x(const x&);\
+                                 inline x& operator=(const x&)
+ #define __DELETE_DEFAULTS(x)    inline x();\
+-                                __DELETE_COPY(x)    
++                                __DELETE_COPY(x)
+ #else
+ #define __FINAL                 final
+ #define __OVERRIDE              override
+@@ -175,17 +175,17 @@ T protocol_cast(S *s) {
+ #if defined(__GNUC_MINOR__) && !defined(__clang__)
+ #define nullptr __null
+ #elif !defined(__clang__) || (defined(__clang__) && defined(__linux__))
+-const class nullptr_t 
++const class nullptr_t
+ {
+ public:
+     template<class T>
+     inline operator T*() const {
+-        return 0; 
++        return 0;
+     }
+ 
+     template<class C, class T>
+     inline operator T C::*() const {
+-        return 0; 
++        return 0;
+     }
+ 
+ private:
+@@ -294,7 +294,9 @@ typedef size_t socksize_t;
+ 
+ #else
+ typedef size_t socksize_t;
++#if !defined(__EXPORT)
+ #define __EXPORT    __attribute__ ((visibility("default")))
++#endif
+ #define __LOCAL     __attribute__ ((visibility("hidden")))
+ #define __SHARED    __attribute__ ((visibility("default")))
+ #endif
+@@ -311,7 +313,7 @@ typedef size_t socksize_t;
+ #define __MINGW_WINPTHREAD__
+ #include <pthread.h>   // gnu libstdc++ now requires a win pthread
+ typedef size_t stacksize_t;
+-#else   
++#else
+ #define _MSTHREADS_
+ typedef DWORD pthread_t;
+ typedef DWORD pthread_key_t;
+@@ -431,7 +433,7 @@ typedef unsigned __int64 uint64_t;
+ typedef char *caddr_t;
+ 
+ #include <stdio.h>
+-#define snprintf(p, s, f, ...) _snprintf_s(p, s, _TRUNCATE, f, __VA_ARGS__) 
++#define snprintf(p, s, f, ...) _snprintf_s(p, s, _TRUNCATE, f, __VA_ARGS__)
+ #define vsnprintf(p, s, f, a) _vsnprintf_s(p, s, _TRUNCATE, f, a)
+ 
+ #else
+@@ -575,7 +577,7 @@ inline T polypointer_cast(S *s)
+ #else
+     return static_cast<T>(s);
+ #endif
+-}   
++}
+ 
+ template<class T, class S>
+ inline T polyconst_cast(S *s)
+@@ -587,7 +589,7 @@ template<class T, class S>
+ inline T polystatic_cast(S *s)
+ {
+     return static_cast<T>(s);
+-}    
++}
+ 
+ template<class T, class S>
+ inline T polydynamic_cast(S *s)
+@@ -597,14 +599,14 @@ inline T polydynamic_cast(S *s)
+ #else
+     return static_cast<T>(s);
+ #endif
+-}    
++}
+ 
+ template<class T, class S>
+ inline T& polyreference_cast(S *s)
+ {
+     __THROW_DEREF(s);
+     return *(static_cast<T*>(s));
+-}    
++}
+ 
+ template<typename T>
+ inline T& reference_cast(T *pointer) {
