@@ -1,0 +1,55 @@
+--- origsrc/knot-2.3.3/src/Makefile.am	2016-12-08 18:17:51.000000000 +0900
++++ src/knot-2.3.3/src/Makefile.am	2016-12-14 07:49:35.560285400 +0900
+@@ -19,6 +19,8 @@ AM_CPPFLAGS = \
+ 	-DRUN_DIR='"${run_dir}"'		\
+ 	-I$(srcdir)/dnssec/lib
+ 
++AM_LDFLAGS = -no-undefined
++
+ ######################
+ # Knot DNS Libraries #
+ ######################
+--- origsrc/knot-2.3.3/src/contrib/endian.h	2016-12-08 18:17:51.000000000 +0900
++++ src/knot-2.3.3/src/contrib/endian.h	2016-12-14 07:50:09.875193500 +0900
+@@ -25,7 +25,7 @@
+ #pragma once
+ 
+ #if defined(__linux__) || defined(__gnu_hurd__) || \
+-    (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
++    (defined(__FreeBSD_kernel__) && defined(__GLIBC__)) || defined(__CYGWIN__)
+ #       include <endian.h>
+ #  ifndef be64toh
+ #       include <arpa/inet.h>
+--- origsrc/knot-2.3.3/src/dnssec/Makefile.am	2016-12-08 18:17:51.000000000 +0900
++++ src/knot-2.3.3/src/dnssec/Makefile.am	2016-12-14 07:50:35.885444500 +0900
+@@ -46,6 +46,7 @@ libdnssec_la_CPPFLAGS = \
+ 	$(CFLAG_VISIBILITY)
+ 
+ libdnssec_la_LDFLAGS = \
++	-no-undefined \
+ 	$(gnutls_LIBS) \
+ 	$(jansson_LIBS) \
+ 	$(libdnssec_VERSION_INFO)
+--- origsrc/knot-2.3.3/src/knot/server/server.c	2016-12-08 18:17:51.000000000 +0900
++++ src/knot-2.3.3/src/knot/server/server.c	2016-12-14 22:04:46.406829800 +0900
+@@ -119,7 +119,9 @@ static bool enable_pktinfo(int sock, int
+ 		break;
+ 	case AF_INET6:
+ 		level = IPPROTO_IPV6;
++#if defined(IPV6_RECVPKTINFO)
+ 		option = IPV6_RECVPKTINFO;
++#endif
+ 		break;
+ 	default:
+ 		return false;
+--- origsrc/knot-2.3.3/src/zscanner/Makefile.am	2016-12-08 18:17:51.000000000 +0900
++++ src/knot-2.3.3/src/zscanner/Makefile.am	2016-12-14 07:51:31.677482900 +0900
+@@ -42,7 +42,7 @@ nodist_libzscanner_la_SOURCES =		\
+ 	scanner.c
+ 
+ libzscanner_la_CPPFLAGS = $(AM_CPPFLAGS) $(CFLAG_VISIBILITY)
+-libzscanner_la_LDFLAGS =		\
++libzscanner_la_LDFLAGS = -no-undefined \
+ 	$(libzscanner_VERSION_INFO)
+ 
+ include $(srcdir)/tests/Makefile.inc
