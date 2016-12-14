@@ -1,0 +1,118 @@
+--- origsrc/lmdb-LMDB_0.9.18/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.18/Makefile.am	2016-12-14 09:15:27.255755300 +0900
+@@ -0,0 +1,39 @@
++
++bin_PROGRAMS = mdb_stat mdb_copy mdb_dump mdb_load
++mdb_stat_SOURCES = libraries/liblmdb/mdb_stat.c
++mdb_stat_LDADD = liblmdb.la
++mdb_copy_SOURCES = libraries/liblmdb/mdb_copy.c
++mdb_copy_LDADD = liblmdb.la
++mdb_dump_SOURCES = libraries/liblmdb/mdb_dump.c
++mdb_dump_LDADD = liblmdb.la
++mdb_load_SOURCES = libraries/liblmdb/mdb_load.c
++mdb_load_LDADD = liblmdb.la
++
++check_PROGRAMS = mtest mtest2 mtest3 mtest4 mtest5
++mtest_SOURCES = libraries/liblmdb/mtest.c
++mtest_LDADD = liblmdb.la
++mtest1_SOURCES = libraries/liblmdb/mtest1.c
++mtest1_LDADD = liblmdb.la
++mtest2_SOURCES = libraries/liblmdb/mtest2.c
++mtest2_LDADD = liblmdb.la
++mtest3_SOURCES = libraries/liblmdb/mtest3.c
++mtest3_LDADD = liblmdb.la
++mtest4_SOURCES = libraries/liblmdb/mtest4.c
++mtest4_LDADD = liblmdb.la
++mtest5_SOURCES = libraries/liblmdb/mtest5.c
++mtest5_LDADD = liblmdb.la
++
++include_HEADERS = libraries/liblmdb/lmdb.h
++
++lib_LTLIBRARIES = liblmdb.la
++liblmdb_la_SOURCES = libraries/liblmdb/mdb.c libraries/liblmdb/midl.c
++liblmdb_la_LDFLAGS = -no-undefined
++
++man_MANS = \
++  libraries/liblmdb/mdb_stat.1 \
++  libraries/liblmdb/mdb_copy.1 \
++  libraries/liblmdb/mdb_dump.1 \
++  libraries/liblmdb/mdb_load.1
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/lmdb-LMDB_0.9.18/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.18/configure.ac	2016-12-14 09:15:27.235241800 +0900
+@@ -0,0 +1,35 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([lmdb], [0.9.18])
++AC_CONFIG_SRCDIR([libraries/liblmdb/lmdb.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++LT_INIT
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_HEADER_RESOLV
++AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h malloc.h netinet/in.h stddef.h stdlib.h string.h sys/file.h sys/param.h sys/vfs.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_MODE_T
++AC_TYPE_OFF_T
++AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_MMAP
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([ftruncate memchr memmove memset munmap strdup strerror uname])
++
++AC_CONFIG_FILES([lmdb.pc Makefile])
++AC_OUTPUT
+--- origsrc/lmdb-LMDB_0.9.18/libraries/liblmdb/mdb.c	2016-02-06 06:22:15.000000000 +0900
++++ src/lmdb-LMDB_0.9.18/libraries/liblmdb/mdb.c	2016-12-14 09:22:22.436668500 +0900
+@@ -348,7 +348,11 @@ typedef pthread_mutex_t mdb_mutex_t[1],
+ #define UNLOCK_MUTEX(mutex)	pthread_mutex_unlock(mutex)
+ 	/** Mark mutex-protected data as repaired, after death of previous owner.
+ 	 */
++#if defined(__CYGWIN__)
++#define mdb_mutex_consistent(mutex)	0
++#else
+ #define mdb_mutex_consistent(mutex)	pthread_mutex_consistent(mutex)
++#endif
+ #endif	/* MDB_USE_POSIX_SEM */
+ 
+ 	/** Get the error code for the last failed system function.
+@@ -4622,8 +4626,10 @@ mdb_env_setup_locks(MDB_env *env, char *
+ 		if ((rc = pthread_mutexattr_init(&mattr))
+ 			|| (rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED))
+ #ifdef MDB_ROBUST_SUPPORTED
++#if defined(PTHREAD_MUTEX_ROBUST)
+ 			|| (rc = pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST))
+ #endif
++#endif
+ 			|| (rc = pthread_mutex_init(env->me_txns->mti_rmutex, &mattr))
+ 			|| (rc = pthread_mutex_init(env->me_txns->mti_wmutex, &mattr)))
+ 			goto fail;
+--- origsrc/lmdb-LMDB_0.9.18/lmdb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.18/lmdb.pc.in	2016-12-14 09:15:27.226461300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: lmdb
++Description: Lightning Memory-Mapped Database Manager
++Version: @VERSION@
++Libs: -L${libdir} -llmdb
++Cflags: -I${includedir}
