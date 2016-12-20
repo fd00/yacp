@@ -1,0 +1,67 @@
+--- origsrc/libchardet-1.0.5/Makefile.am	2016-05-12 00:34:26.000000000 +0900
++++ src/libchardet-1.0.5/Makefile.am	2016-12-20 18:36:09.294148400 +0900
+@@ -43,6 +43,15 @@ bin_SCRIPTS = chardet-config
+ pkgconfigdir=$(libdir)/pkgconfig
+ pkgconfig_DATA = chardet.pc
+ 
++check_PROGRAMS = sample sample1
++sample_SOURCES = test/sample.c
++sample_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/include
++sample_LDADD = src/libchardet.la
++sample1_SOURCES = test/sample.c
++sample1_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/include
++sample1_LDADD = src/libchardet.la
++TESTS = $(check_PROGRAMS)
++
+ DISTCLEANFILES += *.bz2 aclocal.m4 *~
+ 
+ test-install:
+--- origsrc/libchardet-1.0.5/chardet-config.in	2016-05-12 00:34:26.000000000 +0900
++++ src/libchardet-1.0.5/chardet-config.in	2016-12-20 18:29:28.368572400 +0900
+@@ -7,7 +7,6 @@ prefix="@prefix@"
+ exec_prefix="@exec_prefix@"
+ exec_prefix_set=no
+ includedir="@includedir@"
+-la_file="@libdir@/lib@PROG@.la"
+ 
+ usage="\
+ Usage: chardet-config [--prefix] [--exec-prefix] [--version] [--libs] [--defs] [--cflags]"
+@@ -17,8 +16,6 @@ if test $# -eq 0; then
+ 	exit 1
+ fi
+ 
+-. $la_file
+-
+ while test $# -gt 0; do
+ 	case "$1" in
+ 		-*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+--- origsrc/libchardet-1.0.5/configure.ac	2016-05-12 00:34:26.000000000 +0900
++++ src/libchardet-1.0.5/configure.ac	2016-12-20 18:30:47.448817500 +0900
+@@ -41,8 +41,8 @@ AC_PROG_INSTALL
+ AC_PROG_LN_S
+ AC_PROG_AWK
+ AC_PROG_MAKE_SET
+-AC_PROG_RANLIB
+-AC_PROG_LIBTOOL
++LT_INIT
++AM_PROG_CC_C_O
+ 
+ AC_PATH_PROG(PERL, perl)
+ if test ! -f "$ac_cv_path_PERL"; then
+--- origsrc/libchardet-1.0.5/src/Makefile.am	2016-05-12 00:34:26.000000000 +0900
++++ src/libchardet-1.0.5/src/Makefile.am	2016-12-20 18:19:14.033590200 +0900
+@@ -67,7 +67,7 @@ noinst_HEADERS = CharDistribution.h \
+ 
+ AM_CFLAGS = -Wall @CFLAGS@
+ AM_CXXFLAGS = -Wall -Wno-non-virtual-dtor -nostdinc++ -fno-rtti -fno-exceptions @CPPFLAGS@
+-AM_LDFLAGS = -version-info $(SONAME_INFO) @LDFLAGS@ @LIBS@ @MINGW_CYGWIN_DYNLIB@
++AM_LDFLAGS = -no-undefined -version-info $(SONAME_INFO) @LDFLAGS@ @LIBS@ @MINGW_CYGWIN_DYNLIB@
+ 
+ lib_LTLIBRARIES = libchardet.la
+ libchardet_la_SOURCES = CharDistribution.cpp JpCntx.cpp \
+@@ -92,4 +92,4 @@ libchardet_la_SOURCES = CharDistribution
+ 		nsMBCSGroupProber.cpp nsMBCSSM.cpp nsSBCSGroupProber.cpp \
+ 		nsSBCharSetProber.cpp nsSJISProber.cpp nsUTF8Prober.cpp \
+ 		nsUniversalDetector.cpp chardet.cpp
+-libchardet_la_CPPFLAGS = -I../include
++libchardet_la_CPPFLAGS = -I$(top_srcdir)/include
