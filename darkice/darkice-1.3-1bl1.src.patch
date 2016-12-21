@@ -1,0 +1,104 @@
+--- origsrc/darkice-1.3/configure.in	2016-08-04 22:41:01.000000000 +0900
++++ src/darkice-1.3/configure.in	2016-12-21 17:01:36.497115600 +0900
+@@ -58,7 +58,7 @@ AC_ARG_WITH(lame-prefix,
+ 
+ if test "x$with_lame" != xno ; then
+     AC_MSG_CHECKING( [for lame library at ${CONFIG_LAME_PREFIX}] )
+-    LA_SEARCH_LIB( LAME_LIB_LOC, LAME_INC_LOC, libmp3lame.a libmp3lame.so, lame/lame.h,
++    LA_SEARCH_LIB( LAME_LIB_LOC, LAME_INC_LOC, libmp3lame.dll.a libmp3lame.a libmp3lame.so, lame/lame.h,
+                    ${CONFIG_LAME_PREFIX})
+     if test "x${LAME_LIB_LOC}" != "x" ; then
+         AC_DEFINE( HAVE_LAME_LIB, 1, [build with lame library] )
+@@ -121,7 +121,7 @@ AC_ARG_WITH(faac-prefix,
+ 
+ if test "x$with_faac" != xno ; then
+     AC_MSG_CHECKING( [for faac library at ${CONFIG_FAAC_PREFIX}] )
+-    LA_SEARCH_LIB( FAAC_LIB_LOC, FAAC_INC_LOC, libfaac.a libfaac.so, faac.h,
++    LA_SEARCH_LIB( FAAC_LIB_LOC, FAAC_INC_LOC, libfaac.dll.a libfaac.a libfaac.so, faac.h,
+                    ${CONFIG_FAAC_PREFIX})
+     if test "x${FAAC_LIB_LOC}" != "x" ; then
+         AC_DEFINE( HAVE_FAAC_LIB, 1, [build with faac library] )
+@@ -268,4 +268,3 @@ AS_IF([test "x$enable_debug" = xyes],
+     AC_MSG_RESULT([not compiling in debug mode]))
+ 
+ AC_OUTPUT(Makefile src/Makefile man/Makefile)
+-
+--- origsrc/darkice-1.3/darkice.cfg	2015-05-19 02:38:07.000000000 +0900
++++ src/darkice-1.3/darkice.cfg	2016-12-21 17:03:06.017676500 +0900
+@@ -23,7 +23,7 @@ channel         = 2         # channels.
+ bitrateMode     = abr       # average bit rate
+ format          = vorbis    # format of the stream: ogg vorbis
+ bitrate         = 96        # bitrate of the stream sent to the server
+-server          = yp.yourserver.com
++server          = 127.0.0.1
+                             # host name of the server
+ port            = 8000      # port of the IceCast2 server, usually 8000
+ password        = hackme    # source password to the IceCast2 server
+@@ -32,7 +32,7 @@ name            = DarkIce trial
+                             # name of the stream
+ description     = This is only a trial
+                             # description of the stream
+-url             = http://www.yourserver.com
++url             = http://127.0.0.1/
+                             # URL related to the stream
+ genre           = my own    # genre of the stream
+ public          = yes       # advertise this stream?
+@@ -43,9 +43,10 @@ localDumpFile	= dump.ogg  # local dump f
+ # these can be mixed with [icecast2-x] and [shoutcast-x] sections
+ [icecast-0]
+ bitrateMode     = cbr       # constant bit rate
++format          = mp3
+ bitrate         = 96        # bitrate of the mp3 stream sent to the server
+ quality         = 0.8       # encoding quality
+-server          = yp.yourserver.com
++server          = 127.0.0.1
+                             # host name of the server
+ port            = 8000      # port of the IceCast server, usually 8000
+ password        = hackme    # source password to the IceCast server
+@@ -54,7 +55,7 @@ name            = DarkIce trial
+                             # name of the stream
+ description     = This is only a trial
+                             # description of the stream
+-url             = http://www.yourserver.com
++url             = http://127.0.0.1/
+                             # URL related to the stream
+ genre           = my own    # genre of the stream
+ public          = yes       # advertise this stream?
+@@ -65,13 +66,13 @@ public          = yes       # advertise
+ [shoutcast-0]
+ bitrateMode     = vbr       # variable bit rate mode
+ quality         = 0.5       # encoding quality
+-server          = yp.yourserver.com
++server          = 127.0.0.1
+                             # host name of the server
+ port            = 8001      # source port of the ShoutCast server, usually 8001
+ password        = hackme    # source password to the ShoutCast server
+ name            = DarkIce trial
+                             # name of the stream
+-url             = http://www.yourserver.com
++url             = http://127.0.0.1/
+                             # URL related to the stream
+ genre           = my own    # genre of the stream
+ public          = yes       # advertise this stream?
+@@ -80,5 +81,3 @@ irc             = irc.yourserver.com
+ aim             = aim here  # AIM info related to the stream
+ icq             = I see you too
+                             # ICQ info related to the stream
+-
+-
+--- origsrc/darkice-1.3/src/FaacEncoder.cpp	2015-05-19 02:38:07.000000000 +0900
++++ src/darkice-1.3/src/FaacEncoder.cpp	2016-12-21 17:06:31.642200600 +0900
+@@ -36,7 +36,7 @@
+ // compile the whole file only if faac support configured in
+ #ifdef HAVE_FAAC_LIB
+ 
+-
++#include <cstring>
+ 
+ #include "Exception.h"
+ #include "Util.h"
+@@ -276,4 +276,3 @@ FaacEncoder :: close ( void )
+ 
+ 
+ #endif // HAVE_FAAC_LIB
+-
