@@ -1,6 +1,6 @@
 --- origsrc/libsrs_alt-1.0/Makefile.am	2006-06-15 21:26:43.000000000 +0900
-+++ src/libsrs_alt-1.0/Makefile.am	2014-05-15 00:08:56.610512700 +0900
-@@ -1,13 +1,11 @@
++++ src/libsrs_alt-1.0/Makefile.am	2016-12-22 01:08:05.965145800 +0900
+@@ -1,13 +1,14 @@
  SUBDIRS = lib src .
  EXTRA_DIST = MTAs
  
@@ -16,8 +16,11 @@
  srs_SOURCES = srs.c
 -srs_LDFLAGS = src/.libs/libsrs_alt.a
 +srs_LDFLAGS = src/libsrs_alt.la
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/libsrs_alt-1.0/configure.ac	2006-11-21 07:20:59.000000000 +0900
-+++ src/libsrs_alt-1.0/configure.ac	2014-05-15 00:08:56.610512700 +0900
++++ src/libsrs_alt-1.0/configure.ac	2016-12-22 01:08:10.237203300 +0900
 @@ -15,8 +15,7 @@ AC_PROG_CPP
  AC_PROG_INSTALL
  AC_PROG_LN_S
@@ -28,8 +31,17 @@
  
  # Checks for header files.
  AC_HEADER_STDC
+@@ -37,7 +36,7 @@ AC_TYPE_SIZE_T
+ AC_ARG_WITH(base64compat, [  --with-base64compat     Turn on non-standard BASE64 encoding (MTA compatibility mode)],
+ 		[AC_DEFINE([SRS_BASE64COMPAT], [], [Turn on non-standard BASE64 encoding])] )
+ 
+-AC_CONFIG_FILES([lib/Makefile]
++AC_CONFIG_FILES([libsrs_alt.pc lib/Makefile]
+                 [src/Makefile]
+ 		[Makefile])
+ AC_OUTPUT
 --- origsrc/libsrs_alt-1.0/lib/Makefile.am	2005-07-09 03:58:04.000000000 +0900
-+++ src/libsrs_alt-1.0/lib/Makefile.am	2014-05-15 00:08:56.626137700 +0900
++++ src/libsrs_alt-1.0/lib/Makefile.am	2016-12-22 01:05:04.872946400 +0900
 @@ -1,10 +1,5 @@
  EXTRA_DIST = hmac.h sha1.h
  
@@ -41,8 +53,21 @@
  noinst_LTLIBRARIES = libcompat.la
  libcompat_la_SOURCES = hmac.c sha1.c
  libcompat_la_CFLAGS = $(AM_CFLAGS)
+--- origsrc/libsrs_alt-1.0/libsrs_alt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsrs_alt-1.0/libsrs_alt.pc.in	2016-12-22 01:07:58.002672700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsrs_alt
++Description: Complete standalone C implementation of the SRS
++Version: @VERSION@
++Libs: -L${libdir} -lsrs_alt
++Cflags: -I${includedir}
 --- origsrc/libsrs_alt-1.0/src/Makefile.am	2005-07-09 03:38:33.000000000 +0900
-+++ src/libsrs_alt-1.0/src/Makefile.am	2014-05-15 00:08:56.626137700 +0900
++++ src/libsrs_alt-1.0/src/Makefile.am	2016-12-22 01:05:04.876849200 +0900
 @@ -2,15 +2,8 @@ AM_CFLAGS =
  EXTRA_DIST = address.h hash.h srs_alt.h timestamp.h
  include_HEADERS = srs_alt.h
@@ -59,11 +84,10 @@
 +libsrs_alt_la_LDFLAGS = -version-info 1:0 -no-undefined
  libsrs_alt_la_SOURCES = address.c hash.c srs_alt.c timestamp.c
  libsrs_alt_la_CFLAGS = $(AM_CFLAGS)
--libsrs_alt_la_LIBADD = ../lib/libcompat.la
+ libsrs_alt_la_LIBADD = ../lib/libcompat.la
 \ No newline at end of file
-+libsrs_alt_la_LIBADD = ../lib/libcompat.la
 --- origsrc/libsrs_alt-1.0/test.c	2005-03-31 20:53:29.000000000 +0900
-+++ src/libsrs_alt-1.0/test.c	2014-05-15 00:13:33.572169000 +0900
++++ src/libsrs_alt-1.0/test.c	2016-12-22 01:05:04.879779500 +0900
 @@ -1,5 +1,6 @@
  #include <string.h>
  #include <stdio.h>
