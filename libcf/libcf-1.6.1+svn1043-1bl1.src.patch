@@ -1,0 +1,76 @@
+--- origsrc/libcf/Makefile.am	2016-09-06 11:59:37.000000000 +0900
++++ src/libcf/Makefile.am	2016-12-28 17:35:07.917005000 +0900
+@@ -26,6 +26,7 @@ gridspec_api/coord/libnccf_coord.la
+ gridspec_api/axis/libnccf_axis.la					\
+ gridspec_api/global/libnccf_global.la                                   \
+ src/libcf_src.la -lnetcdf
++libcf_la_LDFLAGS = -no-undefined
+ 
+ # What needs to go in the binary dist?
+ BINFILES = README_BINARIES.txt include/libcf.h lib/libcf.a
+--- origsrc/libcf/configure.ac	2016-12-24 03:07:21.000000000 +0900
++++ src/libcf/configure.ac	2016-12-28 18:30:21.040757800 +0900
+@@ -175,7 +175,7 @@ if test "x$enable_regrid" != "xno"; then
+ fi
+ 
+ # Do we want to build the fortran API? Check for --disable-f90
+-nc_build_f90=no
++nc_build_f90=yes
+ AC_MSG_CHECKING([whether Fortran 90 API is desired])
+ AC_ARG_ENABLE([f90],
+               [AS_HELP_STRING([--disable-f90],
+@@ -382,8 +382,7 @@ fi
+ AM_CONDITIONAL([HAVE_FORTRAN_2003], [test x$fortran_2003 = xyes])
+ 
+ # Python (not required but nice to have)
+-PYTHON=""
+-AC_CHECK_PROGS([PYTHON],[python python2])
++AM_PATH_PYTHON
+ AM_CONDITIONAL(HAVE_PYTHON, test "x$PYTHON" != "x")
+ 
+ AC_MSG_NOTICE([generating header files and makefiles])
+@@ -406,4 +405,3 @@ AC_CONFIG_FILES([Makefile
+ 		 examples/Makefile],
+ 		 [])
+ AC_OUTPUT()
+-
+--- origsrc/libcf/src/Makefile.am	2016-12-15 07:59:04.000000000 +0900
++++ src/libcf/src/Makefile.am	2016-12-28 19:27:22.449367900 +0900
+@@ -11,6 +11,7 @@ LDADD += -lnetcdf
+ # Initalize these.
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_LDFLAGS =
++AM_FCFLAGS = -I/usr/include
+ 
+ include_HEADERS =          \
+ nccf_find_next_indices.h   \
+@@ -23,7 +24,7 @@ lib_LTLIBRARIES = libcf_src.la
+ LDADD += -lm
+ 
+ # These linker flags specify libtool version info.
+-libcf_src_la_LDFLAGS = -version-info 0:0:0
++libcf_src_la_LDFLAGS = -no-undefined -version-info 0:0:0
+ 
+ check_PROGRAMS = tst_find_indices_1d tst_find_indices_polar \
+ tst_coords tst_files tst_vars tst_cvars tst_vert	\
+@@ -43,11 +44,12 @@ lib_LTLIBRARIES += libcff_src.la
+ libcff_src_la_DEPENDENCIES = libcf_api.f90
+ EXTRA_DIST = libcf_api.f90
+ libcff_src_la_SOURCES = cffcvars.f90
++libcff_src_la_LDFLAGS = -no-undefined
+ # if USE_NETCDF4
+ # check_PROGRAMS += tst_f03_file
+ # tst_f03_file_SOURCES = tst_f03_file.f90
+ # endif # USE_NETCDF4
+-LDADD += libcf_src.la
++libcff_src_la_LIBADD = libcf_src.la
+ endif # BUILD_F90
+ 
+ # This is the coordinate systems stuff.
+@@ -95,6 +97,3 @@ tst_f03_file.o: tst_f03_file.f90
+ 	$(FC) -c $(AM_FCFLAGS) $(FCFLAGS) -c $? -o $@
+ 
+ TESTS = $(check_PROGRAMS)
+-
+-
+-
