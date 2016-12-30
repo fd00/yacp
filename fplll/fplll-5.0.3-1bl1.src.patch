@@ -1,0 +1,114 @@
+--- origsrc/fplll-5.0.3/configure.ac	2016-10-20 01:19:52.000000000 +0900
++++ src/fplll-5.0.3/configure.ac	2016-12-31 01:21:03.341521200 +0900
+@@ -53,7 +53,7 @@ AC_LANG_CPLUSPLUS
+ AC_PROG_CXX
+ AC_PROG_CC
+ AC_PROG_MAKE_SET
+-AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])
++AX_CXX_COMPILE_STDCXX([11],[ext],[mandatory])
+ 
+ # Checks for libraries.
+ AC_ARG_WITH(gmp,
+@@ -140,4 +140,3 @@ AC_CONFIG_FILES([Makefile
+                  tests/Makefile
+                  fplll.pc])
+ AC_OUTPUT
+-
+--- origsrc/fplll-5.0.3/fplll/lll.h	2016-10-20 01:19:52.000000000 +0900
++++ src/fplll-5.0.3/fplll/lll.h	2016-12-31 01:28:41.832889300 +0900
+@@ -36,7 +36,11 @@ public:
+    */
+   LLLReduction(MatGSO<ZT, FT> &m, double delta, double eta, int flags);
+ 
+-  ~LLLReduction() { LDConvHelper::free(); }
++  ~LLLReduction() {
++#if defined(FPLLL_WITH_LONG_DOUBLE)
++    LDConvHelper::free();
++#endif
++  }
+ 
+   bool lll(int kappa_min = 0, int kappa_start = 0, int kappa_end = -1);
+   inline bool size_reduction(int kappa_min = 0, int kappa_end = -1);
+--- origsrc/fplll-5.0.3/tests/Makefile.am	2016-10-20 01:19:52.000000000 +0900
++++ src/fplll-5.0.3/tests/Makefile.am	2016-12-31 01:34:10.983431000 +0900
+@@ -16,7 +16,7 @@ EXTRA_DIST=lattices/dim55_in \
+ AM_CPPFLAGS = -I$(TOPSRCDIR) -I$(TOPSRCDIR)/fplll -I$(TOPBUILDDIR) -DTESTDATADIR=\"$(TOPSRCDIR)/\"
+ 
+ STAGEDIR := $(realpath -s $(TOPBUILDDIR)/.libs)
+-AM_LDFLAGS = -L$(STAGEDIR) -Wl,-rpath,$(STAGEDIR) -lfplll -no-install $(LIBQD_LIBADD)
++AM_LDFLAGS = -L$(STAGEDIR) -Wl,-rpath,$(STAGEDIR) -lfplll $(LIBQD_LIBADD)
+ 
+ TESTS = test_nr test_lll test_svp test_bkz test_pruner test_sieve
+ 
+--- origsrc/fplll-5.0.3/tests/test_nr.cpp	2016-10-20 01:19:52.000000000 +0900
++++ src/fplll-5.0.3/tests/test_nr.cpp	2016-12-31 01:36:21.873221600 +0900
+@@ -75,7 +75,9 @@ int main(int argc, char *argv[])
+ 
+   int status = 0;
+   status |= test_arithmetic<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_arithmetic<FP_NR<long double>>();
++#endif
+ #ifdef FPLLL_WITH_DPE
+   status |= test_arithmetic<FP_NR<dpe_t>>();
+ #endif
+@@ -86,7 +88,9 @@ int main(int argc, char *argv[])
+   status |= test_arithmetic<FP_NR<mpfr_t>>();
+ 
+   status |= test_std<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_std<FP_NR<long double>>();
++#endif
+ #ifdef FPLLL_WITH_DPE
+   status |= test_std<FP_NR<dpe_t>>();
+ #endif
+@@ -97,7 +101,9 @@ int main(int argc, char *argv[])
+   status |= test_std<FP_NR<mpfr_t>>();
+ 
+   status |= test_root<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_root<FP_NR<long double>>();
++#endif
+ #ifdef FPLLL_WITH_QD
+   status |= test_root<FP_NR<dd_real>>();
+   status |= test_root<FP_NR<qd_real>>();
+@@ -105,7 +111,9 @@ int main(int argc, char *argv[])
+   status |= test_root<FP_NR<mpfr_t>>();
+ 
+   status |= test_str<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_str<FP_NR<long double>>();
++#endif
+ #ifdef FPLLL_WITH_DPE
+   status |= test_str<FP_NR<dpe_t>>();
+ #endif
+--- origsrc/fplll-5.0.3/tests/test_pruner.cpp	2016-10-20 01:19:52.000000000 +0900
++++ src/fplll-5.0.3/tests/test_pruner.cpp	2016-12-31 01:38:02.060734800 +0900
+@@ -316,21 +316,27 @@ int main(int argc, char *argv[])
+ 
+   int status = 0;
+   status |= test_unpruned<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_unpruned<FP_NR<long double>>();
++#endif
+ #ifdef FPLLL_WITH_QD
+   status |= test_unpruned<FP_NR<dd_real>>();
+ #endif
+   status |= test_unpruned<FP_NR<mpfr_t>>();
+ 
+   status |= test_prepruned<FP_NR<double>>();
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   status |= test_prepruned<FP_NR<long double>>();
++#endif
+   status |= test_prepruned<FP_NR<mpfr_t>>();
+ 
++#if defined(FPLLL_WITH_LONG_DOUBLE)
+   Pruner<FP_NR<long double>>::TestPruner tp;
+   status |= tp.test_enforce();
+   status |= tp.test_eval_poly();
+   status |= tp.test_integrate_poly();
+   status |= tp.test_relative_volume();
++#endif
+ 
+ #ifdef FPLLL_WITH_QD
+   Pruner<FP_NR<dd_real>>::TestPruner tp2;
