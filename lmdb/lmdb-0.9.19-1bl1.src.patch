@@ -1,5 +1,5 @@
---- origsrc/lmdb-LMDB_0.9.18/Makefile.am	1970-01-01 09:00:00.000000000 +0900
-+++ src/lmdb-LMDB_0.9.18/Makefile.am	2016-12-14 09:15:27.255755300 +0900
+--- origsrc/lmdb-LMDB_0.9.19/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.19/Makefile.am	2017-01-08 10:57:51.258319800 +0900
 @@ -0,0 +1,39 @@
 +
 +bin_PROGRAMS = mdb_stat mdb_copy mdb_dump mdb_load
@@ -40,14 +40,14 @@
 +
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
---- origsrc/lmdb-LMDB_0.9.18/configure.ac	1970-01-01 09:00:00.000000000 +0900
-+++ src/lmdb-LMDB_0.9.18/configure.ac	2016-12-14 09:15:27.235241800 +0900
+--- origsrc/lmdb-LMDB_0.9.19/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.19/configure.ac	2017-01-08 10:58:32.293860800 +0900
 @@ -0,0 +1,35 @@
 +#                                               -*- Autoconf -*-
 +# Process this file with autoconf to produce a configure script.
 +
 +AC_PREREQ([2.69])
-+AC_INIT([lmdb], [0.9.18])
++AC_INIT([lmdb], [0.9.19])
 +AC_CONFIG_SRCDIR([libraries/liblmdb/lmdb.h])
 +AC_CONFIG_HEADERS([config.h])
 +AM_INIT_AUTOMAKE
@@ -78,9 +78,9 @@
 +
 +AC_CONFIG_FILES([lmdb.pc Makefile])
 +AC_OUTPUT
---- origsrc/lmdb-LMDB_0.9.18/libraries/liblmdb/mdb.c	2016-02-06 06:22:15.000000000 +0900
-+++ src/lmdb-LMDB_0.9.18/libraries/liblmdb/mdb.c	2016-12-14 09:22:22.436668500 +0900
-@@ -348,7 +348,11 @@ typedef pthread_mutex_t mdb_mutex_t[1],
+--- origsrc/lmdb-LMDB_0.9.19/libraries/liblmdb/mdb.c	2016-12-29 03:36:01.000000000 +0900
++++ src/lmdb-LMDB_0.9.19/libraries/liblmdb/mdb.c	2017-01-08 11:04:54.022192700 +0900
+@@ -359,7 +359,11 @@ typedef pthread_mutex_t *mdb_mutexref_t;
  #define UNLOCK_MUTEX(mutex)	pthread_mutex_unlock(mutex)
  	/** Mark mutex-protected data as repaired, after death of previous owner.
  	 */
@@ -92,19 +92,17 @@
  #endif	/* MDB_USE_POSIX_SEM */
  
  	/** Get the error code for the last failed system function.
-@@ -4622,8 +4626,10 @@ mdb_env_setup_locks(MDB_env *env, char *
- 		if ((rc = pthread_mutexattr_init(&mattr))
- 			|| (rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED))
- #ifdef MDB_ROBUST_SUPPORTED
-+#if defined(PTHREAD_MUTEX_ROBUST)
- 			|| (rc = pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST))
- #endif
-+#endif
- 			|| (rc = pthread_mutex_init(env->me_txns->mti_rmutex, &mattr))
- 			|| (rc = pthread_mutex_init(env->me_txns->mti_wmutex, &mattr)))
+@@ -4849,7 +4853,7 @@ mdb_env_setup_locks(MDB_env *env, MDB_na
  			goto fail;
---- origsrc/lmdb-LMDB_0.9.18/lmdb.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/lmdb-LMDB_0.9.18/lmdb.pc.in	2016-12-14 09:15:27.226461300 +0900
+ 
+ 		rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+-#ifdef MDB_ROBUST_SUPPORTED
++#if defined(MDB_ROBUST_SUPPORTED) && defined(PTHREAD_MUTEX_ROBUST)
+ 		if (!rc) rc = pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
+ #endif
+ 		if (!rc) rc = pthread_mutex_init(env->me_txns->mti_rmutex, &mattr);
+--- origsrc/lmdb-LMDB_0.9.19/lmdb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/lmdb-LMDB_0.9.19/lmdb.pc.in	2017-01-08 10:57:51.265567400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
