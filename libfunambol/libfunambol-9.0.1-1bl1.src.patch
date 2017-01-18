@@ -1,0 +1,38 @@
+--- origsrc/libfunambol-9.0.1/build/autotools/configure.ac	2011-02-16 20:04:16.000000000 +0900
++++ src/libfunambol-9.0.1/build/autotools/configure.ac	2017-01-19 01:16:36.322241000 +0900
+@@ -127,7 +127,7 @@ AC_SUBST(CPPUNIT_TESTS)
+ 
+ # get libfunambol version number from package property file and set it 
+ # as release info for libtool LD_FLAGS
+-RELEASE_PROPERTIES_FILE=../../package/release.properties
++RELEASE_PROPERTIES_FILE=${srcdir}/../../package/release.properties
+ 
+ LIBFUNAMBOL_RELEASE_VERSION=$(awk -F= '{ if ($1 ~ /release.major/) { major=$2 }  else if ($1 ~ /release.minor/) { minor=$2 } else if ($1 ~ /build.number/) { build=$2 } }; END { printf("%d.%d.%d", major, minor, build); } ' $RELEASE_PROPERTIES_FILE)
+ 
+--- origsrc/libfunambol-9.0.1/build/autotools/src/Makefile.am	2011-02-16 20:04:16.000000000 +0900
++++ src/libfunambol-9.0.1/build/autotools/src/Makefile.am	2017-01-19 01:12:51.690116500 +0900
+@@ -220,7 +220,7 @@ $(SOURCES_LIBFUNAMBOL): l% : %
+ CLEANFILES = $(SOURCES_LIBFUNAMBOL)
+ 
+ libfunambol_la_SOURCES = $(SOURCES_LIBFUNAMBOL:%=l%)
+-libfunambol_la_LDFLAGS = -export-dynamic -release @LIBFUNAMBOL_RELEASE_VERSION@ @CURL_LDFLAGS@ @CPPUNIT_LDFLAGS@ -lpthread
++libfunambol_la_LDFLAGS = -no-undefined -export-dynamic -release @LIBFUNAMBOL_RELEASE_VERSION@ @CURL_LDFLAGS@ @CPPUNIT_LDFLAGS@ -lpthread
+ libfunambol_la_CXXFLAGS = @CURL_CFLAGS@ @CPPUNIT_CXXFLAGS@ -DENABLE_FUNAMBOL_NAMESPACE
+ 
+ vpath %.cpp $(srcdir)/../../../src/cpp/common/base             \
+--- origsrc/libfunambol-9.0.1/src/cpp/posix/push/FThread.cpp	2011-02-16 20:04:16.000000000 +0900
++++ src/libfunambol-9.0.1/src/cpp/posix/push/FThread.cpp	2017-01-19 01:11:50.802237800 +0900
+@@ -95,7 +95,7 @@ bool FThread::wait(unsigned long timeout
+ 		res = pthread_join(pthread, NULL);
+     }
+ 
+-#elif defined(MAC)
++#elif defined(MAC) || defined(__CYGWIN__)
+     int res = pthread_join( pthread, NULL);
+ #elif defined(POSIX)
+     int res = pthread_timedjoin_np(pthread, NULL, &t);
+@@ -147,4 +147,3 @@ void *FThread::pthreadEntryFunction(void
+     pthread_exit(NULL);
+     return NULL;
+ }
+-
