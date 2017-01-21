@@ -1,0 +1,109 @@
+--- origsrc/libcineon/Makefile.am	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/Makefile.am	2017-01-21 23:47:51.258093100 +0900
+@@ -3,3 +3,5 @@ SUBDIRS = libcineon tools
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libcineon/configure.ac	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/configure.ac	2017-01-21 23:48:08.612600500 +0900
+@@ -16,7 +16,7 @@ AM_DISABLE_SHARED
+ AM_PROG_LIBTOOL
+ 
+ # Checks for libraries.
+-AC_CHECK_LIB(tiff,_TIFFmalloc,have_libtiff='yes',have_libtiff='no')
++PKG_CHECK_MODULES([TIFF], [libtiff-4], [have_libtiff='yes'], [have_libtiff='no'])
+ AM_CONDITIONAL(HAVE_LIBTIFF, test "$have_libtiff" != "no")
+ 
+ # Checks for header files.
+@@ -36,7 +36,7 @@ AC_HEADER_STDC
+ AC_FUNC_STRFTIME
+ AC_CHECK_FUNCS([memset])
+ 
+-AC_OUTPUT([
++AC_OUTPUT([libcineon.pc
+ Makefile
+ libcineon/Makefile
+ tools/Makefile
+@@ -46,5 +46,3 @@ tools/cineon2tiff/Makefile
+ 
+ 
+ AC_MSG_RESULT([libcineon: build libtiff apps... "$have_libtiff"])
+-
+-
+--- origsrc/libcineon/libcineon/CineonHeader.cpp	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/libcineon/CineonHeader.cpp	2017-01-21 23:44:11.661230300 +0900
+@@ -364,7 +364,10 @@ void cineon::Header::Reset()
+ 	IndustryHeader::Reset();
+ }
+ 
+-
++int cineon::GenericHeader::ImageElementComponentCount(const int element) const
++{
++	return 1;
++}
+ 
+ int cineon::GenericHeader::ImageElementCount() const
+ {
+--- origsrc/libcineon/libcineon/Makefile.am	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/libcineon/Makefile.am	2017-01-21 23:44:11.671483600 +0900
+@@ -1,7 +1,7 @@
+ 
+-lib_LIBRARIES = libcineon.a
++lib_LTLIBRARIES = libcineon.la
+ 
+-libcineon_a_SOURCES = Codec.cpp \
++libcineon_la_SOURCES = Codec.cpp \
+                    Cineon.cpp \
+                    CineonHeader.cpp \
+                    ElementReadStream.cpp \
+@@ -10,6 +10,7 @@ libcineon_a_SOURCES = Codec.cpp \
+                    Reader.cpp \
+ 				   TestFunc.cpp \
+                    Writer.cpp
++libcineon_la_LDFLAGS = -no-undefined
+ 
+ noinst_HEADERS = BaseTypeConverter.h \
+ 				 Codec.h \
+--- origsrc/libcineon/libcineon.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcineon/libcineon.pc.in	2017-01-21 23:48:21.856286100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcineon
++Description: Cineon image format reader/writer library
++Version: @VERSION@
++Libs: -L${libdir} -lcineon
++Cflags: -I${includedir}
+--- origsrc/libcineon/tools/cineon2tiff/Makefile.am	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/tools/cineon2tiff/Makefile.am	2017-01-21 23:44:11.675017800 +0900
+@@ -1,10 +1,10 @@
+ 
+-LIBCINEON = $(top_builddir)/libcineon/libcineon.a
++LIBCINEON = $(top_builddir)/libcineon/libcineon.la
+ 
+-INCLUDES = -I$(top_builddir)/libcineon
++INCLUDES = -I$(top_srcdir)/libcineon
+ 
+ bin_PROGRAMS = cineon2tiff
+ 
+ cineon2tiff_SOURCES = cineon2tiff.cpp
+-cineon2tiff_LDADD = $(LIBCINEON) -ltiff
++cineon2tiff_LDADD = $(LIBCINEON) $(TIFF_LIBS)
+ 
+--- origsrc/libcineon/tools/cineonheader/Makefile.am	2017-01-21 23:44:10.000000000 +0900
++++ src/libcineon/tools/cineonheader/Makefile.am	2017-01-21 23:44:11.677845400 +0900
+@@ -1,7 +1,7 @@
+ 
+-LIBCINEON = $(top_builddir)/libcineon/libcineon.a
++LIBCINEON = $(top_builddir)/libcineon/libcineon.la
+ 
+-INCLUDES = -I$(top_builddir)/libcineon
++INCLUDES = -I$(top_srcdir)/libcineon
+ 
+ bin_PROGRAMS = cineonheader
+ 
