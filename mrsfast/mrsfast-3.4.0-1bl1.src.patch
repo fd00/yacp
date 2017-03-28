@@ -1,0 +1,58 @@
+--- origsrc/mrsfast-3.4.0/Makefile	2016-11-17 07:28:51.000000000 +0900
++++ src/mrsfast-3.4.0/Makefile	2017-03-27 23:32:53.574782800 +0900
+@@ -13,11 +13,7 @@ CFLAGS=-fno-pic -DMRSFAST_VERSION=\"$(MR
+ objects=baseFAST.o Sort.o MrsFAST.o Common.o CommandLineParser.o RefGenome.o HashTable.o Reads.o Output.o SNPReader.o  HELP.o
+ 
+ mrsfast: clean_executables $(objects)
+-ifeq ($(shell uname -s),Linux)
+ 	gcc -w $(objects) -o $@ ${LDFLAGS} ${LIBS}
+-else
+-	gcc -Wl,-no_pie -fno-pic -w $(objects) -o $@ ${LDFLAGS} ${LIBS}
+-endif
+ 
+ snp_indexer: clean_executables SNPIndexer.o
+ 	gcc SNPIndexer.o -o $@ ${LDFLAGS} ${LIBS}
+@@ -33,20 +29,14 @@ clean:
+ 	@rm -f SNPIndexer.o
+ 	@rm -f HELPstub.c
+ 	@rm -f HELPstub.o
+-	
++
+ clean_executables:
+ 	@rm -f mrsfast
+ 	@rm -f snp_indexer
+ 
+ HELP.o:
+ 	@groff -Tascii -man ./HELP.man > HELP
+-ifeq ($(shell uname -s),Linux)
+ 	@ld -r -b binary -o HELP.o HELP
+-else
+-	@touch HELPstub.c
+-	gcc -o HELPstub.o -c HELPstub.c
+-	ld -r -o HELP.o -sectcreate binary HELP HELP HELPstub.o
+-endif
+ 
+ DEBUG_FLAGS:
+ 	$(eval CFLAGS = $(CFLAGS) -ggdb)
+@@ -60,7 +50,6 @@ PROFILE_FLAGS:
+ 	$(eval LIBS = $(LIBS) -pg -g)
+ 
+ SSE_FLAGS:
+-ifeq ($(shell uname -s),Linux)
+ ifeq ($(with-sse4),no)
+ 		$(shell echo "-DSSE4=0")
+ else
+@@ -69,13 +58,3 @@ else
+             	    sc=`grep -c "sse4" /proc/cpuinfo`; \
+                 	echo $$sc.$$gv | awk -F. '{if($$1>0 && $$2>=4 && $$3>=4) print "-DSSE4=1 -msse4.2"; else print "-DSSE4=0"}'))
+ endif
+-else
+-ifeq ($(with-sse4),no)
+-		$(shell echo "-DSSE4=0")
+-else
+-        $(eval CFLAGS = $(CFLAGS) \
+-        $(shell gv=`gcc -dumpversion`; \
+-                sc=`sysctl -n machdep.cpu.features | grep -c "SSE4"` ;\
+-                echo $$sc.$$gv | awk -F. '{if($$1>0 && $$2>=4 && $$3>=4) print "-DSSE4=1 -msse4.2"; else print "-DSSE4=0"}'))
+-endif
+-endif
