@@ -1,0 +1,36 @@
+--- origsrc/re2-2017-03-01/CMakeLists.txt	2017-02-28 09:11:21.000000000 +0900
++++ src/re2-2017-03-01/CMakeLists.txt	2017-03-31 17:17:33.578364700 +0900
+@@ -129,3 +129,11 @@ set(RE2_HEADERS
+ 
+ install(FILES ${RE2_HEADERS} DESTINATION include/re2)
+ install(TARGETS re2 ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
++set_target_properties(re2 PROPERTIES SOVERSION 0)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/re2.pc ${CMAKE_BINARY_DIR}/re2.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/re2.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/re2-2017-03-01/re2/testing/re2_test.cc	2017-02-28 09:11:21.000000000 +0900
++++ src/re2-2017-03-01/re2/testing/re2_test.cc	2017-03-31 17:17:33.584238400 +0900
+@@ -737,7 +737,7 @@ TEST(RE2, FullMatchTypedNullArg) {
+ // This implementation requires mmap(2) et al. and thus cannot
+ // be used unless they are available.
+ TEST(RE2, NULTerminated) {
+-#if defined(_POSIX_MAPPED_FILES) && _POSIX_MAPPED_FILES > 0
++#if defined(_POSIX_MAPPED_FILES) && _POSIX_MAPPED_FILES > 0 && !defined(__CYGWIN__)
+   char *v;
+   int x;
+   long pagesize = sysconf(_SC_PAGE_SIZE);
+--- origsrc/re2-2017-03-01/util/mutex.h	2017-02-28 09:11:21.000000000 +0900
++++ src/re2-2017-03-01/util/mutex.h	2017-03-31 17:17:33.592571400 +0900
+@@ -15,7 +15,7 @@
+ #define _POSIX_C_SOURCE 200809L
+ #endif
+ #include <unistd.h>
+-#if defined(_POSIX_READER_WRITER_LOCKS) && _POSIX_READER_WRITER_LOCKS > 0
++#if defined(_POSIX_READER_WRITER_LOCKS) && _POSIX_READER_WRITER_LOCKS > 0 && !defined(__CYGWIN__)
+ #define MUTEX_IS_PTHREAD_RWLOCK
+ #endif
+ #endif
