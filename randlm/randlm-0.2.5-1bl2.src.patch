@@ -1,6 +1,6 @@
 --- origsrc/randlm-0.2.5/configure.in	2012-04-03 04:29:19.000000000 +0900
-+++ src/randlm-0.2.5/configure.in	2015-03-27 22:36:33.005940500 +0900
-@@ -1,15 +1,14 @@
++++ src/randlm-0.2.5/configure.in	2017-06-25 23:39:50.568000000 +0900
+@@ -1,15 +1,17 @@
 -AC_INIT(src/RandLM/RandLM.cpp)
 -
 -PACKAGE=RandLM
@@ -17,11 +17,14 @@
  AC_LANG_CPLUSPLUS
 +BOOST_REQUIRE
 +BOOST_THREADS
++
++PKG_CHECK_MODULES([TICPP], [ticpp])
++PKG_CHECK_MODULES([SPARSEHASH], [libsparsehash])
  
  AC_CONFIG_FILES([
      Makefile
 --- origsrc/randlm-0.2.5/hadoop/Makefile.am	2012-01-18 17:41:20.000000000 +0900
-+++ src/randlm-0.2.5/hadoop/Makefile.am	2015-03-27 22:45:36.640806700 +0900
++++ src/randlm-0.2.5/hadoop/Makefile.am	2017-06-25 18:47:08.284011000 +0900
 @@ -7,9 +7,9 @@ bin_PROGRAMS = \
  	r_compute_ngram_counts
  
@@ -35,20 +38,29 @@
 +	strings.cpp \
  	r_compute_ngram_counts.cpp
 --- origsrc/randlm-0.2.5/src/LDHT/Makefile.am	2012-04-04 00:12:29.000000000 +0900
-+++ src/randlm-0.2.5/src/LDHT/Makefile.am	2015-03-27 14:34:09.899848000 +0900
-@@ -4,8 +4,8 @@ AM_LDFLAGS = -L./
- lib_LTLIBRARIES = libticpp.la libLDHT.la
++++ src/randlm-0.2.5/src/LDHT/Makefile.am	2017-06-25 23:51:02.671000000 +0900
+@@ -1,28 +1,12 @@
+ AM_CPPFLAGS = -I./
+ AM_LDFLAGS = -L./
  
- # Compile ticpp separately.
+-lib_LTLIBRARIES = libticpp.la libLDHT.la
+-
+-# Compile ticpp separately.
 -libticpp_la_CXXFLAGS = -fPIC -Wno-deprecated -Wall -ggdb -DTIXML_USE_TICPP
 -libticpp_la_LDFLAGS = -pthread -version-info 0:0:0 -export-dynamic
-+libticpp_la_CXXFLAGS = -Wno-deprecated -Wall -DTIXML_USE_TICPP
-+libticpp_la_LDFLAGS = -no-undefined -version-info 0:0:0 -export-dynamic
- libticpp_la_includedir = $(includedir)/LDHT
- libticpp_la_SOURCES = \
- 	ticpp.cpp \
-@@ -20,9 +20,9 @@ libticpp_la_include_HEADERS = \
- 	tinyxml.h
+-libticpp_la_includedir = $(includedir)/LDHT
+-libticpp_la_SOURCES = \
+-	ticpp.cpp \
+-	tinystr.cpp \
+-	tinyxml.cpp \
+-	tinyxmlerror.cpp \
+-	tinyxmlparser.cpp
+-libticpp_la_include_HEADERS = \
+-	ticpp.h \
+-	ticpprc.h \
+-	tinystr.h \
+-	tinyxml.h
++lib_LTLIBRARIES = libLDHT.la
  
  # Main Lossy Distributed Hash Table library.
 -libLDHT_la_CXXFLAGS = -fPIC -Wno-deprecated -Wall -ggdb -DTIXML_USE_TICPP
@@ -56,11 +68,11 @@
 -libLDHT_la_LIBADD = -lticpp
 +libLDHT_la_CXXFLAGS = -Wno-deprecated -Wall -DTIXML_USE_TICPP
 +libLDHT_la_LDFLAGS = -no-undefined -pthread -version-info 0:0:0 -export-dynamic
-+libLDHT_la_LIBADD = libticpp.la
++libLDHT_la_LIBADD = $(TICPP_LIBS)
  libLDHT_la_includedir = $(includedir)/LDHT
  libLDHT_la_SOURCES = \
  	BitArray.cpp \
-@@ -100,16 +100,11 @@ noinst_PROGRAMS = \
+@@ -100,16 +84,11 @@ noinst_PROGRAMS = \
  # Test suite. Only compile if enabled in configure via --enable-tests.
  if ENABLE_TESTS
  noinst_PROGRAMS += libLDHT_test
@@ -77,11 +89,11 @@
 -libLDHT_test_LDFLAGS += -L/home/wilson/src/gmock/lib
 -libLDHT_test_LDFLAGS += -L./
 -libLDHT_test_LDADD = $(libLDHT_la_LDADD) -lgtest -lgmock -lticpp -lLDHT
-+libLDHT_test_LDADD = $(libLDHT_la_LDADD) -lgtest -lgmock libticpp.la libLDHT.la
++libLDHT_test_LDADD = $(libLDHT_la_LDADD) -lgtest -lgmock $(TICPP_LIBS) libLDHT.la
  libLDHT_test_SOURCES = \
  	BitArray_test.cpp \
  	BloomFilter_test.cpp \
-@@ -129,23 +124,18 @@ libLDHT_test_SOURCES = \
+@@ -129,23 +108,18 @@ libLDHT_test_SOURCES = \
  TESTS = libLDHT_test
  endif
  
@@ -91,29 +103,29 @@
 -shard_LDADD = -lticpp -lLDHT
 +shard_CXXFLAGS = -ggdb -Wall
 +shard_SOURCES = shard.cpp
-+shard_LDADD = libticpp.la libLDHT.la
++shard_LDADD = $(TICPP_LIBS) libLDHT.la
  
 -server_CXXFLAGS = -ggdb -Wall -static ##-Wunused-but-set-variable
 +server_CXXFLAGS = -ggdb -Wall ##-Wunused-but-set-variable
  server_SOURCES =  server_main.cpp
 -server_LDFLAGS = -L./
 -server_LDADD = -lticpp -lLDHT
-+server_LDADD = libticpp.la libLDHT.la
++server_LDADD = $(TICPP_LIBS) libLDHT.la
  
  query_CXXFLAGS = -ggdb -Wall
  query_SOURCES =  query.cpp
 -query_LDFLAGS = -L./
 -query_LDADD = -lticpp -lLDHT
-+query_LDADD =  libticpp.la libLDHT.la
++query_LDADD =  $(TICPP_LIBS) libLDHT.la
  
  score_ngrams_CXXFLAGS = -ggdb -Wall
  score_ngrams_SOURCES = score_ngrams.cpp
 -score_ngrams_LDFLAGS = -L./
 -score_ngrams_LDADD = -lticpp -lLDHT
 -
-+score_ngrams_LDADD =  libticpp.la libLDHT.la
++score_ngrams_LDADD =  $(TICPP_LIBS) libLDHT.la
 --- origsrc/randlm-0.2.5/src/LDHT/TransportTCP.cpp	2012-03-30 19:53:05.000000000 +0900
-+++ src/randlm-0.2.5/src/LDHT/TransportTCP.cpp	2015-03-27 22:42:12.544688600 +0900
++++ src/randlm-0.2.5/src/LDHT/TransportTCP.cpp	2017-06-25 18:47:08.299334100 +0900
 @@ -6,6 +6,7 @@
  #include <netdb.h>
  #include <sys/socket.h>
@@ -128,7 +140,7 @@
  }  // namespace LDHT.
 -
 --- origsrc/randlm-0.2.5/src/LDHT/server_main.cpp	2012-04-03 18:47:12.000000000 +0900
-+++ src/randlm-0.2.5/src/LDHT/server_main.cpp	2015-03-27 22:42:41.807507600 +0900
++++ src/randlm-0.2.5/src/LDHT/server_main.cpp	2017-06-25 18:47:08.299334100 +0900
 @@ -3,6 +3,7 @@
  //
  
@@ -152,7 +164,7 @@
  }
 -
 --- origsrc/randlm-0.2.5/src/RandLM/Makefile.am	2012-04-03 17:45:47.000000000 +0900
-+++ src/randlm-0.2.5/src/RandLM/Makefile.am	2015-03-27 14:33:41.673511500 +0900
++++ src/randlm-0.2.5/src/RandLM/Makefile.am	2017-06-25 18:47:08.299334100 +0900
 @@ -5,6 +5,7 @@ lib_LTLIBRARIES = libRandLM.la
  
  libRandLM_la_CXXFLAGS = -DMULTITHREADED
