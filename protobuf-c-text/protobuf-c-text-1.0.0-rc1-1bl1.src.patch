@@ -1,0 +1,83 @@
+--- origsrc/protobuf-c-text-1.0.0-rc1/Makefile.am	2014-04-04 14:18:39.000000000 +0900
++++ src/protobuf-c-text-1.0.0-rc1/Makefile.am	2017-06-30 00:11:26.859000000 +0900
+@@ -32,7 +32,7 @@ protobuf_c_text_libprotobuf_c_text_la_CF
+ #    set revision and age to 0 and increment current (c:r:a becomes c+1:0:0).
+ # 3. If interfaces have only been added since the last release, set
+ #    release to 0 and increment current and age (c:r:a becomes c+1:0:a+1).
+-protobuf_c_text_libprotobuf_c_text_la_LDFLAGS = \
++protobuf_c_text_libprotobuf_c_text_la_LDFLAGS = -no-undefined \
+ 	$(COVERAGE_LDFLAGS) -version-info 2:0:0
+ 
+ # Headers for libraries.
+@@ -58,32 +58,27 @@ t_c_dump_SOURCES = t/c-dump.c t/broken-a
+ nodist_t_c_dump_SOURCES = $(PROTOBUF_C_TEST_SRCS)
+ t_c_dump_CFLAGS = $(AM_CFLAGS) $(COVERAGE_CFLAGS) -I t @CHECK_CFLAGS@
+ t_c_dump_LDADD = protobuf-c-text/libprotobuf-c-text.la $(COVERAGE_LDFLAGS) @CHECK_LIBS@
+-t_c_dump_LDFLAGS = -static
+ 
+ t_c_dump2_SOURCES = t/c-dump2.c t/broken-alloc.h t/broken-alloc.c
+ nodist_t_c_dump2_SOURCES = $(PROTOBUF_C_TEST_SRCS)
+ t_c_dump2_CFLAGS = $(AM_CFLAGS) $(COVERAGE_CFLAGS) -I t @CHECK_CFLAGS@
+ t_c_dump2_LDADD = protobuf-c-text/libprotobuf-c-text.la $(COVERAGE_LDFLAGS) @CHECK_LIBS@
+-t_c_dump2_LDFLAGS = -static
+ 
+ t_c_parse_SOURCES = t/c-parse.c t/broken-alloc.h t/broken-alloc.c
+ nodist_t_c_parse_SOURCES = $(PROTOBUF_C_TEST_SRCS)
+ t_c_parse_CFLAGS = $(AM_CFLAGS) $(COVERAGE_CFLAGS) -I t @CHECK_CFLAGS@
+ t_c_parse_LDADD = protobuf-c-text/libprotobuf-c-text.la $(COVERAGE_LDFLAGS) @CHECK_LIBS@
+-t_c_parse_LDFLAGS = -static
+ 
+ t_c_parse2_SOURCES = t/c-parse2.c t/broken-alloc.h t/broken-alloc.c
+ nodist_t_c_parse2_SOURCES = $(PROTOBUF_C_TEST_SRCS)
+ t_c_parse2_CFLAGS = $(AM_CFLAGS) $(COVERAGE_CFLAGS) -I t @CHECK_CFLAGS@
+ t_c_parse2_LDADD = protobuf-c-text/libprotobuf-c-text.la $(COVERAGE_LDFLAGS) @CHECK_LIBS@
+-t_c_parse2_LDFLAGS = -static
+ 
+ t_test_msgs_SOURCES = t/test_msgs.c
+ nodist_t_test_msgs_SOURCES = $(PROTOBUF_C_TEST_SRCS)
+ t_test_msgs_CFLAGS = $(AM_CFLAGS) $(COVERAGE_CFLAGS) -I t @CHECK_CFLAGS@
+ t_test_msgs_LDADD = protobuf-c-text/libprotobuf-c-text.la \
+ 		    $(COVERAGE_LDFLAGS) @CHECK_LIBS@
+-t_test_msgs_LDFLAGS = -static
+ 
+ EXTRA_DIST = t/addressbook.proto \
+ 	     t/addressbook.data \
+@@ -112,7 +107,7 @@ AM_V_RE2C_0 = @echo "  RE2C  " $<;
+ 	$(AM_V_RE2C)$(RE2C) -s -o $@ $<
+ 
+ include am/aminclude_coverage.am
+-include am/aminclude_doxygen.am
++# include am/aminclude_doxygen.am
+ 
+ .PHONY: gh-pages
+ if HAVE_GCOV
+--- origsrc/protobuf-c-text-1.0.0-rc1/protobuf-c-text/generate.c	2014-04-04 14:18:39.000000000 +0900
++++ src/protobuf-c-text-1.0.0-rc1/protobuf-c-text/generate.c	2017-06-30 00:07:37.858000000 +0900
+@@ -502,6 +502,12 @@ protobuf_c_text_to_string_internal(Retur
+ 
+ /* See .h file for API docs. */
+ 
++static ProtobufCAllocator protobuf_c_default_allocator = {
++	.alloc = &malloc,
++	.free = &free,
++	.allocator_data = NULL,
++};
++
+ char *
+ protobuf_c_text_to_string(ProtobufCMessage *m,
+     ProtobufCAllocator *allocator)
+--- origsrc/protobuf-c-text-1.0.0-rc1/protobuf-c-text/parse.re	2014-04-04 14:18:39.000000000 +0900
++++ src/protobuf-c-text-1.0.0-rc1/protobuf-c-text/parse.re	2017-06-30 00:08:53.858000000 +0900
+@@ -1168,6 +1168,12 @@ static StateId(* states[])(State *, Toke
+  * @{
+  */
+ 
++static ProtobufCAllocator protobuf_c_default_allocator = {
++	.alloc = &malloc,
++	.free = &free,
++	.allocator_data = NULL,
++};
++
+ /** Base function for the API functions.
+  *
+  * The API functions take a string or a \c FILE.  This function takes an
