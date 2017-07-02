@@ -1,0 +1,67 @@
+--- origsrc/libibcm-1.0.5/Makefile.am	2007-04-28 02:54:41.000000000 +0900
++++ src/libibcm-1.0.5/Makefile.am	2017-07-02 16:51:10.001274600 +0900
+@@ -14,7 +14,7 @@ endif
+ 
+ src_libibcm_la_SOURCES = src/cm.c
+ src_libibcm_la_LDFLAGS = -version-info 1 -export-dynamic \
+-			 $(libibcm_version_script)
++			 $(libibcm_version_script) -no-undefined
+ src_libibcm_la_DEPENDENCIES = $(srcdir)/src/libibcm.map
+ 
+ # Sample program requires use if librdmacm.
+@@ -32,3 +32,6 @@ EXTRA_DIST = include/infiniband/cm_abi.h
+ 
+ dist-hook: libibcm.spec
+ 	cp libibcm.spec $(distdir)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libibcm-1.0.5/configure.in	2009-10-27 09:05:45.000000000 +0900
++++ src/libibcm-1.0.5/configure.in	2017-07-02 16:51:09.985637800 +0900
+@@ -67,5 +67,5 @@ AC_CACHE_CHECK(whether ld accepts --vers
+ 
+ AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$ac_cv_version_script" = "yes")
+ 
+-AC_CONFIG_FILES([Makefile libibcm.spec])
++AC_CONFIG_FILES([libibcm.pc Makefile libibcm.spec])
+ AC_OUTPUT
+--- origsrc/libibcm-1.0.5/include/infiniband/cm_abi.h	2007-04-28 02:54:41.000000000 +0900
++++ src/libibcm-1.0.5/include/infiniband/cm_abi.h	2017-07-02 16:49:20.565000000 +0900
+@@ -36,7 +36,11 @@
+ #ifndef CM_ABI_H
+ #define CM_ABI_H
+ 
++#if defined(__CYGWIN__)
++#include <asm/types.h>
++#else
+ #include <linux/types.h>
++#endif
+ #include <infiniband/sa.h>
+ #include <infiniband/marshall.h>
+ 
+--- origsrc/libibcm-1.0.5/libibcm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libibcm-1.0.5/libibcm.pc.in	2017-07-02 16:52:38.783000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libibcm
++Description: Userspace InfiniBand Connection Manager
++Version: @VERSION@
++Libs: -L${libdir} -libcm
++Cflags: -I${includedir}
+--- origsrc/libibcm-1.0.5/src/cm.c	2009-10-27 09:05:45.000000000 +0900
++++ src/libibcm-1.0.5/src/cm.c	2017-07-02 16:50:16.984999800 +0900
+@@ -121,8 +121,10 @@ struct cm_id_private {
+ 	pthread_mutex_t mut;
+ };
+ 
++#if !defined(container_of)
+ #define container_of(ptr, type, field) \
+ 	((type *) ((void *)ptr - offsetof(type, field)))
++#endif
+ 
+ static int check_abi_version(void)
+ {
