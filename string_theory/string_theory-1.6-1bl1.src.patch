@@ -1,0 +1,53 @@
+--- origsrc/string_theory-1.6/CMakeLists.txt	2017-02-14 03:05:58.000000000 +0900
++++ src/string_theory-1.6/CMakeLists.txt	2017-07-02 18:54:08.743000000 +0900
+@@ -36,10 +36,14 @@ if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_
+     set(CMAKE_CXX_FLAGS "-Wall -Wextra ${CMAKE_CXX_FLAGS}")
+ 
+     include(CheckCXXCompilerFlag)
++    check_cxx_compiler_flag("-std=gnu++14" HAVE_STD_GNUXX14)
+     check_cxx_compiler_flag("-std=c++14" HAVE_STD_CXX14)
+     check_cxx_compiler_flag("-std=c++11" HAVE_STD_CXX11)
+     check_cxx_compiler_flag("-std=c++0x" HAVE_STD_CXX0X)
+-    if(HAVE_STD_CXX14)
++    if(HAVE_STD_GNUXX14)
++        set(HAVE_STD_CXX11 1)
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14")
++    elseif(HAVE_STD_CXX14)
+         set(HAVE_STD_CXX11 1)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+     elseif(HAVE_STD_CXX11)
+@@ -232,3 +236,10 @@ install(EXPORT string_theory-targets
+ 
+ enable_testing()
+ add_subdirectory(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/string_theory-1.6/string_theory.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/string_theory-1.6/string_theory.pc.in	2017-07-02 18:54:44.940000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: string_theory
++Description: Flexible C++11 string library with type-safe formatting
++Version: @ST_VERSION@
++Libs: -L${libdir} -lstring_theory
++Cflags: -I${includedir}/string_theory
+--- origsrc/string_theory-1.6/test/CMakeLists.txt	2017-02-14 03:05:58.000000000 +0900
++++ src/string_theory-1.6/test/CMakeLists.txt	2017-07-02 18:47:34.421000000 +0900
+@@ -35,7 +35,7 @@ else()
+     set(BUILD_SHARED_LIBS ON  CACHE INTERNAL "Override gtest default")
+ endif()
+ 
+-add_subdirectory(gtest-1.8.0 EXCLUDE_FROM_ALL)
++# add_subdirectory(gtest-1.8.0 EXCLUDE_FROM_ALL)
+ 
+ include_directories(${GTEST_INCLUDE_DIR})
+ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
