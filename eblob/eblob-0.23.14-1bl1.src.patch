@@ -1,0 +1,50 @@
+--- origsrc/eblob-0.23.14/bindings/cpp/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/bindings/cpp/CMakeLists.txt	2017-07-07 06:40:40.548735400 +0900
+@@ -11,6 +11,7 @@ set_target_properties(eblob_cpp PROPERTI
+ target_link_libraries(eblob_cpp ${EBLOB_CPP_LIBRARIES} eblob)
+ 
+ install(TARGETS eblob_cpp
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib${LIB_SUFFIX}
+     ARCHIVE DESTINATION lib${LIB_SUFFIX}
+     BUNDLE DESTINATION library
+--- origsrc/eblob-0.23.14/bindings/python/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/bindings/python/CMakeLists.txt	2017-07-07 06:40:40.548735400 +0900
+@@ -7,6 +7,7 @@ set_target_properties(eblob_python PROPE
+ )
+ 
+ install(TARGETS eblob_python
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib${LIB_SUFFIX}
+     ARCHIVE DESTINATION lib${LIB_SUFFIX}
+     BUNDLE DESTINATION library
+--- origsrc/eblob-0.23.14/library/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/library/CMakeLists.txt	2017-07-07 06:40:40.548735400 +0900
+@@ -26,9 +26,10 @@ set_target_properties(eblob PROPERTIES
+     LINKER_LANGUAGE CXX
+     )
+ 
+-target_link_libraries(eblob ${EBLOB_LIBRARIES} ${Boost_SYSTEM_LIBRARIES} handystats rt)
++target_link_libraries(eblob ${EBLOB_LIBRARIES} ${Boost_SYSTEM_LIBRARIES} handystats rt ssp)
+ 
+ install(TARGETS eblob
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib${LIB_SUFFIX}
+     ARCHIVE DESTINATION lib${LIB_SUFFIX}
+     BUNDLE DESTINATION library
+--- origsrc/eblob-0.23.14/library/mobjects.c	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/library/mobjects.c	2017-07-07 06:40:40.564390700 +0900
+@@ -49,6 +49,13 @@
+ 
+ #if !defined(_D_EXACT_NAMLEN) && (defined(__FreeBSD__) || defined(__APPLE__))
+ #define _D_EXACT_NAMLEN(d) ((d)->d_namlen)
++#elif defined(__CYGWIN__)
++#define _D_EXACT_NAMLEN(d) strlen((d)->d_name)
++#endif
++
++#if defined(__CYGWIN__)
++#define dirent64 dirent
++#define readdir64(d) readdir(d)
+ #endif
+ 
+ static const char *eblob_get_base(const char *blob_base)
