@@ -1,0 +1,82 @@
+--- origsrc/handystats-1.11.3/CMakeLists.txt	2015-06-15 20:06:37.000000000 +0900
++++ src/handystats-1.11.3/CMakeLists.txt	2017-07-07 06:28:28.296000000 +0900
+@@ -8,7 +8,7 @@ SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2
+ 
+ GET_PROPERTY (LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
+ 
+-IF (LIB64)
++IF (LIB64 AND NOT CYGWIN)
+ 	SET (LIBSUFFIX 64)
+ ELSE ()
+ 	SET (LIBSUFFIX "")
+@@ -27,9 +27,9 @@ FILE (GLOB_RECURSE handy_src RELATIVE ${
+ ADD_LIBRARY (${PROJECT_NAME} SHARED ${handy_src})
+ 
+ TARGET_LINK_LIBRARIES (${PROJECT_NAME} rt)
++SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES SOVERSION 0)
+ 
+-
+-INSTALL (TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${LIBDIR})
++INSTALL (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${LIBDIR})
+ INSTALL (DIRECTORY ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+ 
+ ADD_SUBDIRECTORY (benchmarks EXCLUDE_FROM_ALL)
+@@ -37,3 +37,10 @@ ADD_SUBDIRECTORY (benchmarks EXCLUDE_FRO
+ ENABLE_TESTING ()
+ ADD_SUBDIRECTORY (tests)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "1.11.3")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/handystats-1.11.3/handystats.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/handystats-1.11.3/handystats.pc.in	2017-07-07 06:27:27.937413600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: handystats
++Description: C++ library for collecting user-defined in-process runtime statistics with low overhead
++Version: @VERSION@
++Libs: -L${libdir} -lhandystats
++Cflags: -I${includedir}
+--- origsrc/handystats-1.11.3/include/handystats/rapidjson/writer.h	2015-06-15 20:06:37.000000000 +0900
++++ src/handystats-1.11.3/include/handystats/rapidjson/writer.h	2017-07-06 23:53:07.915999800 +0900
+@@ -164,7 +164,7 @@ protected:
+ 
+ 	//! \todo Optimization with custom double-to-string converter.
+ 	void WriteDouble(double d) {
+-		if (isnan(d)) {
++		if (std::isnan(d)) {
+ 			d = 0;
+ 		}
+ 		char buffer[100];
+--- origsrc/handystats-1.11.3/src/core.cpp	2015-06-15 20:06:37.000000000 +0900
++++ src/handystats-1.11.3/src/core.cpp	2017-07-06 23:54:22.453000000 +0900
+@@ -3,7 +3,9 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <thread>
++#if !defined(__CYGWIN__)
+ #include <sys/prctl.h>
++#endif
+ #include <handystats/atomic.hpp>
+ 
+ #include <handystats/chrono.hpp>
+@@ -49,9 +51,9 @@ static void run_processor() {
+ 	memset(thread_name, 0, sizeof(thread_name));
+ 
+ 	sprintf(thread_name, "handystats");
+-
++#if !defined(__CYGWIN__)
+ 	prctl(PR_SET_NAME, thread_name);
+-
++#endif
+ 	while (is_enabled()) {
+ 		if (!message_queue::empty()) {
+ 			process_message_queue();
