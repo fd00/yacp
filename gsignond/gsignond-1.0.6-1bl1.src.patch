@@ -1,0 +1,185 @@
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/include/gsignond/gsignond-log.h	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/include/gsignond/gsignond-log.h	2017-07-07 23:44:00.951000000 +0900
+@@ -27,7 +27,9 @@
+ 
+ #include <glib.h>
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/common/Makefile.am	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/common/Makefile.am	2017-07-07 23:40:03.415000000 +0900
+@@ -45,6 +45,8 @@ libgsignond_common_la_LIBADD = \
+     $(top_builddir)/src/common/db/libgsignond-common-db.la \
+     $(NULL)
+ 
++libgsignond_common_la_LDFLAGS = -no-undefined
++
+ libgsignond_common_la_SOURCES = \
+     gsignond-security-context.c \
+     gsignond-access-control-manager.c \
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/extensions/test/Makefile.am	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/extensions/test/Makefile.am	2017-07-07 23:58:15.649000000 +0900
+@@ -1,17 +1,17 @@
+ include $(top_srcdir)/common.mk
+-extensions_LTLIBRARIES = libextension-test.la
++extensions_LTLIBRARIES = extension-test.la
+ 
+-libextension_test_la_CPPFLAGS = \
++extension_test_la_CPPFLAGS = \
+ 	-I$(top_builddir) \
+ 	-I$(top_srcdir)/include \
+ 	$(GSIGNOND_CFLAGS)
+ 
+-libextension_test_la_LIBADD = \
++extension_test_la_LIBADD = \
+ 	$(top_builddir)/src/common/libgsignond-common.la \
+ 	$(GSIGNOND_LIBS) \
+ 	$(NULL)
+ 
+-libextension_test_la_SOURCES = \
++extension_test_la_SOURCES = \
+     test-access-control-manager.h \
+ 	test-access-control-manager.c \
+     test-extension.h \
+@@ -21,4 +21,4 @@ libextension_test_la_SOURCES = \
+     test-storage-manager.h \
+     test-storage-manager.c
+ 
+-libextension_test_la_LDFLAGS = -avoid-version
++extension_test_la_LDFLAGS = -avoid-version -no-undefined -module
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/gplugind/main.c	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/gplugind/main.c	2017-07-07 23:47:46.359000000 +0900
+@@ -31,8 +31,9 @@
+ #include <glib-unix.h>
+ #include <glib.h>
+ #include <gio/gio.h>
++#if !defined(__CYGWIN__)
+ #include <sys/prctl.h>
+-
++#endif
+ #include "gsignond/gsignond-log.h"
+ #include "daemon/dbus/gsignond-dbus.h"
+ #include "gsignond-plugin-daemon.h"
+@@ -87,8 +88,10 @@ _install_sighandlers (GMainLoop *main_lo
+                            NULL);
+     _sig_source_id[2] = g_source_attach (source, ctx);
+ 
++#if !defined(__CYGWIN__)
+     if (prctl(PR_SET_PDEATHSIG, SIGHUP))
+         WARN ("failed to set parent death signal");
++#endif
+ }
+ 
+ static const gchar* _plugin_path()
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/digest/Makefile.am	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/digest/Makefile.am	2017-07-07 23:59:45.657000000 +0900
+@@ -1,28 +1,22 @@
+ include $(top_srcdir)/common.mk
+-gplugins_LTLIBRARIES = libdigest.la
++gplugins_LTLIBRARIES = digest.la
+ NULL=
+ 
+-libdigest_la_CPPFLAGS = \
++digest_la_CPPFLAGS = \
+     -I$(top_builddir) \
+     -I$(top_srcdir)/src \
+     -I$(top_srcdir)/include \
+     $(GSIGNOND_CFLAGS) \
+     $(NULL)
+ 
+-libdigest_la_LIBADD = \
++digest_la_LIBADD = \
+     $(top_builddir)/src/common/libgsignond-common.la \
+     $(GSIGNOND_LIBS) \
+     $(NULL)
+ 
+-libdigest_la_SOURCES = \
++digest_la_SOURCES = \
+     gsignond-digest-plugin.h \
+     gsignond-digest-plugin.c \
+     $(NULL)
+ 
+-libdigest_la_LDFLAGS = -avoid-version
+-
+-all-local: slink
+-
+-slink:
+-	ln -sf $(abs_top_builddir)/src/plugins/digest/.libs/libdigest.so ../.libs/libdigest.so
+-
++digest_la_LDFLAGS = -avoid-version -no-undefined -module
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/password/Makefile.am	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/password/Makefile.am	2017-07-08 00:00:11.090000000 +0900
+@@ -1,27 +1,22 @@
+ include $(top_srcdir)/common.mk
+-gplugins_LTLIBRARIES = libpassword.la
++gplugins_LTLIBRARIES = password.la
+ NULL=
+ 
+-libpassword_la_CPPFLAGS = \
++password_la_CPPFLAGS = \
+     -I$(top_builddir) \
+     -I$(top_srcdir)/src \
+     -I$(top_srcdir)/include \
+     $(GSIGNOND_CFLAGS) \
+     $(NULL)
+ 
+-libpassword_la_LIBADD = \
++password_la_LIBADD = \
+     $(top_builddir)/src/common/libgsignond-common.la \
+     $(GSIGNOND_LIBS) \
+     $(NULL)
+ 
+-libpassword_la_SOURCES = \
++password_la_SOURCES = \
+     gsignond-password-plugin.h \
+     gsignond-password-plugin.c \
+     $(NULL)
+ 
+-libpassword_la_LDFLAGS = -avoid-version
+-
+-all-local: slink
+-
+-slink:
+-	ln -sf $(abs_top_builddir)/src/plugins/password/.libs/libpassword.so ../.libs/libpassword.so
++password_la_LDFLAGS = -avoid-version -no-undefined -module
+--- origsrc/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/ssotest/Makefile.am	2017-04-12 01:20:20.000000000 +0900
++++ src/gsignond-1.0.6-3214aef8e7c84a9918d8b18fb258247d81be12e2/src/plugins/ssotest/Makefile.am	2017-07-08 00:00:34.392000000 +0900
+@@ -1,29 +1,22 @@
+ include $(top_srcdir)/common.mk
+-gplugins_LTLIBRARIES = libssotest.la
++gplugins_LTLIBRARIES = ssotest.la
+ NULL=
+ 
+-libssotest_la_CPPFLAGS = \
++ssotest_la_CPPFLAGS = \
+     -I$(top_builddir) \
+     -I$(top_srcdir)/src \
+     -I$(top_srcdir)/include \
+     $(GSIGNOND_CFLAGS) \
+     $(NULL)
+ 
+-libssotest_la_LIBADD = \
++ssotest_la_LIBADD = \
+     $(top_builddir)/src/common/libgsignond-common.la \
+     $(GSIGNOND_LIBS) \
+     $(NULL)
+ 
+-libssotest_la_SOURCES = \
++ssotest_la_SOURCES = \
+     gsignond-ssotest-plugin.h \
+     gsignond-ssotest-plugin.c \
+     $(NULL)
+ 
+-libssotest_la_LDFLAGS = -avoid-version
+-
+-all-local: slink
+-
+-slink:
+-	ln -sf $(abs_top_builddir)/src/plugins/ssotest/.libs/libssotest.so ../.libs/libssotest.so
+-    
+-
++ssotest_la_LDFLAGS = -avoid-version -no-undefined -module
