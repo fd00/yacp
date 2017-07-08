@@ -1,0 +1,112 @@
+--- origsrc/anfo-0.98/Makefile.am	2010-09-24 21:15:00.000000000 +0900
++++ src/anfo-0.98/Makefile.am	2017-07-08 19:39:45.436052800 +0900
+@@ -3,3 +3,6 @@ ACLOCAL_AMFLAGS = -I m4 --install
+ 
+ nobase_dist_doc_DATA = README example/ancient.cfg example/default.cfg \
+ 		       example/split-anfo.scm example/threebam.scm
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/anfo-0.98/anfo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/anfo-0.98/anfo.pc.in	2017-07-08 19:39:45.404838100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: anfo
++Description: Anfo Short Read Aligner/Mapper
++Version: @VERSION@
++Libs: -L${libdir} -lanfo
++Cflags: -I${includedir}
+--- origsrc/anfo-0.98/configure.ac	2010-09-24 21:58:25.000000000 +0900
++++ src/anfo-0.98/configure.ac	2017-07-08 21:59:03.229000000 +0900
+@@ -30,6 +30,10 @@ AC_CHECK_HEADERS([popt.h], [], [AC_MSG_E
+ AC_CHECK_HEADERS([zlib.h], [], [AC_MSG_WARN([zlib.h not found.  Want to install zlib1g-dev?])])
+ AC_CHECK_HEADERS([bzlib.h], [], [AC_MSG_WARN([bzlib.h not found.  Want to install libbz2-dev?])])
+ 
++if test "$host_os" = "cygwin"; then
++        PKG_CHECK_MODULES([LIBBSD], [libbsd])
++fi
++
+ PKG_CHECK_MODULES([protobuf], [protobuf >= 2.1.0])
+ AC_CHECK_HEADERS([google/protobuf/message.h], [], [AC_MSG_ERROR([message.h not found.  Need to install libprotobuf-dev?])])
+ 
+@@ -66,7 +70,7 @@ AC_TYPE_UINT8_T
+ # Checks for library functions.
+ AC_CHECK_FUNCS([memset munmap pow strerror])
+ 
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([anfo.pc 
+ 		 Makefile
+ 		 man/Makefile
+ 		 src/Makefile
+--- origsrc/anfo-0.98/src/Makefile.am	2010-09-24 23:00:06.000000000 +0900
++++ src/anfo-0.98/src/Makefile.am	2017-07-08 18:36:23.526000000 +0900
+@@ -19,8 +19,8 @@ CFLAGS += $(protobuf_CFLAGS)
+ CXXFLAGS += $(protobuf_CFLAGS)
+ LDADD = libanfo.la
+ 
+-libanfo_la_LDFLAGS = -version-info 0:0:0
+-libanfo_la_LIBADD = $(protobuf_LIBS) -lpthread
++libanfo_la_LDFLAGS = -no-undefined -version-info 0:0:0
++libanfo_la_LIBADD = $(protobuf_LIBS) -lpthread $(LIBBSD_LIBS)
+ 
+ nodist_libanfo_la_SOURCES = config.pb.h output.pb.h config.pb.cc output.pb.cc
+ libanfo_la_SOURCES = align.cc anfo_common.cc concurrent_stream.cc \
+@@ -40,10 +40,10 @@ anfo.scm: anfo.scm.in
+ 	sed -e "s#__LIBDIR__#$(libdir)#g" < $(srcdir)/anfo.scm.in >> anfo.scm
+ 
+ config.pb.cc: config.proto
+-	$(PROTOC) -I. -I$(dir $(PROTOC))../include --cpp_out=. config.proto
++	$(PROTOC) -I. -I$(dir $(PROTOC))../include --cpp_out=. -I$(srcdir) $<
+ 
+ output.pb.cc: output.proto
+-	$(PROTOC) -I. -I$(dir $(PROTOC))../include --cpp_out=. output.proto
++	$(PROTOC) -I. -I$(dir $(PROTOC))../include --cpp_out=. -I$(srcdir) $<
+ 
+ config.pb.h: config.pb.cc
+ 	@:
+--- origsrc/anfo-0.98/src/conffile.h	2010-09-24 21:15:00.000000000 +0900
++++ src/anfo-0.98/src/conffile.h	2017-07-08 17:43:27.073999800 +0900
+@@ -23,6 +23,8 @@
+ #include <fstream>
+ #include <string>
+ 
++#include <unistd.h>
++
+ /*! \page configuration Configuration Files, Metadata, Output Format
+  *
+  * In order to keep configuration files and somewhat complicated,
+--- origsrc/anfo-0.98/src/util.cc	2010-09-24 21:19:00.000000000 +0900
++++ src/anfo-0.98/src/util.cc	2017-07-08 18:33:25.236000000 +0900
+@@ -26,6 +26,10 @@
+ 
+ #include <sys/ioctl.h>
+ 
++#if defined(__CYGWIN__)
++#include <bsd/unistd.h>
++#endif
++
+ volatile int exit_with = 0 ;
+ std::string program_name ;
+ 
+@@ -46,6 +50,9 @@ int wrap_main( int argc, const char * ar
+ 
+ void set_proc_title( const char *title ) 
+ {
++#if defined(__CYGWIN__)
++	setproctitle(title);
++#else
+ 	extern char* __progname_full ;
+ 	extern char* __progname ;
+ 	static char* pe = 0 ;
+@@ -65,6 +72,7 @@ void set_proc_title( const char *title )
+ 		while( *title && pf != pe ) *pf++ = *title++ ;
+ 		while( pf != pe ) *pf++ = 0 ;
+ 	}
++#endif
+ }
+ 
+ int mktempfile( std::string* name )
