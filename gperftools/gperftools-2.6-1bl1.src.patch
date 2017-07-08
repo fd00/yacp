@@ -1,0 +1,134 @@
+--- origsrc/gperftools-gperftools-2.6/Makefile.am	2017-07-05 12:35:25.000000000 +0900
++++ src/gperftools-gperftools-2.6/Makefile.am	2017-07-08 13:20:47.583000000 +0900
+@@ -583,7 +583,7 @@ noinst_SCRIPTS += $(maybe_threads_unitte
+ # TODO(csilvers): replace by 'if ! cmp $^ $@ >/dev/null 2>&; then ...; fi'
+ maybe_threads_unittest.sh$(EXEEXT): $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) \
+                            $(LIBTCMALLOC_MINIMAL) \
+-                           low_level_alloc_unittest
++                           low_level_alloc_unittest$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(maybe_threads_unittest_sh_SOURCES) $@
+ endif !ENABLE_STATIC
+@@ -837,7 +837,7 @@ TESTS += debugallocation_test.sh$(EXEEXT
+ debugallocation_test_sh_SOURCES = src/tests/debugallocation_test.sh
+ noinst_SCRIPTS += $(debugallocation_test_sh_SOURCES)
+ debugallocation_test.sh$(EXEEXT): $(top_srcdir)/$(debugallocation_test_sh_SOURCES) \
+-                                  debugallocation_test
++                                  debugallocation_test$(EXEEXT)
+ 	rm -f $@
+ 	cp -p $(top_srcdir)/$(debugallocation_test_sh_SOURCES) $@
+ 
+@@ -856,12 +856,12 @@ noinst_LTLIBRARIES += librun_benchmark.l
+ librun_benchmark_la_SOURCES = \
+ 	benchmark/run_benchmark.c benchmark/run_benchmark.h
+ 
+-noinst_PROGRAMS += malloc_bench malloc_bench_shared \
++noinst_PROGRAMS += \
+ 	binary_trees binary_trees_shared
+ 
+ malloc_bench_SOURCES = benchmark/malloc_bench.cc
+ malloc_bench_CXXFLAGS = $(PTHREAD_CFLAGS) $(AM_CXXFLAGS) $(NO_BUILTIN_CXXFLAGS)
+-malloc_bench_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS) -static
++malloc_bench_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS)
+ malloc_bench_LDADD = librun_benchmark.la libtcmalloc_minimal.la $(PTHREAD_LIBS)
+ 
+ malloc_bench_shared_SOURCES = benchmark/malloc_bench.cc
+@@ -871,7 +871,7 @@ malloc_bench_shared_LDADD = librun_bench
+ 
+ if WITH_HEAP_PROFILER_OR_CHECKER
+ 
+-noinst_PROGRAMS += malloc_bench_shared_full
++# noinst_PROGRAMS += malloc_bench_shared_full
+ malloc_bench_shared_full_SOURCES = benchmark/malloc_bench.cc
+ malloc_bench_shared_full_CXXFLAGS = $(PTHREAD_CFLAGS) $(AM_CXXFLAGS) $(NO_BUILTIN_CXXFLAGS)
+ malloc_bench_shared_full_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS)
+@@ -887,7 +887,7 @@ endif WITH_HEAP_PROFILER_OR_CHECKER
+ 
+ binary_trees_SOURCES = benchmark/binary_trees.cc
+ binary_trees_CXXFLAGS = $(PTHREAD_CFLAGS) $(AM_CXXFLAGS) $(NO_BUILTIN_CXXFLAGS)
+-binary_trees_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS) -static
++binary_trees_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS)
+ binary_trees_LDADD = libtcmalloc_minimal.la $(PTHREAD_LIBS)
+ 
+ binary_trees_shared_SOURCES = benchmark/binary_trees.cc
+@@ -950,7 +950,7 @@ libtcmalloc_internal_la_LIBADD = libstac
+ lib_LTLIBRARIES += libtcmalloc.la
+ libtcmalloc_la_SOURCES = $(TCMALLOC_CC) $(TCMALLOC_INCLUDES)
+ libtcmalloc_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG $(AM_CXXFLAGS) $(EMERGENCY_MALLOC_DEFINE)
+-libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
++libtcmalloc_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
+ libtcmalloc_la_LIBADD = libtcmalloc_internal.la libmaybe_threads.la $(PTHREAD_LIBS)
+ 
+ if WITH_HEAP_CHECKER
+@@ -1307,7 +1307,7 @@ libprofiler_la_SOURCES = src/profiler.cc
+ libprofiler_la_LIBADD = libstacktrace.la libmaybe_threads.la libfake_stacktrace_scope.la
+ # We have to include ProfileData for profiledata_unittest
+ CPU_PROFILER_SYMBOLS = '(ProfilerStart|ProfilerStartWithOptions|ProfilerStop|ProfilerFlush|ProfilerEnable|ProfilerDisable|ProfilingIsEnabledForAllThreads|ProfilerRegisterThread|ProfilerGetCurrentState|ProfilerState|ProfileData|ProfileHandler)'
+-libprofiler_la_LDFLAGS = -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
++libprofiler_la_LDFLAGS = -no-undefined -export-symbols-regex $(CPU_PROFILER_SYMBOLS) \
+                          -version-info @PROFILER_SO_VERSION@
+ 
+ # See discussion above (under LIBTCMALLOC_MINIMAL) for why we do this.
+@@ -1400,7 +1400,7 @@ libtcmalloc_and_profiler_la_CXXFLAGS = $
+ # Since this library is meant to be used as a .a, I don't worry as much
+ # about .so versioning.  I just give the libtcmalloc version number.
+ # TODO(csilvers): use -export-symbols-regex?
+-libtcmalloc_and_profiler_la_LDFLAGS = $(PTHREAD_CFLAGS) \
++libtcmalloc_and_profiler_la_LDFLAGS = -no-undefined $(PTHREAD_CFLAGS) \
+                                       -version-info @TCMALLOC_SO_VERSION@
+ # We don't include libprofiler_la_LIBADD here because all it adds is
+ # libstacktrace.la, which we already get via libtcmalloc.  Trying to
+--- origsrc/gperftools-gperftools-2.6/benchmark/getcontext_light.cc	2017-07-05 12:35:25.000000000 +0900
++++ src/gperftools-gperftools-2.6/benchmark/getcontext_light.cc	2017-07-08 12:08:22.203000000 +0900
+@@ -4,7 +4,7 @@
+ extern "C" void getcontext_light(ucontext_t *ctx);
+ 
+ // clang's built-in asm cannot handle .set directives
+-#if defined(__GNUC__) && !defined(__llvm__) && defined(__x86_64) && defined(_LP64)
++#if defined(__GNUC__) && !defined(__llvm__) && defined(__x86_64) && defined(_LP64) && !defined(__CYGWIN__)
+ 
+ #define R(r) offsetof(ucontext_t, uc_mcontext.gregs[r])
+ 
+--- origsrc/gperftools-gperftools-2.6/src/fake_stacktrace_scope.cc	2017-07-05 12:35:25.000000000 +0900
++++ src/gperftools-gperftools-2.6/src/fake_stacktrace_scope.cc	2017-07-08 10:07:01.206871500 +0900
+@@ -31,9 +31,9 @@
+ #include "base/basictypes.h"
+ 
+ namespace tcmalloc {
+-  ATTRIBUTE_WEAK bool EnterStacktraceScope(void) {
++  bool EnterStacktraceScope(void) {
+     return true;
+   }
+-  ATTRIBUTE_WEAK void LeaveStacktraceScope(void) {
++  void LeaveStacktraceScope(void) {
+   }
+ }
+--- origsrc/gperftools-gperftools-2.6/src/malloc_extension.cc	2017-07-05 12:35:25.000000000 +0900
++++ src/gperftools-gperftools-2.6/src/malloc_extension.cc	2017-07-08 10:13:23.796000000 +0900
+@@ -205,7 +205,7 @@ void MallocExtension::MarkThreadTemporar
+ 
+ static MallocExtension* current_instance;
+ 
+-#if (!defined(_WIN32) && !defined(__MINGW32__))
++#if (!defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__))
+ // Provide a weak hook for __lsan_ignore_object, so that
+ // if leak sanitizer is enabled, we can ignore the current_instance
+ // heap allocation.
+--- origsrc/gperftools-gperftools-2.6/src/maybe_threads.cc	2017-07-05 12:35:25.000000000 +0900
++++ src/gperftools-gperftools-2.6/src/maybe_threads.cc	2017-07-08 10:07:01.222497400 +0900
+@@ -57,6 +57,7 @@
+ # define __THROW   // __THROW is just an optimization, so ok to make it ""
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ // These are the methods we're going to conditionally include.
+ extern "C" {
+   int pthread_key_create (pthread_key_t*, void (*)(void*))
+@@ -76,6 +77,7 @@ extern "C" {
+     __THROW ATTRIBUTE_WEAK;
+ #endif
+ }
++#endif
+ 
+ #define MAX_PERTHREAD_VALS 16
+ static void *perftools_pthread_specific_vals[MAX_PERTHREAD_VALS];
