@@ -1,5 +1,13 @@
+--- origsrc/libdoozer-libdoozer-0.1.2/Makefile.am	2012-10-31 07:38:36.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/Makefile.am	2017-07-08 16:22:07.464450700 +0900
+@@ -1,2 +1,5 @@
+ include_HEADERS=	doozer.h
+ SUBDIRS=		lib cli
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/libdoozer-libdoozer-0.1.2/cli/Makefile.am	2012-10-31 07:38:36.000000000 +0900
-+++ src/libdoozer-libdoozer-0.1.2/cli/Makefile.am	2014-05-29 16:19:21.253875600 +0900
++++ src/libdoozer-libdoozer-0.1.2/cli/Makefile.am	2017-07-08 16:16:31.087804100 +0900
 @@ -4,7 +4,11 @@ doozer_cli_SOURCES=	add.cc del.cc get.cc
  			touch.cc wait.cc watch.cc main.cc
  doozer_cli_LDADD=	${top_builddir}/lib/libdoozer.la
@@ -13,7 +21,7 @@
 +doozer_ping_CPPFLAGS=   -I$(top_srcdir)
 +doozer_ping_CXXFLAGS=   $(QTNETWORK_CFLAGS)
 --- origsrc/libdoozer-libdoozer-0.1.2/configure.ac	2012-10-31 07:38:36.000000000 +0900
-+++ src/libdoozer-libdoozer-0.1.2/configure.ac	2014-05-29 16:09:20.928789500 +0900
++++ src/libdoozer-libdoozer-0.1.2/configure.ac	2017-07-08 16:22:07.432406600 +0900
 @@ -59,15 +59,11 @@ AC_CHECK_LIB([protobuf], [main], [PROTO_
  	AC_ERROR([libprotobuf is required]))
  AC_CHECK_LIB([gtest_main], [main], [GTEST_LIBS="$GTEST_LIBS -lgtest_main"])
@@ -35,7 +43,7 @@
  LIBS="$LIBS $AC_LIBS $PROTO_LIBS $GLOG_LIBS"
  AC_SUBST(GTEST_LIBS)
  AC_SUBST(QT_LIBS)
-@@ -75,8 +71,6 @@ AC_SUBST(AC_LIBS)
+@@ -75,12 +71,10 @@ AC_SUBST(AC_LIBS)
  AC_SUBST(LIBS)
  
  # Checks for header files.
@@ -44,8 +52,24 @@
  
  # Checks for typedefs, structures, and compiler characteristics.
  
+ # Checks for library functions.
+ 
+-AC_CONFIG_FILES([Makefile lib/Makefile cli/Makefile])
++AC_CONFIG_FILES([libdoozer.pc Makefile lib/Makefile cli/Makefile])
+ AC_OUTPUT
+--- origsrc/libdoozer-libdoozer-0.1.2/doozer.h	2012-10-31 07:38:36.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/doozer.h	2017-07-08 16:20:25.104000000 +0900
+@@ -32,6 +32,8 @@
+ 
+ #define	DOOZER_URI_PREFIX	"doozer:?"
+ 
++#include <vector>
++
+ struct QTcpSocket;
+ 
+ namespace google {
 --- origsrc/libdoozer-libdoozer-0.1.2/lib/Makefile.am	2012-10-31 07:38:36.000000000 +0900
-+++ src/libdoozer-libdoozer-0.1.2/lib/Makefile.am	2014-05-29 16:16:03.434957900 +0900
++++ src/libdoozer-libdoozer-0.1.2/lib/Makefile.am	2017-07-08 16:16:31.087804100 +0900
 @@ -4,10 +4,12 @@ lib_LTLIBRARIES=	libdoozer.la
  
  libdoozer_la_SOURCES=	msg.pb.h msg.pb.cc error.cc conn.cc baseops.cc	\
@@ -61,3 +85,16 @@
  msg.pb.cc msg.pb.h: msg.proto
 -	protoc --cpp_out=. $<
 +	protoc --cpp_out=. -I$(srcdir) $<
+--- origsrc/libdoozer-libdoozer-0.1.2/libdoozer.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdoozer-libdoozer-0.1.2/libdoozer.pc.in	2017-07-08 16:22:19.948065700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdoozer
++Description: C++ client library for the Doozer lock service
++Version: @VERSION@
++Libs: -L${libdir} -ldoozer
++Cflags: -I${includedir}
