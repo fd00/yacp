@@ -1,0 +1,62 @@
+--- origsrc/libsylph-1.1.0/Makefile.am	2006-11-20 16:31:43.000000000 +0900
++++ src/libsylph-1.1.0/Makefile.am	2017-07-08 15:36:43.034000000 +0900
+@@ -15,4 +15,7 @@ release: distdir
+ 	BZIP2=$(BZIP2_ENV) $(TAR) --bzip2 -chof $(distdir).tar.bz2 $(distdir)
+ 	-rm -rf $(distdir)
+ 
+-ACLOCAL_AMFLAGS = -I m4
++ACLOCAL_AMFLAGS = -I ac
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libsylph-1.1.0/configure.in	2007-12-27 15:04:01.000000000 +0900
++++ src/libsylph-1.1.0/configure.in	2017-07-08 15:37:06.786000000 +0900
+@@ -268,6 +268,7 @@ AC_CHECK_FUNCS(gethostname mkdir mktime
+ 	       fchmod truncate getuid regcomp mlock)
+ 
+ AC_OUTPUT([
++libsylph.pc
+ Makefile
+ ac/Makefile
+ doc/Makefile
+--- origsrc/libsylph-1.1.0/libsylph/Makefile.am	2006-10-04 11:14:10.000000000 +0900
++++ src/libsylph-1.1.0/libsylph/Makefile.am	2017-07-08 15:34:34.770000000 +0900
+@@ -89,12 +89,12 @@ libsylphinclude_HEADERS = \
+ 	xml.h
+ 
+ if OS_WIN32
+-no_undefined = -no-undefined
+ export_symbols = -export-symbols libsylph.def
+ endif
+ 
++no_undefined = -no-undefined
+ libsylph_la_LDFLAGS = \
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
+ 	-export-dynamic $(no_undefined) $(export_symbols)
+ 
+-libsylph_la_LIBADD = $(GLIB_LIBS)
++libsylph_la_LIBADD = $(GLIB_LIBS) $(LTLIBICONV)
+--- origsrc/libsylph-1.1.0/libsylph/defs.h	2006-09-22 13:10:24.000000000 +0900
++++ src/libsylph-1.1.0/libsylph/defs.h	2017-07-08 15:28:34.544176600 +0900
+@@ -24,7 +24,7 @@
+ #  include "config.h"
+ #endif
+ 
+-#include <glibconfig.h>
++#include <glib.h>
+ 
+ #ifdef G_OS_WIN32
+ #  include <glib/gwin32.h>
+--- origsrc/libsylph-1.1.0/libsylph.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsylph-1.1.0/libsylph.pc.in	2017-07-08 15:36:58.191000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsylph
++Description: Sylpheed's core features independent from the UI of Sylpheed
++Version: @VERSION@
++Libs: -L${libdir} -lsylph
++Cflags: -I${includedir}
