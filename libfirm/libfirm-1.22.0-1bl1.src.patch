@@ -1,0 +1,37 @@
+--- origsrc/libfirm-libfirm-1.22.0/CMakeLists.txt	2015-12-31 18:39:56.000000000 +0900
++++ src/libfirm-libfirm-1.22.0/CMakeLists.txt	2017-07-15 20:02:01.806000000 +0900
+@@ -297,6 +297,8 @@ endif()
+ 
+ function(gen_ir target)
+ 	get_filename_component(basename "${target}" NAME)
++	get_filename_component(TARGETDIR "${target}" DIRECTORY)
++	file(MAKE_DIRECTORY "${TARGETDIR}")
+ 	add_custom_command (
+ 		OUTPUT ${target}
+ 		COMMAND ${PYTHON_EXECUTABLE} ${GEN_IR_DIR}/gen_ir.py ${IR_SPEC} ${GEN_TEMPLATEDIR}/${basename} > ${target}
+@@ -308,6 +310,7 @@ endfunction()
+ 
+ function(begen generator target spec)
+ 	get_filename_component(TARGETDIR "${target}" DIRECTORY)
++	file(MAKE_DIRECTORY "${TARGETDIR}")
+ 	set(GENERATOR ${PROJECT_SOURCE_DIR}/ir/be/scripts/${generator})
+ 	add_custom_command(
+ 		OUTPUT ${target}
+@@ -436,6 +439,7 @@ add_library(firm ${SOURCES})
+ if(UNIX)
+ 	target_link_libraries(firm LINK_PUBLIC m)
+ endif()
++set_target_properties(firm PROPERTIES SOVERSION 0)
+ 
+ # Create install target
+ set(INSTALL_HEADERS
+@@ -506,7 +510,8 @@ set(INSTALL_HEADERS
+ 
+ install(TARGETS firm
+ 	EXPORT libfirmTargets
+-	DESTINATION lib
++	RUNTIME DESTINATION bin
++	ARCHIVE DESTINATION lib
+ )
+ foreach(header ${INSTALL_HEADERS})
+ 	get_filename_component(DIR ${header} DIRECTORY)
