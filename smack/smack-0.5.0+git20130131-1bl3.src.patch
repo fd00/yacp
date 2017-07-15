@@ -1,0 +1,73 @@
+--- origsrc/smack/CMakeLists.txt	2017-07-15 18:30:55.000000000 +0900
++++ src/smack/CMakeLists.txt	2017-07-15 18:41:05.116000000 +0900
+@@ -12,12 +12,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PAT
+ 
+ OPTION (ENABLE_EXAMPLES "Build examples" OFF)
+ 
++find_package(pkgconfig)
++pkg_check_modules(LZ4 REQUIRED liblz4)
++
+ find_package(SNAPPY REQUIRED)
+ find_package(Boost REQUIRED filesystem system thread iostreams)
+ set(CMAKE_CXX_FLAGS "-g -W -Wall")
+ 
+ include_directories("${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/include" ${SNAPPY_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+ FILE(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/include/smack/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/smack/*.h")
++LIST(REMOVE_ITEM headers "${CMAKE_CURRENT_SOURCE_DIR}/include/smack/lz4.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/smack/lz4hc.h")
+ install(FILES ${headers} DESTINATION include/smack)
+ 
+ add_subdirectory(src)
+@@ -31,3 +35,11 @@ add_custom_target(dist
+     COMMAND git archive --prefix=${ARCHIVE_NAME}-${smack_VERSION}/ HEAD
+     | bzip2 > ${CMAKE_BINARY_DIR}/${ARCHIVE_NAME}-${smack_VERSION}.tar.bz2
+     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.5.0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/smack/include/smack/lz4.hpp	2017-07-15 18:30:55.000000000 +0900
++++ src/smack/include/smack/lz4.hpp	2017-07-15 18:43:46.899000000 +0900
+@@ -9,8 +9,8 @@
+ #include <boost/iostreams/operations.hpp>
+ #include <boost/iostreams/char_traits.hpp>
+ 
+-#include <smack/lz4.h>
+-#include <smack/lz4hc.h>
++#include <lz4.h>
++#include <lz4hc.h>
+ #include <smack/base.hpp>
+ 
+ namespace bio = boost::iostreams;
+--- origsrc/smack/smack.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/smack/smack.pc.in	2017-07-15 18:30:58.111463800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: smack
++Description: Low-level IO storage which packs data into sorted (zlib/bzip2/snappy compressed) blobs
++Version: @VERSION@
++Libs: -L${libdir} -lsmack
++Cflags: -I${includedir}
+--- origsrc/smack/src/CMakeLists.txt	2017-07-15 18:30:55.000000000 +0900
++++ src/smack/src/CMakeLists.txt	2017-07-15 18:39:08.928000000 +0900
+@@ -1,10 +1,10 @@
+-add_library(smack SHARED key.cpp bloom.cpp logger.cpp crypto/sha512.c smack.cpp lz4.c lz4hc.c)
++add_library(smack SHARED key.cpp bloom.cpp logger.cpp crypto/sha512.c smack.cpp )
+ target_link_libraries(smack ${Boost_FILESYSTEM_LIBRARY} ${Boost_IOSTREAMS_LIBRARY}
+-	${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${SNAPPY_LIBRARIES})
++	${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${SNAPPY_LIBRARIES} ${LZ4_LIBRARIES})
+ set_target_properties(smack PROPERTIES VERSION ${SMACK_VERSION_ABI} SOVERSION ${SMACK_VERSION_ABI})
+ 
+ IF (NOT CMAKE_INSTALL_LIBDIR)
+ SET(CMAKE_INSTALL_LIBDIR lib CACHE PATH "Output directory for libraries")
+ ENDIF (NOT CMAKE_INSTALL_LIBDIR)
+ 
+-install(TARGETS smack LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS smack RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
