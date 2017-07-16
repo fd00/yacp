@@ -1,0 +1,70 @@
+--- origsrc/opencflite-476.19.0/CFBase.c	2011-09-08 02:44:49.000000000 +0900
++++ src/opencflite-476.19.0/CFBase.c	2017-07-16 21:05:04.241000000 +0900
+@@ -44,7 +44,9 @@
+ #include <mach/mach.h>
+ #include <dlfcn.h>
+ #elif DEPLOYMENT_TARGET_LINUX
++#if !defined(__CYGWIN__)
+ #include <mcheck.h>
++#endif
+ #include <pthread.h>
+ #elif DEPLOYMENT_TARGET_WINDOWS
+ #include <windows.h>
+--- origsrc/opencflite-476.19.0/CFFileUtilities.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFFileUtilities.c	2017-07-16 21:06:08.709000200 +0900
+@@ -36,6 +36,10 @@
+ 	Responsibility: Christopher Kane
+ */
+ 
++#if defined(__CYGWIN__)
++#define stat64 stat
++#endif
++
+ #include "CFInternal.h"
+ #include "CFPriv.h"
+ #include <string.h>
+--- origsrc/opencflite-476.19.0/CFTimeZone.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFTimeZone.c	2017-07-16 21:35:29.644000000 +0900
+@@ -52,6 +52,9 @@
+ #include <unistd.h>
+ #include <sys/fcntl.h>
+ #include <tzfile.h>
++#if defined(__CYGWIN__)
++#include <libtz/tzfile.h>
++#endif
+ #elif DEPLOYMENT_TARGET_WINDOWS
+ #include <windows.h>
+ #include <winreg.h>
+--- origsrc/opencflite-476.19.0/Makefile.am	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/Makefile.am	2017-07-16 16:45:58.399607600 +0900
+@@ -4,6 +4,8 @@
+ 
+ ACLOCAL_AMFLAGS			= -I m4
+ 
++AM_LDFLAGS = -no-undefined
++
+ # We need to ensure that the top-level (i.e. source) directory is
+ # built before tests and examples, so we explicitly add '.' to the
+ # list of subdirectories.l
+--- origsrc/opencflite-476.19.0/configure.ac	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/configure.ac	2017-07-16 21:31:55.661000000 +0900
+@@ -82,7 +82,7 @@ case ${host_os} in
+ 		deployment_target="FreeBSD"
+ 		;;
+ 
+-	*linux*)
++	*linux*|*cygwin*)
+ 		CPPFLAGS="-DDEPLOYMENT_TARGET_LINUX=1 ${CPPFLAGS}"
+ 		deployment_target="Linux"
+ 		;;
+@@ -585,6 +585,10 @@ AC_ARG_WITH(warnings-as-errors,
+ 
+ AC_CHECK_HEADER([tzfile.h],[true],AC_MSG_ERROR([${PACKAGE_NAME} requires 'tzfile.h'. Download the latest tzcode package from 'ftp://elsie.nci.nih.gov/pub/' and/or use the '--with-tz-includes=DIR' configuration option.]))
+ 
++if test "$host_os" != "cygwin"; then
++	PKG_CHECK_MODULES([LIBTZ], [libtz])
++fi
++
+ #
+ # Check for headers
+ #
