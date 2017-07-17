@@ -1,5 +1,8 @@
 HOMEPAGE="http://www.gnu.org/software/${PN}/"
 SRC_URI="mirror://gnu/${PN}/${P}.tar.gz"
+PATCH_URI="
+	https://git.yoctoproject.org/cgit.cgi/poky/plain/meta/recipes-support/gnutls/libtasn1/0001-stdint.m4-reintroduce-GNULIB_OVERRIDES_WINT_T-check.patch
+"
 
 CATEGORY="Security"
 SUMMARY="Free implementation of the Kerberos 5 network security system"
@@ -9,14 +12,16 @@ systems. Shishi is part of a GNU system."
 
 MAKEOPTS="-j1"
 
-DIFF_EXCLUDES="
-	gendocs_template
-	gl
-	maint.mk
-"
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	`cat gl/Makefile.am | grep "# Reproduce by: " | sed -e 's/^.*: //'` # gnulib-tools
+}
 
-KEEPDIRS="
-	/var/shishi
+DIFF_EXCLUDES="
+	doc
+	*.c
 "
 
 PKG_NAMES="
@@ -32,7 +37,6 @@ shishi_CONTENTS="
 	usr/share/info
 	usr/share/locale
 	usr/share/man/man1
-	var/shishi
 "
 libshishi0_CONTENTS="
 	usr/bin/*.dll
