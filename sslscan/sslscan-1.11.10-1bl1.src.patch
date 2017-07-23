@@ -1,0 +1,42 @@
+--- origsrc/sslscan-1.11.10-rbsec/Makefile	2017-05-05 01:02:41.000000000 +0900
++++ src/sslscan-1.11.10-rbsec/Makefile	2017-07-23 18:17:55.650000000 +0900
+@@ -22,6 +22,8 @@ MAN1DIR   = $(MANDIR)/man1
+ WARNINGS  = -Wall -Wformat=2
+ DEFINES   = -DVERSION=\"$(GIT_VERSION)\"
+ 
++CFLAGS    += -std=gnu99
++
+ # for dynamic linking
+ LIBS      = -lssl -lcrypto
+ ifneq ($(OS), FreeBSD)
+--- origsrc/sslscan-1.11.10-rbsec/sslscan.c	2017-05-05 01:02:41.000000000 +0900
++++ src/sslscan-1.11.10-rbsec/sslscan.c	2017-07-23 19:28:54.877000000 +0900
+@@ -94,6 +94,28 @@
+ 
+ #include "sslscan.h"
+ 
++#if defined(__CYGWIN__)
++static char * strnstr(const char *s, const char *find, size_t slen)
++{
++	char c, sc;
++	size_t len;
++
++	if ((c = *find++) != '\0') {
++		len = strlen(find);
++		do {
++			do {
++				if (slen-- < 1 || (sc = *s++) == '\0')
++					return (NULL);
++			} while (sc != c);
++			if (len > slen)
++				return (NULL);
++		} while (strncmp(s, find, len) != 0);
++		s--;
++	}
++	return ((char *)s);
++}
++#endif
++
+ /* Borrowed from tortls.c to dance with OpenSSL on many platforms, with
+  * many versions and releases of OpenSSL. */
+ /** Does the run-time openssl version look like we need
