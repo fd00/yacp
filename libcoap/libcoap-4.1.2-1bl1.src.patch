@@ -1,0 +1,44 @@
+--- origsrc/libcoap-4.1.2/Makefile.am	2017-01-14 00:02:58.000000000 +0900
++++ src/libcoap-4.1.2/Makefile.am	2017-07-23 19:54:13.926000200 +0900
+@@ -40,7 +40,6 @@ SUBDIRS = . $(DOC_DIR) tests examples
+ lib_LTLIBRARIES = libcoap-@LIBCOAP_API_VERSION@.la
+ 
+ libcoap_@LIBCOAP_API_VERSION@_la_CFLAGS = \
+-  -fPIC \
+   -fPIE \
+   $(AM_CFLAGS)
+ 
+@@ -107,7 +106,7 @@ libcoap_include_HEADERS = \
+ libcoap_@LIBCOAP_API_VERSION@_la_LDFLAGS =					\
+   -version-info $(LT_LIBCOAP_CURRENT):$(LT_LIBCOAP_REVISION):$(LT_LIBCOAP_AGE)	\
+   @libcoap_SYMBOLS@ \
+-  -pie
++  -no-undefined
+ 
+ ## Collect symbols here we want to ignore while building the helper files
+ ## libcoap-$(LIBCOAP_API_VERSION).{map,sym} for the linker.
+--- origsrc/libcoap-4.1.2/configure.ac	2017-01-14 00:02:58.000000000 +0900
++++ src/libcoap-4.1.2/configure.ac	2017-07-23 19:43:21.608000000 +0900
+@@ -354,6 +354,11 @@ case $host in
+     ADDITIONAL_CFLAGS="-D_GNU_SOURCE -DWITH_POSIX"
+     ;;
+ 
++    *cygwin*)
++    AC_MSG_RESULT([Cygwin])
++    ADDITIONAL_CFLAGS="-D_GNU_SOURCE -DWITH_POSIX"
++    ;;
++
+     *)
+     AC_MSG_WARN([==> Currently unsupported operating system '${host}' !])
+     AC_MSG_ERROR([==> If you can provide patches to support your operating system please write to 'libcoap-developers@lists.sourceforge.net'.])
+--- origsrc/libcoap-4.1.2/src/coap_io.c	2017-01-14 00:02:58.000000000 +0900
++++ src/libcoap-4.1.2/src/coap_io.c	2017-07-23 19:53:37.609999800 +0900
+@@ -304,7 +304,7 @@ coap_network_send(struct coap_context_t
+     break;
+   }
+   case AF_INET: {
+-#if defined(IP_PKTINFO)
++#if defined(IP_PKTINFO) && !defined(__CYGWIN__)
+     struct cmsghdr *cmsg;
+     struct in_pktinfo *pktinfo;
+ 
