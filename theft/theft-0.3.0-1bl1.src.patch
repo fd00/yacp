@@ -1,0 +1,95 @@
+--- origsrc/theft-0.3.0/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/theft-0.3.0/Makefile.am	2017-07-23 12:44:50.755381400 +0900
+@@ -0,0 +1,40 @@
++
++check_PROGRAMS = test_theft
++test_theft_CPPFLAGS = -I$(srcdir)/inc -I$(srcdir)/src -I$(srcdir)/vendor
++test_theft_SOURCES = test/test_theft.c \
++		test/test_theft_autoshrink.c \
++		test/test_theft_autoshrink_ll.c \
++		test/test_theft_autoshrink_bulk.c \
++		test/test_theft_autoshrink_int_array.c \
++		test/test_theft_aux.c \
++		test/test_theft_error.c \
++		test/test_theft_prng.c \
++		test/test_theft_integration.c
++test_theft_LDADD = libtheft.la
++TESTS = $(check_PROGRAMS)
++
++include_HEADERS = inc/theft.h inc/theft_types.h
++
++lib_LTLIBRARIES = libtheft.la
++libtheft_la_CPPFLAGS = -I$(srcdir)/inc
++libtheft_la_SOURCES = src/theft.c \
++		src/theft_autoshrink.c \
++		src/theft_bloom.c \
++		src/theft_call.c \
++		src/theft_hash.c \
++		src/theft_mt.c \
++		src/theft_random.c \
++		src/theft_run.c \
++		src/theft_shrink.c \
++		src/theft_trial.c \
++		src/theft_aux.c \
++		src/theft_aux_builtin.c
++libtheft_la_LDFLAGS = -no-undefined
++
++BUILT_SOURCES = bits_lut.h
++
++bits_lut.h: 
++	$(srcdir)/scripts/mk_bits_lut > $@
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/theft-0.3.0/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/theft-0.3.0/configure.ac	2017-07-23 12:44:50.739927200 +0900
+@@ -0,0 +1,36 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([theft], [0.3.0])
++AC_CONFIG_SRCDIR([inc/theft.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++LT_INIT
++
++# Checks for header files.
++AC_CHECK_HEADERS([float.h inttypes.h limits.h stdint.h stdlib.h string.h sys/time.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_CHECK_HEADER_STDBOOL
++AC_TYPE_INT16_T
++AC_TYPE_INT32_T
++AC_TYPE_INT64_T
++AC_TYPE_INT8_T
++AC_TYPE_SIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT64_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([gettimeofday memset])
++
++AC_CONFIG_FILES([theft.pc Makefile])
++AC_OUTPUT
+--- origsrc/theft-0.3.0/theft.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/theft-0.3.0/theft.pc.in	2017-07-23 12:44:50.724264800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: theft
++Description: Property-based testing for C
++Version: @VERSION@
++Libs: -L${libdir} -ltheft
++Cflags: -I${includedir}
