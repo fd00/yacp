@@ -1,0 +1,103 @@
+--- origsrc/tilp2-1.18/builder/Makefile.am	2013-04-05 03:40:49.000000000 +0900
++++ src/tilp2-1.18/builder/Makefile.am	2017-07-23 06:57:45.262000000 +0900
+@@ -1,3 +1,3 @@
+ builderdir = $(pkgdatadir)/builder
+-dist_builder_DATA = *.ui
++dist_builder_DATA = $(srcdir)/*.ui
+ EXTRA_DIST = README
+--- origsrc/tilp2-1.18/configure.ac	2016-01-16 05:28:52.000000000 +0900
++++ src/tilp2-1.18/configure.ac	2017-07-23 10:24:26.010000000 +0900
+@@ -111,7 +111,6 @@ AC_CHECK_FUNCS([getcwd memset mkdir strc
+ dnl AC_CANONICAL_HOST
+ case "$host" in
+   *-*-mingw*) ARCH="-D__WIN32__ -D__MINGW32__ -mwindows" ;;
+-  *-*-cygwin) ARCH="-D__WIN32__ -D__CYGWIN__ -mwindows -mno-cygwin" ;;
+   *-*-*bsd*)  ARCH="-D__BSD__" ;;
+   *)          ARCH="-D__LINUX__" ;;
+ esac
+@@ -131,7 +130,6 @@ if test "x$kde" = "xdefault"; then
+ fi
+ if test "x$kde" = "xyes"; then
+         AC_PROG_CXX
+-        AC_PATH_KDE
+         AC_DEFINE(WITH_KDE, 1, [Use KDE support])
+ fi
+ AM_CONDITIONAL(USE_KDE, test "x$kde" = "xyes")
+@@ -142,7 +140,7 @@ AC_SUBST(kde)
+ # What flag to depends on gcc version: gcc3 uses "-mms-bitfields", while
+ # gcc2 uses "-fnative-struct".
+ case $host_os in
+-*mingw*|*cygwin*)
++*mingw*)
+   if test x$GCC = xyes; then
+     msnative_struct=''
+     AC_MSG_CHECKING([how to get MSVC-compatible struct packing])
+--- origsrc/tilp2-1.18/help/Makefile.am	2013-04-05 03:40:49.000000000 +0900
++++ src/tilp2-1.18/help/Makefile.am	2017-07-23 07:00:09.239000000 +0900
+@@ -1,5 +1,5 @@
+ helpdir = $(pkgdatadir)/help
+-dist_help_DATA = *.html *.png
++dist_help_DATA = $(srcdir)/*.html $(srcdir)/*.png
+ 
+ dos2unix:
+ 	dos2unix
+--- origsrc/tilp2-1.18/icons/Makefile.am	2013-04-05 03:40:49.000000000 +0900
++++ src/tilp2-1.18/icons/Makefile.am	2017-07-23 07:00:49.171000000 +0900
+@@ -1,11 +1,11 @@
+ iconsdir = $(pkgdatadir)/icons
+-dist_icons_DATA = *.ico
++dist_icons_DATA = $(srcdir)/*.ico
+ 
+ EXTRA_DIST = COPYRIGHT ListOfTypes.txt copy.bat
+ 
+ convert:
+ 	@echo Converting icons to pixmaps
+-	@for I in *.ico; do winicontoppm -writeand $$I $$I; \
++	@for I in $(srcdir)/*.ico; do winicontoppm -writeand $$I $$I; \
+ 	ppmtoxpm -alphamask $${I}_and.pbm $${I}_xor.ppm > \
+ 	`echo $$I | sed -e 's/\.ico$$/.xpm/g'`; rm -f \
+ 	$${I}_???.p?m; \
+--- origsrc/tilp2-1.18/man/Makefile.am	2016-01-27 06:28:20.000000000 +0900
++++ src/tilp2-1.18/man/Makefile.am	2017-07-23 07:01:38.543000000 +0900
+@@ -9,8 +9,8 @@ view: $(man_MANS)
+ 	groff -Tascii -man $(man_MANS) | less
+ 
+ Manpage.txt:
+-	groff -Tascii -man $(man_MANS) > Manpage
+-	C_INCLUDE_PATH="" LIBRARY_PATH="" $(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) cleaner.c -o cleaner
++	groff -Tascii -man $(srcdir)/$(man_MANS) > Manpage
++	C_INCLUDE_PATH="" LIBRARY_PATH="" $(CC_FOR_BUILD) $(CFLAGS_FOR_BUILD) $(srcdir)/cleaner.c -o cleaner
+ 	./cleaner Manpage
+ 	rm -f Manpage cleaner
+ 
+--- origsrc/tilp2-1.18/pixmaps/Makefile.am	2013-04-05 03:40:49.000000000 +0900
++++ src/tilp2-1.18/pixmaps/Makefile.am	2017-07-23 07:02:11.365000000 +0900
+@@ -1,5 +1,5 @@
+ pixmapsdir = $(pkgdatadir)/pixmaps
+-dist_pixmaps_DATA = *.xpm *.png
++dist_pixmaps_DATA = $(srcdir)/*.xpm $(srcdir)/*.png
+ 
+ EXTRA_DIST = copy.bat
+ 
+--- origsrc/tilp2-1.18/src/Makefile.am	2016-03-15 04:55:57.000000000 +0900
++++ src/tilp2-1.18/src/Makefile.am	2017-07-23 10:28:56.505000200 +0900
+@@ -9,7 +9,7 @@ bin_PROGRAMS = tilp
+ tilp_CPPFLAGS = -I$(top_srcdir)/intl \
+ 	@TICABLES_CFLAGS@ @TIFILES_CFLAGS@ @TICALCS_CFLAGS@ @TICONV_CFLAGS@ \
+ 	@GLIB_CFLAGS@ @GTK_CFLAGS@ \
+-	@KDE_INCLUDES@ @QT_INCLUDES@ \
++	${KDE_INCLUDES} ${QT_INCLUDES} \
+ 	-DSHARE_DIR=\"$(pkgdatadir)\" \
+ 	-DLOCALEDIR=\"$(datadir)/locale\" \
+ 	-DSYSCONFDIR=\"$(sysconfdir)\" \
+@@ -17,8 +17,8 @@ tilp_CPPFLAGS = -I$(top_srcdir)/intl \
+ tilp_LDFLAGS = -export-dynamic
+ tilp_LDADD = @TICABLES_LIBS@ @TIFILES_LIBS@ @TICALCS_LIBS@ @TICONV_LIBS@ \
+ 	@GLIB_LIBS@ @GTK_LIBS@ \
+-	@LIB_KDECORE@ @LIB_KDEUI@ @LIB_KIO@ @LIB_QT@ @KDE_LDFLAGS@ \
+-	@QT_LDFLAGS@ @X_LDFLAGS@ @LIBZ@
++	${LIB_KDECORE} ${LIB_KDEUI} ${LIB_KIO} ${LIB_QT} ${KDE_LDFLAGS} \
++	${QT_LDFLAGS} ${X_LDFLAGS} @LIBZ@
+ tilp_SOURCES = *.h \
+ 	tilp_calcs.c tilp_cmdline.c tilp_config.c tilp_error.c \
+ 	tilp_files.c tilp_gif.c tilp_main.c \
