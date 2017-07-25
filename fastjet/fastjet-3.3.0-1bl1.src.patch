@@ -1,0 +1,240 @@
+--- origsrc/fastjet-3.3.0/configure.ac	2017-07-12 17:31:43.000000000 +0900
++++ src/fastjet-3.3.0/configure.ac	2017-07-25 10:11:58.241000000 +0900
+@@ -42,7 +42,7 @@ dnl  - the libtoolize manpage says that
+ dnl    portable to keep using ACLOCAL_AMFLAGS.
+ dnl  - the autoconf manual mentions that since we use 'aclocal -I m4'
+ dnl    we need ACLOCAL_AMFLAGS anyway
+-dnl as a consequence, we don't use AC_CONFIG_MACRO_DIR for the moment
++#   as a consequence, we don't use AC_CONFIG_MACRO_DIR for the moment
+ dnl Question: is it compatible with older versions of libtool?
+ dnl   AC_CONFIG_MACRO_DIR([m4])
+ 
+@@ -90,6 +90,8 @@ AC_STDC_HEADERS
+ dnl set the default destination directory
+ AC_PREFIX_DEFAULT(/usr/local)
+ 
++LT_INIT
++
+ dnl-------------------------------------------------------------------
+ dnl initialize compilation and link flags to set in fastjet-config
+ dnl-------------------------------------------------------------------
+@@ -262,6 +264,8 @@ fi
+ 
+ dnl update compilation/link flags for the CGAL lib
+ if [[ "x$ENABLE_CGAL_FLAG" == "xyes" ]] ; then
++   BOOST_REQUIRE
++   BOOST_THREADS
+    AM_CXXFLAGS=${AM_CXXFLAGS}" $CGAL_CPPFLAGS "
+    CONFIG_LIBS=${CONFIG_LIBS}" $CGAL_LDFLAGS $CGAL_LIBS "
+ else
+@@ -356,6 +360,11 @@ if [[ "x$monolithic" == "xyes" ]] ; then
+ fi
+ 
+ dnl SISCone
++AC_ARG_WITH(bundle-siscone,
++   [  --with-bundle-siscone  Build the bundled SISCone library [default=no]],
++   [bundle_siscone=$withval],
++   [bundle_siscone=no])
++AM_CONDITIONAL(BUNDLE_SISCONE, test x$bundle_siscone != xno)
+ ACX_CHECK_PLUGIN(SISCone, siscone, SISCONE, yes,
+ 	         [CONFIG_LIBS_PLUGINS=${CONFIG_LIBS_PLUGINS}" -lsiscone_spherical -lsiscone"
+                   CONFIG_LIBS_PLUGINS_STATIC=${CONFIG_LIBS_PLUGINS_STATIC}" \${installationdir}/lib/libsiscone.a \${installationdir}/lib/libsiscone_spherical.a"])
+@@ -404,11 +413,6 @@ ACX_CHECK_PLUGIN(GridJet, gridjet, GRIDJ
+ dnl end of plugin section --- don't modify this line
+ 
+ dnl-------------------------------------------------------------------
+-dnl enable libtool (has to be done after the previous lib checks!)
+-dnl-------------------------------------------------------------------
+-AC_PROG_LIBTOOL
+-
+-dnl-------------------------------------------------------------------
+ dnl add Fortran flags if any plugin that needs it is enabled
+ dnl-------------------------------------------------------------------
+ if [[ "x$ENABLE_PXCONE" == "xyes" ]] ; then
+@@ -534,6 +538,7 @@ AC_MSG_RESULT(${ENABLE_PYEXT_FLAG})
+ if [[ "$ENABLE_PYEXT_FLAG" == "yes" ]] ; then
+     AM_PATH_PYTHON
+     AC_ARG_VAR([PYTHON_INCLUDE], [Include flags for python, bypassing python-config])
++    AC_ARG_VAR([PYTHON_LIBS], [Link flags for python, bypassing python-config])
+     AC_ARG_VAR([PYTHON_CONFIG], [Path to python-config])
+     AS_IF([test -z "$PYTHON_INCLUDE"], [
+         AS_IF([test -z "$PYTHON_CONFIG"], [
+@@ -547,6 +552,18 @@ if [[ "$ENABLE_PYEXT_FLAG" == "yes" ]] ;
+         PYTHON_INCLUDE=`$PYTHON_CONFIG --includes`
+         AC_MSG_RESULT([$PYTHON_INCLUDE])
+     ])
++    AS_IF([test -z "$PYTHON_LIBS"], [
++        AS_IF([test -z "$PYTHON_CONFIG"], [
++            AC_PATH_PROGS([PYTHON_CONFIG],
++                          [python$PYTHON_VERSION-config python-config],
++                          [no],
++                          [`dirname $PYTHON`])
++            AS_IF([test "$PYTHON_CONFIG" = no], [AC_MSG_ERROR([cannot find python-config for $PYTHON.])])
++        ])
++        AC_MSG_CHECKING([python link flags])
++        PYTHON_LIBS=`$PYTHON_CONFIG --libs`
++        AC_MSG_RESULT([$PYTHON_LIBS])
++    ])
+ 
+     # at a deeper level, one may want to be able to run swig dynamically
+     #   
+--- origsrc/fastjet-3.3.0/example/Makefile.am	2017-02-22 04:39:38.000000000 +0900
++++ src/fastjet-3.3.0/example/Makefile.am	2017-07-25 14:41:02.928000000 +0900
+@@ -43,8 +43,16 @@ noinst_PROGRAMS += 03-plugin
+ 03_plugin_CXXFLAGS = $(AM_CXXFLAGS) $(CGAL_CPPFLAGS) -I$(srcdir)/../include
+ 03_plugin_LDADD = ../src/libfastjet.la $(CGAL_LIBS)
+ 03_plugin_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
++if MONOLITHIC_PLUGINS
++03_plugin_LDADD += ../plugins/libfastjetplugins.la
++else
++if BUNDLE_SISCONE
+ 03_plugin_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
+ else
++03_plugin_LDADD += -lsiscone -lsiscone_spherical
++endif
++endif
++else
+ EXTRA_DIST += 03-plugin.cc
+ endif
+ 
+@@ -124,18 +132,59 @@ fastjet_areas_SOURCES = fastjet_areas.cc
+ fastjet_areas_CXXFLAGS = $(AM_CXXFLAGS) $(CGAL_CPPFLAGS) -I$(srcdir)/../include
+ fastjet_areas_LDADD = ../src/libfastjet.la $(CGAL_LIBS)
+ if BUILD_PLUGIN_SISCONE
++if BUNDLE_SISCONE
+ fastjet_areas_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
+ fastjet_areas_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++else
++fastjet_areas_LDADD += -lsiscone -lsiscone_spherical
++endif
+ endif
+ 
+ fastjet_timing_plugins_SOURCES = fastjet_timing_plugins.cc CmdLine.cc
+ fastjet_timing_plugins_CXXFLAGS = $(AM_CXXFLAGS) $(CGAL_CPPFLAGS) -I$(srcdir)/../include
+ fastjet_timing_plugins_LDADD = ../src/libfastjet.la $(CGAL_LIBS)
+ fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../tools
+-fastjet_timing_plugins_LDADD += ../tools/libfastjettools.la 
+-if BUILD_PLUGIN_SISCONE
++fastjet_timing_plugins_LDADD += ../tools/libfastjettools.la
+ fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/SISCone -I$(srcdir)/../plugins/SISCone/siscone
++if MONOLITHIC_PLUGINS
++fastjet_timing_plugins_LDADD += ../plugins/libfastjetplugins.la
++if BUILD_PLUGIN_CDFCONES
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/CDFCones
++endif
++if BUILD_PLUGIN_PXCONE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/PxCone
++endif
++if BUILD_PLUGIN_D0RUNIICONE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/D0RunIICone
++endif
++if BUILD_PLUGIN_TRACKJET
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/TrackJet
++endif
++if BUILD_PLUGIN_ATLASCONE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/ATLASCone
++endif
++if BUILD_PLUGIN_EECAMBRIDGE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/EECambridge
++endif
++if BUILD_PLUGIN_JADE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/Jade
++endif
++if BUILD_PLUGIN_CMSITERATIVECONE
++fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/CMSIterativeCone
++endif
++if BUILD_PLUGIN_D0RUNICONE
++fastjet_timing_plugins_CXXFLAGS += -I${srcdir}/../plugins/D0RunICone
++endif
++if BUILD_PLUGIN_GRIDJET
++fastjet_timing_plugins_CXXFLAGS += -I${srcdir}/../plugins/GridJet
++endif
++else
++if BUILD_PLUGIN_SISCONE
++if BUNDLE_SISCONE
+ fastjet_timing_plugins_LDADD += ../plugins/SISCone/libSISConePlugin.la ../plugins/SISCone/siscone/siscone/libsiscone.la ../plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++else
++fastjet_timing_plugins_LDADD += -lsiscone -lsiscone_spherical
++endif
+ endif
+ if BUILD_PLUGIN_CDFCONES
+ fastjet_timing_plugins_CXXFLAGS += -I$(srcdir)/../plugins/CDFCones
+@@ -177,6 +226,7 @@ if BUILD_PLUGIN_GRIDJET
+ fastjet_timing_plugins_CXXFLAGS += -I${srcdir}/../plugins/GridJet
+ fastjet_timing_plugins_LDADD += ../plugins/GridJet/libGridJetPlugin.la
+ endif
++endif
+ 
+ # add entries for other plugins here
+ 
+--- origsrc/fastjet-3.3.0/plugins/Makefile.am	2011-07-01 02:03:40.000000000 +0900
++++ src/fastjet-3.3.0/plugins/Makefile.am	2017-07-25 09:31:36.285000000 +0900
+@@ -44,7 +44,8 @@ if MONOLITHIC_PLUGINS
+ lib_LTLIBRARIES = libfastjetplugins.la
+ libfastjetplugins_la_SOURCES=
+ nodist_EXTRA_libfastjetplugins_la_SOURCES = dummy.cc
+-libfastjetplugins_la_LIBADD =
++libfastjetplugins_la_LDFLAGS = -no-undefined
++libfastjetplugins_la_LIBADD = $(top_builddir)/src/libfastjet.la -lgfortran
+ if BUILD_PLUGIN_SISCONE
+ libfastjetplugins_la_LIBADD += SISCone/libSISConePlugin.la
+ endif
+--- origsrc/fastjet-3.3.0/plugins/SISCone/Makefile.am	2016-06-01 16:12:03.000000000 +0900
++++ src/fastjet-3.3.0/plugins/SISCone/Makefile.am	2017-07-25 00:19:32.611000000 +0900
+@@ -1,11 +1,21 @@
+-SUBDIRS = siscone fastjet .
++SUBDIRS = fastjet .
+ 
+ if MONOLITHIC_PLUGINS
+ noinst_LTLIBRARIES = libSISConePlugin.la
+ else
+ lib_LTLIBRARIES = libSISConePlugin.la
+ endif
+-libSISConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/siscone -I$(srcdir)/../../include -I./siscone
++libSISConePlugin_la_CXXFLAGS = $(AM_CXXFLAGS) -I$(srcdir) -I$(srcdir)/../../include -I./siscone
+ libSISConePlugin_la_SOURCES = SISConeBasePlugin.cc SISConePlugin.cc SISConeSphericalPlugin.cc
+ 
++if BUNDLE_SISCONE
++SUBDIRS += siscone
++libSISConePlugin_la_CXXFLAGS += -I$(srcdir)/siscone
++libSISConePlugin_la_LIBADD = \
++	$(top_builddir)/plugins/SISCone/siscone/siscone/libsiscone.la \
++	$(top_builddir)/plugins/SISCone/siscone/siscone/spherical/libsiscone_spherical.la
++else
++libSISConePlugin_la_LIBADD = -lsiscone -lsiscone_spherical
++endif
++
+ EXTRA_DIST = makefile.static
+--- origsrc/fastjet-3.3.0/pyinterface/Makefile.am	2017-02-22 04:39:38.000000000 +0900
++++ src/fastjet-3.3.0/pyinterface/Makefile.am	2017-07-25 12:03:05.067000000 +0900
+@@ -69,8 +69,8 @@ pyexec_LTLIBRARIES = _fastjet.la
+ _fastjet_la_LIBTOOLFLAGS = --silent
+ _fastjet_la_SOURCES = swig_wrap.cpp
+ _fastjet_la_CPPFLAGS = $(PYTHON_INCLUDE) $(AM_CXXFLAGS) $(CGAL_CPPFLAGS) -I../include -I$(top_srcdir)/include -I$(top_srcdir)/tools -DSWIG
+-_fastjet_la_LDFLAGS = -module
+-_fastjet_la_LIBADD = ../src/libfastjet.la ../tools/libfastjettools.la $(CGAL_LIBS)
++_fastjet_la_LDFLAGS = -avoid-version -no-undefined -module
++_fastjet_la_LIBADD = ../src/libfastjet.la ../tools/libfastjettools.la $(CGAL_LIBS) $(PYTHON_LIBS)
+ 
+ # include the interface file for completeness
+ 
+--- origsrc/fastjet-3.3.0/src/Makefile.am	2014-08-11 16:05:18.000000000 +0900
++++ src/fastjet-3.3.0/src/Makefile.am	2017-07-25 00:20:11.815000000 +0900
+@@ -24,4 +24,7 @@ libfastjet_la_SOURCES = DnnPlane.cc\
+         LazyTiling9SeparateGhosts.cc \
+         RectangularGrid.cc
+ 
++libfastjet_la_LDFLAGS = -no-undefined
++libfastjet_la_LIBADD = $(CGAL_LIBS) $(BOOST_THREAD_LIBS)
++
+ EXTRA_DIST = makefile.static genconfig.sh
+--- origsrc/fastjet-3.3.0/tools/Makefile.am	2014-07-25 03:13:01.000000000 +0900
++++ src/fastjet-3.3.0/tools/Makefile.am	2017-07-25 00:20:28.519000000 +0900
+@@ -12,4 +12,7 @@ libfastjettools_la_SOURCES = \
+   MassDropTagger.cc RestFrameNSubjettinessTagger.cc CASubJetTagger.cc \
+   JHTopTagger.cc TopTaggerBase.cc
+ 
++libfastjettools_la_LDFLAGS = -no-undefined
++libfastjettools_la_LIBADD = $(top_builddir)/src/libfastjet.la
++
+ # EXTRA_DIST = makefile.static 
