@@ -1,0 +1,56 @@
+--- origsrc/glotzer-libgetar-8b0dfdde8d4d/CMakeLists.txt	2017-05-06 03:45:29.000000000 +0900
++++ src/glotzer-libgetar-8b0dfdde8d4d/CMakeLists.txt	2017-07-26 00:01:26.459000200 +0900
+@@ -7,10 +7,14 @@ IF(NOT DISABLE_SQLITE)
+   FIND_PACKAGE(SQLite3)
+ ENDIF(NOT DISABLE_SQLITE)
+ 
++INCLUDE(FindPkgConfig)
++  
+ IF(SQLITE3_FOUND)
+   INCLUDE_DIRECTORIES(${SQLITE3_INCLUDE_DIRS})
+   SET(LINK_LIBS ${LINK_LIBS} ${SQLITE3_LIBRARIES})
+-  set(EXTRA_SRCS ${EXTRA_SRCS} src/SqliteArchive.cpp lz4/lz4.c lz4/lz4hc.c)
++  set(EXTRA_SRCS ${EXTRA_SRCS} src/SqliteArchive.cpp)
++  PKG_CHECK_MODULES(LIBLZ4 REQUIRED liblz4)
++  SET(LINK_LIBS ${LINK_LIBS} ${LIBLZ4_LIBRARIES})
+   add_definitions(-DENABLE_SQLITE)
+ ENDIF(SQLITE3_FOUND)
+ 
+@@ -20,12 +24,23 @@ set(GETAR_SRC
+ 
+ if(LIBGETAR_SHARED)
+   ADD_LIBRARY(getar SHARED ${GETAR_SRC})
++  SET_TARGET_PROPERTIES(getar PROPERTIES SOVERSION 0)
+ else()
+   ADD_LIBRARY(getar STATIC ${GETAR_SRC})
+ endif()
+ 
+ target_link_libraries(getar ${LINK_LIBS})
+ 
+-install(TARGETS getar LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++file(GLOB headers "src/*.hpp" "vogl_miniz/*.h")
++install(FILES ${headers} DESTINATION include/getar)
++install(TARGETS getar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ add_subdirectory(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.5.3")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/glotzer-libgetar-8b0dfdde8d4d/getar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/glotzer-libgetar-8b0dfdde8d4d/getar.pc.in	2017-07-26 00:01:43.881000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgetar
++Description: Library to read and write GEneric Trajectory ARchives
++Version: @VERSION@
++Libs: -L${libdir} -lgetar
++Cflags: -I${includedir}/getar
