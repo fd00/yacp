@@ -1,0 +1,93 @@
+--- origsrc/elektra-0.8.19/cmake/Modules/LibAddLib.cmake	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/cmake/Modules/LibAddLib.cmake	2017-08-07 19:34:28.645000000 +0900
+@@ -30,7 +30,7 @@ function(add_lib name)
+ 		target_link_libraries (elektra-${name}
+ 			${ARG_LINK_LIBRARIES})
+ 
+-		install (TARGETS elektra-${name} DESTINATION lib${LIB_SUFFIX} EXPORT ElektraTargetsLibelektra)
++		install (TARGETS elektra-${name} EXPORT ElektraTargetsLibelektra RUNTIME DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ 	endif (BUILD_SHARED)
+ 
+ endfunction()
+--- origsrc/elektra-0.8.19/scripts/CMakeLists.txt	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/scripts/CMakeLists.txt	2017-08-07 20:27:13.301000200 +0900
+@@ -58,6 +58,10 @@ if (INSTALL_SYSTEM_FILES)
+ 		install (FILES kdb_zsh_completion
+ 			DESTINATION /usr/local/share/zsh/site-functions
+ 			RENAME _kdb)
++	elseif (CYGWIN)
++		install (FILES kdb_zsh_completion
++			DESTINATION /usr/share/zsh/site-functions
++			RENAME _kdb)
+ 	else ()
+ 		# This Folder is at least the valid folder for Debian
+ 		install (FILES kdb_zsh_completion
+--- origsrc/elektra-0.8.19/src/bindings/glib/CMakeLists.txt	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/src/bindings/glib/CMakeLists.txt	2017-08-07 01:02:25.707000000 +0900
+@@ -39,7 +39,8 @@ else()
+ 
+ 	install (
+ 		TARGETS ${GELEKTRA_LIBRARY}
+-		LIBRARY DESTINATION lib${LIB_SUFFIX}
++		RUNTIME DESTINATION bin
++		ARCHIVE DESTINATION lib${LIB_SUFFIX}
+ 	)
+ 
+ 	install (
+@@ -67,4 +68,6 @@ else()
+ 	if (BUILD_TESTING)
+ 		add_subdirectory (tests)
+ 	endif (BUILD_TESTING)
++
++	set_target_properties (${GELEKTRA_LIBRARY} PROPERTIES SOVERSION ${SO_VERSION})
+ endif()
+--- origsrc/elektra-0.8.19/src/libs/elektra/CMakeLists.txt	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/src/libs/elektra/CMakeLists.txt	2017-08-07 01:08:25.580000000 +0900
+@@ -134,7 +134,7 @@ if (BUILD_SHARED)
+ 	set (ELEKTRA_RPATH "${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/${TARGET_PLUGIN_FOLDER}")
+ 	set_target_properties (${elektra-all_LIBRARIES} PROPERTIES INSTALL_RPATH "${ELEKTRA_RPATH}")
+ 
+-	install (TARGETS elektra-core elektra-kdb elektra DESTINATION lib${LIB_SUFFIX} EXPORT ElektraTargetsLibelektra)
++	install (TARGETS elektra-core elektra-kdb elektra EXPORT ElektraTargetsLibelektra RUNTIME DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ 
+ 	list (APPEND targets_built ${elektra-all_LIBRARIES})
+ endif (BUILD_SHARED)
+--- origsrc/elektra-0.8.19/src/libs/tools/src/CMakeLists.txt	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/src/libs/tools/src/CMakeLists.txt	2017-08-07 19:33:09.488000000 +0900
+@@ -29,7 +29,7 @@ if (BUILD_SHARED)
+ 		)
+ 	endif ()
+ 
+-	install (TARGETS elektratools DESTINATION lib${LIB_SUFFIX})
++	install (TARGETS elektratools RUNTIME DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ endif (BUILD_SHARED)
+ 
+ if (BUILD_FULL)
+--- origsrc/elektra-0.8.19/src/plugins/CMakeLists.txt	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/src/plugins/CMakeLists.txt	2017-08-07 19:43:42.782000000 +0900
+@@ -69,7 +69,7 @@ if (output EQUAL -1)
+ endif()
+ 
+ 
+-if (BUILD_SHARED)
++if (BUILD_SHARED AND NOT CYGWIN)
+ 	mkdir (${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+ 	create_lib_symlink (
+ 			libelektra-${KDB_DEFAULT_STORAGE}.so
+@@ -82,5 +82,5 @@ if (BUILD_SHARED)
+ 			libelektra-resolver.so
+ 			PLUGIN
+ 			)
+-endif (BUILD_SHARED)
++endif (BUILD_SHARED AND NOT CYGWIN)
+ 
+--- origsrc/elektra-0.8.19/src/plugins/fstab/testmntent.c	2016-11-23 05:59:21.000000000 +0900
++++ src/elektra-0.8.19/src/plugins/fstab/testmntent.c	2017-08-07 15:06:27.846000000 +0900
+@@ -23,6 +23,6 @@ int main ()
+ 	opts = m->mnt_opts;
+ 	freq = m->mnt_freq;
+ 	passno = m->mnt_passno;
+-
++	addmntent(f, m);
+ 	return 0;
+ }
