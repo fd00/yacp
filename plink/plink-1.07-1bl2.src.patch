@@ -1,0 +1,99 @@
+--- origsrc/plink-1.07-src/Makefile	2009-10-11 01:00:20.000000000 +0900
++++ src/plink-1.07-src/Makefile	2017-08-08 09:45:50.901000000 +0900
+@@ -22,12 +22,12 @@
+ SYS = UNIX
+ 
+ # Leave blank after "=" to disable; put "= 1" to enable
+-WITH_R_PLUGINS = 1
++WITH_R_PLUGINS = 
+ WITH_WEBCHECK = 1
+ FORCE_32BIT = 
+ WITH_ZLIB = 1
+ WITH_LAPACK = 
+-FORCE_DYNAMIC = 
++FORCE_DYNAMIC = 1
+ 
+ # Put C++ compiler here; Windows has it's own specific version
+ CXX_UNIX = g++
+@@ -37,7 +37,7 @@ CXX_WIN = c:\bin\mingw\bin\mingw32-g++.e
+ CXXFLAGS = 
+ 
+ # Misc
+-LIB_LAPACK = /usr/lib/liblapack.so.3
++LIB_LAPACK = `pkg-config --libs lapack`
+ 
+ 
+ # --------------------------------------------------------------------
+@@ -96,7 +96,9 @@ else
+  CXXFLAGS += -DSKIP
+ endif
+ 
+-
++ifdef CYGWIN
++ CXXFLAGS += -Dfopen64=fopen
++endif
+ 
+ SRC = plink.cpp options.cpp input.cpp binput.cpp tinput.cpp genome.cpp	\
+ helper.cpp stats.cpp filters.cpp locus.cpp multi.cpp crandom.cpp	\
+--- origsrc/plink-1.07-src/elf.cpp	2009-10-11 01:00:21.000000000 +0900
++++ src/plink-1.07-src/elf.cpp	2017-08-08 10:03:23.106672100 +0900
+@@ -1175,10 +1175,10 @@ void Plink::elfBaseline()
+ 	  << setw(8) << gcnt << " "
+ 	  << setw(8) << (double)cnt / (double)gcnt << "\n";
+ 
+-      map<int,int>::iterator i = chr_cnt.begin();
+-      while ( i != chr_cnt.end() )
++      map<int,int>::iterator it = chr_cnt.begin();
++      while ( it != chr_cnt.end() )
+ 	{
+-	  int c = i->first;
++	  int c = it->first;
+ 	  int x = chr_cnt.find( c )->second;
+ 	  int y = chr_gcnt.find( c )->second;
+ 	  
+@@ -1189,7 +1189,7 @@ void Plink::elfBaseline()
+ 	      << setw(8) << y << " "
+ 	      << setw(8) << (double)x / (double)y << "\n";
+ 	  
+-	  ++i;
++	  ++it;
+ 	}
+       
+     }
+--- origsrc/plink-1.07-src/idhelp.cpp	2009-10-11 01:00:22.000000000 +0900
++++ src/plink-1.07-src/idhelp.cpp	2017-08-08 10:06:45.996000000 +0900
+@@ -772,12 +772,12 @@ void IDHelper::idHelp()
+       for (int j = 0 ; j < jointField.size(); j++ )
+ 	{
+ 	  set<IDField*> & jf = jointField[j];
+-	  set<IDField*>::iterator j = jf.begin();
++	  set<IDField*>::iterator jt = jf.begin();
+ 	  PP->printLOG(" { ");
+-	  while ( j != jf.end() )
++	  while ( jt != jf.end() )
+ 	    {
+-	      PP->printLOG( (*j)->name + " " );
+-	      ++j;
++	      PP->printLOG( (*jt)->name + " " );
++	      ++jt;
+ 	    }
+ 	  PP->printLOG(" }");
+ 	}
+--- origsrc/plink-1.07-src/sets.cpp	2009-10-11 01:00:20.000000000 +0900
++++ src/plink-1.07-src/sets.cpp	2017-08-08 09:34:22.213743700 +0900
+@@ -768,11 +768,11 @@ vector_t Set::profileTestScore()
+       //////////////////////////////////////////////
+       // Reset original missing status
+ 
+-      vector<Individual*>::iterator i = PP->sample.begin();
+-      while ( i != PP->sample.end() )
++      vector<Individual*>::iterator it = PP->sample.begin();
++      while ( it != PP->sample.end() )
+ 	{
+-	  (*i)->missing = (*i)->flag;
+-	  ++i;
++	  (*it)->missing = (*it)->flag;
++	  ++it;
+ 	}
+ 
+       ////////////////////////////////////////////////
