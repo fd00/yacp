@@ -1,0 +1,50 @@
+--- origsrc/cucumber-cpp-0.4/CMakeLists.txt	2017-03-31 14:31:15.000000000 +0900
++++ src/cucumber-cpp-0.4/CMakeLists.txt	2017-08-12 00:58:20.577000000 +0900
+@@ -44,7 +44,7 @@ else()
+ endif()
+ 
+ set(Boost_USE_STATIC_RUNTIME OFF)
+-set(CUKE_CORE_BOOST_LIBS thread system regex date_time program_options filesystem)
++set(CUKE_CORE_BOOST_LIBS thread system regex date_time program_options filesystem unit_test_framework)
+ if(NOT CUKE_DISABLE_BOOST_TEST)
+     # "An external test runner utility is required to link with dynamic library" (Boost User's Guide)
+     set(Boost_USE_STATIC_LIBS OFF)
+@@ -67,7 +67,7 @@ else()
+ endif()
+ 
+ include_directories(${Boost_INCLUDE_DIRS})
+-set(CUKE_EXTRA_LIBRARIES ${CUKE_EXTRA_LIBRARIES} ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
++set(CUKE_EXTRA_LIBRARIES ${CUKE_EXTRA_LIBRARIES} ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+ 
+ #
+ # GTest
+@@ -214,3 +214,5 @@ endif()
+ if(CUKE_ENABLE_EXAMPLES)
+     add_subdirectory(examples)
+ endif()
++
++install(DIRECTORY include/cucumber-cpp DESTINATION include)
+--- origsrc/cucumber-cpp-0.4/src/CMakeLists.txt	2017-03-31 14:31:15.000000000 +0900
++++ src/cucumber-cpp-0.4/src/CMakeLists.txt	2017-08-12 00:53:32.359000000 +0900
+@@ -33,12 +33,17 @@ if(CMAKE_EXTRA_GENERATOR OR MSVC_IDE)
+     list(APPEND CUKE_SOURCES ${CUKE_HEADERS})
+ endif()
+ 
+-add_library(cucumber-cpp-nomain STATIC ${CUKE_SOURCES})
+-add_library(cucumber-cpp STATIC ${CUKE_SOURCES} main.cpp)
++add_library(cucumber-cpp-nomain SHARED ${CUKE_SOURCES})
++add_library(cucumber-cpp SHARED ${CUKE_SOURCES} main.cpp)
+ 
+ if(MINGW)
+     list(APPEND CUKE_DEP_LIBRARIES ws2_32)
+ endif(MINGW)
+ 
+-target_link_libraries(cucumber-cpp-nomain PRIVATE ${CUKE_DEP_LIBRARIES})
+-target_link_libraries(cucumber-cpp PRIVATE ${CUKE_DEP_LIBRARIES})
++target_link_libraries(cucumber-cpp-nomain PRIVATE ${CUKE_DEP_LIBRARIES} ${CUKE_EXTRA_LIBRARIES})
++target_link_libraries(cucumber-cpp PRIVATE ${CUKE_DEP_LIBRARIES} ${CUKE_EXTRA_LIBRARIES})
++
++set_target_properties(cucumber-cpp-nomain PROPERTIES SOVERSION 0)
++set_target_properties(cucumber-cpp PROPERTIES SOVERSION 0)
++
++install(TARGETS cucumber-cpp-nomain cucumber-cpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
