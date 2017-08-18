@@ -1,0 +1,183 @@
+--- origsrc/arrayfire-3.5.0/CMakeLists.txt	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/CMakeLists.txt	2017-08-18 13:21:20.526000000 +0900
+@@ -139,8 +139,11 @@ INCLUDE_DIRECTORIES(BEFORE
+     )
+ 
+ IF(${UNIX})
+-    ADD_DEFINITIONS(-std=c++11 -Wall -fvisibility=hidden)
+-
++    IF(CYGWIN)
++        ADD_DEFINITIONS(-std=gnu++11 -Wall -fvisibility=hidden)
++    ELSE()
++        ADD_DEFINITIONS(-std=c++11 -Wall -fvisibility=hidden)
++    ENDIF()
+     IF(${WITH_COVERAGE})
+         SET(CMAKE_CXX_FLAGS             "-fprofile-arcs -ftest-coverage")
+         SET(CMAKE_EXE_LINKER_FLAGS      "-fprofile-arcs -ftest-coverage")
+@@ -289,9 +292,11 @@ INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURC
+     DESTINATION "${AF_INSTALL_EXAMPLE_DIR}"
+     COMPONENT examples)
+ 
+-INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples"
+-    DESTINATION "${AF_INSTALL_EXAMPLE_DIR}/assets"
+-    COMPONENT examples)
++IF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples")
++    INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples"
++        DESTINATION "${AF_INSTALL_EXAMPLE_DIR}/assets"
++        COMPONENT examples)
++ENDIF()
+ 
+ IF(APPLE)
+     INCLUDE(osx_install/OSXInstaller)
+--- origsrc/arrayfire-3.5.0/src/api/unified/CMakeLists.txt	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/src/api/unified/CMakeLists.txt	2017-08-18 13:23:41.972817500 +0900
+@@ -65,7 +65,7 @@ SET_TARGET_PROPERTIES(af PROPERTIES
+                       VERSION "${AF_VERSION}"
+                       SOVERSION "${AF_VERSION_MAJOR}")
+ 
+-INSTALL(TARGETS af EXPORT AF DESTINATION "${AF_INSTALL_LIB_DIR}"
++INSTALL(TARGETS af EXPORT AF RUNTIME DESTINATION "${AF_INSTALL_BIN_DIR}" ARCHIVE DESTINATION "${AF_INSTALL_LIB_DIR}"
+         COMPONENT libraries)
+ 
+ IF(APPLE)
+--- origsrc/arrayfire-3.5.0/src/backend/cpu/CMakeLists.txt	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/src/backend/cpu/CMakeLists.txt	2017-08-18 13:33:39.237000000 +0900
+@@ -1,7 +1,12 @@
+ 
+ ADD_DEFINITIONS(-DAF_CPU)
+ 
+-FIND_PACKAGE(CBLAS REQUIRED)
++IF (CYGWIN)
++    FIND_PACKAGE(PKGCONFIG REQUIRED)
++    PKG_CHECK_MODULES(CBLAS REQUIRED blas)
++ELSE()
++    FIND_PACKAGE(CBLAS REQUIRED)
++ENDIF()
+ 
+ IF(NOT DEFINED BUILD_CPU_ASYNC)
+     CMAKE_POLICY(PUSH)
+@@ -56,7 +61,12 @@ IF(${CMAKE_CXX_COMPILER_ID} STREQUAL "GN
+     ADD_DEFINITIONS(-flax-vector-conversions)
+ ENDIF()
+ 
+-FIND_PACKAGE(FFTW REQUIRED)
++IF(CYGWIN)
++    FIND_PACKAGE(PKGCONFIG REQUIRED)
++    PKG_CHECK_MODULES(FFTW REQUIRED fftw3 fftw3f)
++ELSE()
++    FIND_PACKAGE(FFTW REQUIRED)
++ENDIF()
+ 
+ IF(APPLE)
+     FIND_PACKAGE(LAPACKE QUIET) # For finding MKL
+@@ -160,7 +170,7 @@ LIST(SORT cpp_sources)
+ source_group(api\\cpp\\Sources FILES ${cpp_sources})
+ 
+ # OS Definitions
+-IF(UNIX)
++IF(UNIX AND NOT CYGWIN)
+     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+ ELSE(${UNIX}) #Windows
+     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+@@ -234,7 +244,7 @@ SET_TARGET_PROPERTIES(afcpu PROPERTIES
+                       VERSION "${AF_VERSION}"
+                       SOVERSION "${AF_VERSION_MAJOR}")
+ 
+-INSTALL(TARGETS afcpu EXPORT CPU DESTINATION "${AF_INSTALL_LIB_DIR}"
++INSTALL(TARGETS afcpu EXPORT CPU RUNTIME DESTINATION "${AF_INSTALL_BIN_DIR}" ARCHIVE DESTINATION "${AF_INSTALL_LIB_DIR}"
+         COMPONENT libraries)
+ 
+ IF(APPLE)
+--- origsrc/arrayfire-3.5.0/src/backend/cpu/lapack_helper.hpp	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/src/backend/cpu/lapack_helper.hpp	2017-08-17 08:21:42.782000000 +0900
+@@ -26,7 +26,7 @@
+         #undef AF_LAPACK_COL_MAJOR
+         #define AF_LAPACK_COL_MAJOR 0
+     #else // NETLIB LAPACKE
+-        #include<lapacke.h>
++        //#include<lapacke.h>
+     #endif
+ #endif
+ 
+--- origsrc/arrayfire-3.5.0/src/backend/opencl/CMakeLists.txt	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/src/backend/opencl/CMakeLists.txt	2017-08-18 02:09:37.476000000 +0900
+@@ -37,7 +37,12 @@ ELSE(NOT LAPACK_FOUND)
+   ADD_DEFINITIONS(-DWITH_OPENCL_LINEAR_ALGEBRA)
+ 
+   IF(NOT USE_OPENCL_MKL)
+-    FIND_PACKAGE(CBLAS REQUIRED)
++    IF(CYGWIN)
++        FIND_PACKAGE(PKGCONFIG REQUIRED)
++        PKG_CHECK_MODULES(CBLAS REQUIRED blas)
++    ELSE()
++        FIND_PACKAGE(CBLAS REQUIRED)
++    ENDIF()
+ 
+     IF(USE_CPU_F77_BLAS)
+       ADD_DEFINITIONS(-DUSE_F77_BLAS)
+@@ -72,7 +77,12 @@ IF(USE_SYSTEM_CLBLAST AND NOT OPENCL_BLA
+ ENDIF()
+ IF(OPENCL_BLAS_LIBRARY STREQUAL "CLBlast")
+     IF(USE_SYSTEM_CLBLAST)
+-        FIND_PACKAGE(CLBlast REQUIRED)
++        IF(CYGWIN)
++            FIND_PACKAGE(PKGCONFIG REQUIRED)
++            PKG_CHECK_MODULES(CLBLAST REQUIRED clblast)
++        ELSE()
++            FIND_PACKAGE(CLBlast REQUIRED)
++        ENDIF()
+     ELSE()
+         INCLUDE(build_CLBlast)
+     ENDIF()
+@@ -259,7 +269,11 @@ CL_KERNEL_TO_H(
+ 
+ # OS Definitions
+ IF(UNIX)
+-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pthread -Wno-comment")
++    IF(CYGWIN)
++      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wno-comment")
++    ELSE()
++      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pthread -Wno-comment")
++    ENDIF()
+     # GCC 6.0 and above enable -Wignored-attributes by default causing a lot of warnings
+     # Disable the trigger for gcc >= 6.0.0
+     IF("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "6.0.0")
+--- origsrc/arrayfire-3.5.0/test/CMakeLists.txt	2017-06-24 02:02:37.000000000 +0900
++++ src/arrayfire-3.5.0/test/CMakeLists.txt	2017-08-18 12:17:08.592000000 +0900
+@@ -122,7 +122,11 @@ MACRO(CREATE_TESTS BACKEND AFLIBNAME GTE
+           FOLDER "Tests/${BACKEND}")
+ 
+         IF (${FNAME} MATCHES "threading|solve")
+-            SET_TARGET_PROPERTIES(${TEST_NAME} PROPERTIES COMPILE_OPTIONS -std=c++11)
++            IF (CYGWIN)
++                SET_TARGET_PROPERTIES(${TEST_NAME} PROPERTIES COMPILE_OPTIONS -std=gnu++11)
++            ELSE()
++                SET_TARGET_PROPERTIES(${TEST_NAME} PROPERTIES COMPILE_OPTIONS -std=c++11)
++            ENDIF()
+         ENDIF()
+ 
+         IF(TEST_LINK_FLAGS)
+@@ -204,9 +208,9 @@ LIST(SORT UNIFIED_FILES)  # Tests execut
+ # Next we build each example using every backend.
+ IF(${ArrayFire_CPU_FOUND})  # variable defined by FIND(ArrayFire ...)
+     OPTION(BUILD_CPU "Build ArrayFire Tests for CPU backend" ON)
+-    CHECK_AND_CREATE_TESTS(cpu ${ArrayFire_CPU_LIBRARIES} "${GTEST_LIBRARIES}" "")
++    CHECK_AND_CREATE_TESTS(cpu ${ArrayFire_CPU_LIBRARIES} "${GTEST_LIBRARIES};${GTEST_MAIN_LIBRARIES}" "")
+ ELSEIF(TARGET afcpu)        # variable defined by the ArrayFire build tree
+-    CHECK_AND_CREATE_TESTS(cpu afcpu "${GTEST_LIBRARIES}" "")
++    CHECK_AND_CREATE_TESTS(cpu afcpu "${GTEST_LIBRARIES};${GTEST_MAIN_LIBRARIES}" "")
+ ELSE()
+     MESSAGE(STATUS "TESTS: CPU backend is OFF. afcpu was not found.")
+ ENDIF()
+@@ -304,9 +308,9 @@ ENDIF()
+ # Unified Backend
+ IF(${ArrayFire_Unified_FOUND})  # variable defined by FIND(ArrayFire ...)
+   OPTION(BUILD_UNIFIED "Build ArrayFire Tests for Unified backend" ON)
+-    CHECK_AND_CREATE_TESTS(unified ${ArrayFire_Unified_LIBRARIES} "${GTEST_LIBRARIES}" "${CMAKE_DL_LIBS}")
++    CHECK_AND_CREATE_TESTS(unified ${ArrayFire_Unified_LIBRARIES} "${GTEST_LIBRARIES};${GTEST_MAIN_LIBRARIES}" "${CMAKE_DL_LIBS}")
+ ELSEIF(TARGET af)        # variable defined by the ArrayFire build tree
+-    CHECK_AND_CREATE_TESTS(unified af "${GTEST_LIBRARIES}" "${CMAKE_DL_LIBS}")
++    CHECK_AND_CREATE_TESTS(unified af "${GTEST_LIBRARIES};${GTEST_MAIN_LIBRARIES}" "${CMAKE_DL_LIBS}")
+ ELSE()
+     MESSAGE(STATUS "TESTS: UNIFIED backend is OFF. af was not found.")
+ ENDIF()
