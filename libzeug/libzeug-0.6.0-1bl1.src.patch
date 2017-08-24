@@ -1,0 +1,40 @@
+--- origsrc/libzeug-0.6.0/CMakeLists.txt	2016-04-15 04:17:12.000000000 +0900
++++ src/libzeug-0.6.0/CMakeLists.txt	2017-08-24 12:25:07.638000000 +0900
+@@ -100,7 +100,11 @@ endif()
+ if(UNIX AND SYSTEM_DIR_INSTALL)
+     # Install into the system (/usr/bin or /usr/local/bin)
+     set(INSTALL_ROOT      "share/${project}")       # /usr/[local]/share/<project>
+-    set(INSTALL_CMAKE     "share/${project}/cmake") # /usr/[local]/share/<project>/cmake
++    if(CYGWIN)
++        set(INSTALL_CMAKE     "lib/cmake/${project}") # /usr/[local]/share/<project>/cmake
++    else()
++        set(INSTALL_CMAKE     "share/${project}/cmake") # /usr/[local]/share/<project>/cmake
++    endif()
+     set(INSTALL_EXAMPLES  "share/${project}")       # /usr/[local]/share/<project>
+     set(INSTALL_DATA      "share/${project}")       # /usr/[local]/share/<project>
+     set(INSTALL_BIN       "bin")                    # /usr/[local]/bin
+@@ -159,7 +163,11 @@ add_subdirectory(deploy)
+ install(FILES "${PROJECT_BINARY_DIR}/VERSION" DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+ 
+ # Install cmake find script for the project
+-install(FILES ${META_PROJECT_NAME}-config.cmake DESTINATION ${INSTALL_ROOT} COMPONENT dev)
++if(CYGWIN)
++    install(FILES ${META_PROJECT_NAME}-config.cmake DESTINATION ${INSTALL_CMAKE} COMPONENT dev)
++else()
++    install(FILES ${META_PROJECT_NAME}-config.cmake DESTINATION ${INSTALL_ROOT} COMPONENT dev)
++endif()
+ 
+ # Install the project meta files
+ install(FILES AUTHORS   DESTINATION ${INSTALL_ROOT} COMPONENT runtime)
+--- origsrc/libzeug-0.6.0/cmake/CompileOptions.cmake	2016-04-15 04:17:12.000000000 +0900
++++ src/libzeug-0.6.0/cmake/CompileOptions.cmake	2017-08-24 12:34:13.765000200 +0900
+@@ -24,6 +24,9 @@ set(DEFAULT_PROJECT_OPTIONS
+     POSITION_INDEPENDENT_CODE ON
+     CXX_VISIBILITY_PRESET     "hidden"
+ )
++if(CYGWIN)
++    set(DEFAULT_PROJECT_OPTIONS "${DEFAULT_PROJECT_OPTIONS}" SOVERSION 0)
++endif()
+ 
+ 
+ # 
