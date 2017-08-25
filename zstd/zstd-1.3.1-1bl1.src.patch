@@ -1,98 +1,137 @@
---- origsrc/zstd-1.3.0/build/cmake/CMakeLists.txt	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/CMakeLists.txt	2017-07-14 20:28:26.450000000 +0900
-@@ -51,18 +51,10 @@ ENDIF (ZSTD_LEGACY_SUPPORT)
+--- origsrc/zstd-1.3.1/build/cmake/CMakeLists.txt	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/CMakeLists.txt	2017-08-25 16:25:06.713000000 +0900
+@@ -51,17 +51,17 @@ ENDIF (ZSTD_LEGACY_SUPPORT)
  ADD_SUBDIRECTORY(lib)
  
  IF (ZSTD_BUILD_PROGRAMS)
 -    IF (NOT ZSTD_BUILD_STATIC)
--        MESSAGE(SEND_ERROR "You need to build static library to build zstd CLI")
++    IF (NOT CYGWIN AND NOT ZSTD_BUILD_STATIC)
+         MESSAGE(SEND_ERROR "You need to build static library to build zstd CLI")
 -    ENDIF (NOT ZSTD_BUILD_STATIC)
--
++    ENDIF (NOT CYGWIN AND NOT ZSTD_BUILD_STATIC)
+ 
      ADD_SUBDIRECTORY(programs)
  ENDIF (ZSTD_BUILD_PROGRAMS)
  
  IF (ZSTD_BUILD_TESTS)
 -    IF (NOT ZSTD_BUILD_STATIC)
--        MESSAGE(SEND_ERROR "You need to build static library to build tests")
++    IF (NOT CYGWIN AND NOT ZSTD_BUILD_STATIC)
+         MESSAGE(SEND_ERROR "You need to build static library to build tests")
 -    ENDIF (NOT ZSTD_BUILD_STATIC)
--
++    ENDIF (NOT CYGWIN AND NOT ZSTD_BUILD_STATIC)
+ 
      ADD_SUBDIRECTORY(tests)
  ENDIF (ZSTD_BUILD_TESTS)
- 
---- origsrc/zstd-1.3.0/build/cmake/CMakeModules/AddZstdCompilationFlags.cmake	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/CMakeModules/AddZstdCompilationFlags.cmake	2017-07-14 20:28:58.888000000 +0900
-@@ -23,7 +23,7 @@ endfunction()
+--- origsrc/zstd-1.3.1/build/cmake/CMakeModules/AddZstdCompilationFlags.cmake	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/CMakeModules/AddZstdCompilationFlags.cmake	2017-08-25 16:25:54.764000000 +0900
+@@ -23,7 +23,11 @@ endfunction()
  MACRO(ADD_ZSTD_COMPILATION_FLAGS)
      if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" OR MINGW) #Not only UNIX but also WIN32 for MinGW
          #Set c++11 by default
 -        EnableCompilerFlag("-std=c++11" false true)
-+        EnableCompilerFlag("-std=gnu++11" false true)
++        if (CYGWIN)
++            EnableCompilerFlag("-std=gnu++11" false true)
++        else ()
++            EnableCompilerFlag("-std=c++11" false true)
++        endif ()
          #Set c99 by default
          EnableCompilerFlag("-std=c99" true false)
          EnableCompilerFlag("-Wall" true true)
---- origsrc/zstd-1.3.0/build/cmake/contrib/gen_html/CMakeLists.txt	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/contrib/gen_html/CMakeLists.txt	2017-07-14 20:41:57.644000000 +0900
-@@ -30,4 +30,4 @@ ADD_CUSTOM_TARGET(zstd_manual.html ALL
+--- origsrc/zstd-1.3.1/build/cmake/contrib/gen_html/CMakeLists.txt	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/contrib/gen_html/CMakeLists.txt	2017-08-25 16:26:48.736000000 +0900
+@@ -30,4 +30,8 @@ ADD_CUSTOM_TARGET(zstd_manual.html ALL
                    ${GENHTML_BINARY} "${LIBVERSION}" "${LIBRARY_DIR}/zstd.h" "${PROJECT_BINARY_DIR}/zstd_manual.html"
                    DEPENDS gen_html COMMENT "Update zstd manual")
  
 -INSTALL(FILES "${PROJECT_BINARY_DIR}/zstd_manual.html" DESTINATION "share/doc")
-+INSTALL(FILES "${PROJECT_BINARY_DIR}/zstd_manual.html" DESTINATION "share/doc/zstd")
---- origsrc/zstd-1.3.0/build/cmake/lib/CMakeLists.txt	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/lib/CMakeLists.txt	2017-07-14 20:39:18.548000000 +0900
-@@ -147,7 +147,7 @@ IF (UNIX)
++IF(CYGWIN)
++    INSTALL(FILES "${PROJECT_BINARY_DIR}/zstd_manual.html" DESTINATION "share/doc/zstd")
++ELSE()
++    INSTALL(FILES "${PROJECT_BINARY_DIR}/zstd_manual.html" DESTINATION "share/doc")
++ENDIF()
+--- origsrc/zstd-1.3.1/build/cmake/lib/CMakeLists.txt	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/lib/CMakeLists.txt	2017-08-25 16:28:05.869999800 +0900
+@@ -147,7 +147,11 @@ IF (UNIX)
              -P "${CMAKE_CURRENT_SOURCE_DIR}/pkgconfig.cmake"
              COMMENT "Creating pkg-config file")
  
 -    INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/libzstd.pc" DESTINATION "share/pkgconfig")
-+    INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/libzstd.pc" DESTINATION "lib/pkgconfig")
++    IF (CYGWIN)
++        INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/libzstd.pc" DESTINATION "lib/pkgconfig")
++    ELSE (CYGWIN)
++        INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/libzstd.pc" DESTINATION "share/pkgconfig")
++    ENDIF (CYGWIN)
  ENDIF (UNIX)
  
  # install target
---- origsrc/zstd-1.3.0/build/cmake/programs/CMakeLists.txt	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/programs/CMakeLists.txt	2017-07-14 20:24:46.043000000 +0900
-@@ -30,7 +30,7 @@ IF (MSVC)
+--- origsrc/zstd-1.3.1/build/cmake/programs/CMakeLists.txt	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/programs/CMakeLists.txt	2017-08-25 16:29:34.565000000 +0900
+@@ -30,7 +30,11 @@ IF (MSVC)
  ENDIF (MSVC)
  
  ADD_EXECUTABLE(zstd ${PROGRAMS_DIR}/zstdcli.c ${PROGRAMS_DIR}/fileio.c ${PROGRAMS_DIR}/bench.c ${PROGRAMS_DIR}/datagen.c ${PROGRAMS_DIR}/dibio.c ${PlatformDependResources})
 -TARGET_LINK_LIBRARIES(zstd libzstd_static)
-+TARGET_LINK_LIBRARIES(zstd libzstd_shared)
- INSTALL(TARGETS zstd RUNTIME DESTINATION "bin")
- 
- IF (UNIX)
-@@ -50,7 +50,7 @@ IF (UNIX)
++IF (CYGWIN)
++    TARGET_LINK_LIBRARIES(zstd libzstd_shared)
++ELSE (CYGWIN)
++    TARGET_LINK_LIBRARIES(zstd libzstd_static)
++ENDIF (CYGWIN)
+ IF (CMAKE_SYSTEM_NAME MATCHES "(Solaris|SunOS)")
+     TARGET_LINK_LIBRARIES(zstd rt)
+ ENDIF (CMAKE_SYSTEM_NAME MATCHES "(Solaris|SunOS)")
+@@ -53,7 +57,11 @@ IF (UNIX)
      INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/unzstd.1 DESTINATION "share/man/man1")
  
      ADD_EXECUTABLE(zstd-frugal ${PROGRAMS_DIR}/zstdcli.c ${PROGRAMS_DIR}/fileio.c)
 -    TARGET_LINK_LIBRARIES(zstd-frugal libzstd_static)
-+    TARGET_LINK_LIBRARIES(zstd-frugal libzstd_shared)
++    IF (CYGWIN)
++        TARGET_LINK_LIBRARIES(zstd-frugal libzstd_shared)
++    ELSE (CYGWIN)
++        TARGET_LINK_LIBRARIES(zstd-frugal libzstd_static)
++    ENDIF (CYGWIN)
      SET_PROPERTY(TARGET zstd-frugal APPEND PROPERTY COMPILE_DEFINITIONS "ZSTD_NOBENCH;ZSTD_NODICT")
  ENDIF (UNIX)
  
---- origsrc/zstd-1.3.0/build/cmake/tests/CMakeLists.txt	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/build/cmake/tests/CMakeLists.txt	2017-07-14 20:25:19.684000000 +0900
-@@ -41,15 +41,15 @@ SET(TESTS_DIR ${ZSTD_SOURCE_DIR}/tests)
+--- origsrc/zstd-1.3.1/build/cmake/tests/CMakeLists.txt	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/build/cmake/tests/CMakeLists.txt	2017-08-25 16:36:34.244000000 +0900
+@@ -41,15 +41,31 @@ SET(TESTS_DIR ${ZSTD_SOURCE_DIR}/tests)
  INCLUDE_DIRECTORIES(${TESTS_DIR} ${PROGRAMS_DIR} ${LIBRARY_DIR} ${LIBRARY_DIR}/common ${LIBRARY_DIR}/compress ${LIBRARY_DIR}/dictBuilder)
  
  ADD_EXECUTABLE(fullbench ${PROGRAMS_DIR}/datagen.c ${TESTS_DIR}/fullbench.c)
 -TARGET_LINK_LIBRARIES(fullbench libzstd_static)
-+TARGET_LINK_LIBRARIES(fullbench libzstd_shared)
++IF (CYGWIN)
++    TARGET_LINK_LIBRARIES(fullbench libzstd_shared)
++ELSE (CYGWIN)
++    TARGET_LINK_LIBRARIES(fullbench libzstd_static)
++ENDIF (CYGWIN)
  
  ADD_EXECUTABLE(fuzzer ${PROGRAMS_DIR}/datagen.c ${TESTS_DIR}/fuzzer.c)
 -TARGET_LINK_LIBRARIES(fuzzer libzstd_static)
-+TARGET_LINK_LIBRARIES(fuzzer libzstd_shared)
++IF (CYGWIN)
++    TARGET_LINK_LIBRARIES(fuzzer libzstd_shared)
++ELSE (CYGWIN)
++    TARGET_LINK_LIBRARIES(fuzzer libzstd_static)
++ENDIF (CYGWIN)
  
  IF (UNIX)
      ADD_EXECUTABLE(paramgrill ${PROGRAMS_DIR}/datagen.c ${TESTS_DIR}/paramgrill.c)
 -    TARGET_LINK_LIBRARIES(paramgrill libzstd_static m) #m is math library
-+    TARGET_LINK_LIBRARIES(paramgrill libzstd_shared m) #m is math library
++    IF (CYGWIN)
++        TARGET_LINK_LIBRARIES(paramgrill libzstd_shared m) #m is math library
++    ELSE (CYGWIN)
++        TARGET_LINK_LIBRARIES(paramgrill libzstd_static m) #m is math library
++    ENDIF (CYGWIN)
  
      ADD_EXECUTABLE(datagen ${PROGRAMS_DIR}/datagen.c ${TESTS_DIR}/datagencli.c)
 -    TARGET_LINK_LIBRARIES(datagen libzstd_static)
-+    TARGET_LINK_LIBRARIES(datagen libzstd_shared)
++    IF (CYGWIN)
++        TARGET_LINK_LIBRARIES(datagen libzstd_shared)
++    ELSE (CYGWIN)
++        TARGET_LINK_LIBRARIES(datagen libzstd_static)
++    ENDIF (CYGWIN)
  ENDIF (UNIX)
---- origsrc/zstd-1.3.0/contrib/pzstd/Options.cpp	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/contrib/pzstd/Options.cpp	2017-07-14 20:26:59.290000000 +0900
+--- origsrc/zstd-1.3.1/contrib/pzstd/Options.cpp	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/contrib/pzstd/Options.cpp	2017-08-25 16:32:11.322000000 +0900
 @@ -18,12 +18,11 @@
  #include <thread>
  #include <vector>
@@ -104,12 +143,12 @@
  #define IS_CONSOLE(stdStream) _isatty(_fileno(stdStream))
  #elif defined(_POSIX_C_SOURCE) || defined(_XOPEN_SOURCE) || defined(_POSIX_SOURCE) || (defined(__APPLE__) && defined(__MACH__)) || \
 -      defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)  /* https://sourceforge.net/p/predef/wiki/OperatingSystems/ */
-+      defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__)  /* https://sourceforge.net/p/predef/wiki/OperatingSystems/ */
++      defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__CYGWIN__) /* https://sourceforge.net/p/predef/wiki/OperatingSystems/ */
  #include <unistd.h> /* isatty */
  #define IS_CONSOLE(stdStream) isatty(fileno(stdStream))
  #else
---- origsrc/zstd-1.3.0/contrib/pzstd/Pzstd.cpp	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/contrib/pzstd/Pzstd.cpp	2017-07-14 20:30:37.202000000 +0900
+--- origsrc/zstd-1.3.1/contrib/pzstd/Pzstd.cpp	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/contrib/pzstd/Pzstd.cpp	2017-08-25 16:32:27.378053300 +0900
 @@ -21,7 +21,7 @@
  #include <memory>
  #include <string>
@@ -119,9 +158,9 @@
  #  include <fcntl.h>    /* _O_BINARY */
  #  include <io.h>       /* _setmode, _isatty */
  #  define SET_BINARY_MODE(file) { if (_setmode(_fileno(file), _O_BINARY) == -1) perror("Cannot set _O_BINARY"); }
---- origsrc/zstd-1.3.0/programs/platform.h	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/programs/platform.h	2017-07-14 20:21:28.339000000 +0900
-@@ -97,10 +97,10 @@ extern "C" {
+--- origsrc/zstd-1.3.1/programs/platform.h	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/programs/platform.h	2017-08-25 16:33:03.892000000 +0900
+@@ -95,10 +95,10 @@ extern "C" {
  /*-*********************************************
  *  Detect if isatty() and fileno() are available
  ************************************************/
@@ -134,9 +173,9 @@
  #  include <io.h>       /* _isatty */
  #  define IS_CONSOLE(stdStream) _isatty(_fileno(stdStream))
  #elif defined(WIN32) || defined(_WIN32)
---- origsrc/zstd-1.3.0/programs/zstdcli.c	2017-07-06 03:05:17.000000000 +0900
-+++ src/zstd-1.3.0/programs/zstdcli.c	2017-07-14 20:23:28.401000000 +0900
-@@ -352,10 +352,10 @@ int main(int argCount, const char* argv[
+--- origsrc/zstd-1.3.1/programs/zstdcli.c	2017-08-21 04:34:18.000000000 +0900
++++ src/zstd-1.3.1/programs/zstdcli.c	2017-08-25 16:35:12.138000000 +0900
+@@ -381,10 +381,10 @@ int main(int argCount, const char* argv[
      unsigned dictID = 0;
      int dictCLevel = g_defaultDictCLevel;
      unsigned dictSelect = g_defaultSelectivityLevel;
