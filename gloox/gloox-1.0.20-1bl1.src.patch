@@ -1,0 +1,95 @@
+--- origsrc/gloox-1.0.20/configure.ac	2017-02-27 03:23:05.000000000 +0900
++++ src/gloox-1.0.20/configure.ac	2017-08-26 17:15:27.023000000 +0900
+@@ -20,9 +20,7 @@ dnl Checks for programs.
+ AC_PROG_INSTALL
+ AC_PROG_CC
+ AC_PROG_CXX
+-AC_PROG_RANLIB
+-AM_PROG_LIBTOOL
+-AC_PROG_LIBTOOL
++LT_INIT
+ 
+ dnl
+ dnl extra paths
+@@ -94,8 +92,10 @@ AC_MSG_RESULT($libidn)
+ 
+ dnl extra win32 libs
+ case "$host_os" in
+-  *mingw*|*cygwin*)
++  *mingw*)
+       LIBS="${LIBS} -lws2_32 -lgdi32 -ldnsapi";;
++  *cygwin*)
++      ;;
+   *)
+       CXXFLAGS="$CXXFLAGS -ansi";;
+ esac
+@@ -109,13 +109,13 @@ AC_ARG_WITH(schannel, AC_HELP_STRING([--
+       schannel=yes, schannel=no)
+ if test "$schannel" = "yes"; then
+   case "$host_os" in
+-    *mingw*|*cygwin*)
++    *mingw*)
+         ssl=yes
+         LIBS="${LIBS} -lcrypt32 -lsecur32";;
+     *)
+         schannel=no
+         echo "*"
+-        echo "* You provided the '--with-schannel' switch. SChannel is only available in MinGW/cygwin. Ignoring."
++        echo "* You provided the '--with-schannel' switch. SChannel is only available in MinGW. Ignoring."
+         echo "*";;
+   esac
+   AC_MSG_CHECKING([if SChannel should be used])
+--- origsrc/gloox-1.0.20/src/Makefile.am	2017-02-27 02:40:40.000000000 +0900
++++ src/gloox-1.0.20/src/Makefile.am	2017-08-26 17:04:45.898771000 +0900
+@@ -7,7 +7,7 @@ DIST_SUBDIRS = . tests examples
+ 
+ AM_CPPFLAGS = -Wall -pedantic -pipe -Wfloat-equal -Wcast-align \
+               -Wsign-compare -Wpointer-arith -Wswitch -Wunknown-pragmas \
+-              -Wconversion -Wcast-qual -ansi -Wformat-security \
++              -Wconversion -Wcast-qual -Wformat-security \
+               -Wundef -Wmissing-format-attribute -Wshadow -Wwrite-strings \
+               -Wformat-nonliteral -Wformat-security -Wredundant-decls \
+               -Wformat=2 -Wold-style-cast -Wno-long-long \
+--- origsrc/gloox-1.0.20/src/examples/linklocal_example.cpp	2017-02-21 21:32:57.000000000 +0900
++++ src/gloox-1.0.20/src/examples/linklocal_example.cpp	2017-08-26 17:30:10.959000200 +0900
+@@ -111,15 +111,15 @@ class LinkLocalExample : public LinkLoca
+       for( ; it != services.end(); ++it )
+       {
+         printf( "%s:\t%s.%s%s on interface %d\n", (*it).flag == LinkLocal::AddService ? "Added" : "Removed", (*it).service.c_str(), (*it).regtype.c_str(),
+-                (*it).domain.c_str(), (*it).interface );
++                (*it).domain.c_str(), (*it).iface );
+         if( !m_fClient /*&& (*it)->flag == LinkLocal::AddService && (*it)->service != "js@pitufo"*/ )
+         {
+           printf( "setting up new local client and connecting to %s.%s%s on interface %d\n",
+-                  (*it).service.c_str(), (*it).regtype.c_str(), (*it).domain.c_str(), (*it).interface );
++                  (*it).service.c_str(), (*it).regtype.c_str(), (*it).domain.c_str(), (*it).iface );
+           m_fClient = new LinkLocal::Client( JID( "js@pitufo" ) );
+           m_fClient->logInstance().registerLogHandler( LogLevelDebug, LogAreaAll, this );
+           m_fClient->registerConnectionListener( this );
+-          if( !m_fClient->connect( (*it).service, (*it).regtype, (*it).domain, (*it).interface ) )
++          if( !m_fClient->connect( (*it).service, (*it).regtype, (*it).domain, (*it).iface ) )
+           {
+             printf( "m_fClient->connect() failed\n" );
+           }
+--- origsrc/gloox-1.0.20/src/linklocalclient.cpp	2017-02-21 21:32:57.000000000 +0900
++++ src/gloox-1.0.20/src/linklocalclient.cpp	2017-08-26 17:12:04.446000000 +0900
+@@ -55,7 +55,7 @@ namespace gloox
+     bool Client::connect( const std::string& service, const std::string& type,
+                           const std::string& domain, int iface )
+     {
+-      m_interface = interface;
++      m_interface = iface;
+       return resolve( service, type, domain );
+     }
+ 
+--- origsrc/gloox-1.0.20/src/linklocalmanager.cpp	2017-02-21 21:32:58.000000000 +0900
++++ src/gloox-1.0.20/src/linklocalmanager.cpp	2017-08-26 17:11:35.757999800 +0900
+@@ -197,7 +197,7 @@ namespace gloox
+ 
+     void Manager::handleBrowse( Flag flag, const std::string& service, const std::string& regtype, const std::string& domain, int iface, bool moreComing )
+     {
+-      Service s( flag, service, regtype, domain, interface );
++      Service s( flag, service, regtype, domain, iface );
+       m_tmpServices.push_back( s );
+ 
+ //       switch( flag )
