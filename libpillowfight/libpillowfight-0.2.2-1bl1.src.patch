@@ -1,0 +1,64 @@
+--- origsrc/libpillowfight-0.2.2/CMakeLists.txt	2017-06-06 22:52:29.000000000 +0900
++++ src/libpillowfight-0.2.2/CMakeLists.txt	2017-08-30 20:48:48.044636800 +0900
+@@ -21,10 +21,22 @@ add_library(pillowfight SHARED
+ 	src/pillowfight/util.c
+ )
+ 
+-install (TARGETS pillowfight DESTINATION lib)
++install (TARGETS pillowfight RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install (FILES
+ 	include/pillowfight/pillowfight.h
+ 	include/pillowfight/util.h
+ 	DESTINATION
+ 	include/pillowfight
+ )
++
++if (CYGWIN)
++	set_target_properties(pillowfight PROPERTIES SOVERSION 0)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0.2.2")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libpillowfight.pc.in ${CMAKE_BINARY_DIR}/libpillowfight.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libpillowfight.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libpillowfight-0.2.2/include/pillowfight/util.h	2017-06-06 22:52:29.000000000 +0900
++++ src/libpillowfight-0.2.2/include/pillowfight/util.h	2017-08-30 20:47:05.312000000 +0900
+@@ -21,7 +21,7 @@
+ #define PF_WINDOWS
+ #endif
+ 
+-#ifdef PF_WINDOWS
++#if defined(PF_WINDOWS) || defined(__CYGWIN__)
+ #define _USE_MATH_DEFINES
+ #include <float.h>
+ #define MAXDOUBLE DBL_MAX
+--- origsrc/libpillowfight-0.2.2/libpillowfight.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpillowfight-0.2.2/libpillowfight.pc.in	2017-08-30 20:49:35.543000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpillowfight
++Description: Small library containing various image processing algorithms
++Version: @VERSION@
++Libs: -L${libdir} -lpillowfight
++Cflags: -I${includedir}
+--- origsrc/libpillowfight-0.2.2/src/pillowfight/util.c	2017-06-06 22:52:29.000000000 +0900
++++ src/libpillowfight-0.2.2/src/pillowfight/util.c	2017-08-30 20:47:38.809000000 +0900
+@@ -22,11 +22,6 @@
+ 
+ #include <pillowfight/util.h>
+ 
+-#ifndef PF_WINDOWS
+-#include <values.h>
+-#endif
+-
+-
+ const union pf_pixel g_pf_default_white_pixel = {
+ 	PF_WHOLE_WHITE,
+ };
