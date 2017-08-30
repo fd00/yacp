@@ -1,0 +1,56 @@
+--- origsrc/philips_to_ismrmrd-0.1.0/CMakeLists.txt	2015-10-23 12:20:29.000000000 +0900
++++ src/philips_to_ismrmrd-0.1.0/CMakeLists.txt	2017-08-30 15:22:32.486000000 +0900
+@@ -21,16 +21,17 @@ if (WIN32)
+     #ADD_DEFINITIONS(-D__BUILD_CONVERTER_TINYXML__)
+ else (WIN32)
+   if (UNIX)
+-    if (APPLE)
++    if (APPLE OR CYGWIN)
+       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-    else (APPLE)
++    else (APPLE OR CYGWIN)
+       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -std=c++11")
+-    endif (APPLE)
++    endif (APPLE OR CYGWIN)
+   endif (UNIX)
+ endif (WIN32)
+ 
+ ###############################################################
+-find_path(ISMRMRD_CMAKE_MODULES FindIsmrmrd.cmake HINTS
++find_path(ISMRMRD_CMAKE_MODULES NAMES FindIsmrmrd.cmake ISMRMRDConfig.cmake HINTS
++  /usr/lib/cmake/ISMRMRD
+   $ENV{ISMRMRD_HOME}/share/ismrmrd/cmake
+   ${CMAKE_INSTALL_PREFIX}/share/ismrmrd/cmake
+   /usr/local/share/ismrmrd/cmake)
+@@ -46,7 +47,7 @@ set(CMAKE_MODULE_PATH ${ISMRMRD_CMAKE_MO
+ ###############################################################
+ 
+ # Added for static linking!!!
+-set(Boost_USE_STATIC_LIBS ON)
++option(Boost_USE_STATIC_LIBS ON)
+ find_package(Boost COMPONENTS thread system program_options filesystem REQUIRED)
+ 
+ find_package(LibXml2 REQUIRED)
+@@ -56,10 +57,20 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}
+ find_package(Ismrmrd REQUIRED)
+ INCLUDE_DIRECTORIES( ${ISMRMRD_INCLUDE_DIR} )
+ 
++if (CYGWIN)
++  find_path(PUGIXML_INCLUDE_DIR NAMES pugixml.hpp PATHS /usr/include)
++  find_library(PUGIXML_LIBRARIES NAMES pugixml PATH /usr/lib)
++  include(FindPackageHandleStandardArgs)
++  find_package_handle_standard_args(PUGIXML DEFAULT_MSG PUGIXML_LIBRARIES PUGIXML_INCLUDE_DIR)
++  if (NOT PUGIXML_FOUND)
++    set(PUGIXML_SOURCES pugixml.cpp)
++  endif()
++endif()
++
+ add_executable(philips_to_ismrmrd 
+                main.cpp
+-	       pugixml.cpp)
++	       ${PUGIXML_SOURCES})
+ 
+-target_link_libraries(philips_to_ismrmrd ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES} ${ISMRMRD_LIBRARIES} ${Boost_LIBRARIES})
++target_link_libraries(philips_to_ismrmrd ${LIBXSLT_LIBRARIES} ${LIBXML2_LIBRARIES} ${ISMRMRD_LIBRARIES} ${Boost_LIBRARIES} ${PUGIXML_LIBRARIES})
+ 
+ install(TARGETS philips_to_ismrmrd DESTINATION bin)
