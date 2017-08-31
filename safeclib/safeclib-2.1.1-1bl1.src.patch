@@ -1,0 +1,61 @@
+--- origsrc/safeclib-30082017/.version	1970-01-01 09:00:00.000000000 +0900
++++ src/safeclib-30082017/.version	2017-08-31 23:14:57.501896200 +0900
+@@ -0,0 +1 @@
++UNKNOWN
+--- origsrc/safeclib-30082017/Makefile.am	2017-08-30 19:13:22.000000000 +0900
++++ src/safeclib-30082017/Makefile.am	2017-08-31 23:33:04.516000000 +0900
+@@ -84,6 +84,7 @@ BUILT_SOURCES = $(top_srcdir)/.version
+ pcdatadir = $(libdir)/pkgconfig
+ pcdata_DATA = safec-$(SAFEC_API_VERSION).pc
+ 
++if ENABLE_DOC
+ if HAVE_DOXYGEN
+ dist_man_MANS = \
+ 	doc/man/man3/STRTOK_DELIM_MAX_LEN.3 \
+@@ -236,6 +237,7 @@ clean-local:
+ 	rm -rf $(top_srcdir)/docs/html
+ 	rm -rf $(top_srcdir)/docs/man
+ endif
++endif
+ 
+ # Additional make rules
+ # ===============================================
+--- origsrc/safeclib-30082017/configure.ac	2017-08-30 19:13:22.000000000 +0900
++++ src/safeclib-30082017/configure.ac	2017-08-31 23:32:49.418000000 +0900
+@@ -226,6 +226,16 @@ AC_ARG_ENABLE(debug-build,
+ 	esac], [enable_debug_build=false ])
+ AM_CONDITIONAL(ENABLE_DEBUG_BUILD, test "x$enable_debug_build" = "xtrue")
+ 
++AC_ARG_ENABLE(doc,
++	AS_HELP_STRING([--enable-doc],
++	               [turn on build doc @<:@default=no@:>@]),
++	[case "${enableval}" in
++	yes) enable_doc=true ;;
++	no)  enable_doc=false ;;
++	*)   AC_MSG_ERROR([bad value ${enableval} for --enable-doc]) ;;
++	esac], [enable_doc=false ])
++AM_CONDITIONAL(ENABLE_DOC, test "x$enable_doc" = "xtrue")
++
+ 
+ AC_MSG_NOTICE([Check programs])
+ # ===============================================
+--- origsrc/safeclib-30082017/src/Makefile.am	2017-08-30 19:13:22.000000000 +0900
++++ src/safeclib-30082017/src/Makefile.am	2017-08-31 23:17:07.205000000 +0900
+@@ -109,6 +109,7 @@ EXT_STR_FILES = \
+ # Not all the code can support -Werror yet so we specifically enable it
+ # for where it works
+ AM_CFLAGS += -Werror
++AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ noinst_LTLIBRARIES = \
+ 	libmemprims.la   \
+--- origsrc/safeclib-30082017/tests/Makefile.am	2017-08-30 19:13:22.000000000 +0900
++++ src/safeclib-30082017/tests/Makefile.am	2017-08-31 23:24:20.861000000 +0900
+@@ -97,6 +97,7 @@ SAFEC_TEST_COMMON = \
+ # WARNING: tests won't build with -Werror right now because of some
+ # type-casting issues
+ #AM_CFLAGS   += -Werror
++AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ LDADD = $(top_builddir)/src/libsafec-@SAFEC_API_VERSION@.la
+ 
