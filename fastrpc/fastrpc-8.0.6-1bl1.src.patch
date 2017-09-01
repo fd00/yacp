@@ -1,0 +1,49 @@
+--- origsrc/fastrpc-8.0.6/src/Makefile.am	2017-06-13 16:12:07.000000000 +0900
++++ src/fastrpc-8.0.6/src/Makefile.am	2017-09-02 00:33:34.282000000 +0900
+@@ -36,10 +36,10 @@
+ 
+ 
+ # warn on all
+-AM_CXXFLAGS = -Wall -fPIC $(DEPS_CFLAGS) ${CXXEXTRAFLAGS}
++AM_CXXFLAGS = -Wall $(DEPS_CFLAGS) ${CXXEXTRAFLAGS}
+ 
+ # extra compiler options
+-AM_CPPFLAGS = -D_ISOC99_SOURCE -D__ENABLE_WSTRING=1 -std=c++11
++AM_CPPFLAGS = -D__ENABLE_WSTRING=1 -std=gnu++11
+ 
+ # install these headers
+ include_HEADERS = frpc.h frpcvalue.h frpcarray.h frpcstruct.h frpcbinary.h frpcdatetime.h \
+@@ -78,7 +78,7 @@ libfastrpc_la_SOURCES = frpcvalue.cc frp
+                         frpcb64writer.cc frpcconfig.cc frpccompare.cc
+ 
+ # with these flags (version info etc.)
+-libfastrpc_la_LDFLAGS = @VERSION_INFO@ $(DEPS_LIBS)
++libfastrpc_la_LDFLAGS = -no-undefined @VERSION_INFO@ $(DEPS_LIBS)
+ 
+ check_PROGRAMS=test-base64 test-protocol test-marshallers
+ test_base64_SOURCES=../test/base64.cc
+--- origsrc/fastrpc-8.0.6/src/frpcconnector.cc	2017-06-13 16:12:07.000000000 +0900
++++ src/fastrpc-8.0.6/src/frpcconnector.cc	2017-09-02 00:28:55.316000000 +0900
+@@ -233,6 +233,8 @@ SimpleConnector_t::SimpleConnector_t(con
+ 
+ #if (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
+     he = gethostbyname_r(url.host.c_str(), &h, tmpbuf, 1024, &errcode);
++#elif defined(__CYGWIN__)
++    he = gethostbyname(url.host.c_str());
+ #else
+     gethostbyname_r(url.host.c_str(), &h, tmpbuf, 1024, &he, &errcode);
+ #endif
+--- origsrc/fastrpc-8.0.6/test/marshallers.cc	2017-06-13 16:12:07.000000000 +0900
++++ src/fastrpc-8.0.6/test/marshallers.cc	2017-09-02 00:37:33.780999800 +0900
+@@ -777,7 +777,11 @@ void runTests(const TestSettings_t &ts)
+ }
+ 
+ int main(int argc, const char *argv[]) {
++#if defined(__CYGWIN__)
++    doColor = ::isatty(::fileno(stderr));
++#else
+     doColor = ::isatty(::fileno(::stderr));
++#endif
+ 
+     Args_t args(argv + 1, argv + argc);
+     TestSettings_t ts;
