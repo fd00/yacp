@@ -1,0 +1,31 @@
+--- origsrc/blackbird/CMakeLists.txt	2017-09-10 12:54:59.000000000 +0900
++++ src/blackbird/CMakeLists.txt	2017-09-10 12:59:18.658000000 +0900
+@@ -23,10 +23,17 @@ endif()
+ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+   target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX _CRT_SECURE_NO_WARNINGS)
+ endif()
++if(CYGWIN)
++set_target_properties(${PROJECT_NAME} PROPERTIES
++                                      CXX_STANDARD 11
++                                      CXX_STANDARD_REQUIRED YES
++                                      CXX_EXTENSIONS YES)
++else()
+ set_target_properties(${PROJECT_NAME} PROPERTIES
+                                       CXX_STANDARD 11
+                                       CXX_STANDARD_REQUIRED YES
+                                       CXX_EXTENSIONS NO)
++endif()
+ target_include_directories (${PROJECT_NAME} PRIVATE
+                             ${PROJECT_SOURCE_DIR}/src
+                             ${SQLITE3_INCLUDE_DIR}
+@@ -37,6 +44,10 @@ target_link_libraries(${PROJECT_NAME} ${
+                                       ${JANSSON_LIBRARIES}
+                                       ${OPENSSL_LIBRARIES}
+                                       ${SQLITE3_LIBRARIES})
++if(CYGWIN)
++install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
++else()
+ install(TARGETS ${PROJECT_NAME}
+         RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/..)
++endif()
+ cotire(${PROJECT_NAME})
