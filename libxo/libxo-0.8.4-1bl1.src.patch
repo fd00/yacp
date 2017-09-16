@@ -1,0 +1,60 @@
+--- origsrc/libxo-0.8.4/configure.ac	2017-08-03 13:31:23.000000000 +0900
++++ src/libxo-0.8.4/configure.ac	2017-09-16 19:22:21.007000000 +0900
+@@ -75,6 +75,9 @@ AC_CHECK_HEADERS([sys/sysctl.h])
+ AC_CHECK_HEADERS([threads.h])
+ AC_CHECK_HEADERS([monitor.h])
+ 
++PKG_CHECK_MODULES([LIBBSD], [libbsd], [have_bsd=yes], [have_bsd=no])
++AC_DEFINE([HAVE_LIBBSD], [1], [libbsd])
++
+ dnl humanize_number(3) is a great function, but it's not standard.
+ dnl Note Macosx has the function in libutil.a but doesn't ship the
+ dnl header file, so I'll need to carry my own implementation.  See:
+--- origsrc/libxo-0.8.4/libxo/Makefile.am	2017-05-12 22:55:23.000000000 +0900
++++ src/libxo-0.8.4/libxo/Makefile.am	2017-09-16 19:23:00.602000000 +0900
+@@ -43,6 +43,9 @@ libxo_la_SOURCES = \
+     xo_encoder.c \
+     xo_syslog.c
+ 
++libxo_la_LDFLAGS = -no-undefined
++libxo_la_LIBADD = $(LIBBSD_LIBS)
++
+ man3_files = \
+     libxo.3 \
+     xo_attr.3 \
+--- origsrc/libxo-0.8.4/libxo/libxo.c	2017-08-03 13:17:56.000000000 +0900
++++ src/libxo-0.8.4/libxo/libxo.c	2017-09-16 19:26:39.498499200 +0900
+@@ -43,6 +43,10 @@
+ #include <wctype.h>
+ #include <getopt.h>
+ 
++#if defined(__CYGWIN__)
++typedef int64_t quad_t;
++#endif
++
+ #include "xo_config.h"
+ #include "xo.h"
+ #include "xo_encoder.h"
+--- origsrc/libxo-0.8.4/libxo/xo_syslog.c	2017-06-03 22:07:19.000000000 +0900
++++ src/libxo-0.8.4/libxo/xo_syslog.c	2017-09-16 19:27:42.303000000 +0900
+@@ -58,7 +58,9 @@
+ #include <stdarg.h>
+ #include <sys/time.h>
+ #include <sys/types.h>
++#if !defined(__CYGWIN__)
+ #include <sys/sysctl.h>
++#endif
+ 
+ #include "xo_config.h"
+ #include "xo.h"
+@@ -259,6 +261,10 @@ xo_send_syslog (char *full_msg, char *v0
+     flags |= O_CLOEXEC;
+ #endif /* O_CLOEXEC */
+ 
++#if !defined(_PATH_CONSOLE)
++#define _PATH_CONSOLE "/dev/console"
++#endif
++
+     if (xo_logstat & LOG_CONS
+         && (fd = open(_PATH_CONSOLE, flags, 0)) >= 0) {
+         struct iovec iov[2];
