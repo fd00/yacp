@@ -1,5 +1,16 @@
+--- origsrc/szl-1.0/configure.ac	2010-08-16 07:04:18.000000000 +0900
++++ src/szl-1.0/configure.ac	2017-09-20 18:25:40.777000000 +0900
+@@ -39,6 +39,8 @@ AS_IF([test "x${ac_cv_env_CXXFLAGS_set}"
+   AC_MSG_RESULT([use user-supplied: $CXXFLAGS])
+ ])
+ 
++AS_IF([test "$host_os" = "cygwin"], [CXXFLAGS="${CXXFLAGS} -Wno-narrowing"])
++
+ AC_SUBST(SZL_OPT_FLAG)
+ 
+ AC_PROG_LN_S
 --- origsrc/szl-1.0/src/Makefile.am	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/Makefile.am	2017-06-29 18:26:17.460833900 +0900
++++ src/szl-1.0/src/Makefile.am	2017-09-20 18:09:12.218766200 +0900
 @@ -250,12 +250,13 @@ libengine_la_SOURCES = \
  
  ##### Libraries to install
@@ -44,7 +55,7 @@
  ##### The szl program
  
 --- origsrc/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2017-06-29 18:26:17.476513400 +0900
++++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2017-09-20 18:09:12.233623800 +0900
 @@ -233,7 +233,7 @@ bool SzlQuantileTest::CheckCorrectness(i
    // within the tolerable range. The ideal index
    // we are expecting is calculated as next_rank.
@@ -55,7 +66,7 @@
      dec.GetString(&vstr);
      CHECK_EQ(sscanf(vstr.c_str(), "xx-%d", &index), 1);
 --- origsrc/szl-1.0/src/engine/code.cc	2010-08-16 07:04:14.000000000 +0900
-+++ src/szl-1.0/src/engine/code.cc	2017-06-29 18:26:17.476513400 +0900
++++ src/szl-1.0/src/engine/code.cc	2017-09-20 18:09:12.249276000 +0900
 @@ -18,6 +18,7 @@
  #include <string>
  #include <errno.h>
@@ -64,8 +75,30 @@
  
  #include "engine/globals.h"
  #include "public/logging.h"
+--- origsrc/szl-1.0/src/engine/form.cc	2010-08-16 07:04:13.000000000 +0900
++++ src/szl-1.0/src/engine/form.cc	2017-09-20 18:33:25.592000000 +0900
+@@ -801,8 +801,7 @@ bool ArrayForm::IsEqual(Val* v1, Val* v2
+ 
+ Val* ArrayForm::Cmp(Val* v1, Val* v2) const {
+   assert(v1->is_array());
+-  if (!v2->is_array())
+-    return false;
++  assert(v2->is_array());
+   ArrayVal* a1 = v1->as_array();
+   ArrayVal* a2 = v2->as_array();
+   assert(a1->type()->IsEqual(a2->type(), false));  // ignore proto info
+@@ -1075,8 +1074,7 @@ bool TupleForm::IsEqual(Val* v1, Val* v2
+ 
+ Val* TupleForm::Cmp(Val* v1, Val* v2) const {
+   assert(v1->is_tuple());
+-  if (!v2->is_tuple())
+-    return false;
++  assert(v2->is_tuple());
+   TupleVal* t1 = v1->as_tuple();
+   TupleVal* t2 = v2->as_tuple();
+   assert(t1->type()->IsEqual(t2->type(), false));  // ignore proto info
 --- origsrc/szl-1.0/src/engine/scanner.h	2010-08-16 07:04:13.000000000 +0900
-+++ src/szl-1.0/src/engine/scanner.h	2017-06-29 18:26:17.492088800 +0900
++++ src/szl-1.0/src/engine/scanner.h	2017-09-20 18:09:12.249276000 +0900
 @@ -14,6 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -75,7 +108,7 @@
  namespace sawzall {
  
 --- origsrc/szl-1.0/src/engine/symboltable.cc	2010-08-16 07:04:14.000000000 +0900
-+++ src/szl-1.0/src/engine/symboltable.cc	2017-06-29 18:26:17.492088800 +0900
++++ src/szl-1.0/src/engine/symboltable.cc	2017-09-20 18:09:12.264879300 +0900
 @@ -44,7 +44,7 @@ namespace sawzall {
  // ------------------------------------------------------------------------------
  // Implementation of SymbolTable
@@ -86,7 +119,7 @@
  List<TableType*>* SymbolTable::table_types_ = NULL;
  TableType* SymbolTable::collection_type_ = NULL;
 --- origsrc/szl-1.0/src/public/porting.h	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/public/porting.h	2017-06-29 18:26:17.507670300 +0900
++++ src/szl-1.0/src/public/porting.h	2017-09-20 18:09:12.264879300 +0900
 @@ -48,7 +48,9 @@ typedef uint64_t uint64;
  
  typedef signed char schar;
@@ -98,7 +131,7 @@
  typedef unsigned long uword_t;
  
 --- origsrc/szl-1.0/src/utilities/port_ieee.h	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/utilities/port_ieee.h	2017-06-29 18:26:17.507670300 +0900
++++ src/szl-1.0/src/utilities/port_ieee.h	2017-09-20 18:09:12.264879300 +0900
 @@ -14,7 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -109,7 +142,7 @@
  #elif defined(OS_MACOSX)
  #include <machine/endian.h>
 --- origsrc/szl-1.0/src/utilities/random_base.cc	2010-08-16 07:04:15.000000000 +0900
-+++ src/szl-1.0/src/utilities/random_base.cc	2017-06-29 18:26:17.507670300 +0900
++++ src/szl-1.0/src/utilities/random_base.cc	2017-09-20 18:09:12.264879300 +0900
 @@ -18,6 +18,7 @@
  #include <string>
  #include <memory.h>
