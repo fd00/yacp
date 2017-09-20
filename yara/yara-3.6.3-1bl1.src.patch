@@ -1,0 +1,427 @@
+--- origsrc/yara-3.6.3/Makefile.am	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/Makefile.am	2017-09-20 21:38:00.856000000 +0900
+@@ -23,10 +23,10 @@ ACLOCAL_AMFLAGS=-I m4
+ bin_PROGRAMS = yara yarac
+ 
+ yara_SOURCES = args.c args.h threading.c threading.h yara.c
+-yara_LDADD = libyara/.libs/libyara.a
++yara_LDADD = libyara/libyara.la
+ 
+ yarac_SOURCES = args.c args.h yarac.c
+-yarac_LDADD = libyara/.libs/libyara.a
++yarac_LDADD = libyara/libyara.la
+ 
+ TESTS = $(check_PROGRAMS)
+ check_PROGRAMS = test-alignment test-rules test-pe test-elf test-version
+--- origsrc/yara-3.6.3/libyara/Makefile.am	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/Makefile.am	2017-09-20 21:38:30.817000000 +0900
+@@ -82,7 +82,7 @@ yarainclude_HEADERS = \
+ 
+ lib_LTLIBRARIES = libyara.la
+ 
+-libyara_la_LDFLAGS = -version-number 3:6:3
++libyara_la_LDFLAGS = -no-undefined -version-number 3:6:3
+ 
+ libyara_la_SOURCES = \
+   $(MODULES) \
+@@ -134,7 +134,7 @@ libyara_la_SOURCES = \
+   utils.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-nodist_pkgconfig_DATA = yara.pc
++pkgconfig_DATA = yara.pc
+ 
+ yara.pc: yara.pc.in
+ 		sed -e 's![@]prefix[@]!$(prefix)!g' \
+--- origsrc/yara-3.6.3/libyara/exception.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/exception.h	2017-09-20 21:52:21.084000200 +0900
+@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #include <assert.h>
+ 
+-#if _WIN32 || __CYGWIN__
++#if _WIN32
+ 
+ #include <windows.h>
+ #include <setjmp.h>
+--- origsrc/yara-3.6.3/libyara/filemap.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/filemap.c	2017-09-20 21:52:49.077000000 +0900
+@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #include <fcntl.h>
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #else
+ #include <sys/stat.h>
+@@ -90,7 +90,7 @@ YR_API int yr_filemap_map(
+ //       ERROR_COULD_NOT_MAP_FILE
+ //
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ YR_API int yr_filemap_map_fd(
+     YR_FILE_DESCRIPTOR file,
+@@ -261,7 +261,7 @@ YR_API int yr_filemap_map_fd(
+ //       ERROR_COULD_NOT_MAP_FILE
+ //
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ YR_API int yr_filemap_map_ex(
+     const char* file_path,
+--- origsrc/yara-3.6.3/libyara/include/yara/error.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/include/yara/error.h	2017-09-20 21:53:06.382000000 +0900
+@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #include <string.h>
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #endif
+ 
+--- origsrc/yara-3.6.3/libyara/include/yara/filemap.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/include/yara/filemap.h	2017-09-20 21:53:43.266000000 +0900
+@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <sys/types.h>
+ #endif
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #define YR_FILE_DESCRIPTOR    HANDLE
+ #else
+@@ -54,7 +54,7 @@ typedef struct _YR_MAPPED_FILE
+   YR_FILE_DESCRIPTOR  file;
+   size_t              size;
+   uint8_t*            data;
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   HANDLE              mapping;
+   #endif
+ 
+--- origsrc/yara-3.6.3/libyara/include/yara/limits.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/include/yara/limits.h	2017-09-20 21:51:35.657000000 +0900
+@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #ifndef YR_LIMITS_H
+ #define YR_LIMITS_H
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #endif
+ 
+--- origsrc/yara-3.6.3/libyara/include/yara/pe.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/include/yara/pe.h	2017-09-20 21:54:00.749000000 +0900
+@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #pragma pack(push, 1)
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ 
+ // These definitions are not present in older Windows headers.
+--- origsrc/yara-3.6.3/libyara/include/yara/threading.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/include/yara/threading.h	2017-09-20 21:54:27.073000000 +0900
+@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ 
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ #include <windows.h>
+ 
+--- origsrc/yara-3.6.3/libyara/lexer.l	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/lexer.l	2017-09-20 21:55:11.969000200 +0900
+@@ -50,7 +50,7 @@ with noyywrap then we can remove this pr
+ #include <string.h>
+ #include <setjmp.h>
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #else
+ #include <unistd.h>
+@@ -846,7 +846,7 @@ int yr_lex_parse_rules_fd(
+   yyset_extra(compiler, yyscanner);
+   while (1)
+   {
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     DWORD len;
+     if (!ReadFile(rules_fd, buf, sizeof(buf), &len, NULL))
+       break;
+--- origsrc/yara-3.6.3/libyara/libyara.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/libyara.c	2017-09-20 21:55:23.609999800 +0900
+@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <openssl/crypto.h>
+ #endif
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #if !defined(_MSC_VER) || (defined(_MSC_VER) && (_MSC_VER < 1900))
+ #define snprintf _snprintf
+ #endif
+--- origsrc/yara-3.6.3/libyara/mem.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/mem.c	2017-09-20 21:55:33.719000200 +0900
+@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ 
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ #include <windows.h>
+ #include <string.h>
+--- origsrc/yara-3.6.3/libyara/modules/cuckoo.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/modules/cuckoo.c	2017-09-20 21:55:50.876000000 +0900
+@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <yara/re.h>
+ #include <yara/modules.h>
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #define strcasecmp _stricmp
+ #endif
+ 
+--- origsrc/yara-3.6.3/libyara/modules/hash.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/modules/hash.c	2017-09-20 21:55:59.984999800 +0900
+@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <openssl/md5.h>
+ #include <openssl/sha.h>
+ 
+-#if _WIN32 || __CYGWIN__
++#if _WIN32
+ 
+ #ifndef PRIu64
+ #define PRIu64 "%I64d"
+--- origsrc/yara-3.6.3/libyara/object.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/object.c	2017-09-20 21:56:14.390000200 +0900
+@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <string.h>
+ #include <math.h>
+ 
+-#if _WIN32 || __CYGWIN__
++#if _WIN32
+ #define PRIu64 "I64d"
+ #else
+ #include <inttypes.h>
+--- origsrc/yara-3.6.3/libyara/proc.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/proc.c	2017-09-20 21:41:38.721999800 +0900
+@@ -27,7 +27,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONT
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ #include <windows.h>
+ 
+@@ -184,7 +184,11 @@ YR_MEMORY_BLOCK* _yr_get_first_block(
+ #include <fcntl.h>
+ #include <unistd.h>
+ #include <sys/types.h>
++#if defined(__CYGWIN__)
++#define ptrace(request, pid, addr, data) (-1)
++#else
+ #include <sys/ptrace.h>
++#endif
+ #include <sys/wait.h>
+ 
+ #include <yara/error.h>
+--- origsrc/yara-3.6.3/libyara/threading.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/libyara/threading.c	2017-09-20 21:56:33.827000000 +0900
+@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <yara/error.h>
+ #include <yara/threading.h>
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ YR_THREAD_ID yr_current_thread_id(void)
+ {
+--- origsrc/yara-3.6.3/tests/test-rules.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/tests/test-rules.c	2017-09-20 21:57:47.442000000 +0900
+@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include "blob.h"
+ #include "util.h"
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <fileapi.h>
+ #else
+ #include <unistd.h>
+@@ -1607,7 +1607,7 @@ void test_file_descriptor()
+   YR_COMPILER* compiler = NULL;
+   YR_RULES* rules = NULL;
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+   HANDLE fd = CreateFile("tests/data/true.yar", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+   if (fd == INVALID_HANDLE_VALUE)
+   {
+@@ -1633,7 +1633,7 @@ void test_file_descriptor()
+     exit(EXIT_FAILURE);
+   }
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+   CloseHandle(fd);
+ #else
+   close(fd);
+--- origsrc/yara-3.6.3/threading.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/threading.c	2017-09-20 22:05:37.975000000 +0900
+@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #include <fcntl.h>
+ 
+-#if !defined(_WIN32) && !defined(__CYGWIN__)
++#if !defined(_WIN32)
+ #include <errno.h>
+ #endif
+ 
+@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ int mutex_init(
+     MUTEX* mutex)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+     InitializeCriticalSection(mutex);
+     return 0;
+   #else
+@@ -50,7 +50,7 @@ int mutex_init(
+ void mutex_destroy(
+     MUTEX* mutex)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   DeleteCriticalSection(mutex);
+   #else
+   pthread_mutex_destroy(mutex);
+@@ -61,7 +61,7 @@ void mutex_destroy(
+ void mutex_lock(
+     MUTEX* mutex)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   EnterCriticalSection(mutex);
+   #else
+   pthread_mutex_lock(mutex);
+@@ -72,7 +72,7 @@ void mutex_lock(
+ void mutex_unlock(
+     MUTEX* mutex)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   LeaveCriticalSection(mutex);
+   #else
+   pthread_mutex_unlock(mutex);
+@@ -84,7 +84,7 @@ int semaphore_init(
+     SEMAPHORE* semaphore,
+     int value)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   *semaphore = CreateSemaphore(NULL, value, 65535, NULL);
+   if (*semaphore == NULL)
+     return GetLastError();
+@@ -110,7 +110,7 @@ int semaphore_init(
+ void semaphore_destroy(
+     SEMAPHORE* semaphore)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   CloseHandle(*semaphore);
+   #else
+   sem_close(*semaphore);
+@@ -121,7 +121,7 @@ void semaphore_destroy(
+ void semaphore_wait(
+     SEMAPHORE* semaphore)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   WaitForSingleObject(*semaphore, INFINITE);
+   #else
+   sem_wait(*semaphore);
+@@ -132,7 +132,7 @@ void semaphore_wait(
+ void semaphore_release(
+     SEMAPHORE* semaphore)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   ReleaseSemaphore(*semaphore, 1, NULL);
+   #else
+   sem_post(*semaphore);
+@@ -145,7 +145,7 @@ int create_thread(
+     THREAD_START_ROUTINE start_routine,
+     void* param)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   *thread = CreateThread(NULL, 0, start_routine, param, 0, NULL);
+   if (*thread == NULL)
+     return GetLastError();
+@@ -160,7 +160,7 @@ int create_thread(
+ void thread_join(
+     THREAD* thread)
+ {
+-  #if defined(_WIN32) || defined(__CYGWIN__)
++  #if defined(_WIN32)
+   WaitForSingleObject(*thread, INFINITE);
+   #else
+   pthread_join(*thread, NULL);
+--- origsrc/yara-3.6.3/threading.h	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/threading.h	2017-09-20 21:58:37.232000200 +0900
+@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #ifndef THREADING_H
+ #define THREADING_H
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <windows.h>
+ #else
+ #include <sys/stat.h>
+@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <semaphore.h>
+ #endif
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ typedef HANDLE SEMAPHORE;
+ typedef CRITICAL_SECTION MUTEX;
+--- origsrc/yara-3.6.3/yara.c	2017-07-05 23:35:49.000000000 +0900
++++ src/yara-3.6.3/yara.c	2017-09-20 22:06:31.357000200 +0900
+@@ -27,7 +27,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONT
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+-#if !defined(_WIN32) && !defined(__CYGWIN__)
++#if !defined(_WIN32)
+ 
+ #include <sys/stat.h>
+ #include <dirent.h>
+@@ -304,7 +304,7 @@ char* file_queue_get()
+ }
+ 
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ int is_directory(
+     const char* path)
+@@ -762,7 +762,7 @@ int callback(
+ }
+ 
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ DWORD WINAPI scanning_thread(LPVOID param)
+ #else
+ void* scanning_thread(void* param)
