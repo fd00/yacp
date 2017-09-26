@@ -1,0 +1,82 @@
+--- origsrc/gperftools-gperftools-2.6.1/Makefile.am	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/Makefile.am	2017-09-27 00:44:40.540999800 +0900
+@@ -865,7 +865,7 @@ noinst_PROGRAMS += malloc_bench malloc_b
+ 
+ malloc_bench_SOURCES = benchmark/malloc_bench.cc
+ malloc_bench_CXXFLAGS = $(PTHREAD_CFLAGS) $(AM_CXXFLAGS) $(NO_BUILTIN_CXXFLAGS)
+-malloc_bench_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS) -static
++malloc_bench_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS)
+ malloc_bench_LDADD = librun_benchmark.la libtcmalloc_minimal.la $(PTHREAD_LIBS)
+ 
+ malloc_bench_shared_SOURCES = benchmark/malloc_bench.cc
+@@ -891,7 +891,7 @@ endif WITH_HEAP_PROFILER_OR_CHECKER
+ 
+ binary_trees_SOURCES = benchmark/binary_trees.cc
+ binary_trees_CXXFLAGS = $(PTHREAD_CFLAGS) $(AM_CXXFLAGS) $(NO_BUILTIN_CXXFLAGS)
+-binary_trees_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS) -static
++binary_trees_LDFLAGS = $(PTHREAD_CFLAGS) $(TCMALLOC_FLAGS)
+ binary_trees_LDADD = libtcmalloc_minimal.la $(PTHREAD_LIBS)
+ 
+ binary_trees_shared_SOURCES = benchmark/binary_trees.cc
+--- origsrc/gperftools-gperftools-2.6.1/benchmark/getcontext_light.cc	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/benchmark/getcontext_light.cc	2017-09-27 00:22:21.267999800 +0900
+@@ -4,7 +4,7 @@
+ extern "C" void getcontext_light(ucontext_t *ctx);
+ 
+ // clang's built-in asm cannot handle .set directives
+-#if defined(__GNUC__) && !defined(__llvm__) && defined(__x86_64) && defined(_LP64)
++#if defined(__GNUC__) && !defined(__llvm__) && defined(__x86_64) && defined(_LP64) && !defined(__CYGWIN__)
+ 
+ #define R(r) offsetof(ucontext_t, uc_mcontext.gregs[r])
+ 
+--- origsrc/gperftools-gperftools-2.6.1/benchmark/malloc_bench.cc	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/benchmark/malloc_bench.cc	2017-09-27 00:44:08.807000000 +0900
+@@ -85,7 +85,7 @@ static void bench_fastpath_simple(long i
+ #ifdef __GNUC__
+ #define HAVE_SIZED_FREE_OPTION
+ 
+-extern "C" void tc_free_sized(void *ptr, size_t size) __attribute__((weak));
++extern "C" void tc_free_sized(void *ptr, size_t size);
+ 
+ static bool is_sized_free_available(void)
+ {
+--- origsrc/gperftools-gperftools-2.6.1/src/base/basictypes.h	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/src/base/basictypes.h	2017-09-27 00:20:23.211999800 +0900
+@@ -247,7 +247,7 @@ inline void bit_store(Dest *dest, const
+   memcpy(dest, source, sizeof(Dest));
+ }
+ 
+-#ifdef HAVE___ATTRIBUTE__
++#if defined(HAVE___ATTRIBUTE__) && !defined(__CYGWIN__)
+ # define ATTRIBUTE_WEAK      __attribute__((weak))
+ # define ATTRIBUTE_NOINLINE  __attribute__((noinline))
+ #else
+--- origsrc/gperftools-gperftools-2.6.1/src/malloc_extension.cc	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/src/malloc_extension.cc	2017-09-26 23:33:12.710000000 +0900
+@@ -205,7 +205,7 @@ void MallocExtension::MarkThreadTemporar
+ 
+ static MallocExtension* current_instance;
+ 
+-#if (!defined(_WIN32) && !defined(__MINGW32__))
++#if (!defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__))
+ // Provide a weak hook for __lsan_ignore_object, so that
+ // if leak sanitizer is enabled, we can ignore the current_instance
+ // heap allocation.
+--- origsrc/gperftools-gperftools-2.6.1/src/maybe_threads.cc	2017-07-10 06:55:33.000000000 +0900
++++ src/gperftools-gperftools-2.6.1/src/maybe_threads.cc	2017-09-26 23:34:02.602000000 +0900
+@@ -57,6 +57,7 @@
+ # define __THROW   // __THROW is just an optimization, so ok to make it ""
+ #endif
+ 
++#if !defined(__CYGWIN__)
+ // These are the methods we're going to conditionally include.
+ extern "C" {
+   int pthread_key_create (pthread_key_t*, void (*)(void*))
+@@ -76,6 +77,7 @@ extern "C" {
+     __THROW ATTRIBUTE_WEAK;
+ #endif
+ }
++#endif
+ 
+ #define MAX_PERTHREAD_VALS 16
+ static void *perftools_pthread_specific_vals[MAX_PERTHREAD_VALS];
