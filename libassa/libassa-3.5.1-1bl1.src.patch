@@ -1,0 +1,83 @@
+--- origsrc/libassa-3.5.1/assa/CommonUtils.h	2006-07-20 11:30:53.000000000 +0900
++++ src/libassa-3.5.1/assa/CommonUtils.h	2017-10-08 00:32:37.444000000 +0900
+@@ -14,6 +14,7 @@
+ #ifndef COMMON_UTILS_H
+ #define COMMON_UTILS_H
+ 
++#include <unistd.h>
+ #include <sstream>
+ 
+ #include <string> 
+--- origsrc/libassa-3.5.1/assa/Makefile.am	2012-05-18 11:26:21.000000000 +0900
++++ src/libassa-3.5.1/assa/Makefile.am	2017-10-08 00:20:49.974000000 +0900
+@@ -106,7 +106,7 @@ INCLUDES = \
+ lib_LTLIBRARIES = libassa-3.5.la 
+ 
+ libassa_3_5_la_SOURCES = $(h_sources) $(cpp_sources)
+-
++libassa_3_5_la_LIBADD = $(TIRPC_LIBS)
+ libassa_3_5_la_LDFLAGS = \
+ 	@WIN32_EXTRA_LDFLAGS@ \
+ 	-version-info @LIBASSA_SO_VERSION@ 
+--- origsrc/libassa-3.5.1/assa/Socket.cpp	2006-09-25 02:35:33.000000000 +0900
++++ src/libassa-3.5.1/assa/Socket.cpp	2017-10-08 00:10:10.723000000 +0900
+@@ -15,7 +15,7 @@
+ //------------------------------------------------------------------------
+ 
+ #include <sstream>
+-#if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__CYGWIN32__)
++#if defined (__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__CYGWIN__)
+ #  include <sys/ioctl.h>
+ #endif
+ 
+@@ -734,11 +734,11 @@ decode_fcntl_flags (long mask_)
+ 	if (mask_ & O_SYNC) {
+ 		answer += "O_SYNC|";	// 010000
+ 	}
+-
++#if defined(O_ASYNC)
+ 	if (mask_ & O_ASYNC) {		// 020000
+ 		answer += "O_ASYNC|";
+ 	}
+-
++#endif
+ 	answer.erase (answer.end () - 1);
+ 
+ #endif
+--- origsrc/libassa-3.5.1/configure.ac	2012-05-23 11:52:25.000000000 +0900
++++ src/libassa-3.5.1/configure.ac	2017-10-08 00:13:18.192000000 +0900
+@@ -154,7 +154,7 @@ AC_SUBST(LIBRPC)
+ AC_MSG_CHECKING([for win32 environment... ])
+ case "$host_os" in
+ 	cygwin*)
+-		WIN32_EXTRA_LDFLAGS="--no-undefined"
++		WIN32_EXTRA_LDFLAGS="-no-undefined"
+ 		WIN32_EXTRA_LIBADD="$LIBRPC"
+ 		AC_MSG_RESULT([found cygwin: added -no-undefined to LDFLAGS])
+ 		;;
+--- origsrc/libassa-3.5.1/doc/Makefile.am	2012-05-23 11:29:08.000000000 +0900
++++ src/libassa-3.5.1/doc/Makefile.am	2017-10-08 00:01:34.663000200 +0900
+@@ -28,9 +28,9 @@ install-reference: html/index.html
+ 			basefile=`echo $$file | sed -e 's,^.*/,,'`; \
+ 			${INSTALL_DATA} $$file ${DESTDIR}${docdir}/html/$$basefile; \
+ 		done ; \
+-		${INSTALL_DATA} assa_reference.html ${DESTDIR}${docdir} ;\
+-		${INSTALL_DATA} RELEASE-NOTES-v340.html ${DESTDIR}${docdir} ;\
+-		${INSTALL_DATA} RELEASE-NOTES-v350.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/assa_reference.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/RELEASE-NOTES-v340.html ${DESTDIR}${docdir} ;\
++		${INSTALL_DATA} ${srcdir}/RELEASE-NOTES-v350.html ${DESTDIR}${docdir} ;\
+ 	fi
+ 
+ uninstall-reference: html/index.html
+--- origsrc/libassa-3.5.1/tests/Makefile.am	2012-05-23 11:52:25.000000000 +0900
++++ src/libassa-3.5.1/tests/Makefile.am	2017-10-08 00:01:54.566000000 +0900
+@@ -20,7 +20,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ # Choose static libraries where possible.
+ # Try to create a completely statically linked executable
+ # 
+-AM_LDFLAGS = -static @WIN32_EXTRA_LDFLAGS@
++AM_LDFLAGS = @WIN32_EXTRA_LDFLAGS@
+ 
+ LDADD = \
+ 	$(top_builddir)/assa/libassa-@ASSA_RELEASE@.la \
