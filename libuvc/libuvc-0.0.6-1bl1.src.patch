@@ -1,0 +1,48 @@
+--- origsrc/libuvc-0.0.6/CMakeLists.txt	2017-09-21 11:39:28.000000000 +0900
++++ src/libuvc-0.0.6/CMakeLists.txt	2017-10-09 14:40:09.290999800 +0900
+@@ -23,6 +23,7 @@ find_package(PkgConfig)
+ pkg_check_modules(LIBUSB libusb-1.0)
+ 
+ # Try to find JPEG using a module or pkg-config. If that doesn't work, search for the header.
++if(NOT CYGWIN)
+ find_package(jpeg QUIET)
+ if(JPEG_FOUND)
+   set(JPEG_LINK_FLAGS ${JPEG_LIBRARIES})
+@@ -39,6 +40,7 @@ else()
+     endif()
+   endif()
+ endif()
++endif()
+ 
+ include(GNUInstallDirs)
+ 
+@@ -80,6 +82,9 @@ endif()
+ if(BUILD_UVC_SHARED)
+   add_library(uvc SHARED ${SOURCES})
+   list(APPEND UVC_TARGETS uvc)
++  if(CYGWIN)
++    set_target_properties(uvc PROPERTIES SOVERSION 0)
++  endif()
+ endif()
+ 
+ if(BUILD_UVC_STATIC)
+@@ -110,6 +115,7 @@ endif()
+ 
+ install(TARGETS ${UVC_TARGETS}
+     EXPORT libuvcTargets
++  RUNTIME DESTINATION bin
+   LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}"
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}"
+   PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/libuvc"
+--- origsrc/libuvc-0.0.6/include/libuvc/libuvc_internal.h	2017-09-21 11:39:28.000000000 +0900
++++ src/libuvc-0.0.6/include/libuvc/libuvc_internal.h	2017-10-09 14:41:47.277000000 +0900
+@@ -64,6 +64,9 @@
+ /* http://stackoverflow.com/questions/19452971/array-size-macro-that-rejects-pointers */
+ #define IS_INDEXABLE(arg) (sizeof(arg[0]))
+ #define IS_ARRAY(arg) (IS_INDEXABLE(arg) && (((void *) &arg) == ((void *) arg)))
++#if defined(ARRAYSIZE)
++#undef ARRAYSIZE
++#endif
+ #define ARRAYSIZE(arr) (sizeof(arr) / (IS_ARRAY(arr) ? sizeof(arr[0]) : 0))
+ 
+ /** Video interface subclass code (A.2) */
