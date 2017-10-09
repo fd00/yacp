@@ -1,0 +1,37 @@
+--- origsrc/libthesky-0.3.3/CMake/CompilerFlags_Fortran.cmake	2014-06-29 19:16:36.000000000 +0900
++++ src/libthesky-0.3.3/CMake/CompilerFlags_Fortran.cmake	2017-10-09 11:39:04.335000000 +0900
+@@ -84,9 +84,9 @@ if( Fortran_COMPILER_NAME MATCHES "gfort
+     set( WARN_FLAGS "${WARN_FLAGS} -Werror" )
+   endif( STOP_ON_WARNING )
+   
+-  if( WANT_LIBRARY )
++  if( WANT_LIBRARY AND NOT CYGWIN )
+     set( LIB_FLAGS "-fPIC -g" )
+-  endif( WANT_LIBRARY )
++  endif( WANT_LIBRARY AND NOT CYGWIN )
+   
+   
+   # Package-specific flags:
+--- origsrc/libthesky-0.3.3/CMakeLists.txt	2015-11-27 06:17:16.000000000 +0900
++++ src/libthesky-0.3.3/CMakeLists.txt	2017-10-09 11:43:43.757000000 +0900
+@@ -113,6 +113,11 @@ if( CREATE_SHAREDLIB )
+     set_target_properties( libTheSky_shared PROPERTIES OUTPUT_NAME "TheSky" )
+   endif( COMPILER_SPECIFIC_LIBS )
+   set_target_properties( libTheSky_shared PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY} )
++  if( CYGWIN )
++    target_link_libraries( libTheSky_shared ${LibSUFR_LIBRARY} )
++    set_target_properties( libTheSky_shared PROPERTIES SOVERSION 0 )
++    install( TARGETS libTheSky_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++  endif( CYGWIN )
+ endif( CREATE_SHAREDLIB )
+ 
+ # Use add_dependencies below in order to pretend the static lib depends on the shared.  This
+@@ -148,7 +153,7 @@ install( DIRECTORY man/ DESTINATION ${CM
+ 
+ # Install documents:
+ if( NOT EXISTS VERSION )
+-  install( FILES doc/CHANGELOG doc/LICENCE doc/README doc/VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libthesky-${PKG_VERSION} )
++  install( FILES doc/CHANGELOG doc/LICENCE doc/README doc/VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libthesky )
+ else( NOT EXISTS VERSION )
+   install( FILES CHANGELOG LICENCE README VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libthesky-${PKG_VERSION} )
+ endif( NOT EXISTS VERSION )
