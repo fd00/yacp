@@ -1,0 +1,45 @@
+--- origsrc/libisofs-1.4.8/Makefile.am	2016-04-19 16:06:22.000000000 +0900
++++ src/libisofs-1.4.8/Makefile.am	2017-11-16 00:15:18.127385000 +0900
+@@ -8,11 +8,13 @@ libincludedir=$(includedir)/libisofs
+ lib_LTLIBRARIES = libisofs/libisofs.la
+ ACLOCAL_AMFLAGS = -I ./
+ 
++AM_CPPFLAGS = -I$(top_builddir)/libisofs
++
+ ## ========================================================================= ##
+ 
+ # Build libraries
+ 
+-libisofs_libisofs_la_LDFLAGS = \
++libisofs_libisofs_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) $(LIBLDFLAGS)
+ 
+ # Eventually enabling system adapters for ACL and EA.
+@@ -114,7 +116,7 @@ noinst_PROGRAMS = \
+ 
+ # ts A90807
+ # Consolidated demo code for having less linker mesages with a make run.
+-demo_demo_CPPFLAGS = -Ilibisofs
++demo_demo_CPPFLAGS = -Ilibisofs -I$(top_srcdir)/libisofs
+ demo_demo_LDADD = $(libisofs_libisofs_la_OBJECTS) $(libisofs_libisofs_la_LIBADD)
+ demo_demo_SOURCES = demo/demo.c
+ 
+@@ -283,4 +285,3 @@ EXTRA_DIST = \
+ 	libisofs/aaip-os-dummy.c \
+ 	libisofs/aaip-os-linux.c \
+ 	libisofs/aaip-os-freebsd.c
+-
+--- origsrc/libisofs-1.4.8/demo/demo.c	2016-07-22 21:40:46.000000000 +0900
++++ src/libisofs-1.4.8/demo/demo.c	2017-11-16 00:15:18.144043900 +0900
+@@ -243,8 +243,11 @@ need_abs_path:;
+ 
+ 
+ static const char * const optstring = "JRIL:b:hV:";
++
++#if !defined(__CYGWIN__)
+ extern char *optarg;
+ extern int optind;
++#endif
+ 
+ void iso_usage(char **argv)
+ {
