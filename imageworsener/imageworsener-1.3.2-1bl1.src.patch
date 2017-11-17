@@ -1,13 +1,13 @@
---- origsrc/imageworsener-1.3.0/Makefile.am	2015-11-02 06:44:23.000000000 +0900
-+++ src/imageworsener-1.3.0/Makefile.am	2016-04-10 16:18:04.279782900 +0900
+--- origsrc/imageworsener-1.3.2/Makefile.am	2017-05-26 02:23:27.000000000 +0900
++++ src/imageworsener-1.3.2/Makefile.am	2017-11-17 18:08:38.421000000 +0900
 @@ -14,8 +14,8 @@ libimageworsener_la_SOURCES=src/imagew-m
   src/imagew-webp.c \
   src/imagew-pnm.c \
   src/imagew-util.c
 -libimageworsener_la_LIBADD=-lm
--libimageworsener_la_LDFLAGS=-release 1.2.0
-+libimageworsener_la_LIBADD=-lm $(LIBPNG_LIBS) $(LIBWEBP_LIBS) $(ZLIB_LIBS)
-+libimageworsener_la_LDFLAGS=-no-undefined -release 1.2.0
+-libimageworsener_la_LDFLAGS=-release 1.3.2
++libimageworsener_la_LIBADD=-lm $(LIBJPEG_LIBS) $(LIBPNG_LIBS) $(LIBWEBP_LIBS) $(ZLIB_LIBS)
++libimageworsener_la_LDFLAGS=-no-undefined -release 1.3.2
  bin_PROGRAMS=imagew
  imagew_SOURCES=src/imagew-cmd.c
  imagew_LDADD=libimageworsener.la
@@ -29,8 +29,8 @@
 +
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
---- origsrc/imageworsener-1.3.0/configure.ac	2015-11-04 20:29:52.000000000 +0900
-+++ src/imageworsener-1.3.0/configure.ac	2016-04-10 16:18:01.063842900 +0900
+--- origsrc/imageworsener-1.3.2/configure.ac	2017-05-26 02:23:27.000000000 +0900
++++ src/imageworsener-1.3.2/configure.ac	2017-11-17 18:03:36.989225100 +0900
 @@ -16,7 +16,7 @@ dnl AM_PROG_CC_C_O is required by the "s
  AM_PROG_CC_C_O
  AM_PROG_LIBTOOL
@@ -40,7 +40,7 @@
  dnl "foreign" removes the need for some files (NEWS, AUTHORS, ...).
  dnl "subdir-options" puts object files in subdirectories, instead of in
  dnl the current directory.
-@@ -25,51 +25,16 @@ AM_INIT_AUTOMAKE([foreign subdir-objects
+@@ -25,97 +25,28 @@ AM_INIT_AUTOMAKE([foreign subdir-objects
  dnl Checks for libraries.
  
  dnl ---------- zlib ----------
@@ -67,8 +67,8 @@
 - AC_CHECK_LIB(z,deflate)
 -fi
 +PKG_CHECK_MODULES([ZLIB], [zlib], [
-+    AC_DEFINE([HAVE_LIBZ], [1], [have libz])
-+    AC_DEFINE([HAVE_ZLIB_H], [1], [have zlib.h])
++  AC_DEFINE([HAVE_LIBZ], [1], [have libz])
++  AC_DEFINE([HAVE_ZLIB_H], [1], [have zlib.h])
 +])
  
  dnl ---------- libpng ----------
@@ -94,14 +94,36 @@
 - AC_CHECK_LIB(png,png_read_png)
 -fi
 +PKG_CHECK_MODULES([LIBPNG], [libpng], [
-+    AC_DEFINE([HAVE_LIBPNG], [1], [have libpng])
-+    AC_DEFINE([HAVE_PNG_H], [1], [have png.h])
++  AC_DEFINE([HAVE_LIBPNG], [1], [have libpng])
++  AC_DEFINE([HAVE_PNG_H], [1], [have png.h])
 +])
  
  dnl ---------- libjpeg ----------
- AC_ARG_WITH([jpeg],
-@@ -95,27 +60,10 @@ if test "$with_jpeg" != 'no'; then
- fi
+-AC_ARG_WITH([jpeg],
+-    [AS_HELP_STRING([--without-jpeg], [disable JPEG support])],
+-    [with_jpeg=$withval],
+-    [with_jpeg='yes'])
+-AC_ARG_WITH(jpeg-include-dir,
+- AS_HELP_STRING([--with-jpeg-include-dir=DIR],
+-  [location of JPEG headers]),,)
+-AC_ARG_WITH(jpeg-lib-dir,
+- AS_HELP_STRING([--with-jpeg-lib-dir=DIR],
+-  [location of JPEG library binary]),,)
+-
+-if test "$with_jpeg" != 'no'; then
+- if test "x$with_jpeg_include_dir" != "x"; then
+-  CPPFLAGS="-I$with_jpeg_include_dir $CPPFLAGS"
+- fi
+- AC_CHECK_HEADERS([jpeglib.h])
+- if test "x$with_jpeg_lib_dir" != "x"; then
+-  LDFLAGS="-L$with_jpeg_lib_dir $LDFLAGS"
+- fi
+- AC_CHECK_LIB(jpeg,jpeg_read_scanlines)
+-fi
++PKG_CHECK_MODULES([LIBJPEG], [libjpeg], [
++  AC_DEFINE([HAVE_LIBJPEG], [1], [have libjpeg])
++  AC_DEFINE([HAVE_JPEGLIB_H], [1], [have jpeglib.h])
++])
  
  dnl ---------- libwebp ----------
 -AC_ARG_WITH([webp],
@@ -126,14 +148,14 @@
 - AC_CHECK_LIB(webp,WebPGetDecoderVersion)
 -fi
 +PKG_CHECK_MODULES([LIBWEBP], [libwebp], [
-+    AC_DEFINE([HAVE_LIBWEBP], [1], [have libwebp])
-+    AC_DEFINE([HAVE_WEBP_DECODE_H], [1], [have webp/decode.h])
++  AC_DEFINE([HAVE_LIBWEBP], [1], [have libwebp])
++  AC_DEFINE([HAVE_WEBP_DECODE_H], [1], [have webp/decode.h])
 +])
  
  dnl ---------------------------
  
---- origsrc/imageworsener-1.3.0/imageworsener.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/imageworsener-1.3.0/imageworsener.pc.in	2016-04-10 16:18:12.722038300 +0900
+--- origsrc/imageworsener-1.3.2/imageworsener.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/imageworsener-1.3.2/imageworsener.pc.in	2017-11-17 18:03:36.950089100 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
