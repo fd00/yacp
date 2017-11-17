@@ -1,29 +1,22 @@
---- origsrc/isomd5sum-1.0.12/Makefile.am	1970-01-01 09:00:00.000000000 +0900
-+++ src/isomd5sum-1.0.12/Makefile.am	2014-04-20 12:09:13.778625000 +0900
-@@ -0,0 +1,33 @@
+--- origsrc/isomd5sum-1.2.2/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.2.2/Makefile.am	2017-11-17 19:02:19.645000000 +0900
+@@ -0,0 +1,27 @@
 +
 +bin_PROGRAMS = checkisomd5 implantisomd5
-+
 +checkisomd5_SOURCES = checkisomd5.c
 +checkisomd5_LDADD = libcheckisomd5.la -lpopt
-+
 +implantisomd5_SOURCES = implantisomd5.c
 +implantisomd5_LDADD = libimplantisomd5.la -lpopt
 +
-+
 +include_HEADERS = libcheckisomd5.h libimplantisomd5.h
 +
-+
 +lib_LTLIBRARIES = libcheckisomd5.la libimplantisomd5.la
-+
-+libcheckisomd5_la_SOURCES = libcheckisomd5.c md5.c
++libcheckisomd5_la_SOURCES = libcheckisomd5.c md5.c utilities.c
 +libcheckisomd5_la_CPPFLAGS = -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1
 +libcheckisomd5_la_LDFLAGS = -no-undefined
-+
-+libimplantisomd5_la_SOURCES = libimplantisomd5.c md5.c
++libimplantisomd5_la_SOURCES = libimplantisomd5.c md5.c utilities.c
 +libimplantisomd5_la_CPPFLAGS = -D_GNU_SOURCE=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE=1 -D_LARGEFILE64_SOURCE=1
 +libimplantisomd5_la_LDFLAGS = -no-undefined
-+
 +
 +pyexec_LTLIBRARIES = pyisomd5sum.la
 +pyisomd5sum_la_SOURCES = pyisomd5sum.c
@@ -31,11 +24,12 @@
 +pyisomd5sum_la_LDFLAGS = -no-undefined -avoid-version -module
 +pyisomd5sum_la_LIBADD = libcheckisomd5.la libimplantisomd5.la $(PYTHON_LIBS)
 +
-+
 +man_MANS = checkisomd5.1 implantisomd5.1
 +
---- origsrc/isomd5sum-1.0.12/checkisomd5.c	2014-01-11 10:38:02.000000000 +0900
-+++ src/isomd5sum-1.0.12/checkisomd5.c	2014-04-20 12:09:13.778625000 +0900
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libcheckisomd5.pc libimplantisomd5.pc
+--- origsrc/isomd5sum-1.2.2/checkisomd5.c	2017-10-04 03:14:54.000000000 +0900
++++ src/isomd5sum-1.2.2/checkisomd5.c	2017-11-17 18:39:53.239216300 +0900
 @@ -23,6 +23,7 @@
  #include <string.h>
  #include <popt.h>
@@ -44,14 +38,14 @@
  
  #include "md5.h"
  #include "libcheckisomd5.h"
---- origsrc/isomd5sum-1.0.12/configure.ac	1970-01-01 09:00:00.000000000 +0900
-+++ src/isomd5sum-1.0.12/configure.ac	2014-04-20 12:10:00.394836000 +0900
+--- origsrc/isomd5sum-1.2.2/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.2.2/configure.ac	2017-11-17 19:08:50.586000000 +0900
 @@ -0,0 +1,40 @@
 +#                                               -*- Autoconf -*-
 +# Process this file with autoconf to produce a configure script.
 +
 +AC_PREREQ([2.69])
-+AC_INIT([isomd5sum], [1.0.12])
++AC_INIT([isomd5sum], [1.2.2])
 +AC_CONFIG_SRCDIR([checkisomd5.c])
 +AC_CONFIG_HEADERS([config.h])
 +AM_INIT_AUTOMAKE
@@ -60,13 +54,13 @@
 +AC_PROG_CC
 +AC_PROG_INSTALL
 +LT_INIT
-+AM_PATH_PYTHON
++AM_PATH_PYTHON([3])
 +
-+if ! python-config --help &> /dev/null ; then
-+	AC_MSG_ERROR([Python is required.])
++if ! python3-config --help &> /dev/null ; then
++	AC_MSG_ERROR([Python3 is required.])
 +else
-+	PYTHON_CFLAGS=`python-config --cflags`
-+	PYTHON_LIBS=`python-config --libs`
++	PYTHON_CFLAGS=`python3-config --cflags`
++	PYTHON_LIBS=`python3-config --libs`
 +	AC_SUBST([PYTHON_CFLAGS])
 +	AC_SUBST([PYTHON_LIBS])
 +fi
@@ -85,5 +79,29 @@
 +AC_FUNC_MALLOC
 +AC_CHECK_FUNCS([memset select strtol])
 +
-+AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libcheckisomd5.pc libimplantisomd5.pc Makefile])
 +AC_OUTPUT
+--- origsrc/isomd5sum-1.2.2/libcheckisomd5.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.2.2/libcheckisomd5.pc.in	2017-11-17 19:00:35.473000000 +0900
+@@ -0,0 +1,9 @@
++includedir=@includedir@
++libdir=@libdir@
++
++Name: libcheckisomd5
++Description: Utilities for working with md5sum implanted in ISO images
++URL: https://github.com/rhinstaller/isomd5sum
++Version: @VERSION@
++Cflags: -I${includedir}
++Libs: -L${libdir} -lcheckisomd5
+--- origsrc/isomd5sum-1.2.2/libimplantisomd5.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/isomd5sum-1.2.2/libimplantisomd5.pc.in	2017-11-17 19:00:22.438999800 +0900
+@@ -0,0 +1,9 @@
++includedir=@includedir@
++libdir=@libdir@
++
++Name: libimplantisomd5
++Description: Utilities for working with md5sum implanted in ISO images
++URL: https://github.com/rhinstaller/isomd5sum
++Version: @VERSION@
++Cflags: -I${includedir}
++Libs: -L${libdir} -limplantisomd5
