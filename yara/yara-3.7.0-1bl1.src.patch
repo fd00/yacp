@@ -1,40 +1,71 @@
---- origsrc/yara-3.6.3/Makefile.am	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/Makefile.am	2017-09-20 21:38:00.856000000 +0900
+--- origsrc/yara-3.7.0/Makefile.am	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/Makefile.am	2017-11-18 11:23:28.161000000 +0900
 @@ -23,10 +23,10 @@ ACLOCAL_AMFLAGS=-I m4
  bin_PROGRAMS = yara yarac
  
- yara_SOURCES = args.c args.h threading.c threading.h yara.c
+ yara_SOURCES = args.c args.h common.h threading.c threading.h yara.c
 -yara_LDADD = libyara/.libs/libyara.a
 +yara_LDADD = libyara/libyara.la
  
- yarac_SOURCES = args.c args.h yarac.c
+ yarac_SOURCES = args.c args.h common.h yarac.c
 -yarac_LDADD = libyara/.libs/libyara.a
 +yarac_LDADD = libyara/libyara.la
  
  TESTS = $(check_PROGRAMS)
- check_PROGRAMS = test-alignment test-rules test-pe test-elf test-version
---- origsrc/yara-3.6.3/libyara/Makefile.am	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/Makefile.am	2017-09-20 21:38:30.817000000 +0900
-@@ -82,7 +82,7 @@ yarainclude_HEADERS = \
+ check_PROGRAMS = test-alignment test-api test-rules test-pe test-elf test-version
+@@ -40,15 +40,15 @@ endif
+ 
+ test_alignment_SOURCES = tests/test-alignment.c
+ test_rules_SOURCES = tests/test-rules.c tests/util.c
+-test_rules_LDADD = libyara/.libs/libyara.a
++test_rules_LDADD = libyara/libyara.la
+ test_pe_SOURCES = tests/test-pe.c tests/util.c
+-test_pe_LDADD = libyara/.libs/libyara.a
++test_pe_LDADD = libyara/libyara.la
+ test_elf_SOURCES = tests/test-elf.c tests/util.c
+-test_elf_LDADD = libyara/.libs/libyara.a
++test_elf_LDADD = libyara/libyara.la
+ test_exception_SOURCES = tests/test-exception.c tests/util.c
+-test_exception_LDADD = libyara/.libs/libyara.a
++test_exception_LDADD = libyara/libyara.la
+ test_version_SOURCES = tests/test-version.c
+-test_api_LDADD = libyara/.libs/libyara.a
++test_api_LDADD = libyara/libyara.la
+ test_api_SOURCES = tests/test-api.c tests/util.c
+ 
+ # man pages
+--- origsrc/yara-3.7.0/configure.ac	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/configure.ac	2017-11-18 11:19:23.516000000 +0900
+@@ -48,7 +48,9 @@ case $host_os in
+     openbsd*)
+             CFLAGS="$CFLAGS -DUSE_OPENBSD_PROC"
+             proc_interface=openbsd ;;
+-    *)      proc_interface=none ;;
++    *)
++            CFLAGS="$CFLAGS -DUSE_NO_PROC"
++            proc_interface=none ;;
+ esac
+ 
+ AC_C_BIGENDIAN
+--- origsrc/yara-3.7.0/libyara/Makefile.am	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/Makefile.am	2017-11-18 11:01:02.088315000 +0900
+@@ -103,7 +103,7 @@ noinst_HEADERS = \
  
  lib_LTLIBRARIES = libyara.la
  
--libyara_la_LDFLAGS = -version-number 3:6:3
-+libyara_la_LDFLAGS = -no-undefined -version-number 3:6:3
+-libyara_la_LDFLAGS = -version-number 3:7:0
++libyara_la_LDFLAGS = -no-undefined -version-number 3:7:0
  
- libyara_la_SOURCES = \
-   $(MODULES) \
-@@ -134,7 +134,7 @@ libyara_la_SOURCES = \
-   utils.h
+ BUILT_SOURCES = \
+   lexer.c \
+@@ -173,4 +173,4 @@ libyara_la_SOURCES += proc/none.c
+ endif
  
  pkgconfigdir = $(libdir)/pkgconfig
 -nodist_pkgconfig_DATA = yara.pc
 +pkgconfig_DATA = yara.pc
- 
- yara.pc: yara.pc.in
- 		sed -e 's![@]prefix[@]!$(prefix)!g' \
---- origsrc/yara-3.6.3/libyara/exception.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/exception.h	2017-09-20 21:52:21.084000200 +0900
+--- origsrc/yara-3.7.0/libyara/exception.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/exception.h	2017-11-18 11:01:19.596999800 +0900
 @@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <assert.h>
@@ -44,8 +75,8 @@
  
  #include <windows.h>
  #include <setjmp.h>
---- origsrc/yara-3.6.3/libyara/filemap.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/filemap.c	2017-09-20 21:52:49.077000000 +0900
+--- origsrc/yara-3.7.0/libyara/filemap.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/filemap.c	2017-11-18 11:01:56.142999800 +0900
 @@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <fcntl.h>
@@ -64,7 +95,7 @@
  
  YR_API int yr_filemap_map_fd(
      YR_FILE_DESCRIPTOR file,
-@@ -261,7 +261,7 @@ YR_API int yr_filemap_map_fd(
+@@ -258,7 +258,7 @@ YR_API int yr_filemap_map_fd(
  //       ERROR_COULD_NOT_MAP_FILE
  //
  
@@ -73,8 +104,8 @@
  
  YR_API int yr_filemap_map_ex(
      const char* file_path,
---- origsrc/yara-3.6.3/libyara/include/yara/error.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/include/yara/error.h	2017-09-20 21:53:06.382000000 +0900
+--- origsrc/yara-3.7.0/libyara/include/yara/error.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/error.h	2017-11-18 11:02:19.749000000 +0900
 @@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <string.h>
@@ -84,8 +115,8 @@
  #include <windows.h>
  #endif
  
---- origsrc/yara-3.6.3/libyara/include/yara/filemap.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/include/yara/filemap.h	2017-09-20 21:53:43.266000000 +0900
+--- origsrc/yara-3.7.0/libyara/include/yara/filemap.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/filemap.h	2017-11-18 11:02:39.316000000 +0900
 @@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <sys/types.h>
  #endif
@@ -98,14 +129,14 @@
 @@ -54,7 +54,7 @@ typedef struct _YR_MAPPED_FILE
    YR_FILE_DESCRIPTOR  file;
    size_t              size;
-   uint8_t*            data;
+   const uint8_t*      data;
 -  #if defined(_WIN32) || defined(__CYGWIN__)
 +  #if defined(_WIN32)
    HANDLE              mapping;
    #endif
  
---- origsrc/yara-3.6.3/libyara/include/yara/limits.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/include/yara/limits.h	2017-09-20 21:51:35.657000000 +0900
+--- origsrc/yara-3.7.0/libyara/include/yara/limits.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/limits.h	2017-11-18 11:02:50.623000000 +0900
 @@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #ifndef YR_LIMITS_H
  #define YR_LIMITS_H
@@ -115,8 +146,8 @@
  #include <windows.h>
  #endif
  
---- origsrc/yara-3.6.3/libyara/include/yara/pe.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/include/yara/pe.h	2017-09-20 21:54:00.749000000 +0900
+--- origsrc/yara-3.7.0/libyara/include/yara/pe.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/pe.h	2017-11-18 11:02:57.905999800 +0900
 @@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #pragma pack(push, 1)
@@ -126,8 +157,19 @@
  #include <windows.h>
  
  // These definitions are not present in older Windows headers.
---- origsrc/yara-3.6.3/libyara/include/yara/threading.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/include/yara/threading.h	2017-09-20 21:54:27.073000000 +0900
+--- origsrc/yara-3.7.0/libyara/include/yara/strutils.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/strutils.h	2017-11-18 11:08:09.325000000 +0900
+@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <yara/integers.h>
+ 
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ #if !defined(PRIu64)
+ #define PRIu64 "I64u"
+--- origsrc/yara-3.7.0/libyara/include/yara/threading.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/include/yara/threading.h	2017-11-18 11:03:08.086999800 +0900
 @@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  
@@ -137,19 +179,19 @@
  
  #include <windows.h>
  
---- origsrc/yara-3.6.3/libyara/lexer.l	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/lexer.l	2017-09-20 21:55:11.969000200 +0900
-@@ -50,7 +50,7 @@ with noyywrap then we can remove this pr
+--- origsrc/yara-3.7.0/libyara/lexer.l	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/lexer.l	2017-11-18 11:03:43.811000200 +0900
+@@ -51,7 +51,7 @@ with noyywrap then we can remove this pr
  #include <string.h>
  #include <setjmp.h>
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  #include <windows.h>
+ #define strtoll _strtoi64
  #else
- #include <unistd.h>
-@@ -846,7 +846,7 @@ int yr_lex_parse_rules_fd(
-   yyset_extra(compiler, yyscanner);
+@@ -862,7 +862,7 @@ int yr_lex_parse_rules_fd(
+ 
    while (1)
    {
 -#if defined(_WIN32) || defined(__CYGWIN__)
@@ -157,19 +199,19 @@
      DWORD len;
      if (!ReadFile(rules_fd, buf, sizeof(buf), &len, NULL))
        break;
---- origsrc/yara-3.6.3/libyara/libyara.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/libyara.c	2017-09-20 21:55:23.609999800 +0900
-@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- #include <openssl/crypto.h>
- #endif
+--- origsrc/yara-3.7.0/libyara/libyara.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/libyara.c	2017-11-18 11:03:54.300000000 +0900
+@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ 
+ #include "crypto.h"
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  #if !defined(_MSC_VER) || (defined(_MSC_VER) && (_MSC_VER < 1900))
  #define snprintf _snprintf
  #endif
---- origsrc/yara-3.6.3/libyara/mem.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/mem.c	2017-09-20 21:55:33.719000200 +0900
+--- origsrc/yara-3.7.0/libyara/mem.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/mem.c	2017-11-18 11:04:06.463000000 +0900
 @@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  
@@ -179,8 +221,8 @@
  
  #include <windows.h>
  #include <string.h>
---- origsrc/yara-3.6.3/libyara/modules/cuckoo.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/modules/cuckoo.c	2017-09-20 21:55:50.876000000 +0900
+--- origsrc/yara-3.7.0/libyara/modules/cuckoo.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/modules/cuckoo.c	2017-11-18 11:04:23.425000000 +0900
 @@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <yara/re.h>
  #include <yara/modules.h>
@@ -190,19 +232,8 @@
  #define strcasecmp _stricmp
  #endif
  
---- origsrc/yara-3.6.3/libyara/modules/hash.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/modules/hash.c	2017-09-20 21:55:59.984999800 +0900
-@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- #include <openssl/md5.h>
- #include <openssl/sha.h>
- 
--#if _WIN32 || __CYGWIN__
-+#if _WIN32
- 
- #ifndef PRIu64
- #define PRIu64 "%I64d"
---- origsrc/yara-3.6.3/libyara/object.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/object.c	2017-09-20 21:56:14.390000200 +0900
+--- origsrc/yara-3.7.0/libyara/object.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/object.c	2017-11-18 11:05:12.565000000 +0900
 @@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <string.h>
  #include <math.h>
@@ -212,31 +243,8 @@
  #define PRIu64 "I64d"
  #else
  #include <inttypes.h>
---- origsrc/yara-3.6.3/libyara/proc.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/proc.c	2017-09-20 21:41:38.721999800 +0900
-@@ -27,7 +27,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONT
- SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
- 
--#if defined(_WIN32) || defined(__CYGWIN__)
-+#if defined(_WIN32)
- 
- #include <windows.h>
- 
-@@ -184,7 +184,11 @@ YR_MEMORY_BLOCK* _yr_get_first_block(
- #include <fcntl.h>
- #include <unistd.h>
- #include <sys/types.h>
-+#if defined(__CYGWIN__)
-+#define ptrace(request, pid, addr, data) (-1)
-+#else
- #include <sys/ptrace.h>
-+#endif
- #include <sys/wait.h>
- 
- #include <yara/error.h>
---- origsrc/yara-3.6.3/libyara/threading.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/libyara/threading.c	2017-09-20 21:56:33.827000000 +0900
+--- origsrc/yara-3.7.0/libyara/threading.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/libyara/threading.c	2017-11-18 11:05:40.549000000 +0900
 @@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <yara/error.h>
  #include <yara/threading.h>
@@ -246,10 +254,10 @@
  
  YR_THREAD_ID yr_current_thread_id(void)
  {
---- origsrc/yara-3.6.3/tests/test-rules.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/tests/test-rules.c	2017-09-20 21:57:47.442000000 +0900
-@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- #include "blob.h"
+--- origsrc/yara-3.7.0/tests/test-api.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/tests/test-api.c	2017-11-18 11:09:07.487000000 +0900
+@@ -2,7 +2,7 @@
+ #include <yara.h>
  #include "util.h"
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
@@ -257,7 +265,7 @@
  #include <fileapi.h>
  #else
  #include <unistd.h>
-@@ -1607,7 +1607,7 @@ void test_file_descriptor()
+@@ -104,7 +104,7 @@ void test_file_descriptor()
    YR_COMPILER* compiler = NULL;
    YR_RULES* rules = NULL;
  
@@ -266,7 +274,7 @@
    HANDLE fd = CreateFile("tests/data/true.yar", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
    if (fd == INVALID_HANDLE_VALUE)
    {
-@@ -1633,7 +1633,7 @@ void test_file_descriptor()
+@@ -133,7 +133,7 @@ void test_file_descriptor()
      exit(EXIT_FAILURE);
    }
  
@@ -275,8 +283,8 @@
    CloseHandle(fd);
  #else
    close(fd);
---- origsrc/yara-3.6.3/threading.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/threading.c	2017-09-20 22:05:37.975000000 +0900
+--- origsrc/yara-3.7.0/threading.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/threading.c	2017-11-18 11:06:56.612000000 +0900
 @@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <fcntl.h>
@@ -376,8 +384,8 @@
    WaitForSingleObject(*thread, INFINITE);
    #else
    pthread_join(*thread, NULL);
---- origsrc/yara-3.6.3/threading.h	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/threading.h	2017-09-20 21:58:37.232000200 +0900
+--- origsrc/yara-3.7.0/threading.h	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/threading.h	2017-11-18 11:07:10.943000000 +0900
 @@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #ifndef THREADING_H
  #define THREADING_H
@@ -396,8 +404,8 @@
  
  typedef HANDLE SEMAPHORE;
  typedef CRITICAL_SECTION MUTEX;
---- origsrc/yara-3.6.3/yara.c	2017-07-05 23:35:49.000000000 +0900
-+++ src/yara-3.6.3/yara.c	2017-09-20 22:06:31.357000200 +0900
+--- origsrc/yara-3.7.0/yara.c	2017-11-10 20:21:21.000000000 +0900
++++ src/yara-3.7.0/yara.c	2017-11-18 11:09:20.744999800 +0900
 @@ -27,7 +27,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONT
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
@@ -407,21 +415,21 @@
  
  #include <sys/stat.h>
  #include <dirent.h>
-@@ -304,7 +304,7 @@ char* file_queue_get()
+@@ -322,7 +322,7 @@ static char* file_queue_get()
  }
  
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
- int is_directory(
+ static int is_directory(
      const char* path)
-@@ -762,7 +762,7 @@ int callback(
+@@ -781,7 +781,7 @@ static int callback(
  }
  
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
- DWORD WINAPI scanning_thread(LPVOID param)
+ static DWORD WINAPI scanning_thread(LPVOID param)
  #else
- void* scanning_thread(void* param)
+ static void* scanning_thread(void* param)
