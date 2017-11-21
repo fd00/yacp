@@ -1,0 +1,54 @@
+--- origsrc/libplctag-1.5.7/CMakeLists.txt	2017-06-08 09:03:39.000000000 +0900
++++ src/libplctag-1.5.7/CMakeLists.txt	2017-11-21 22:53:04.570000000 +0900
+@@ -164,6 +164,9 @@ ENDFOREACH()
+ 
+ # set up the library
+ add_library(plctag SHARED ${libplctag_SRCS} )
++if (CYGWIN)
++    set_target_properties(plctag PROPERTIES SOVERSION 0)
++endif()
+ 
+ # Windows needs to link the library to the WINSOCK library
+ if (WIN32)
+@@ -212,13 +215,26 @@ foreach ( example ${example_PROGRAMS} )
+     set_source_files_properties("${example_SRC_PATH}/${example}.c" PROPERTIES COMPILE_FLAGS ${BASE_C_FLAGS})
+     add_executable( ${example} "${example_SRC_PATH}/${example}.c" "${example_SRC_PATH}/${example_PROG_UTIL}" "${example_SRC_PATH}/utils.h" )
+     target_link_libraries(${example} ${example_LIBRARIES} )
++    if (CYGWIN)
++        install(TARGETS ${example} RUNTIME DESTINATION share/libplctag/example)
++    endif()
+ endforeach(example)
+ 
+ # simple.cpp is different because it is C++
+ set_source_files_properties("${example_SRC_PATH}/simple_cpp.cpp" PROPERTIES COMPILE_FLAGS ${BASE_CXX_FLAGS})
+ add_executable (simple_cpp "${example_SRC_PATH}/simple_cpp.cpp" "${example_SRC_PATH}/${example_PROG_UTIL}" "${example_SRC_PATH}/utils.h" )
+ target_link_libraries (simple_cpp ${example_LIBRARIES} )
+-
++if (CYGWIN)
++    install(TARGETS simple_cpp RUNTIME DESTINATION share/libplctag/example)
++endif()
+ # for installation
+-install(TARGETS plctag DESTINATION lib)
++install(TARGETS plctag RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES "${lib_SRC_PATH}/libplctag.h" DESTINATION include)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}.7")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libplctag.pc.in ${CMAKE_BINARY_DIR}/libplctag.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libplctag.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libplctag-1.5.7/libplctag.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libplctag-1.5.7/libplctag.pc.in	2017-11-21 22:52:34.914000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libplctag
++Description: Portable and simple API for accessing Allen-Bradley PLC data
++Version: @VERSION@
++Libs: -L${libdir} -lplctag
++Cflags: -I${includedir}
