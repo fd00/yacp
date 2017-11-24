@@ -1,0 +1,174 @@
+--- origsrc/mysql-proxy-rel-0.8.5/configure.ac	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/configure.ac	2017-11-24 16:17:34.630000200 +0900
+@@ -372,7 +372,7 @@ case $host_os in
+ 	*darwin* )
+ 		ARCH=macosx
+ 		;;
+-	*linux* )
++	*linux*|*cygwin* )
+ 		ARCH=linux
+ 		;;
+ 	*freebsd* )
+--- origsrc/mysql-proxy-rel-0.8.5/lib/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/lib/Makefile.am	2017-11-24 16:57:23.357000200 +0900
+@@ -51,21 +51,25 @@ dist_luaext_DATA = \
+ 
+ luaext_LTLIBRARIES = lfs.la glib2.la chassis.la mysql.la lpeg.la posix.la
+ 
++AM_LDFLAGS = -no-undefined
++
+ lfs_la_SOURCES  = lfs.c
+ ## get libtool to build a shared-lib
+ lfs_la_CPPFLAGS = ${LUA_CFLAGS}
++lfs_la_LIBADD   = $(LUA_LIBS)
+ lfs_la_LDFLAGS  = $(AM_LDFLAGS) -module -avoid-version
+ 
+ posix_la_SOURCES  = posix.c
+ ## get libtool to build a shared-lib
+ posix_la_CPPFLAGS = ${LUA_CFLAGS}
++posix_la_LIBADD   = $(LUA_LIBS)
+ posix_la_LDFLAGS  = $(AM_LDFLAGS) -module -avoid-version
+ 
+ glib2_la_SOURCES  = glib2.c
+ ## get libtool to build a shared-lib
+ glib2_la_CPPFLAGS = ${LUA_CFLAGS} ${GLIB_CFLAGS}
+ glib2_la_LDFLAGS  = $(AM_LDFLAGS) -module -avoid-version
+-glib2_la_LIBADD   = $(GLIB_LIBS)
++glib2_la_LIBADD   = $(GLIB_LIBS) $(LUA_LIBS)
+ 
+ chassis_la_SOURCES  = chassis.c
+ ## get libtool to build a shared-lib
+@@ -87,6 +91,7 @@ mysql_la_LIBADD   = ${GLIB_LIBS} ${top_b
+ 
+ lpeg_la_SOURCES  = lpeg.c
+ lpeg_la_CPPFLAGS = ${LUA_CFLAGS}
++lpeg_la_LIBADD   = $(LUA_LIBS)
+ lpeg_la_LDFLAGS  = $(AM_LDFLAGS) -module -avoid-version
+ 
+ 
+@@ -118,7 +123,7 @@ sql_tokenizer_gen_LDADD=${GLIB_LIBS}
+ 
+ sql-tokenizer.c: sql-tokenizer-keywords.c
+ 
+-sql-tokenizer-keywords.c: sql-tokenizer-gen
++sql-tokenizer-keywords.c: sql-tokenizer-gen$(EXEEXT)
+ 	${builddir}/sql-tokenizer-gen > ${builddir}/sql-tokenizer-keywords.c
+ 
+ 
+--- origsrc/mysql-proxy-rel-0.8.5/plugins/admin/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/plugins/admin/Makefile.am	2017-11-24 17:31:10.450000000 +0900
+@@ -19,11 +19,11 @@
+ #  $%ENDLICENSE%$
+ plugindir = ${pkglibdir}/plugins
+ 
+-plugin_LTLIBRARIES = libadmin.la
+-libadmin_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic
+-libadmin_la_SOURCES  = admin-plugin.c
+-libadmin_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
+-libadmin_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
++plugin_LTLIBRARIES = admin.la
++admin_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic -module
++admin_la_SOURCES  = admin-plugin.c
++admin_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
++admin_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
+ 
+ EXTRA_DIST=CMakeLists.txt
+ 
+--- origsrc/mysql-proxy-rel-0.8.5/plugins/cli/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/plugins/cli/Makefile.am	2017-11-24 17:31:19.869999800 +0900
+@@ -19,11 +19,11 @@
+ #  $%ENDLICENSE%$
+ plugindir = ${pkglibdir}/plugins
+ 
+-plugin_LTLIBRARIES = libcli.la
+-libcli_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic
+-libcli_la_SOURCES  = cli-plugin.c
+-libcli_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la -lreadline
+-libcli_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
++plugin_LTLIBRARIES = cli.la
++cli_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic -module
++cli_la_SOURCES  = cli-plugin.c
++cli_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la -lreadline
++cli_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
+ 
+ EXTRA_DIST=CMakeLists.txt
+ 
+--- origsrc/mysql-proxy-rel-0.8.5/plugins/debug/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/plugins/debug/Makefile.am	2017-11-24 17:31:28.839000000 +0900
+@@ -19,11 +19,11 @@
+ #  $%ENDLICENSE%$
+ plugindir = ${pkglibdir}/plugins
+ 
+-plugin_LTLIBRARIES = libdebug.la
+-libdebug_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic
+-libdebug_la_SOURCES  = debug-plugin.c
+-libdebug_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
+-libdebug_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
++plugin_LTLIBRARIES = debug.la
++debug_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic -module
++debug_la_SOURCES  = debug-plugin.c
++debug_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
++debug_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
+ 
+ EXTRA_DIST=CMakeLists.txt
+ 
+--- origsrc/mysql-proxy-rel-0.8.5/plugins/proxy/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/plugins/proxy/Makefile.am	2017-11-24 17:31:37.589000000 +0900
+@@ -19,11 +19,11 @@
+ #  $%ENDLICENSE%$
+ plugindir = ${pkglibdir}/plugins
+ 
+-plugin_LTLIBRARIES = libproxy.la
+-libproxy_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic
+-libproxy_la_SOURCES  = proxy-plugin.c
+-libproxy_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
+-libproxy_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
++plugin_LTLIBRARIES = proxy.la
++proxy_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic -module
++proxy_la_SOURCES  = proxy-plugin.c
++proxy_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
++proxy_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
+ noinst_HEADERS = proxy-plugin.h
+ 
+ EXTRA_DIST=CMakeLists.txt
+--- origsrc/mysql-proxy-rel-0.8.5/plugins/replicant/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/plugins/replicant/Makefile.am	2017-11-24 17:31:46.479000000 +0900
+@@ -19,11 +19,11 @@
+ #  $%ENDLICENSE%$
+ plugindir = ${pkglibdir}/plugins
+ 
+-plugin_LTLIBRARIES = libreplicant.la
+-libreplicant_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic
+-libreplicant_la_SOURCES  = replicant-plugin.c
+-libreplicant_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
+-libreplicant_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
++plugin_LTLIBRARIES = replicant.la
++replicant_la_LDFLAGS  = -export-dynamic -no-undefined -avoid-version -dynamic -module
++replicant_la_SOURCES  = replicant-plugin.c
++replicant_la_LIBADD   = $(EVENT_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) $(top_builddir)/src/libmysql-proxy.la
++replicant_la_CPPFLAGS = $(MYSQL_CFLAGS) $(GLIB_CFLAGS) $(LUA_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)/src/
+ 
+ EXTRA_DIST=CMakeLists.txt
+ 
+--- origsrc/mysql-proxy-rel-0.8.5/src/Makefile.am	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/src/Makefile.am	2017-11-24 17:38:22.298000000 +0900
+@@ -136,7 +136,7 @@ libmysql_proxy_la_LIBADD   = $(EVENT_LIB
+ noinst_HEADERS=\
+ 	network-debug.h
+ 
+-include_HEADERS=\
++pkginclude_HEADERS=\
+ 	network-mysqld.h \
+ 	network-mysqld-lua.h \
+ 	network-mysqld-proto.h \
+--- origsrc/mysql-proxy-rel-0.8.5/src/chassis-frontend.c	2014-08-19 16:21:07.000000000 +0900
++++ src/mysql-proxy-rel-0.8.5/src/chassis-frontend.c	2017-11-24 17:29:44.642999800 +0900
+@@ -343,6 +343,8 @@ int chassis_frontend_load_plugins(GPtrAr
+ 		chassis_plugin *p;
+ #ifdef WIN32
+ #define G_MODULE_PREFIX "plugin-" /* we build the plugins with a prefix on win32 to avoid name-clashing in bin/ */
++#elif defined(__CYGWIN__)
++#define G_MODULE_PREFIX ""
+ #else
+ #define G_MODULE_PREFIX "lib"
+ #endif
