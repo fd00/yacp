@@ -1,0 +1,49 @@
+--- origsrc/aws-checksums/CMakeLists.txt	2017-11-27 13:34:16.000000000 +0900
++++ src/aws-checksums/CMakeLists.txt	2017-11-27 13:44:25.231861700 +0900
+@@ -61,8 +61,11 @@ add_library(aws-checksums ${LIBTYPE} ${C
+ set_target_properties(aws-checksums PROPERTIES LINKER_LANGUAGE C)
+ set(CMAKE_C_FLAGS_DEBUGOPT "")
+ set_property(TARGET aws-checksums PROPERTY C_STANDARD 99)
++if(CYGWIN)
++    set_target_properties(aws-checksums PROPERTIES SOVERSION 0)
++endif()
+ 
+-if(BUILD_SHARED_LIBS AND WIN32)
++if(BUILD_SHARED_LIBS)
+     target_compile_definitions(aws-checksums PRIVATE "-DAWS_CHECKSUMS_EXPORTS")    
+ endif()
+ 
+@@ -103,10 +106,19 @@ install (FILES ${AWS_CHECKSUMS_HEADERS}
+ install (
+          TARGETS ${PROJECT_NAME}
+          EXPORT "${PROJECT_NAME}-config"
++         RUNTIME DESTINATION bin
+          ARCHIVE DESTINATION lib
+          LIBRARY DESTINATION lib
+          COMPONENT library     
+ )
+ 
+ export(TARGETS ${PROJECT_NAME} FILE "${PROJECT_NAME}-config.cmake")
+-install(EXPORT ${PROJECT_NAME}-config DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/cmake/")
++install(EXPORT ${PROJECT_NAME}-config DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME}/")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0+git20171031")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-checksums.pc.in ${CMAKE_BINARY_DIR}/aws-checksums.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-checksums.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-checksums/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-checksums/aws-checksums.pc.in	2017-11-27 13:44:25.215826400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-checksums
++Description: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations
++Version: @VERSION@
++Libs: -L${libdir} -laws-checksums
++Cflags: -I${includedir}
