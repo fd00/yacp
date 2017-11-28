@@ -1,0 +1,70 @@
+--- origsrc/binaryen-version_39/CMakeLists.txt	2017-11-08 13:55:23.000000000 +0900
++++ src/binaryen-version_39/CMakeLists.txt	2017-11-29 02:05:47.844581500 +0900
+@@ -97,7 +97,11 @@ ELSE()
+   SET(THREADS_PREFER_PTHREAD_FLAG ON)
+   SET(CMAKE_THREAD_PREFER_PTHREAD ON)
+   FIND_PACKAGE(Threads REQUIRED)
+-  ADD_CXX_FLAG("-std=c++11")
++  if (CYGWIN)
++    ADD_CXX_FLAG("-std=gnu++11")
++  else()
++    ADD_CXX_FLAG("-std=c++11")
++  endif()
+   if (NOT EMSCRIPTEN)
+     # try to get the target architecture by compiling a dummy.c file and
+     # checking the architecture using the file command.
+@@ -147,11 +151,15 @@ ELSE()
+     endif ()
+   endif ()
+   ADD_COMPILE_FLAG("-Wall")
+-  ADD_COMPILE_FLAG("-Werror")
++  if(NOT CYGWIN)
++    ADD_COMPILE_FLAG("-Werror")
++  endif()
+   ADD_COMPILE_FLAG("-Wextra")
+   ADD_COMPILE_FLAG("-Wno-unused-parameter")
+   ADD_COMPILE_FLAG("-fno-omit-frame-pointer")
+-  IF(WIN32)
++  IF(CYGWIN)
++    ADD_COMPILE_FLAG("-D_GNU_SOURCE")
++  ELSEIF(WIN32)
+     ADD_COMPILE_FLAG("-D_GNU_SOURCE")
+     ADD_LINK_FLAG("-Wl,--stack,8388608")
+   ELSE()
+@@ -194,7 +202,10 @@ ELSE()
+   ADD_LIBRARY(binaryen SHARED ${binaryen_SOURCES})
+ ENDIF()
+ TARGET_LINK_LIBRARIES(binaryen passes wasm asmjs emscripten-optimizer ir cfg support)
+-INSTALL(TARGETS binaryen DESTINATION ${CMAKE_INSTALL_LIBDIR})
++INSTALL(TARGETS binaryen RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++IF(CYGWIN)
++  SET_TARGET_PROPERTIES(binaryen PROPERTIES SOVERSION 0)
++ENDIF()
+ 
+ INSTALL(FILES src/binaryen-c.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ INSTALL(FILES bin/wasm.js DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME})
+@@ -310,3 +321,11 @@ IF (UNIX) # TODO: port to windows
+ 
+ ENDIF()
+ 
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "39")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/binaryen.pc.in ${CMAKE_BINARY_DIR}/binaryen.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/binaryen.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/binaryen-version_39/binaryen.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/binaryen-version_39/binaryen.pc.in	2017-11-29 02:13:31.596000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: binaryen
++Description: Compiler infrastructure and toolchain library for WebAssembly
++Version: @VERSION@
++Libs: -L${libdir} -lbinaryen
++Cflags: -I${includedir}
