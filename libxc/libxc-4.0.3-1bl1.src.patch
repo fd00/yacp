@@ -1,53 +1,55 @@
---- origsrc/libxc-2.2.2/src/Makefile.am	2015-02-19 22:35:48.000000000 +0900
-+++ src/libxc-2.2.2/src/Makefile.am	2015-05-09 06:40:33.889051100 +0900
-@@ -59,7 +59,7 @@ libxc_la_FUNC_SOURCES = \
- libxc_la_FUNC_SINGLE_SOURCES = $(libxc_la_FUNC_SOURCES:.c=_s.c)
+--- origsrc/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/src/Makefile.am	2017-11-20 19:08:32.000000000 +0900
++++ src/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/src/Makefile.am	2017-11-29 21:27:46.032000000 +0900
+@@ -97,7 +97,7 @@ libxc_la_FUNC_SOURCES = \
+ 	hyb_mgga_xc_kcis.c mgga_c_b88.c mgga_x_gx.c mgga_x_pbe_gx.c
  
- libxc_la_SOURCES = $(libxc_la_FUNC_SOURCES)
+ libxc_la_SOURCES = references.c $(libxc_la_FUNC_SOURCES)
 -libxc_la_LDFLAGS = -version-info $(XC_LT_VERSION)
 +libxc_la_LDFLAGS = -no-undefined -version-info $(XC_LT_VERSION)
  
- if COMPILE_SINGLE
-   nodist_libxc_la_SOURCES = $(libxc_la_FUNC_SINGLE_SOURCES)
-@@ -75,18 +75,11 @@ if COMPILE_SINGLE
- endif
+ if COMPILE_FORTRAN
+   lib_LTLIBRARIES += libxcf90.la
+@@ -106,11 +106,8 @@ if COMPILE_FORTRAN
+   nodist_libxcf90_la_SOURCES = libxc_funcs.f90 libxc.f90
  
    # libtool stuff
 -  libxcf90_la_LDFLAGS = -version-info $(XC_LT_VERSION)
 +  libxcf90_la_LDFLAGS = -no-undefined -version-info $(XC_LT_VERSION)
    libxcf90_la_LIBADD = libxc.la
- 
+-
 -  # this is a hack to go around buggy libtool/automake versions
 -  libxcf90_la_LIBTOOLFLAGS = --tag=F77
  endif
  
+ if COMPILE_FORTRAN03
+@@ -119,19 +116,10 @@ if COMPILE_FORTRAN03
+   nodist_libxcf03_la_SOURCES = libxcf03.f90
+ 
+   # libtool stuff
+-  libxcf03_la_LDFLAGS = -version-info $(XC_LT_VERSION)
++  libxcf03_la_LDFLAGS = -no-undefined -version-info $(XC_LT_VERSION)
+   libxcf03_la_LIBADD = libxc.la
+-
+-  # this is a hack to go around buggy libtool/automake versions
+-  libxcf03_la_LIBTOOLFLAGS = --tag=F77
+ endif
+ 
+-
 -# this is a hack to go around buggy libtool/automake versions
 -LTFCCOMPILE = $(LIBTOOL) --mode=compile --tag=F77 $(FC) $(AM_FCFLAGS) $(FCFLAGS)
 -FCLINK = $(LIBTOOL) --mode=link --tag=F77 $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
 -         $(AM_LDFLAGS) $(LDFLAGS) -o $@
 -
- dist_noinst_SCRIPTS = get_funcs.pl
- 
  noinst_HEADERS = \
---- origsrc/libxc-2.2.2/src/mgga_x_2d_prhg07.c	2015-02-19 22:35:48.000000000 +0900
-+++ src/libxc-2.2.2/src/mgga_x_2d_prhg07.c	2015-05-09 06:40:33.889051100 +0900
-@@ -26,6 +26,10 @@
- #define XC_MGGA_X_2D_PRHG07         210   /* Pittalis, Rasanen, Helbig, Gross Exchange Functional */
- #define XC_MGGA_X_2D_PRHG07_PRP10   211   /* PRGH07 with PRP10 correction */
- 
-+#if defined(__CYGWIN__)
-+#define expl(x) exp(x)
-+#define logl(x) log(x)
-+#endif
- 
- /* Standard Newton's method */
- static FLOAT
---- origsrc/libxc-2.2.2/src/util.h	2015-02-19 22:35:48.000000000 +0900
-+++ src/libxc-2.2.2/src/util.h	2015-05-09 06:40:33.904365100 +0900
-@@ -36,8 +36,14 @@ double asinh (double x);
- float  asinhf(float  x);
+ 	string_f.h references.h util.h work_lda.c \
+ 	work_gga_x.c work_gga_c.c \
+--- origsrc/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/src/util.h	2017-11-20 19:08:32.000000000 +0900
++++ src/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/src/util.h	2017-11-29 21:35:36.047000000 +0900
+@@ -75,9 +75,14 @@ double erf(double);
+ double erfc(double);
  #endif
  
+-
 +#if defined(M_SQRTPI)
 +#undef M_SQRTPI
  #define M_SQRTPI        1.772453850905516027298167483341145182798L
@@ -59,9 +61,9 @@
  #define M_CBRT2         1.259921049894873164767210607278228350570L
  #define M_CBRT3         1.442249570307408382321638310780109588392L
  #define M_CBRT4         1.587401051968199474751705639272308260391L
---- origsrc/libxc-2.2.2/testsuite/Makefile.am	2015-02-19 22:35:48.000000000 +0900
-+++ src/libxc-2.2.2/testsuite/Makefile.am	2015-05-09 06:40:33.904365100 +0900
-@@ -22,18 +22,18 @@
+--- origsrc/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/testsuite/Makefile.am	2017-11-20 19:08:32.000000000 +0900
++++ src/libxc-4.0.3-c0ba6bfbb36a211a13760b92ff3d3db7a9f9d11d/testsuite/Makefile.am	2017-11-29 21:28:21.626000000 +0900
+@@ -21,18 +21,18 @@
  noinst_PROGRAMS = xc-get_data xc-consistency xc-regression xc-error
  dist_noinst_SCRIPTS = xc-run_testsuite xc-reference.pl
  TESTS = xc-run_testsuite
