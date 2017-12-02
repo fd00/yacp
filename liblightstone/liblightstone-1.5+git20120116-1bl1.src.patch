@@ -1,0 +1,43 @@
+--- origsrc/liblightstone/BuildSysCMakeLib.cmake	2017-12-02 23:59:28.000000000 +0900
++++ src/liblightstone/BuildSysCMakeLib.cmake	2017-12-03 00:13:15.530000000 +0900
+@@ -327,12 +327,12 @@ FUNCTION(BUILDSYS_BUILD_LIB)
+ 
+     # Installation commands
+     IF(BUILDSYS_LIB_SHOULD_INSTALL AND NOT BUILDSYS_LIB_EXCLUDE_FROM_ALL)
+-      INSTALL(TARGETS ${CURRENT_LIB} LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR})
++      INSTALL(TARGETS ${CURRENT_LIB} RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR})
+     ELSEIF(BUILDSYS_LIB_SHOULD_INSTALL AND BUILDSYS_LIB_EXCLUDE_FROM_ALL)
+       # Only install the output file if it exists. This doesn't work for targets under exclude from all, but we may build them anyways
+       MESSAGE(STATUS "NOTE: Target ${BUILDSYS_LIB_NAME} will only be installed after target is specifically built (not build using all target)")
+       GET_TARGET_PROPERTY(LIB_OUTPUT_NAME ${CURRENT_LIB} LOCATION)
+-      INSTALL(FILES ${LIB_OUTPUT_NAME} LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} OPTIONAL)
++      INSTALL(FILES ${LIB_OUTPUT_NAME} RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} OPTIONAL)
+     ENDIF()
+ 
+     # Rewrite of install_name_dir in apple binaries
+--- origsrc/liblightstone/CMakeLists.txt	2017-12-02 23:59:28.000000000 +0900
++++ src/liblightstone/CMakeLists.txt	2017-12-03 00:10:17.109999800 +0900
+@@ -74,3 +74,10 @@ ENDIF(BUILD_STATIC AND APPLE)
+ ADD_SUBDIRECTORY(include)
+ ADD_SUBDIRECTORY(src)
+ ADD_SUBDIRECTORY(examples)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/liblightstone.pc.in ${CMAKE_BINARY_DIR}/liblightstone.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/liblightstone.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/liblightstone/liblightstone.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liblightstone/liblightstone.pc.in	2017-12-03 00:10:53.125000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liblightstone
++Description: Open Source Library for communicating with the Lightstone USB Biometrics Widget
++Version: @LIBLIGHTSTONE_VERSION@
++Libs: -L${libdir} -llightstone
++Cflags: -I${includedir}
