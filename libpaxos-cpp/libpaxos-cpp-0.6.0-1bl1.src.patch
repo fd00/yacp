@@ -1,0 +1,91 @@
+--- origsrc/libpaxos-cpp-0.6.0/Makefile.am	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/Makefile.am	2017-12-03 13:31:17.436000200 +0900
+@@ -2,3 +2,6 @@
+ AM_CPPFLAGS = -I($top_srcdir)
+ 
+ SUBDIRS = paxos++ examples test
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = paxos-cpp.pc
+--- origsrc/libpaxos-cpp-0.6.0/configure.ac	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/configure.ac	2017-12-03 13:30:50.530000000 +0900
+@@ -9,7 +9,7 @@ AC_CONFIG_HEADER([config.h])
+ LT_INIT([shared static])
+ 
+ # Makefile initialization.
+-AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
++AM_INIT_AUTOMAKE([-Wall subdir-objects])
+ 
+ # Checks for programs.
+ AC_ARG_ENABLE([debug],
+@@ -54,7 +54,7 @@ AS_IF([test "x$enable_debug" == "xyes"],
+         DEBUG="-Wall -Werror -g -ggdb -DDEBUG"
+ ])
+ 
+-CXXFLAGS="$CXXFLAGS -std=c++11 $INCLUDEDIRS $DEBUG $BOOST_LOG"
++CXXFLAGS="$CXXFLAGS $INCLUDEDIRS $DEBUG $BOOST_LOG"
+ LDFLAGS="$LDFLAGS $LIBDIRS"
+ 
+ AC_PROG_CC
+@@ -67,5 +67,5 @@ AC_PROG_CXX
+ # Checks for typedefs, structures, and compiler characteristics.
+ 
+ # Checks for library functions.
+-AC_CONFIG_FILES([Makefile paxos++/Makefile examples/Makefile examples/introduction_1/Makefile examples/lock_service_1/Makefile test/Makefile])
++AC_CONFIG_FILES([paxos-cpp.pc Makefile paxos++/Makefile examples/Makefile examples/introduction_1/Makefile examples/lock_service_1/Makefile test/Makefile])
+ AC_OUTPUT
+--- origsrc/libpaxos-cpp-0.6.0/examples/introduction_1/Makefile.am	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/examples/introduction_1/Makefile.am	2017-12-03 13:20:27.905999800 +0900
+@@ -8,3 +8,5 @@ bin_PROGRAMS = client server
+ 
+ server_SOURCES = server.cpp
+ client_SOURCES = client.cpp
++
++AM_CPPFLAGS = -I$(top_srcdir)
+--- origsrc/libpaxos-cpp-0.6.0/examples/lock_service_1/Makefile.am	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/examples/lock_service_1/Makefile.am	2017-12-03 13:21:20.211999800 +0900
+@@ -8,3 +8,5 @@ bin_PROGRAMS = client server
+ 
+ server_SOURCES = server.cpp 
+ client_SOURCES = client.cpp
++
++AM_CPPFLAGS = -I$(top_srcdir)
+--- origsrc/libpaxos-cpp-0.6.0/paxos++/Makefile.am	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/paxos++/Makefile.am	2017-12-03 13:28:32.336999800 +0900
+@@ -1,4 +1,4 @@
+-include_HEADERS = \
++nobase_pkginclude_HEADERS = \
+ 	detail/client/protocol/request.hpp \
+ 	detail/client/protocol/initiate_request.hpp \
+ 	detail/quorum/client_view.hpp \
+@@ -58,8 +58,11 @@ libpaxos_la_SOURCES = \
+ 	configuration.cpp \
+ 	server.cpp
+ 
++libpaxos_la_LIBADD = -lboost_serialization -lboost_system -lboost_thread
++libpaxos_la_LDFLAGS = -no-undefined
++
+ if HAVE_SQLITE
+-include_HEADERS += durable/sqlite.hpp
++nobase_pkginclude_HEADERS += durable/sqlite.hpp
+ libpaxos_la_SOURCES += durable/sqlite.cpp
++libpaxos_la_LIBADD += -lsqlite3
+ endif
+-
+--- origsrc/libpaxos-cpp-0.6.0/paxos-cpp.pc.in	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/paxos-cpp.pc.in	2017-12-03 13:30:26.108000000 +0900
+@@ -7,5 +7,5 @@ Name: @PACKAGE_NAME@
+ Description: libpaxos-cpp is a c++ implementation of the paxos distributed concensus protocol
+ Version: @PACKAGE_VERSION@
+ URL: @PACKAGE_URL@
+-Libs: -L${libdir} -lpaxos-@EXAMPLE_API_VERSION@
+-Cflags: -I${includedir}/paxos++-@EXAMPLE_API_VERSION@ -I${libdir}/libpaxos++-@EXAMPLE_API_VERSION@/include
++Libs: -L${libdir} -lpaxos
++Cflags: -I${includedir}/libpaxos-cpp
+--- origsrc/libpaxos-cpp-0.6.0/test/Makefile.am	2012-10-29 21:15:34.000000000 +0900
++++ src/libpaxos-cpp-0.6.0/test/Makefile.am	2017-12-03 13:22:23.489000000 +0900
+@@ -36,3 +36,4 @@ TESTS= \
+ 	durability1 \
+ 	durability2
+ 
++AM_CPPFLAGS = -I$(top_srcdir)
