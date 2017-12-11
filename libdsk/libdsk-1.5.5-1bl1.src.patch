@@ -1,0 +1,60 @@
+--- origsrc/libdsk-1.5.5/Makefile.am	2017-03-01 08:33:28.000000000 +0900
++++ src/libdsk-1.5.5/Makefile.am	2017-12-11 18:55:39.884837500 +0900
+@@ -53,4 +53,5 @@ EXTRA_DIST= $(srcdir)/config/* \
+ install-man:
+ 	cd man && make install-man
+ 
+-
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdsk-1.5.5/configure.ac	2017-10-29 17:36:28.000000000 +0900
++++ src/libdsk-1.5.5/configure.ac	2017-12-11 18:55:39.884837500 +0900
+@@ -53,11 +53,13 @@ AC_CHECK_HEADERS(errno.h limits.h sys/io
+ AC_CHECK_HEADERS(unistd.h termios.h libgen.h assert.h)
+ AC_CHECK_HEADERS(dirent.h fcntl.h utime.h pwd.h time.h dir.h direct.h)
+ AC_CHECK_HEADERS(linux/fd.h linux/fdreg.h shlobj.h)
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADERS([windows.h winioctl.h], [], [], 
+ [[#ifdef HAVE_WINDOWS_H
+ #include <windows.h>
+ #endif
+ ]])
++fi
+ 
+ dnl Checks for functions
+ AC_CHECK_FUNCS(strcmpi stricmp strcasecmp, break)
+@@ -126,4 +128,4 @@ AC_CHECK_FUNCS(strerror)
+ AC_SUBST(LIBDSKJAR)
+ AC_SUBST(TOOLCLASSES)
+ AC_SUBST(CLASSPATH)
+-AC_OUTPUT(Makefile doc/Makefile include/Makefile lib/Makefile tools/Makefile man/Makefile)
++AC_OUTPUT(libdsk.pc Makefile doc/Makefile include/Makefile lib/Makefile tools/Makefile man/Makefile)
+--- origsrc/libdsk-1.5.5/lib/Makefile.am	2017-02-15 07:44:52.000000000 +0900
++++ src/libdsk-1.5.5/lib/Makefile.am	2017-12-11 18:55:39.902019500 +0900
+@@ -30,7 +30,7 @@ EXTRA_DIST=$(CLASSDPRE)/Drive.java \
+ # If interfaces have been removed set the right-hand number to 0.
+ # 
+ #
+-libdsk_la_LDFLAGS = -version-info 7:0:3
++libdsk_la_LDFLAGS = -no-undefined -version-info 7:0:3
+ libdsk_la_SOURCES = dskread.c  dskwrite.c dskcheck.c dskstat.c \
+ 		   dsklphys.c dskfmt.c   dskopen.c  dskpars.c \
+ 		   dskerror.c dskseek.c  dsksecid.c dskgeom.c \
+@@ -111,4 +111,3 @@ $(srcdir)/dskjni.c:	$(JARHEADERS)
+ install-exec-local:
+ 	$(mkinstalldirs) $(libdir)
+ 	if test x@LIBDSKJAR@ = x; then true; else $(INSTALL_DATA) @LIBDSKJAR@ $(DESTDIR)/$(libdir); fi
+-
+--- origsrc/libdsk-1.5.5/libdsk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdsk-1.5.5/libdsk.pc.in	2017-12-11 18:55:39.919210200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdsk
++Description: Library for accessing discs and disc image files
++Version: @VERSION@
++Libs: -L${libdir} -ldsk
++Cflags: -I${includedir}
