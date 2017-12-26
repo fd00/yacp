@@ -1,0 +1,48 @@
+--- origsrc/tools-1.4.1/scripts/CMakeLists.txt	2017-09-03 03:49:40.000000000 +0900
++++ src/tools-1.4.1/scripts/CMakeLists.txt	2017-12-26 10:43:34.094000200 +0900
+@@ -19,6 +19,11 @@ if (WITH_RC_FILES)
+   endif(APPLE)
+   configure_file(VOTCARC.csh.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh @ONLY)
+   configure_file(VOTCARC.bash.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash @ONLY)
++  if(CYGWIN)
++  install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
++    ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION /etc/profile.d)
++  else()
+   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
+     ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION bin)
++  endif()
+ endif (WITH_RC_FILES)
+--- origsrc/tools-1.4.1/src/libtools/CMakeLists.txt	2017-09-03 03:49:40.000000000 +0900
++++ src/tools-1.4.1/src/libtools/CMakeLists.txt	2017-12-26 10:44:41.874000000 +0900
+@@ -55,7 +55,7 @@ endif(MKL_FOUND)
+ set_target_properties(votca_tools PROPERTIES SOVERSION ${SOVERSION})
+ target_link_libraries(votca_tools ${Boost_LIBRARIES} ${LINALG_LIBRARIES} ${SQLITE3_LIBRARIES}
+   ${FFTW3_LIBRARIES} ${EXPAT_LIBRARIES} ${THREAD_LIBRARIES} ${MATH_LIBRARIES})
+-install(TARGETS votca_tools LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
++install(TARGETS votca_tools RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIB} ARCHIVE DESTINATION ${LIB})
+ 
+ configure_file(libvotca_tools.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc @ONLY)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libvotca_tools.pc DESTINATION ${LIB}/pkgconfig)
+--- origsrc/tools-1.4.1/src/libtools/linalg/gsl/eigensystems.cc	2017-09-03 03:49:40.000000000 +0900
++++ src/tools-1.4.1/src/libtools/linalg/gsl/eigensystems.cc	2017-12-26 10:54:39.419000000 +0900
+@@ -23,6 +23,9 @@
+ #include <gsl/gsl_errno.h>
+ #include <gsl/gsl_eigen.h>
+ 
++#if defined(_B)
++#undef _B
++#endif
+ 
+ namespace votca { namespace tools {
+ 
+--- origsrc/tools-1.4.1/src/tools/CMakeLists.txt	2017-09-03 03:49:40.000000000 +0900
++++ src/tools-1.4.1/src/tools/CMakeLists.txt	2017-12-26 10:45:17.391000000 +0900
+@@ -7,7 +7,7 @@ foreach(PROG votca_property)
+ 
+   if (BUILD_MANPAGES)
+      add_custom_command(OUTPUT ${PROG}.man
+-       COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${PROG} --man > ${PROG}.man
++       COMMAND PATH=${CMAKE_CURRENT_BINARY_DIR}/../libtools:$ENV{PATH} ${CMAKE_CURRENT_BINARY_DIR}/${PROG} --man > ${PROG}.man
+        COMMENT "Building ${PROG} manpage"
+        DEPENDS ${PROG})
+      add_custom_target(${PROG}_manpage DEPENDS ${PROG}.man)
