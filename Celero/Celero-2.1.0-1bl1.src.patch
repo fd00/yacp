@@ -1,5 +1,5 @@
---- origsrc/Celero-2.0.7/CMakeLists.txt	2017-05-29 07:39:58.000000000 +0900
-+++ src/Celero-2.0.7/CMakeLists.txt	2017-08-10 23:21:45.534743100 +0900
+--- origsrc/Celero-2.1.0/CMakeLists.txt	2017-09-27 03:25:30.000000000 +0900
++++ src/Celero-2.1.0/CMakeLists.txt	2017-12-29 01:22:31.138000000 +0900
 @@ -53,12 +53,6 @@ endif()
  
  if(CELERO_ENABLE_TESTS)
@@ -24,11 +24,13 @@
  if(UNIX)
  	if(CMAKE_COMPILER_IS_GNUCXX)
  	  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -std=gnu++11 -Wall -O3" CACHE STRING "Compiler Flags for All Builds" FORCE)
-@@ -211,10 +209,11 @@ endif()
+@@ -211,10 +209,13 @@ endif()
  
  add_library(${PROJECT_NAME} ${CELERO_USER_DEFINED_SHARED_OR_STATIC} ${TARGET_SRC} ${TARGET_H})
  target_link_libraries(${PROJECT_NAME} ${SYSLIBS})
-+set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++if(CYGWIN)
++	set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
  include_directories(${HEADER_PATH})
  
  install(TARGETS ${PROJECT_NAME}
@@ -37,7 +39,7 @@
  	ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
  install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})
  
-@@ -240,7 +239,7 @@ if(CELERO_ENABLE_TESTS)
+@@ -240,7 +241,7 @@ if(CELERO_ENABLE_TESTS)
  	include_directories(${GTEST_INCLUDE_DIR})
  
  	add_dependencies(${PROJECT_NAME} celero)
@@ -46,7 +48,7 @@
  
  	if(CELERO_ENABLE_AUTO_RUN_TESTS)
  		add_test(${PROJECT_NAME} ${PROJECT_NAME})
-@@ -261,3 +260,11 @@ if(CELERO_ENABLE_FOLDERS)
+@@ -261,3 +262,11 @@ if(CELERO_ENABLE_FOLDERS)
  endif()
  
  ADD_SUBDIRECTORY(experiments)
@@ -58,8 +60,8 @@
 +SET(VERSION "2.0.7")
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/celero.pc.in ${CMAKE_BINARY_DIR}/celero.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/celero.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/Celero-2.0.7/celero.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/Celero-2.0.7/celero.pc.in	2017-08-10 23:21:45.534743100 +0900
+--- origsrc/Celero-2.1.0/celero.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Celero-2.1.0/celero.pc.in	2017-12-29 01:21:31.326494200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -71,9 +73,9 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lcelero
 +Cflags: -I${includedir}
---- origsrc/Celero-2.0.7/test/CMakeLists.txt	2017-05-29 07:39:58.000000000 +0900
-+++ src/Celero-2.0.7/test/CMakeLists.txt	2017-08-10 23:21:45.534743100 +0900
-@@ -1,15 +1,6 @@
+--- origsrc/Celero-2.1.0/test/CMakeLists.txt	2017-09-27 03:25:30.000000000 +0900
++++ src/Celero-2.1.0/test/CMakeLists.txt	2017-12-29 01:21:31.404791200 +0900
+@@ -1,15 +1,4 @@
  
 -set(GTEST_DIRECTORY gtest-1.7.0)
 -
@@ -81,7 +83,7 @@
 +set(GTEST_INCLUDE_DIR /usr/include)
  set(GTEST_LIBRARY gtest)
  set(GTEST_MAIN_LIBRARY gtest_main)
- 
+-
 -include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/include ${CMAKE_CURRENT_SOURCE_DIR}/${GTEST_DIRECTORY}/src)
 -
 -FILE(GLOB _ALL_FILES ./ ./*)
@@ -90,4 +92,3 @@
 -    ADD_SUBDIRECTORY(${_FILE})
 -  ENDIF()
 -ENDFOREACH()
-+add_subdirectory(Celero)
