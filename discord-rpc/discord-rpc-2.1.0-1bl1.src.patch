@@ -1,41 +1,35 @@
---- origsrc/discord-rpc-2.0.1/CMakeLists.txt	2017-11-10 07:24:30.000000000 +0900
-+++ src/discord-rpc-2.0.1/CMakeLists.txt	2017-11-30 14:27:01.318209700 +0900
-@@ -1,4 +1,4 @@
--cmake_minimum_required (VERSION 3.7.0)
-+cmake_minimum_required (VERSION 3.6.2)
- project (DiscordRPC)
- 
- # format
-@@ -26,6 +26,7 @@ else(CLANG_FORMAT_CMD)
+--- origsrc/discord-rpc-2.1.0/CMakeLists.txt	2017-12-02 07:41:20.000000000 +0900
++++ src/discord-rpc-2.1.0/CMakeLists.txt	2017-12-28 12:45:29.963000000 +0900
+@@ -26,6 +26,7 @@ if (CLANG_FORMAT_CMD)
      )
  endif(CLANG_FORMAT_CMD)
  
 +if (NOT CYGWIN)
  # thirdparty stuff
- execute_process( 
+ execute_process(
      COMMAND mkdir ${CMAKE_SOURCE_DIR}/thirdparty
-@@ -47,8 +48,17 @@ endif(NOT RAPIDJSONTEST)
- find_file(RAPIDJSON NAMES rapidjson rapidjson-1.1.0 PATHS ${CMAKE_SOURCE_DIR}/thirdparty)
+@@ -47,6 +48,7 @@ endif(NOT RAPIDJSONTEST)
+ find_file(RAPIDJSON NAMES rapidjson rapidjson-1.1.0 PATHS ${CMAKE_SOURCE_DIR}/thirdparty CMAKE_FIND_ROOT_PATH_BOTH)
  
  add_library(rapidjson STATIC IMPORTED ${RAPIDJSON})
-+endif(NOT CYGWIN)
++endif()
  
  # add subdirs
  
- add_subdirectory(src)
--add_subdirectory(examples/send-presence)
-\ No newline at end of file
-+add_subdirectory(examples/send-presence)
+@@ -54,3 +56,11 @@ add_subdirectory(src)
+ if (BUILD_EXAMPLES)
+     add_subdirectory(examples/send-presence)
+ endif(BUILD_EXAMPLES)
 +
 +SET(prefix ${CMAKE_INSTALL_PREFIX})
 +SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
 +SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+SET(VERSION "2.0.1")
++SET(VERSION "2.1.0")
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/discord-rpc.pc.in ${CMAKE_BINARY_DIR}/discord-rpc.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/discord-rpc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/discord-rpc-2.0.1/discord-rpc.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/discord-rpc-2.0.1/discord-rpc.pc.in	2017-11-30 14:27:51.599000000 +0900
+--- origsrc/discord-rpc-2.1.0/discord-rpc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/discord-rpc-2.1.0/discord-rpc.pc.in	2017-12-28 12:45:27.514797900 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -47,11 +41,11 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -ldiscord-rpc
 +Cflags: -I${includedir}
---- origsrc/discord-rpc-2.0.1/src/CMakeLists.txt	2017-11-10 07:24:30.000000000 +0900
-+++ src/discord-rpc-2.0.1/src/CMakeLists.txt	2017-11-30 14:25:32.241000000 +0900
-@@ -59,30 +59,35 @@ if(UNIX)
+--- origsrc/discord-rpc-2.1.0/src/CMakeLists.txt	2017-12-02 07:41:20.000000000 +0900
++++ src/discord-rpc-2.1.0/src/CMakeLists.txt	2017-12-28 12:43:40.734000000 +0900
+@@ -69,33 +69,39 @@ if(UNIX)
  
-     add_library(discord-rpc ${RPC_LIBRARY_TYPE} ${BASE_RPC_SRC})
+     add_library(discord-rpc ${BASE_RPC_SRC})
      target_link_libraries(discord-rpc PUBLIC pthread)
 -    target_compile_options(discord-rpc PRIVATE
 -        -g
@@ -69,11 +63,9 @@
 -        -Wno-exit-time-destructors # not sure about these
 -        -Wno-global-constructors
 -    )
--    target_compile_options(discord-rpc PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
--
 +    if (CYGWIN)
 +        set_target_properties(discord-rpc PROPERTIES SOVERSION 0)
-+    else()
++    else ()
 +        target_compile_options(discord-rpc PRIVATE
 +            -g
 +            -Wall
@@ -90,8 +82,15 @@
 +            -Wno-exit-time-destructors # not sure about these
 +            -Wno-global-constructors
 +        )
-+        target_compile_options(discord-rpc PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
+ 
+-    if (${BUILD_SHARED_LIBS})
+-        target_compile_options(discord-rpc PRIVATE -fPIC)
+-    endif (${BUILD_SHARED_LIBS})
++        if (${BUILD_SHARED_LIBS})
++            target_compile_options(discord-rpc PRIVATE -fPIC)
++        endif (${BUILD_SHARED_LIBS})
 +    endif()
+ 
      if (APPLE)
          target_link_libraries(discord-rpc PRIVATE "-framework AppKit")
      endif (APPLE)
@@ -103,4 +102,4 @@
 +endif()
  
  if (NOT ${ENABLE_IO_THREAD})
-     add_definitions(discord-rpc PUBLIC -DDISCORD_DISABLE_IO_THREAD)
+     target_compile_definitions(discord-rpc PUBLIC -DDISCORD_DISABLE_IO_THREAD)
