@@ -1,0 +1,95 @@
+--- origsrc/ate-pairing-1.2/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/ate-pairing-1.2/Makefile.am	2018-01-02 14:31:51.254585000 +0900
+@@ -0,0 +1,25 @@
++
++AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/test
++
++pkginclude_HEADERS = include/bn.h include/zm.h include/zm2.h
++
++lib_LTLIBRARIES = libzm.la
++libzm_la_SOURCES = src/zm.cpp src/zm2.cpp
++libzm_la_LDFLAGS = -no-undefined
++
++check_PROGRAMS = bench bn loop_test sample test_zm
++bench_SOURCES = test/bench.cpp
++bench_LDADD = libzm.la
++bn_SOURCES = test/bn.cpp
++bn_LDADD = libzm.la
++loop_test_SOURCES = test/loop_test.cpp
++loop_test_LDADD = libzm.la
++sample_SOURCES = test/sample.cpp
++sample_LDADD = libzm.la
++test_zm_SOURCES = test/test_zm.cpp
++test_zm_LDADD = libzm.la
++
++TESTS = $(check_PROGRAMS)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/ate-pairing-1.2/ate-pairing.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ate-pairing-1.2/ate-pairing.pc.in	2018-01-02 14:33:20.941000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ate-pairing
++Description: High-Speed Software Implementation of the Optimal Ate Pairing over Barreto-Naehrig Curves
++Version: @VERSION@
++Libs: -L${libdir} -lzm
++Cflags: -I${includedir}
+--- origsrc/ate-pairing-1.2/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/ate-pairing-1.2/configure.ac	2018-01-02 14:31:51.254585000 +0900
+@@ -0,0 +1,38 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([ate-pairing], [1.2])
++AC_CONFIG_SRCDIR([include/bn.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++LT_INIT
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([malloc.h memory.h stdint.h stdlib.h string.h sys/time.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_CHECK_HEADER_STDBOOL
++AC_C_INLINE
++AC_TYPE_INT16_T
++AC_TYPE_INT32_T
++AC_TYPE_INT64_T
++AC_TYPE_INT8_T
++AC_TYPE_SIZE_T
++AC_TYPE_SSIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT64_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_CHECK_FUNCS([gettimeofday memset strtol strtoul])
++
++AC_CONFIG_FILES([ate-pairing.pc Makefile])
++AC_OUTPUT
+--- origsrc/ate-pairing-1.2/include/bn.h	2014-12-15 14:33:17.000000000 +0900
++++ src/ate-pairing-1.2/include/bn.h	2018-01-02 14:18:41.277975500 +0900
+@@ -13,6 +13,10 @@
+ 
+ //#define BN_SUPPORT_SNARK
+ 
++#if defined(_P)
++#undef _P
++#endif
++
+ #ifdef MIE_ATE_USE_GMP
+ #include <gmpxx.h>
+ 
