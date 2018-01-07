@@ -1,0 +1,189 @@
+--- origsrc/libff/CMakeLists.txt	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/CMakeLists.txt	2018-01-08 01:41:32.063000000 +0900
+@@ -105,9 +105,9 @@ else()
+   set(gmp_library_type STATIC)
+ endif()
+ message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
+-add_library(GMP::gmp ${gmp_library_type} IMPORTED)
++add_library(gmp ${gmp_library_type} IMPORTED)
+ set_target_properties(
+-  GMP::gmp PROPERTIES
++  gmp PROPERTIES
+   IMPORTED_LOCATION ${GMP_LIBRARY}
+   INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
+ )
+@@ -220,3 +220,11 @@ if ("${IS_LIBFF_PARENT}")
+   add_subdirectory(depends)
+ endif()
+ add_subdirectory(libff)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libff.pc.in ${CMAKE_BINARY_DIR}/libff.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libff.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libff/depends/CMakeLists.txt	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/depends/CMakeLists.txt	2018-01-08 01:31:26.250693800 +0900
+@@ -1,11 +1,16 @@
+ if(${CURVE} STREQUAL "BN128")
+-  include_directories(ate-pairing/include)
+-  include_directories(xbyak)
+-  add_library(
+-    zm
+-    STATIC
++  if (CYGWIN)
++    include(FindPkgConfig)
++    pkg_check_modules(ATE_PAIRING REQUIRED ate-pairing)
++  else()
++    include_directories(ate-pairing/include)
++    include_directories(xbyak)
++    add_library(
++      zm
++      STATIC
+ 
+-    ate-pairing/src/zm.cpp
+-    ate-pairing/src/zm2.cpp
+-  )
++      ate-pairing/src/zm.cpp
++      ate-pairing/src/zm2.cpp
++    )
++  endif()
+ endif()
+--- origsrc/libff/libff/CMakeLists.txt	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/CMakeLists.txt	2018-01-08 01:38:03.346999800 +0900
+@@ -22,7 +22,7 @@ endif()
+ 
+ add_library(
+   ff
+-  STATIC
++  SHARED
+ 
+   algebra/curves/alt_bn128/alt_bn128_g1.cpp
+   algebra/curves/alt_bn128/alt_bn128_g2.cpp
+@@ -54,10 +54,15 @@ add_library(
+ target_link_libraries(
+   ff
+ 
+-  GMP::gmp
++  ${GMP_LIBRARY}
+   ${PROCPS_LIBRARIES}
+   ${FF_EXTRALIBS}
+ )
++
++if (CYGWIN)
++  set_target_properties(ff PROPERTIES SOVERSION 0)
++endif()
++
+ target_include_directories(
+   ff
+   PUBLIC ..
+@@ -73,7 +78,7 @@ install(
+ )
+ 
+ install(
+-  TARGETS ff DESTINATION lib
++  TARGETS ff RUNTIME DESTINATION bin ARCHIVE DESTINATION lib
+ )
+ 
+ add_executable(
+--- origsrc/libff/libff/algebra/curves/bn128/bn128_g1.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn128_g1.hpp	2018-01-08 01:34:31.487000000 +0900
+@@ -9,7 +9,11 @@
+ #define BN128_G1_HPP_
+ #include <vector>
+ 
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ #include <libff/algebra/curves/bn128/bn128_init.hpp>
+ #include <libff/algebra/curves/curve_utils.hpp>
+--- origsrc/libff/libff/algebra/curves/bn128/bn128_g2.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn128_g2.hpp	2018-01-08 01:34:48.526000000 +0900
+@@ -10,7 +10,11 @@
+ #include <iostream>
+ #include <vector>
+ 
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ #include <libff/algebra/curves/bn128/bn128_init.hpp>
+ #include <libff/algebra/curves/curve_utils.hpp>
+--- origsrc/libff/libff/algebra/curves/bn128/bn128_gt.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn128_gt.hpp	2018-01-08 01:35:15.130000200 +0900
+@@ -9,7 +9,11 @@
+ #define BN128_GT_HPP_
+ #include <iostream>
+ 
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ #include <libff/algebra/fields/field_utils.hpp>
+ #include <libff/algebra/fields/fp.hpp>
+--- origsrc/libff/libff/algebra/curves/bn128/bn128_init.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn128_init.hpp	2018-01-08 01:35:24.886000000 +0900
+@@ -7,7 +7,12 @@
+ 
+ #ifndef BN128_INIT_HPP_
+ #define BN128_INIT_HPP_
++
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ #include <libff/algebra/curves/public_params.hpp>
+ #include <libff/algebra/fields/fp.hpp>
+--- origsrc/libff/libff/algebra/curves/bn128/bn128_pairing.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn128_pairing.hpp	2018-01-08 01:35:41.079000000 +0900
+@@ -10,7 +10,12 @@
+ 
+ #ifndef BN128_PAIRING_HPP_
+ #define BN128_PAIRING_HPP_
++
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ #include <libff/algebra/curves/bn128/bn128_g1.hpp>
+ #include <libff/algebra/curves/bn128/bn128_g2.hpp>
+--- origsrc/libff/libff/algebra/curves/bn128/bn_utils.hpp	2018-01-07 22:48:14.000000000 +0900
++++ src/libff/libff/algebra/curves/bn128/bn_utils.hpp	2018-01-08 01:35:52.043000000 +0900
+@@ -9,7 +9,11 @@
+ #define BN_UTILS_HPP_
+ #include <vector>
+ 
++#if defined(__CYGWIN__)
++#include <ate-pairing/bn.h>
++#else
+ #include "depends/ate-pairing/include/bn.h"
++#endif
+ 
+ namespace libff {
+ 
+--- origsrc/libff/libff.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libff/libff.pc.in	2018-01-08 01:40:44.454274400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libff
++Description: C++ library for Finite Fields and Elliptic Curves
++Version: @VERSION@
++Libs: -L${libdir} -lff
++Cflags: -I${includedir}
