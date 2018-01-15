@@ -1,0 +1,200 @@
+--- origsrc/folly-2018.01.08.00/folly/Makefile.am	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/Makefile.am	2018-01-15 15:04:54.800000000 +0900
+@@ -11,6 +11,8 @@ ACLOCAL_AMFLAGS = -I m4
+ 
+ CLEANFILES =
+ 
++AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/../
++AM_LDFLAGS = -no-undefined
+ 
+ noinst_PROGRAMS = generate_fingerprint_tables
+ generate_fingerprint_tables_SOURCES = build/GenerateFingerprintTables.cpp
+@@ -478,15 +480,15 @@ nobase_follyinclude_HEADERS = \
+ 	Varint.h
+ 
+ FormatTables.cpp: build/generate_format_tables.py
+-	$(PYTHON) build/generate_format_tables.py
++	$(PYTHON) $(top_srcdir)/build/generate_format_tables.py
+ CLEANFILES += FormatTables.cpp
+ 
+ EscapeTables.cpp: build/generate_escape_tables.py
+-	$(PYTHON) build/generate_escape_tables.py
++	$(PYTHON) $(top_srcdir)/build/generate_escape_tables.py
+ CLEANFILES += EscapeTables.cpp
+ 
+ GroupVarintTables.cpp: build/generate_varint_tables.py
+-	$(PYTHON) build/generate_varint_tables.py
++	$(PYTHON) $(top_srcdir)/build/generate_varint_tables.py
+ CLEANFILES += GroupVarintTables.cpp
+ 
+ libfollybasesse42_la_SOURCES = \
+@@ -743,13 +745,13 @@ libfollybase_la_LIBADD = libfollybasesse
+ libfollybase_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION)
+ 
+ libfolly_la_LIBADD = libfollybase.la
+-libfolly_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION) -lssl
++libfolly_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LT_VERSION) $(OPENSSL_LIBS) $(PKG_LIBS)
+ 
+ if USE_SYMBOLIZER
+ libfolly_la_LDFLAGS += -lunwind
+ endif
+ 
+-FingerprintTables.cpp: generate_fingerprint_tables
++FingerprintTables.cpp: generate_fingerprint_tables$(EXEEXT)
+ 	./generate_fingerprint_tables
+ CLEANFILES += FingerprintTables.cpp
+ 
+--- origsrc/folly-2018.01.08.00/folly/Singleton.cpp	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/Singleton.cpp	2018-01-15 15:05:42.233560400 +0900
+@@ -30,7 +30,7 @@
+ #include <folly/Format.h>
+ #include <folly/ScopeGuard.h>
+ 
+-#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__)
++#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(__CYGWIN__)
+ #define FOLLY_SINGLETON_HAVE_DLSYM 1
+ #endif
+ 
+--- origsrc/folly-2018.01.08.00/folly/configure.ac	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/configure.ac	2018-01-15 15:13:15.295000000 +0900
+@@ -459,11 +459,13 @@ if test "$folly_cv_prog_vsnprintf_bad_fo
+             [Define to 1 if the vsnprintf supports returning errors on bad format strings.])
+ fi
+ 
+-AC_SEARCH_LIBS([cplus_demangle_v3_callback], [iberty_pic iberty])
+-if test "$ac_cv_search_cplus_demangle_v3_callback" != "no" ; then
+-  AC_DEFINE([HAVE_CPLUS_DEMANGLE_V3_CALLBACK], [1],
+-            [Define to 1 if we have cplus_demangle_v3_callback.])
+-fi
++AS_IF([test "$host_os" != "cygwin"], [
++  AC_SEARCH_LIBS([cplus_demangle_v3_callback], [iberty_pic iberty])
++  if test "$ac_cv_search_cplus_demangle_v3_callback" != "no" ; then
++    AC_DEFINE([HAVE_CPLUS_DEMANGLE_V3_CALLBACK], [1],
++              [Define to 1 if we have cplus_demangle_v3_callback.])
++  fi
++],[])
+ 
+ # Check for clock_gettime(2). This is not in an AC_CHECK_FUNCS() because we
+ # want to link with librt if necessary.
+--- origsrc/folly-2018.01.08.00/folly/experimental/logging/Makefile.am	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/experimental/logging/Makefile.am	2018-01-15 15:07:48.234000000 +0900
+@@ -1,3 +1,5 @@
++AM_LDFLAGS = -no-undefined
++
+ SUBDIRS = . example
+ 
+ lib_LTLIBRARIES = libfollylogging.la
+--- origsrc/folly-2018.01.08.00/folly/init/Makefile.am	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/init/Makefile.am	2018-01-15 15:08:02.826000000 +0900
+@@ -1,3 +1,5 @@
++AM_LDFLAGS = -no-undefined
++
+ SUBDIRS = .
+ 
+ lib_LTLIBRARIES = libfollyinit.la
+--- origsrc/folly-2018.01.08.00/folly/io/async/AsyncSocket.cpp	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/io/async/AsyncSocket.cpp	2018-01-15 15:46:55.873000000 +0900
+@@ -223,11 +223,12 @@ int AsyncSocket::SendMsgParamsCallback::
+   }
+ #endif // MSG_MORE
+ #endif // MSG_NOSIGNAL
++#if defined(MSG_EOR)
+   if (isSet(flags, WriteFlags::EOR)) {
+     // marks that this is the last byte of a record (response)
+     msg_flags |= MSG_EOR;
+   }
+-
++#endif
+   if (zeroCopyEnabled && isSet(flags, WriteFlags::WRITE_MSG_ZEROCOPY)) {
+     msg_flags |= MSG_ZEROCOPY;
+   }
+--- origsrc/folly-2018.01.08.00/folly/io/async/EventFDWrapper.h	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/io/async/EventFDWrapper.h	2018-01-15 15:08:56.543000000 +0900
+@@ -41,7 +41,9 @@
+ #else /* !def FOLLY_GLIBC_2_9 */
+ 
+ #include <fcntl.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <unistd.h>
+ 
+ // Use existing __NR_eventfd2 if already defined
+--- origsrc/folly-2018.01.08.00/folly/portability/Stdlib.cpp	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/portability/Stdlib.cpp	2018-01-15 16:00:38.123000000 +0900
+@@ -146,6 +146,7 @@ int unsetenv(const char* name) {
+ 
+ #include <string>
+ #include <vector>
++#include <unistd.h>
+ 
+ extern "C" int clearenv() {
+   std::vector<std::string> data;
+--- origsrc/folly-2018.01.08.00/folly/portability/SysSyscall.h	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/portability/SysSyscall.h	2018-01-15 15:09:40.388000000 +0900
+@@ -16,7 +16,7 @@
+ 
+ #pragma once
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ 
+ #if defined(__APPLE__)
+--- origsrc/folly-2018.01.08.00/folly/system/ThreadId.h	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/system/ThreadId.h	2018-01-15 15:33:00.057000000 +0900
+@@ -84,6 +84,8 @@ inline uint64_t getOSThreadID() {
+   return tid;
+ #elif _WIN32
+   return uint64_t(GetCurrentThreadId());
++#elif defined(__CYGWIN__)
++  return (pid_t)(uintptr_t)pthread_self();
+ #else
+   return uint64_t(syscall(FOLLY_SYS_gettid));
+ #endif
+--- origsrc/folly-2018.01.08.00/folly/test/Makefile.am	2018-01-08 14:49:59.000000000 +0900
++++ src/folly-2018.01.08.00/folly/test/Makefile.am	2018-01-15 15:11:13.341000000 +0900
+@@ -2,8 +2,6 @@ SUBDIRS = . function_benchmark
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+-CPPFLAGS += -isystem gtest/googletest/include -isystem gtest/googlemock/include
+-
+ TESTS= \
+ 	sorted_vector_types_test \
+ 	foreach_test \
+@@ -16,26 +14,23 @@ TESTS= \
+ 	bits_test \
+ 	bit_iterator_test
+ 
+-check_LTLIBRARIES = libfollytestmain.la libgtest.la
++check_LTLIBRARIES = libfollytestmain.la
+ check_PROGRAMS =
+ noinst_LTLIBRARIES = thread_local_test_lib.la
+ 
+-libgtest_la_CPPFLAGS = -isystem gtest/googletest
+-libgtest_la_SOURCES = gtest/googletest/src/gtest-all.cc
+-
+ if FOLLY_TESTMAIN
+-libfollytestmain_la_CPPFLAGS = $(AM_CPPFLAGS) $(libgtest_la_CPPFLAGS)
+-libfollytestmain_la_SOURCES = $(libgtest_la_SOURCES) common/TestMain.cpp
+-libfollytestmain_la_LIBADD = $(top_builddir)/init/libfollyinit.la $(top_builddir)/libfolly.la
++libfollytestmain_la_CPPFLAGS = $(AM_CPPFLAGS)
++libfollytestmain_la_SOURCES = common/TestMain.cpp
++libfollytestmain_la_LIBADD = $(top_builddir)/init/libfollyinit.la $(top_builddir)/libfolly.la -lgtest -lgtest_main
+ else
+-libfollytestmain_la_CPPFLAGS = $(libgtest_la_CPPFLAGS)
+-libfollytestmain_la_SOURCES = $(libgtest_la_SOURCES) gtest/googletest/src/gtest_main.cc
+-libfollytestmain_la_LIBADD = $(top_builddir)/libfolly.la
++libfollytestmain_la_CPPFLAGS =
++libfollytestmain_la_SOURCES =
++libfollytestmain_la_LIBADD = $(top_builddir)/libfolly.la -lgtest -lgtest_main
+ endif
+ 
+ thread_local_test_lib_la_CPPFLAGS = $(AM_CPPFLAGS)
+ thread_local_test_lib_la_SOURCES = ThreadLocalTestLib.cpp
+-thread_local_test_lib_la_LDFLAGS = -module -rpath /force_shared
++thread_local_test_lib_la_LDFLAGS = -no-undefined -module -rpath /force_shared
+ thread_local_test_lib_la_LIBADD = $(top_builddir)/libfolly.la
+ 
+ noinst_HEADERS = FBStringTestBenchmarks.cpp.h \
