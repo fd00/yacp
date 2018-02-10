@@ -1,0 +1,72 @@
+--- origsrc/azure-c-shared-utility-2018-02-09/CMakeLists.txt	2018-02-10 08:42:20.000000000 +0900
++++ src/azure-c-shared-utility-2018-02-09/CMakeLists.txt	2018-02-10 16:00:17.772000000 +0900
+@@ -403,6 +403,9 @@ if(${build_as_dynamic})
+     #make sure we can link as dll/so
+     add_library(aziotsharedutil_dll SHARED ./src/aziotsharedutil.def ${source_c_files} ${source_h_files})
+     set_target_properties(aziotsharedutil_dll PROPERTIES OUTPUT_NAME "aziotsharedutil")
++    if (CYGWIN)
++        set_target_properties(aziotsharedutil_dll PROPERTIES SOVERSION 0)
++    endif()
+ endif()
+ 
+ set(aziotsharedutil_target_libs)
+@@ -533,7 +536,11 @@ if(${use_installed_dependencies})
+     endif()
+ 
+     # Install Azure C Shared Utility
+-    set(package_location "cmake")
++    if (CYGWIN)
++        set(package_location "${CMAKE_INSTALL_LIBDIR}/cmake/azure-c-shared-utility")
++    else()
++        set(package_location "cmake")
++    endif()
+     
+     if(${build_as_dynamic})
+         set(targets aziotsharedutil aziotsharedutil_dll)
+@@ -542,7 +549,6 @@ if(${use_installed_dependencies})
+     endif(${build_as_dynamic})
+     
+     install (TARGETS ${targets} EXPORT aziotsharedutilTargets
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/../bin
+         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/azureiot
+--- origsrc/azure-c-shared-utility-2018-02-09/adapters/socketio_berkeley.c	2018-02-10 08:42:20.000000000 +0900
++++ src/azure-c-shared-utility-2018-02-09/adapters/socketio_berkeley.c	2018-02-10 15:50:22.102000000 +0900
+@@ -447,12 +447,15 @@ static int set_target_network_interface(
+             LogError("Did not find a network interface matching MAC ADDRESS");
+             result = __FAILURE__;
+         }
+-        else if (setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, current_nid->name, strlen(current_nid->name)) != 0)
++        else
++#if defined(SO_BINDTODEVICE)
++        if (setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, current_nid->name, strlen(current_nid->name)) != 0)
+         {
+             LogError("setsockopt failed (%d)", errno);
+             result = __FAILURE__;
+         }
+         else
++#endif
+         {
+             result = 0;
+         }
+@@ -990,16 +993,18 @@ int socketio_setoption(CONCRETE_IO_HANDL
+         {
+ #ifdef __APPLE__
+             result = setsockopt(socket_io_instance->socket, IPPROTO_TCP, TCP_KEEPALIVE, value, sizeof(int));
+-#else
++#elif defined(TCP_KEEPIDLE)
+             result = setsockopt(socket_io_instance->socket, SOL_TCP, TCP_KEEPIDLE, value, sizeof(int));
+ #endif
+             if (result == -1) result = errno;
+         }
++#if defined(TCP_KEEPINTVL)
+         else if (strcmp(optionName, "tcp_keepalive_interval") == 0)
+         {
+             result = setsockopt(socket_io_instance->socket, SOL_TCP, TCP_KEEPINTVL, value, sizeof(int));
+             if (result == -1) result = errno;
+         }
++#endif
+         else if (strcmp(optionName, OPTION_NET_INT_MAC_ADDRESS) == 0)
+         {
+ #ifdef __APPLE__
