@@ -1,0 +1,110 @@
+--- origsrc/openddl-parser-0.4.0/CMakeLists.txt	2017-03-11 04:38:47.000000000 +0900
++++ src/openddl-parser-0.4.0/CMakeLists.txt	2018-02-16 20:31:18.527000000 +0900
+@@ -1,7 +1,7 @@
+ CMAKE_MINIMUM_REQUIRED( VERSION 2.6 )
+ PROJECT( OpenDDL-Parser )
+ SET ( OPENDDL_PARSER_VERSION_MAJOR 0 )
+-SET ( OPENDDL_PARSER_VERSION_MINOR 1 )
++SET ( OPENDDL_PARSER_VERSION_MINOR 4 )
+ SET ( OPENDDL_PARSER_VERSION_PATCH 0 )
+ SET ( OPENDDL_PARSER_VERSION ${OPENDDL_PARSER_VERSION_MAJOR}.${OPENDDL_PARSER_VERSION_MINOR}.${OPENDDL_PARSER_VERSION_PATCH} )
+ SET ( PROJECT_VERSION "${OPENDDL_PARSER_VERSION}" )
+@@ -38,21 +38,27 @@ if ( DDL_DEBUG_OUTPUT )
+     add_definitions( -DDDL_DEBUG_HEADER_NAME)
+ endif()
+ 
+-INCLUDE_DIRECTORIES(
+-    ./
+-    include/
+-    contrib/gtest-1.7.0/include
+-    contrib/gtest-1.7.0/
+-)
++if (CYGWIN)
++    include_directories(./ include/)
++else()
++    INCLUDE_DIRECTORIES(
++        ./
++        include/
++        contrib/gtest-1.7.0/include
++        contrib/gtest-1.7.0/
++    )
++endif()
+ 
+ link_directories(
+     ${CMAKE_HOME_DIRECTORY}/lib
+ )
+ 
+ set( CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake )
+-SET( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )
+-SET( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )
+-SET( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
++if (NOT CYGWIN)
++    SET( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )
++    SET( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib )
++    SET( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin )
++endif()
+ 
+ if( WIN32 AND NOT CYGWIN )
+   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc" )  # Force to always compile with W4
+@@ -110,6 +116,10 @@ else()
+ 	)
+ endif()
+ 
++if (CYGWIN)
++    set_target_properties( openddl_parser PROPERTIES SOVERSION 0 )
++endif()
++
+ SET ( GTEST_PATH contrib/gtest-1.7.0 )
+ 
+ SET ( gtest_src
+@@ -139,10 +149,15 @@ SET( openddl_parser_unittest_src
+ SOURCE_GROUP( code  FILES ${openddl_parser_unittest_src} )
+ SOURCE_GROUP( gtest FILES ${gtest_src} )
+ 
+-ADD_EXECUTABLE( openddl_parser_unittest 
+-    ${gtest_src}
+-    ${openddl_parser_unittest_src}
+-)
++if (CYGWIN)
++    add_executable( openddl_parser_unittest ${openddl_parser_unittest_src} )
++    target_link_libraries( openddl_parser_unittest gtest gtest_main )
++else()
++    ADD_EXECUTABLE( openddl_parser_unittest 
++        ${gtest_src}
++        ${openddl_parser_unittest_src}
++    )
++endif()
+ 
+ target_link_libraries( openddl_parser_unittest openddl_parser ${CMAKE_THREAD_LIBS_INIT} )
+ 
+@@ -165,3 +180,17 @@ ADD_EXECUTABLE( openddl_parser_demo
+ ) 
+ 
+ target_link_libraries( openddl_parser_demo openddl_parser )
++
++if (CYGWIN)
++    install( TARGETS openddl_parser RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++    install( TARGETS openddl_parser_demo RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++    file( GLOB headers "include/openddlparser/*.h")
++    install( FILES ${headers} DESTINATION include/openddlparser )
++
++    SET(prefix ${CMAKE_INSTALL_PREFIX})
++    SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++    SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++    SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/openddl-parser.pc.in ${CMAKE_BINARY_DIR}/openddl-parser.pc @ONLY)
++    INSTALL(FILES ${CMAKE_BINARY_DIR}/openddl-parser.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/openddl-parser-0.4.0/openddl-parser.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/openddl-parser-0.4.0/openddl-parser.pc.in	2018-02-16 20:31:40.494999800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: openddl-parser
++Description: Simple and fast OpenDDL Parser
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lopenddl-parser
++Cflags: -I${includedir}
