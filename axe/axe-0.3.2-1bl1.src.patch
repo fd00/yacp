@@ -1,0 +1,74 @@
+--- origsrc/axe-0.3.2/CMakeLists.txt	2016-12-01 09:23:19.000000000 +0900
++++ src/axe-0.3.2/CMakeLists.txt	2018-02-21 00:27:00.998000000 +0900
+@@ -48,9 +48,21 @@ SET(AXEWRN "${AXEWRN} -Wall -Wextra -Wpe
+ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${AXEWRN}")
+ 
++INCLUDE(FindPkgConfig)
++PKG_CHECK_MODULES(LIBQES libqes)
++PKG_CHECK_MODULES(DATRIE datrie-0.2)
++
++IF (LIBQES_FOUND)
++    INCLUDE_DIRECTORIES(${LIBQES_INCLUDE_DIRS})
++    SET(AXE_DEP_LIBS ${AXE_DEP_LIBS} ${LIBQES_LIBRARIES})
++ELSE()
++    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/libqes/src)
++    ADD_SUBDIRECTORY(src/libqes)
++    SET(AXE_DEP_LIBS ${AXE_DEP_LIBS} qes_static)
++ENDIF()
++
+ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src
+                     ${PROJECT_SOURCE_DIR}/src/datrie
+-                    ${PROJECT_SOURCE_DIR}/src/libqes/src
+                     ${PROJECT_SOURCE_DIR}/src/gsl)
+ LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/lib)
+ 
+@@ -60,7 +72,6 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/src/a
+                ${CMAKE_BINARY_DIR}/axe_config.h)
+ 
+ SET(LIBQES_AS_SUBMODULE True)  # stop libqes installing itself
+-ADD_SUBDIRECTORY(src/libqes)
+ ADD_SUBDIRECTORY(docs)
+ ADD_SUBDIRECTORY(tests)
+ ADD_SUBDIRECTORY(src)
+--- origsrc/axe-0.3.2/src/CMakeLists.txt	2016-12-01 09:23:19.000000000 +0900
++++ src/axe-0.3.2/src/CMakeLists.txt	2018-02-21 00:25:08.092000000 +0900
+@@ -16,15 +16,24 @@
+ # Axe library (libaxe.a)
+ FILE(GLOB DATRIE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/datrie/*.c)
+ FILE(GLOB GSL_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/gsl/*.c)
+-SET(AXELIB_SRCS ${DATRIE_SRCS} axe.c)
++SET(AXELIB_SRCS axe.c)
+ 
+-IF (NOT GSL_FOUND)
++IF (GSL_FOUND)
++    SET(AXE_DEP_LIBS ${AXE_DEP_LIBS} ${GSL_LIBRARIES})
++ELSE()
+     MESSAGE(STATUS "Using bundled GSL sources")
+     SET(AXELIB_SRCS ${AXELIB_SRCS} ${GSL_SRCS})
+ ENDIF()
+ 
++IF (DATRIE_FOUND)
++    SET(AXE_DEP_LIBS ${AXE_DEP_LIBS} ${DATRIE_LIBRARIES})
++ELSE()
++    MESSAGE(STATUS "Using bundled DATRIE sources")
++    SET(AXELIB_SRCS ${AXELIB_SRCS} ${DATRIE_SRCS})
++ENDIF()
++
+ ADD_LIBRARY(axelib STATIC ${AXELIB_SRCS})
+-TARGET_LINK_LIBRARIES(axelib qes_static ${AXE_DEP_LIBS})
++TARGET_LINK_LIBRARIES(axelib ${AXE_DEP_LIBS})
+ SET_TARGET_PROPERTIES(axelib PROPERTIES OUTPUT_NAME axe)
+ 
+ # Executable
+--- origsrc/axe-0.3.2/tests/CMakeLists.txt	2016-12-01 09:23:19.000000000 +0900
++++ src/axe-0.3.2/tests/CMakeLists.txt	2018-02-21 00:30:20.409000000 +0900
+@@ -1,7 +1,7 @@
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/tinytest)
+ 
+ ADD_EXECUTABLE(test_axe test.c ${CMAKE_CURRENT_SOURCE_DIR}/tinytest/tinytest.c test_libaxe.c)
+-TARGET_LINK_LIBRARIES(test_axe ${AXE_DEPENDS_LIBRARIES} axelib qes_static)
++TARGET_LINK_LIBRARIES(test_axe ${AXE_DEPENDS_LIBRARIES} axelib ${AXE_DEP_LIBS})
+ 
+ # Copy test files over to bin dir & make output
+ ADD_CUSTOM_TARGET(setup_tests ALL
