@@ -1,0 +1,102 @@
+--- origsrc/libCello-2.1.0/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.1.0/Makefile.am	2018-02-25 20:06:17.649399600 +0900
+@@ -0,0 +1,22 @@
++
++check_PROGRAMS = Cello_test
++Cello_test_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/tests
++Cello_test_SOURCES = tests/test.c tests/ptest.c
++Cello_test_LDADD = libCello.la
++TESTS = $(check_PROGRAMS)
++
++include_HEADERS = include/Cello.h
++
++lib_LTLIBRARIES = libCello.la
++libCello_la_CPPFLAGS = -I$(top_srcdir)/include
++libCello_la_SOURCES = \
++src/Alloc.c  src/Array.c      src/Assign.c  src/Cmp.c       src/Concat.c \
++src/Doc.c    src/Exception.c  src/File.c    src/Function.c  src/GC.c \
++src/Get.c    src/Hash.c       src/Iter.c    src/Len.c       src/List.c \
++src/Num.c    src/Pointer.c    src/Push.c    src/Resize.c    src/Show.c \
++src/Start.c  src/String.c     src/Table.c   src/Thread.c    src/Tree.c \
++src/Tuple.c  src/Type.c
++libCello_la_LDFLAGS = -no-undefined
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libCello-2.1.0/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.1.0/configure.ac	2018-02-25 20:06:17.649399600 +0900
+@@ -0,0 +1,30 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([libCello], [2.0.3])
++AC_CONFIG_SRCDIR([examples/cello_world.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CXX
++AC_PROG_CC
++LT_INIT
++
++# Checks for header files.
++AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h unistd.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_CHECK_HEADER_STDBOOL
++AC_TYPE_INT64_T
++AC_TYPE_SIZE_T
++AC_TYPE_UINT64_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([atexit memmove memset strchr strstr])
++
++AC_CONFIG_FILES([libCello.pc Makefile])
++AC_OUTPUT
+--- origsrc/libCello-2.1.0/include/Cello.h	2017-01-27 18:37:38.000000000 +0900
++++ src/libCello-2.1.0/include/Cello.h	2018-02-25 20:06:17.680920600 +0900
+@@ -123,7 +123,7 @@
+ 
+ #ifdef CELLO_UNIX
+ #include <pthread.h>
+-#ifndef CELLO_NSTRACE
++#if !defined(CELLO_NSTRACE) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ #endif
+--- origsrc/libCello-2.1.0/libCello.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libCello-2.1.0/libCello.pc.in	2018-02-25 20:06:17.680920600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libCello
++Description: Higher level programming in C
++Version: @VERSION@
++Libs: -L${libdir} -lCello
++Cflags: -I${includedir}
+--- origsrc/libCello-2.1.0/src/Exception.c	2017-01-27 18:37:38.000000000 +0900
++++ src/libCello-2.1.0/src/Exception.c	2018-02-25 20:06:17.711901500 +0900
+@@ -181,7 +181,7 @@ static bool Exception_Running(var self)
+ #if defined(CELLO_UNIX)
+ 
+ static void Exception_Backtrace(void) {
+-  
++#if !defined(__CYGWIN__)
+   var trace[EXCEPTION_MAX_STRACE];
+   size_t trace_count = backtrace(trace, EXCEPTION_MAX_STRACE);
+   char** symbols = backtrace_symbols(trace, trace_count);  
+@@ -196,7 +196,7 @@ static void Exception_Backtrace(void) {
+   print_to($(File, stderr), 0, "!!\t\n");
+   
+   free(symbols);
+-  
++#endif
+ }
+ 
+ #elif defined(CELLO_WINDOWS)
