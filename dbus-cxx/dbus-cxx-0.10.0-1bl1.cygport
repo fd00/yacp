@@ -1,5 +1,7 @@
 HOMEPAGE="http://${PN}.sf.net/"
-SRC_URI="mirror://sourceforge/${PN}/${P}.tar.bz2"
+SVN_URI="https://svn.code.sf.net/p/${PN}/code"
+SVN_TAG="${PV}"
+SVN_MODULE="${PN}"
 
 CATEGORY="Libs"
 SUMMARY="C++ wrapper for dbus"
@@ -8,11 +10,25 @@ manipulation and relies on sigc++ to provide an OO interface. Also included is
 dbus-cxx-xml2cpp to generate proxy and adapter interfaces from DBus XML
 introspection-like documents."
 
+inherit svn
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
 CYGCONF_ARGS="
 	--enable-glibmm
 	--enable-unit-tests
 	--enable-tools
 "
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	lndirs
+	cygconf
+	cygmake
+}
 
 PKG_NAMES="
 	${PN}
@@ -43,7 +59,6 @@ libdbus_cxx_glibmm_devel_CONTENTS="
 	usr/lib/lib${PN}-glibmm*
 	usr/lib/pkgconfig/${PN}-glibmm-1.0.pc
 "
-
 dbus_cxx_SUMMARY="${SUMMARY} (utilities)"
 libdbus_cxx0_SUMMARY="${SUMMARY} (runtime)"
 libdbus_cxx_devel_SUMMARY="${SUMMARY} (development)"
