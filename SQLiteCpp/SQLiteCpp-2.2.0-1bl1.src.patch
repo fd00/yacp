@@ -1,0 +1,98 @@
+--- origsrc/SQLiteCpp-2.2.0/CMakeLists.txt	2017-09-19 22:17:26.000000000 +0900
++++ src/SQLiteCpp-2.2.0/CMakeLists.txt	2018-03-01 17:47:05.520000000 +0900
+@@ -175,12 +175,17 @@ add_library(SQLiteCpp ${SQLITECPP_SRC} $
+ #target_link_libraries(SQLiteCpp PUBLIC sqlite3)
+ 
+ if (UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+-    set_target_properties(SQLiteCpp PROPERTIES COMPILE_FLAGS "-fPIC")
++    if (CYGWIN)
++        set_target_properties(SQLiteCpp PROPERTIES SOVERSION 0)
++    else()
++        set_target_properties(SQLiteCpp PROPERTIES COMPILE_FLAGS "-fPIC")
++    endif ()
+ endif (UNIX AND (CMAKE_COMPILER_IS_GNUCXX OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+ 
+ # Allow the library to be installed via "make install" and found with "find_package"
+ install(TARGETS SQLiteCpp
+     EXPORT ${PROJECT_NAME}Config
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+     COMPONENT libraries)
+@@ -190,6 +195,10 @@ target_include_directories(SQLiteCpp PUB
+ install(DIRECTORY include/ DESTINATION include COMPONENT headers FILES_MATCHING REGEX ".*\\.(hpp|h)$")
+ install(EXPORT ${PROJECT_NAME}Config DESTINATION lib/cmake/${PROJECT_NAME})
+ 
++if (CYGWIN)
++    install(FILES FindSQLiteCpp.cmake DESTINATION lib/cmake/${PROJECT_NAME})
++endif ()
++
+ ## Build provided copy of SQLite3 C library ##
+ 
+ # TODO NOCOMMIT
+@@ -204,6 +213,10 @@ if (SQLITECPP_INTERNAL_SQLITE)
+     add_subdirectory(sqlite3)
+     include_directories("${PROJECT_SOURCE_DIR}/sqlite3")
+     target_include_directories(sqlite3 PUBLIC "${PROJECT_SOURCE_DIR}/sqlite3")
++else()
++    include(FindPkgConfig)
++    pkg_check_modules(SQLITE3 REQUIRED sqlite3)
++    target_link_libraries(SQLiteCpp "${SQLITE3_LIBRARIES}")
+ endif (SQLITECPP_INTERNAL_SQLITE)
+ 
+ 
+@@ -284,11 +297,13 @@ if (SQLITECPP_BUILD_TESTS)
+     # add the subdirectory containing the CMakeLists.txt for the gtest library
+     # TODO: under Linux, uses libgtest-dev if found
+     # TODO: move to the new googletest Github repository
+-    if (NOT EXISTS "${PROJECT_SOURCE_DIR}/googletest/CMakeLists.txt")
+-        message(FATAL_ERROR "Missing 'googletest' submodule! Either use 'git init submodule' and 'git update submodule' to get googletest according to the README, or deactivate unit tests with -DSQLITECPP_BUILD_TESTS=OFF")
++    if (NOT CYGWIN)
++        if (NOT EXISTS "${PROJECT_SOURCE_DIR}/googletest/CMakeLists.txt")
++            message(FATAL_ERROR "Missing 'googletest' submodule! Either use 'git init submodule' and 'git update submodule' to get googletest according to the README, or deactivate unit tests with -DSQLITECPP_BUILD_TESTS=OFF")
++        endif ()
++        add_subdirectory(googletest) 
++        include_directories("${PROJECT_SOURCE_DIR}/googletest/googletest/include")
+     endif ()
+-    add_subdirectory(googletest) 
+-    include_directories("${PROJECT_SOURCE_DIR}/googletest/googletest/include")
+ 
+     # add the unit test executable
+     add_executable(SQLiteCpp_tests ${SQLITECPP_TESTS})
+@@ -296,7 +311,10 @@ if (SQLITECPP_BUILD_TESTS)
+     # Link target with dl for linux
+     if (UNIX AND NOT APPLE)
+         target_link_libraries(SQLiteCpp_tests dl)
+-    endif ()    
++    endif ()
++    if (CYGWIN)
++        target_link_libraries(SQLiteCpp_tests gtest)
++    endif ()
+ 
+     # add a "test" target:
+     enable_testing()
+@@ -312,3 +330,11 @@ else (SQLITECPP_BUILD_TESTS)
+     message(STATUS "SQLITECPP_BUILD_TESTS OFF")
+ endif (SQLITECPP_BUILD_TESTS)
+ 
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++SET(VERSION "2.2.0")
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/SQLiteCpp.pc.in ${CMAKE_BINARY_DIR}/SQLiteCpp.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/SQLiteCpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/SQLiteCpp-2.2.0/SQLiteCpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SQLiteCpp-2.2.0/SQLiteCpp.pc.in	2018-03-01 17:05:46.163900100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SQLiteCpp
++Description: Smart and easy to use C++ SQLite3 wrapper
++Version: @VERSION@
++Libs: -L${libdir} -lSQLiteCpp
++Cflags: -I${includedir}
