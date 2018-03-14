@@ -1,0 +1,28 @@
+--- origsrc/yaml-cpp-yaml-cpp-0.6.2/test/CMakeLists.txt	2018-03-06 13:56:23.000000000 +0900
++++ src/yaml-cpp-yaml-cpp-0.6.2/test/CMakeLists.txt	2018-03-14 16:26:34.641000000 +0900
+@@ -1,8 +1,11 @@
+-set(gtest_force_shared_crt ${MSVC_SHARED_RT} CACHE BOOL
+-  "Use shared (DLL) run-time lib even when Google Test built as a static lib.")
+-add_subdirectory(gtest-1.8.0)
+-include_directories(SYSTEM gtest-1.8.0/googlemock/include)
+-include_directories(SYSTEM gtest-1.8.0/googletest/include)
++option(USE_SYSTEM_GTEST "use system gtest" ON)
++if(NOT USE_SYSTEM_GTEST)
++  set(gtest_force_shared_crt ${MSVC_SHARED_RT} CACHE BOOL
++    "Use shared (DLL) run-time lib even when Google Test built as a static lib.")
++  add_subdirectory(gtest-1.8.0)
++  include_directories(SYSTEM gtest-1.8.0/googlemock/include)
++  include_directories(SYSTEM gtest-1.8.0/googletest/include)
++endif()
+ 
+ if(WIN32 AND BUILD_SHARED_LIBS)
+   add_definitions("-DGTEST_LINKED_AS_SHARED_LIBRARY")
+@@ -40,5 +43,8 @@ set_target_properties(run-tests PROPERTI
+   COMPILE_FLAGS "${yaml_c_flags} ${yaml_cxx_flags} ${yaml_test_flags}"
+ )
+ target_link_libraries(run-tests yaml-cpp gmock)
++if (USE_SYSTEM_GTEST)
++  target_link_libraries(run-tests gtest)
++endif()
+ 
+ add_test(yaml-test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/run-tests)
