@@ -1,0 +1,31 @@
+--- origsrc/libdivecomputer-0.6.0/src/serial_posix.c	2017-11-25 07:55:31.000000000 +0900
++++ src/libdivecomputer-0.6.0/src/serial_posix.c	2018-03-19 21:43:23.011000000 +0900
+@@ -177,6 +177,7 @@ dc_serial_open (dc_serial_t **out, dc_co
+ 		goto error_free;
+ 	}
+ 
++#if defined(TIOCEXCL)
+ #ifndef ENABLE_PTY
+ 	// Enable exclusive access mode.
+ 	if (ioctl (device->fd, TIOCEXCL, NULL) != 0) {
+@@ -186,6 +187,7 @@ dc_serial_open (dc_serial_t **out, dc_co
+ 		goto error_close;
+ 	}
+ #endif
++#endif
+ 
+ 	// Retrieve the current terminal attributes, to
+ 	// be able to restore them when closing the device.
+@@ -224,10 +226,12 @@ dc_serial_close (dc_serial_t *device)
+ 		dc_status_set_error(&status, syserror (errcode));
+ 	}
+ 
++#if defined(TIOCNXCL)
+ #ifndef ENABLE_PTY
+ 	// Disable exclusive access mode.
+ 	ioctl (device->fd, TIOCNXCL, NULL);
+ #endif
++#endif
+ 
+ 	// Close the device.
+ 	if (close (device->fd) != 0) {
