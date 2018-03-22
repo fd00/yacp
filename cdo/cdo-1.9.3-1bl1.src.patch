@@ -1,0 +1,76 @@
+--- origsrc/cdo-1.9.3/Makefile.am	2018-01-02 16:34:36.000000000 +0900
++++ src/cdo-1.9.3/Makefile.am	2018-03-22 21:24:17.047000000 +0900
+@@ -1,7 +1,7 @@
+ # Process this file with automake to produce Makefile.in
+ SUBDIRS = libcdi src/lib/ncl src contrib test/data test
+ if MAINTAINER_MODE
+-SUBDIRS += test/bandit_tests
++# SUBDIRS += test/bandit_tests
+ endif
+ #
+ EXTRA_DIST=config/default OPERATORS doc/cdo.pdf doc/cdo_cmor.pdf doc/cdo_eca.pdf doc/cdo_magics.pdf doc/cdo_refcard.pdf cdo.spec README
+--- origsrc/cdo-1.9.3/libcdi/app/cdi.c	2017-11-21 20:02:06.000000000 +0900
++++ src/cdo-1.9.3/libcdi/app/cdi.c	2018-03-22 11:06:15.168000000 +0900
+@@ -56,9 +56,10 @@ void cdiDefTableID(int tableID);
+ 
+ int getopt(int argc, char *const argv[], const char *optstring);
+ 
++#if !defined(__CYGWIN__)
+ extern char *optarg;
+ extern int optind, opterr, optopt;
+-
++#endif
+ 
+ static char *Progname;
+ 
+--- origsrc/cdo-1.9.3/libcdi/m4/acx_options.m4	2017-08-04 18:14:12.000000000 +0900
++++ src/cdo-1.9.3/libcdi/m4/acx_options.m4	2018-03-22 11:11:53.648000000 +0900
+@@ -35,7 +35,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+--- origsrc/cdo-1.9.3/libcdi/src/Makefile.am	2018-01-08 16:55:44.000000000 +0900
++++ src/cdo-1.9.3/libcdi/src/Makefile.am	2018-03-22 11:09:27.589000000 +0900
+@@ -7,6 +7,7 @@ noinst_LTLIBRARIES = libcdiresunpack.la
+ if ENABLE_CDI_LIB
+   lib_LTLIBRARIES = libcdi.la
+   include_HEADERS = cdi.h cdi.inc
++  libcdi_la_LDFLAGS = -no-undefined
+ else
+   noinst_LTLIBRARIES += libcdi.la
+ endif
+@@ -169,6 +170,7 @@ if USE_MPI
+ if ENABLE_CDI_LIB
+ lib_LTLIBRARIES += libcdipio.la
+ include_HEADERS += cdipio.h cdipio.inc
++libcdipio_la_LDFLAGS = -no-undefined
+ else
+ noinst_LTLIBRARIES += libcdipio.la
+ endif
+--- origsrc/cdo-1.9.3/libcdi/src/cgribexlib.c	2018-01-22 17:47:14.000000000 +0900
++++ src/cdo-1.9.3/libcdi/src/cgribexlib.c	2018-03-22 11:10:08.981000000 +0900
+@@ -5772,7 +5772,7 @@ void gribRepair1(int nrec, long recsize,
+ #if defined(__cplusplus)
+ extern "C" {
+ #endif
+-#include <szlib.h>
++#include <szip/szlib.h>
+ #ifdef  __cplusplus
+ }
+ #endif
+--- origsrc/cdo-1.9.3/m4/acx_options.m4	2017-07-03 17:59:29.000000000 +0900
++++ src/cdo-1.9.3/m4/acx_options.m4	2018-03-22 11:07:20.137000000 +0900
+@@ -40,7 +40,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
