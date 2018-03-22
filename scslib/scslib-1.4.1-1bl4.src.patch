@@ -1,15 +1,16 @@
 --- origsrc/scslib-1.4.1/Makefile.am	2003-05-29 00:57:25.000000000 +0900
-+++ src/scslib-1.4.1/Makefile.am	2014-07-20 15:51:21.604486900 +0900
++++ src/scslib-1.4.1/Makefile.am	2018-03-23 01:03:46.961332700 +0900
 @@ -1,13 +1,13 @@
  ## Process this file with automake to produce Makefile.in
  
  
 -lib_LIBRARIES = libscs.a
-+lib_LTLIBRARIES = libscs.la
++# lib_LIBRARIES = libscs.a
  
  
  # shared libraries need libtool. We'll do it later.
- #lib_LTLIBRARIES = libscs.la
+-#lib_LTLIBRARIES = libscs.la
++lib_LTLIBRARIES = libscs.la
  
 -libscs_a_SOURCES = scs.h scs_private.h \
 +libscs_la_SOURCES = scs.h scs_private.h \
@@ -24,8 +25,15 @@
  
  include_HEADERS = scs.h scs_config.h
  
+@@ -23,3 +24,6 @@ SUBDIRS = . tests
+ AM_CFLAGS =  -Wall -Wshadow -Wpointer-arith -Wcast-align -Wconversion -Waggregate-return -Wstrict-prototypes -Wnested-externs -Wlong-long -Winline 
+ 
+ EXTRA_DIST = VERSION  Doxyfile.user Doxyfile.dev Docs DocsDev
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/scslib-1.4.1/configure.in	2003-05-05 18:54:03.000000000 +0900
-+++ src/scslib-1.4.1/configure.in	2014-07-20 15:52:21.694330600 +0900
++++ src/scslib-1.4.1/configure.in	2018-03-23 01:03:46.961332700 +0900
 @@ -39,7 +39,7 @@ dnl Checks for programs.
  AC_PROG_CC(gcc-3.2 gcc-3.0 gcc cc)
  AC_PROG_CXX
@@ -44,8 +52,30 @@
  [
  if ` test "$1" `
  then  
+@@ -222,7 +222,7 @@ AC_CHECK_SIZEOF(int)
+ dnl defines SIZEOF_INT to be the size in bytes of int
+ 
+ 
+-AC_CONFIG_FILES([Makefile tests/Makefile])
++AC_CONFIG_FILES([scslib.pc Makefile tests/Makefile])
+ AC_OUTPUT
+ 
+ 
+--- origsrc/scslib-1.4.1/scslib.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/scslib-1.4.1/scslib.pc.in	2018-03-23 01:05:12.895000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: scslib
++Description: Software Carry-Save Multiple-Precision Library
++Version: @VERSION@
++Libs: -L${libdir} -lscs
++Cflags: -I${includedir}/scslib
 --- origsrc/scslib-1.4.1/tests/Makefile.am	2003-05-05 18:54:03.000000000 +0900
-+++ src/scslib-1.4.1/tests/Makefile.am	2014-07-20 15:51:21.604486900 +0900
++++ src/scslib-1.4.1/tests/Makefile.am	2018-03-23 00:52:45.149000000 +0900
 @@ -2,12 +2,12 @@
  
  bin_PROGRAMS =  scs_test_timing scs_test_accuracy
@@ -65,15 +95,13 @@
 \ No newline at end of file
 +scs_test_accuracy_SOURCES = test_accuracy.c
 --- origsrc/scslib-1.4.1/tests/test_accuracy.c	2003-06-16 22:49:42.000000000 +0900
-+++ src/scslib-1.4.1/tests/test_accuracy.c	2014-07-20 15:54:49.836908700 +0900
-@@ -37,6 +37,11 @@ Copyright (C) 2002  David Defour and Flo
++++ src/scslib-1.4.1/tests/test_accuracy.c	2018-03-23 01:01:56.129000000 +0900
+@@ -37,6 +37,9 @@ Copyright (C) 2002  David Defour and Flo
  
  #include <mpfr.h>
  
 +#if defined(__CYGWIN__)
 +#define mpfr_out_str __gmpfr_out_str
-+__MPFR_DECLSPEC size_t mpfr_out_str _MPFR_PROTO ((FILE*, int, size_t,
-+                                                  mpfr_srcptr, mpfr_rnd_t));
 +#endif
  
  void (* test_scs_fct) () = NULL;
