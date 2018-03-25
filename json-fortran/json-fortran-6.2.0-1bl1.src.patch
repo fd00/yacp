@@ -1,59 +1,94 @@
---- origsrc/json-fortran-6.1.0/CMakeLists.txt	2017-11-06 00:26:05.000000000 +0900
-+++ src/json-fortran-6.1.0/CMakeLists.txt	2017-11-17 23:25:15.448999800 +0900
-@@ -91,7 +91,7 @@ endif ()
+--- origsrc/json-fortran-6.2.0/CMakeLists.txt	2018-03-11 04:50:19.000000000 +0900
++++ src/json-fortran-6.2.0/CMakeLists.txt	2018-03-25 12:07:17.138000000 +0900
+@@ -91,7 +91,11 @@ endif ()
  # Put package export CMake files where they can be found
  # use `find_package ( jsonfortran-${CMAKE_Fortran_COMPILER_ID} <version> REQUIRED )`
  if (USE_GNU_INSTALL_CONVENTION)
 -  set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PACKAGE_VERSION}" )
-+  set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME}" )
++  if (CYGWIN)
++    set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME}" )
++  else ()
++    set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PACKAGE_VERSION}" )
++  endif ()
  else ()
    set ( EXPORT_INSTALL_DIR "${PACKAGE_VERSION}/cmake" )
  endif ()
-@@ -131,18 +131,20 @@ endif ()
+@@ -129,28 +133,39 @@ endif ()
+ # Build a shared and static library by default
+ #---------------------------------------------
  
++option(ENABLE_STATIC "enable static" OFF)
  set ( LIB_NAME ${CMAKE_PROJECT_NAME} )
  add_library ( ${LIB_NAME}        SHARED ${JF_LIB_SRCS} )
--add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
++if (ENABLE_STATIC)
+ add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
 -set_target_properties ( ${LIB_NAME}-static
 -  PROPERTIES
 -  OUTPUT_NAME ${LIB_NAME}
+-  if(NOT MSVC_IDE)
 -  PREFIX lib
+-  endif()
 -  VERSION ${VERSION}
 -  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 -  Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
-+option(ENABLE_STATIC "enable static" OFF)
-+if (ENABLE_STATIC)
-+  add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
+-set_target_properties ( ${LIB_NAME}
+-  PROPERTIES
+-  OUTPUT_NAME ${LIB_NAME}
+-  if(NOT MSVC_IDE)
+-  PREFIX lib
+-  endif()
+-  SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
+-  VERSION ${VERSION}
+-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+-  Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
 +  set_target_properties ( ${LIB_NAME}-static
 +    PROPERTIES
 +    OUTPUT_NAME ${LIB_NAME}
++    if(NOT MSVC_IDE)
 +    PREFIX lib
++    endif()
 +    VERSION ${VERSION}
 +    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
 +    Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
-+endif()
- set_target_properties ( ${LIB_NAME}
-   PROPERTIES
-   OUTPUT_NAME ${LIB_NAME}
--  PREFIX lib
-   SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
-   VERSION ${VERSION}
-   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-@@ -339,15 +341,26 @@ endif ()
++endif ()
++if (NOT MSVC_IDE AND NOT CYGWIN)
++  set_target_properties ( ${LIB_NAME}
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    PREFIX lib
++    SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
++    VERSION ${VERSION}
++    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
++else ()
++  set_target_properties ( ${LIB_NAME}
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
++    VERSION ${VERSION}
++    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
++endif ()
+ 
+ #-------------------------------------
+ # Build the documentation with FORD
+@@ -346,15 +361,27 @@ endif ()
  # Perform the installation
  #-------------------------
  
 -install ( TARGETS ${LIB_NAME} ${LIB_NAME}-static
++
 +install ( TARGETS ${LIB_NAME}
-+  EXPORT ${PACKAGE_NAME}-targets
-+  RUNTIME DESTINATION bin
-+  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
-+if (ENABLE_STATIC)
-+install ( TARGETS ${LIB_NAME}-static
    EXPORT ${PACKAGE_NAME}-targets
-   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
++  RUNTIME DESTINATION bin
    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
-+endif()
++if (ENABLE_STATIC)
++  install ( TARGETS ${LIB_NAME}-static
++    EXPORT ${PACKAGE_NAME}-targets
++    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
++    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++endif ()
  
  # Code to  fix the dylib install name on Mac.
  include ( cmake/fixupInstallNameDir.cmake )
@@ -64,11 +99,11 @@
 +  install ( FILES ${mods} DESTINATION "${INSTALL_MOD_DIR}")
 +else ()
 +  install ( DIRECTORY "${MODULE_DIR}/" DESTINATION  "${INSTALL_MOD_DIR}" )
-+endif()
++endif ()
  
  #------------------------------------------
  # Add portable unistall command to makefile
-@@ -388,7 +401,10 @@ install ( FILES
+@@ -395,7 +422,10 @@ install ( FILES
  #----------------------------------------------
  # Make build tree targets accessible for import
  #----------------------------------------------
@@ -76,7 +111,7 @@
 +export ( TARGETS ${LIB_NAME} FILE ${PACKAGE_NAME}-targets.cmake )
 +if (ENABLE_STATIC)
 +  export ( TARGETS ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
-+endif()
++endif ()
  
  # build tree package config file, NOT installed
  configure_file (
