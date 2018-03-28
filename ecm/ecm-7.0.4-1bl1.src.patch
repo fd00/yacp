@@ -1,0 +1,56 @@
+--- origsrc/ecm-7.0.4/Makefile.am	2016-08-23 21:25:36.000000000 +0900
++++ src/ecm-7.0.4/Makefile.am	2018-03-28 17:50:28.748229200 +0900
+@@ -181,3 +181,6 @@ if MAKE_MANPAGE
+ ecm.1: $(srcdir)/ecm.xml
+ 	xsltproc -o ecm.1 $(XSLDIR)/manpages/docbook.xsl $(srcdir)/ecm.xml
+ endif
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/ecm-7.0.4/configure.ac	2016-10-11 18:23:36.000000000 +0900
++++ src/ecm-7.0.4/configure.ac	2018-03-28 17:50:28.767312200 +0900
+@@ -272,7 +272,7 @@ if test "x$enable_asm_redc" = xyes; then
+   GMP_ASM_TYPE 
+ 
+   case $host in
+-    *-*-mingw32|*cygwin*) GMP_DEFINE([WINDOWS64_ABI], 1)
++    *-*-mingw32) GMP_DEFINE([WINDOWS64_ABI], 1)
+                  AC_DEFINE([WINDOWS64_ABI], 1,[Define to 1 if x86_64 mulredc*() functions should be called with Windows ABI]);;
+     *) ;;
+   esac
+@@ -371,11 +371,13 @@ dnl Checks for header files.
+ AC_FUNC_ALLOCA
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS([math.h limits.h malloc.h strings.h sys/time.h unistd.h io.h signal.h fcntl.h])
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADERS([windows.h psapi.h], [], [],
+    [[#ifdef HAVE_WINDOWS_H
+      # include <windows.h>
+      #endif
+      ]])
++fi
+ AC_CHECK_HEADERS([ctype.h sys/types.h sys/resource.h aio.h])
+ 
+ dnl Checks for library functions that are not in GMP
+@@ -647,7 +649,7 @@ CU_CHECK_CUDA
+ LIBS="$LIBS $GWLIB"
+ 
+ GMP_FINISH
+-AC_CONFIG_FILES([Makefile athlon/Makefile pentium4/Makefile x86_64/Makefile powerpc64/Makefile aprtcle/Makefile build.vc12/Makefile build.vc12/assembler/Makefile build.vc12/ecm/Makefile build.vc12/ecm_gpu/Makefile build.vc12/libecm/Makefile build.vc12/libecm_gpu/Makefile build.vc12/tune/Makefile build.vc12/bench_mulredc/Makefile])
++AC_CONFIG_FILES([ecm.pc Makefile athlon/Makefile pentium4/Makefile x86_64/Makefile powerpc64/Makefile aprtcle/Makefile build.vc12/Makefile build.vc12/assembler/Makefile build.vc12/ecm/Makefile build.vc12/ecm_gpu/Makefile build.vc12/libecm/Makefile build.vc12/libecm_gpu/Makefile build.vc12/tune/Makefile build.vc12/bench_mulredc/Makefile])
+ 
+ AC_SUBST([XSLDIR])
+ AC_SUBST([ASMPATH])
+--- origsrc/ecm-7.0.4/ecm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ecm-7.0.4/ecm.pc.in	2018-03-28 17:50:28.710269100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ecm
++Description: Elliptic Curve Method for Integer Factorization
++Version: @VERSION@
++Libs: -L${libdir} -lecm
++Cflags: -I${includedir}
