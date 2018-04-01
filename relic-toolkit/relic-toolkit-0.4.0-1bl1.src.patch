@@ -1,0 +1,39 @@
+--- origsrc/relic-relic-toolkit-0.4.0/CMakeLists.txt	2014-08-20 02:01:22.000000000 +0900
++++ src/relic-relic-toolkit-0.4.0/CMakeLists.txt	2018-04-01 16:53:38.376000000 +0900
+@@ -380,3 +380,9 @@ if(BENCH GREATER 0)
+ 	add_subdirectory(bench)
+ endif(BENCH GREATER 0)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/relic-toolkit.pc.in ${CMAKE_BINARY_DIR}/relic-toolkit.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/relic-toolkit.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/relic-relic-toolkit-0.4.0/relic-toolkit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/relic-relic-toolkit-0.4.0/relic-toolkit.pc.in	2018-04-01 17:02:47.576000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: relic-toolkit
++Description: Modern cryptographic meta-toolkit
++Version: @VERSION@
++Libs: -L${libdir} -lrelic
++Cflags: -I${includedir}/relic
+--- origsrc/relic-relic-toolkit-0.4.0/src/CMakeLists.txt	2014-08-20 02:01:22.000000000 +0900
++++ src/relic-relic-toolkit-0.4.0/src/CMakeLists.txt	2018-04-01 16:02:34.465000000 +0900
+@@ -168,7 +168,10 @@ if (SHLIB)
+ 	add_dependencies(${RELIC} arith_objs)
+ 	target_link_libraries(${RELIC} ${ARITH_LIBS})
+ 	LINK_LIBS(${RELIC})
+-	install(TARGETS ${RELIC} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++	if (CYGWIN)
++		set_target_properties(${RELIC} PROPERTIES SOVERSION 0)
++	endif()
++	install(TARGETS ${RELIC} RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+ endif(SHLIB)
+ 
+ if (STLIB)
