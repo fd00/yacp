@@ -1,0 +1,55 @@
+HOMEPAGE="http://www.libtom.net/LibTomCrypt/"
+SRC_URI="https://github.com/libtom/${PN}/archive/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Fairly comprehensive, modular and portable cryptographic toolkit"
+DESCRIPTION="LibTomCrypt is a fairly comprehensive, modular and portable cryptographic
+toolkit that provides developers with a vast array of well known published
+block ciphers, one-way hash functions, chaining modes, pseudo-random number
+generators, public key cryptography and a plethora of other routines."
+
+export CFLAGS="${CFLAGS} -DUSE_LTM -DLTM_DESC"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake -f Makefile.shared EXTRALIBS=`pkg-config --libs libtommath`
+}
+
+src_test()
+{
+	cd ${B}
+	cygmake -f Makefile.shared test
+	./test.exe
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall -f Makefile.shared PREFIX=/usr
+}
+
+PKG_IGNORE="
+	usr/lib/libtomcrypt.a
+"
+
+PKG_NAMES="
+	libtomcrypt
+	libtomcrypt1
+	libtomcrypt-devel
+"
+libtomcrypt_CONTENTS="
+	usr/share
+"
+libtomcrypt1_CONTENTS="
+	usr/bin
+"
+libtomcrypt_devel_CONTENTS="
+	usr/include
+	usr/lib/${PN}.dll.a
+	usr/lib/pkgconfig
+"
+libtomcrypt_SUMMARY="${SUMMARY} (licensing & readmes)"
+libtomcrypt1_SUMMARY="${SUMMARY} (runtime)"
+libtomcrypt_devel_SUMMARY="${SUMMARY} (development)"
