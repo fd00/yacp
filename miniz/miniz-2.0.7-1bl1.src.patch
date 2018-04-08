@@ -1,0 +1,48 @@
+--- origsrc/miniz-2.0.7/CMakeLists.txt	2018-02-21 03:03:53.000000000 +0900
++++ src/miniz-2.0.7/CMakeLists.txt	2018-04-09 02:42:48.107000200 +0900
+@@ -12,7 +12,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+ 
+ set(miniz_SOURCE miniz.c miniz_zip.c miniz_tinfl.c miniz_tdef.c)
+ 
+-add_library(miniz ${miniz_SOURCE})
++add_library(miniz SHARED ${miniz_SOURCE})
+ 
+ set(EXAMPLE1_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/examples/example1.c")
+ set(EXAMPLE2_SRC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/examples/example2.c")
+@@ -45,8 +45,19 @@ endif()
+ # target_link_libraries(miniz_tester miniz)
+ 
+ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Targets
+-    ARCHIVE  DESTINATION lib
+-    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin
+     )
+ file(GLOB INSTALL_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+-install(FILES ${INSTALL_HEADERS} DESTINATION include/${PROJECT_NAME})
+\ No newline at end of file
++install(FILES ${INSTALL_HEADERS} DESTINATION include/${PROJECT_NAME})
++
++if (CYGWIN)
++    set_target_properties(miniz PROPERTIES SOVERSION 0)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/miniz.pc.in ${CMAKE_BINARY_DIR}/miniz.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/miniz.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/miniz-2.0.7/miniz.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/miniz-2.0.7/miniz.pc.in	2018-04-09 02:41:09.177448600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: miniz
++Description: Single C source file zlib-replacement library
++Version: @VERSION@
++Libs: -L${libdir} -lminiz
++Cflags: -I${includedir}
