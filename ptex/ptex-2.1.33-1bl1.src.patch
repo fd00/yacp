@@ -1,0 +1,86 @@
+--- origsrc/ptex-2.1.33/CMakeLists.txt	2018-01-25 08:12:27.000000000 +0900
++++ src/ptex-2.1.33/CMakeLists.txt	2018-04-09 17:34:06.198999800 +0900
+@@ -20,7 +20,7 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_C
+     endif ()
+ endif ()
+ 
+-if (NOT WIN32)
++if (NOT WIN32 AND NOT CYGWIN)
+     set(CMAKE_CXX_FLAGS "-std=c++98 -Wall -Wextra -pedantic ${CMAKE_CXX_FLAGS}")
+ endif ()
+ 
+@@ -47,4 +47,15 @@ include_directories(${ZLIB_INCLUDE_DIR})
+ add_subdirectory(src/ptex)
+ add_subdirectory(src/utils)
+ add_subdirectory(src/tests)
+-add_subdirectory(src/doc)
++
++option(ENABLE_DOC "enable doc" OFF)
++if (ENABLE_DOC)
++    add_subdirectory(src/doc)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ptex.pc.in ${CMAKE_BINARY_DIR}/ptex.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ptex.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ptex-2.1.33/ptex.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ptex-2.1.33/ptex.pc.in	2018-04-09 17:34:28.169000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ptex
++Description: Per-Face Texture Mapping for Production Rendering
++Version: @VERSION@
++Libs: -L${libdir} -lPtex
++Cflags: -I${includedir}
+--- origsrc/ptex-2.1.33/src/ptex/CMakeLists.txt	2018-01-25 08:12:27.000000000 +0900
++++ src/ptex-2.1.33/src/ptex/CMakeLists.txt	2018-04-09 17:25:50.676000200 +0900
+@@ -14,15 +14,27 @@ set(SRCS
+     PtexUtils.cpp
+     PtexWriter.cpp)
+ 
+-add_library(Ptex_static STATIC ${SRCS})
+-set_target_properties(Ptex_static PROPERTIES OUTPUT_NAME Ptex)
++option(ENABLE_STATIC "enable static" OFF)
++
++if (ENABLE_STATIC)
++    add_library(Ptex_static STATIC ${SRCS})
++    set_target_properties(Ptex_static PROPERTIES OUTPUT_NAME Ptex)
++endif()
+ 
+ add_library(Ptex_dynamic SHARED ${SRCS})
+ set_target_properties(Ptex_dynamic PROPERTIES OUTPUT_NAME Ptex)
+ 
++if (CYGWIN)
++    set_target_properties(Ptex_dynamic PROPERTIES SOVERSION 0)
++endif()
++
+ target_link_libraries(Ptex_dynamic ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES})
+ 
+-install(TARGETS Ptex_static Ptex_dynamic DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (ENABLE_STATIC)
++    install(TARGETS Ptex_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
++
++install(TARGETS Ptex_dynamic RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ install(FILES
+         PtexHalf.h
+--- origsrc/ptex-2.1.33/src/utils/CMakeLists.txt	2018-01-25 08:12:27.000000000 +0900
++++ src/ptex-2.1.33/src/utils/CMakeLists.txt	2018-04-09 17:26:18.084000200 +0900
+@@ -9,7 +9,7 @@ execute_process(COMMAND git describe ${P
+                 OUTPUT_STRIP_TRAILING_WHITESPACE)
+ 
+ add_executable(ptxinfo ptxinfo.cpp)
+-add_definitions(-DPTEX_VER="${PTEX_VER} \(${PTEX_SHA}\)" -DPTEX_STATIC)
+-target_link_libraries(ptxinfo Ptex_static ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
++add_definitions(-DPTEX_VER="${PTEX_VER} \(${PTEX_SHA}\)")
++target_link_libraries(ptxinfo Ptex_dynamic ${ZLIB_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+ 
+ install(TARGETS ptxinfo DESTINATION ${CMAKE_INSTALL_BINDIR})
