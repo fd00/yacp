@@ -1,0 +1,85 @@
+--- origsrc/hkl-5.0.0.2449/Documentation/figures/Makefile.am	2018-02-07 22:40:06.000000000 +0900
++++ src/hkl-5.0.0.2449/Documentation/figures/Makefile.am	2018-04-13 17:18:56.611000000 +0900
+@@ -15,11 +15,11 @@ AM_CPPFLAGS = -Wextra -D_DEFAULT_SOURCE
+ 	$(GSL_CFLAGS)
+ 
+ # wee need access to the private part until the trajectory is done.
+-AM_LDFLAGS = -Wl,--whole-archive,$(top_builddir)/hkl/.libs/libhkl.a,--no-whole-archive
++# AM_LDFLAGS = -Wl,--whole-archive,$(top_builddir)/hkl/.libs/libhkl.a,--no-whole-archive
+ 
+ LDADD = \
+-	$(top_builddir)/hkl/libhkl.la \
+ 	$(top_builddir)/hkl/api2/libhkl2.la \
++	$(top_builddir)/hkl/libhkl.la \
+ 	$(GLIB_LIBS) \
+ 	$(GOBJECT_LIBS) \
+ 	$(GSL_LIBS)
+--- origsrc/hkl-5.0.0.2449/hkl/ccan/coroutine/coroutine.c	2017-12-04 07:20:38.000000000 +0900
++++ src/hkl-5.0.0.2449/hkl/ccan/coroutine/coroutine.c	2018-04-13 16:48:04.886000000 +0900
+@@ -59,9 +59,11 @@ struct coroutine_stack *coroutine_stack_
+ 	struct coroutine_stack *stack;
+ 	size_t size = bufsize - sizeof(*stack) - metasize;
+ 
++#if !defined(__CYGWIN__)
+ #ifdef MINSIGSTKSZ
+ 	BUILD_ASSERT(COROUTINE_MIN_STKSZ >= MINSIGSTKSZ);
+ #endif
++#endif
+ 
+ 	if (bufsize < (COROUTINE_MIN_STKSZ + sizeof(*stack) + metasize))
+ 		return NULL;
+--- origsrc/hkl-5.0.0.2449/hkl/hkl-macros-private.h	2018-02-07 22:40:06.000000000 +0900
++++ src/hkl-5.0.0.2449/hkl/hkl-macros-private.h	2018-04-13 16:59:05.201000000 +0900
+@@ -32,7 +32,9 @@
+ 
+ /* the assert method */
+ #if !defined(NDEBUG) && !_MSC_VER
++#if !defined(__CYGWIN__)
+ # include <execinfo.h>
++#endif
+ # include <assert.h>
+ # define hkl_assert(x) do{ if (!(x)) {hkl_printbt(); assert(x); } } while(0)
+ #else
+--- origsrc/hkl-5.0.0.2449/hkl/hkl-macros.c	2018-02-07 22:40:06.000000000 +0900
++++ src/hkl-5.0.0.2449/hkl/hkl-macros.c	2018-04-13 17:07:48.948999800 +0900
+@@ -19,12 +19,15 @@
+  *
+  * Authors: Picca Frédéric-Emmanuel <picca@synchrotron-soleil.fr>
+  */
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>                   // for backtrace, etc
++#endif
+ #include "hkl-macros-private.h"
+ 
+ #ifndef _MSC_VER
+ void hkl_printbt(void)
+ {
++#if !defined(__CYGWIN__)
+ 	void *array[20];
+ 	int size;
+ 	char **strings;
+@@ -38,6 +41,7 @@ void hkl_printbt(void)
+ 		fprintf(stderr, "#%i %s\n", i, strings[i]);
+ 
+ 	free(strings);
++#endif
+ }
+ #else
+ int vasprintf(char **strp, const char *fmt, va_list ap)
+--- origsrc/hkl-5.0.0.2449/tests/Makefile.am	2018-02-07 22:40:06.000000000 +0900
++++ src/hkl-5.0.0.2449/tests/Makefile.am	2018-04-13 17:48:54.670000000 +0900
+@@ -35,11 +35,11 @@ AM_CPPFLAGS = -Wextra -D_DEFAULT_SOURCE
+ 	$(GOBJECT_CFLAGS) \
+ 	$(GSL_CFLAGS)
+ 
+-AM_LDFLAGS = -Wl,--whole-archive,$(top_builddir)/hkl/.libs/libhkl.a,--no-whole-archive
++# AM_LDFLAGS = -Wl,--whole-archive,$(top_builddir)/hkl/.libs/libhkl.a,--no-whole-archive
+ 
+-LDADD = $(top_builddir)/hkl/libhkl.la \
++LDADD = $(top_builddir)/tests/tap/libtap.a \
+ 	$(top_builddir)/hkl/api2/libhkl2.la \
+-	$(top_builddir)/tests/tap/libtap.a \
++	$(top_builddir)/hkl/libhkl.la \
+ 	$(GLIB_LIBS) \
+ 	$(GOBJECT_LIBS) \
+ 	$(GSL_LIBS)
