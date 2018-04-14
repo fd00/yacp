@@ -1,0 +1,135 @@
+--- origsrc/gdnsd-2.4.0/Makefile.am	2018-02-15 23:59:22.000000000 +0900
++++ src/gdnsd-2.4.0/Makefile.am	2018-04-14 20:35:32.018994600 +0900
+@@ -31,6 +31,7 @@ export CCACHE_CPP2 = 1
+ bin_PROGRAMS =
+ sbin_PROGRAMS =
+ pkglibexec_PROGRAMS =
++lib_LTLIBRARIES =
+ pkglib_LTLIBRARIES =
+ noinst_LTLIBRARIES =
+ noinst_SCRIPTS =
+@@ -168,23 +169,23 @@ pkglib_LTLIBRARIES += \
+ 
+ # simple plugins (in build terms)
+ plugins_plugin_http_status_la_SOURCES = plugins/http_status.c
+-plugins_plugin_http_status_la_LDFLAGS = -avoid-version -module
++plugins_plugin_http_status_la_LDFLAGS = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la 
+ plugins_plugin_multifo_la_SOURCES     = plugins/multifo.c
+-plugins_plugin_multifo_la_LDFLAGS     = -avoid-version -module
++plugins_plugin_multifo_la_LDFLAGS     = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_null_la_SOURCES        = plugins/null.c
+-plugins_plugin_null_la_LDFLAGS        = -avoid-version -module
++plugins_plugin_null_la_LDFLAGS        = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_reflect_la_SOURCES     = plugins/reflect.c
+-plugins_plugin_reflect_la_LDFLAGS     = -avoid-version -module
++plugins_plugin_reflect_la_LDFLAGS     = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_simplefo_la_SOURCES    = plugins/simplefo.c
+-plugins_plugin_simplefo_la_LDFLAGS    = -avoid-version -module
++plugins_plugin_simplefo_la_LDFLAGS    = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_static_la_SOURCES      = plugins/static.c
+-plugins_plugin_static_la_LDFLAGS      = -avoid-version -module
++plugins_plugin_static_la_LDFLAGS      = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_tcp_connect_la_SOURCES = plugins/tcp_connect.c
+-plugins_plugin_tcp_connect_la_LDFLAGS = -avoid-version -module
++plugins_plugin_tcp_connect_la_LDFLAGS = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_weighted_la_SOURCES    = plugins/weighted.c
+-plugins_plugin_weighted_la_LDFLAGS    = -avoid-version -module
++plugins_plugin_weighted_la_LDFLAGS    = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ plugins_plugin_extfile_la_SOURCES     = plugins/extfile.c
+-plugins_plugin_extfile_la_LDFLAGS     = -avoid-version -module
++plugins_plugin_extfile_la_LDFLAGS     = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ 
+ # extmon
+ 
+@@ -198,8 +199,8 @@ plugins_gdnsd_extmon_helper_CFLAGS  = $(
+ plugins_gdnsd_extmon_helper_LDFLAGS = $(LDFLAGS_PIE)
+ 
+ plugins_plugin_extmon_la_SOURCES  = plugins/extmon.c plugins/extmon_comms.h
+-plugins_plugin_extmon_la_LDFLAGS  = -avoid-version -module
+-plugins_plugin_extmon_la_LIBADD   = plugins/libextmon_comms.la
++plugins_plugin_extmon_la_LDFLAGS  = -avoid-version -module -no-undefined
++plugins_plugin_extmon_la_LIBADD   = plugins/libextmon_comms.la libgdnsd/libgdnsd.la
+ 
+ # geoip + metafo
+ 
+@@ -210,11 +211,11 @@ plugins_gdnsd_geoip_test_LDFLAGS  = $(LD
+ plugins_gdnsd_geoip_test_LDADD    = libgdmaps/libgdmaps.la libgdnsd/libgdnsd.la $(LIBGDNSD_LIBS)
+ 
+ plugins_plugin_geoip_la_SOURCES   = plugins/geoip.c plugins/meta_core.inc
+-plugins_plugin_geoip_la_LDFLAGS   = -avoid-version -module
+-plugins_plugin_geoip_la_LIBADD    = libgdmaps/libgdmaps.la
++plugins_plugin_geoip_la_LDFLAGS   = -avoid-version -module -no-undefined
++plugins_plugin_geoip_la_LIBADD    = libgdmaps/libgdmaps.la libgdnsd/libgdnsd.la
+ 
+ plugins_plugin_metafo_la_SOURCES  = plugins/metafo.c plugins/meta_core.inc
+-plugins_plugin_metafo_la_LDFLAGS  = -avoid-version -module
++plugins_plugin_metafo_la_LDFLAGS  = -avoid-version -module -no-undefined libgdnsd/libgdnsd.la
+ 
+ #=====================================
+ # libgdmaps/
+@@ -248,7 +249,7 @@ libgdmaps_libgdmaps_la_SOURCES = \
+ # libgdnsd/
+ #=====================================
+ 
+-pkglib_LTLIBRARIES += libgdnsd/libgdnsd.la
++lib_LTLIBRARIES += libgdnsd/libgdnsd.la
+ 
+ # These are the public libgdnsd headers that all in-tree source can use. They
+ # are also installed via "make install" and can be used by 3rd-party plugins
+@@ -304,7 +305,7 @@ LIBGDNSD_PATHS = \
+ 	-DGDNSD_DEFPATH_LIBEXEC='"$(GDNSD_DEFPATH_LIBEXEC)"'
+ 
+ libgdnsd_libgdnsd_la_CPPFLAGS = $(LIBGDNSD_PATHS) $(AM_CPPFLAGS)
+-libgdnsd_libgdnsd_la_LDFLAGS = -shared -avoid-version
++libgdnsd_libgdnsd_la_LDFLAGS = -no-undefined
+ libgdnsd_libgdnsd_la_LIBADD  = $(LIBGDNSD_LIBS)
+ 
+ libgdnsd_libgdnsd_la_pkgincludedir = $(pkgincludedir)
+@@ -444,3 +445,6 @@ install-exec-hook: $(INSTALL_EXEC_HOOK_D
+ check-local: $(CHECK_LOCAL_DEPS)
+ all-local: $(ALL_LOCAL_DEPS)
+ .PHONY: $(INSTALL_EXEC_HOOK_DEPS) $(CHECK_LOCAL_DEPS) $(ALL_LOCAL_DEPS)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/gdnsd-2.4.0/configure.ac	2018-02-15 23:59:22.000000000 +0900
++++ src/gdnsd-2.4.0/configure.ac	2018-04-14 20:35:32.018994600 +0900
+@@ -479,7 +479,7 @@ AC_DEFINE_UNQUOTED([BUILD_INFO],["$B_INF
+ 
+ # Output generation
+ AC_CONFIG_HEADERS([config.h])
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([gdnsd.pc 
+   Makefile
+   t/Makefile
+   t/libtap/Makefile
+--- origsrc/gdnsd-2.4.0/gdnsd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/gdnsd-2.4.0/gdnsd.pc.in	2018-04-14 20:35:31.956527300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: gdnsd
++Description: Authoritative DNS Server
++Version: @VERSION@
++Libs: -L${libdir} -lgdnsd
++Cflags: -I${includedir}
+--- origsrc/gdnsd-2.4.0/src/main.c	2018-02-15 23:59:22.000000000 +0900
++++ src/gdnsd-2.4.0/src/main.c	2018-04-14 19:59:03.392999800 +0900
+@@ -485,12 +485,14 @@ int main(int argc, char** argv) {
+             log_warn("setpriority(%i) failed: %s", cfg->priority, dmn_logf_errno());
+     }
+ 
++#if !defined(__CYGWIN__)
+     // Lock whole daemon into memory, including
+     //  all future allocations.
+     if(cfg->lock_mem)
+         if(mlockall(MCL_CURRENT | MCL_FUTURE))
+             log_fatal("mlockall(MCL_CURRENT|MCL_FUTURE) failed: %s (you may need to disabled the lock_mem config option if your system or your ulimits do not allow it)",
+                 dmn_logf_errno());
++#endif
+ 
+     // Initialize dnspacket stuff
+     dnspacket_global_setup(socks_cfg);
