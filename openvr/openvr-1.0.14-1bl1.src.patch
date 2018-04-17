@@ -1,0 +1,103 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.dll.a' origsrc/openvr-1.0.14/CMakeLists.txt src/openvr-1.0.14/CMakeLists.txt
+--- origsrc/openvr-1.0.14/CMakeLists.txt	2018-04-06 07:20:38.000000000 +0900
++++ src/openvr-1.0.14/CMakeLists.txt	2018-04-17 19:09:43.986000000 +0900
+@@ -26,7 +26,7 @@ endif()
+ if(WIN32)
+ 	set(PLATFORM_NAME "win")
+ elseif(UNIX AND NOT APPLE)
+-  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
++  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux" OR CYGWIN)
+     set(PLATFORM_NAME "linux")
+     add_definitions(-DLINUX -DPOSIX)
+     if(PROCESSOR_ARCH MATCHES "64")
+@@ -55,7 +55,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+ # Enable some properties.
+ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+ 	# Enable c++11 and hide symbols which shouldn't be visible
++  if(CYGWIN)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fvisibility=hidden")
++  else()
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fvisibility=hidden")
++  endif()
+ 
+ 	# Set custom libc++ usage here
+ 	if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND USE_LIBCXX)
+@@ -74,3 +78,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_CO
+ endif()
+ 
+ add_subdirectory(src)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/openvr.pc.in ${CMAKE_BINARY_DIR}/openvr.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/openvr.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.dll.a' origsrc/openvr-1.0.14/headers/openvr_capi.h src/openvr-1.0.14/headers/openvr_capi.h
+--- origsrc/openvr-1.0.14/headers/openvr_capi.h	2018-04-06 07:20:38.000000000 +0900
++++ src/openvr-1.0.14/headers/openvr_capi.h	2018-04-17 19:07:54.141584200 +0900
+@@ -24,8 +24,8 @@
+ #endif
+ 
+ // OPENVR API export macro
+-#if defined( _WIN32 ) && !defined( _X360 )
+-	#if defined( OPENVR_API_EXPORTS )
++#if (defined( _WIN32 ) || defined(__CYGWIN__)) && !defined( _X360 )
++	#if defined( OPENVR_API_EXPORTS ) || defined(__CYGWIN__)
+ 	#define S_API EXTERN_C __declspec( dllexport )
+ 	#elif defined( OPENVR_API_NODLL )
+ 	#define S_API EXTERN_C
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.dll.a' origsrc/openvr-1.0.14/openvr.pc.in src/openvr-1.0.14/openvr.pc.in
+--- origsrc/openvr-1.0.14/openvr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/openvr-1.0.14/openvr.pc.in	2018-04-17 19:07:54.157624500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: openvr
++Description: OpenVR SDK
++Version: @VERSION@
++Libs: -L${libdir} -lopenvr_api
++Cflags: -I${includedir}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.dll.a' origsrc/openvr-1.0.14/src/CMakeLists.txt src/openvr-1.0.14/src/CMakeLists.txt
+--- origsrc/openvr-1.0.14/src/CMakeLists.txt	2018-04-06 07:20:38.000000000 +0900
++++ src/openvr-1.0.14/src/CMakeLists.txt	2018-04-17 19:07:54.157624500 +0900
+@@ -61,6 +61,9 @@ source_group("VRCommon" FILES
+ # Build the library.
+ if(BUILD_SHARED)
+ 	add_library(${LIBNAME} SHARED ${SOURCE_FILES})
++	if(CYGWIN)
++		set_target_properties(${LIBNAME} PROPERTIES SOVERSION 1.0.0)
++	endif()
+ elseif(BUILD_FRAMEWORK)
+ 	set( LIBNAME "OpenVR" )
+ 	add_library( ${LIBNAME} 
+@@ -93,4 +96,7 @@ endif()
+ 
+ target_link_libraries(${LIBNAME} ${EXTRA_LIBS})
+ 
+-install(TARGETS ${LIBNAME} DESTINATION lib)
++install(TARGETS ${LIBNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++file(GLOB headers "${CMAKE_SOURCE_DIR}/headers/*.h")
++install(FILES ${headers} DESTINATION include/openvr)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.dll.a' origsrc/openvr-1.0.14/src/vrcommon/pathtools_public.h src/openvr-1.0.14/src/vrcommon/pathtools_public.h
+--- origsrc/openvr-1.0.14/src/vrcommon/pathtools_public.h	2018-04-06 07:20:38.000000000 +0900
++++ src/openvr-1.0.14/src/vrcommon/pathtools_public.h	2018-04-17 19:07:54.188719200 +0900
+@@ -106,10 +106,12 @@ std::string GetUserDocumentsPath();
+ #endif
+ 
+ //-----------------------------------------------------------------------------
+-#if defined(WIN32)
++#if defined(WIN32) || defined(__CYGWIN__)
+ #define DYNAMIC_LIB_EXT	".dll"
+ #define PROGRAM_EXT ".exe"
+-#ifdef _WIN64
++#if defined(__CYGWIN__)
++#define PLATSUBDIR  "cygwin"
++#elif defined(_WIN64)
+ #define PLATSUBDIR	"win64"
+ #else
+ #define PLATSUBDIR	"win32"
