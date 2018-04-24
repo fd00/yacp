@@ -1,0 +1,59 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/glotzer-libgetar-bfcff7c04722/CMakeLists.txt src/glotzer-libgetar-bfcff7c04722/CMakeLists.txt
+--- origsrc/glotzer-libgetar-bfcff7c04722/CMakeLists.txt	2017-10-27 05:09:04.000000000 +0900
++++ src/glotzer-libgetar-bfcff7c04722/CMakeLists.txt	2018-04-24 17:24:14.322000000 +0900
+@@ -7,11 +7,16 @@ IF(NOT DISABLE_SQLITE)
+   FIND_PACKAGE(SQLite3)
+ ENDIF(NOT DISABLE_SQLITE)
+ 
++INCLUDE(FindPkgConfig)
++
+ IF(SQLITE3_FOUND)
+   INCLUDE_DIRECTORIES(${SQLITE3_INCLUDE_DIRS})
+   SET(LINK_LIBS ${LINK_LIBS} ${SQLITE3_LIBRARIES})
+-  set(EXTRA_SRCS ${EXTRA_SRCS} src/SqliteArchive.cpp lz4/lz4.c lz4/lz4hc.c)
++  set(EXTRA_SRCS ${EXTRA_SRCS} src/SqliteArchive.cpp)
++  PKG_CHECK_MODULES(LIBLZ4 REQUIRED liblz4)
+   add_definitions(-DENABLE_SQLITE)
++  INCLUDE_DIRECTORIES(${LIBLZ4_INCLUDE_DIRS})
++  SET(LINK_LIBS ${LINK_LIBS} ${LIBLZ4_LIBRARIES})
+ ENDIF(SQLITE3_FOUND)
+ 
+ set(GETAR_SRC
+@@ -20,12 +25,22 @@ set(GETAR_SRC
+ 
+ if(LIBGETAR_SHARED)
+   ADD_LIBRARY(getar SHARED ${GETAR_SRC})
++  SET_TARGET_PROPERTIES(getar PROPERTIES SOVERSION 0)
+ else()
+   ADD_LIBRARY(getar STATIC ${GETAR_SRC})
+ endif()
+ 
+ target_link_libraries(getar ${LINK_LIBS})
+ 
+-install(TARGETS getar LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++file(GLOB headers "src/*.hpp" "vogl_miniz/*.h")
++install(FILES ${headers} DESTINATION include/getar)
++install(TARGETS getar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ add_subdirectory(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgetar.pc.in ${CMAKE_BINARY_DIR}/libgetar.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libgetar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/glotzer-libgetar-bfcff7c04722/libgetar.pc.in src/glotzer-libgetar-bfcff7c04722/libgetar.pc.in
+--- origsrc/glotzer-libgetar-bfcff7c04722/libgetar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/glotzer-libgetar-bfcff7c04722/libgetar.pc.in	2018-04-24 17:24:24.098000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgetar
++Description: Library to read and write GEneric Trajectory ARchives
++Version: @VERSION@
++Libs: -L${libdir} -lgetar
++Cflags: -I${includedir}/getar
