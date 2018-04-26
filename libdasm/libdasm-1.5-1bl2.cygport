@@ -1,0 +1,85 @@
+HOMEPAGE="https://code.google.com/archive/p/${PN}/"
+SRC_URI="https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/${PN}/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Disassembly library"
+DESCRIPTION="This was an up-to-date libdasm fork, but I never got the time."
+
+inherit python2
+inherit ruby
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+
+	cd ${B}
+	lndirs
+	cygconf
+	cygmake
+
+	pushd pydasm
+		${PYTHON2} setup.py build "${@}" || error "setup.py build failed"
+	popd
+
+	pushd rbdasm
+		ruby_compile --with-opt-include=${B} --with-opt-lib=${B}/.libs
+	popd
+}
+
+src_test()
+{
+	cd ${B}
+	cygmake check
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	pushd pydasm
+		${PYTHON2} setup.py "${@}" install --no-compile --root=${D} || error "setup.py install failed"
+	popd
+
+	pushd rbdasm
+		RUBYVENDORARCHDIR=`${RUBY} -e 'require "rbconfig"; print RbConfig::CONFIG["vendorarchdir"]'`
+		mkdir -p ${D}${RUBYVENDORARCHDIR}
+		ruby_install
+	popd
+}
+
+DIFF_EXCLUDES="
+	Makefile
+"
+
+PKG_NAMES="
+	${PN}
+	${PN}0
+	${PN}-devel
+	python2-${PN}
+	ruby-${PN}
+"
+libdasm_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libdasm0_CONTENTS="
+	usr/bin/*.dll
+"
+libdasm_devel_CONTENTS="
+	usr/include
+	usr/lib/*.dll.a
+	usr/lib/pkgconfig
+"
+python2_libdasm_CONTENTS="
+	usr/lib/python2*
+"
+ruby_libdasm_CONTENTS="
+	usr/lib/ruby
+"
+libdasm_SUMMARY="${SUMMARY} (utilities)"
+libdasm0_SUMMARY="${SUMMARY} (runtime)"
+libdasm_devel_SUMMARY="${SUMMARY} (development)"
+python2_libdasm_SUMMARY="${SUMMARY} (python2 bindings)"
+ruby_libdasm_SUMMARY="${SUMMARY} (ruby bindings)"
