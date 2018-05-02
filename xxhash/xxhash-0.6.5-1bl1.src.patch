@@ -1,0 +1,59 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/xxHash-0.6.5/cmake_unofficial/CMakeLists.txt src/xxHash-0.6.5/cmake_unofficial/CMakeLists.txt
+--- origsrc/xxHash-0.6.5/cmake_unofficial/CMakeLists.txt	2018-04-19 06:33:48.000000000 +0900
++++ src/xxHash-0.6.5/cmake_unofficial/CMakeLists.txt	2018-05-02 14:39:57.823000000 +0900
+@@ -58,8 +58,8 @@ include_directories("${XXHASH_DIR}")
+ # libxxhash
+ add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+ set_target_properties(xxhash PROPERTIES
+-  SOVERSION "${XXHASH_VERSION_STRING}"
+-  VERSION "${XXHASH_VERSION_STRING}")
++  SOVERSION "${XXHASH_LIB_SOVERSION}"
++  VERSION "${XXHASH_LIB_VERSION}")
+ 
+ # xxhsum
+ add_executable(xxhsum "${XXHASH_DIR}/xxhsum.c")
+@@ -91,10 +91,17 @@ if(NOT XXHASH_BUNDLED_MODE)
+   install(TARGETS xxhsum
+     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+   install(TARGETS xxhash
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+   install(FILES "${XXHASH_DIR}/xxhash.h"
+     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+   install(FILES "${XXHASH_DIR}/xxhsum.1"
+     DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+ endif(NOT XXHASH_BUNDLED_MODE)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/xxhash.pc.in ${CMAKE_BINARY_DIR}/xxhash.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/xxhash.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/xxHash-0.6.5/cmake_unofficial/xxhash.pc.in src/xxHash-0.6.5/cmake_unofficial/xxhash.pc.in
+--- origsrc/xxHash-0.6.5/cmake_unofficial/xxhash.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/xxHash-0.6.5/cmake_unofficial/xxhash.pc.in	2018-05-02 14:38:29.936000200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: xxhash
++Description: Extremely fast hash algorithm
++Version: @XXHASH_VERSION_STRING@
++Libs: -L${libdir} -lxxhash
++Cflags: -I${includedir}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/xxHash-0.6.5/xxhsum.c src/xxHash-0.6.5/xxhsum.c
+--- origsrc/xxHash-0.6.5/xxhsum.c	2018-04-19 06:33:48.000000000 +0900
++++ src/xxHash-0.6.5/xxhsum.c	2018-05-02 14:36:24.460000000 +0900
+@@ -63,7 +63,7 @@
+ /* ************************************
+  *  OS-Specific Includes
+  **************************************/
+-#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__)
++#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(_WIN32)
+ #  include <fcntl.h>    /* _O_BINARY */
+ #  include <io.h>       /* _setmode, _isatty */
+ #  define SET_BINARY_MODE(file) _setmode(_fileno(file), _O_BINARY)
