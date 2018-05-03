@@ -1,0 +1,82 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/cpu_features/CMakeLists.txt src/cpu_features/CMakeLists.txt
+--- origsrc/cpu_features/CMakeLists.txt	2018-05-03 12:03:49.000000000 +0900
++++ src/cpu_features/CMakeLists.txt	2018-05-03 12:13:49.980000000 +0900
+@@ -25,6 +25,7 @@ set(_HDRS
+   include/cpuinfo_arm.h
+   include/cpuinfo_mips.h
+   include/cpuinfo_x86.h
++  include/cpu_features_macros.h
+ )
+ 
+ add_library(cpu_features
+@@ -62,6 +63,10 @@ target_compile_definitions(cpu_features
+   PUBLIC STACK_LINE_READER_BUFFER_SIZE=1024)
+ target_link_libraries(cpu_features PUBLIC ${CMAKE_DL_LIBS})
+ 
++if (CYGWIN)
++  set_target_properties(cpu_features PROPERTIES SOVERSION 0)
++endif()
++
+ # The use of shared libraries is discouraged.
+ # For API / ABI compatibility reasons, it is recommended to build and use
+ # cpu_features in a subdirectory of your project or as an embedded dependency.
+@@ -84,6 +89,8 @@ add_executable(CpuFeature::list_cpu_feat
+ 
+ include(CTest)
+ if(BUILD_TESTING)
++option(USE_SYSTEM_GTEST "use system gtest" ON)
++  if (NOT USE_SYSTEM_GTEST)
+   # Automatically incorporate googletest into the CMake Project if target not
+   # found.
+   if(NOT TARGET gtest OR NOT TARGET gmock_main)
+@@ -121,6 +128,7 @@ if(BUILD_TESTING)
+                      ${CMAKE_BINARY_DIR}/googletest-build
+                      EXCLUDE_FROM_ALL)
+   endif()
++  endif()
+ 
+   add_subdirectory(test)
+ endif()
+@@ -160,3 +168,10 @@ install(
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CpuFeatures"
+   COMPONENT Devel
+ )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cpu_features.pc.in ${CMAKE_BINARY_DIR}/cpu_features.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cpu_features.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/cpu_features/cpu_features.pc.in src/cpu_features/cpu_features.pc.in
+--- origsrc/cpu_features/cpu_features.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpu_features/cpu_features.pc.in	2018-05-03 12:14:07.655000000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpu_features
++Description: Cross platform C99 library to get cpu features at runtime
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcpu_features
++Cflags: -I${includedir}/cpu_features
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/cpu_features/test/CMakeLists.txt src/cpu_features/test/CMakeLists.txt
+--- origsrc/cpu_features/test/CMakeLists.txt	2018-05-03 12:03:49.000000000 +0900
++++ src/cpu_features/test/CMakeLists.txt	2018-05-03 12:05:30.218000000 +0900
+@@ -2,9 +2,11 @@
+ # libraries for tests
+ #
+ 
+-set(CMAKE_CXX_STANDARD 11)
+-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(CMAKE_CXX_EXTENSIONS OFF) # prefer use of -std11 instead of -gnustd11
++if (NOT CYGWIN)
++    set(CMAKE_CXX_STANDARD 11)
++    set(CMAKE_CXX_STANDARD_REQUIRED ON)
++    set(CMAKE_CXX_EXTENSIONS OFF) # prefer use of -std11 instead of -gnustd11
++endif()
+ 
+ include_directories(../include)
+ add_definitions(-DCPU_FEATURES_TEST)
