@@ -1,0 +1,93 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/streamvbyte-0.2.1/CMakeLists.txt src/streamvbyte-0.2.1/CMakeLists.txt
+--- origsrc/streamvbyte-0.2.1/CMakeLists.txt	2018-03-11 13:54:23.000000000 +0900
++++ src/streamvbyte-0.2.1/CMakeLists.txt	2018-05-08 22:16:36.846439200 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.3)
+-project(STREAMVBYTE VERSION "0.0.1")
++project(STREAMVBYTE VERSION "0.2.1")
+ cmake_policy(SET CMP0065 OLD)
+ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -v" )
+@@ -39,8 +39,11 @@ set(STREAMVBYTE_SRCS
+   ${PROJECT_SOURCE_DIR}/src/streamvbyte.c
+   ${PROJECT_SOURCE_DIR}/src/streamvbytedelta.c
+   )
+-add_library(streamvbyte_static STATIC "${STREAMVBYTE_SRCS}")
+-target_link_libraries(streamvbyte_static ${BASE_FLAGS})
++option(ENABLE_STATIC "enable static" OFF)
++if(ENABLE_STATIC)
++  add_library(streamvbyte_static STATIC "${STREAMVBYTE_SRCS}")
++  target_link_libraries(streamvbyte_static ${BASE_FLAGS})
++endif()
+ add_library(streamvbyte SHARED "${STREAMVBYTE_SRCS}")
+ target_link_libraries(streamvbyte ${BASE_FLAGS})
+ install(FILES
+@@ -48,27 +51,37 @@ install(FILES
+   ${PROJECT_SOURCE_DIR}/include/streamvbytedelta.h
+   DESTINATION include
+   )
++if(ENABLE_STATIC)
+ install(
+-  TARGETS streamvbyte streamvbyte_static
++  TARGETS streamvbyte_static
+   DESTINATION lib)
++endif()
++install(
++  TARGETS streamvbyte
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib)
++
++if(CYGWIN)
++  set_target_properties(streamvbyte PROPERTIES SOVERSION 0)
++endif()
+ 
+ # build programs
+ 
+ # example
+ add_executable (example ${PROJECT_SOURCE_DIR}/example.c)
+-target_link_libraries (example streamvbyte_static)
++target_link_libraries (example streamvbyte)
+ # perf
+ add_executable (perf ${PROJECT_SOURCE_DIR}/tests/perf.c)
+-target_link_libraries (perf streamvbyte_static)
++target_link_libraries (perf streamvbyte)
+ # decode perf
+ add_executable (decode_perf ${PROJECT_SOURCE_DIR}/tests/decode_perf.c)
+-target_link_libraries(decode_perf streamvbyte_static)
++target_link_libraries(decode_perf streamvbyte)
+ # writeseq
+ add_executable (writeseq ${PROJECT_SOURCE_DIR}/tests/writeseq.c)
+-target_link_libraries (writeseq streamvbyte_static)
++target_link_libraries (writeseq streamvbyte)
+ # perf
+ add_executable (unit ${PROJECT_SOURCE_DIR}/tests/unit.c)
+-target_link_libraries (unit streamvbyte_static)
++target_link_libraries (unit streamvbyte)
+ 
+ option(STREAMVBYTE_ENABLE_TESTS "enable unit tests for streamvbyte" ON)
+ if(STREAMVBYTE_ENABLE_TESTS)
+@@ -79,3 +92,10 @@ if(STREAMVBYTE_ENABLE_TESTS)
+         COMMAND ctest --output-on-failure
+     DEPENDS unit)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/streamvbyte.pc.in ${CMAKE_BINARY_DIR}/streamvbyte.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/streamvbyte.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/streamvbyte-0.2.1/streamvbyte.pc.in src/streamvbyte-0.2.1/streamvbyte.pc.in
+--- origsrc/streamvbyte-0.2.1/streamvbyte.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/streamvbyte-0.2.1/streamvbyte.pc.in	2018-05-08 22:13:37.268910000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: streamvbyte
++Description: Fast integer compression in C using the StreamVByte codec
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lstreamvbyte
++Cflags: -I${includedir}
