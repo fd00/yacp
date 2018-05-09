@@ -1,0 +1,99 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/json-fortran-6.3.0/CMakeLists.txt src/json-fortran-6.3.0/CMakeLists.txt
+--- origsrc/json-fortran-6.3.0/CMakeLists.txt	2018-04-21 10:45:21.000000000 +0900
++++ src/json-fortran-6.3.0/CMakeLists.txt	2018-05-09 19:50:53.537051000 +0900
+@@ -91,7 +91,11 @@ endif ()
+ # Put package export CMake files where they can be found
+ # use `find_package ( jsonfortran-${CMAKE_Fortran_COMPILER_ID} <version> REQUIRED )`
+ if (USE_GNU_INSTALL_CONVENTION)
++  if (CYGWIN)
++    set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME}" )
++  else ()
+   set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PACKAGE_VERSION}" )
++  endif ()
+ else ()
+   set ( EXPORT_INSTALL_DIR "${PACKAGE_VERSION}/cmake" )
+ endif ()
+@@ -129,10 +133,12 @@ endif ()
+ # Build a shared and static library by default
+ #---------------------------------------------
+ 
++option(ENABLE_STATIC "enable static" OFF)
+ set ( LIB_NAME ${CMAKE_PROJECT_NAME} )
+ add_library ( ${LIB_NAME}        SHARED ${JF_LIB_SRCS} )
++if (ENABLE_STATIC)
+ add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
+-set_target_properties ( ${LIB_NAME}-static
++  set_target_properties ( ${LIB_NAME}-static
+   PROPERTIES
+   OUTPUT_NAME ${LIB_NAME}
+   if(NOT MSVC_IDE)
+@@ -141,16 +147,25 @@ set_target_properties ( ${LIB_NAME}-stat
+   VERSION ${VERSION}
+   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+   Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
+-set_target_properties ( ${LIB_NAME}
++endif ()
++if (NOT MSVC_IDE AND NOT CYGWIN)
++  set_target_properties ( ${LIB_NAME}
+   PROPERTIES
+   OUTPUT_NAME ${LIB_NAME}
+-  if(NOT MSVC_IDE)
+   PREFIX lib
+-  endif()
+   SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
+   VERSION ${VERSION}
+   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+   Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
++else ()
++  set_target_properties ( ${LIB_NAME}
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
++    VERSION ${VERSION}
++    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
++endif ()
+ 
+ #-------------------------------------
+ # Build the documentation with FORD
+@@ -346,10 +361,17 @@ endif ()
+ # Perform the installation
+ #-------------------------
+ 
+-install ( TARGETS ${LIB_NAME} ${LIB_NAME}-static
++
++install ( TARGETS ${LIB_NAME}
++  EXPORT ${PACKAGE_NAME}-targets
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++if (ENABLE_STATIC)
++  install ( TARGETS ${LIB_NAME}-static
+   EXPORT ${PACKAGE_NAME}-targets
+   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++endif ()
+ 
+ # Code to  fix the dylib install name on Mac.
+ include ( cmake/fixupInstallNameDir.cmake )
+@@ -395,7 +417,10 @@ install ( FILES
+ #----------------------------------------------
+ # Make build tree targets accessible for import
+ #----------------------------------------------
+-export ( TARGETS ${LIB_NAME} ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++export ( TARGETS ${LIB_NAME} FILE ${PACKAGE_NAME}-targets.cmake )
++if (ENABLE_STATIC)
++  export ( TARGETS ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++endif ()
+ 
+ # build tree package config file, NOT installed
+ configure_file (
+ssible for import
+ #----------------------------------------------
+-export ( TARGETS ${LIB_NAME} ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++export ( TARGETS ${LIB_NAME} FILE ${PACKAGE_NAME}-targets.cmake )
++if (ENABLE_STATIC)
++  export ( TARGETS ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++endif ()
+ 
+ # build tree package config file, NOT installed
+ configure_file (
