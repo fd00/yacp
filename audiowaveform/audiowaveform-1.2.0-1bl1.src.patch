@@ -1,0 +1,33 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/audiowaveform-1.2.0/CMakeLists.txt src/audiowaveform-1.2.0/CMakeLists.txt
+--- origsrc/audiowaveform-1.2.0/CMakeLists.txt	2018-04-16 16:58:30.000000000 +0900
++++ src/audiowaveform-1.2.0/CMakeLists.txt	2018-05-15 23:21:08.400500400 +0900
+@@ -172,7 +172,9 @@ if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CX
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.7")
++    if(NOT CYGWIN)
+     set(CMAKE_CXX_FLAGS "-std=c++11")
++    endif()
+ else()
+     # Set GTEST_LANG_CXX11=0 to disable C++11 features when compiling googlemock.
+     # Without this compilation fails with g++ 4.6.3 on gmock-matchers.h.
+@@ -265,7 +267,10 @@ if(ENABLE_TESTS)
+ 
+     # Use EXCLUDE_FROM_ALL to prevent installing googletest headers as part of
+     # 'make install'.
++    option(USE_SYSTEM_GMOCK "use system gmock" ON)
++    if (NOT USE_SYSTEM_GMOCK)
+     add_subdirectory(googlemock EXCLUDE_FROM_ALL)
++    endif()
+ 
+     set(TESTS
+         test/AudioFileReaderTest.cpp
+@@ -287,7 +292,7 @@ if(ENABLE_TESTS)
+     )
+ 
+     include_directories(${gtest_SOURCE_DIR}/include ${gmock_SOURCE_DIR}/include)
+-    set(TEST_LIBS gmock_main)
++    set(TEST_LIBS gmock gmock_main gtest)
+     add_executable(audiowaveform_tests ${MODULES} ${TESTS})
+     target_link_libraries(audiowaveform_tests ${LIBS} ${TEST_LIBS})
+     add_test(audiowaveform_tests audiowaveform_tests)
