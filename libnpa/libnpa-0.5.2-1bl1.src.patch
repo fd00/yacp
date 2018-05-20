@@ -1,0 +1,56 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x lexer.cpp -x npaversion.hpp -x parser.cpp -x parser.hpp origsrc/libnpa-0.5.2/CMakeLists.txt src/libnpa-0.5.2/CMakeLists.txt
+--- origsrc/libnpa-0.5.2/CMakeLists.txt	2018-05-02 06:57:22.000000000 +0900
++++ src/libnpa-0.5.2/CMakeLists.txt	2018-05-21 06:54:54.958928000 +0900
+@@ -25,8 +25,10 @@ message(STATUS "Configuring libnpa versi
+ # project name and language
+ project (libnpa CXX)
+ 
+-set(CMAKE_BUILD_TYPE Debug)
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++if(NOT CYGWIN)
++    set(CMAKE_BUILD_TYPE Debug)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++endif()
+ 
+ # include version number in header
+ configure_file(${PROJECT_SOURCE_DIR}/include/npaversion.hpp.in
+@@ -79,14 +81,24 @@ add_library(npa SHARED
+     src/nsbconstants.cpp
+ )
+ target_link_libraries(npa ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
++if(CYGWIN)
++    set_target_properties(npa PROPERTIES SOVERSION 0)
++endif()
+ 
+ # install headers and library
+ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+     DESTINATION include/libnpa
+     FILES_MATCHING PATTERN "*.hpp")
+-install(TARGETS npa DESTINATION lib)
++install(TARGETS npa RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # create packages
+ set(CPACK_GENERATOR "TBZ2")
+ set(CPACK_PACKAGE_VERSION ${LIBNPA_VERSION})
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libnpa.pc.in ${CMAKE_BINARY_DIR}/libnpa.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libnpa.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x lexer.cpp -x npaversion.hpp -x parser.cpp -x parser.hpp origsrc/libnpa-0.5.2/libnpa.pc.in src/libnpa-0.5.2/libnpa.pc.in
+--- origsrc/libnpa-0.5.2/libnpa.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnpa-0.5.2/libnpa.pc.in	2018-05-21 06:55:28.402303700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnpa
++Description: Free library for manipulating Nitroplus game files
++Version: @LIBNPA_VERSION@
++Libs: -L${libdir} -lnpa
++Cflags: -I${includedir}/libnpa
