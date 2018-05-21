@@ -1,0 +1,68 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libsignal-protocol-c-2.3.2/CMakeLists.txt src/libsignal-protocol-c-2.3.2/CMakeLists.txt
+--- origsrc/libsignal-protocol-c-2.3.2/CMakeLists.txt	2018-05-14 23:02:23.000000000 +0900
++++ src/libsignal-protocol-c-2.3.2/CMakeLists.txt	2018-05-21 17:11:08.918670400 +0900
+@@ -64,6 +64,10 @@ IF(COVERAGE)
+ 	add_custom_target( coverage DEPENDS run_coverage )
+ ENDIF(COVERAGE)
+ 
++INCLUDE(FindPkgConfig)
++PKG_CHECK_MODULES(LIBPROTOBUF_C REQUIRED libprotobuf-c)
++PKG_CHECK_MODULES(CURVE25519_DONNA REQUIRED curve25519-donna)
++
+ add_subdirectory(src)
+ 
+ IF(BUILD_TESTING)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libsignal-protocol-c-2.3.2/src/CMakeLists.txt src/libsignal-protocol-c-2.3.2/src/CMakeLists.txt
+--- origsrc/libsignal-protocol-c-2.3.2/src/CMakeLists.txt	2018-05-14 23:02:23.000000000 +0900
++++ src/libsignal-protocol-c-2.3.2/src/CMakeLists.txt	2018-05-21 17:16:30.182131900 +0900
+@@ -62,17 +62,31 @@ set(signal_protocol_SRCS
+ )
+ 
+ add_subdirectory(curve25519)
+-add_subdirectory(protobuf-c)
+ 
+-add_library(signal-protocol-c
++if(LIBPROTOBUF_C_FOUND)
++	add_library(signal-protocol-c
++		${protobuf_SRCS}
++		${signal_protocol_SRCS}
++		$<TARGET_OBJECTS:curve25519>
++	)
++else()
++	add_subdirectory(protobuf-c)
++	add_library(signal-protocol-c
+ 	${protobuf_SRCS}
+ 	${signal_protocol_SRCS}
+ 	$<TARGET_OBJECTS:curve25519>
+ 	$<TARGET_OBJECTS:protobuf-c>
+-)
++	)
++endif()
+ 
+ if(BUILD_SHARED_LIBS)
+ 	target_link_libraries(signal-protocol-c ${M_LIB})
++	if(LIBPROTOBUF_C_FOUND)
++		target_link_libraries(signal-protocol-c ${LIBPROTOBUF_C_LIBRARIES})
++	endif()
++	if(CURVE25519_DONNA_FOUND)
++		target_link_libraries(signal-protocol-c ${CURVE25519_DONNA_LIBRARIES})
++	endif()
+ 	set_target_properties(signal-protocol-c PROPERTIES
+ 		VERSION ${SIGNAL_PROTOCOL_C_VERSION}
+ 		SOVERSION ${SIGNAL_PROTOCOL_C_VERSION_MAJOR}
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libsignal-protocol-c-2.3.2/src/curve25519/CMakeLists.txt src/libsignal-protocol-c-2.3.2/src/curve25519/CMakeLists.txt
+--- origsrc/libsignal-protocol-c-2.3.2/src/curve25519/CMakeLists.txt	2018-05-14 23:02:23.000000000 +0900
++++ src/libsignal-protocol-c-2.3.2/src/curve25519/CMakeLists.txt	2018-05-21 17:13:42.629905000 +0900
+@@ -100,7 +100,11 @@ set(ed25519_SRCS
+     ed25519/tests/internal_fast_tests.c
+ )
+ 
+-add_library(curve25519 OBJECT ${curve25519_SRCS} ${ed25519_SRCS})
++if(CURVE25519_DONNA_FOUND)
++    add_library(curve25519 OBJECT ${ed25519_SRCS})
++else()
++    add_library(curve25519 OBJECT ${curve25519_SRCS} ${ed25519_SRCS})
++endif()
+ 
+ # Add -fPIC flag
+ if(BUILD_SHARED_LIBS)
