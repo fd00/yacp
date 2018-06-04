@@ -1,0 +1,75 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/adept-utils-1.0.1/CMakeLists.txt src/adept-utils-1.0.1/CMakeLists.txt
+--- origsrc/adept-utils-1.0.1/CMakeLists.txt	2015-04-01 15:35:08.000000000 +0900
++++ src/adept-utils-1.0.1/CMakeLists.txt	2018-06-05 06:58:57.041879800 +0900
+@@ -55,8 +55,8 @@ configure_file(
+   ${PROJECT_BINARY_DIR}/adept_utils-config.cmake
+   @ONLY)
+ 
+-install(FILES ${PROJECT_BINARY_DIR}/adept_utils-config.cmake DESTINATION share/cmake/adept_utils)
+-install(EXPORT adept_utils-libs                              DESTINATION share/cmake/adept_utils)
++install(FILES ${PROJECT_BINARY_DIR}/adept_utils-config.cmake DESTINATION lib/cmake/adept_utils)
++install(EXPORT adept_utils-libs                              DESTINATION lib/cmake/adept_utils)
+ 
+ 
+ # Configure subdirectories here, after everything else, so that they
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/adept-utils-1.0.1/timing/CMakeLists.txt src/adept-utils-1.0.1/timing/CMakeLists.txt
+--- origsrc/adept-utils-1.0.1/timing/CMakeLists.txt	2015-04-01 15:35:08.000000000 +0900
++++ src/adept-utils-1.0.1/timing/CMakeLists.txt	2018-06-05 06:58:57.041879800 +0900
+@@ -1,13 +1,25 @@
+ #
+ # Timing library -- this is in straight C for greater accessibility
+ #
+-add_static_and_shared_library(adept_timing timing.c)
++
++if (CYGWIN)
++  add_library(adept_timing SHARED timing.c)
++  set_target_properties(adept_timing PROPERTIES SOVERSION 0)
++else()
++  add_static_and_shared_library(adept_timing timing.c)
++  use_c99_for_target(adept_timing_static)
++endif()
+ use_c99_for_target(adept_timing)
+-use_c99_for_target(adept_timing_static)
+ 
+-install(TARGETS adept_timing adept_timing_static
++if (CYGWIN)
++  install(TARGETS adept_timing EXPORT adept_utils-libs
++                               RUNTIME DESTINATION bin
++                               ARCHIVE DESTINATION lib)
++else()
++  install(TARGETS adept_timing adept_timing_static
+         DESTINATION lib EXPORT adept_utils-libs)
+-install(FILES timing.h DESTINATION include)
++endif()
++install(FILES timing.h DESTINATION include/adept-utils)
+ 
+ if (CMAKE_SYSTEM_NAME STREQUAL BlueGeneL)
+   include_directories(/bgl/BlueLight/ppcfloor/bglsys/include)
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/adept-utils-1.0.1/utils/CMakeLists.txt src/adept-utils-1.0.1/utils/CMakeLists.txt
+--- origsrc/adept-utils-1.0.1/utils/CMakeLists.txt	2015-04-01 15:35:08.000000000 +0900
++++ src/adept-utils-1.0.1/utils/CMakeLists.txt	2018-06-05 06:58:57.041879800 +0900
+@@ -18,12 +18,23 @@ if (Boost_FOUND)
+     mpi_utils.h
+     stl_utils.h)
+ 
++  if (CYGWIN)
++    add_library(adept_utils SHARED ${ADEPT_UTILS_SOURCES})
++    set_target_properties(adept_utils PROPERTIES SOVERSION 0)
++  else()
+   add_static_and_shared_library(adept_utils ${ADEPT_UTILS_SOURCES})
++  endif()
+   target_link_libraries(adept_utils adept_timing)
+ 
++  if (CYGWIN)
++    install(TARGETS adept_utils EXPORT adept_utils-libs
++                                RUNTIME DESTINATION bin
++                                ARCHIVE DESTINATION lib)
++  else()
+   install(TARGETS adept_utils adept_utils_static
+           DESTINATION lib EXPORT adept_utils-libs)
+-  install(FILES ${ADEPT_UTILS_HEADERS} DESTINATION include)
++  endif()
++  install(FILES ${ADEPT_UTILS_HEADERS} DESTINATION include/adept-utils)
+ 
+   include_directories(
+     ${Boost_INCLUDE_DIR}
