@@ -1,0 +1,42 @@
+--- origsrc/ulfius-2.3.6/CMakeLists.txt	2018-06-08 21:50:35.000000000 +0900
++++ src/ulfius-2.3.6/CMakeLists.txt	2018-06-15 17:38:52.139491000 +0900
+@@ -152,6 +152,8 @@ target_link_libraries(ulfius ${LIBS})
+ 
+ # dependencies
+ 
++find_package(Orcania)
++
+ option(CHECK_YDER "Check Yder library." ON)
+ 
+ if (CHECK_YDER)
+@@ -171,7 +173,7 @@ if (CHECK_YDER)
+       set(YDER_LIBRARIES yder orcania)
+   endif ()
+ 
+-  target_link_libraries(ulfius ${LIBS} ${YDER_LIBRARIES})
++  target_link_libraries(ulfius ${LIBS} ${YDER_LIBRARIES} ${ORCANIA_LIBRARIES})
+ endif()
+ 
+ # tests
+@@ -223,7 +225,7 @@ option(INSTALL_HEADER "Install the heade
+ configure_file(libulfius.pc.in libulfius.pc @ONLY)
+ 
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libulfius.pc
+-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+ 
+ SET (TARGETS ulfius)
+ if (BUILD_STATIC)
+--- origsrc/ulfius-2.3.6/src/u_websocket.c	2018-06-08 21:50:35.000000000 +0900
++++ src/ulfius-2.3.6/src/u_websocket.c	2018-06-15 17:34:10.459841300 +0900
+@@ -34,6 +34,10 @@
+ #include <unistd.h>
+ #include <gnutls/gnutls.h>
+ 
++#if !defined(POLLRDHUP)
++#define POLLRDHUP (0)
++#endif
++
+ /**
+  * Set a websocket in the response
+  * You must set at least websocket_manager_callback or websocket_incoming_message_callback
