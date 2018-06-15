@@ -1,0 +1,84 @@
+--- origsrc/libpenetra/Makefile.am	2018-06-15 12:01:16.000000000 +0900
++++ src/libpenetra/Makefile.am	2018-06-15 15:07:08.700340300 +0900
+@@ -1,2 +1,5 @@
+ ACLOCAL_AMFLAGS=-I m4
+ SUBDIRS = src examples $(INCLUDE_TESTS)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libpenetra/configure.ac	2018-06-15 12:01:16.000000000 +0900
++++ src/libpenetra/configure.ac	2018-06-15 15:07:08.700340300 +0900
+@@ -165,7 +165,7 @@ fi
+ AC_SUBST([ARCH])
+ AC_SUBST([TARGET_ARCH])
+ 
+-AC_CONFIG_FILES([     Makefile \
++AC_CONFIG_FILES([libpenetra.pc      Makefile \
+                       src/Makefile \
+                       test/Makefile \
+                       test/hosts/Makefile \
+--- origsrc/libpenetra/examples/Makefile.am	2018-06-15 12:01:16.000000000 +0900
++++ src/libpenetra/examples/Makefile.am	2018-06-15 15:02:10.108582400 +0900
+@@ -13,8 +13,7 @@ bin_PROGRAMS = 	is_pe_file \
+ 		show_coff_header2 \
+ 		show_dos_header \
+ 		show_dos_header2 \
+-		show_sections \
+-		show_optional_header
++		show_sections
+ 
+ 
+ 
+@@ -31,5 +30,5 @@ show_dos_header2_SOURCES = show_dos_head
+ show_sections_SOURCES = show_sections.c
+ show_optional_header_SOURCES = show_optional_header.c
+ 
+-AM_CFLAGS = -ggdb -Wall -Wextra -Werror -I../src/include
+-LDADD = -L../src/.libs -lpenetra
++AM_CFLAGS = -ggdb -Wall -Wextra -Werror -I$(top_srcdir)/src/include
++LDADD = $(top_builddir)/src/libpenetra.la
+--- origsrc/libpenetra/libpenetra.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpenetra/libpenetra.pc.in	2018-06-15 15:08:09.687146800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpenetra
++Description: Library to access information about PE binary
++Version: @VERSION@
++Libs: -L${libdir} -lpenetra
++Cflags: -I${includedir}/penetra
+--- origsrc/libpenetra/src/Makefile.am	2018-06-15 12:01:16.000000000 +0900
++++ src/libpenetra/src/Makefile.am	2018-06-15 14:58:03.630101800 +0900
+@@ -1,7 +1,7 @@
+ CFLAGS_LANGUAGE=-std=c99 -pedantic -D_POSIX_C_SOURCE \
+ 		-D_SVID_SOURCE
+-CFLAGS_WARNS=-Wall -Wextra -Werror
+-CFLAGS_INCLUDES=-Iinclude -I$(LIBXML_INCLUDES) -I$(LIBUDIS_INCLUDES)
++CFLAGS_WARNS=-Wall -Wextra
++CFLAGS_INCLUDES=-I$(top_srcdir)/src/include -I$(LIBXML_INCLUDES) -I$(LIBUDIS_INCLUDES)
+ 
+ AM_CFLAGS=	-ggdb -fPIC -O2 $(CFLAGS_LANGUAGE) \
+ 		$(CFLAGS_WARNS) \
+@@ -18,11 +18,11 @@ libpenetra_la_SOURCES =  penetra.c \
+ 			dos.c
+ 
+ 
+-libpenetra_la_LDFLAGS = -version-info 1:0:0
++libpenetra_la_LDFLAGS = -no-undefined -version-info 1:0:0
+ libpenetra_la_LIBADD=-L$(LIBXML_LIBPATH) -L$(LIBUDIS_LIBPATH) -lxml2 -ludis86
+ 
+ library_includedir=$(includedir)/penetra
+-library_include_HEADERS	=	include/penetra/penetra.h \
++library_include_HEADERS	=	\
+ 				include/penetra/types.h \
+ 				include/penetra/error.h \
+ 				include/penetra/defines.h \
+@@ -34,5 +34,4 @@ library_include_HEADERS	=	include/penetr
+ 				include/penetra/section.h \
+ 				include/penetra/import.h \
+ 				include/penetra/load_config.h \
+-				include/penetra/resource.h \
+ 				include/penetra/coff.h
