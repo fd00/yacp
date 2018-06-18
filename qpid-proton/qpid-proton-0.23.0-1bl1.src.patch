@@ -1,0 +1,37 @@
+--- origsrc/qpid-proton-0.23.0/CMakeLists.txt	2018-05-24 04:13:50.000000000 +0900
++++ src/qpid-proton-0.23.0/CMakeLists.txt	2018-06-18 23:38:49.637855800 +0900
+@@ -210,7 +210,7 @@ foreach (LANG ${BINDING_LANGS})
+   endif ()
+ endforeach()
+ 
+-set (PROTON_SHARE ${SHARE_INSTALL_DIR}/proton-${PN_VERSION})
++set (PROTON_SHARE ${SHARE_INSTALL_DIR}/proton)
+ # End of variables used during install
+ 
+ # Can't do valgrind and coverage at athe same time - coverage takes precedence
+@@ -415,8 +415,10 @@ if (BUILD_PYTHON)
+   endif (NOT TOX_MODULE_FOUND)
+ endif (BUILD_PYTHON)
+ 
+-install (FILES LICENSE.txt README.md
+-         DESTINATION ${PROTON_SHARE})
++if (NOT CYGWIN)
++  install (FILES LICENSE.txt README.md
++          DESTINATION ${PROTON_SHARE})
++endif()
+ 
+ # Generate test environment settings
+ configure_file(${CMAKE_SOURCE_DIR}/misc/config.sh.in
+--- origsrc/qpid-proton-0.23.0/c/src/proactor/libuv.c	2018-05-24 04:13:50.000000000 +0900
++++ src/qpid-proton-0.23.0/c/src/proactor/libuv.c	2018-06-18 19:51:25.635047500 +0900
+@@ -133,6 +133,10 @@ static void work_init(work_t* w, pn_proa
+ 
+ /* ================ IO ================ */
+ 
++#if defined(__CYGWIN__)
++#define addr_t libuv_addr_t
++#endif
++
+ /* A resolvable address */
+ typedef struct addr_t {
+   char addr_buf[PN_MAX_ADDR];
