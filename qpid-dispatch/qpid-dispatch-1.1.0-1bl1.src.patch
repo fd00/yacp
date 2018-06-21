@@ -1,0 +1,40 @@
+--- origsrc/qpid-dispatch-1.1.0/CMakeLists.txt	2018-06-08 05:16:15.000000000 +0900
++++ src/qpid-dispatch-1.1.0/CMakeLists.txt	2018-06-21 17:26:00.208466900 +0900
+@@ -165,7 +165,9 @@ include_directories(
+     )
+ 
+ if (NOT CMAKE_SYSTEM_NAME STREQUAL SunOS)
+- add_compile_options(-Werror)
++ if (NOT CYGWIN)
++  add_compile_options(-Werror)
++ endif ()
+  add_compile_options(-Wall)
+  include(CheckCCompilerFlag)
+  check_c_compiler_flag(-Wpedantic HAS_PEDANTIC_FLAG)
+@@ -199,8 +201,10 @@ if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+   add_compile_options(-Wno-gnu-statement-expression)
+ endif()
+ 
+-if (NOT (USE_SANITIZERS OR USE_TSAN))
+-  set(CATCH_UNDEFINED "-Wl,-z,defs")
++if (NOT CYGWIN)
++  if (NOT (USE_SANITIZERS OR USE_TSAN))
++    set(CATCH_UNDEFINED "-Wl,-z,defs")
++  endif ()
+ endif ()
+ 
+ ##
+--- origsrc/qpid-dispatch-1.1.0/src/CMakeLists.txt	2018-06-08 05:16:15.000000000 +0900
++++ src/qpid-dispatch-1.1.0/src/CMakeLists.txt	2018-06-21 17:31:40.019152300 +0900
+@@ -130,8 +130,11 @@ target_link_libraries(qpid-dispatch ${Pr
+ endif()
+ set_target_properties(qpid-dispatch PROPERTIES
+   LINK_FLAGS "${CATCH_UNDEFINED}"
++  SOVERSION 0
+   )
+ install(TARGETS qpid-dispatch
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib
+   LIBRARY DESTINATION ${QPID_DISPATCH_HOME})
+ 
+ set (QPID_DISPATCH_LIB "libqpid-dispatch.so")
