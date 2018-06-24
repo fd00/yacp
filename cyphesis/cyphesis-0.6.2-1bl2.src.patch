@@ -1,0 +1,48 @@
+--- origsrc/cyphesis-0.6.2/configure.ac	2013-10-26 07:13:29.000000000 +0900
++++ src/cyphesis-0.6.2/configure.ac	2018-06-24 17:56:36.670356400 +0900
+@@ -133,7 +133,9 @@ AC_COMPILE_IFELSE(
+     [
+       AC_LANG_PROGRAM(
+         [[
++          #if defined(__MACH__)  
+           #include <CoreFoundation/CFBundle.h>
++          #endif
+         ]],
+         [[
+           CFBundleRef appBundle = CFBundleGetMainBundle();
+@@ -151,8 +153,11 @@ AC_COMPILE_IFELSE(
+ 
+ dnl General header checks
+ AC_CHECK_HEADERS(termios.h signal.h syslog.h sys/utsname.h sys/wait.h)
+-AC_CHECK_HEADERS(winsock.h arpa/inet.h sys/un.h dirent.h io.h sys/ucred.h)
+-AC_CHECK_HEADERS(windows.h getopt.h)
++AC_CHECK_HEADERS(arpa/inet.h sys/un.h dirent.h io.h sys/ucred.h)
++AC_CHECK_HEADERS(getopt.h)
++if test "$host_os" != "cygwin"; then
++    AC_CHECK_HEADERS(winsock.h windows.h)
++fi
+ 
+ dnl then check for the header file Python.h and set
+ dnl python_include_path and python_version
+@@ -382,20 +387,7 @@ PKG_CHECK_MODULES(AVAHI, avahi-client,
+         AC_MSG_NOTICE([Ommiting DNS-SD functionality.])
+     ])
+ 
+-AM_PATH_PSQL(7.1.0,
+-    [
+-        if test "$PG_CFLAGS" != "-I/usr/include"; then
+-            CPPFLAGS="$CPPFLAGS $PG_CFLAGS"
+-        fi
+-        if test "$PG_LIBS" != "-L/usr/lib"; then
+-            PGSQL_LIBS="$PGSQL_LIBS $PG_LIBS"
+-        fi
+-    ],
+-    AC_MSG_ERROR([
+-Cannot find PostgreSQL config or config failed. Please install PostgreSQL and
+-ensure than pg_config is on the PATH. See http://www.postgresql.org/ for
+-details of how to download the software.])
+-)
++PKG_CHECK_MODULES([PG], [libpq])
+ 
+ ac_save_LIBS="$LIBS"
+ LIBS="$LIBS $PG_LIBS"
