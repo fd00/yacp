@@ -1,0 +1,38 @@
+--- origsrc/miniupnp-miniupnpc_2_1/miniupnpc/CMakeLists.txt	2018-05-07 20:12:58.000000000 +0900
++++ src/miniupnp-miniupnpc_2_1/miniupnpc/CMakeLists.txt	2018-06-24 22:19:50.200811600 +0900
+@@ -124,7 +124,9 @@ if (UPNPC_BUILD_SHARED)
+   target_link_libraries (libminiupnpc-shared PRIVATE miniupnpc-private)
+   target_compile_definitions(libminiupnpc-shared PRIVATE MINIUPNP_EXPORTS)
+ 
+-  target_include_directories(libminiupnpc-static INTERFACE ../${CMAKE_CURRENT_SOURCE_DIR})
++  if (UPNPC_BUILD_STATIC)
++    target_include_directories(libminiupnpc-static INTERFACE ../${CMAKE_CURRENT_SOURCE_DIR})
++  endif ()
+   if (WIN32)
+     target_link_libraries(libminiupnpc-shared INTERFACE ws2_32 iphlpapi)
+   endif()
+@@ -187,4 +189,11 @@ install (FILES
+   DESTINATION include/miniupnpc
+ )
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/miniupnpc.pc.in ${CMAKE_BINARY_DIR}/miniupnpc.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/miniupnpc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++
+ # vim: ts=2:sw=2
+--- origsrc/miniupnp-miniupnpc_2_1/miniupnpc/miniupnpc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/miniupnp-miniupnpc_2_1/miniupnpc/miniupnpc.pc.in	2018-06-24 22:21:24.213012300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: miniupnpc
++Description: 
++Version: @MINIUPNPC_VERSION@
++Libs: -L${libdir} -lminiupnpc
++Cflags: -I${includedir}
