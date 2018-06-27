@@ -1,0 +1,76 @@
+--- origsrc/cubeb/CMakeLists.txt	2018-06-28 05:12:44.000000000 +0900
++++ src/cubeb/CMakeLists.txt	2018-06-28 05:31:22.070679500 +0900
+@@ -69,6 +69,9 @@ target_compile_definitions(cubeb PRIVATE
+ target_compile_definitions(cubeb PRIVATE FLOATING_POINT)
+ target_compile_definitions(cubeb PRIVATE EXPORT=)
+ target_compile_definitions(cubeb PRIVATE RANDOM_PREFIX=speex)
++if (CYGWIN)
++  set_target_properties(cubeb PROPERTIES SOVERSION 0)
++endif()
+ 
+ add_sanitizers(cubeb)
+ 
+@@ -164,7 +167,7 @@ if(USE_JACK)
+ endif()
+ 
+ check_include_files(audioclient.h USE_WASAPI)
+-if(USE_WASAPI)
++if(USE_WASAPI AND NOT CYGWIN)
+   target_sources(cubeb PRIVATE
+     src/cubeb_wasapi.cpp)
+   target_compile_definitions(cubeb PRIVATE USE_WASAPI)
+@@ -172,7 +175,7 @@ if(USE_WASAPI)
+ endif()
+ 
+ check_include_files("windows.h;mmsystem.h" USE_WINMM)
+-if(USE_WINMM)
++if(USE_WINMM AND NOT CYGWIN)
+   target_sources(cubeb PRIVATE
+     src/cubeb_winmm.c)
+   target_compile_definitions(cubeb PRIVATE USE_WINMM)
+@@ -231,7 +234,9 @@ if(BUILD_TESTS)
+     target_link_libraries(test_${NAME} PRIVATE cubeb gtest_main)
+     add_test(${NAME} test_${NAME})
+     add_sanitizers(test_${NAME})
+-    install(TARGETS test_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
++    if (NOT CYGWIN)
++      install(TARGETS test_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX})
++    endif()
+   endmacro(cubeb_add_test)
+ 
+   cubeb_add_test(sanity)
+@@ -251,7 +256,9 @@ if(BUILD_TESTS)
+   target_link_libraries(test_resampler PRIVATE cubeb gtest_main)
+   add_test(resampler test_resampler)
+   add_sanitizers(test_resampler)
+-  install(TARGETS test_resampler DESTINATION ${CMAKE_INSTALL_PREFIX})
++  if (NOT CYGWIN)
++    install(TARGETS test_resampler DESTINATION ${CMAKE_INSTALL_PREFIX})
++  endif()
+ 
+   cubeb_add_test(duplex)
+ 
+@@ -266,3 +273,10 @@ if(BUILD_TESTS)
+   cubeb_add_test(utils)
+   cubeb_add_test(ring_buffer)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cubeb.pc.in ${CMAKE_BINARY_DIR}/cubeb.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cubeb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cubeb/cubeb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cubeb/cubeb.pc.in	2018-06-28 05:34:23.786961800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cubeb
++Description: Cross platform audio library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcubeb
++Cflags: -I${includedir}
