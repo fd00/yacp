@@ -1,0 +1,98 @@
+--- origsrc/OpenCOLLADA-1.6.62/CMakeLists.txt	2018-01-13 09:23:52.000000000 +0900
++++ src/OpenCOLLADA-1.6.62/CMakeLists.txt	2018-06-29 21:00:57.633903500 +0900
+@@ -98,10 +98,13 @@ macro(opencollada_add_lib
+ 			endif()
+ 		endforeach()
+ 		set(CMAKE_REQUIRED_LIBRARIES "${name}_shared;${CMAKE_REQUIRED_LIBRARIES}"  PARENT_SCOPE)
+-
++		if (CYGWIN)
++			set_target_properties(${name}_shared PROPERTIES SOVERSION 0)
++		endif()
+ 		install(
+ 			TARGETS ${name}_shared EXPORT LibraryExport
+-			LIBRARY DESTINATION ${OPENCOLLADA_INST_LIBRARY}
++			RUNTIME DESTINATION bin
++			ARCHIVE DESTINATION lib
+ 		)
+ 	endif ()
+ endmacro()
+@@ -274,7 +277,7 @@ add_subdirectory(common/libftoa)
+ add_subdirectory(${EXTERNAL_LIBRARIES}/UTF)
+ add_subdirectory(common/libBuffer)
+ add_subdirectory(${EXTERNAL_LIBRARIES}/MathMLSolver)
+-add_subdirectory(${EXTERNAL_LIBRARIES}/zlib)
++# add_subdirectory(${EXTERNAL_LIBRARIES}/zlib)
+ 
+ # building OpenCOLLADA libs
+ add_subdirectory(COLLADABaseUtils)
+--- origsrc/OpenCOLLADA-1.6.62/COLLADABaseUtils/src/COLLADABUNativeString.cpp	2018-01-13 09:23:52.000000000 +0900
++++ src/OpenCOLLADA-1.6.62/COLLADABaseUtils/src/COLLADABUNativeString.cpp	2018-06-29 19:07:30.214049100 +0900
+@@ -57,7 +57,7 @@ namespace COLLADABU
+ 		WideCharToMultiByte( CP_ACP, 0, (LPCWSTR)wideString.c_str(), -1, dest, multibyteLength, 0, 0 );
+ 		this->assign( dest );
+ 		delete[] dest;
+-#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC)
++#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC) || defined(__CYGWIN__)
+ //# error check if this really works on linux
+ 		size_t maxStringLength = wcstombs( 0, wideString.c_str(), 0 ) + 1; // wideString.length()*MB_CUR_MAX + 1;
+ 		char* dest = new char[ maxStringLength ];
+@@ -80,7 +80,7 @@ namespace COLLADABU
+ 		WideString returnValue( dest );
+ 		delete[] dest;
+ 		return returnValue;
+-#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC)
++#elif defined (COLLADABU_OS_LINUX) || defined (COLLADABU_OS_MAC) || defined(__CYGWIN__)
+ //# error check if this really works on linux
+ 
+ 		size_t maxStringLength = length() + 1;
+--- origsrc/OpenCOLLADA-1.6.62/DAEValidator/CMakeLists.txt	2018-01-13 09:23:52.000000000 +0900
++++ src/OpenCOLLADA-1.6.62/DAEValidator/CMakeLists.txt	2018-06-29 20:11:09.251802700 +0900
+@@ -83,7 +83,7 @@ endif ()
+ if (USE_STATIC)
+         list(APPEND Libraries zlib_static)
+     else ()
+-        list(APPEND Libraries zlib_shared)
++        list(APPEND Libraries z)
+     endif ()
+ if (WIN32)
+ 	list(APPEND Libraries ws2_32.lib)
+--- origsrc/OpenCOLLADA-1.6.62/GeneratedSaxParser/include/GeneratedSaxParserPrerequisites.h	2018-01-13 09:23:52.000000000 +0900
++++ src/OpenCOLLADA-1.6.62/GeneratedSaxParser/include/GeneratedSaxParserPrerequisites.h	2018-06-29 19:10:28.143687000 +0900
+@@ -62,7 +62,7 @@ namespace GeneratedSaxParser
+     typedef unsigned int uint32;
+     typedef unsigned long long uint64;
+ 
+-#elif defined COLLADABU_OS_LINUX
++#elif defined COLLADABU_OS_LINUX || defined(__CYGWIN__)
+     typedef signed char sint8;
+     typedef signed short sint16;
+     typedef signed int sint32;
+--- origsrc/OpenCOLLADA-1.6.62/common/libBuffer/src/CommonFWriteBufferFlusher.cpp	2018-01-13 09:23:52.000000000 +0900
++++ src/OpenCOLLADA-1.6.62/common/libBuffer/src/CommonFWriteBufferFlusher.cpp	2018-06-29 19:04:53.496255100 +0900
+@@ -90,7 +90,7 @@ namespace Common
+ 		FilePosType currentPos = ftello64(mStream);
+ #elif defined( _WIN32)
+ 		FilePosType currentPos = _ftelli64(mStream);
+-#elif defined (__APPLE__) || defined(__FreeBSD__)
++#elif defined (__APPLE__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ 		FilePosType currentPos = ftello(mStream);
+ #else
+ 		FilePosType currentPos = ftello64(mStream);
+@@ -115,7 +115,7 @@ namespace Common
+   			return (fseeko64(mStream,0,SEEK_END) == 0);
+ #elif defined( _WIN32)
+ 			return (_fseeki64(mStream, 0, SEEK_END) == 0);
+-#elif defined (__APPLE__) || defined(__FreeBSD__)
++#elif defined (__APPLE__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ 			return (fseeko(mStream, 0, SEEK_END) == 0);
+ #else
+ 			return (fseeko64(mStream, 0, SEEK_END) == 0);
+@@ -135,7 +135,7 @@ namespace Common
+   				bool success = (fseeko64(mStream,pos,SEEK_SET) == 0);
+ #elif defined( _WIN32)
+ 				bool success = (_fseeki64(mStream, pos, SEEK_SET) == 0);
+-#elif defined (__APPLE__) || defined(__FreeBSD__)
++#elif defined (__APPLE__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ 				bool success = (fseeko(mStream, pos, SEEK_SET) == 0);
+ #else
+ 				bool success = (fseeko64(mStream, pos, SEEK_SET) == 0);
