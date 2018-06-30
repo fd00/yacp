@@ -1,0 +1,69 @@
+--- origsrc/libperseus-sdr-0.8.0/Makefile.am	2018-04-10 02:58:18.000000000 +0900
++++ src/libperseus-sdr-0.8.0/Makefile.am	2018-06-30 12:36:52.508488400 +0900
+@@ -35,6 +35,7 @@ lib_LTLIBRARIES = libperseus-sdr.la
+ libperseus_sdr_la_CFLAGS = $(AM_CFLAGS)
+ libperseus_sdr_la_SOURCES =  perseus-sdr.c perseuserr.c perseusfx2.c perseus-in.c \
+                              perseusfx2.h perseus-in.h perseus-sdr.h fpga_data.h
++libperseus_sdr_la_LDFLAGS = -no-undefined
+ 
+ nodist_libperseus_sdr_la_SOURCES = fpga_data.c
+ 
+@@ -89,14 +90,17 @@ fpga_data.c: $(srcdir)/generate_fpga_cod
+ # sudo udevadm control --reload-rules
+ #
+ udevrule_DATA = $(top_srcdir)/95-perseus.rules
+-udevruledir = $(bindir)
++udevruledir = /etc/udev/rules.d
+ EXTRA_DIST = $(top_srcdir)/95-perseus.rules README.Windows $(top_srcdir)/build-aux/git-version-gen
+ 
+ install-data-hook:
+-	-cp $(bindir)/95-perseus.rules /etc/udev/rules.d/ ; groupadd perseususb ; echo $(INST_USER) ;usermod -a -G perseususb $(INST_USER) ; udevadm control --reload-rules
++#	-cp $(bindir)/95-perseus.rules /etc/udev/rules.d/ ; groupadd perseususb ; echo $(INST_USER) ;usermod -a -G perseususb $(INST_USER) ; udevadm control --reload-rules
+ 
+ uninstall-hook:
+ 	-rm /etc/udev/rules.d/95-perseus.rules ; groupdel perseususb ; udevadm control --reload-rules
+ 
+ 
+ distdir = $(PACKAGE)-$(VERSION)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libperseus-sdr.pc
+--- origsrc/libperseus-sdr-0.8.0/configure.ac	2018-04-10 02:58:18.000000000 +0900
++++ src/libperseus-sdr-0.8.0/configure.ac	2018-06-30 11:11:14.044424400 +0900
+@@ -243,7 +243,7 @@ AC_C_VOLATILE
+ AC_FUNC_MALLOC
+ AC_CHECK_FUNCS([gettimeofday])
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([libperseus-sdr.pc Makefile
+ 				 examples/Makefile
+ ])
+ 
+--- origsrc/libperseus-sdr-0.8.0/examples/Makefile.am	2018-04-10 02:58:18.000000000 +0900
++++ src/libperseus-sdr-0.8.0/examples/Makefile.am	2018-06-30 10:52:53.121166300 +0900
+@@ -6,9 +6,11 @@ $(top_srcdir)/.version:
+ dist-hook:
+ 	echo $(VERSION) > $(distdir)/.tarball-version
+ 
++AM_CPPFLAGS = -I$(top_srcdir)
++
+ if OS_LINUX
+ # flags you want to pass to the C compiler & linker
+-AM_CFLAGS  =  -Wall -O3 @SIMD_FLAGS@ -DGIT_REVISION=\"@VERSION@\" -I$(top_srcdir)/
++AM_CFLAGS  =  -Wall -O3 @SIMD_FLAGS@ -DGIT_REVISION=\"@VERSION@\"
+ AM_LDFLAGS =
+ AM_LIBS    = -ldl -L$(top_srcdir)/
+ endif
+--- origsrc/libperseus-sdr-0.8.0/libperseus-sdr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libperseus-sdr-0.8.0/libperseus-sdr.pc.in	2018-06-30 11:11:13.981927600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libperseus-sdr
++Description: Perseus Software Defined Radio Control Library for Linux
++Version: @VERSION@
++Libs: -L${libdir} -lperseus-sdr
++Cflags: -I${includedir}
