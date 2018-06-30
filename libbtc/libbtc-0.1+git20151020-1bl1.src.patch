@@ -1,0 +1,48 @@
+--- origsrc/libbtc/Makefile.am	2018-06-30 16:30:26.000000000 +0900
++++ src/libbtc/Makefile.am	2018-06-30 16:52:01.350409400 +0900
+@@ -2,13 +2,6 @@ ACLOCAL_AMFLAGS = -I build-aux/m4
+ .PHONY: gen
+ .INTERMEDIATE: $(GENBIN)
+ 
+-DIST_SUBDIRS = src/secp256k1
+-
+-LIBSECP256K1=src/secp256k1/libsecp256k1.la
+-
+-$(LIBSECP256K1): $(wildcard src/secp256k1/src/*) $(wildcard src/secp256k1/include/*)
+-	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
+-
+ lib_LTLIBRARIES = libbtc.la
+ include_HEADERS = include/btc/btc.h \
+ 	include/btc/tx.h \
+@@ -50,8 +43,8 @@ libbtc_la_SOURCES = \
+ libbtc_la_LDFLAGS = \
+ 	-version-info 1:0:0 \
+ 	-no-undefined
+-libbtc_la_CFLAGS = -I$(top_srcdir)/include
+-libbtc_la_LIBADD = $(LIBSECP256K1)
++libbtc_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
++libbtc_la_LIBADD = $(SECP256K1_LIBS)
+ 
+ if USE_TESTS
+ noinst_PROGRAMS = tests
+--- origsrc/libbtc/configure.ac	2018-06-30 16:30:26.000000000 +0900
++++ src/libbtc/configure.ac	2018-06-30 16:35:36.148827500 +0900
+@@ -84,7 +84,7 @@ AC_SUBST(LIBTOOL_APP_LDFLAGS)
+ AC_SUBST(BUILD_EXEEXT)
+ AM_CONDITIONAL([USE_TESTS], [test x"$use_tests" != x"no"])
+ 
+-AC_CONFIG_SUBDIRS([src/secp256k1])
++PKG_CHECK_MODULES([SECP256K1], [libsecp256k1])
+ 
+ dnl make sure nothing new is exported so that we don't break the cache
+ PKGCONFIG_PATH_TEMP="$PKG_CONFIG_PATH"
+--- origsrc/libbtc/libbtc.pc	2018-06-30 16:30:26.000000000 +0900
++++ src/libbtc/libbtc.pc	2018-06-30 16:37:31.365137900 +0900
+@@ -1,5 +1,5 @@
+-prefix=/usr/local
+-exec_prefix=${prefix}
++prefix=/usr
++exec_prefix=/usr
+ libdir=${exec_prefix}/lib
+ includedir=${prefix}/include
+ 
