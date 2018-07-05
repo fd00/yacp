@@ -1,0 +1,88 @@
+--- origsrc/lib2geom/CMakeLists.txt	2018-07-04 21:54:51.000000000 +0900
++++ src/lib2geom/CMakeLists.txt	2018-07-05 05:12:26.953323000 +0900
+@@ -11,7 +11,10 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_D
+ ENABLE_TESTING()
+ INCLUDE(Config2GeomDepends)
+ 
+-INCLUDE_DIRECTORIES (src src/googletest/googletest/include ${CMAKE_CURRENT_BINARY_DIR})
++if (NOT CYGWIN)
++    INCLUDE_DIRECTORIES (src/googletest/googletest/include ${CMAKE_CURRENT_BINARY_DIR})
++endif()
++INCLUDE_DIRECTORIES (src ${CMAKE_CURRENT_BINARY_DIR})
+ LINK_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR}/src/2geom)
+ 
+ IF(gsl_FOUND)
+--- origsrc/lib2geom/src/CMakeLists.txt	2018-07-04 21:54:52.000000000 +0900
++++ src/lib2geom/src/CMakeLists.txt	2018-07-04 22:04:04.785924300 +0900
+@@ -6,6 +6,8 @@ ADD_SUBDIRECTORY (toys)
+ ADD_SUBDIRECTORY (cython)
+ ADD_SUBDIRECTORY (py2geom)
+ 
+-ADD_LIBRARY(gtest SHARED googletest/googletest/src/gtest-all.cc)
+-ADD_LIBRARY(gtest_main STATIC googletest/googletest/src/gtest_main.cc)
+-TARGET_INCLUDE_DIRECTORIES(gtest PRIVATE googletest/googletest)
++IF(NOT CYGWIN)
++    ADD_LIBRARY(gtest SHARED googletest/googletest/src/gtest-all.cc)
++    ADD_LIBRARY(gtest_main STATIC googletest/googletest/src/gtest_main.cc)
++    TARGET_INCLUDE_DIRECTORIES(gtest PRIVATE googletest/googletest)
++ENDIF()
+--- origsrc/lib2geom/src/tests/rect-test.cpp	2018-07-04 21:54:52.000000000 +0900
++++ src/lib2geom/src/tests/rect-test.cpp	2018-07-05 05:31:11.372742700 +0900
+@@ -251,7 +251,7 @@ TYPED_TEST(GenericRectTest, Emptiness) {
+     EXPECT_FALSE(empty);
+     EXPECT_TRUE(!empty);
+     EXPECT_FALSE(oa.empty());
+-    EXPECT_TRUE(oa);
++    EXPECT_TRUE((bool) oa);
+     EXPECT_FALSE(!oa);
+ }
+ 
+--- origsrc/lib2geom/src/toys/conic-section-toy.cpp	2018-07-04 21:54:52.000000000 +0900
++++ src/lib2geom/src/toys/conic-section-toy.cpp	2018-07-05 12:07:39.936464600 +0900
+@@ -119,7 +119,7 @@ class ConicSectionToy : public Toy
+ 
+         if (!parabola_toggle.on )
+         {
+-            if (focus2.pos == Point(infinity(),infinity()))
++            if (focus2.pos == Point(::infinity(), ::infinity()))
+                 focus2.pos = Point(m_width/2, m_height/2);
+             double df1f2 = distance (focus1.pos, focus2.pos);
+             if (df1f2 > 20 )
+@@ -140,7 +140,7 @@ class ConicSectionToy : public Toy
+         }
+         else
+         {
+-            focus2.pos = Point(infinity(),infinity());
++            focus2.pos = Point(::infinity(), ::infinity());
+         }
+ 
+         cs.set (vertex.pos, focus1.pos, focus2.pos);
+--- origsrc/lib2geom/src/toys/sweeper.cpp	2018-07-04 21:54:53.000000000 +0900
++++ src/lib2geom/src/toys/sweeper.cpp	2018-07-05 05:40:56.218389300 +0900
+@@ -841,7 +841,7 @@ public:
+     //returns an (infinite) rect around "a" separating it from "b". Nota: 3 sides are infinite!
+     //TODO: place the cut where there is most space...
+     OptRect separate(Rect const &a, Rect const &b){
+-        Rect ret ( Interval( -infinity(), infinity() ) , Interval(-infinity(), infinity() ) );
++        Rect ret ( Interval( -::infinity(), ::infinity() ) , Interval(-::infinity(), ::infinity() ) );
+         double gap = 0;
+         unsigned dir = 4;
+         if (b[X].min() - a[X].max() > gap){
+@@ -872,7 +872,7 @@ public:
+ 
+     //Find 4 lines (returned as a Rect sides) that cut all the rays (=edges). *!* some side might be infinite.
+     OptRect isolateVertex(Rect const &box){
+-        OptRect sep ( Interval( -infinity(), infinity() ) , Interval(-infinity(), infinity() ) );
++        OptRect sep ( Interval( -::infinity(), ::infinity() ) , Interval(-::infinity(), ::infinity() ) );
+         //separate this vertex from the others. Find a better way.
+         for (unsigned i=0; i<vtxboxes.size(); i++){
+             if ( Point::LexLessRt(dim)( sep->max(), vtxboxes[i].min() ) ){
+@@ -950,7 +950,7 @@ public:
+ 
+             for (unsigned side=0; side<4; side++){//scan X or Y direction, on level min or max...
+                 double level = sep->corner( side )[1-side%2];
+-                if (level != infinity() && level != -infinity() ){
++                if (level != ::infinity() && level != -::infinity() ){
+                     std::vector<double> times = roots(c[1-side%2]-level);
+                     if ( times.size() > 0 ) {
+                         double t;
