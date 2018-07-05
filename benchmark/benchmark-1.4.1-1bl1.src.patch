@@ -1,0 +1,36 @@
+--- origsrc/benchmark-1.4.1/CMakeLists.txt	2018-05-25 19:18:58.000000000 +0900
++++ src/benchmark-1.4.1/CMakeLists.txt	2018-07-05 20:59:19.623364900 +0900
+@@ -75,6 +75,9 @@ get_git_version(GIT_VERSION)
+ 
+ # Tell the user what versions we are using
+ string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" VERSION ${GIT_VERSION})
++if(CYGWIN)
++  set(VERSION ${PV})
++endif()
+ message("-- Version: ${VERSION}")
+ 
+ # The version of the libraries
+@@ -249,3 +252,10 @@ if (BENCHMARK_ENABLE_TESTING)
+   endif()
+   add_subdirectory(test)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/benchmark-1.4.1/benchmark.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/benchmark-1.4.1/benchmark.pc.in	2018-07-05 20:59:19.623364900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: benchmark
++Description: Microbenchmark support library
++Version: @VERSION@
++Libs: -L${libdir} -lbenchmark
++Cflags: -I${includedir}/benchmark
