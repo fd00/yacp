@@ -1,0 +1,50 @@
+--- origsrc/assimp-4.1.0/CMakeLists.txt	2017-12-11 22:22:45.000000000 +0900
++++ src/assimp-4.1.0/CMakeLists.txt	2018-07-05 17:15:18.684166900 +0900
+@@ -205,7 +205,7 @@ ENDIF( UNIX )
+ 
+ 
+ # Grouped compiler settings
+-IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") AND NOT CMAKE_COMPILER_IS_MINGW)
++IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") AND NOT CMAKE_COMPILER_IS_MINGW AND NOT CYGWIN)
+   # hide all not-exported symbols
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fvisibility=hidden -fPIC -Wall -std=c++0x")
+   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+@@ -293,8 +293,11 @@ ENDIF()
+ # cmake configuration files
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/assimp-config.cmake.in"         "${CMAKE_CURRENT_BINARY_DIR}/assimp-config.cmake" @ONLY IMMEDIATE)
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/assimp-config-version.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/assimp-config-version.cmake" @ONLY IMMEDIATE)
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/assimp-config.cmake"             "${CMAKE_CURRENT_BINARY_DIR}/assimp-config-version.cmake" DESTINATION "${ASSIMP_LIB_INSTALL_DIR}/cmake/assimp-${ASSIMP_VERSION_MAJOR}.${ASSIMP_VERSION_MINOR}" COMPONENT ${LIBASSIMP-DEV_COMPONENT})
+-
++if( CYGWIN )
++  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/assimp-config.cmake"             "${CMAKE_CURRENT_BINARY_DIR}/assimp-config-version.cmake" DESTINATION "${ASSIMP_LIB_INSTALL_DIR}/cmake/assimp" COMPONENT ${LIBASSIMP-DEV_COMPONENT})
++else( CYGWIN )
++  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/assimp-config.cmake"             "${CMAKE_CURRENT_BINARY_DIR}/assimp-config-version.cmake" DESTINATION "${ASSIMP_LIB_INSTALL_DIR}/cmake/assimp-${ASSIMP_VERSION_MAJOR}.${ASSIMP_VERSION_MINOR}" COMPONENT ${LIBASSIMP-DEV_COMPONENT})
++endif( CYGWIN )
+ FIND_PACKAGE( DirectX )
+ 
+ IF( BUILD_DOCS )
+@@ -303,7 +306,13 @@ ENDIF( BUILD_DOCS )
+ 
+ # Look for system installed irrXML
+ IF ( SYSTEM_IRRXML )
++  if ( CYGWIN )
++    find_package( PkgConfig REQUIRED )
++    pkg_check_modules( IRRXML irrxml REQUIRED )
++    set( IRRXML_LIBRARY ${IRRXML_LIBRARIES} )
++  else( CYGWIN )
+     find_package( IrrXML REQUIRED )
++  endif( CYGWIN )
+ ENDIF( SYSTEM_IRRXML )
+ 
+ # Search for external dependencies, and build them from source if not found
+--- origsrc/assimp-4.1.0/tools/assimp_cmd/assimp_cmd.rc	2017-12-11 22:22:45.000000000 +0900
++++ src/assimp-4.1.0/tools/assimp_cmd/assimp_cmd.rc	2018-07-05 16:45:40.648352800 +0900
+@@ -1,7 +1,7 @@
+ // Microsoft Visual C++ generated resource script.
+ //
+ #include "resource.h"
+-#include "../../revision.h"
++#include "revision.h"
+ 
+ #define APSTUDIO_READONLY_SYMBOLS
+ /////////////////////////////////////////////////////////////////////////////
