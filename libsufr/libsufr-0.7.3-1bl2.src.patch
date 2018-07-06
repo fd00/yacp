@@ -1,0 +1,47 @@
+--- origsrc/libsufr-0.7.3/CMake/CompilerFlags_Fortran.cmake	2017-01-28 02:28:01.000000000 +0900
++++ src/libsufr-0.7.3/CMake/CompilerFlags_Fortran.cmake	2018-07-06 18:13:00.832246700 +0900
+@@ -91,9 +91,9 @@ if( Fortran_COMPILER_NAME MATCHES "gfort
+     set( WARN_FLAGS "${WARN_FLAGS} -Werror" )
+   endif( STOP_ON_WARNING )
+   
+-  if( WANT_LIBRARY )
++  if( WANT_LIBRARY AND NOT CYGWIN )
+     set( LIB_FLAGS "-fPIC -g" )
+-  endif( WANT_LIBRARY )
++  endif( WANT_LIBRARY AND NOT CYGWIN )
+   
+   
+   # Package-specific flags:
+--- origsrc/libsufr-0.7.3/CMakeLists.txt	2017-01-28 02:28:01.000000000 +0900
++++ src/libsufr-0.7.3/CMakeLists.txt	2018-07-06 18:17:01.653844800 +0900
+@@ -87,6 +87,10 @@ if( CREATE_SHAREDLIB )
+     set_target_properties( libSUFR_shared PROPERTIES OUTPUT_NAME "SUFR" )  # Sets the file name and soname to libSUFR.so
+   endif( COMPILER_SPECIFIC_LIBS )
+   set_target_properties( libSUFR_shared PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY} )
++  if( CYGWIN )
++    set_target_properties( libSUFR_shared PROPERTIES SOVERSION 0 )
++    install( TARGETS libSUFR_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++  endif( CYGWIN )
+ endif( CREATE_SHAREDLIB )
+ 
+ # Use add_dependencies below in order to pretend the static lib depends on the shared.  This
+@@ -135,12 +139,13 @@ install( DIRECTORY usr/ DESTINATION ${CM
+ install( DIRECTORY man/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man )
+ 
+ # Install documents:
+-if( NOT EXISTS VERSION )
+-  install( FILES doc/CHANGELOG doc/LICENCE doc/README doc/VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
+-else( NOT EXISTS VERSION )
+-  install( FILES CHANGELOG LICENCE README VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
+-endif( NOT EXISTS VERSION )
+-
++if( NOT CYGWIN )
++  if( NOT EXISTS VERSION )
++    install( FILES doc/CHANGELOG doc/LICENCE doc/README doc/VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
++  else( NOT EXISTS VERSION )
++    install( FILES CHANGELOG LICENCE README VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
++  endif( NOT EXISTS VERSION )
++endif( NOT CYGWIN )
+ 
+ # Create Linux-distribution binary package:
+ if( WANT_PACKAGE )
