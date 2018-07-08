@@ -1,0 +1,55 @@
+--- origsrc/libmacaroons-releases-0.3.0/Makefile.am	2015-05-27 00:39:34.000000000 +0900
++++ src/libmacaroons-releases-0.3.0/Makefile.am	2018-07-08 11:50:27.503471300 +0900
+@@ -53,7 +53,7 @@ libmacaroons_la_LIBADD += $(SODIUM_LIBS)
+ if ENABLE_JSON_SUPPORT
+ libmacaroons_la_LIBADD += $(JSON_LIBS)
+ endif
+-libmacaroons_la_LDFLAGS = -version-info 0:1:0
++libmacaroons_la_LDFLAGS = -no-undefined -version-info 0:1:0
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libmacaroons.pc
+@@ -90,6 +90,6 @@ bindings_python_macaroons_la_CFLAGS += $
+ bindings_python_macaroons_la_LIBADD =
+ bindings_python_macaroons_la_LIBADD += libmacaroons.la
+ bindings_python_macaroons_la_LIBADD += $(PYTHON_LDFLAGS)
+-bindings_python_macaroons_la_LDFLAGS = -module -avoid-version -export-symbols-regex initmacaroons $(AM_LDFLAGS) $(LDFLAGS)
++bindings_python_macaroons_la_LDFLAGS = -no-undefined -module -avoid-version -export-symbols-regex initmacaroons $(AM_LDFLAGS) $(LDFLAGS)
+ bindings/python/macaroons.c: bindings/python/macaroons.pyx
+-	$(pyx_verbose)cython bindings/python/macaroons.pyx
++	$(pyx_verbose)cython $(top_srcdir)/bindings/python/macaroons.pyx
+--- origsrc/libmacaroons-releases-0.3.0/configure.ac	2015-05-27 00:39:34.000000000 +0900
++++ src/libmacaroons-releases-0.3.0/configure.ac	2018-07-08 11:47:53.401600800 +0900
+@@ -52,8 +52,19 @@ if test x"${json_support}" = xyes; then
+ 
+     if test x"${needs_json}" = xyes; then
+         AC_SUBST([JSON_LIBS], ["-ljson"])
++        AC_CHECK_HEADER([json/json.h],,[AC_MSG_ERROR([
++----------------------------------------
++Macaroons rely upon the libjson library.
++Please install libjson to continue.
++----------------------------------------])])
+     elif test  x"${needs_json_c}" = xyes; then
+         AC_SUBST([JSON_LIBS], ["-ljson-c"])
++        AC_CHECK_HEADER([json-c/json.h],,[AC_MSG_ERROR([
++----------------------------------------
++Macaroons rely upon the libjson-c library.
++Please install libjson-c to continue.
++----------------------------------------])])
++        AC_DEFINE([USE_JSON_C], [1], [use json-c])
+     else
+         AC_MSG_ERROR([
+ ----------------------------------------
+@@ -61,12 +72,6 @@ Macaroons rely upon the libjson library.
+ Please install libjson to continue.
+ ----------------------------------------])
+     fi
+-
+-    AC_CHECK_HEADER([json/json.h],,[AC_MSG_ERROR([
+-----------------------------------------
+-Macaroons rely upon the libjson library.
+-Please install libjson to continue.
+-----------------------------------------])])
+ fi
+ 
+ AM_CONDITIONAL([ENABLE_PYTHON_BINDINGS], [test x"${python_bindings}" = xyes])
