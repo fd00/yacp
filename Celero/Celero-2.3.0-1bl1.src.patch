@@ -1,0 +1,126 @@
+--- origsrc/Celero-2.3.0/CMakeLists.txt	2018-07-03 08:24:44.000000000 +0900
++++ src/Celero-2.3.0/CMakeLists.txt	2018-07-13 12:26:43.002566100 +0900
+@@ -196,6 +196,9 @@ endif()
+ #
+ 
+ target_link_libraries(${PROJECT_NAME} ${SYSLIBS})
++if(CYGWIN)
++	set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
+ 
+ target_include_directories(${PROJECT_NAME} PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+@@ -210,13 +213,13 @@ install(TARGETS ${PROJECT_NAME}
+   EXPORT ${PROJECT_NAME}-target
+   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/static
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ )
+ install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})
+ 
+ # export to be used from install location
+ install(EXPORT ${PROJECT_NAME}-target
+-  DESTINATION ${CMAKE_INSTALL_PREFIX}/share
++  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/Celero
+ )
+ # export to be used from build directory
+ export(EXPORT ${PROJECT_NAME}-target
+@@ -228,40 +231,42 @@ export(EXPORT ${PROJECT_NAME}-target
+ # ---------------------------------------------------------------------------
+ 
+ if(CELERO_ENABLE_TESTS)
+-	# Pull in Google Test
+-	# https://github.com/google/googletest/tree/master/googletest#incorporating-into-an-existing-cmake-project
+-
+-	# Download and unpack googletest at configure time
+-	configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+-
+-	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" . 
+-		RESULT_VARIABLE result
+-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
++	if (NOT CYGWIN)
++		# Pull in Google Test
++		# https://github.com/google/googletest/tree/master/googletest#incorporating-into-an-existing-cmake-project
++
++		# Download and unpack googletest at configure time
++		configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
++
++		execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" . 
++			RESULT_VARIABLE result
++			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
++
++		if(result)
++			message(FATAL_ERROR "CMake step for googletest failed: ${result}")
++		endif()
++
++		execute_process(COMMAND ${CMAKE_COMMAND} --build .
++			RESULT_VARIABLE result
++			WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
++		
++		if(result)
++			message(FATAL_ERROR "Build step for googletest failed: ${result}")
++		endif()
++
++		# Prevent overriding the parent project's compiler/linker
++		# settings on Windows
++		set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++
++		# Add googletest directly to our build. This defines
++		# the gtest and gtest_main targets.
++		add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
++						${CMAKE_BINARY_DIR}/googletest-build
++						EXCLUDE_FROM_ALL)
+ 
+-	if(result)
+-		message(FATAL_ERROR "CMake step for googletest failed: ${result}")
++		include_directories("${gtest_SOURCE_DIR}/include")
+ 	endif()
+ 
+-	execute_process(COMMAND ${CMAKE_COMMAND} --build .
+-		RESULT_VARIABLE result
+-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+-	
+-	if(result)
+-		message(FATAL_ERROR "Build step for googletest failed: ${result}")
+-	endif()
+-
+-	# Prevent overriding the parent project's compiler/linker
+-	# settings on Windows
+-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+-
+-	# Add googletest directly to our build. This defines
+-	# the gtest and gtest_main targets.
+-	add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+-					 ${CMAKE_BINARY_DIR}/googletest-build
+-					 EXCLUDE_FROM_ALL)
+-
+-	include_directories("${gtest_SOURCE_DIR}/include")
+-
+ 	set(PROJECT_NAME CeleroTest)
+ 
+ 	add_executable(${PROJECT_NAME}
+@@ -298,3 +303,10 @@ if(CELERO_ENABLE_FOLDERS)
+ endif()
+ 
+ add_subdirectory(experiments)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Celero.pc.in ${CMAKE_BINARY_DIR}/Celero.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Celero.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Celero-2.3.0/Celero.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Celero-2.3.0/Celero.pc.in	2018-07-13 12:30:54.414000600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Celero
++Description: C++ Benchmark Authoring Library/Framework
++Version: @VERSION@
++Libs: -L${libdir} -lcelero
++Cflags: -I${includedir}
