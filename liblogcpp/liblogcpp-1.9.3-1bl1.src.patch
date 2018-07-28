@@ -1,0 +1,46 @@
+--- origsrc/liblogcpp-1.9.3/CMakeLists.txt	2017-09-28 00:39:58.000000000 +0900
++++ src/liblogcpp-1.9.3/CMakeLists.txt	2018-07-28 20:08:47.094638800 +0900
+@@ -33,7 +33,11 @@ endif()
+ 
+ if( LOGCPP_SHARED )
+ 	add_library( logcpp SHARED ${LIBLOGCPP_SOURCE} )
+-	set( LOGCPP_PKGCONFIG_LIBNAME "liblogcpp.so" )
++	if (CYGWIN)
++		set_target_properties( logcpp PROPERTIES SOVERSION 0 )
++	else()
++		set( LOGCPP_PKGCONFIG_LIBNAME "liblogcpp.so" )
++	endif()
+ else()
+ 	add_library( logcpp STATIC ${LIBLOGCPP_SOURCE} )
+ 	set( LOGCPP_PKGCONFIG_LIBNAME "liblogcpp.a" )
+@@ -61,7 +65,7 @@ else()
+ endif()
+ 
+ if( LOGCPP_INSTALL_LIBS )
+-	install(TARGETS logcpp DESTINATION ${LOGCPP_LIB_INSTALL_DIR} )
++	install(TARGETS logcpp RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LOGCPP_LIB_INSTALL_DIR} )
+ 	install(FILES ${LIBLOGCPP_HEADERS} DESTINATION ${LOGCPP_HEADER_INSTALL_DIR} )
+ 	install(FILES ${PROJECT_SOURCE_DIR}/lib/LibLogCPPConfig.cmake DESTINATION "${LOGCPP_LIB_INSTALL_DIR}/cmake/LibLogCPP" )
+ 	configure_file(${PROJECT_SOURCE_DIR}/lib/liblogcpp.pc.in ${CMAKE_CURRENT_BINARY_DIR}/liblogcpp.pc @ONLY)
+--- origsrc/liblogcpp-1.9.3/lib/liblogcpp.pc.in	2017-09-28 00:39:58.000000000 +0900
++++ src/liblogcpp-1.9.3/lib/liblogcpp.pc.in	2018-07-28 20:16:30.489591900 +0900
+@@ -4,6 +4,6 @@ includedir=@LOGCPP_HEADER_INSTALL_DIR@
+ Name: LibLogC++
+ Description: An intuitive and highly customizable LGPL library for logging with C++
+ Version: @LIBLOGCPP_VERSION@
+-Libs: ${libdir}/@LOGCPP_PKGCONFIG_LIBNAME@
++Libs: -L${libdir} -llogcpp
+ Cflags: -I${includedir}
+ 
+--- origsrc/liblogcpp-1.9.3/src/severity.hpp	2017-09-28 00:39:58.000000000 +0900
++++ src/liblogcpp-1.9.3/src/severity.hpp	2018-07-28 20:05:34.755825500 +0900
+@@ -32,6 +32,9 @@
+ #include <string>
+ #include <array>
+ 
++#if defined(__CYGWIN__)
++typedef unsigned int uint;
++#endif
+ 
+ namespace logcpp {
+ 
