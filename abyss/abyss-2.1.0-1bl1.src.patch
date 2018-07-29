@@ -1,0 +1,64 @@
+--- origsrc/abyss-2.1.0/Common/Uncompress.cpp	2018-04-14 09:56:20.000000000 +0900
++++ src/abyss-2.1.0/Common/Uncompress.cpp	2018-07-29 08:48:37.772217300 +0900
+@@ -130,12 +130,16 @@ typedef FILE* (*fopen_t)(const char *pat
+ FILE *fopen(const char *path, const char *mode)
+ {
+ 	static fopen_t real_fopen;
++#if defined(__CYGWIN__)
++	real_fopen = fopen;
++#else
+ 	if (real_fopen == NULL)
+ 		real_fopen = (fopen_t)dlsym(RTLD_NEXT, "fopen");
+ 	if (real_fopen == NULL) {
+ 		fprintf(stderr, "error: dlsym fopen: %s\n", dlerror());
+ 		exit(EXIT_FAILURE);
+ 	}
++#endif
+ 
+ 	// open a web address
+ 	if (wgetExec(path) != NULL)
+@@ -157,12 +161,16 @@ FILE *fopen(const char *path, const char
+ FILE *fopen64(const char *path, const char *mode)
+ {
+ 	static fopen_t real_fopen64;
++#if defined(__CYGWIN__)
++	real_fopen64 = fopen64;
++#else
+ 	if (real_fopen64 == NULL)
+ 		real_fopen64 = (fopen_t)dlsym(RTLD_NEXT, "fopen64");
+ 	if (real_fopen64 == NULL) {
+ 		fprintf(stderr, "error: dlsym fopen64: %s\n", dlerror());
+ 		exit(EXIT_FAILURE);
+ 	}
++#endif
+ 
+ 	// open a web address
+ 	if (wgetExec(path) != NULL)
+@@ -186,12 +194,16 @@ typedef int (*open_t)(const char *path,
+ int open(const char *path, int flags, mode_t mode)
+ {
+ 	static open_t real_open;
++#if defined(__CYGWIN__)
++	real_open = open;
++#else
+ 	if (real_open == NULL)
+ 		real_open = (open_t)dlsym(RTLD_NEXT, "open");
+ 	if (real_open == NULL) {
+ 		fprintf(stderr, "error: dlsym open: %s\n", dlerror());
+ 		exit(EXIT_FAILURE);
+ 	}
++#endif
+ 
+ 	// open a web address
+ 	if (wgetExec(path) != NULL)
+--- origsrc/abyss-2.1.0/KAligner/Semaphore.h	2018-04-14 09:56:20.000000000 +0900
++++ src/abyss-2.1.0/KAligner/Semaphore.h	2018-07-29 09:19:48.081408900 +0900
+@@ -3,7 +3,7 @@
+ 
+ /** Semaphore class needed since some OS' do not support unnamed
+  * semaphores. */
+-#if __APPLE__
++#if __APPLE__ || defined(__CYGWIN__)
+ # include <pthread.h>
+ class Semaphore {
+   public:
