@@ -1,0 +1,70 @@
+--- origsrc/ompl-1.4.0-Source/CMakeLists.txt	2018-06-25 06:58:25.000000000 +0900
++++ src/ompl-1.4.0-Source/CMakeLists.txt	2018-07-31 09:40:06.096567100 +0900
+@@ -198,7 +198,7 @@ if (NOT ${CMAKE_VERSION} VERSION_LESS 2.
+     set(LIB_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR})
+     configure_package_config_file(omplConfig.cmake.in
+         ${CMAKE_CURRENT_BINARY_DIR}/omplConfig.cmake
+-        INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/ompl/cmake
++        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ompl
+         PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR
+         NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+     write_basic_package_version_file(
+@@ -207,7 +207,7 @@ if (NOT ${CMAKE_VERSION} VERSION_LESS 2.
+         COMPATIBILITY SameMajorVersion)
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/omplConfig.cmake
+         ${CMAKE_CURRENT_BINARY_DIR}/omplConfigVersion.cmake
+-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/ompl/cmake
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ompl
+         COMPONENT ompl)
+ endif()
+ 
+--- origsrc/ompl-1.4.0-Source/CMakeModules/CompilerSettings.cmake	2018-06-25 06:58:25.000000000 +0900
++++ src/ompl-1.4.0-Source/CMakeModules/CompilerSettings.cmake	2018-07-31 07:01:33.408547800 +0900
+@@ -6,7 +6,11 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
+ else()
+     set(CMAKE_CXX_STANDARD 11)
+     set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-    set(CMAKE_CXX_EXTENSIONS OFF)
++    if(CYGWIN)
++        set(CMAKE_CXX_EXTENSIONS ON)
++    else()
++        set(CMAKE_CXX_EXTENSIONS OFF)
++    endif()
+     # this next line shouldn't be necessary, but doesn't always get added by cmake (e.g., for clang++-5)
+     add_definitions(-std=c++11)
+ endif()
+@@ -60,9 +64,9 @@ if(IS_XLC)
+     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -q64")
+ endif(IS_XLC)
+ 
+-if((CMAKE_COMPILER_IS_GNUCXX OR IS_ICPC) AND NOT MINGW)
++if((CMAKE_COMPILER_IS_GNUCXX OR IS_ICPC) AND NOT MINGW AND NOT CYGWIN)
+     add_definitions(-fPIC)
+-endif((CMAKE_COMPILER_IS_GNUCXX OR IS_ICPC) AND NOT MINGW)
++endif((CMAKE_COMPILER_IS_GNUCXX OR IS_ICPC) AND NOT MINGW AND NOT CYGWIN)
+ 
+ option(OMPL_SKIP_RPATH "Don't set RPATH to the OMPL library" OFF)
+ if(NOT OMPL_SKIP_RPATH)
+--- origsrc/ompl-1.4.0-Source/src/ompl/CMakeLists.txt	2018-06-25 06:58:25.000000000 +0900
++++ src/ompl-1.4.0-Source/src/ompl/CMakeLists.txt	2018-07-31 07:01:33.424251500 +0900
+@@ -77,7 +77,8 @@ endif(MSVC)
+ 
+ # install the library
+ install(TARGETS ompl
+-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     COMPONENT ompl)
+ if(NOT MSVC)
+     add_custom_command(TARGET ompl POST_BUILD
+--- origsrc/ompl-1.4.0-Source/tests/CMakeLists.txt	2018-06-25 06:58:36.000000000 +0900
++++ src/ompl-1.4.0-Source/tests/CMakeLists.txt	2018-07-31 07:01:33.424251500 +0900
+@@ -22,7 +22,7 @@ if (OMPL_BUILD_TESTS)
+     add_ompl_test(test_gridb datastructures/gridb.cpp)
+     add_ompl_test(test_nearestneighbors datastructures/nearestneighbors.cpp)
+     if(FLANN_FOUND)
+-        target_link_libraries(test_nearestneighbors ${FLANN_LIBRARIES})
++        target_link_libraries(test_nearestneighbors ${FLANN_LIBRARIES} lz4)
+     endif()
+     add_ompl_test(test_pdf datastructures/pdf.cpp)
+ 
