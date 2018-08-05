@@ -1,0 +1,44 @@
+--- origsrc/bctoolbox-0.6.0/src/utils/exception.cc	2017-07-20 20:03:39.000000000 +0900
++++ src/bctoolbox-0.6.0/src/utils/exception.cc	2018-08-05 11:11:03.846068200 +0900
+@@ -16,7 +16,9 @@
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ #include "bctoolbox/exception.hh"
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <unistd.h>
+ #include "bctoolbox/logging.h"
+ #include "dlfcn.h"
+@@ -41,7 +43,9 @@ static void uncaught_handler() {
+ 
+ 
+ BctbxException::BctbxException(const char *message) : mOffset(1), mSize(0) {
++#if !defined(__CYGWIN__)
+ 	mSize = backtrace(mArray, sizeof(mArray) / sizeof(void *));
++#endif
+ 	if (message)
+ 		mOs << message;
+ #if __clang
+@@ -84,10 +88,13 @@ BctbxException::BctbxException() : mOffs
+ #endif
+ 
+ void BctbxException::printStackTrace() const {
++#if !defined(__CYGWIN__)
+ 	backtrace_symbols_fd(mArray + mOffset, mSize - mOffset, STDERR_FILENO);
++#endif
+ }
+ 
+ void BctbxException::printStackTrace(std::ostream &os) const {
++#if !defined(__CYGWIN__)
+ 	char **bt = backtrace_symbols(mArray, mSize);
+ 	int position=0;
+ 	for (unsigned int i = mOffset; i < mSize; ++i) {
+@@ -111,6 +118,7 @@ void BctbxException::printStackTrace(std
+ 		os << std::endl;
+ 	}
+ 	free(bt);
++#endif
+ }
+ 
+ const std::string &BctbxException::str() const {
