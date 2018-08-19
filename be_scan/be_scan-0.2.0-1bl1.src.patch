@@ -1,0 +1,92 @@
+--- origsrc/be_scan-0.2.0/Makefile.am	2017-09-15 08:52:21.000000000 +0900
++++ src/be_scan-0.2.0/Makefile.am	2018-08-19 10:12:35.567356700 +0900
+@@ -1,4 +1,7 @@
+-SUBDIRS = src test java_bindings python_bindings
++SUBDIRS = src test python_bindings
++if !CYGWIN
++SUBDIRS += java_bindings
++endif
+ 
+ RELEASE	= $(PACKAGE)-$(VERSION)
+ 
+@@ -20,3 +23,5 @@ EXTRA_DIST = \
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/be_scan-0.2.0/be_scan.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/be_scan-0.2.0/be_scan.pc.in	2018-08-19 09:46:42.124605600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: be_scan
++Description: Scanner library for scanning for digital forensic artifacts
++Version: @VERSION@
++Libs: -L${libdir} -lbe_scan
++Cflags: -I${includedir}
+--- origsrc/be_scan-0.2.0/configure.ac	2017-09-15 08:52:21.000000000 +0900
++++ src/be_scan-0.2.0/configure.ac	2018-08-19 09:46:42.171384000 +0900
+@@ -9,7 +9,7 @@ AC_PREREQ(2.57)
+ AC_INIT(be_scan, 0.2.0, github.com/NPS-DEEP/be_scan/issues)
+ AC_CONFIG_MACRO_DIR(m4)
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([be_scan.pc Makefile
+                  src/Makefile
+                  test/Makefile
+                  java_bindings/Makefile
+@@ -75,13 +75,19 @@ m4_include([m4/ax_swig_python.m4])
+ AX_SWIG_PYTHON
+ AX_SWIG_ENABLE_CXX
+ 
++AM_CONDITIONAL([CYGWIN], [test "$host_os" = "cygwin"])
++
+ ## SWIG Java
++if test "$host_os" = "cygwin"; then
++JNI_CPPFLAGS="-I/usr/include"
++else
+ m4_include([m4/ax_jni_include_dir.m4])
+ AX_JNI_INCLUDE_DIR
+ for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
+   do
+           JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
+   done
++fi
+ AM_CONDITIONAL([JNI_CPPFLAGS], [test "$JNI_CPPFLAGS" != ""])
+ if test "$JNI_CPPFLAGS" == "" ; then
+   AC_MSG_ERROR([Java JNI is not available.  Please install Java Devel.])
+--- origsrc/be_scan-0.2.0/python_bindings/Makefile.am	2017-09-15 08:52:21.000000000 +0900
++++ src/be_scan-0.2.0/python_bindings/Makefile.am	2018-08-19 09:44:05.363876300 +0900
+@@ -42,7 +42,7 @@ be_scan_wrap.cpp: be_scan.i ${top_srcdir
+ python_PYTHON = $(builddir)/be_scan.py
+ 
+ # module, so no lib prefix
+-_be_scan_la_LDFLAGS = -module ${PYTHON_LDFLAGS}
++_be_scan_la_LDFLAGS = -no-undefined -avoid-version -module ${PYTHON_LDFLAGS}
+ 
+ # install _be_scan.la
+ pyexec_LTLIBRARIES = _be_scan.la
+@@ -51,7 +51,7 @@ pyexec_LTLIBRARIES = _be_scan.la
+ _be_scan_la_SOURCES = be_scan_wrap.cpp be_scan.i
+ 
+ # _be_scan.la requires relocatable be_scan library libbe_scan.so
+-_be_scan_la_LIBADD = ../src/libbe_scan.la
++_be_scan_la_LIBADD = ../src/libbe_scan.la ${PYTHON_LIBS}
+ 
+ # c++ flags for compiling _be_scan.la
+ _be_scan_la_CPPFLAGS = ${PYTHON_CPPFLAGS} -Wno-deprecated-register -I${top_srcdir}/src
+--- origsrc/be_scan-0.2.0/src/Makefile.am	2017-09-15 08:52:21.000000000 +0900
++++ src/be_scan-0.2.0/src/Makefile.am	2018-08-18 21:09:41.935305300 +0900
+@@ -41,7 +41,7 @@ lib_LTLIBRARIES = libbe_scan.la
+ AM_CFLAGS = $(BE_SCAN_CFLAGS)
+ AM_CXXFLAGS = $(BE_SCAN_CXXFLAGS)
+ 
+-libbe_scan_la_LDFLAGS = -PIC
++libbe_scan_la_LDFLAGS = -no-undefined -PIC
+ 
+ libbe_scan_la_SOURCES = $(BE_SCAN_INCS)
+ 
