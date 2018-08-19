@@ -1,0 +1,55 @@
+--- origsrc/xscsv/CMakeLists.txt	2018-08-19 20:20:41.000000000 +0900
++++ src/xscsv/CMakeLists.txt	2018-08-19 20:24:49.913781500 +0900
+@@ -38,12 +38,17 @@ project(xscsv)
+ set(xscsv_VERSION_MAJOR 0)
+ set(xscsv_VERSION_MINOR 1)
+ set(xscsv_VERSION_REVISION 0)
++set(VERSION "${xscsv_VERSION_MAJOR}.${xscsv_VERSION_MINOR}.${xscsv_VERSION_REVISION}")
+ 
+ include_directories(BEFORE ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/src)
+ 
+ # Build
+-add_library(xscsv STATIC
+-	src/xscsv.c)
++add_library(xscsv SHARED
++    src/xscsv.c)
++    
++if (CYGWIN)
++    set_target_properties(xscsv PROPERTIES SOVERSION 0)
++endif()
+ 
+ add_executable(xscsv_info_print
+     examples/info_print.c)
+@@ -133,7 +138,7 @@ set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJE
+ 	PARENT_SCOPE)
+ 
+ # Install
+-install(TARGETS xscsv ARCHIVE DESTINATION lib)
++install(TARGETS xscsv RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install_files("/include" .h
+ 	${CMAKE_SOURCE_DIR}/src/xscsv.h)
+ 
+@@ -158,3 +163,10 @@ add_test(NAME xscsv_tab_get_contents COM
+ #add_test(NAME dmath_standart_deviation COMMAND dmath_standart_deviation_test)
+ #add_test(NAME dmath_sum COMMAND dmath_sum_test)
+ #add_test(NAME dmath_variance COMMAND dmath_variance_test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/xscsv.pc.in ${CMAKE_BINARY_DIR}/xscsv.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/xscsv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/xscsv/xscsv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/xscsv/xscsv.pc.in	2018-08-19 20:24:06.471440300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: xscsv
++Description: eXtra Small CSV library
++Version: @VERSION@
++Libs: -L${libdir} -lxscsv
++Cflags: -I${includedir}
