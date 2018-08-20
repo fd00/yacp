@@ -1,0 +1,151 @@
+--- origsrc/sleuthkit-4.6.2/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/Makefile.am	2018-08-20 23:31:23.934763500 +0900
+@@ -95,3 +95,6 @@ api-docs:
+ 
+ man-html:
+ 	cd man;build-html
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/sleuthkit-4.6.2/configure.ac	2018-08-08 23:44:19.000000000 +0900
++++ src/sleuthkit-4.6.2/configure.ac	2018-08-20 23:31:23.934763500 +0900
+@@ -369,7 +369,7 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
+ 
+ AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
+ case "$host" in
+-*-*-mingw*)
++*-*-mingw*|*-*-cygwin*)
+   dnl Add -no-undefined flag to LDFLAGS to let libtool build DLLs.
+   AC_MSG_RESULT([yes])
+   LIBTSK_LDFLAGS="-no-undefined"
+@@ -391,7 +391,7 @@ WARNINGS='-Wall -Wextra -Wno-unused-para
+ AC_SUBST(AM_CFLAGS, $WARNINGS)
+ AC_SUBST(AM_CXXFLAGS, $WARNINGS)
+ 
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([sleuthkit.pc 
+     Makefile
+     tsk/Makefile
+     tsk/base/Makefile
+--- origsrc/sleuthkit-4.6.2/samples/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/samples/Makefile.am	2018-08-20 23:15:07.837698000 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I.. -I$(srcdir)/..
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../tsk/libtsk.la
+-AM_LDFLAGS = -static
++AM_LDFLAGS = 
+ EXTRA_DIST = .indent.pro 
+ 
+ noinst_PROGRAMS = posix_style callback_style posix_cpp_style callback_cpp_style
+--- origsrc/sleuthkit-4.6.2/sleuthkit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/sleuthkit-4.6.2/sleuthkit.pc.in	2018-08-20 23:31:47.651059500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: sleuthkit
++Description: The Sleuth Kit
++Version: @VERSION@
++Libs: -L${libdir} -ltsk
++Cflags: -I${includedir}
+--- origsrc/sleuthkit-4.6.2/tests/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tests/Makefile.am	2018-08-20 23:15:19.262913000 +0900
+@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I.. -I$(srcdir)/..
+ AM_CFLAGS += $(PTHREAD_CFLAGS)
+ AM_CXXFLAGS += -Wno-unused-command-line-argument $(PTHREAD_CFLAGS)
+ LDADD = ../tsk/libtsk.la
+-LDFLAGS += -static $(PTHREAD_LIBS)
++LDFLAGS += $(PTHREAD_LIBS)
+ EXTRA_DIST = .indent.pro runtests.sh
+ 
+ check_SCRIPTS = runtests.sh test_libraries.sh
+--- origsrc/sleuthkit-4.6.2/tools/autotools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/autotools/Makefile.am	2018-08-20 23:15:53.768243500 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. 
+ AM_CXXFLAGS += -Wno-overloaded-virtual -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la
+-LDFLAGS += -static
++LDFLAGS +=
+ EXTRA_DIST = .indent.pro
+ 
+ bin_PROGRAMS = tsk_recover tsk_loaddb tsk_comparedir tsk_gettimes
+--- origsrc/sleuthkit-4.6.2/tools/fiwalk/src/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/fiwalk/src/Makefile.am	2018-08-20 23:16:44.673293300 +0900
+@@ -1,5 +1,5 @@
+ bin_PROGRAMS = fiwalk 
+-AM_CPPFLAGS = -I../../..
++AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../../tsk/libtsk.la
+ 
+--- origsrc/sleuthkit-4.6.2/tools/fstools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/fstools/Makefile.am	2018-08-20 23:17:01.993865000 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la
+-LDFLAGS += -static
++LDFLAGS +=
+ EXTRA_DIST = .indent.pro fscheck.cpp
+ 
+ bin_PROGRAMS = blkcalc blkcat blkls blkstat ffind fls fcat fsstat icat ifind ils \
+--- origsrc/sleuthkit-4.6.2/tools/hashtools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/hashtools/Makefile.am	2018-08-20 23:17:21.557868900 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la
+-LDFLAGS += -static
++LDFLAGS +=
+ EXTRA_DIST = .indent.pro md5.c sha1.c
+ 
+ bin_PROGRAMS = hfind
+--- origsrc/sleuthkit-4.6.2/tools/imgtools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/imgtools/Makefile.am	2018-08-20 23:17:31.008992600 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la
+-LDFLAGS += -static
++LDFLAGS +=
+ EXTRA_DIST = .indent.pro
+ 
+ bin_PROGRAMS = img_cat img_stat
+--- origsrc/sleuthkit-4.6.2/tools/srchtools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/srchtools/Makefile.am	2018-08-20 23:17:55.947511200 +0900
+@@ -8,7 +8,7 @@ srch_strings_SOURCES = srch_strings.c
+ 
+ sigfind_SOURCES = sigfind.cpp 
+ sigfind_LDADD = ../../tsk/libtsk.la
+-sigfind_LDFLAGS = -static
++sigfind_LDFLAGS =
+ 
+ indent:
+ 	indent *.c *.cpp
+--- origsrc/sleuthkit-4.6.2/tools/vstools/Makefile.am	2018-08-08 23:44:18.000000000 +0900
++++ src/sleuthkit-4.6.2/tools/vstools/Makefile.am	2018-08-20 23:18:14.327743400 +0900
+@@ -1,7 +1,7 @@
+ AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la
+-LDFLAGS += -static
++LDFLAGS +=
+ EXTRA_DIST = .indent.pro
+ 
+ bin_PROGRAMS = mmls mmstat mmcat
+--- origsrc/sleuthkit-4.6.2/unit_tests/base/Makefile.am	2018-08-08 23:44:19.000000000 +0900
++++ src/sleuthkit-4.6.2/unit_tests/base/Makefile.am	2018-08-20 23:18:55.011605600 +0900
+@@ -1,7 +1,7 @@
+-AM_CPPFLAGS = -I../.. $(CPPUNIT_CFLAGS)
++AM_CPPFLAGS = -I../.. -I$(top_srcdir)/tsk $(CPPUNIT_CFLAGS)
+ AM_CXXFLAGS += -Wno-unused-command-line-argument
+ LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
+-LDFLAGS = -static 
++LDFLAGS =
+ 
+ TESTS = test_base
+ 
