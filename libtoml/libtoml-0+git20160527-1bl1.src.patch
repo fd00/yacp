@@ -1,0 +1,48 @@
+--- origsrc/libtoml/CMakeLists.txt	2018-08-22 21:36:38.806431200 +0900
++++ src/libtoml/CMakeLists.txt	2018-08-22 21:52:50.526635900 +0900
+@@ -16,7 +16,7 @@ SET(SRCS toml.h toml.c toml_private.h to
+ FOREACH(RAGEL_SRC ${RAGEL_SRCS})
+ 	STRING(REPLACE ".rl" ".c" C_SRC ${RAGEL_SRC})
+ 	ADD_CUSTOM_COMMAND(OUTPUT ${C_SRC}
+-		COMMAND ${RAGEL} -n -p -o ${C_SRC} ${RAGEL_SRC}
++		COMMAND ${RAGEL} -n -p -o ${C_SRC} "${CMAKE_SOURCE_DIR}/${RAGEL_SRC}"
+ 		DEPENDS ${RAGEL} ${RAGEL_SRC}
+ 		COMMENT "Building ${C_SRC} from ${RAGEL_SRC}"
+ 	)
+@@ -30,10 +30,22 @@ LINK_DIRECTORIES(${PC_LIBICU_LIBRARY_DIR
+ ADD_LIBRARY(toml SHARED ${SRCS})
+ TARGET_LINK_LIBRARIES(toml ${PC_LIBICU_LIBRARIES})
+ TARGET_INCLUDE_DIRECTORIES(toml PUBLIC $<INSTALL_INTERFACE:include/toml>)
+-INSTALL(TARGETS toml EXPORT tomlConfig LIBRARY DESTINATION lib)
++INSTALL(TARGETS toml EXPORT tomlConfig RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ INSTALL(EXPORT tomlConfig DESTINATION lib/cmake/toml)
+ 
+ ADD_EXECUTABLE(main main.c)
+ TARGET_LINK_LIBRARIES(main toml ${PC_LIBICU_LIBRARIES})
+ ADD_EXECUTABLE(test test.c)
+ TARGET_LINK_LIBRARIES(test toml ${PC_LIBICU_LIBRARIES} ${PC_CUNIT_LIBRARIES})
++
++INSTALL(FILES toml.h DESTINATION include)
++if (CYGWIN)
++	SET_TARGET_PROPERTIES(toml PROPERTIES SOVERSION 0)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libtoml.pc.in ${CMAKE_BINARY_DIR}/libtoml.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libtoml.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libtoml/libtoml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtoml/libtoml.pc.in	2018-08-22 21:41:46.291627400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtoml
++Description: Fast C parser using Ragel to generate the state machine
++Version: @VERSION@
++Libs: -L${libdir} -ltoml
++Cflags: -I${includedir}
