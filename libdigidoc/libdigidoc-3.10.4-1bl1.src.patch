@@ -1,0 +1,41 @@
+--- origsrc/libdigidoc-3.10.4/CMakeLists.txt	2018-05-11 17:46:56.000000000 +0900
++++ src/libdigidoc-3.10.4/CMakeLists.txt	2018-08-25 08:35:33.053090900 +0900
+@@ -26,7 +26,8 @@ find_package( PKCS11 )
+ find_package( ZLIB REQUIRED )
+ find_package( Iconv )
+ 
+-if( DOXYGEN_FOUND )
++option(ENABLE_DOC "Enable doc" OFF)
++if( DOXYGEN_FOUND AND ENABLE_DOC )
+ 	configure_file( ${CMAKE_SOURCE_DIR}/etc/Doxyfile.in Doxyfile @ONLY )
+ 	add_custom_target( docs ALL
+ 		${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+--- origsrc/libdigidoc-3.10.4/libdigidoc/CMakeLists.txt	2018-05-11 17:46:56.000000000 +0900
++++ src/libdigidoc-3.10.4/libdigidoc/CMakeLists.txt	2018-08-25 00:43:45.661211800 +0900
+@@ -40,6 +40,8 @@ if( WIN32 )
+ 	)
+ 	list( APPEND libdigidoc_SRCS DigiDocGlobals.c DigiDocCSP.c DigiCrypt.c DlgUnit.c DlgUnitS.c )
+ 	set( EXT_LIBRARIES Crypt32 Comctl32 )
++	set( LIBDIGIDOC_RC libdigidoc.rc )
++	set( CDIGIDOC_RC cdigidoc.rc )
+ endif()
+ 
+ add_library( digidoc ${BUILD_TYPE}
+@@ -47,7 +49,7 @@ add_library( digidoc ${BUILD_TYPE}
+ 	${CMAKE_CURRENT_BINARY_DIR}/${DIGIDOC_CONF_NAME}
+ 	${libdigidoc_SRCS}
+ 	${CERTS}
+-	libdigidoc.rc
++	${LIBDIGIDOC_RC}
+ 	DigiDocConfig.c
+ 	DigiDocLib.c
+ 	DigiDocObj.c
+@@ -91,7 +93,7 @@ set_target_properties( digidoc PROPERTIE
+ )
+ 
+ if( BUILD_TOOLS )
+-	add_executable(cdigidoc cdigidoc.c cdigidoc.rc)
++	add_executable(cdigidoc cdigidoc.c ${CDIGIDOC_RC})
+ 	target_link_libraries(cdigidoc digidoc)
+ endif()
+ 
