@@ -1,0 +1,86 @@
+--- origsrc/groonga-8.0.5/configure.ac	2018-07-24 01:10:33.000000000 +0900
++++ src/groonga-8.0.5/configure.ac	2018-08-26 07:21:46.747959100 +0900
+@@ -1383,7 +1383,7 @@ AC_MSG_CHECKING([whether package platfor
+ AC_ARG_WITH(package-platform,
+   [AS_HELP_STRING([--with-package-platform=PLATFORM],
+     [install package platform related files. [default=no]
+-     (supported package platforms: centos, centos5, centos6, centos7, fedora)])],
++     (supported package platforms: centos, centos5, centos6, centos7, fedora, cygwin)])],
+   [package_platform="$withval"],
+   [package_platform="no"])
+ if test "$package_platform" = "centos"; then
+@@ -1402,10 +1402,13 @@ AM_CONDITIONAL([CENTOS_PLATFORM],
+                [test "${package_platform}" != "no"])
+ AM_CONDITIONAL([CENTOS_INIT_PLATFORM],
+                [test "${package_platform}" = "centos5" ||
+-                test "${package_platform}" = "centos6"])
++                test "${package_platform}" = "centos6" ||
++                test "${package_platform}" = "cygwin"])
+ AM_CONDITIONAL([CENTOS_SYSTEMD_PLATFORM],
+                [test "${package_platform}" = "centos7" ||
+                 test "${package_platform}" = "fedora"])
++AM_CONDITIONAL([CYGWIN_INIT_PLATFORM],
++               [test "${package_platform}" = "cygwin"])
+ 
+ # plugins check
+ relative_pluginsdir_base="\$(PACKAGE)/plugins"
+@@ -1533,7 +1536,7 @@ AC_ARG_ENABLE(groonga_httpd,
+   [enable_groonga_httpd="yes"])
+ if test "x$enable_groonga_httpd" != "xno"; then
+   enable_groonga_httpd="yes"
+-  AC_CONFIG_SUBDIRS([src/httpd])
++  # AC_CONFIG_SUBDIRS([src/httpd])
+ else
+   enable_groonga_httpd="no"
+ fi
+@@ -1613,7 +1616,7 @@ if test "x$with_onigmo" != "xno"; then
+     AC_MSG_ERROR("No Onigmo found")
+   fi
+   if test "x$with_onigmo" = "xbundled" -o "$have_onigmo" = "no"; then
+-    AC_CONFIG_SUBDIRS([vendor/onigmo])
++    # AC_CONFIG_SUBDIRS([vendor/onigmo])
+     ONIGMO_CFLAGS="-I\$(top_srcdir)/vendor/onigmo-source"
+     ONIGMO_LIBS="\$(top_builddir)/vendor/onigmo-source/libonigmo.la"
+   fi
+--- origsrc/groonga-8.0.5/data/init.d/centos/Makefile.am	2017-04-12 17:04:30.000000000 +0900
++++ src/groonga-8.0.5/data/init.d/centos/Makefile.am	2018-08-26 07:21:46.763526600 +0900
+@@ -3,7 +3,11 @@ SUBDIRS = sysconfig
+ scripts = groonga-server-http groonga-server-gqtp groonga-httpd
+ 
+ if CENTOS_INIT_PLATFORM
++if CYGWIN_INIT_PLATFORM
++initdir = $(sysconfdir)/rc.d/init.d
++else
+ initdir = $(sysconfdir)/init.d
++endif
+ dist_init_SCRIPTS = $(scripts)
+ else
+ EXTRA_DIST = $(scripts)
+--- origsrc/groonga-8.0.5/data/logrotate.d/centos/groonga-httpd	2018-07-27 09:54:22.000000000 +0900
++++ src/groonga-8.0.5/data/logrotate.d/centos/groonga-httpd	2018-08-26 07:26:30.642751500 +0900
+@@ -8,7 +8,7 @@
+     sharedscripts
+     postrotate
+         if [ -f /var/lock/subsys/groonga-httpd ]; then
+-            /bin/kill -USR1 $(cat /tmp/local/var/run/groonga/groonga-httpd.pid)
++            /bin/kill -USR1 $(cat /var/run/groonga/groonga-httpd.pid)
+         fi
+     endscript
+ }
+--- origsrc/groonga-8.0.5/data/systemd/centos/groonga-httpd.service	2018-07-27 09:54:22.000000000 +0900
++++ src/groonga-8.0.5/data/systemd/centos/groonga-httpd.service	2018-08-26 07:26:31.470876100 +0900
+@@ -6,12 +6,12 @@ Conflicts=groonga-server-http.service
+ 
+ [Service]
+ Type=forking
+-PIDFile=/tmp/local/var/run/groonga/groonga-httpd.pid
++PIDFile=/var/run/groonga/groonga-httpd.pid
+ User=root
+ Group=root
+ EnvironmentFile=-/etc/sysconfig/groonga-httpd
+ ExecStartPre=-/usr/bin/mkdir -p /var/log/groonga/httpd
+-ExecStartPre=/usr/bin/rm -f /tmp/local/var/run/groonga/groonga-httpd.pid
++ExecStartPre=/usr/bin/rm -f /var/run/groonga/groonga-httpd.pid
+ ExecStartPre=/usr/sbin/groonga-httpd -t
+ ExecStart=/usr/sbin/groonga-httpd
+ KillMode=process
