@@ -1,6 +1,6 @@
 HOMEPAGE="https://gitlab.com/accounts-sso/${PN}"
-SRC_URI="https://gitlab.com/accounts-sso/${PN}/repository/archive.tar.bz2?ref=${PV}"
-SRC_DIR="${P}-3214aef8e7c84a9918d8b18fb258247d81be12e2"
+GIT_URI="https://gitlab.com/accounts-sso/${PN}.git"
+GIT_TAG="${PV}"
 
 CATEGORY="Utils"
 SUMMARY="SignOn Daemon (GLib)"
@@ -8,28 +8,35 @@ DESCRIPTION="The GSignOn daemon is a D-Bus service which performs user authentic
 behalf of its clients. There are currently authentication plugins for OAuth
 1.0 and 2.0, SASL, Digest-MD5, and plain username/password combination."
 
-CYGPORT_USE_UNSTABLE_API=1
-src_patch_hook()
-{
-	cd ${origsrcdir}/${SRC_DIR}
-	ln -fs /usr/share/gtk-doc/data/gtk-doc.make .
-}
+inherit git
+inherit meson
+
+CYGMESON_ARGS="
+	-Ddocumentation=false
+"
+
+PKG_IGNORE="
+	usr/lib/gsignond/gplugins/libdigest.dll.a
+	usr/lib/gsignond/gplugins/libpassword.dll.a
+	usr/lib/gsignond/gplugins/libssotest.dll.a
+"
 
 PKG_NAMES="
 	${PN}
-	lib${PN}0
+	lib${PN}1
 	lib${PN}-devel
-	girepository-gSignond1.0
+	girepository-gSignond1.1
 	vala-${PN}
 "
 gsignond_CONTENTS="
 	etc
 	usr/bin/*.exe
-	usr/lib/gsignond
+	usr/lib/gsignond/gplugins/*.dll
+	usr/lib/gsignond/pluginloaders
 	usr/share/dbus*
 	usr/share/doc
 "
-libgsignond0_CONTENTS="
+libgsignond1_CONTENTS="
 	usr/bin/*.dll
 "
 libgsignond_devel_CONTENTS="
@@ -37,7 +44,7 @@ libgsignond_devel_CONTENTS="
 	usr/lib/lib*
 	usr/lib/pkgconfig
 "
-girepository_gSignond1_0_CONTENTS="
+girepository_gSignond1_1_CONTENTS="
 	usr/lib/girepository*
 	usr/share/gir*
 "
@@ -45,7 +52,7 @@ vala_gsignond_CONTENTS="
 	usr/share/vala
 "
 gsignond_SUMMARY="${SUMMARY} (licensing & readmes)"
-libgsignond0_SUMMARY="${SUMMARY} (runtime)"
+libgsignond1_SUMMARY="${SUMMARY} (runtime)"
 libgsignond_devel_SUMMARY="${SUMMARY} (development)"
-girepository_gSignond1_0_SUMMARY="${SUMMARY} (GObject Introspection data)"
+girepository_gSignond1_1_SUMMARY="${SUMMARY} (GObject Introspection data)"
 vala_gsignond_SUMMARY="${SUMMARY} (vala bindings)"

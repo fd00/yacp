@@ -1,0 +1,68 @@
+--- origsrc/gsignond/src/common/gsignond-log.h	2018-08-26 06:41:44.000000000 +0900
++++ src/gsignond/src/common/gsignond-log.h	2018-08-26 06:44:49.507618500 +0900
+@@ -27,7 +27,9 @@
+ 
+ #include <glib.h>
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+--- origsrc/gsignond/src/gplugind/main.c	2018-08-26 06:41:44.000000000 +0900
++++ src/gsignond/src/gplugind/main.c	2018-08-26 06:47:22.288778100 +0900
+@@ -30,7 +30,9 @@
+ #include <glib-unix.h>
+ #include <glib.h>
+ #include <gio/gio.h>
++#if !defined(__CYGWIN__)
+ #include <sys/prctl.h>
++#endif
+ 
+ #include <gsignond.h>
+ #include "gsignond-dbus.h"
+@@ -86,8 +88,10 @@ _install_sighandlers (GMainLoop *main_lo
+                            NULL);
+     _sig_source_id[2] = g_source_attach (source, ctx);
+ 
++#if !defined(__CYGWIN__)
+     if (prctl(PR_SET_PDEATHSIG, SIGHUP))
+         WARN ("failed to set parent death signal");
++#endif
+ }
+ 
+ static const gchar* _plugin_path(void)
+--- origsrc/gsignond/src/plugins/digest/meson.build	2018-08-26 06:41:44.000000000 +0900
++++ src/gsignond/src/plugins/digest/meson.build	2018-08-26 06:55:38.773399500 +0900
+@@ -9,4 +9,5 @@ digest_plugin = shared_module('digest',
+     digest_files,
+     dependencies : [glib, gio, gio_unix, gmodule, gsignond_common],
+     install: true,
+-    install_dir : gplugins_dir)
++    install_dir : gplugins_dir,
++    name_prefix : '')
+--- origsrc/gsignond/src/plugins/password/meson.build	2018-08-26 06:41:44.000000000 +0900
++++ src/gsignond/src/plugins/password/meson.build	2018-08-26 06:56:37.728155300 +0900
+@@ -9,7 +9,8 @@ password_plugin = shared_module('passwor
+     password_files,
+     dependencies : [glib, gio, gio_unix, gmodule, gsignond_common],
+     install: true,
+-    install_dir : gplugins_dir)
++    install_dir : gplugins_dir,
++    name_prefix : '')
+ 
+ password_plugin_dep = declare_dependency(
+     sources: password_files,
+--- origsrc/gsignond/src/plugins/ssotest/meson.build	2018-08-26 06:41:44.000000000 +0900
++++ src/gsignond/src/plugins/ssotest/meson.build	2018-08-26 06:56:47.999494600 +0900
+@@ -7,7 +7,8 @@ ssotest_plugin = shared_module('ssotest'
+     ssotest_files,
+     dependencies : [glib, gio, gio_unix, gmodule, gsignond_common],
+     install: true,
+-    install_dir : gplugins_dir
++    install_dir : gplugins_dir,
++    name_prefix : ''
+ )
+ 
+ ssotest_plugin_dep = declare_dependency(
