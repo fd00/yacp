@@ -1,0 +1,53 @@
+--- origsrc/redex-2017.10.31/libredex/Debug.cpp	2017-10-31 17:48:48.000000000 +0900
++++ src/redex-2017.10.31/libredex/Debug.cpp	2018-08-27 00:01:55.631120100 +0900
+@@ -16,13 +16,15 @@
+ #include <stdlib.h>
+ 
+ #ifndef _MSC_VER
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <unistd.h>
+ #endif
+ 
+ namespace {
+ void crash_backtrace() {
+-#ifndef _MSC_VER
++#if !defined(_MSC_VER) && !defined(__CYGWIN__)
+   constexpr int max_bt_frames = 256;
+   void* buf[max_bt_frames];
+   auto frames = backtrace(buf, max_bt_frames);
+--- origsrc/redex-2017.10.31/libredex/DexAsm.h	2017-10-31 17:48:48.000000000 +0900
++++ src/redex-2017.10.31/libredex/DexAsm.h	2018-08-27 18:06:17.509714100 +0900
+@@ -14,6 +14,10 @@
+ 
+ #include "IRInstruction.h"
+ 
++#if defined(_L)
++#undef _L
++#endif
++
+ /*
+  * Mini-DSL for building DexInstructions quickly.
+  */
+--- origsrc/redex-2017.10.31/libredex/PluginRegistry.h	2017-10-31 17:48:48.000000000 +0900
++++ src/redex-2017.10.31/libredex/PluginRegistry.h	2018-08-27 00:20:17.341816200 +0900
+@@ -10,6 +10,7 @@
+ #pragma once
+ #include "Trace.h"
+ #include "Util.h"
++#include <functional>
+ #include <unordered_map>
+ 
+ class Plugin {};
+--- origsrc/redex-2017.10.31/libresource/utils/Vector.h	2017-10-31 17:48:48.000000000 +0900
++++ src/redex-2017.10.31/libresource/utils/Vector.h	2018-08-27 01:07:37.048934500 +0900
+@@ -248,7 +248,7 @@ Vector<TYPE>& Vector<TYPE>::operator = (
+ 
+ template<class TYPE> inline
+ const Vector<TYPE>& Vector<TYPE>::operator = (const Vector<TYPE>& rhs) const {
+-    VectorImpl::operator = (static_cast<const VectorImpl&>(rhs));
++    VectorImpl::operator = (rhs);
+     return *this;
+ }
+ 
