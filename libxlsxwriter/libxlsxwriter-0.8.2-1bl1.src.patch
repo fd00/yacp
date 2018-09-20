@@ -1,0 +1,56 @@
+--- origsrc/libxlsxwriter-RELEASE_0.8.2/CMakeLists.txt	2018-09-17 04:12:56.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.8.2/CMakeLists.txt	2018-09-20 20:03:36.584904500 +0900
+@@ -204,7 +204,7 @@ endif()
+ 
+ set(LXW_PROJECT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+ set(LXW_LIB_DIR "${LXW_PROJECT_DIR}/lib")
+-add_library(${PROJECT_NAME} "")
++add_library(${PROJECT_NAME} SHARED "")
+ target_sources(${PROJECT_NAME}
+     PRIVATE ${LXW_SOURCES}
+     PUBLIC ${LXW_HEADERS}
+@@ -215,6 +215,9 @@ target_include_directories(${PROJECT_NAM
+     PRIVATE ${LXW_PRIVATE_INCLUDE_DIRS}
+     PUBLIC include include/xlsxwriter
+ )
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
+ 
+ # TESTS
+ # -----
+@@ -336,3 +339,10 @@ install(DIRECTORY include/xlsxwriter
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+     FILES_MATCHING PATTERN "*.h"
+ )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libxlsxwriter.pc.in ${CMAKE_BINARY_DIR}/libxlsxwriter.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libxlsxwriter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libxlsxwriter-RELEASE_0.8.2/cmake/FindPackage.cmake	2018-09-17 04:12:56.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.8.2/cmake/FindPackage.cmake	2018-09-20 20:03:36.590904100 +0900
+@@ -43,7 +43,7 @@ macro(SetSuffixes packageName)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+         endif()
+     else()
+-        if(WIN32)
++        if(WIN32 OR CYGWIN)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a" ".dll" ".lib" ".a")
+         else()
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+--- origsrc/libxlsxwriter-RELEASE_0.8.2/libxlsxwriter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.8.2/libxlsxwriter.pc.in	2018-09-20 20:03:36.595405400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libxlsxwriter
++Description: C library for creating Excel XLSX files
++Version: @VERSION@
++Libs: -L${libdir} -lxlsxwriter
++Cflags: -I${includedir}
