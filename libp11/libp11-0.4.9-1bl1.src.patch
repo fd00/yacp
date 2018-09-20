@@ -1,0 +1,32 @@
+--- origsrc/libp11-libp11-0.4.9/src/Makefile.am	2018-09-04 03:08:20.000000000 +0900
++++ src/libp11-libp11-0.4.9/src/Makefile.am	2018-09-21 06:28:24.096508700 +0900
+@@ -22,7 +22,7 @@ dist_noinst_DATA = libp11.rc
+ endif
+ libp11_la_CFLAGS = $(AM_CFLAGS) $(OPENSSL_CFLAGS)
+ libp11_la_LIBADD = $(OPENSSL_LIBS)
+-libp11_la_LDFLAGS = $(AM_LDFLAGS) \
++libp11_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined \
+ 	-version-info @LIBP11_LT_CURRENT@:@LIBP11_LT_REVISION@:@LIBP11_LT_AGE@
+ 
+ if HAVE_LD_VERSION_SCRIPT
+@@ -46,7 +46,7 @@ pkcs11_la_LIBADD = $(libp11_la_OBJECTS)
+ 
+ # We intentionally not version symbols in this module because no
+ # application links with it. It is dynamically opened.
+-pkcs11_la_LDFLAGS = $(AM_LDFLAGS) -module -shared -shrext $(SHARED_EXT) \
++pkcs11_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined -module -shared -shrext $(SHARED_EXT) \
+ 	-avoid-version -export-symbols "$(srcdir)/pkcs11.exports"
+ 
+ # OpenSSL older than 1.1.0 expected libpkcs11.so instead of pkcs11.so
+--- origsrc/libp11-libp11-0.4.9/tests/fork-change-slot.c	2018-09-04 03:08:20.000000000 +0900
++++ src/libp11-libp11-0.4.9/tests/fork-change-slot.c	2018-09-21 06:35:07.214407500 +0900
+@@ -26,7 +26,9 @@
+ #include <unistd.h>
+ #include <signal.h>
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ 
+ #include <openssl/evp.h>
+ #include <openssl/conf.h>
