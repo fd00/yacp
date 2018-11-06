@@ -1,0 +1,35 @@
+--- origsrc/c-toxcore-0.2.8/auto_tests/network_test.c	2018-10-08 06:21:24.000000000 +0900
++++ src/c-toxcore-0.2.8/auto_tests/network_test.c	2018-11-06 16:55:50.974344600 +0900
+@@ -5,6 +5,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#if defined(__CYGWIN__)
++#include <errno.h>
++#endif
++
+ #include "../testing/misc_tools.h"
+ #include "../toxcore/network.h"
+ #include "check_compat.h"
+@@ -20,7 +24,8 @@ START_TEST(test_addr_resolv_localhost)
+      * normally this should happen automatically
+      * cygwin doesn't do it for every network related function though
+      * e.g. not for getaddrinfo... */
+-    net_socket(0, 0, 0);
++    Family family = {0};
++    net_socket(family, 0, 0);
+     errno = 0;
+ #endif
+ 
+--- origsrc/c-toxcore-0.2.8/configure.ac	2018-10-08 06:21:24.000000000 +0900
++++ src/c-toxcore-0.2.8/configure.ac	2018-11-06 16:33:02.407467500 +0900
+@@ -268,6 +268,9 @@ case $host_os in
+         WIN32="yes"
+         EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
+     ;;
++    *cygwin*)
++        EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
++    ;;
+     *solaris*)
+         LIBS="$LIBS -lssp -lsocket -lnsl"
+     ;;
