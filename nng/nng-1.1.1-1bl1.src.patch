@@ -1,8 +1,8 @@
---- origsrc/nng-1.0.1/CMakeLists.txt	2018-07-06 04:52:50.000000000 +0900
-+++ src/nng-1.0.1/CMakeLists.txt	2018-08-05 22:45:15.408894400 +0900
-@@ -361,12 +361,17 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Windo
-     add_definitions (-D_WIN32_WINNT=0x0600)
-     list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_WIN32_WINNT=0x0600)
+--- origsrc/nng-1.1.1/CMakeLists.txt	2018-11-22 12:24:25.000000000 +0900
++++ src/nng-1.1.1/CMakeLists.txt	2018-11-25 14:23:01.236783100 +0900
+@@ -259,11 +259,16 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "QNX")
+     add_definitions (-DNNG_PLATFORM_QNX)
+     set(NNG_PLATFORM_POSIX ON)
  
 +elseif (CMAKE_SYSTEM_NAME MATCHES "CYGWIN")
 +    add_definitions (-DNNG_PLATFORM_POSIX)
@@ -13,13 +13,12 @@
      message (AUTHOR_WARNING "WARNING: This platform may not be supported: ${CMAKE_SYSTEM_NAME}")
      message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
      # blithely hope for POSIX to work
-     find_package (Threads REQUIRED)
 -    add_definitions (-DPLATFORM_POSIX)
 +    add_definitions (-DNNG_PLATFORM_POSIX)
  endif ()
  
  macro (nng_check_func SYM DEF)
-@@ -495,3 +500,10 @@ set (CPACK_PACKAGE_FILE_NAME "${PROJECT_
+@@ -398,3 +403,10 @@ set (CPACK_PACKAGE_FILE_NAME "${PROJECT_
  
  add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
  include (CPack)
@@ -30,8 +29,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/nng.pc.in ${CMAKE_BINARY_DIR}/nng.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/nng.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/nng-1.0.1/nng.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/nng-1.0.1/nng.pc.in	2018-08-05 22:45:15.361937300 +0900
+--- origsrc/nng-1.1.1/nng.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/nng-1.1.1/nng.pc.in	2018-11-25 14:23:01.190784300 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -43,21 +42,21 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lnng
 +Cflags: -I${includedir}
---- origsrc/nng-1.0.1/src/platform/posix/posix_thread.c	2018-07-06 04:52:50.000000000 +0900
-+++ src/nng-1.0.1/src/platform/posix/posix_thread.c	2018-08-05 18:32:09.455507300 +0900
-@@ -274,13 +274,14 @@ nni_plat_init(int (*helper)(void))
- 		pthread_mutex_unlock(&nni_plat_init_lock);
+--- origsrc/nng-1.1.1/src/platform/posix/posix_thread.c	2018-11-22 12:24:25.000000000 +0900
++++ src/nng-1.1.1/src/platform/posix/posix_thread.c	2018-11-25 14:12:27.325266600 +0900
+@@ -286,6 +286,7 @@ nni_plat_init(int (*helper)(void))
  		return (NNG_ENOMEM);
  	}
+ 
 +#if !defined(__CYGWIN__)
  #if !defined(NNG_USE_GETTIMEOFDAY) && NNG_USE_CLOCKID != CLOCK_REALTIME
  	if (pthread_condattr_setclock(&nni_cvattr, NNG_USE_CLOCKID) != 0) {
  		pthread_mutex_unlock(&nni_plat_init_lock);
+@@ -295,6 +296,7 @@ nni_plat_init(int (*helper)(void))
  		return (NNG_ENOMEM);
  	}
  #endif
--
 +#endif
- 	if (pthread_mutexattr_init(&nni_mxattr) != 0) {
- 		pthread_mutex_unlock(&nni_plat_init_lock);
- 		pthread_condattr_destroy(&nni_cvattr);
+ 
+ #if defined(NNG_SETSTACKSIZE)
+ 	struct rlimit rl;
