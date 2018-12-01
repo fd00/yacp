@@ -1,0 +1,55 @@
+--- origsrc/yomm2/CMakeLists.txt	2018-12-01 10:56:49.000000000 +0900
++++ src/yomm2/CMakeLists.txt	2018-12-01 11:04:50.448843500 +0900
+@@ -68,3 +68,10 @@ if (${YOMM2_ENABLE_BENCHMARKS})
+ endif()
+ 
+ INSTALL (DIRECTORY include/yorel DESTINATION include)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/yomm2.pc.in ${CMAKE_BINARY_DIR}/yomm2.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/yomm2.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yomm2/examples/CMakeLists.txt	2018-12-01 10:56:49.000000000 +0900
++++ src/yomm2/examples/CMakeLists.txt	2018-12-01 11:00:04.792420200 +0900
+@@ -27,7 +27,7 @@ add_executable(asteroids asteroids.cpp)
+ target_link_libraries (asteroids yomm2)
+ add_test (asteroids asteroids)
+ 
+-if(NOT MSVC)
++if(NOT (MSVC OR CYGWIN))
+   set(CMAKE_SKIP_BUILD_RPATH TRUE)
+   add_executable(dl_main dl_main.cpp)
+   add_library(dl_shared SHARED dl_shared.cpp)
+--- origsrc/yomm2/src/CMakeLists.txt	2018-12-01 10:56:49.000000000 +0900
++++ src/yomm2/src/CMakeLists.txt	2018-12-01 11:02:56.967719400 +0900
+@@ -3,8 +3,13 @@
+ # See accompanying file LICENSE_1_0.txt
+ # or copy at http://www.boost.org/LICENSE_1_0.txt)
+ 
+-add_library(yomm2 yomm2.cpp)
++add_library(yomm2 SHARED yomm2.cpp)
+ 
+ INSTALL(TARGETS yomm2
+-  DESTINATION lib
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib
+ )
++
++if (CYGWIN)
++  set_target_properties(yomm2 PROPERTIES SOVERSION 0)
++endif()
+--- origsrc/yomm2/yomm2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yomm2/yomm2.pc.in	2018-12-01 11:04:50.421897600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yomm2
++Description: Fast, orthogonal, open multi-methods
++Version: @VERSION@
++Libs: -L${libdir} -lyomm2
++Cflags: -I${includedir}
