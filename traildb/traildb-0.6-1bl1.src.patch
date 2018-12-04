@@ -1,0 +1,73 @@
+--- origsrc/traildb-0.6/Makefile.am	2017-05-16 08:58:49.000000000 +0900
++++ src/traildb-0.6/Makefile.am	2018-12-04 17:00:08.775020700 +0900
+@@ -1,7 +1,6 @@
+ lib_LTLIBRARIES = libtraildb.la
+ ACLOCAL_AMFLAGS = -I m4
+ libtraildb_la_CFLAGS = -std=c99 \
+-                       -DJUDYERROR=judyerror_macro_missing_fix_this \
+                        -O3 \
+                        -fvisibility=hidden \
+                        -g \
+@@ -17,10 +16,11 @@ libtraildb_la_CFLAGS = -std=c99 \
+                        -Wshadow \
+                        -Wstrict-prototypes
+ 
+-AM_CPPFLAGS = -Isrc/xxhash -Isrc/dsfmt
++AM_CPPFLAGS = -Isrc/dsfmt
+ AM_CFLAGS=-O3 -g -fvisibility=hidden
+ 
+-libtraildb_la_LIBADD = src/xxhash/xxhash.lo src/dsfmt/dSFMT.lo
++libtraildb_la_LDFLAGS = -no-undefined
++libtraildb_la_LIBADD = -lxxhash src/dsfmt/dSFMT.lo
+ libtraildb_la_SOURCES = \
+   src/tdb.c \
+   src/tdb_cons.c \
+@@ -36,7 +36,7 @@ libtraildb_la_SOURCES = \
+   src/judy_str_map.c \
+   src/judy_128_map.c
+ 
+-EXTRA_libtraildb_la_SOURCES = src/xxhash/xxhash.c src/dsfmt/dSFMT.c
++EXTRA_libtraildb_la_SOURCES = src/dsfmt/dSFMT.c
+ 
+ include_HEADERS = \
+   src/traildb.h \
+@@ -46,13 +46,15 @@ include_HEADERS = \
+ 
+ bin_PROGRAMS = util/traildb_bench tdbcli/tdb
+ util_traildb_bench_SOURCES = util/traildb_bench.c
+-util_traildb_bench_CFLAGS  = ${libtraildb_la_CFLAGS} -Isrc/
++util_traildb_bench_CFLAGS  = ${libtraildb_la_CFLAGS} -I$(top_srcdir)/src/
+ util_traildb_bench_LDADD   = libtraildb.la
+ 
+-tdbcli_tdb_CFLAGS = -Isrc/ \
+-                    -DJUDYERROR=judyerror_macro_missing_fix_this \
++tdbcli_tdb_CFLAGS = -I$(top_srcdir)/src/ \
+                     -O3 \
+                     -g \
+                     -Wall
+-tdbcli_tdb_SOURCES = tdbcli/main.c tdbcli/op_dump.c tdbcli/op_make.c tdbcli/jsmn/jsmn.c
+-tdbcli_tdb_LDADD = libtraildb.la
++tdbcli_tdb_SOURCES = tdbcli/main.c tdbcli/op_dump.c tdbcli/op_make.c tdbcli/op_index.c tdbcli/op_merge.c tdbcli/tdb_index.c tdbcli/filter.c tdbcli/thread_util.c
++tdbcli_tdb_LDADD = libtraildb.la -ljsmn
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/traildb-0.6/configure.ac	2017-05-16 08:58:49.000000000 +0900
++++ src/traildb-0.6/configure.ac	2018-12-04 17:00:27.539606300 +0900
+@@ -6,6 +6,7 @@ AM_PROG_AR
+ LT_INIT
+ AC_PROG_CC
+ AC_CONFIG_FILES([
++  traildb.pc
+   Makefile
+ ])
+ AC_DEFINE(DSFMT_MEXP, 521)
+--- origsrc/traildb-0.6/traildb.pc.in	2017-05-16 08:58:49.000000000 +0900
++++ src/traildb-0.6/traildb.pc.in	2018-12-04 17:02:45.152358700 +0900
+@@ -7,5 +7,5 @@ Name: TrailDB
+ Description: TrailDB database
+ URL: https://traildb.io
+ Version: @VERSION@
+-Cflags: -I${includedir}/traildb
++Cflags: -I${includedir}
+ Libs: -L${libdir} -ltraildb
