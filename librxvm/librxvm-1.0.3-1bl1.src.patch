@@ -1,0 +1,92 @@
+--- origsrc/librxvm-1.0.3/Makefile.am	2017-10-12 14:47:56.000000000 +0900
++++ src/librxvm-1.0.3/Makefile.am	2018-12-05 18:15:44.822819800 +0900
+@@ -2,3 +2,6 @@ AUTOMAKE_OPTIONS = foreign
+ SUBDIRS = librxvm examples tests/src
+ TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+ 				  $(top_srcdir)/build-aux/tap-driver.sh
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = librxvm.pc
+--- origsrc/librxvm-1.0.3/configure.ac	2017-10-12 14:47:56.000000000 +0900
++++ src/librxvm-1.0.3/configure.ac	2018-12-05 18:15:54.919687600 +0900
+@@ -10,6 +10,7 @@ CFLAGS="-march=native -O3 -fno-stack-pro
+ AC_PROG_CC
+ AC_PROG_AWK
+ AC_PROG_INSTALL
++LT_INIT
+ 
+ AC_ARG_ENABLE([extras],
+ [AS_HELP_STRING([--disable-extras], [exclude non-essential features
+@@ -23,11 +24,8 @@ AC_CHECK_HEADERS([stdint.h stdlib.h stri
+ AC_C_INLINE
+ AC_TYPE_SIZE_T
+ AC_TYPE_UINT8_T
+-AC_PROG_RANLIB
+-
+-AM_PROG_AR
+ 
+ AC_FUNC_MALLOC
+ AC_CHECK_FUNCS([memset])
+ 
+-AC_OUTPUT(Makefile librxvm/Makefile tests/src/Makefile examples/Makefile)
++AC_OUTPUT(librxvm.pc Makefile librxvm/Makefile tests/src/Makefile examples/Makefile)
+--- origsrc/librxvm-1.0.3/examples/Makefile.am	2017-10-12 14:47:56.000000000 +0900
++++ src/librxvm-1.0.3/examples/Makefile.am	2018-12-05 17:54:54.952865600 +0900
+@@ -1,6 +1,6 @@
+ bin_PROGRAMS = rxvm_match rxvm_search
+-LDADD = -lrxvm -L../librxvm
+-AM_CFLAGS = -I..
++LDADD = $(top_builddir)/librxvm/librxvm.la
++AM_CFLAGS = -I$(top_srcdir)
+ AM_DEFAULT_SOURCE_EXT = .c
+ 
+ if NOEXTRAS
+--- origsrc/librxvm-1.0.3/librxvm/Makefile.am	2017-10-12 14:47:56.000000000 +0900
++++ src/librxvm-1.0.3/librxvm/Makefile.am	2018-12-05 18:03:10.328055200 +0900
+@@ -3,9 +3,10 @@ rxvminclude_HEADERS = lex.h rxvm_common.
+ 						 stack.h stage1.h stage2.h vm.h vmcode.h \
+ 						 string_builder.h setop.h
+ 
+-lib_LIBRARIES = librxvm.a
+-librxvm_a_SOURCES = stack.c lex.c stage1.c stage2.c vm.c rxvm.c vmcode.c \
++lib_LTLIBRARIES = librxvm.la
++librxvm_la_SOURCES = stack.c lex.c stage1.c stage2.c vm.c rxvm.c vmcode.c \
+ 					   string_builder.c setop.c
++librxvm_la_LDFLAGS = -no-undefined
+ 
+ AM_CFLAGS =-Wall -pedantic
+ 
+@@ -13,6 +14,6 @@ if NOEXTRAS
+ AM_CFLAGS += -DNOEXTRAS
+ else
+ AM_CFLAGS += -D_FILE_OFFSET_BITS=64
+-librxvm_a_SOURCES += bmh.c randinput.c lfix_to_str.c lfix.c
++librxvm_la_SOURCES += bmh.c randinput.c lfix_to_str.c lfix.c
+ rxvminclude_HEADERS += bmh.h lfix_to_str.h lfix.h
+ endif
+--- origsrc/librxvm-1.0.3/librxvm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/librxvm-1.0.3/librxvm.pc.in	2018-12-05 18:12:13.397310300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: librxvm
++Description: Non-backtracking NFA-based regular expression library
++Version: @VERSION@
++Libs: -L${libdir} -lrxvm
++Cflags: -I${includedir}
+--- origsrc/librxvm-1.0.3/tests/src/Makefile.am	2017-10-12 14:47:56.000000000 +0900
++++ src/librxvm-1.0.3/tests/src/Makefile.am	2018-12-05 18:08:17.072350500 +0900
+@@ -9,8 +9,8 @@ rxvm_test_SOURCES = test_run.c test_rxvm
+ test_rxvm_search.c test_rxvm_match.c test_rxvm_search_nomatch.c \
+ test_rxvm_search_multi.c test_rxvm_api.c test_utils.c randexp.c
+ 
+-LDADD = -lrxvm -L../../librxvm
+-AM_CFLAGS = -I../../librxvm -Wall -Wno-trigraphs
++LDADD = $(top_builddir)/librxvm/librxvm.la
++AM_CFLAGS = -I$(top_srcdir)/librxvm -Wall -Wno-trigraphs
+ AM_DEFAULT_SOURCE_EXT = .c
+ 
+ if NOEXTRAS
