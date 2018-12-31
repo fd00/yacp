@@ -1,0 +1,61 @@
+--- origsrc/aws-checksums-0.1.1/CMakeLists.txt	2018-12-21 10:54:23.000000000 +0900
++++ src/aws-checksums-0.1.1/CMakeLists.txt	2018-12-31 09:32:54.693448800 +0900
+@@ -62,7 +62,7 @@ set_target_properties(aws-checksums PROP
+ set(CMAKE_C_FLAGS_DEBUGOPT "")
+ set_property(TARGET aws-checksums PROPERTY C_STANDARD 99)
+ 
+-if(BUILD_SHARED_LIBS AND WIN32)
++if(BUILD_SHARED_LIBS)
+     target_compile_definitions(aws-checksums PRIVATE "-DAWS_CHECKSUMS_EXPORTS")    
+ endif()
+ 
+@@ -96,7 +96,9 @@ add_executable(aws-checksums-tests ${TES
+ target_link_libraries(aws-checksums-tests aws-checksums)
+ set_target_properties(aws-checksums-tests PROPERTIES LINKER_LANGUAGE C)
+ set_property(TARGET aws-checksums-tests PROPERTY C_STANDARD 99)
+-
++if(CYGWIN)
++    set_target_properties(aws-checksums PROPERTIES SOVERSION 0)
++endif()
+ 
+ include(CTest)
+ enable_testing()
+@@ -115,10 +117,10 @@ install(TARGETS ${CMAKE_PROJECT_NAME}
+     EXPORT ${CMAKE_PROJECT_NAME}-targets
+     ARCHIVE DESTINATION ${LIBRARY_DIRECTORY}
+     LIBRARY DESTINATION ${LIBRARY_DIRECTORY}
+-    RUNTIME DESTINATION ${LIBRARY_DIRECTORY})
++    RUNTIME DESTINATION bin)
+ 
+ install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake/"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}"
+     NAMESPACE AWS::)
+ 
+ configure_file("cmake/${CMAKE_PROJECT_NAME}-config.cmake"
+@@ -126,5 +128,11 @@ configure_file("cmake/${CMAKE_PROJECT_NA
+     @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake/")
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}")
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-checksums.pc.in ${CMAKE_BINARY_DIR}/aws-checksums.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-checksums.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-checksums-0.1.1/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-checksums-0.1.1/aws-checksums.pc.in	2018-12-31 09:31:00.137728300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-checksums
++Description: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations
++Version: @VERSION@
++Libs: -L${libdir} -laws-checksums
++Cflags: -I${includedir}
