@@ -1,0 +1,121 @@
+--- origsrc/aws-c-common-0.2.1/CMakeLists.txt	2018-12-28 09:37:56.000000000 +0900
++++ src/aws-c-common-0.2.1/CMakeLists.txt	2018-12-31 09:00:14.493594200 +0900
+@@ -12,7 +12,7 @@
+ # permissions and limitations under the License.
+ 
+ cmake_minimum_required(VERSION 3.0)
+-project(aws-c-common LANGUAGES C VERSION 0.1.0)
++project(aws-c-common LANGUAGES C VERSION 0.2.1)
+ 
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+ include(AwsCFlags)
+@@ -123,7 +123,11 @@ endif()
+ 
+ # Our ABI is not yet stable
+ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++if (CYGWIN)
++    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
++    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++endif()
+ 
+ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+@@ -184,12 +188,12 @@ configure_file("cmake/${CMAKE_PROJECT_NA
+   @ONLY)
+ 
+ install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}"
+     NAMESPACE AWS::
+     COMPONENT Development)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}"
+     COMPONENT Development)
+ 
+ list(APPEND EXPORT_MODULES
+@@ -202,7 +206,7 @@ list(APPEND EXPORT_MODULES
+     )
+ 
+ install(FILES ${EXPORT_MODULES}
+-        DESTINATION "${LIBRARY_DIRECTORY}/cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}"
+         COMPONENT Development)
+ 
+ if (NOT CMAKE_CROSSCOMPILING)
+@@ -216,3 +220,10 @@ configure_file(${CONFIG_HEADER_TEMPLATE}
+                ESCAPE_QUOTES)
+ 
+ include(CPackConfig)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-common-0.2.1/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.2.1/aws-c-common.pc.in	2018-12-31 09:00:23.807434500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-common
++Description: Core c99 package for AWS SDK for C
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -laws-c-common
++Cflags: -I${includedir}
+--- origsrc/aws-c-common-0.2.1/cmake/AwsSharedLibSetup.cmake	2018-12-28 09:37:56.000000000 +0900
++++ src/aws-c-common-0.2.1/cmake/AwsSharedLibSetup.cmake	2018-12-31 08:57:13.515516700 +0900
+@@ -30,7 +30,7 @@ function(aws_prepare_shared_lib_exports
+                 NAMELINK_SKIP
+                 COMPONENT Runtime
+                 RUNTIME
+-                DESTINATION ${LIBRARY_DIRECTORY}
++                DESTINATION bin
+                 COMPONENT Runtime)
+         install(TARGETS ${target}
+                 EXPORT ${target}-targets
+--- origsrc/aws-c-common-0.2.1/include/aws/testing/aws_test_harness.h	2018-12-28 09:37:56.000000000 +0900
++++ src/aws-c-common-0.2.1/include/aws/testing/aws_test_harness.h	2018-12-31 08:50:22.750175000 +0900
+@@ -445,13 +445,16 @@ done:
+     return EXCEPTION_EXECUTE_HANDLER;
+ }
+ #else
++#if !defined(__CYGWIN__)
+ #    include <execinfo.h>
++#endif
+ #    include <signal.h>
+ 
+ static void s_print_stack_trace(int sig, siginfo_t *sig_info, void *user_data) {
+     (void)sig_info;
+     (void)user_data;
+ 
++#if !defined(__CYGWIN__)
+     void *array[100];
+     char **strings;
+     size_t i;
+@@ -465,6 +468,7 @@ static void s_print_stack_trace(int sig,
+         fprintf(stderr, "%s\n", strings[i]);
+ 
+     free(strings);
++#endif
+     exit(-1);
+ }
+ #endif
+--- origsrc/aws-c-common-0.2.1/source/arch/cpuid.c	2018-12-28 09:37:56.000000000 +0900
++++ src/aws-c-common-0.2.1/source/arch/cpuid.c	2018-12-31 08:46:56.074817400 +0900
+@@ -35,7 +35,7 @@
+ #define CPUID_UNAVAILABLE 1
+ static int cpuid_state = 2;
+ 
+-#ifdef HAVE_MSVC_CPUIDEX
++#if !defined(HAVE_BUILTIN_CPU_SUPPORTS) && !defined(HAVE_MAY_I_USE) && defined(HAVE_MSVC_CPUIDEX)
+ static bool msvc_check_avx2(void) {
+     int cpuInfo[4];
+ 
