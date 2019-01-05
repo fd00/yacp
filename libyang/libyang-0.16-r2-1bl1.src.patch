@@ -1,0 +1,113 @@
+--- origsrc/libyang-0.16-r2/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
++++ src/libyang-0.16-r2/CMakeLists.txt	2019-01-05 10:51:12.194060300 +0900
+@@ -90,6 +90,9 @@ set(GEN_PYTHON_VERSION "3" CACHE STRING
+ set(GEN_JAVASCRIPT_BINDINGS 0 CACHE BOOL "Enable JavaScript bindings.")
+ set(GEN_JAVA_BINDINGS 1 CACHE BOOL "Enable Java bindings.")
+ 
++include(FindPkgConfig)
++pkg_check_modules(LINENOISE linenoise)
++
+ find_package(FLEX)
+ find_package(BISON)
+ find_program(DEB_BUILDER NAMES debuild)
+@@ -223,6 +226,10 @@ set(lintsrc
+     tools/lint/configuration.c
+     linenoise/linenoise.c)
+ 
++if(NOT LINENOISE_FOUND)
++    list(APPEND lintsrc linenoise/linenoise.c)
++endif()
++
+ set(resrc
+     tools/re/main.c)
+ 
+@@ -280,7 +287,7 @@ find_package(PCRE REQUIRED)
+ include_directories(${PCRE_INCLUDE_DIRS})
+ target_link_libraries(yang ${PCRE_LIBRARIES})
+ 
+-install(TARGETS yang DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS yang RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES ${headers} ${PROJECT_BINARY_DIR}/src/libyang.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
+ 
+ find_package(PkgConfig)
+@@ -373,6 +380,9 @@ configure_file(${PROJECT_SOURCE_DIR}/src
+ # yanglint
+ add_executable(yanglint ${lintsrc})
+ target_link_libraries(yanglint yang)
++if(LINENOISE_FOUND)
++    target_link_libraries(yanglint ${LINENOISE_LIBRARIES})
++endif()
+ install(TARGETS yanglint DESTINATION ${CMAKE_INSTALL_BINDIR})
+ install(FILES ${PROJECT_SOURCE_DIR}/tools/lint/yanglint.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+ 
+--- origsrc/libyang-0.16-r2/src/common.c	2018-10-17 20:03:26.000000000 +0900
++++ src/libyang-0.16-r2/src/common.c	2019-01-05 10:38:52.119276500 +0900
+@@ -21,7 +21,9 @@
+ #include <pthread.h>
+ #include <string.h>
+ #include <stdlib.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+--- origsrc/libyang-0.16-r2/src/xml.c	2018-10-17 20:03:26.000000000 +0900
++++ src/libyang-0.16-r2/src/xml.c	2019-01-05 10:39:23.043337500 +0900
+@@ -23,7 +23,9 @@
+ #include <pthread.h>
+ #include <sys/stat.h>
+ #include <sys/mman.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <fcntl.h>
+ 
+ #include "common.h"
+--- origsrc/libyang-0.16-r2/swig/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
++++ src/libyang-0.16-r2/swig/CMakeLists.txt	2019-01-05 12:07:33.829378500 +0900
+@@ -74,7 +74,7 @@ else(ENABLE_STATIC)
+     add_library(libyang-cpp SHARED ${LIBYANG_CPP_SOURCES})
+ endif(ENABLE_STATIC)
+ SET_TARGET_PROPERTIES(libyang-cpp PROPERTIES
+-    VERSION ${LIBYANG_VERSION} SOVERSION ${LIBYANG_SOVERSION} PREFIX "")
++    VERSION ${LIBYANG_VERSION} SOVERSION ${LIBYANG_SOVERSION} OUTPUT_NAME "yang-cpp")
+ 
+ # include custom Modules
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+@@ -89,7 +89,7 @@ if(PKG_CONFIG_FOUND)
+ endif()
+ 
+ # install binary
+-install(TARGETS libyang-cpp DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS libyang-cpp RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES ${LIBYANG_HPP_SOURCES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
+ 
+ if (GEN_CPP_BINDINGS)
+--- origsrc/libyang-0.16-r2/swig/python/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
++++ src/libyang-0.16-r2/swig/python/CMakeLists.txt	2019-01-05 12:00:59.171929400 +0900
+@@ -51,11 +51,19 @@ if(ENABLE_BUILD_TESTS)
+     ADD_PYTHON_TEST(test_tree_data)
+     ADD_PYTHON_TEST(test_tree_schema)
+ 
+-    add_custom_command(TARGET ${SWIG_MODULE_${PYTHON_SWIG_BINDING}_REAL_NAME} POST_BUILD
+-        COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/_${PYTHON_SWIG_BINDING}.so" ${PY2_SWIG_DIR}/tests
+-            COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_SWIG_BINDING}.py" ${PY2_SWIG_DIR}/tests
+-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+-        )
++    if(CYGWIN)
++        add_custom_command(TARGET ${SWIG_MODULE_${PYTHON_SWIG_BINDING}_REAL_NAME} POST_BUILD
++            COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/_${PYTHON_SWIG_BINDING}.dll" ${PY2_SWIG_DIR}/tests
++                COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_SWIG_BINDING}.py" ${PY2_SWIG_DIR}/tests
++            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
++            )
++    else()
++        add_custom_command(TARGET ${SWIG_MODULE_${PYTHON_SWIG_BINDING}_REAL_NAME} POST_BUILD
++            COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/_${PYTHON_SWIG_BINDING}.so" ${PY2_SWIG_DIR}/tests
++                COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_SWIG_BINDING}.py" ${PY2_SWIG_DIR}/tests
++            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
++            )
++    endif()
+ 
+     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.py.in" "${CMAKE_CURRENT_BINARY_DIR}/tests/config.py" ESCAPE_QUOTES @ONLY)
+ endif()
