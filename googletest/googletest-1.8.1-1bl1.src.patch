@@ -1,0 +1,38 @@
+--- origsrc/googletest-release-1.8.1/googlemock/CMakeLists.txt	2018-09-01 00:21:57.000000000 +0900
++++ src/googletest-release-1.8.1/googlemock/CMakeLists.txt	2019-01-08 14:17:19.271551000 +0900
+@@ -123,6 +123,9 @@ if (DEFINED CMAKE_VERSION AND NOT "${CMA
+     "$<BUILD_INTERFACE:${gmock_build_include_dirs}>"
+     "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
+ endif()
++if (CYGWIN)
++  set_target_properties(gmock gmock_main PROPERTIES SOVERSION 0)
++endif()
+ 
+ ########################################################################
+ #
+--- origsrc/googletest-release-1.8.1/googletest/CMakeLists.txt	2018-09-01 00:21:57.000000000 +0900
++++ src/googletest-release-1.8.1/googletest/CMakeLists.txt	2019-01-08 14:12:47.562646300 +0900
+@@ -144,6 +144,9 @@ if (DEFINED CMAKE_VERSION AND NOT "${CMA
+     "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>")
+ endif()
+ target_link_libraries(gtest_main PUBLIC gtest)
++if (CYGWIN)
++  set_target_properties(gtest gtest_main PROPERTIES SOVERSION 0)
++endif()
+ 
+ ########################################################################
+ #
+--- origsrc/googletest-release-1.8.1/googletest/cmake/internal_utils.cmake	2018-09-01 00:21:57.000000000 +0900
++++ src/googletest-release-1.8.1/googletest/cmake/internal_utils.cmake	2019-01-08 13:38:16.572661900 +0900
+@@ -99,7 +99,10 @@ macro(config_compiler_and_linker)
+     set(cxx_no_exception_flags "-EHs-c- -D_HAS_EXCEPTIONS=0")
+     set(cxx_no_rtti_flags "-GR-")
+   elseif (CMAKE_COMPILER_IS_GNUCXX)
+-    set(cxx_base_flags "-Wall -Wshadow -Werror")
++    set(cxx_base_flags "-Wall -Wshadow")
++    if(NOT CYGWIN)
++      set(cxx_base_flags "${cxx_base_flags} -Werror")
++    endif()
+     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
+       set(cxx_base_flags "${cxx_base_flags} -Wno-error=dangling-else")
+     endif()
