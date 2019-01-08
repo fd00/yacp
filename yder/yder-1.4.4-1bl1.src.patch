@@ -1,0 +1,90 @@
+--- origsrc/yder-1.4.4/CMakeLists.txt	2018-10-28 03:34:43.000000000 +0900
++++ src/yder-1.4.4/CMakeLists.txt	2019-01-08 17:50:10.135191600 +0900
+@@ -85,20 +85,6 @@ else()
+   set(DISABLE_JOURNALD ON)
+ endif ()
+ 
+-# shared library
+-
+-add_library(yder SHARED ${LIB_SRC})
+-set_target_properties(yder PROPERTIES
+-        COMPILE_OPTIONS -Wextra
+-        PUBLIC_HEADER "${INC_DIR}/yder.h;${PROJECT_BINARY_DIR}/yder-cfg.h"
+-        VERSION "${LIBRARY_VERSION}"
+-        SOVERSION "${LIBRARY_SOVERSION}")
+-if (WIN32)
+-    set_target_properties(yder PROPERTIES SUFFIX "-${LIBRARY_VERSION_MAJOR}.dll")
+-endif ()
+-
+-target_link_libraries(yder ${LIBS} ${ORCANIA_LIBRARIES} ${SYSTEMD_LIBRARIES})
+-
+ # static library
+ 
+ option(BUILD_STATIC "Build static library." OFF)
+@@ -112,24 +98,28 @@ endif ()
+ 
+ option (SEARCH_ORCANIA "Search for Orcania library" ON)
+ if (SEARCH_ORCANIA)
+-    set(Orcania_FIND_QUIETLY ON) # force to find Orcania quietly
+-    include(FindOrcania)
+-    find_package(Orcania 1.1 QUIET) # try to find orcania
++    include(FindPkgConfig)
++    pkg_check_modules(ORCANIA liborcania)
+     if (NOT ORCANIA_FOUND)
+-        include(DownloadProject)
+-        download_project(PROJ orcania # ... otherwise, download archive
+-            URL "https://github.com/babelouest/orcania/archive/v${ORCANIA_VERSION_DOWNLOAD}.tar.gz"
+-            QUIET)
+-        add_subdirectory(${orcania_SOURCE_DIR} ${orcania_BINARY_DIR})
+-        include_directories(${orcania_SOURCE_DIR}/include)
+-        include_directories(${orcania_BINARY_DIR})
+-        add_dependencies(yder orcania)
+-        set(ORCANIA_LIBRARIES orcania)
+-        set(LIBS ${LIBS} ${ORCANIA_LIBRARIES})
+-    else()
+-        set(LIBS ${LIBS} ${ORCANIA_LIBRARIES})
+-        include_directories(${ORCANIA_INCLUDE_DIRS})
+-        include_directories(${orcania_BINARY_DIR})
++        set(Orcania_FIND_QUIETLY ON) # force to find Orcania quietly
++        include(FindOrcania)
++        find_package(Orcania 1.1 QUIET) # try to find orcania
++        if (NOT ORCANIA_FOUND)
++            include(DownloadProject)
++            download_project(PROJ orcania # ... otherwise, download archive
++                URL "https://github.com/babelouest/orcania/archive/v${ORCANIA_VERSION_DOWNLOAD}.tar.gz"
++                QUIET)
++            add_subdirectory(${orcania_SOURCE_DIR} ${orcania_BINARY_DIR})
++            include_directories(${orcania_SOURCE_DIR}/include)
++            include_directories(${orcania_BINARY_DIR})
++            add_dependencies(yder orcania)
++            set(ORCANIA_LIBRARIES orcania)
++            set(LIBS ${LIBS} ${ORCANIA_LIBRARIES})
++        else()
++            set(LIBS ${LIBS} ${ORCANIA_LIBRARIES})
++            include_directories(${ORCANIA_INCLUDE_DIRS})
++            include_directories(${orcania_BINARY_DIR})
++        endif ()
+     endif ()
+ endif ()
+ 
+@@ -141,6 +131,20 @@ else ()
+   set(PKGCONF_REQ_PRIVATE "liborcania")
+ endif ()
+ 
++# shared library
++
++add_library(yder SHARED ${LIB_SRC})
++set_target_properties(yder PROPERTIES
++        COMPILE_OPTIONS -Wextra
++        PUBLIC_HEADER "${INC_DIR}/yder.h;${PROJECT_BINARY_DIR}/yder-cfg.h"
++        VERSION "${LIBRARY_VERSION}"
++        SOVERSION "${LIBRARY_SOVERSION}")
++if (WIN32)
++    set_target_properties(yder PROPERTIES SUFFIX "-${LIBRARY_VERSION_MAJOR}.dll")
++endif ()
++
++target_link_libraries(yder ${LIBS} ${ORCANIA_LIBRARIES} ${SYSTEMD_LIBRARIES})
++
+ # build yder-cfg.h file
+ configure_file(${INC_DIR}/yder-cfg.h.in ${PROJECT_BINARY_DIR}/yder-cfg.h)
+ set (CMAKE_EXTRA_INCLUDE_FILES ${PROJECT_BINARY_DIR})
