@@ -1,0 +1,50 @@
+--- origsrc/libdecaf-1.0.0/CMakeLists.txt	2018-07-14 05:31:25.000000000 +0900
++++ src/libdecaf-1.0.0/CMakeLists.txt	2019-01-16 08:22:27.059642600 +0900
+@@ -82,7 +82,11 @@ configure_file(cmake/DecafConfig.cmake.i
+ 	"${CMAKE_CURRENT_BINARY_DIR}/DecafConfig.cmake"
+ 	@ONLY
+ )
+-set(ConfigPackageLocation share/decaf/cmake)
++if(CYGWIN)
++	set(ConfigPackageLocation lib/cmake/decaf)
++else()
++	set(ConfigPackageLocation share/decaf/cmake)
++endif()
+ install(EXPORT ${EXPORT_TARGETS_NAME}Targets
+ 	FILE DecafTargets.cmake
+ 	DESTINATION ${ConfigPackageLocation}
+@@ -115,3 +119,10 @@ set(CPACK_SOURCE_IGNORE_FILES
+ )
+ 
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libdecaf.pc.in ${CMAKE_BINARY_DIR}/libdecaf.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libdecaf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libdecaf-1.0.0/libdecaf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdecaf-1.0.0/libdecaf.pc.in	2019-01-16 08:23:11.291094200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdecaf
++Description: Fast, strong elliptic curve cryptography
++Version: @VERSION@
++Libs: -L${libdir} -ldecaf
++Cflags: -I${includedir}/decaf
+--- origsrc/libdecaf-1.0.0/src/CMakeLists.txt	2018-06-06 07:25:08.000000000 +0900
++++ src/libdecaf-1.0.0/src/CMakeLists.txt	2019-01-16 08:15:42.672065900 +0900
+@@ -88,7 +88,7 @@ if(ENABLE_SHARED)
+ 	if(APPLE)
+ 		set_target_properties(decaf PROPERTIES LINK_FLAGS "-stdlib=libc++")
+ 	endif()
+-	set_target_properties(decaf PROPERTIES VERSION ${DECAF_SO_VERSION})
++	set_target_properties(decaf PROPERTIES VERSION ${DECAF_SO_VERSION} SOVERSION ${DECAF_SO_VERSION})
+ 	target_include_directories(decaf PUBLIC)
+ 	target_link_libraries(decaf PRIVATE)
+ 	if(MSVC)
