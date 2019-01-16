@@ -1,0 +1,43 @@
+--- origsrc/libvarnam-3.2.6/CMakeLists.txt	2017-03-24 01:06:12.000000000 +0900
++++ src/libvarnam-3.2.6/CMakeLists.txt	2019-01-16 10:21:45.312017900 +0900
+@@ -34,6 +34,9 @@ option(BUILD_TOOLS "Build tools?" OFF)
+ option(BUILD_VST "Compile VST files?" ON)
+ 
+ set(CMAKE_C_FLAGS "-Wall -ansi -pedantic -Wno-long-long -Wconversion -Wformat=2 -Wshadow -Wcast-qual -Wwrite-strings -fPIC")
++if (CYGWIN)
++  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
++endif()
+ set(CMAKE_C_FLAGS_DEBUG "-g")
+ set(CMAKE_C_FLAGS_RELEASE "-O2")
+ set(SQLITE3_LIBRARIES "")
+@@ -148,6 +151,10 @@ SET_TARGET_PROPERTIES(${VARNAM_LIBRARY_N
+                                              VERSION ${VARNAM_VERSION_MAJOR}.${VARNAM_VERSION_MINOR}.${VARNAM_VERSION_PATCH}
+                                              SOVERSION ${VARNAM_VERSION_MAJOR})
+ 
++if (NOT EMBED_SQLITE)
++  target_link_libraries(${VARNAM_LIBRARY_NAME_STATIC} ${SQLITE3_LIBRARY})
++  target_link_libraries(${VARNAM_LIBRARY_NAME} ${SQLITE3_LIBRARY})
++endif()
+ 
+ # a custom target to compile all scheme files
+ # this is just a highlevel target and there are individual targets which depends on this
+@@ -179,7 +186,7 @@ else()
+   set(VARNAM_LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+ endif()
+ 
+-INSTALL ( TARGETS ${VARNAM_LIBRARY_NAME} DESTINATION ${VARNAM_LIB_INSTALL_DIR})
++INSTALL ( TARGETS ${VARNAM_LIBRARY_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION ${VARNAM_LIB_INSTALL_DIR})
+ INSTALL ( TARGETS ${VARNAM_LIBRARY_NAME_STATIC} DESTINATION ${VARNAM_LIB_INSTALL_DIR})
+ INSTALL ( FILES ${VARNAM_INCLUDE_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/lib${VARNAM_LIBRARY_NAME})
+ INSTALL ( FILES deps/sqlite3.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/lib${VARNAM_LIBRARY_NAME}/deps)
+--- origsrc/libvarnam-3.2.6/varnamc	2017-03-24 01:06:12.000000000 +0900
++++ src/libvarnam-3.2.6/varnamc	2019-01-16 10:22:33.995028800 +0900
+@@ -34,7 +34,7 @@ def find_libvarnam
+   # Trying to find out libvarnam in the predefined locations if
+   # absolute path to the library is not specified
+   libvarnam_search_paths = ['.', File.dirname(File.expand_path(__FILE__)), '/usr/local/lib', '/usr/local/lib/i386-linux-gnu', '/usr/local/lib/x86_64-linux-gnu', '/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu', '/usr/lib']
+-  libvarnam_names = ['libvarnam.so', "libvarnam.so.#{$libvarnam_major_version}", 'libvarnam.dylib', 'varnam.dll']
++  libvarnam_names = ['libvarnam.so', "libvarnam.so.#{$libvarnam_major_version}", 'libvarnam.dylib', 'varnam.dll', "cygvarvam-#{$libvarnam_major_version}.dll"]
+   libvarnam_search_paths.each do |path|
+     libvarnam_names.each do |fname|
+       fullpath = File.join(path, fname)
