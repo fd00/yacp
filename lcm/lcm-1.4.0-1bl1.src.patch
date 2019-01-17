@@ -1,0 +1,42 @@
+--- origsrc/lcm-1.4.0/lcm-cmake/install.cmake	2018-08-31 08:38:03.000000000 +0900
++++ src/lcm-1.4.0/lcm-cmake/install.cmake	2019-01-17 23:37:53.844721600 +0900
+@@ -2,6 +2,8 @@ include(CMakePackageConfigHelpers)
+ 
+ if(WIN32)
+   set(CONFIG_INSTALL_DIR CMake)
++elseif(CYGWIN)
++  set(CONFIG_INSTALL_DIR lib/cmake/${PROJECT_NAME})
+ else()
+   set(CONFIG_INSTALL_DIR lib${LIB_SUFFIX}/${PROJECT_NAME}/cmake)
+ endif()
+--- origsrc/lcm-1.4.0/test/gtest/CMakeLists.txt	2018-08-31 08:38:03.000000000 +0900
++++ src/lcm-1.4.0/test/gtest/CMakeLists.txt	2019-01-17 23:25:21.559166200 +0900
+@@ -1,15 +1,17 @@
+ project(gtest)
+ 
+-find_package(Threads)
++if(NOT CYGWIN)
++  find_package(Threads)
+ 
+-add_library(gtest src/gtest-all.cc)
+-target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
+-target_include_directories(gtest SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/include)
+-if(BUILD_SHARED_LIBS)
+-  target_compile_definitions(gtest
+-    PRIVATE GTEST_CREATE_SHARED_LIBRARY
+-    INTERFACE GTEST_LINKED_AS_SHARED_LIBRARY)
+-endif()
++  add_library(gtest src/gtest-all.cc)
++  target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
++  target_include_directories(gtest SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/include)
++  if(BUILD_SHARED_LIBS)
++    target_compile_definitions(gtest
++      PRIVATE GTEST_CREATE_SHARED_LIBRARY
++      INTERFACE GTEST_LINKED_AS_SHARED_LIBRARY)
++  endif()
+ 
+-add_library(gtest_main src/gtest_main.cc)
+-target_link_libraries(gtest_main gtest ${CMAKE_THREAD_LIBS_INIT})
++  add_library(gtest_main src/gtest_main.cc)
++  target_link_libraries(gtest_main gtest ${CMAKE_THREAD_LIBS_INIT})
++endif()
