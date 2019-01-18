@@ -1,0 +1,50 @@
+--- origsrc/libptytty/Makefile.am	2019-01-18 17:58:06.000000000 +0900
++++ src/libptytty/Makefile.am	2019-01-18 18:06:02.051852000 +0900
+@@ -11,6 +11,7 @@ include_HEADERS = src/libptytty.h
+ lib_LTLIBRARIES = libptytty.la
+ 
+ libptytty_la_SOURCES = src/c-api.C src/fdpass.C src/logging.C src/proxy.C src/ptytty.C
++libptytty_la_LDFLAGS = -no-undefined
+ 
+ noinst_PROGRAMS = c-sample
+ c_sample_SOURCES = eg/c-sample.c
+@@ -25,3 +26,6 @@ $(srcdir)/README: $(srcdir)/doc/libptytt
+ 	pod2text <$< >$@
+ 
+ alldoc: $(srcdir)/doc/libptytty.3 $(srcdir)/README
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libptytty/configure.ac	2019-01-18 17:58:06.000000000 +0900
++++ src/libptytty/configure.ac	2019-01-18 18:06:02.053371200 +0900
+@@ -22,5 +22,5 @@ UTMP_CHECK
+ 
+ SCM_RIGHTS_CHECK
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libptytty.pc Makefile])
+ AC_OUTPUT
+--- origsrc/libptytty/libptytty.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libptytty/libptytty.pc.in	2019-01-18 18:06:02.013199400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libptytty
++Description: OS independent and secure pty/tty and utmp/wtmp/lastlog handling
++Version: @VERSION@
++Libs: -L${libdir} -lptytty
++Cflags: -I${includedir}
+--- origsrc/libptytty/src/logging.C	2019-01-18 17:58:06.000000000 +0900
++++ src/libptytty/src/logging.C	2019-01-18 18:04:54.783751500 +0900
+@@ -344,7 +344,7 @@ ptytty_unix::log_session (bool login, co
+       update_wtmp (WTMP_FILE, &ut);
+ #  endif
+ # endif
+-# if defined(HAVE_STRUCT_UTMPX) && defined(HAVE_UPDWTMPX)
++# if defined(HAVE_STRUCT_UTMPX) && defined(HAVE_UPDWTMPX) && !defined(__CYGWIN__)
+       updwtmpx (WTMPX_FILE, &utx);
+ # endif
+     }
