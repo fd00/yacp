@@ -1,0 +1,67 @@
+--- origsrc/libinklevel-0.9.3/Makefile.am	2018-07-14 07:08:30.000000000 +0900
++++ src/libinklevel-0.9.3/Makefile.am	2019-01-18 09:00:06.624876500 +0900
+@@ -22,6 +22,9 @@ libinklevel_la_SOURCES = libinklevel.c c
+ 
+ include_HEADERS = inklevel.h                         
+ 
+-libinklevel_la_LDFLAGS = -version-info @ABI_VERSION@ $(LIBUSB1_LIBS)
++libinklevel_la_LDFLAGS = -no-undefined -version-info @ABI_VERSION@ $(LIBUSB1_LIBS)
+ 
+ @rpmtarget@
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libinklevel-0.9.3/configure.ac	2018-07-08 05:11:02.000000000 +0900
++++ src/libinklevel-0.9.3/configure.ac	2019-01-18 09:00:06.626904400 +0900
+@@ -109,7 +109,7 @@ AC_TYPE_UINT32_T
+ AC_TYPE_UINT8_T
+ AC_DEFINE_UNQUOTED(LINUX,1,[Define value for Linux OS])
+ case $host in
+-  *-*-linux*) AC_DEFINE_UNQUOTED(HOST_OS,LINUX,[Host OS])
++  *-*-linux*|*-*-cygwin*) AC_DEFINE_UNQUOTED(HOST_OS,LINUX,[Host OS])
+ 	      ## check for pkgconfig
+ 	      PKG_PROG_PKG_CONFIG([0.26])
+ 
+@@ -130,5 +130,5 @@ AC_SUBST(RPM_EPOCH)
+ AC_SUBST(HOST_OS)
+ ## What files must be generated
+ 
+-AC_CONFIG_FILES([Makefile libinklevel.spec])
++AC_CONFIG_FILES([libinklevel.pc Makefile libinklevel.spec])
+ AC_OUTPUT
+--- origsrc/libinklevel-0.9.3/d4lib.c	2018-07-08 03:11:21.000000000 +0900
++++ src/libinklevel-0.9.3/d4lib.c	2019-01-18 08:56:52.394866200 +0900
+@@ -131,7 +131,7 @@ typedef struct error_s
+    unsigned char            epsid;
+    unsigned char            essid;
+    unsigned char            ecode;
+-} error_t;
++} libinklevel_error_t;
+ 
+ /* results */
+ typedef struct errorMessage_s
+--- origsrc/libinklevel-0.9.3/inklevel.h	2018-07-08 04:27:08.000000000 +0900
++++ src/libinklevel-0.9.3/inklevel.h	2019-01-18 08:57:26.448091300 +0900
+@@ -18,6 +18,9 @@
+ #define CUSTOM_BJNP 6
+ 
+ /* Possible return values for get_ink_level() */
++#if defined(ERROR)
++#undef ERROR
++#endif
+ 
+ #define OK 0
+ #define ERROR -1
+--- origsrc/libinklevel-0.9.3/libinklevel.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libinklevel-0.9.3/libinklevel.pc.in	2019-01-18 09:00:06.575498500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libinklevel
++Description: Library to get the ink level of your printer
++Version: @VERSION@
++Libs: -L${libdir} -linklevel
++Cflags: -I${includedir}
