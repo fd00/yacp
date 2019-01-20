@@ -1,0 +1,84 @@
+--- origsrc/ptex-2.3.1/CMakeLists.txt	2018-11-08 04:40:16.000000000 +0900
++++ src/ptex-2.3.1/CMakeLists.txt	2019-01-21 07:56:38.859573700 +0900
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.8.0)
++cmake_minimum_required(VERSION 3.6.2)
+ project(Ptex)
+ 
+ option(PTEX_BUILD_STATIC_LIBS "Enable building Ptex static libraries" ON)
+@@ -18,7 +18,9 @@ if (DEFINED ENV{CXXFLAGS_STD})
+ else ()
+     set(CMAKE_CXX_STANDARD 98)
+ endif ()
+-set(CMAKE_CXX_EXTENSIONS OFF)
++if (NOT CYGWIN)
++    set(CMAKE_CXX_EXTENSIONS OFF)
++endif()
+ set(CMAKE_INSTALL_MESSAGE LAZY) # Silence "Up-to-date:" install messages
+ 
+ if (NOT DEFINED PTEX_SHA)
+@@ -97,5 +99,15 @@ include_directories(src/ptex)
+ add_subdirectory(src/ptex)
+ add_subdirectory(src/utils)
+ add_subdirectory(src/tests)
+-add_subdirectory(src/doc)
++option(ENABLE_DOC "enable doc" OFF)
++if (ENABLE_DOC)
++    add_subdirectory(src/doc)
++endif()
+ add_subdirectory(src/build)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ptex.pc.in ${CMAKE_BINARY_DIR}/ptex.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ptex.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ptex-2.3.1/ptex.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ptex-2.3.1/ptex.pc.in	2019-01-21 07:56:53.297028900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ptex
++Description: Per-Face Texture Mapping for Production Rendering
++Version: @PTEX_VER@
++Libs: -L${libdir} -lPtex
++Cflags: -I${includedir}
+--- origsrc/ptex-2.3.1/src/build/CMakeLists.txt	2018-11-08 04:40:16.000000000 +0900
++++ src/ptex-2.3.1/src/build/CMakeLists.txt	2019-01-21 07:55:42.081304100 +0900
+@@ -1,6 +1,10 @@
+ include(CMakePackageConfigHelpers)
+ 
+-set(CMAKE_DIR "share/cmake/Ptex")
++if (CYGWIN)
++    set(CMAKE_DIR "lib/cmake/Ptex")
++else()
++    set(CMAKE_DIR "share/cmake/Ptex")
++endif()
+ 
+ write_basic_package_version_file("ptex-version.cmake"
+     VERSION "${PTEX_MAJOR_VERSION}.${PTEX_MINOR_VERSION}"
+--- origsrc/ptex-2.3.1/src/ptex/CMakeLists.txt	2018-11-08 04:40:16.000000000 +0900
++++ src/ptex-2.3.1/src/ptex/CMakeLists.txt	2019-01-21 07:50:12.407987600 +0900
+@@ -35,6 +35,9 @@ endif()
+ if(PTEX_BUILD_SHARED_LIBS)
+     add_library(Ptex_dynamic SHARED ${SRCS})
+     set_target_properties(Ptex_dynamic PROPERTIES OUTPUT_NAME Ptex)
++    if (CYGWIN)
++        set_target_properties(Ptex_dynamic PROPERTIES SOVERSION 0)
++    endif()
+     target_include_directories(Ptex_dynamic
+         PUBLIC
+             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+@@ -44,7 +47,7 @@ if(PTEX_BUILD_SHARED_LIBS)
+             ${CMAKE_CURRENT_SOURCE_DIR})
+     target_link_libraries(Ptex_dynamic
+         PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES})
+-    install(TARGETS Ptex_dynamic EXPORT Ptex DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS Ptex_dynamic EXPORT Ptex RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ install(FILES
