@@ -1,0 +1,127 @@
+--- origsrc/libcouchbase-2.10.3/CMakeLists.txt	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/CMakeLists.txt	2019-01-23 19:23:16.197990500 +0900
+@@ -347,8 +347,10 @@ ELSE()
+     ENDIF()
+ ENDIF()
+ 
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++IF(NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++ENDIF()
+ SET(LCB_LINK_DEPS ${lcb_plat_libs} ${lcb_ssl_libs} ${LCB_HDR_HISTOGRAM_LINK})
+ IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     SET(LCB_LINK_DEPS ${LCB_LINK_DEPS} rt)
+--- origsrc/libcouchbase-2.10.3/plugins/io/libev/CMakeLists.txt	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/plugins/io/libev/CMakeLists.txt	2019-01-23 19:25:24.768189100 +0900
+@@ -12,11 +12,17 @@ ENDIF()
+ 
+ 
+ ADD_LIBRARY(couchbase_libev SHARED plugin-libev.c)
+-SET_TARGET_PROPERTIES(couchbase_libev
+-    PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+-    COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
++IF(CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libev
++        PROPERTIES
++        COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
++ELSE()
++    SET_TARGET_PROPERTIES(couchbase_libev
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib"
++        COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
++ENDIF()
+ TARGET_LINK_LIBRARIES(couchbase_libev ${LIBEV_LIBRARIES})
+ INCLUDE_DIRECTORIES(AFTER ${LIBEV_INCLUDE_DIR})
+ 
+@@ -28,4 +34,5 @@ ENDIF()
+ 
+ INSTALL(TARGETS
+     couchbase_libev
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+--- origsrc/libcouchbase-2.10.3/plugins/io/libevent/CMakeLists.txt	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/plugins/io/libevent/CMakeLists.txt	2019-01-23 19:25:51.380918100 +0900
+@@ -24,7 +24,7 @@ IF(LCB_EMBED_PLUGIN_LIBEVENT)
+     SET(LCB_LINK_SPEC "${LCB_LINKS_SPEC} ${LIBEVENT_LIBRARIES}")
+ ELSE()
+     ADD_LIBRARY(couchbase_libevent SHARED plugin-libevent.c)
+-    INSTALL(TARGETS couchbase_libevent LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    INSTALL(TARGETS couchbase_libevent RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     TARGET_LINK_LIBRARIES(couchbase_libevent ${LIBEVENT_LIBRARIES})
+ ENDIF()
+ 
+--- origsrc/libcouchbase-2.10.3/plugins/io/libuv/CMakeLists.txt	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/plugins/io/libuv/CMakeLists.txt	2019-01-23 19:27:00.284399500 +0900
+@@ -29,16 +29,22 @@ ADD_LIBRARY(couchbase_libuv SHARED plugi
+ #ELSE()
+ #    SET(_lcbuv_cflags "")
+ #ENDIF()
+-SET_TARGET_PROPERTIES(couchbase_libuv
+-    PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+-    COMPILE_FLAGS "${CMAKE_C_FLAGS} ${LCB_CORE_FLAGS} ${_lcbuv_cflags}")
++IF(CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libuv
++        PROPERTIES
++        COMPILE_FLAGS "${CMAKE_C_FLAGS} ${LCB_CORE_FLAGS} ${_lcbuv_cflags}")
++ELSE()
++    SET_TARGET_PROPERTIES(couchbase_libuv
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib"
++        COMPILE_FLAGS "${CMAKE_C_FLAGS} ${LCB_CORE_FLAGS} ${_lcbuv_cflags}")
++ENDIF()
+ 
+ TARGET_LINK_LIBRARIES(couchbase_libuv ${LIBUV_LIBRARIES} couchbase)
+ INCLUDE_DIRECTORIES(AFTER ${LIBUV_INCLUDE_DIR})
+ ADD_DEFINITIONS(-DLIBCOUCHBASE_INTERNAL=1)
+ INSTALL(TARGETS
+     couchbase_libuv
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+--- origsrc/libcouchbase-2.10.3/src/dns-srv.cc	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/src/dns-srv.cc	2019-01-23 19:27:46.801207900 +0900
+@@ -15,7 +15,7 @@
+ #endif /* __NAMESER < NNN */
+ #endif /* HAVE_ARPA_NAMESER_H */
+ 
+-#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH)
++#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH) && !defined(__CYGWIN__)
+ #define CAN_SRV_LOOKUP
+ #include <sys/types.h>
+ #include <netinet/in.h>
+--- origsrc/libcouchbase-2.10.3/src/iofactory.c	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/src/iofactory.c	2019-01-23 19:50:19.954989200 +0900
+@@ -68,6 +68,8 @@ typedef struct {
+ #else
+     #define PLUGIN_SO(NAME) "libcouchbase_"NAME".dll."
+ #endif /* _DEBUG */
++#elif defined(__CYGWIN__)
++#define PLUGIN_SO(NAME) "cygcouchbase_"NAME".dll"
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_"NAME".so"
+ #endif
+--- origsrc/libcouchbase-2.10.3/tests/CMakeLists.txt	2018-12-20 22:39:31.000000000 +0900
++++ src/libcouchbase-2.10.3/tests/CMakeLists.txt	2019-01-23 19:50:59.825771800 +0900
+@@ -3,8 +3,11 @@ IF (NOT (WIN32 AND CMAKE_COMPILER_IS_GNU
+     SET(gtest_force_shared_crt ON CACHE BOOL "" )
+     SET(BUILD_SHARED_LIBS ON)
+ ENDIF()
+-ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/contrib/gtest-1.8.1 gtest)
+-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
++OPTION(USE_SYSTEM_GTEST "use system gtest" ON)
++IF(USE_SYSTEM_GTEST)
++    ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/contrib/gtest-1.8.1 gtest)
++    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
++ENDIF()
+ 
+ ADD_EXECUTABLE(check-all EXCLUDE_FROM_ALL
+     check-all.cc $<TARGET_OBJECTS:cliopts> mocksupport/procutil.c)
