@@ -1,0 +1,95 @@
+--- origsrc/lib3mf-1.8.1/CMakeLists.txt	2019-01-08 21:36:18.000000000 +0900
++++ src/lib3mf-1.8.1/CMakeLists.txt	2019-01-23 11:44:15.700191200 +0900
+@@ -9,8 +9,7 @@ ENDIF ()
+ # increase minor version on every backward compatible change of the API
+ # increase patch version on every change that does not alter the API
+ project (lib3MF
+-	VERSION 1.8.1
+-	DESCRIPTION "Lib3MF is a C++ implementation of the 3D Manufacturing Format file standard.")
++	VERSION 1.8.1)
+ 
+ include(GNUInstallDirs)
+ 
+@@ -130,6 +129,12 @@ add_library(${PROJECT_NAME} SHARED ${SRC
+ set(STARTUPPROJECT ${PROJECT_NAME})
+ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES PREFIX "" IMPORT_PREFIX "")
+ target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_s)
++if (LIBZIP_FOUND)
++	target_link_libraries(${PROJECT_NAME} ${LIBZIP_LIBRARIES})
++endif()
++if (ZLIB_FOUND)
++	target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
++endif()
+ if (UNIX OR MINGW)
+ 	# Uncomment the following to but the version info into the .so-file.
+ 	SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}.${BUILD_NUMBER}")
+@@ -139,9 +144,9 @@ install(TARGETS ${PROJECT_NAME}
+ 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ 	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+-install(DIRECTORY Include/Model DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+-install(DIRECTORY Include/Common DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
++install(DIRECTORY Include/Model DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/lib3mf")
++install(DIRECTORY Include/Common DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/lib3mf")
++install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/lib3mf")
+ 
+ #########################################################
+ configure_file(lib3MF.pc.in lib3MF.pc @ONLY)
+--- origsrc/lib3mf-1.8.1/Source/CMakeLists.txt	2019-01-08 21:36:18.000000000 +0900
++++ src/lib3mf-1.8.1/Source/CMakeLists.txt	2019-01-23 11:32:48.617484200 +0900
+@@ -1,9 +1,17 @@
++if (NOT (USE_INCLUDED_LIBZIP AND USE_INCLUDED_ZLIB))
++	include(FindPkgConfig)
++endif()
++
+ if (USE_INCLUDED_LIBZIP)
+ 	file(GLOB LIBZIP_FILES ./Source/Libraries/libzip/*.c)
++else()
++	pkg_check_modules(LIBZIP REQUIRED libzip)
+ endif()
+ 
+ if (USE_INCLUDED_ZLIB)
+ 	file(GLOB ZLIB_FILES ./Source/Libraries/zlib/*.c)
++else()
++	pkg_check_modules(ZLIB REQUIRED zlib)
+ endif()
+ 
+ if(NMR_COM_NATIVE)
+--- origsrc/lib3mf-1.8.1/UnitTests/CMakeLists.txt	2019-01-08 21:36:18.000000000 +0900
++++ src/lib3mf-1.8.1/UnitTests/CMakeLists.txt	2019-01-23 11:18:27.492917200 +0900
+@@ -1,4 +1,7 @@
+-ADD_SUBDIRECTORY (googletest EXCLUDE_FROM_ALL)
++find_package(GTest)
++if (NOT GTEST_FOUND)
++    ADD_SUBDIRECTORY (googletest EXCLUDE_FROM_ALL)
++endif()
+ enable_testing()
+ 	
+ SET(gtest_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest")
+--- origsrc/lib3mf-1.8.1/UnitTests/CPP/CMakeLists.txt	2019-01-08 21:36:18.000000000 +0900
++++ src/lib3mf-1.8.1/UnitTests/CPP/CMakeLists.txt	2019-01-23 11:41:10.559855500 +0900
+@@ -23,6 +23,12 @@ endif()
+ 
+ target_include_directories(${TESTNAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Include ${gtest_SOURCE_DIR}/include)
+ target_link_libraries(${TESTNAME} ${PROJECT_NAME}_s gtest gtest_main)
++if (LIBZIP_FOUND)
++	target_link_libraries(${TESTNAME} ${LIBZIP_LIBRARIES})
++endif()
++if (ZLIB_FOUND)
++	target_link_libraries(${TESTNAME} ${ZLIB_LIBRARIES})
++endif()
+ add_dependencies(${TESTNAME} ${PROJECT_NAME}_s)
+ set_target_properties(${TESTNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/")
+ 
+--- origsrc/lib3mf-1.8.1/lib3MF.pc.in	2019-01-08 21:36:18.000000000 +0900
++++ src/lib3mf-1.8.1/lib3MF.pc.in	2019-01-23 11:44:33.675834500 +0900
+@@ -1,7 +1,7 @@
+ prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=@CMAKE_INSTALL_PREFIX@
+ libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+-includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@/lib3mf
+ 
+ Name: @PROJECT_NAME@
+ Description: @PROJECT_DESCRIPTION@
