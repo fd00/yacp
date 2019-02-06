@@ -1,0 +1,62 @@
+--- origsrc/cpprestsdk-2.10.10/CMakeLists.txt	2019-01-30 15:41:08.000000000 +0900
++++ src/cpprestsdk-2.10.10/CMakeLists.txt	2019-02-06 16:28:39.865442200 +0900
+@@ -2,3 +2,10 @@ cmake_minimum_required(VERSION 3.1)
+ project(cpprestsdk-root NONE)
+ 
+ add_subdirectory(Release)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cpprestsdk.pc.in ${CMAKE_BINARY_DIR}/cpprestsdk.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cpprestsdk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpprestsdk-2.10.10/Release/include/cpprest/details/cpprest_compat.h	2019-01-30 15:41:08.000000000 +0900
++++ src/cpprestsdk-2.10.10/Release/include/cpprest/details/cpprest_compat.h	2019-02-06 15:27:27.569334800 +0900
+@@ -30,7 +30,9 @@
+ 
+ #else // ^^^ _WIN32 ^^^ // vvv !_WIN32 vvv
+ 
++#if !defined(__CYGWIN__)
+ #define __declspec(x) __attribute__((x))
++#endif
+ #define dllimport
+ #define novtable /* no novtable equivalent */
+ #define __assume(x)                                                                                                    \
+--- origsrc/cpprestsdk-2.10.10/Release/src/pch/stdafx.h	2019-01-30 15:41:08.000000000 +0900
++++ src/cpprestsdk-2.10.10/Release/src/pch/stdafx.h	2019-02-06 15:28:38.399972100 +0900
+@@ -66,7 +66,9 @@
+ #include "boost/thread/mutex.hpp"
+ #include <fcntl.h>
+ #include <sys/stat.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <unistd.h>
+ #endif // _WIN32
+ 
+--- origsrc/cpprestsdk-2.10.10/Release/src/pplx/pplxlinux.cpp	2019-01-30 15:41:08.000000000 +0900
++++ src/cpprestsdk-2.10.10/Release/src/pplx/pplxlinux.cpp	2019-02-06 15:29:16.483470200 +0900
+@@ -15,7 +15,9 @@
+ 
+ #include "pplx/pplx.h"
+ #include "pplx/threadpool.h"
++#if !defined(__CYGWIN__)
+ #include "sys/syscall.h"
++#endif
+ #include <thread>
+ 
+ #ifdef _WIN32
+--- origsrc/cpprestsdk-2.10.10/cpprestsdk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpprestsdk-2.10.10/cpprestsdk.pc.in	2019-02-06 16:29:07.955036300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpprestsdk
++Description: C++ libraries for cloud-based client-server communication
++Version: @VERSION@
++Libs: -L${libdir} -lcpprest
++Cflags: -I${includedir}
