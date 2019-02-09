@@ -1,0 +1,63 @@
+--- origsrc/libyacurs-1.0.1/Makefile.am	2018-11-04 22:01:19.000000000 +0900
++++ src/libyacurs-1.0.1/Makefile.am	2019-02-10 07:13:52.807786100 +0900
+@@ -3,3 +3,6 @@ ACLOCAL_AMFLAGS= -I m4
+ SUBDIRS = po include src tests
+ 
+ EXTRA_DIST = build-aux/config.rpath BUGS
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libyacurs-1.0.1/configure.ac	2018-11-04 22:01:19.000000000 +0900
++++ src/libyacurs-1.0.1/configure.ac	2019-02-10 07:13:52.823921900 +0900
+@@ -229,7 +229,7 @@ AC_COMPILE_IFELSE(
+ LIBS="$my_saved_LIBS"
+ 
+ AC_CONFIG_HEADERS([config.h include/libyacurscfg.h])
+-AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile include/Makefile po/Makefile.in tests/basic/Makefile tests/ui-interactive/Makefile tests/ui-non-interactive/Makefile tests/preloadlib/Makefile])
++AC_CONFIG_FILES([libyacurs.pc Makefile src/Makefile tests/Makefile include/Makefile po/Makefile.in tests/basic/Makefile tests/ui-interactive/Makefile tests/ui-non-interactive/Makefile tests/preloadlib/Makefile])
+ AC_OUTPUT
+ 
+ AC_MSG_NOTICE([])
+--- origsrc/libyacurs-1.0.1/libyacurs.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libyacurs-1.0.1/libyacurs.pc.in	2019-02-10 07:13:52.729547300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libyacurs
++Description: Curses abstraction used by YAPET
++Version: @VERSION@
++Libs: -L${libdir} -lyacurs
++Cflags: -I${includedir}
+--- origsrc/libyacurs-1.0.1/src/Makefile.am	2018-11-04 22:01:19.000000000 +0900
++++ src/libyacurs-1.0.1/src/Makefile.am	2019-02-10 06:54:03.093350900 +0900
+@@ -6,7 +6,7 @@ else
+ lib_LTLIBRARIES = libyacurs.la
+ endif
+ 
+-libyacurs_la_LDFLAGS = -version-info 0 $(CURSES_LIB) $(LTLIBINTL)
++libyacurs_la_LDFLAGS = -no-undefined -version-info 0 $(CURSES_LIB) $(LTLIBINTL)
+ 
+ libyacurs_la_CPPFLAGS = -D_XOPEN_SOURCE_EXTENDED=1	\
+ -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(localedir)\"	\
+--- origsrc/libyacurs-1.0.1/tests/Makefile.am	2018-11-04 22:01:19.000000000 +0900
++++ src/libyacurs-1.0.1/tests/Makefile.am	2019-02-10 07:02:09.839486300 +0900
+@@ -1,4 +1,4 @@
+ # $Id$
+ 
+-SUBDIRS = preloadlib basic ui-interactive ui-non-interactive
++SUBDIRS = basic ui-interactive ui-non-interactive
+ 
+--- origsrc/libyacurs-1.0.1/tests/preloadlib/Makefile.am	2018-11-04 22:01:19.000000000 +0900
++++ src/libyacurs-1.0.1/tests/preloadlib/Makefile.am	2019-02-10 07:01:25.772761900 +0900
+@@ -16,7 +16,7 @@ testpreload.lo: testpreload.cc
+ 	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) -shared $(STDCXX98_FLAG) $(myCPPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(AM_CPPFLAGS) -DHAVE_CONFIG_H -c -o $(builddir)/$@ $<
+ 
+ libtestpreload.la: testpreload.lo
+-	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXX) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -rpath $(libdir) -version-info 0 -o $@ $<
++	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXX) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -rpath $(libdir) -no-undefined -version-info 0 -o $@ $<
+ 
+ all-local: libtestpreload.la
+ 
