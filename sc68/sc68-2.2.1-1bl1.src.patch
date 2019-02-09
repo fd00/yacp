@@ -1,0 +1,186 @@
+--- origsrc/sc68-2.2.1/api68/Makefile.am	2003-09-30 18:00:05.000000000 +0900
++++ src/sc68-2.2.1/api68/Makefile.am	2019-02-09 13:55:55.791747300 +0900
+@@ -9,7 +9,9 @@ myheaders=\
+  mixer68.h
+ 
+ lib_LTLIBRARIES = libapi68.la
++libapi68_la_CPPFLAGS = -I$(top_srcdir)
+ libapi68_la_SOURCES = ${mysources} ${myheaders}
+-libapi68_la_LDFLAGS = -version-info 3:1 -release @VERSION@ 
++libapi68_la_LDFLAGS = -no-undefined -version-info 3:1 -release @VERSION@ 
++libapi68_la_LIBADD = $(top_builddir)/emu68/libemu68.la $(top_builddir)/file68/libfile68.la $(top_builddir)/io68/libio68.la
+ 
+ #EXTRA_DIST = api68.vcproj
+--- origsrc/sc68-2.2.1/as68/Makefile.am	2003-09-26 04:55:13.000000000 +0900
++++ src/sc68-2.2.1/as68/Makefile.am	2019-02-09 13:56:57.419382300 +0900
+@@ -11,6 +11,7 @@ myheaders=\
+  error.h
+ 
+ bin_PROGRAMS = as68
++as68_CPPFLAGS = -I$(top_srcdir)
+ as68_SOURCES = $(mysources) $(myheaders)
+ 
+ #EXTRA_DIST = as68.vcproj
+--- origsrc/sc68-2.2.1/as68/as68.c	2003-09-25 05:16:00.000000000 +0900
++++ src/sc68-2.2.1/as68/as68.c	2019-02-09 14:07:16.070377000 +0900
+@@ -63,7 +63,9 @@
+ #define DEFAULT_CODE_BUFFER_SIZE 512 /* in Kb */
+ 
+ #include <stdio.h>
++#if !defined(__CYGWIN__)
+ #include <stdlib.h>
++#endif
+ #include <string.h>
+ #include <stdarg.h>
+ #include <ctype.h>
+--- origsrc/sc68-2.2.1/config_type68.h	2003-09-30 19:04:04.000000000 +0900
++++ src/sc68-2.2.1/config_type68.h	2019-02-09 14:22:13.424635000 +0900
+@@ -8,7 +8,7 @@
+ #define SIZEOF_CHAR      1
+ #define SIZEOF_SHORT     2
+ #define SIZEOF_INT       4
+-#define SIZEOF_LONG      4
++#define SIZEOF_LONG      8
+ #define SIZEOF_LONG_LONG 8
+ 
+ #define TYPE_S8    signed char
+@@ -17,8 +17,8 @@
+ #define TYPE_U16 unsigned short
+ #define TYPE_S32   signed int
+ #define TYPE_U32 unsigned int
+-#define TYPE_S64   signed long long
+-#define TYPE_U64 unsigned long long
++#define TYPE_S64   signed long
++#define TYPE_U64 unsigned long
+ 
+ #endif /* ifdef HAVE_CONFIG_H */
+ 
+--- origsrc/sc68-2.2.1/configure.ac	2003-09-30 18:58:46.000000000 +0900
++++ src/sc68-2.2.1/configure.ac	2019-02-09 14:21:07.674689400 +0900
+@@ -72,7 +72,7 @@ SUBDIRS68="emu68 emu68debug io68 desa68
+ # Programs
+ SUBDIRS68="$SUBDIRS68 as68 sc68 info68 sourcer68 debug68"
+ # Data
+-SUBDIRS68="$SUBDIRS68 data info man"
++SUBDIRS68="$SUBDIRS68 data man"
+ 
+ # C-flags
+ MY_CFLAGS="-DHAVE_CONFIG_CONFIG68_H=1 -DNO_FALLBACK_CONFIG=1"
+--- origsrc/sc68-2.2.1/debug68/Makefile.am	2003-09-26 04:55:21.000000000 +0900
++++ src/sc68-2.2.1/debug68/Makefile.am	2019-02-09 14:17:46.146241300 +0900
+@@ -14,7 +14,7 @@ myheaders=\
+  SC68debug_io.h
+ 
+ bin_PROGRAMS = debug68
+-
++debug68_CPPFLAGS = -I$(top_srcdir)
+ debug68_SOURCES = $(mysources) $(myheaders)
+ debug68_LDADD = \
+  ../file68/libfile68.la\
+--- origsrc/sc68-2.2.1/debug68/sc68debug.c	2003-09-23 16:40:53.000000000 +0900
++++ src/sc68-2.2.1/debug68/sc68debug.c	2019-02-09 14:19:20.299430300 +0900
+@@ -1200,7 +1200,7 @@ int main(int na, char **a)
+ 
+ static void dcom(command_t *com)
+ {
+-  printf(com->com);
++  printf("%s", com->com);
+   if(com->altcom!=NULL) printf(" (%s)",com->altcom);
+   if(com->help  !=NULL) printf(" : %s",com->help);
+   if(com->use   !=NULL) printf("\n  usage: %s %s",com->com,com->use);
+--- origsrc/sc68-2.2.1/desa68/Makefile.am	2003-09-26 04:55:25.000000000 +0900
++++ src/sc68-2.2.1/desa68/Makefile.am	2019-02-09 13:22:56.766843200 +0900
+@@ -1,5 +1,6 @@
+ lib_LTLIBRARIES = libdesa68.la
++libdesa68_la_CPPFLAGS = -I$(top_srcdir)
+ libdesa68_la_SOURCES = desa68.c desa68.h
+-libdesa68_la_LDFLAGS =  -version-info 2:0:0 -release @VERSION@
++libdesa68_la_LDFLAGS = -no-undefined -version-info 2:0:0 -release @VERSION@
+ libdesa68_la_CFLAGS = -Wno-multichar $(AM_CFLAGS)
+ #EXTRA_DIST = desa68.vcproj
+--- origsrc/sc68-2.2.1/emu68/Makefile.am	2003-09-26 04:58:41.000000000 +0900
++++ src/sc68-2.2.1/emu68/Makefile.am	2019-02-09 13:18:34.539391100 +0900
+@@ -61,7 +61,8 @@ myextra=\
+  table.inc
+ 
+ lib_LTLIBRARIES = libemu68.la
++libemu68_la_CPPFLAGS = -I$(top_srcdir)
+ libemu68_la_SOURCES = ${mysources} ${myheaders}
+-libemu68_la_LDFLAGS = -version-info 2:0:0 -release @VERSION@
++libemu68_la_LDFLAGS = -no-undefined -version-info 2:0:0 -release @VERSION@
+ 
+ EXTRA_DIST = $(myextra)
+--- origsrc/sc68-2.2.1/emu68debug/Makefile.am	2003-08-23 01:21:59.000000000 +0900
++++ src/sc68-2.2.1/emu68debug/Makefile.am	2019-02-09 13:19:31.516200400 +0900
+@@ -25,6 +25,7 @@ mysources=\
+  ../emu68/table68.c
+ 
+ lib_LTLIBRARIES = libemu68dbg.la
++libemu68dbg_la_CPPFLAGS = -I$(top_srcdir)
+ libemu68dbg_la_SOURCES = ${mysources}
+-libemu68dbg_la_LDFLAGS = -version-info 2:0:0 -release @VERSION@
++libemu68dbg_la_LDFLAGS = -no-undefined -version-info 2:0:0 -release @VERSION@
+ libemu68dbg_la_CFLAGS = -DEMU68DEBUG=1 $(AM_CFLAGS)
+--- origsrc/sc68-2.2.1/file68/Makefile.am	2003-09-26 04:56:14.000000000 +0900
++++ src/sc68-2.2.1/file68/Makefile.am	2019-02-09 13:49:54.502290800 +0900
+@@ -30,8 +30,10 @@ myheaders=\
+  string68.h
+ 
+ lib_LTLIBRARIES = libfile68.la
++libfile68_la_CPPFLAGS = -I$(top_srcdir)
+ libfile68_la_SOURCES = $(mysources) $(myheaders)
+-libfile68_la_LDFLAGS = -version-info 2:1:0 -release @VERSION@ @Z_LIB@
++libfile68_la_LDFLAGS = -no-undefined -version-info 2:1:0 -release @VERSION@ @Z_LIB@
++libfile68_la_LIBADD = $(top_builddir)/unice68/libunice68.la
+ libfile68_la_CFLAGS = -Wno-multichar -DSC68_SHARED_DATA_PATH='"$(pkgdatadir)"' $(AM_CFLAGS)
+ 
+ #EXTRA_DIST = file68.vcproj
+--- origsrc/sc68-2.2.1/info68/Makefile.am	2003-09-26 04:56:24.000000000 +0900
++++ src/sc68-2.2.1/info68/Makefile.am	2019-02-09 14:14:37.393972500 +0900
+@@ -1,4 +1,5 @@
+ bin_PROGRAMS = info68
++info68_CPPFLAGS = -I$(top_srcdir)
+ info68_SOURCES = info68.c info68_doc.h
+ info68_LDADD = ../file68/libfile68.la ../unice68/libunice68.la
+ #EXTRA_DIST = info68.vcproj
+--- origsrc/sc68-2.2.1/io68/Makefile.am	2003-09-26 04:56:28.000000000 +0900
++++ src/sc68-2.2.1/io68/Makefile.am	2019-02-09 13:21:16.460753200 +0900
+@@ -24,7 +24,8 @@ myheaders =\
+  ymoutorg.h
+ 
+ lib_LTLIBRARIES = libio68.la
++libio68_la_CPPFLAGS = -I$(top_srcdir)
+ libio68_la_SOURCES = $(mysources) $(myheaders)
+-libio68_la_LDFLAGS = -version-info 2:0:0 -release @VERSION@
++libio68_la_LDFLAGS = -no-undefined -version-info 2:0:0 -release @VERSION@
+ 
+ #EXTRA_DIST = io68.vcproj
+--- origsrc/sc68-2.2.1/sc68/Makefile.am	2003-09-26 04:56:36.000000000 +0900
++++ src/sc68-2.2.1/sc68/Makefile.am	2019-02-09 14:08:08.579264100 +0900
+@@ -1,4 +1,5 @@
+ bin_PROGRAMS = sc68
++sc68_CPPFLAGS = -I$(top_srcdir)
+ sc68_SOURCES = sc68.c sc68_doc.h
+ sc68_LDADD =\
+  ../api68/libapi68.la\
+--- origsrc/sc68-2.2.1/sourcer68/Makefile.am	2003-09-26 04:56:40.000000000 +0900
++++ src/sc68-2.2.1/sourcer68/Makefile.am	2019-02-09 14:16:28.429179200 +0900
+@@ -1,4 +1,5 @@
+ bin_PROGRAMS = sourcer68
++sourcer68_CPPFLAGS = -I$(top_srcdir)
+ sourcer68_SOURCES = sourcer68.c sourcer68_doc.h
+ sourcer68_LDADD = \
+  ../file68/libfile68.la\
+--- origsrc/sc68-2.2.1/unice68/Makefile.am	2003-09-26 04:57:05.000000000 +0900
++++ src/sc68-2.2.1/unice68/Makefile.am	2019-02-09 13:45:54.756379400 +0900
+@@ -1,8 +1,9 @@
+ lib_LTLIBRARIES = libunice68.la
+ libunice68_la_SOURCES = unice68_native.c unice68.h
+-libunice68_la_LDFLAGS = -version-info 1:0:0 -release @VERSION@
++libunice68_la_LDFLAGS = -no-undefined -version-info 1:0:0 -release @VERSION@
+ 
+ bin_PROGRAMS = unice68
++unice68_CPPFLAGS = -I$(top_srcdir)
+ unice68_SOURCES = unice68.c 
+ unice68_LDADD = libunice68.la
+ EXTRA_DIST =  unice68_doc.h
