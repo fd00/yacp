@@ -1,0 +1,51 @@
+--- origsrc/libgcroots-0.3.1/Makefile.am	2018-05-09 09:52:18.000000000 +0900
++++ src/libgcroots-0.3.1/Makefile.am	2019-02-23 10:37:41.605758000 +0900
+@@ -15,6 +15,8 @@
+ # Modified by: Petter Urkedal <petter.urkedal@nordita.dk> (2005-04)
+ # Modified by: YAMAMOTO Kengo <yamaken AT bp.iij4u.or.jp> (2006-12, libgcroots)
+ 
++ACLOCAL_AMFLAGS = -I m4
++
+ ## Process this file with automake to produce Makefile.in.
+ 
+ include libtool-version.mk
+@@ -126,7 +128,7 @@ libgcroots_la_SOURCES = mark.c gcroots.c
+ 
+ libgcroots_la_LIBADD = @addobjs@ $(THREADDLLIBS) $(UNWINDLIBS)
+ libgcroots_la_DEPENDENCIES = @addobjs@
+-libgcroots_la_LDFLAGS = -version-info $(libgcroots_version)
++libgcroots_la_LDFLAGS = -version-info $(libgcroots_version) -no-undefined
+ 
+ EXTRA_libgcroots_la_SOURCES = alpha_mach_dep.S \
+     mips_sgi_mach_dep.s mips_ultrix_mach_dep.s \
+--- origsrc/libgcroots-0.3.1/configure.ac	2018-05-09 09:56:17.000000000 +0900
++++ src/libgcroots-0.3.1/configure.ac	2019-02-23 10:37:41.621277200 +0900
+@@ -464,7 +464,7 @@ addobjs="$addobjs $machdep"
+ AC_SUBST(addobjs)
+ AC_SUBST(addlibs)
+ 
+-AC_PROG_LIBTOOL
++LT_INIT(win32-dll)
+ 
+ #
+ # Check for AViiON Machines running DGUX
+--- origsrc/libgcroots-0.3.1/include/private/gcconfig.h	2018-05-10 10:31:47.000000000 +0900
++++ src/libgcroots-0.3.1/include/private/gcconfig.h	2019-02-23 10:52:27.433984400 +0900
+@@ -414,11 +414,16 @@
+ #   endif
+ #   define mach_type_known
+ # endif
+-# if defined(__CYGWIN32__) || defined(__CYGWIN__)
++# if defined(__CYGWIN32__)
+ #   define I386
+ #   define CYGWIN32
+ #   define mach_type_known
+ # endif
++# if defined(__CYGWIN__) && !defined(__CYGWIN32__)
++#   define x86_64
++#   define CYGWIN
++#   define mach_type_known
++# endif
+ # if defined(__MINGW32__)
+ #   define I386
+ #   define MSWIN32
