@@ -1,0 +1,88 @@
+--- origsrc/libaes_siv-1.0.0/CMakeLists.txt	2017-03-01 07:56:44.000000000 +0900
++++ src/libaes_siv-1.0.0/CMakeLists.txt	2019-03-02 12:22:04.330602900 +0900
+@@ -27,13 +27,17 @@ find_program(A2X a2x)
+ 
+ configure_file(config.h.in config.h)
+ 
++include_directories(${CMAKE_BINARY_DIR})
++
+ add_library(aes_siv SHARED aes_siv.c)
+ target_link_libraries(aes_siv ${OPENSSL_CRYPTO_LIBRARY})
+ set_target_properties(aes_siv PROPERTIES VERSION "1.0.0" SOVERSION 1)
+ 
+-add_library(aes_siv_static STATIC aes_siv.c)
+-target_link_libraries(aes_siv_static ${OPENSSL_CRYPTO_LIBRARY})
+-set_target_properties(aes_siv_static PROPERTIES OUTPUT_NAME aes_siv)
++if(NOT BUILD_SHARED_LIBS)
++  add_library(aes_siv_static STATIC aes_siv.c)
++  target_link_libraries(aes_siv_static ${OPENSSL_CRYPTO_LIBRARY})
++  set_target_properties(aes_siv_static PROPERTIES OUTPUT_NAME aes_siv)
++endif()
+ 
+ add_executable(runtests aes_siv_test.c tests.c)
+ target_link_libraries(runtests ${OPENSSL_CRYPTO_LIBRARY})
+@@ -50,10 +54,12 @@ if(ENABLE_SANITIZER)
+ endif(ENABLE_SANITIZER)
+ 
+ add_executable(bench EXCLUDE_FROM_ALL bench.c)
+-target_link_libraries(bench aes_siv_static)
++target_link_libraries(bench aes_siv)
+ 
+-install(TARGETS aes_siv LIBRARY DESTINATION lib)
+-install(TARGETS aes_siv_static ARCHIVE DESTINATION lib)
++install(TARGETS aes_siv RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++if(NOT BUILD_SHARED_LIBS)
++  install(TARGETS aes_siv_static ARCHIVE DESTINATION lib)
++endif()
+ install(FILES aes_siv.h DESTINATION include)
+ 
+ if(A2X)
+@@ -90,18 +96,25 @@ add_custom_command(
+   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/AES_SIV_Encrypt.adoc)
+ 
+ install(FILES
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_CTX_new.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_CTX_copy.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_CTX_cleanup.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_CTX_free.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_Init.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_AssociateData.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_EncryptFinal.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_DecryptFinal.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_Encrypt.3
+-  ${CMAKE_CURRENT_BINARY_DIR}/AES_SIV_Decrypt.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_CTX_new.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_CTX_copy.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_CTX_cleanup.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_CTX_free.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_Init.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_AssociateData.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_EncryptFinal.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_DecryptFinal.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_Encrypt.3
++  ${CMAKE_SOURCE_DIR}/AES_SIV_Decrypt.3
+   DESTINATION share/man/man3)
+ endif(A2X)
+ 
+ enable_testing()
+ add_test(NAME test COMMAND runtests)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libaes_siv.pc.in ${CMAKE_BINARY_DIR}/libaes_siv.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libaes_siv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libaes_siv-1.0.0/libaes_siv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libaes_siv-1.0.0/libaes_siv.pc.in	2019-03-02 12:23:44.975207300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libaes_siv
++Description: RFC5297-compliant C implementation of AES-SIV
++Version: @VERSION@
++Libs: -L${libdir} -laes_siv
++Cflags: -I${includedir}
