@@ -1,0 +1,92 @@
+--- origsrc/pathie-cpp-0.1.0/CMakeLists.txt	2017-10-29 05:10:05.000000000 +0900
++++ src/pathie-cpp-0.1.0/CMakeLists.txt	2019-03-02 13:46:15.665931200 +0900
+@@ -113,15 +113,22 @@ file(GLOB_RECURSE test_sources
+ # Targets
+ 
+ # Libraries
+-add_library(pathie STATIC ${pathie_sources})
++if (NOT CMAKE_BUILD_SHARED_LIBS)
++  add_library(pathie STATIC ${pathie_sources})
++endif()
+ 
+ if (CMAKE_BUILD_SHARED_LIBS)
+   add_library(pathie-dynamic SHARED ${pathie_sources})
+   set_target_properties(pathie-dynamic PROPERTIES OUTPUT_NAME pathie)
++  if (CYGWIN)
++    set_target_properties(pathie-dynamic PROPERTIES SOVERSION 0)
++  endif()
+ endif()
+ 
+ if(WIN32)
+-  target_link_libraries(pathie shlwapi)
++  if (NOT CMAKE_BUILD_SHARED_LIBS)
++    target_link_libraries(pathie shlwapi)
++  endif()
+ 
+   if (CMAKE_BUILD_SHARED_LIBS)
+     target_link_libraries(pathie-dynamic shlwapi)
+@@ -143,12 +150,16 @@ endif()
+ ########################################
+ # Installation information
+ 
+-install(TARGETS pathie
+-  DESTINATION lib)
++if (NOT CMAKE_BUILD_SHARED_LIBS)
++  install(TARGETS pathie
++    DESTINATION lib)
++endif()
+ 
+ if (CMAKE_BUILD_SHARED_LIBS)
+   install(TARGETS pathie-dynamic
+-    DESTINATION lib)
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib)
++  target_link_libraries(pathie-dynamic iconv)
+ endif()
+ 
+ install(FILES
+@@ -185,3 +196,10 @@ else()
+ endif()
+ message(STATUS "Stream replacments: ${PATHIE_BUILD_STREAM_REPLACEMENTS}")
+ message(STATUS "---------------------------------------------------")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/pathie-cpp.pc.in ${CMAKE_BINARY_DIR}/pathie-cpp.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/pathie-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/pathie-cpp-0.1.0/include/path.hpp	2017-10-29 05:10:05.000000000 +0900
++++ src/pathie-cpp-0.1.0/include/path.hpp	2019-03-02 13:32:06.955897600 +0900
+@@ -29,6 +29,7 @@
+ 
+ #ifndef PATHIE_PATH_HPP
+ #define PATHIE_PATH_HPP
++#include <cstdio>
+ #include <string>
+ #include <iostream>
+ #include <vector>
+--- origsrc/pathie-cpp-0.1.0/pathie-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/pathie-cpp-0.1.0/pathie-cpp.pc.in	2019-03-02 13:47:24.823388700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: pathie-cpp
++Description: Small C++ library for crossplatform Unicode path management
++Version: @PATHIE_VERSION_MAJOR@.@PATHE_VERSION_MINOR@.@PATHIE_VERSION_PATCH@
++Libs: -L${libdir} -lpathie
++Cflags: -I${includedir}
+--- origsrc/pathie-cpp-0.1.0/src/path.cpp	2017-10-29 05:10:05.000000000 +0900
++++ src/pathie-cpp-0.1.0/src/path.cpp	2019-03-02 13:31:12.530452900 +0900
+@@ -895,7 +895,7 @@ Path Path::pwd()
+  */
+ Path Path::exe()
+ {
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   char buf[PATH_MAX];
+   ssize_t size = ::readlink("/proc/self/exe", buf, PATH_MAX);
+ 
