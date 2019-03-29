@@ -1,0 +1,56 @@
+--- origsrc/zydis-2.0.3/CMakeLists.txt	2019-03-05 21:04:38.000000000 +0900
++++ src/zydis-2.0.3/CMakeLists.txt	2019-03-29 10:38:54.356404500 +0900
+@@ -79,6 +79,9 @@ function (_set_common_flags target)
+ endfunction ()
+ 
+ add_library("Zydis")
++if (CYGWIN)
++    set_target_properties("Zydis" PROPERTIES SOVERSION 0)
++endif()
+ _set_common_flags("Zydis")
+ target_include_directories("Zydis"
+     PUBLIC "include" ${PROJECT_BINARY_DIR}
+@@ -249,3 +252,10 @@ if (ZYDIS_BUILD_TOOLS)
+         install(TARGETS "ZydisInfo" RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+     endif ()
+ endif ()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/zydis.pc.in ${CMAKE_BINARY_DIR}/zydis.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/zydis.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/zydis-2.0.3/examples/ZydisPerfTest.c	2019-03-05 21:04:38.000000000 +0900
++++ src/zydis-2.0.3/examples/ZydisPerfTest.c	2019-03-29 10:35:13.650626000 +0900
+@@ -38,7 +38,7 @@
+ #   include <Windows.h>
+ #elif defined(ZYDIS_APPLE)
+ #   include <mach/mach_time.h>
+-#elif defined(ZYDIS_LINUX)
++#elif defined(ZYDIS_LINUX) || defined(ZYDIS_POSIX)
+ #   include <sys/time.h>
+ #   include <pthread.h>
+ #elif defined(ZYDIS_FREEBSD)
+@@ -99,7 +99,7 @@ double GetCounter()
+ 
+     return (double)elapsed * timebaseInfo.numer / timebaseInfo.denom / 1000000;
+ }
+-#elif defined(ZYDIS_LINUX) || defined(ZYDIS_FREEBSD)
++#elif defined(ZYDIS_LINUX) || defined(ZYDIS_FREEBSD) || defined(ZYDIS_POSIX)
+ struct timeval t1;
+ 
+ void StartCounter()
+--- origsrc/zydis-2.0.3/zydis.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/zydis-2.0.3/zydis.pc.in	2019-03-29 10:40:34.771538800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: zydis
++Description: Fast and lightweight x86/x86_64 disassembler library
++Version: @Zydis_VERSION@
++Libs: -L${libdir} -lZydis
++Cflags: -I${includedir}
