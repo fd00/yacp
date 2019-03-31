@@ -1,6 +1,6 @@
---- origsrc/openvr-1.0.16/CMakeLists.txt	2018-07-28 04:08:16.000000000 +0900
-+++ src/openvr-1.0.16/CMakeLists.txt	2018-07-29 22:16:10.763186800 +0900
-@@ -26,7 +26,7 @@ endif()
+--- origsrc/openvr-1.2.10/CMakeLists.txt	2019-01-31 08:41:38.000000000 +0900
++++ src/openvr-1.2.10/CMakeLists.txt	2019-03-31 09:29:48.023460400 +0900
+@@ -43,7 +43,7 @@ endif()
  if(WIN32)
  	set(PLATFORM_NAME "win")
  elseif(UNIX AND NOT APPLE)
@@ -9,19 +9,22 @@
      set(PLATFORM_NAME "linux")
      add_definitions(-DLINUX -DPOSIX)
      if(PROCESSOR_ARCH MATCHES "64")
-@@ -55,7 +55,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+@@ -71,8 +71,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+ 
  # Enable some properties.
  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
- 	# Enable c++11 and hide symbols which shouldn't be visible
+-	# Enable c++11 and hide symbols which shouldn't be visible
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fvisibility=hidden")
++  # Enable c++11 and hide symbols which shouldn't be visible
 +  if(CYGWIN)
 +    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fvisibility=hidden")
 +  else()
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fvisibility=hidden")
++  	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fvisibility=hidden")
 +  endif()
  
  	# Set custom libc++ usage here
  	if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND USE_LIBCXX)
-@@ -74,3 +78,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_CO
+@@ -91,3 +95,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_CO
  endif()
  
  add_subdirectory(src)
@@ -32,21 +35,21 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/openvr.pc.in ${CMAKE_BINARY_DIR}/openvr.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/openvr.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/openvr-1.0.16/headers/openvr_capi.h	2018-07-28 04:08:16.000000000 +0900
-+++ src/openvr-1.0.16/headers/openvr_capi.h	2018-07-29 22:16:10.778728600 +0900
+--- origsrc/openvr-1.2.10/headers/openvr_capi.h	2019-01-31 08:41:38.000000000 +0900
++++ src/openvr-1.2.10/headers/openvr_capi.h	2019-03-31 09:18:05.118719300 +0900
 @@ -24,8 +24,8 @@
  #endif
  
  // OPENVR API export macro
 -#if defined( _WIN32 ) && !defined( _X360 )
 -	#if defined( OPENVR_API_EXPORTS )
-+#if (defined( _WIN32 ) || defined(__CYGWIN__)) && !defined( _X360 )
-+	#if defined( OPENVR_API_EXPORTS ) || defined(__CYGWIN__)
++#if (defined( _WIN32 ) || defined( __CYGWIN__ )) && !defined( _X360 )
++	#if defined( OPENVR_API_EXPORTS ) || defined( __CYGWIN__ )
  	#define S_API EXTERN_C __declspec( dllexport )
  	#elif defined( OPENVR_API_NODLL )
  	#define S_API EXTERN_C
---- origsrc/openvr-1.0.16/openvr.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/openvr-1.0.16/openvr.pc.in	2018-07-29 22:16:10.778728600 +0900
+--- origsrc/openvr-1.2.10/openvr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/openvr-1.2.10/openvr.pc.in	2019-03-31 09:33:47.087795400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -55,12 +58,12 @@
 +
 +Name: openvr
 +Description: OpenVR SDK
-+Version: @VERSION@
++Version: @OPENVR_VERSION@
 +Libs: -L${libdir} -lopenvr_api
 +Cflags: -I${includedir}
---- origsrc/openvr-1.0.16/src/CMakeLists.txt	2018-07-28 04:08:16.000000000 +0900
-+++ src/openvr-1.0.16/src/CMakeLists.txt	2018-07-29 22:16:10.794458100 +0900
-@@ -61,6 +61,9 @@ source_group("VRCommon" FILES
+--- origsrc/openvr-1.2.10/src/CMakeLists.txt	2019-01-31 08:41:38.000000000 +0900
++++ src/openvr-1.2.10/src/CMakeLists.txt	2019-03-31 09:19:14.471547600 +0900
+@@ -68,6 +68,9 @@ source_group("VRCommon" FILES
  # Build the library.
  if(BUILD_SHARED)
  	add_library(${LIBNAME} SHARED ${SOURCE_FILES})
@@ -70,18 +73,18 @@
  elseif(BUILD_FRAMEWORK)
  	set( LIBNAME "OpenVR" )
  	add_library( ${LIBNAME} 
-@@ -93,4 +96,7 @@ endif()
- 
- target_link_libraries(${LIBNAME} ${EXTRA_LIBS})
+@@ -101,7 +104,7 @@ endif()
+ target_link_libraries(${LIBNAME} ${EXTRA_LIBS} ${CMAKE_DL_LIBS})
+ target_include_directories(${LIBNAME} PUBLIC ${OPENVR_HEADER_DIR})
  
 -install(TARGETS ${LIBNAME} DESTINATION lib)
 +install(TARGETS ${LIBNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
-+
-+file(GLOB headers "${CMAKE_SOURCE_DIR}/headers/*.h")
-+install(FILES ${headers} DESTINATION include/openvr)
---- origsrc/openvr-1.0.16/src/vrcommon/pathtools_public.h	2018-07-28 04:08:16.000000000 +0900
-+++ src/openvr-1.0.16/src/vrcommon/pathtools_public.h	2018-07-29 22:16:10.810082600 +0900
-@@ -106,10 +106,12 @@ std::string GetUserDocumentsPath();
+ install(FILES ${PUBLIC_HEADER_FILES} DESTINATION include/openvr)
+ 
+ # Generate a .pc file for linux environments
+--- origsrc/openvr-1.2.10/src/vrcommon/pathtools_public.h	2019-01-31 08:41:38.000000000 +0900
++++ src/openvr-1.2.10/src/vrcommon/pathtools_public.h	2019-03-31 09:23:13.264880800 +0900
+@@ -112,10 +112,12 @@ bool Path_UnlinkFile( const std::string
  #endif
  
  //-----------------------------------------------------------------------------
