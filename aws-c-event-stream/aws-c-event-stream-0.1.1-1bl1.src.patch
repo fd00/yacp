@@ -1,0 +1,70 @@
+--- origsrc/aws-c-event-stream-0.1.1/CMakeLists.txt	2019-01-05 10:14:32.000000000 +0900
++++ src/aws-c-event-stream-0.1.1/CMakeLists.txt	2019-04-02 23:41:30.079712300 +0900
+@@ -19,7 +19,11 @@ elseif(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+     set(CMAKE_INSTALL_LIBDIR "lib")
+ endif()
+ 
+-list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake")
++if(CYGWIN)
++    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/aws-c-common")
++else()
++    list(APPEND CMAKE_MODULE_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake")
++endif()
+ 
+ include(AwsCFlags)
+ include(AwsSharedLibSetup)
+@@ -69,7 +73,11 @@ target_include_directories(${CMAKE_PROJE
+ 
+ 
+ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++if(CYGWIN)
++    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
++    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++endif()
+ 
+ find_package(aws-c-common REQUIRED)
+ find_package(aws-checksums REQUIRED)
+@@ -83,7 +91,7 @@ install(FILES ${AWS_EVENT_STREAM_HEADERS
+     COMPONENT Development)
+ 
+ install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake/"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}/"
+     NAMESPACE AWS::
+     COMPONENT Development)
+ 
+@@ -92,7 +100,7 @@ configure_file("cmake/${CMAKE_PROJECT_NA
+     @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake/"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}/"
+     COMPONENT Development)
+ 
+ 
+@@ -105,3 +113,10 @@ if(NOT MSVC)
+ endif()
+ 
+ add_subdirectory(bin)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-event-stream.pc.in ${CMAKE_BINARY_DIR}/aws-c-event-stream.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-event-stream.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-event-stream-0.1.1/aws-c-event-stream.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-event-stream-0.1.1/aws-c-event-stream.pc.in	2019-04-02 23:41:29.954668500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-event-stream
++Description: C99 implementation of the vnd.amazon.eventstream content-type
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-event-stream
++Cflags: -I${includedir}
