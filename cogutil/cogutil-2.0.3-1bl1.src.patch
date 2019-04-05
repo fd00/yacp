@@ -1,0 +1,42 @@
+--- origsrc/cogutil-2.0.3-stable/CMakeLists.txt	2016-12-12 12:19:48.000000000 +0900
++++ src/cogutil-2.0.3-stable/CMakeLists.txt	2019-04-06 06:56:26.675279100 +0900
+@@ -371,3 +371,10 @@ SUMMARY_ADD("StackPrint" "Pretty printin
+ SUMMARY_ADD("Unit tests" "Unit tests" CXXTEST_FOUND)
+ SUMMARY_ADD("Util" "General utility library" HAVE_UTIL)
+ SUMMARY_SHOW()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cogutil.pc.in ${CMAKE_BINARY_DIR}/cogutil.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cogutil.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cogutil-2.0.3-stable/cogutil.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cogutil-2.0.3-stable/cogutil.pc.in	2019-04-06 06:56:26.644226100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cogutil
++Description: Very low-level C++ programming utilities used by several components
++Version: @VERSION@
++Libs: -L${libdir} -lcogutil
++Cflags: -I${includedir}
+--- origsrc/cogutil-2.0.3-stable/opencog/util/CMakeLists.txt	2016-12-12 12:19:48.000000000 +0900
++++ src/cogutil-2.0.3-stable/opencog/util/CMakeLists.txt	2019-04-06 06:55:12.418250000 +0900
+@@ -122,11 +122,8 @@ INSTALL(FILES
+ )
+ 
+ IF (CYGWIN)
+-    INSTALL(TARGETS cogutil DESTINATION "bin/opencog")
+-    ADD_CUSTOM_COMMAND (
+-        TARGET cogutil 
+-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/opencog/util/cygcogutil.dll ${CMAKE_BINARY_DIR}/tests/util/ 
+-        MAIN_DEPENDENCY cogutil)
++	INSTALL(TARGETS cogutil RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++	SET_TARGET_PROPERTIES(cogutil PROPERTIES SOVERSION 0)
+ ELSE (CYGWIN) #Linux
+     INSTALL(TARGETS cogutil LIBRARY DESTINATION "lib${LIB_DIR_SUFFIX}")
+ ENDIF (CYGWIN)
