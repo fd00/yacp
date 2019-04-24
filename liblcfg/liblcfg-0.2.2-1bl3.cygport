@@ -1,5 +1,5 @@
 HOMEPAGE="http://${PN}.carnivore.it/"
-SRC_URI="http://${PN}.carnivore.it/files/${P}.tar.gz"
+SRC_URI="https://github.com/DinoTools/${PN}/archive/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Lightweight configuration file library"
@@ -7,9 +7,29 @@ DESCRIPTION="liblcfg is a lightweight configuration file library written in C99.
 format supports arbitrarily nested simple assignments, lists and maps (aka
 dictionaries)."
 
+export CYGCONF_SOURCE="${top}/${PF}.${ARCH}/src/${P}/code"
+
 CYGCONF_ARGS="
 	--enable-check
 "
+
+src_compile()
+{
+	cd ${CYGCONF_SOURCE}
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+src_test()
+{
+	cd ${B}/tests
+	ln -fs ${S}/code/tests/conf .
+	cd ${B}
+	cygtest
+	rm -f tests/conf
+}
 
 PKG_NAMES="
 	${PN}
@@ -27,7 +47,6 @@ liblcfg_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-
 liblcfg_SUMMARY="${SUMMARY} (utilities)"
 liblcfg1_SUMMARY="${SUMMARY} (runtime)"
 liblcfg_devel_SUMMARY="${SUMMARY} (development)"
