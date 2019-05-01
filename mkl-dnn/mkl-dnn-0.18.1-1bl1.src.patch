@@ -1,0 +1,66 @@
+--- origsrc/mkl-dnn-0.18.1/CMakeLists.txt	2019-03-16 10:17:21.000000000 +0900
++++ src/mkl-dnn-0.18.1/CMakeLists.txt	2019-05-02 08:25:30.959011600 +0900
+@@ -91,4 +91,13 @@ add_subdirectory(examples)
+ add_subdirectory(tests)
+ 
+ # Cannot use CMAKE_INSTALL_DOCDIR since it uses PROJECT_NAME and not LIB_NAME
+-install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
++if(NOT CYGWIN)
++    install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mkl-dnn.pc.in ${CMAKE_BINARY_DIR}/mkl-dnn.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/mkl-dnn.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/mkl-dnn-0.18.1/cmake/SDL.cmake	2019-03-16 10:17:21.000000000 +0900
++++ src/mkl-dnn-0.18.1/cmake/SDL.cmake	2019-05-02 07:37:34.325938500 +0900
+@@ -52,7 +52,7 @@ if(UNIX)
+     if(APPLE)
+         append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-bind_at_load")
+         append(CMAKE_EXE_LINKER_FLAGS "-Wl,-bind_at_load")
+-    else()
++    elseif(NOT CYGWIN)
+         append(CMAKE_EXE_LINKER_FLAGS "-pie")
+         append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
+         append(CMAKE_EXE_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
+--- origsrc/mkl-dnn-0.18.1/mkl-dnn.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mkl-dnn-0.18.1/mkl-dnn.pc.in	2019-05-02 08:25:58.438233000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mkl-dnn
++Description: Intel(R) Math Kernel Library for Deep Neural Networks
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmkldnn
++Cflags: -I${includedir}
+--- origsrc/mkl-dnn-0.18.1/src/cpu/gemm/s8x8s32/common.hpp	2019-03-16 10:17:21.000000000 +0900
++++ src/mkl-dnn-0.18.1/src/cpu/gemm/s8x8s32/common.hpp	2019-05-02 07:47:10.570658600 +0900
+@@ -30,8 +30,9 @@
+ #define AVX512_BLOCKING_SMALL_K           48
+ #define AVX512_BN_SMALL_K                 24
+ 
+-
++#if !defined(PAGESIZE)
+ #define PAGESIZE 4096
++#endif
+ 
+ #define PADD_BYTESIZE_ONPAGE(x, size) (((x) * (size) + PAGESIZE - 1) / PAGESIZE) * PAGESIZE
+ #define NEXT_THR_STRIDE(x, size) (PADD_BYTESIZE_ONPAGE(x, size)) / size
+--- origsrc/mkl-dnn-0.18.1/tests/gtests/gtest/CMakeLists.txt	2019-03-16 10:17:21.000000000 +0900
++++ src/mkl-dnn-0.18.1/tests/gtests/gtest/CMakeLists.txt	2019-05-02 07:39:33.659803400 +0900
+@@ -6,6 +6,8 @@ source_group("" FILES ${MAIN_SRC})
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/..
+   )
+-find_package(Threads REQUIRED)
++if(NOT CYGWIN)
++  find_package(Threads REQUIRED)
++endif()
+ add_library(${TARGET_NAME} STATIC ${MAIN_SRC})
+ target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
