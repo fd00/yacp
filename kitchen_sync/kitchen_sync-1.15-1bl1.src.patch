@@ -1,27 +1,27 @@
---- origsrc/kitchen_sync-1.11/CMakeLists.txt	2019-02-05 20:07:55.000000000 +0900
-+++ src/kitchen_sync-1.11/CMakeLists.txt	2019-02-21 18:01:30.590157000 +0900
+--- origsrc/kitchen_sync-1.15/CMakeLists.txt	2019-05-05 20:19:05.000000000 +0900
++++ src/kitchen_sync-1.15/CMakeLists.txt	2019-05-06 07:38:12.858141600 +0900
 @@ -9,12 +9,14 @@ CHECK_CXX_COMPILER_FLAG("-std=c++14" COM
  CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
  CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
  CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
 -if(COMPILER_SUPPORTS_CXX14)
--	ADD_DEFINITIONS("-std=c++14")
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 -elseif(COMPILER_SUPPORTS_CXX11)
--	ADD_DEFINITIONS("-std=c++11")
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 -elseif(COMPILER_SUPPORTS_CXX0X)
--	ADD_DEFINITIONS("-std=c++0x")
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 +if(NOT CYGWIN)
 +	if(COMPILER_SUPPORTS_CXX14)
-+		ADD_DEFINITIONS("-std=c++14")
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 +	elseif(COMPILER_SUPPORTS_CXX11)
-+		ADD_DEFINITIONS("-std=c++11")
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 +	elseif(COMPILER_SUPPORTS_CXX0X)
-+		ADD_DEFINITIONS("-std=c++0x")
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 +	endif()
  endif()
  if(COMPILER_SUPPORTS_STDLIB)
- 	ADD_DEFINITIONS("-stdlib=libc++")
-@@ -47,8 +49,10 @@ find_package(Threads)
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+@@ -46,8 +48,10 @@ find_package(Threads)
  set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "disable yaml tests")
  set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
  set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
@@ -58,16 +58,16 @@
  
  # turn on debugging symbols
  set(CMAKE_BUILD_TYPE Debug)
---- origsrc/kitchen_sync-1.11/test/CMakeLists.txt	2019-02-05 20:07:55.000000000 +0900
-+++ src/kitchen_sync-1.11/test/CMakeLists.txt	2019-02-21 18:01:30.590157000 +0900
-@@ -3,18 +3,20 @@ set(CMAKE_CXX_FLAGS "") # disable the sa
+--- origsrc/kitchen_sync-1.15/test/CMakeLists.txt	2019-05-05 20:19:05.000000000 +0900
++++ src/kitchen_sync-1.15/test/CMakeLists.txt	2019-05-06 07:39:13.962921600 +0900
+@@ -2,21 +2,23 @@
  add_executable(ks_unit_tests ks_unit_tests.cpp db_url_test.cpp ../src/db_url.cpp basic_uint128_t_test.cpp)
  add_test(unit_tests          ks_unit_tests)
  
 +include_directories(${CMAKE_SOURCE_DIR})
 +
  # the main tests require ruby (and various extra gems).  to run the suite, run
--#   cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make test
+ #   cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make test
 -add_test(prepare_for_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle install --quiet)
 -add_test(protocol_version_test   env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/protocol_version_test.rb)
 -add_test(snapshot_from_test      env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/snapshot_from_test.rb)
@@ -81,7 +81,6 @@
 -add_test(column_types_to_test    env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_to_test.rb)
 -add_test(column_types_from_test  env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_from_test.rb)
 -add_test(sync_to_test            env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/sync_to_test.rb)
-+#   cmake ${CMAKE_SOURCE_DIR} && CTEST_OUTPUT_ON_FAILURE=1 make test
 +add_test(prepare_for_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle install --quiet)
 +add_test(protocol_version_test   env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/protocol_version_test.rb)
 +add_test(snapshot_from_test      env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/snapshot_from_test.rb)
@@ -95,8 +94,11 @@
 +add_test(column_types_to_test    env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_to_test.rb)
 +add_test(column_types_from_test  env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_from_test.rb)
 +add_test(sync_to_test            env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/sync_to_test.rb)
---- origsrc/kitchen_sync-1.11/test/basic_uint128_t_test.cpp	2019-02-05 20:07:55.000000000 +0900
-+++ src/kitchen_sync-1.11/test/basic_uint128_t_test.cpp	2019-02-21 18:01:30.590157000 +0900
+ 
+ # we also have a performance test utility that is not run as part of the test suite because there's no particular pass/fail criteria
+ add_executable(ks_bench ks_bench.cpp ../src/xxHash/xxhash.cpp)
+--- origsrc/kitchen_sync-1.15/test/basic_uint128_t_test.cpp	2019-05-05 20:19:05.000000000 +0900
++++ src/kitchen_sync-1.15/test/basic_uint128_t_test.cpp	2019-05-06 07:39:45.129866600 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -106,8 +108,8 @@
  
  TEST_CASE("addition", "[basic_uint128_t]") {
  	REQUIRE(basic_uint128_t{0, 1} + basic_uint128_t{0, 1} == basic_uint128_t{0, 2});
---- origsrc/kitchen_sync-1.11/test/db_url_test.cpp	2019-02-05 20:07:55.000000000 +0900
-+++ src/kitchen_sync-1.11/test/db_url_test.cpp	2019-02-21 18:01:30.605569600 +0900
+--- origsrc/kitchen_sync-1.15/test/db_url_test.cpp	2019-05-05 20:19:05.000000000 +0900
++++ src/kitchen_sync-1.15/test/db_url_test.cpp	2019-05-06 07:39:57.877534300 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -117,8 +119,8 @@
  
  TEST_CASE("parsing full URLs", "[db_url]") {
  	DbUrl url("postgresql://someuser:mypassword@localhost:1000/sourcedb");
---- origsrc/kitchen_sync-1.11/test/ks_unit_tests.cpp	2019-02-05 20:07:55.000000000 +0900
-+++ src/kitchen_sync-1.11/test/ks_unit_tests.cpp	2019-02-21 18:01:30.605569600 +0900
+--- origsrc/kitchen_sync-1.15/test/ks_unit_tests.cpp	2019-05-05 20:19:05.000000000 +0900
++++ src/kitchen_sync-1.15/test/ks_unit_tests.cpp	2019-05-06 07:40:09.022436300 +0900
 @@ -1,2 +1,2 @@
  #define CATCH_CONFIG_MAIN
 -#include "../../catch2/catch.hpp"
