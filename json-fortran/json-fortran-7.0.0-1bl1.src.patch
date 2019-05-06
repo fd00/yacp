@@ -1,0 +1,106 @@
+--- origsrc/json-fortran-7.0.0/CMakeLists.txt	2019-01-27 11:45:08.000000000 +0900
++++ src/json-fortran-7.0.0/CMakeLists.txt	2019-05-06 11:41:03.716486100 +0900
+@@ -120,7 +120,11 @@ endif ()
+ # Put package export CMake files where they can be found
+ # use `find_package ( jsonfortran-${CMAKE_Fortran_COMPILER_ID} <version> REQUIRED )`
+ if (USE_GNU_INSTALL_CONVENTION)
+-  set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PACKAGE_VERSION}" )
++  if (CYGWIN)
++    set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PROJECT_NAME}" )
++  else ()
++    set ( EXPORT_INSTALL_DIR "${INSTALL_LIB_DIR}/cmake/${PACKAGE_VERSION}" )
++  endif ()
+ else ()
+   set ( EXPORT_INSTALL_DIR "${PACKAGE_VERSION}/cmake" )
+ endif ()
+@@ -160,26 +164,39 @@ endif ()
+ 
+ set ( LIB_NAME ${CMAKE_PROJECT_NAME} )
+ add_library ( ${LIB_NAME}        SHARED ${JF_LIB_SRCS} )
+-add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
+-set_target_properties ( ${LIB_NAME}-static
+-  PROPERTIES
+-  OUTPUT_NAME ${LIB_NAME}
+-  if(NOT MSVC_IDE)
+-  PREFIX lib
+-  endif()
+-  VERSION ${VERSION}
+-  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+-  Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
+-set_target_properties ( ${LIB_NAME}
+-  PROPERTIES
+-  OUTPUT_NAME ${LIB_NAME}
+-  if(NOT MSVC_IDE)
+-  PREFIX lib
+-  endif()
+-  SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
+-  VERSION ${VERSION}
+-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+-  Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
++if (NOT BUILD_SHARED_LIBS)
++  add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
++  set_target_properties ( ${LIB_NAME}-static
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    if(NOT MSVC_IDE)
++    PREFIX lib
++    endif()
++    VERSION ${VERSION}
++    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
++endif ()
++if (NOT MSVC_IDE AND NOT CYGWIN)
++  set_target_properties ( ${LIB_NAME}
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    if(NOT MSVC_IDE)
++    PREFIX lib
++    endif()
++    SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
++    VERSION ${VERSION}
++    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR} )
++else () 
++  execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_DIR})
++  set_target_properties ( ${LIB_NAME}
++    PROPERTIES
++    OUTPUT_NAME ${LIB_NAME}
++    SOVERSION ${VERSION_MAJOR}.${VERSION_MINOR}
++    VERSION ${VERSION}
++    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
++    Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
++endif ()
+ 
+ #-------------------------------------
+ # Build the documentation with FORD
+@@ -378,10 +395,16 @@ endif ()
+ # Perform the installation
+ #-------------------------
+ 
+-install ( TARGETS ${LIB_NAME} ${LIB_NAME}-static
++install ( TARGETS ${LIB_NAME}
+   EXPORT ${PACKAGE_NAME}-targets
+-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
++  RUNTIME DESTINATION bin
+   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++if (NOT BUILD_SHARED_LIBS)
++  install ( TARGETS ${LIB_NAME}-static
++    EXPORT ${PACKAGE_NAME}-targets
++    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
++    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++endif ()
+ 
+ # Code to  fix the dylib install name on Mac.
+ include ( cmake/fixupInstallNameDir.cmake )
+@@ -427,7 +450,10 @@ install ( FILES
+ #----------------------------------------------
+ # Make build tree targets accessible for import
+ #----------------------------------------------
+-export ( TARGETS ${LIB_NAME} ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++export ( TARGETS ${LIB_NAME} FILE ${PACKAGE_NAME}-targets.cmake )
++if (NOT BUILD_SHARED_LIBS)
++  export ( TARGETS ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++endif ()
+ 
+ # build tree package config file, NOT installed
+ configure_file (
