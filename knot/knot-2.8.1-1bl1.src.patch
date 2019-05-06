@@ -1,0 +1,45 @@
+--- origsrc/knot-2.8.1/src/Makefile.am	2018-12-12 02:49:10.000000000 +0900
++++ src/knot-2.8.1/src/Makefile.am	2019-05-06 09:24:01.825430100 +0900
+@@ -6,6 +6,8 @@ AM_CPPFLAGS = \
+ 	-DMODULE_DIR='"${module_dir}"'		\
+ 	-DMODULE_INSTDIR='"${module_instdir}"'
+ 
++AM_LDFLAGS = -no-undefined
++
+ EXTRA_DIST =
+ CLEANFILES =
+ BUILT_SOURCES =
+--- origsrc/knot-2.8.1/src/knot/server/server.c	2019-04-05 00:06:14.000000000 +0900
++++ src/knot-2.8.1/src/knot/server/server.c	2019-05-06 09:24:43.161041300 +0900
+@@ -126,7 +126,9 @@ static bool enable_pktinfo(int sock, int
+ 		break;
+ 	case AF_INET6:
+ 		level = IPPROTO_IPV6;
++#if defined(IPV6_RECVPKTINFO)
+ 		option = IPV6_RECVPKTINFO;
++#endif
+ 		break;
+ 	default:
+ 		return false;
+--- origsrc/knot-2.8.1/src/libknot/endian.h	2019-04-05 00:06:14.000000000 +0900
++++ src/knot-2.8.1/src/libknot/endian.h	2019-05-06 09:25:15.201429300 +0900
+@@ -25,7 +25,7 @@
+ #pragma once
+ 
+ #if defined(__linux__) || defined(__gnu_hurd__) || \
+-    (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
++    (defined(__FreeBSD_kernel__) && defined(__GLIBC__)) || defined(__CYGWIN__)
+ #       include <endian.h>
+ #elif defined(__FreeBSD__) || defined(__NetBSD__)
+ #       include <sys/endian.h>
+--- origsrc/knot-2.8.1/tests/Makefile.am	2019-04-05 00:06:15.000000000 +0900
++++ src/knot-2.8.1/tests/Makefile.am	2019-05-06 09:26:24.916106200 +0900
+@@ -218,7 +218,7 @@ knot/test_semantic_check:
+ 	@chmod +x $(top_builddir)/tests/$@
+ endif HAVE_LIBUTILS
+ 
+-libzscanner/test_zscanner: libzscanner/zscanner-tool
++libzscanner/test_zscanner: libzscanner/zscanner-tool$(EXEEXT)
+ 	@$(edit) < $(top_srcdir)/tests/$@.in > $(top_builddir)/tests/$@
+ 	@chmod +x $(top_builddir)/tests/$@
+ 
