@@ -1,0 +1,27 @@
+--- origsrc/gssdp-1.2.1/libgssdp/gssdp-net-posix.c	2019-05-02 05:59:29.000000000 +0900
++++ src/gssdp-1.2.1/libgssdp/gssdp-net-posix.c	2019-05-07 11:41:47.582648900 +0900
+@@ -568,10 +568,11 @@ gssdp_net_list_devices (void)
+                 goto out;
+         }
+ 
++#if defined(AF_PACKET)
+         for (ifa = ifa_list; ifa != NULL; ifa = ifa->ifa_next) {
+                 g_hash_table_add (interfaces, g_strdup (ifa->ifa_name));
+         }
+-
++#endif
+ 
+         freeifaddrs (ifa_list);
+ 
+--- origsrc/gssdp-1.2.1/meson.build	2019-05-02 05:59:29.000000000 +0900
++++ src/gssdp-1.2.1/meson.build	2019-05-07 11:41:47.613912400 +0900
+@@ -12,6 +12,9 @@ pktinfo_test = '''#define _GNU_SOURCE
+ #ifdef __APPLE__
+ #define __APPLE_USE_RFC_3542
+ #endif
++#if defined(__CYGWIN__)
++#error "IPV6_RECVPKTINFO not defined in cygwin"
++#endif
+ #include <netinet/ip.h>
+ struct in_pktinfo pktinfo;
+ struct in6_pktinfo pktinfo6;
