@@ -1,0 +1,40 @@
+--- origsrc/cubature/CMakeLists.txt	2019-05-09 14:17:48.000000000 +0900
++++ src/cubature/CMakeLists.txt	2019-05-09 14:25:24.702972000 +0900
+@@ -6,6 +6,10 @@ add_library( cubature SHARED
+     hcubature.c
+     pcubature.c)
+ 
++if( CYGWIN )
++    set_target_properties( cubature PROPERTIES SOVERSION 0 )
++endif()
++
+ add_executable( htest test.c )
+ target_link_libraries( htest cubature m )
+ 
+@@ -14,6 +18,12 @@ target_link_libraries( ptest cubature m
+ target_compile_definitions( ptest PRIVATE PCUBATURE=1 )
+ 
+ include(GNUInstallDirs)
+-install( TARGETS cubature DESTINATION ${CMAKE_INSTALL_LIBDIR} )
++install( TARGETS cubature RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+ install( FILES cubature.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cubature.pc.in ${CMAKE_BINARY_DIR}/cubature.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cubature.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cubature/cubature.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cubature/cubature.pc.in	2019-05-09 14:25:32.221096100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cubature
++Description: Multi-dimensional adaptive integration (cubature) in C
++Version: @VERSION@
++Libs: -L${libdir} -lcubature
++Cflags: -I${includedir}
