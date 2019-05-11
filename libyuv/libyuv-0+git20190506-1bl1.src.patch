@@ -1,13 +1,11 @@
-diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libyuv/CMakeLists.txt src/libyuv/CMakeLists.txt
---- origsrc/libyuv/CMakeLists.txt	2018-05-14 10:03:25.000000000 +0900
-+++ src/libyuv/CMakeLists.txt	2018-05-14 11:17:25.613200100 +0900
-@@ -23,16 +23,23 @@ LIST ( SORT			ly_unittest_sources )
+--- origsrc/libyuv/CMakeLists.txt	2019-05-11 21:41:58.000000000 +0900
++++ src/libyuv/CMakeLists.txt	2019-05-11 21:43:03.431821000 +0900
+@@ -23,16 +23,22 @@ LIST ( SORT			ly_unittest_sources )
  INCLUDE_DIRECTORIES( BEFORE ${ly_inc_dir} )
  
  # this creates the static library (.a)
 -ADD_LIBRARY				( ${ly_lib_static} STATIC ${ly_source_files} )
-+OPTION(ENABLE_STATIC "enable static" OFF)
-+if (ENABLE_STATIC)
++if (NOT BUILD_SHARED_LIBS)
 +  ADD_LIBRARY				( ${ly_lib_static} STATIC ${ly_source_files} )
 +endif()
  
@@ -28,7 +26,7 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
  
  
  INCLUDE ( FindJPEG )
-@@ -40,6 +47,7 @@ if (JPEG_FOUND)
+@@ -40,6 +46,7 @@ if (JPEG_FOUND)
    include_directories( ${JPEG_INCLUDE_DIR} )
    target_link_libraries( yuvconvert ${JPEG_LIBRARY} )
    add_definitions( -DHAVE_JPEG )
@@ -36,7 +34,7 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
  endif()
  
  if(TEST)
-@@ -59,7 +67,7 @@ if(TEST)
+@@ -59,7 +66,7 @@ if(TEST)
    endif()
  
    add_executable(libyuv_unittest ${ly_unittest_sources})
@@ -45,13 +43,13 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
    find_library(PTHREAD_LIBRARY pthread)
    if(NOT PTHREAD_LIBRARY STREQUAL "PTHREAD_LIBRARY-NOTFOUND")
      target_link_libraries(libyuv_unittest pthread)
-@@ -82,10 +90,19 @@ endif()
+@@ -82,10 +89,19 @@ endif()
  
  # install the conversion tool, .so, .a, and all the header files
  INSTALL ( PROGRAMS ${CMAKE_BINARY_DIR}/yuvconvert			DESTINATION bin )
 -INSTALL ( TARGETS ${ly_lib_static}						DESTINATION lib )
 -INSTALL ( TARGETS ${ly_lib_shared} LIBRARY				DESTINATION lib RUNTIME DESTINATION bin )
-+if (ENABLE_STATIC)
++if (NOT BUILD_SHARED_LIBS)
 +  INSTALL ( TARGETS ${ly_lib_static}						DESTINATION lib )
 +endif()
 +INSTALL ( TARGETS ${ly_lib_shared} ARCHIVE DESTINATION lib RUNTIME DESTINATION bin )
@@ -67,9 +65,8 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libyuv.pc.in ${CMAKE_BINARY_DIR}/libyuv.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/libyuv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libyuv/libyuv.pc.in src/libyuv/libyuv.pc.in
 --- origsrc/libyuv/libyuv.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libyuv/libyuv.pc.in	2018-05-14 11:17:32.705799700 +0900
++++ src/libyuv/libyuv.pc.in	2019-05-11 21:42:05.371475200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
