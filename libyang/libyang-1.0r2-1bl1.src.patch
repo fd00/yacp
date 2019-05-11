@@ -1,8 +1,8 @@
---- origsrc/libyang-0.16-r2/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
-+++ src/libyang-0.16-r2/CMakeLists.txt	2019-01-05 10:51:12.194060300 +0900
-@@ -90,6 +90,9 @@ set(GEN_PYTHON_VERSION "3" CACHE STRING
+--- origsrc/libyang-1.0-r2/CMakeLists.txt	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/CMakeLists.txt	2019-05-11 22:23:37.048950600 +0900
+@@ -105,6 +105,9 @@ set(GEN_PYTHON_VERSION "3" CACHE STRING
  set(GEN_JAVASCRIPT_BINDINGS 0 CACHE BOOL "Enable JavaScript bindings.")
- set(GEN_JAVA_BINDINGS 1 CACHE BOOL "Enable Java bindings.")
+ set(GEN_JAVA_BINDINGS 0 CACHE BOOL "Enable Java bindings.")
  
 +include(FindPkgConfig)
 +pkg_check_modules(LINENOISE linenoise)
@@ -10,7 +10,7 @@
  find_package(FLEX)
  find_package(BISON)
  find_program(DEB_BUILDER NAMES debuild)
-@@ -223,6 +226,10 @@ set(lintsrc
+@@ -238,6 +241,10 @@ set(lintsrc
      tools/lint/configuration.c
      linenoise/linenoise.c)
  
@@ -21,7 +21,7 @@
  set(resrc
      tools/re/main.c)
  
-@@ -280,7 +287,7 @@ find_package(PCRE REQUIRED)
+@@ -299,7 +306,7 @@ find_package(PCRE REQUIRED)
  include_directories(${PCRE_INCLUDE_DIRS})
  target_link_libraries(yang ${PCRE_LIBRARIES})
  
@@ -30,7 +30,7 @@
  install(FILES ${headers} ${PROJECT_BINARY_DIR}/src/libyang.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
  
  find_package(PkgConfig)
-@@ -373,6 +380,9 @@ configure_file(${PROJECT_SOURCE_DIR}/src
+@@ -392,6 +399,9 @@ configure_file(${PROJECT_SOURCE_DIR}/src
  # yanglint
  add_executable(yanglint ${lintsrc})
  target_link_libraries(yanglint yang)
@@ -40,8 +40,8 @@
  install(TARGETS yanglint DESTINATION ${CMAKE_INSTALL_BINDIR})
  install(FILES ${PROJECT_SOURCE_DIR}/tools/lint/yanglint.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
  
---- origsrc/libyang-0.16-r2/src/common.c	2018-10-17 20:03:26.000000000 +0900
-+++ src/libyang-0.16-r2/src/common.c	2019-01-05 10:38:52.119276500 +0900
+--- origsrc/libyang-1.0-r2/src/common.c	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/src/common.c	2019-05-11 22:23:37.064598800 +0900
 @@ -21,7 +21,9 @@
  #include <pthread.h>
  #include <string.h>
@@ -52,8 +52,30 @@
  #include <sys/types.h>
  #include <unistd.h>
  
---- origsrc/libyang-0.16-r2/src/xml.c	2018-10-17 20:03:26.000000000 +0900
-+++ src/libyang-0.16-r2/src/xml.c	2019-01-05 10:39:23.043337500 +0900
+--- origsrc/libyang-1.0-r2/src/extensions/CMakeLists.txt	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/src/extensions/CMakeLists.txt	2019-05-11 22:44:28.907194100 +0900
+@@ -2,7 +2,7 @@ macro(EXTENSION_PLUGIN PLUGIN_NAME SRCS)
+     add_library(${PLUGIN_NAME} SHARED ${SRCS})
+     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
+     target_link_libraries(${PLUGIN_NAME} yang)
+-    install(TARGETS ${PLUGIN_NAME} DESTINATION ${EXTENSIONS_PLUGINS_DIR_MACRO})
++    install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${EXTENSIONS_PLUGINS_DIR_MACRO})
+ endmacro(EXTENSION_PLUGIN)
+ 
+ foreach(EXTENSION ${EXTENSIONS_LIST})
+--- origsrc/libyang-1.0-r2/src/user_types/CMakeLists.txt	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/src/user_types/CMakeLists.txt	2019-05-11 22:44:42.511645500 +0900
+@@ -2,7 +2,7 @@ macro(USER_TYPE_PLUGIN PLUGIN_NAME SRCS)
+     add_library(${PLUGIN_NAME} SHARED ${SRCS})
+     set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
+     target_link_libraries(${PLUGIN_NAME} yang)
+-    install(TARGETS ${PLUGIN_NAME} DESTINATION ${USER_TYPES_PLUGINS_DIR_MACRO})
++    install(TARGETS ${PLUGIN_NAME} RUNTIME DESTINATION ${USER_TYPES_PLUGINS_DIR_MACRO})
+ endmacro(USER_TYPE_PLUGIN)
+ 
+ foreach(USER_TYPE ${USER_TYPE_LIST})
+--- origsrc/libyang-1.0-r2/src/xml.c	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/src/xml.c	2019-05-11 22:23:37.080203000 +0900
 @@ -23,7 +23,9 @@
  #include <pthread.h>
  #include <sys/stat.h>
@@ -64,8 +86,8 @@
  #include <fcntl.h>
  
  #include "common.h"
---- origsrc/libyang-0.16-r2/swig/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
-+++ src/libyang-0.16-r2/swig/CMakeLists.txt	2019-01-05 12:07:33.829378500 +0900
+--- origsrc/libyang-1.0-r2/swig/CMakeLists.txt	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/swig/CMakeLists.txt	2019-05-11 22:23:37.095831800 +0900
 @@ -74,7 +74,7 @@ else(ENABLE_STATIC)
      add_library(libyang-cpp SHARED ${LIBYANG_CPP_SOURCES})
  endif(ENABLE_STATIC)
@@ -84,8 +106,8 @@
  install(FILES ${LIBYANG_HPP_SOURCES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
  
  if (GEN_CPP_BINDINGS)
---- origsrc/libyang-0.16-r2/swig/python/CMakeLists.txt	2018-10-17 20:03:26.000000000 +0900
-+++ src/libyang-0.16-r2/swig/python/CMakeLists.txt	2019-01-05 12:00:59.171929400 +0900
+--- origsrc/libyang-1.0-r2/swig/python/CMakeLists.txt	2019-04-05 22:46:42.000000000 +0900
++++ src/libyang-1.0-r2/swig/python/CMakeLists.txt	2019-05-11 22:23:37.111453600 +0900
 @@ -51,11 +51,19 @@ if(ENABLE_BUILD_TESTS)
      ADD_PYTHON_TEST(test_tree_data)
      ADD_PYTHON_TEST(test_tree_schema)
