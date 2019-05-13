@@ -1,0 +1,47 @@
+--- origsrc/clinalg-0.2.0/Makefile.am	2014-10-24 18:18:14.000000000 +0900
++++ src/clinalg-0.2.0/Makefile.am	2019-05-13 11:40:32.734053900 +0900
+@@ -1 +1,4 @@
+ SUBDIRS=src include test
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/clinalg-0.2.0/configure.ac	2014-10-24 18:18:14.000000000 +0900
++++ src/clinalg-0.2.0/configure.ac	2019-05-13 11:36:15.380557700 +0900
+@@ -41,10 +41,11 @@ AC_CHECK_FUNCS([dchinx_ dchdex_])
+ # Checks for header files.
+ AC_CHECK_HEADER([stdlib.h])
+ AC_CHECK_HEADER([string.h])
+-AC_CHECK_HEADER([blas.h])
+-AC_CHECK_HEADER([lapack.h])
+ AC_CHECK_HEADER([qrupdate.h])
+ 
++PKG_CHECK_MODULES([BLAS], [blas])
++PKG_CHECK_MODULES([LAPACK], [lapack])
++
+ # Checks for typedefs, structures, and compiler characteristics.
+ AC_HEADER_STDBOOL
+ AC_TYPE_SIZE_T
+--- origsrc/clinalg-0.2.0/src/Makefile.am	2014-10-24 18:18:14.000000000 +0900
++++ src/clinalg-0.2.0/src/Makefile.am	2019-05-13 11:35:22.057734300 +0900
+@@ -19,8 +19,8 @@ libclinalg_la_SOURCES = \
+ 	linalg/c_linalg_qr.c\
+ 	linalg/c_linalg_sv.c
+ 
+-libclinalg_la_LIBADD = -L$(top_srcdir)/src
++libclinalg_la_LIBADD = $(BLAS_LIBS) $(LAPACK_LIBS)
+ libclinalg_la_CPPFLAGS = -I$(top_srcdir)/include\
+ 	-I$(top_srcdir)/include/matrix -I$(top_srcdir)/include/linalg
+-libclinalg_la_LDFLAGS = -version-info $(CLINALG_LT_VERSION)
++libclinalg_la_LDFLAGS = -no-undefined -version-info $(CLINALG_LT_VERSION)
+ 
+--- origsrc/clinalg-0.2.0/test/Makefile.am	2014-10-24 18:18:14.000000000 +0900
++++ src/clinalg-0.2.0/test/Makefile.am	2019-05-13 11:39:31.798423800 +0900
+@@ -26,7 +26,7 @@ test_clinalg_SOURCES=\
+ 	test_clinalg.c
+ 
+ # Linker options for a.out
+-test_clinalg_LDFLAGS = $(top_srcdir)/src/libclinalg.la
++test_clinalg_LDFLAGS = $(top_builddir)/src/libclinalg.la
+ 
+ # Compiler options for a.out
+ test_clinalg_CPPFLAGS =\
