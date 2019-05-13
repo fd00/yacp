@@ -1,0 +1,73 @@
+--- origsrc/arcueid-0.1.2/configure.in	2013-05-14 09:43:52.000000000 +0900
++++ src/arcueid-0.1.2/configure.in	2019-05-12 20:08:31.747753400 +0900
+@@ -19,7 +19,7 @@ AC_PREREQ(2.61)
+ AC_INIT([Arcueid], [0.1.2], [dido@imperium.ph])
+ AC_CONFIG_SRCDIR([src/alloc.c])
+ 
+-AM_INIT_AUTOMAKE([-Wall -Werror])
++AM_INIT_AUTOMAKE([-Wall])
+ AC_CANONICAL_HOST
+ AC_CONFIG_MACRO_DIR([m4])
+ 
+@@ -85,6 +85,7 @@ GMP_LIBS=
+ if test "x$enable_bignum" != xno; then
+   AC_CHECK_HEADERS(gmp.h,, AC_MSG_FAILURE([Bignum (libgmp) test failed (--disable-bignum to disable)]))
+   AC_CHECK_LIB(gmp, __gmpz_init, GMP_LIBS=-lgmp)
++  AC_SUBST(GMP_LIBS)
+   if test "$GMP_LIBS" != ""; then
+     MP_HEADER="#include <gmp.h>"
+     MP_TYPE="typedef mpz_t bignum_t;"
+--- origsrc/arcueid-0.1.2/src/Makefile.am	2013-05-14 09:43:52.000000000 +0900
++++ src/arcueid-0.1.2/src/Makefile.am	2019-05-12 20:05:28.926264000 +0900
+@@ -17,13 +17,14 @@
+ #
+ lib_LTLIBRARIES = libarcueid.la
+ 
+-libarcueid_la_LDFLAGS = -version-info 0:0:0
++libarcueid_la_LDFLAGS = -no-undefined -version-info 0:0:0
+ libarcueid_la_SOURCES = alloc.c arith.c arcueid.c ccode.c chan.c \
+ 	clos.c codegen.c compiler.c cons.c cont.c dirops.c env.c \
+ 	err.c fileio.c gopt.c hash.c io.c load.c mathfns.c net.c \
+ 	osdep.c re.c regaux.c regcomp.c rregexec.c sio.c sread.c \
+ 	ssyntax.c string.c symbol.c thread.c util.c utf.c vector.c \
+ 	vmengine.c
++libarcueid_la_LIBADD = $(GMP_LIBS)
+ 
+ include_HEADERS = arcueid.h
+ noinst_HEADERS = alloc.h arith.h builtins.h compiler.h gopt.h \
+--- origsrc/arcueid-0.1.2/src/fileio.c	2013-05-14 09:43:52.000000000 +0900
++++ src/arcueid-0.1.2/src/fileio.c	2019-05-12 20:01:57.989367300 +0900
+@@ -109,6 +109,7 @@ static AFFDEF(fio_ready)
+   for (;;) {
+     fp = FIODATA(AV(fio))->fp;
+     /* XXX - NOT PORTABLE! */
++#if !defined(__CYGWIN__)
+ #ifdef _IO_fpos_t
+     check = (fp->_IO_read_ptr != fp->_IO_read_end);
+ #else
+@@ -116,6 +117,7 @@ static AFFDEF(fio_ready)
+ #endif
+     if (check)
+       ARETURN(CTRUE);
++#endif
+     /* No buffered data available. See if the underlying file descriptor
+        is readable. */
+     FD_ZERO(&rfds);
+--- origsrc/arcueid-0.1.2/src/repl.c	2013-05-14 09:43:52.000000000 +0900
++++ src/arcueid-0.1.2/src/repl.c	2019-05-12 20:10:16.367001900 +0900
+@@ -129,6 +129,7 @@ static int stdin_ready(arc *c)
+   int retval, check;
+ 
+   /* XXX - NOT PORTABLE! */
++#if !defined(__CYGWIN__)
+ #ifdef _IO_fpos_t
+   check = (stdin->_IO_read_ptr != stdin->_IO_read_end);
+ #else
+@@ -136,6 +137,7 @@ static int stdin_ready(arc *c)
+ #endif
+   if (check)
+     return(1);
++#endif
+ 
+   FD_ZERO(&rfds);
+   FD_SET(fileno(stdin), &rfds);
