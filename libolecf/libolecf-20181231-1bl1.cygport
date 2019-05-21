@@ -3,25 +3,30 @@ SRC_URI="https://github.com/libyal/${PN}/archive/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Library and tools to access the OLE 2 Compound File (OLECF) format"
-DESCRIPTION="libolecf is a library to access the OLE 2 Compound File (OLECF) format.
+DESCRIPTION="libolecf is a library to access the OLE 2 Compound File (OLECF) format."
 
-The OLE 2 Compound File format is used to store certain versions of Microsoft
-Office files, thumbs.db and other file formats."
+CYGCONF_ARGS="
+	--enable-python3
+"
 
 src_test()
 {
-    cd ${B}
-    pushd tests
-        ln -fs ${S}/tests/test_runner.sh .
-    popd
-    cygtest
-    rm tests/test_runner.sh
+	cd ${B}
+	pushd tests
+		for f in ${S}/tests/*.{py,sh}
+		do
+			ln -fs ${f} .
+		done
+	popd
+	cygtest
+	rm tests/*.{py,sh}
 }
 
 PKG_NAMES="
 	${PN}
 	${PN}1
 	${PN}-devel
+	python3-${PN}
 "
 libolecf_CONTENTS="
 	usr/bin/*.exe
@@ -33,9 +38,14 @@ libolecf1_CONTENTS="
 "
 libolecf_devel_CONTENTS="
 	usr/include
-	usr/lib
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
 	usr/share/man/man3
+"
+python3_libolecf_CONTENTS="
+	usr/lib/python3*
 "
 libolecf_SUMMARY="${SUMMARY} (utilities)"
 libolecf1_SUMMARY="${SUMMARY} (runtime)"
 libolecf_devel_SUMMARY="${SUMMARY} (development)"
+python3_libolecf_SUMMARY="${SUMMARY} (python3 bindings)"
