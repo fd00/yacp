@@ -1,0 +1,239 @@
+--- origsrc/libewf-20171104/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/Makefile.am	2019-05-26 09:42:28.996802100 +0900
+@@ -3,33 +3,12 @@ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = \
+ 	include \
+ 	common \
+-	libcerror \
+-	libcthreads \
+-	libcdata \
+-	libcdatetime \
+-	libclocale \
+-	libcnotify \
+-	libcsplit \
+-	libuna \
+-	libcfile \
+-	libcpath \
+-	libbfio \
+-	libfcache \
+-	libfdata \
+-	libfguid \
+-	libfvalue \
+-	libhmac \
+-	libcaes \
+ 	libewf \
+-	libodraw \
+-	libsmdev \
+-	libsmraw \
+ 	ewftools \
+ 	ewf.net \
+ 	pyewf \
+ 	pyewf-python2 \
+ 	pyewf-python3 \
+-	po \
+ 	manuals \
+ 	tests \
+ 	msvscpp
+--- origsrc/libewf-20171104/configure.ac	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/configure.ac	2019-05-26 09:42:16.929759200 +0900
+@@ -224,31 +224,11 @@ dnl Generate Makefiles
+ AC_CONFIG_FILES([Makefile])
+ AC_CONFIG_FILES([include/Makefile])
+ AC_CONFIG_FILES([common/Makefile])
+-AC_CONFIG_FILES([libcerror/Makefile])
+-AC_CONFIG_FILES([libcthreads/Makefile])
+-AC_CONFIG_FILES([libcdata/Makefile])
+-AC_CONFIG_FILES([libcdatetime/Makefile])
+-AC_CONFIG_FILES([libclocale/Makefile])
+-AC_CONFIG_FILES([libcnotify/Makefile])
+-AC_CONFIG_FILES([libcsplit/Makefile])
+-AC_CONFIG_FILES([libuna/Makefile])
+-AC_CONFIG_FILES([libcfile/Makefile])
+-AC_CONFIG_FILES([libcpath/Makefile])
+-AC_CONFIG_FILES([libbfio/Makefile])
+-AC_CONFIG_FILES([libfcache/Makefile])
+-AC_CONFIG_FILES([libfdata/Makefile])
+-AC_CONFIG_FILES([libfguid/Makefile])
+-AC_CONFIG_FILES([libfvalue/Makefile])
+-AC_CONFIG_FILES([libhmac/Makefile])
+-AC_CONFIG_FILES([libcaes/Makefile])
+ AC_CONFIG_FILES([libewf/Makefile])
+ AC_CONFIG_FILES([pyewf/Makefile])
+ AC_CONFIG_FILES([pyewf-python2/Makefile])
+ AC_CONFIG_FILES([pyewf-python3/Makefile])
+ AC_CONFIG_FILES([ewf.net/Makefile])
+-AC_CONFIG_FILES([libodraw/Makefile])
+-AC_CONFIG_FILES([libsmdev/Makefile])
+-AC_CONFIG_FILES([libsmraw/Makefile])
+ AC_CONFIG_FILES([ewftools/Makefile])
+ AC_CONFIG_FILES([po/Makefile.in])
+ AC_CONFIG_FILES([po/Makevars])
+--- origsrc/libewf-20171104/ewftools/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/ewftools/Makefile.am	2019-05-26 09:42:49.889047100 +0900
+@@ -1,4 +1,5 @@
+ AM_CPPFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+--- origsrc/libewf-20171104/ewftools/export_handle.c	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/ewftools/export_handle.c	2019-05-26 10:03:14.342719000 +0900
+@@ -5921,6 +5921,7 @@ int export_handle_export_single_files(
+ 	export_path_size = 1 + system_string_length(
+ 	                        export_handle->target_path );
+ 
++#if !defined(__CYGWIN__)
+ #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+ 	if( libcpath_path_sanitize_wide(
+ 	     export_handle->target_path,
+@@ -5942,6 +5943,7 @@ int export_handle_export_single_files(
+ 
+ 		goto on_error;
+ 	}
++#endif
+ 	result = libewf_handle_get_root_file_entry(
+ 	          export_handle->input_handle,
+ 	          &file_entry,
+@@ -6221,6 +6223,7 @@ int export_handle_export_file_entry(
+ 
+ 			goto on_error;
+ 		}
++#if !defined(__CYGWIN__)
+ #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+ 		if( libcpath_path_sanitize_filename_wide(
+ 		     name,
+@@ -6242,6 +6245,7 @@ int export_handle_export_file_entry(
+ 
+ 			goto on_error;
+ 		}
++#endif
+ #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+ 		if( libcpath_path_join_wide(
+ 		     &target_path,
+--- origsrc/libewf-20171104/libewf/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/libewf/Makefile.am	2019-05-26 09:43:04.252994400 +0900
+@@ -1,4 +1,5 @@
+ AM_CPPFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+--- origsrc/libewf-20171104/m4/libbfio.m4	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/m4/libbfio.m4	2019-05-26 09:52:18.151082600 +0900
+@@ -39,7 +39,7 @@ AC_DEFUN([AX_LIBBFIO_CHECK_LIB],
+            [[#include <libbfio/features.h>]],
+            [[#if !defined( LIBBFIO_HAVE_WIDE_CHARACTER_TYPE ) || ( LIBBFIO_HAVE_WIDE_CHARACTER_TYPE != 1 )
+ #error LIBBFIO_HAVE_WIDE_CHARACTER_TYPE not defined
+-##endif]] )],
++#endif]] )],
+          [ac_cv_header_libbfio_features_h_have_wide_character_type=yes],
+          [ac_cv_header_libbfio_features_h_have_wide_character_type=no])
+        AC_LANG_POP(C)],
+--- origsrc/libewf-20171104/m4/libcfile.m4	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/m4/libcfile.m4	2019-05-26 09:51:57.455069200 +0900
+@@ -40,7 +40,7 @@ AC_DEFUN([AX_LIBCFILE_CHECK_LIB],
+            [[#include <libcfile/features.h>]],
+            [[#if !defined( LIBCFILE_HAVE_WIDE_CHARACTER_TYPE ) || ( LIBCFILE_HAVE_WIDE_CHARACTER_TYPE != 1 )
+ #error LIBCFILE_HAVE_WIDE_CHARACTER_TYPE not defined
+-##endif]] )],
++#endif]] )],
+          [ac_cv_header_libcfile_features_h_have_wide_character_type=yes],
+          [ac_cv_header_libcfile_features_h_have_wide_character_type=no])
+        AC_LANG_POP(C)],
+--- origsrc/libewf-20171104/m4/libclocale.m4	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/m4/libclocale.m4	2019-05-26 09:51:34.482604900 +0900
+@@ -40,7 +40,7 @@ AC_DEFUN([AX_LIBCLOCALE_CHECK_LIB],
+            [[#include <libclocale/features.h>]],
+            [[#if !defined( LIBCLOCALE_HAVE_WIDE_CHARACTER_TYPE ) || ( LIBCLOCALE_HAVE_WIDE_CHARACTER_TYPE != 1 )
+ #error LIBCLOCALE_HAVE_WIDE_CHARACTER_TYPE not defined
+-##endif]] )],
++#endif]] )],
+          [ac_cv_header_libclocale_features_h_have_wide_character_type=yes],
+          [ac_cv_header_libclocale_features_h_have_wide_character_type=no])
+        AC_LANG_POP(C)],
+--- origsrc/libewf-20171104/m4/libcpath.m4	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/m4/libcpath.m4	2019-05-26 09:52:10.034403300 +0900
+@@ -40,7 +40,7 @@ AC_DEFUN([AX_LIBCPATH_CHECK_LIB],
+            [[#include <libcpath/features.h>]],
+            [[#if !defined( LIBCPATH_HAVE_WIDE_CHARACTER_TYPE ) || ( LIBCPATH_HAVE_WIDE_CHARACTER_TYPE != 1 )
+ #error LIBCPATH_HAVE_WIDE_CHARACTER_TYPE not defined
+-##endif]] )],
++#endif]] )],
+          [ac_cv_header_libcpath_features_h_have_wide_character_type=yes],
+          [ac_cv_header_libcpath_features_h_have_wide_character_type=no])
+        AC_LANG_POP(C)],
+--- origsrc/libewf-20171104/m4/libcsplit.m4	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/m4/libcsplit.m4	2019-05-26 09:51:46.459158400 +0900
+@@ -40,7 +40,7 @@ AC_DEFUN([AX_LIBCSPLIT_CHECK_LIB],
+            [[#include <libcsplit/features.h>]],
+            [[#if !defined( LIBCSPLIT_HAVE_WIDE_CHARACTER_TYPE ) || ( LIBCSPLIT_HAVE_WIDE_CHARACTER_TYPE != 1 )
+ #error LIBCSPLIT_HAVE_WIDE_CHARACTER_TYPE not defined
+-##endif]] )],
++#endif]] )],
+          [ac_cv_header_libcsplit_features_h_have_wide_character_type=yes],
+          [ac_cv_header_libcsplit_features_h_have_wide_character_type=no])
+        AC_LANG_POP(C)],
+--- origsrc/libewf-20171104/pyewf/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/pyewf/Makefile.am	2019-05-26 09:43:18.886464500 +0900
+@@ -1,5 +1,6 @@
+ if HAVE_PYTHON
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -47,7 +48,7 @@ pyewf_la_LIBADD = \
+ 	@LIBBFIO_LIBADD@
+ 
+ pyewf_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
+-pyewf_la_LDFLAGS  = -module -avoid-version $(PYTHON_LDFLAGS)
++pyewf_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON_LDFLAGS)
+ 
+ endif
+ 
+--- origsrc/libewf-20171104/pyewf-python2/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/pyewf-python2/Makefile.am	2019-05-26 09:43:33.190963400 +0900
+@@ -6,6 +6,7 @@ pyexecdir = $(pyexecdir2)
+ 
+ if HAVE_PYTHON2
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -57,7 +58,7 @@ pyewf_la_LIBADD = \
+ 	@LIBBFIO_LIBADD@
+ 
+ pyewf_la_CPPFLAGS = $(PYTHON2_CPPFLAGS)
+-pyewf_la_LDFLAGS  = -module -avoid-version $(PYTHON2_LDFLAGS)
++pyewf_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON2_LDFLAGS)
+ 
+ $(BUILT_SOURCES):
+ 	/bin/cp -f $(top_srcdir)/pyewf/$@ $@
+--- origsrc/libewf-20171104/pyewf-python3/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/pyewf-python3/Makefile.am	2019-05-26 09:43:48.754762200 +0900
+@@ -6,6 +6,7 @@ pyexecdir = $(pyexecdir3)
+ 
+ if HAVE_PYTHON3
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -57,7 +58,7 @@ pyewf_la_LIBADD = \
+ 	@LIBBFIO_LIBADD@
+ 
+ pyewf_la_CPPFLAGS = $(PYTHON3_CPPFLAGS)
+-pyewf_la_LDFLAGS  = -module -avoid-version $(PYTHON3_LDFLAGS)
++pyewf_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON3_LDFLAGS)
+ 
+ $(BUILT_SOURCES):
+ 	/bin/cp -f $(top_srcdir)/pyewf/$@ $@
+--- origsrc/libewf-20171104/tests/Makefile.am	2017-11-06 02:09:10.000000000 +0900
++++ src/libewf-20171104/tests/Makefile.am	2019-05-26 09:44:01.707376800 +0900
+@@ -1,4 +1,5 @@
+ AM_CPPFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
