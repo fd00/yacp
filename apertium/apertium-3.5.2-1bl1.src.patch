@@ -1,16 +1,16 @@
---- origsrc/apertium-3.5.0/Makefile.am	2018-03-06 20:10:08.000000000 +0900
-+++ src/apertium-3.5.0/Makefile.am	2018-04-07 10:55:34.715000000 +0900
+--- origsrc/apertium-3.5.2/Makefile.am	2018-09-11 19:38:25.000000000 +0900
++++ src/apertium-3.5.2/Makefile.am	2019-05-28 11:09:26.184541700 +0900
 @@ -15,7 +15,7 @@ EXTRA_DIST=autogen.sh README-MODES apert
  
  install-data-local:
  	mkdir -p $(DESTDIR)$(modesdir)
 -	$(INSTALL_DATA) README-MODES  $(DESTDIR)$(modesdir)/README
-+	$(INSTALL_DATA) $(top_srcdir)/README-MODES $(DESTDIR)$(modesdir)/README
++	$(INSTALL_DATA) $(top_srcdir)/README-MODES  $(DESTDIR)$(modesdir)/README
  
  # just a synonym:
  test: check
---- origsrc/apertium-3.5.0/apertium/Makefile.am	2018-03-06 20:08:15.000000000 +0900
-+++ src/apertium-3.5.0/apertium/Makefile.am	2018-04-07 14:26:13.718000000 +0900
+--- origsrc/apertium-3.5.2/apertium/Makefile.am	2018-09-11 19:38:25.000000000 +0900
++++ src/apertium-3.5.2/apertium/Makefile.am	2019-05-28 11:16:43.089609100 +0900
 @@ -197,7 +197,7 @@ GENERATEDSCRIPTS = apertium-gen-deformat
  
  lib_LTLIBRARIES = libapertium3.la
@@ -20,6 +20,15 @@
  
  bin_PROGRAMS = apertium-deshtml \
  	       apertium-deslatex \
+@@ -251,7 +251,7 @@ apertiuminclude = $(prefix)/include/aper
+ apertiumlib = $(prefix)/lib
+ apertiumsysconf = $(prefix)/etc/apertium
+ 
+-apertium_DATA = deformat.xsl reformat.xsl new2old.xsl lexchoice.xsl \
++apertium_DATA = $(srcdir)/deformat.xsl $(srcdir)/reformat.xsl new2old.xsl lexchoice.xsl \
+                 lexchoicebil.xsl \
+ 				tagger.dtd interchunk.dtd format.dtd  transfer.dtd postchunk.dtd modes.dtd \
+ 				tagger.rnc interchunk.rnc format.rnc  transfer.rnc postchunk.rnc modes.rnc \
 @@ -340,7 +340,7 @@ apertium_tagger_readwords_LDADD = $(APER
  if WINDOWS
  INCLUDES = -I$(top_srcdir)/utf8 -I$(top_srcdir)/apertium/win32 -I$(top_srcdir) $(APERTIUM_CFLAGS)
@@ -29,7 +38,7 @@
  endif
  CLEANFILES = *~ apertium_destxt.cc apertium_retxt.cc apertium_deshtml.cc \
               apertium_rehtml.cc apertium_desrtf.cc apertium_rertf.cc \
-@@ -355,110 +355,110 @@ CLEANFILES = *~ apertium_destxt.cc apert
+@@ -355,200 +355,200 @@ CLEANFILES = *~ apertium_destxt.cc apert
               apertium_prelatex.cc apertium_postlatex.cc \
               $(GENERATEDSCRIPTS)
  
@@ -182,9 +191,20 @@
  	$(FLEX) -Cfer -o$@ $@tmp
  	rm $@tmp
  
-@@ -471,62 +471,62 @@ apertium_postlatex.cc: apertium-postlate
- apertium_postlatex_raw.cc: apertium-postlatex-raw.l
- 	$(FLEX) -Cfer -o$@ apertium-postlatex-raw.l
+-apertium_prelatex.cc: apertium-prelatex.l
+-	$(FLEX) -Cfer -o$@ apertium-prelatex.l
++apertium_prelatex.cc: $(srcdir)/apertium-prelatex.l
++	$(FLEX) -Cfer -o$@ $(srcdir)/apertium-prelatex.l
+ 
+-apertium_postlatex.cc: apertium-postlatex.l
+-	$(FLEX) -Cfer -o$@ apertium-postlatex.l
++apertium_postlatex.cc: $(srcdir)/apertium-postlatex.l
++	$(FLEX) -Cfer -o$@ $(srcdir)/apertium-postlatex.l
+ 
+-apertium_postlatex_raw.cc: apertium-postlatex-raw.l
+-	$(FLEX) -Cfer -o$@ apertium-postlatex-raw.l
++apertium_postlatex_raw.cc: $(srcdir)/apertium-postlatex-raw.l
++	$(FLEX) -Cfer -o$@ $(srcdir)/apertium-postlatex-raw.l
  
 -apertium-validate-tagger: Makefile.am validate-header.sh
 +apertium-validate-tagger: Makefile.am $(srcdir)/validate-header.sh
@@ -258,10 +278,15 @@
  	@echo "#!$(BASH)" > $@
 -	@cat deformat-header.sh >> $@
 +	@cat $(srcdir)/deformat-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \$$FILE1 && \\" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \"\$$FILE1\" && \\" >> $@
  	@if [ `basename $(XSLTPROC)` == xsltproc ]; \
- 	  then echo "$(XSLTPROC) --stringparam mode \$$MODE \"$(apertiumdir)\"/deformat.xsl \$$FILE1 >/tmp/\$$\$$.deformat.l && \\"; \
-@@ -537,10 +537,10 @@ apertium-gen-deformat: Makefile.am defor
+-	  then echo "$(XSLTPROC) --stringparam mode \$$MODE \"$(apertiumdir)\"/deformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.deformat.l && \\"; \
+-          else echo "$(XSLTPROC) \"$(apertiumdir)\"/deformat.xsl \"\$$FILE1\" \"\\\$$mode=\$$MODE\" >/tmp/\$$\$$.deformat.l && \\"; \
++	  then echo "$(XSLTPROC) --stringparam mode \$$MODE \"$(apertiumdir)\"/$(srcdir)/deformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.deformat.l && \\"; \
++          else echo "$(XSLTPROC) \"$(apertiumdir)\"/$(srcdir)/deformat.xsl \"\$$FILE1\" \"\\\$$mode=\$$MODE\" >/tmp/\$$\$$.deformat.l && \\"; \
+           fi >> $@
+ 	@echo "$(FLEX) \$$FLEXOPTS -o/tmp/\$$\$$.lex.cc /tmp/\$$\$$.deformat.l && \\" >> $@
+ 	@echo "$(CXX) -DGENFORMAT $(CXXFLAGS) -w $(APERTIUM_CFLAGS) -I $(apertiuminclude) -o \"\$$FILE2\" /tmp/\$$\$$.lex.cc $(APERTIUM_LIBS) 2>/dev/null && \\" >> $@
  	@echo "rm /tmp/\$$\$$.deformat.l /tmp/\$$\$$.lex.cc" >> $@
  	@chmod a+x $@
  
@@ -271,10 +296,11 @@
  	@echo "#!$(BASH)" > $@
 -	@cat gen-header.sh >> $@
 +	@cat $(srcdir)/gen-header.sh >> $@
- 	@echo "$(XMLLINT) --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \$$FILE1 && \\" >> $@
- 	@echo "$(XSLTPROC) \"$(apertiumdir)\"/reformat.xsl \$$FILE1 >/tmp/\$$\$$.reformat.l && \\" >> $@
+ 	@echo "$(XMLLINT) --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \"\$$FILE1\" && \\" >> $@
+-	@echo "$(XSLTPROC) \"$(apertiumdir)\"/reformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.reformat.l && \\" >> $@
++	@echo "$(XSLTPROC) \"$(apertiumdir)\"/$(srcdir)/reformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.reformat.l && \\" >> $@
  	@echo "$(FLEX) \$$FLEXOPTS -o/tmp/\$$\$$.lex.cc /tmp/\$$\$$.reformat.l && \\" >> $@
-@@ -548,7 +548,7 @@ apertium-gen-reformat: Makefile.am gen-h
+ 	@echo "$(CXX) -DGENFORMAT $(CXXFLAGS) -w $(APERTIUM_CFLAGS) -I $(apertiuminclude) -o \"\$$FILE2\" /tmp/\$$\$$.lex.cc $(APERTIUM_LIBS) 2>/dev/null &&\\" >> $@
  	@echo "rm /tmp/\$$\$$.reformat.l /tmp/\$$\$$.lex.cc" >> $@
  	@chmod a+x $@
  
@@ -283,7 +309,7 @@
  	@echo "#!$(BASH)" > $@
  	@echo "APERTIUMDIR=$(apertiumdir)" >> $@
  	@echo "XMLLINT=$(XMLLINT)" >> $@
-@@ -556,50 +556,50 @@ apertium-gen-modes: apertium-gen-modes.i
+@@ -556,47 +556,47 @@ apertium-gen-modes: apertium-gen-modes.i
  	@cat $< >> $@
  	@chmod a+x $@
  
@@ -300,7 +326,6 @@
  	@echo "Creating apertium script"
  	@echo "#!$(BASH)" > $@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
- 	@echo "LTTOOLBOX_PATH=\"$(prefix)/bin\"" >>$@
  	@echo "DEFAULT_DIRECTORY=\"$(prefix)/share/apertium\"" >>$@
 -	@cat apertium-header.sh >>$@
 +	@cat $(srcdir)/apertium-header.sh >>$@
@@ -311,8 +336,6 @@
  	@echo "Creating apertium-unformat script"
  	@echo "#!$(BASH)" > $@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
- 	@echo "LTTOOLBOX_PATH=\"$(prefix)/bin\"" >>$@
- 	@echo "DEFAULT_DIRECTORY=\"$(prefix)/share/apertium\"" >>$@
 -	@cat apertium-unformat-header.sh >>$@
 +	@cat $(srcdir)/apertium-unformat-header.sh >>$@
  	@chmod a+x $@
@@ -345,7 +368,7 @@
  	@echo "Creating apertium-gen-lextorbil script"
  	@echo "#!$(BASH)" >$@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
-@@ -607,10 +607,10 @@ apertium-gen-lextorbil: Makefile.am tran
+@@ -604,10 +604,10 @@ apertium-gen-lextorbil: Makefile.am tran
  	@echo "XSLTPROC_OPTIONS_LR=\"\"">>$@
  	@echo "XSLTPROC_OPTIONS_RL=\"--stringparam r2l yes\"">>$@
  	@echo "STYLESHEET=\"$(apertiumdir)/lexchoicebil.xsl\"">>$@
@@ -358,7 +381,7 @@
  	@echo "Creating apertium-gen-lextormono script"
  	@echo "#!$(BASH)" >$@
  	@echo "APERTIUM_PATH=\"$(prefix)/bin\"" >>$@
-@@ -618,28 +618,28 @@ apertium-gen-lextormono: Makefile.am tra
+@@ -615,28 +615,28 @@ apertium-gen-lextormono: Makefile.am tra
  	@echo "XSLTPROC_OPTIONS_LR=\"\"">>$@
  	@echo "XSLTPROC_OPTIONS_RL=\"--stringparam r2l yes\"">>$@
  	@echo "STYLESHEET=\"$(apertiumdir)/lexchoice.xsl\"">>$@
@@ -394,8 +417,17 @@
  	@chmod a+x $@
  
  man_MANS=apertium.1 apertium-deshtml.1 apertium-desrtf.1 apertium-destxt.1 \
---- origsrc/apertium-3.5.0/configure.ac	2018-03-04 22:34:37.000000000 +0900
-+++ src/apertium-3.5.0/configure.ac	2018-04-07 11:06:57.063000000 +0900
+@@ -665,7 +665,7 @@ man_MANS=apertium.1 apertium-deshtml.1 a
+ #         apertium-lextor.1 apertium-preprocess-corpus-lextor.1
+ 
+ EXTRA_DIST = gen-header.sh deformat-header.sh \
+-             reformat.xsl deformat.xsl new2old.xsl lexchoice.xsl lexchoicebil.xsl \
++             $(srcdir)/reformat.xsl $(srcdir)/deformat.xsl new2old.xsl lexchoice.xsl lexchoicebil.xsl \
+              txt-format.xml \
+              html-format.xml odt-format.xml rtf-format.xml wxml-format.xml latex-format.xml\
+              html-noent-format.xml \
+--- origsrc/apertium-3.5.2/configure.ac	2018-09-11 19:38:25.000000000 +0900
++++ src/apertium-3.5.2/configure.ac	2019-05-28 11:17:29.363868700 +0900
 @@ -172,7 +172,7 @@ AC_CHECK_DECLS([fread_unlocked, fwrite_u
  AC_CHECK_FUNCS([setlocale strdup getopt snprintf mbtowc])
  AC_REPLACE_FUNCS(getopt_long)
