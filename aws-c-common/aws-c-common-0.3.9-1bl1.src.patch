@@ -1,15 +1,15 @@
---- origsrc/aws-c-common-0.3.4/CMakeLists.txt	2019-03-16 03:06:46.000000000 +0900
-+++ src/aws-c-common-0.3.4/CMakeLists.txt	2019-04-02 14:38:45.437826600 +0900
-@@ -12,7 +12,7 @@
- # permissions and limitations under the License.
- 
+--- origsrc/aws-c-common-0.3.9/CMakeLists.txt	2019-05-14 06:30:37.000000000 +0900
++++ src/aws-c-common-0.3.9/CMakeLists.txt	2019-05-29 21:46:58.494059800 +0900
+@@ -14,7 +14,7 @@
  cmake_minimum_required(VERSION 3.0)
+ option(STATIC_CRT "Windows specific option that to specify static/dynamic run-time library" OFF)
+ 
 -project(aws-c-common LANGUAGES C VERSION 0.1.0)
-+project(aws-c-common LANGUAGES C VERSION 0.3.4)
++project(aws-c-common LANGUAGES C VERSION 0.3.9)
  
  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
  include(AwsCFlags)
-@@ -129,7 +129,11 @@ endif()
+@@ -131,7 +131,11 @@ endif()
  
  # Our ABI is not yet stable
  set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES VERSION 1.0.0)
@@ -22,7 +22,7 @@
  
  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-@@ -190,12 +194,12 @@ configure_file("cmake/${CMAKE_PROJECT_NA
+@@ -192,12 +196,12 @@ configure_file("cmake/${CMAKE_PROJECT_NA
    @ONLY)
  
  install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
@@ -37,7 +37,7 @@
      COMPONENT Development)
  
  list(APPEND EXPORT_MODULES
-@@ -208,7 +212,7 @@ list(APPEND EXPORT_MODULES
+@@ -210,7 +214,7 @@ list(APPEND EXPORT_MODULES
      )
  
  install(FILES ${EXPORT_MODULES}
@@ -46,7 +46,7 @@
          COMPONENT Development)
  
  # This should come last, to ensure all variables defined by cmake will be available for export
-@@ -222,3 +226,10 @@ if (NOT CMAKE_CROSSCOMPILING)
+@@ -226,3 +230,10 @@ if (NOT CMAKE_CROSSCOMPILING)
  endif()
  
  include(CPackConfig)
@@ -57,8 +57,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-common-0.3.4/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-common-0.3.4/aws-c-common.pc.in	2019-04-02 14:38:26.779583900 +0900
+--- origsrc/aws-c-common-0.3.9/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.3.9/aws-c-common.pc.in	2019-05-29 21:56:12.192693400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -67,38 +67,25 @@
 +
 +Name: aws-c-common
 +Description: Core c99 package for AWS SDK for C
-+Version: @VERSION@
++Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -laws-c-common
 +Cflags: -I${includedir}
---- origsrc/aws-c-common-0.3.4/include/aws/testing/aws_test_harness.h	2019-03-16 03:06:46.000000000 +0900
-+++ src/aws-c-common-0.3.4/include/aws/testing/aws_test_harness.h	2019-04-02 14:38:26.794889000 +0900
-@@ -445,13 +445,16 @@ done:
-     return EXCEPTION_EXECUTE_HANDLER;
- }
- #elif !defined __ANDROID__
-+#if !defined(__CYGWIN__)
- #    include <execinfo.h>
-+#endif
- #    include <signal.h>
+--- origsrc/aws-c-common-0.3.9/cmake/AwsCFlags.cmake	2019-05-14 06:30:37.000000000 +0900
++++ src/aws-c-common-0.3.9/cmake/AwsCFlags.cmake	2019-05-29 21:42:59.112210900 +0900
+@@ -48,7 +48,10 @@ function(aws_set_common_properties targe
+         list(APPEND AWS_C_FLAGS "${_FLAGS}")
  
- static void s_print_stack_trace(int sig, siginfo_t *sig_info, void *user_data) {
-     (void)sig_info;
-     (void)user_data;
+     else()
+-        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes)
++        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes)
++        if (NOT CYGWIN)
++            list(APPEND AWS_C_FLAGS -Werror)
++        endif()
  
-+#if !defined(__CYGWIN__)
-     void *array[100];
-     char **strings;
-     size_t i;
-@@ -465,6 +468,7 @@ static void s_print_stack_trace(int sig,
-         fprintf(stderr, "%s\n", strings[i]);
- 
-     free(strings);
-+#endif
-     exit(-1);
- }
- #endif
---- origsrc/aws-c-common-0.3.4/source/arch/cpuid.c	2019-03-16 03:06:46.000000000 +0900
-+++ src/aws-c-common-0.3.4/source/arch/cpuid.c	2019-04-02 14:38:26.810548500 +0900
+         if(NOT SET_PROPERTIES_NO_WEXTRA)
+             list(APPEND AWS_C_FLAGS -Wextra)
+--- origsrc/aws-c-common-0.3.9/source/arch/cpuid.c	2019-05-14 06:30:37.000000000 +0900
++++ src/aws-c-common-0.3.9/source/arch/cpuid.c	2019-05-29 21:40:40.008956600 +0900
 @@ -35,7 +35,7 @@
  #define CPUID_UNAVAILABLE 1
  static int cpuid_state = 2;
