@@ -1,39 +1,35 @@
 --- origsrc/mbelib-1.3.0/CMakeLists.txt	2016-01-09 02:31:41.000000000 +0900
-+++ src/mbelib-1.3.0/CMakeLists.txt	2017-10-12 20:23:40.774000000 +0900
-@@ -5,16 +5,28 @@ FILE(GLOB SRCS *.c)
++++ src/mbelib-1.3.0/CMakeLists.txt	2019-05-31 10:00:31.322168600 +0900
+@@ -5,15 +5,24 @@ FILE(GLOB SRCS *.c)
  
  include_directories("${PROJECT_SOURCE_DIR}")
  
 -ADD_LIBRARY(mbe-static STATIC ${SRCS})
-+option(BUILD_STATIC_LIBS "build static" OFF)
-+if (BUILD_STATIC_LIBS)
++if (NOT BUILD_SHARED_LIBS)
 +    ADD_LIBRARY(mbe-static STATIC ${SRCS})
++    TARGET_LINK_LIBRARIES(mbe-static m)
 +endif()
  ADD_LIBRARY(mbe-shared SHARED ${SRCS})
 -TARGET_LINK_LIBRARIES(mbe-static m)
-+if (BUILD_STATIC_LIBS)
-+    TARGET_LINK_LIBRARIES(mbe-static m)
-+endif()
  TARGET_LINK_LIBRARIES(mbe-shared m)
  
 -install(TARGETS mbe-static mbe-shared DESTINATION lib)
-+install(TARGETS mbe-shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
-+if (BUILD_STATIC_LIBS)
++if (NOT BUILD_SHARED_LIBS)
 +    install(TARGETS mbe-static DESTINATION lib)
 +endif()
++install(TARGETS mbe-shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
  install (FILES "${PROJECT_SOURCE_DIR}/mbelib.h" DESTINATION include)
  
 -set_target_properties(mbe-static mbe-shared PROPERTIES OUTPUT_NAME mbe
-+set_target_properties(mbe-shared PROPERTIES OUTPUT_NAME mbe
-                       VERSION 1.0 SOVERSION 1 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib )
-+if (BUILD_STATIC_LIBS)
++if (NOT BUILD_SHARED_LIBS)
 +    set_target_properties(mbe-static PROPERTIES OUTPUT_NAME mbe
 +                          VERSION 1.0 SOVERSION 1 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib )
 +endif()
++set_target_properties(mbe-shared PROPERTIES OUTPUT_NAME mbe
+                       VERSION 1.0 SOVERSION 1 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib )
  
  # uninstall target
- configure_file(
-@@ -30,3 +42,11 @@ option(DISABLE_TEST "Disable building of
+@@ -30,3 +39,10 @@ option(DISABLE_TEST "Disable building of
  if (NOT DISABLE_TEST)
      add_subdirectory(test)
  endif()
@@ -42,11 +38,10 @@
 +SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
 +SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+SET(VERSION "1.3.0")
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mbelib.pc.in ${CMAKE_BINARY_DIR}/mbelib.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/mbelib.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/mbelib-1.3.0/mbelib.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/mbelib-1.3.0/mbelib.pc.in	2017-10-12 20:23:58.461000000 +0900
++++ src/mbelib-1.3.0/mbelib.pc.in	2019-05-31 10:00:31.244053500 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -56,5 +51,37 @@
 +Name: mbelib
 +Description: P25 Phase 1 and ProVoice vocoder
 +Version: @VERSION@
-+Libs: -L${libdir} -lmbe
++Libs: -L${libdir} -lmbelib
 +Cflags: -I${includedir}
+--- origsrc/mbelib-1.3.0/test/CMakeLists.txt	2016-01-09 02:31:41.000000000 +0900
++++ src/mbelib-1.3.0/test/CMakeLists.txt	2019-05-31 09:58:44.946621800 +0900
+@@ -1,13 +1,19 @@
+ project(mbetest)
+ 
+-add_subdirectory(gtest)
+-add_subdirectory(gmock)
++if (NOT CYGWIN)
++    add_subdirectory(gtest)
++    add_subdirectory(gmock)
++endif()
+ 
+ FILE(GLOB SRCS *.cpp)
+ 
++if (NOT CYGWIN)
++    include_directories(
++        ${PROJECT_SOURCE_DIR}/gtest/include
++        ${PROJECT_SOURCE_DIR}/gmock/include
++    )
++endif()
+ include_directories(
+-    ${PROJECT_SOURCE_DIR}/gtest/include
+-    ${PROJECT_SOURCE_DIR}/gmock/include
+     ${mbe_SOURCE_DIR}
+ )
+ 
+@@ -19,4 +25,4 @@ add_custom_target(test
+ )
+ 
+ ADD_EXECUTABLE(mbetest ${SRCS})
+-TARGET_LINK_LIBRARIES(mbetest mbe gmock gtest)
++TARGET_LINK_LIBRARIES(mbetest mbe gmock gtest gtest_main)
