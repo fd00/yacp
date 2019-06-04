@@ -1,0 +1,53 @@
+--- origsrc/replxx-release-0.0.1/CMakeLists.txt	2018-05-11 19:57:56.000000000 +0900
++++ src/replxx-release-0.0.1/CMakeLists.txt	2019-06-04 12:57:59.687819700 +0900
+@@ -61,7 +61,7 @@ endif()
+ # build libreplxx
+ add_library(
+   replxx
+-  STATIC
++  SHARED
+   src/conversion.cxx
+   src/ConvertUTF.cpp
+   src/escape.cxx
+@@ -77,12 +77,16 @@ add_library(
+ 
+ add_library(Replxx::Replxx ALIAS replxx)
+ 
++if (CYGWIN)
++  set_target_properties(replxx PROPERTIES SOVERSION 0)
++endif()
++
+ target_include_directories(replxx
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+    PRIVATE ${PROJECT_SOURCE_DIR}/src)
+ 
+ # install
+-install(TARGETS replxx DESTINATION lib)
++install(TARGETS replxx RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # headers
+ install(FILES include/replxx.hxx include/replxx.h DESTINATION include)
+@@ -131,3 +135,10 @@ set(CPACK_STRIP_FILES "ON")
+ 
+ set(CPACK_PACKAGE_NAME "replxx")
+ set(CPACK_DEBIAN_PACKAGE_SECTION "utilities")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/replxx.pc.in ${CMAKE_BINARY_DIR}/replxx.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/replxx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/replxx-release-0.0.1/replxx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/replxx-release-0.0.1/replxx.pc.in	2019-06-04 12:58:10.025164900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: replxx
++Description: Readline and libedit replacement
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lreplxx
++Cflags: -I${includedir}
