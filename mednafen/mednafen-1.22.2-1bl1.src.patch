@@ -1,0 +1,61 @@
+--- origsrc/mednafen/configure.ac	2019-04-24 06:54:58.000000000 +0900
++++ src/mednafen/configure.ac	2019-06-07 13:43:42.272721600 +0900
+@@ -585,12 +585,15 @@ AC_ARG_WITH([external-trio], [AS_HELP_ST
+ 	[],
+ 	[with_external_trio=no])
+ if test x$with_external_trio = xyes; then
+-	AC_CHECK_LIB([trio], [trio_printf], [], AC_MSG_ERROR([*** libtrio not found!]))
+-	AC_CHECK_HEADER([trio.h], [], AC_MSG_ERROR([*** libtrio not found!]))
++	PKG_CHECK_MODULES([TRIO], [trio], [], AC_MSG_ERROR([*** trio not found!]))
++	AC_SUBST([TRIO_CFLAGS])
++	AC_SUBST([TRIO_LIBS])
++	# AC_CHECK_LIB([trio], [trio_printf], [], AC_MSG_ERROR([*** libtrio not found!]))
++	# AC_CHECK_HEADER([trio.h], [], AC_MSG_ERROR([*** libtrio not found!]))
+ 
+ 	AC_DEFINE([HAVE_EXTERNAL_TRIO], [1], [Define if we are compiling and linking with external trio.])
+ 	AM_CONDITIONAL(HAVE_EXTERNAL_TRIO, true)
+-	AC_SUBST([TRIO_LIBS], ["-ltrio"])
++	# AC_SUBST([TRIO_LIBS], ["-ltrio"])
+ 	trio_include_symsrc="include/trio_external"
+ else
+ 	trio_include_symsrc="src/trio"
+@@ -742,7 +745,7 @@ AM_CONDITIONAL(ARCH_X86_64, false)
+ AM_CONDITIONAL(ARCH_POWERPC, false)
+ AM_CONDITIONAL(ARCH_POWERPC_ALTIVEC, false)
+ 
+-TRIO_CFLAGS=""
++# TRIO_CFLAGS=""
+ 
+ dnl OpenBSD...
+ AC_TRY_COMPILE([], [asm volatile("vcvtss2si %xmm6,%ecx\n\tvhaddps %ymm7,%ymm7,%ymm7\n\tvzeroupper\n\t");],
+--- origsrc/mednafen/src/Makefile.am	2019-04-24 06:54:58.000000000 +0900
++++ src/mednafen/src/Makefile.am	2019-06-07 13:08:06.159219500 +0900
+@@ -1,6 +1,6 @@
+ AUTOMAKE_OPTIONS = subdir-objects
+ DEFS = @DEFS@ @SNDFILE_CFLAGS@
+-DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl
++DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl $(TRIO_CFLAGS)
+ 
+ bin_PROGRAMS	=	mednafen
+ 
+--- origsrc/mednafen/src/drivers/Makefile.am	2019-04-24 06:54:58.000000000 +0900
++++ src/mednafen/src/drivers/Makefile.am	2019-06-07 11:34:59.429066000 +0900
+@@ -1,6 +1,6 @@
+ AUTOMAKE_OPTIONS = subdir-objects
+ DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@  @SDL_CFLAGS@
+-DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl
++DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl $(TRIO_CFLAGS)
+ 
+ noinst_LIBRARIES	=	libmdfnsdl.a
+ 
+--- origsrc/mednafen/src/ss/Makefile.am	2019-04-24 06:54:58.000000000 +0900
++++ src/mednafen/src/ss/Makefile.am	2019-06-07 11:41:40.038712500 +0900
+@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = subdir-objects
+ DEFS = @DEFS@
+ AM_CXXFLAGS = @AM_CXXFLAGS@ @SS_EXTRA_FLAGS@ @NO_STACK_PROTECTOR_FLAGS@
+ # -Wpedantic
+-DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl
++DEFAULT_INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_builddir)/intl $(TRIO_CFLAGS)
+ 
+ noinst_LIBRARIES	=
+ 
