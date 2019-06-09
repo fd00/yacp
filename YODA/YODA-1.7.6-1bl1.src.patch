@@ -1,0 +1,91 @@
+--- origsrc/YODA-1.7.6/configure.ac	2019-06-07 22:47:01.000000000 +0900
++++ src/YODA-1.7.6/configure.ac	2019-06-09 20:20:10.156581200 +0900
+@@ -48,7 +48,7 @@ AC_SUBST([LIB_SUFFIX])
+ 
+ ## Set default build flags
+ AC_CEDAR_CHECKCXXFLAG([-pedantic], [AM_CXXFLAGS="$AM_CXXFLAGS -pedantic"])
+-AC_CEDAR_CHECKCXXFLAG([-Wall], [AM_CXXFLAGS="$AM_CXXFLAGS -Wall -Wno-format"])
++AC_CEDAR_CHECKCXXFLAG([-Wall], [AM_CXXFLAGS="$AM_CXXFLAGS -Wall"])
+ dnl AC_CEDAR_CHECKCXXFLAG([-std=c++98], [AM_CXXFLAGS="$AM_CXXFLAGS -std=c++98"])
+ dnl AC_CEDAR_CHECKCXXFLAG([-Wno-unused-variable], [AM_CXXFLAGS="$AM_CXXFLAGS -Wno-unused-variable"])
+ 
+@@ -172,15 +172,14 @@ AC_SUBST(YODA_SETUP_PY_PATH)
+ AC_PATH_PROG(DOXYGEN, doxygen)
+ AM_CONDITIONAL(WITH_DOXYGEN, test "$DOXYGEN")
+ 
++PKG_CHECK_MODULES([TINYXML], [tinyxml])
++PKG_CHECK_MODULES([YAML_CPP], [yaml-cpp])
+ 
+ ## Build file output
+ AC_EMPTY_SUBST
+ AC_CONFIG_FILES([Makefile Doxyfile])
+ AC_CONFIG_FILES([include/Makefile include/YODA/Makefile])
+-AC_CONFIG_FILES([src/Makefile
+-                 src/tinyxml/Makefile
+-                 src/yamlcpp/Makefile
+-])
++AC_CONFIG_FILES([src/Makefile])
+ AC_CONFIG_FILES([tests/Makefile])
+ AC_CONFIG_FILES([pyext/Makefile
+                  pyext/setup.py
+--- origsrc/YODA-1.7.6/include/YODA/Utils/BinSearcher.h	2017-09-04 23:57:42.000000000 +0900
++++ src/YODA-1.7.6/include/YODA/Utils/BinSearcher.h	2019-06-09 20:22:28.970871000 +0900
+@@ -14,6 +14,10 @@
+ #include <limits>
+ #include <memory>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace YODA {
+   namespace Utils {
+ 
+--- origsrc/YODA-1.7.6/src/Makefile.am	2018-08-31 07:11:52.000000000 +0900
++++ src/YODA-1.7.6/src/Makefile.am	2019-06-09 20:18:03.223425900 +0900
+@@ -1,4 +1,4 @@
+-SUBDIRS = tinyxml yamlcpp .
++# SUBDIRS = tinyxml yamlcpp .
+ 
+ lib_LTLIBRARIES = libYODA.la
+ 
+@@ -23,8 +23,8 @@ libYODA_la_SOURCES = \
+     Scatter2D.cc \
+     Scatter3D.cc
+ 
+-libYODA_la_LDFLAGS = -avoid-version
+-libYODA_la_LIBADD = $(builddir)/tinyxml/libyoda-tinyxml.la $(builddir)/yamlcpp/libyoda-yaml-cpp.la
+-libYODA_la_CPPFLAGS = $(AM_CPPFLAGS) -DTIXML_USE_STL -I$(srcdir)/yamlcpp -I$(srcdir) -DYAML_NAMESPACE=YODA_YAML
++libYODA_la_LDFLAGS = -no-undefined
++libYODA_la_LIBADD = $(TINYXML_LIBS) $(YAML_CPP_LIBS)
++libYODA_la_CPPFLAGS = $(AM_CPPFLAGS) $(TINYXML_CFLAGS) $(YAML_CPP_CFLAGS) -I$(srcdir) -DYAML_NAMESPACE=YODA_YAML
+ 
+ EXTRA_DIST = zstr
+--- origsrc/YODA-1.7.6/src/ReaderYODA.cc	2018-09-20 01:44:32.000000000 +0900
++++ src/YODA-1.7.6/src/ReaderYODA.cc	2019-06-09 20:23:29.021855200 +0900
+@@ -18,10 +18,7 @@
+ #include "YODA/Scatter2D.h"
+ #include "YODA/Scatter3D.h"
+ 
+-#include "yaml-cpp/yaml.h"
+-#ifdef YAML_NAMESPACE
+-#define YAML YAML_NAMESPACE
+-#endif
++#include <yaml-cpp/yaml.h>
+ 
+ #ifdef HAVE_LIBZ
+ #define _XOPEN_SOURCE 700
+--- origsrc/YODA-1.7.6/src/WriterYODA.cc	2018-09-20 01:44:32.000000000 +0900
++++ src/YODA-1.7.6/src/WriterYODA.cc	2019-06-09 20:24:27.654948100 +0900
+@@ -5,10 +5,7 @@
+ //
+ #include "YODA/WriterYODA.h"
+ 
+-#include "yaml-cpp/yaml.h"
+-#ifdef YAML_NAMESPACE
+-#define YAML YAML_NAMESPACE
+-#endif
++#include <yaml-cpp/yaml.h>
+ 
+ #include <iostream>
+ #include <iomanip>
