@@ -1,0 +1,180 @@
+--- origsrc/biosig4c++-1.9.4/CMakeLists.txt	2019-04-06 17:41:26.000000000 +0900
++++ src/biosig4c++-1.9.4/CMakeLists.txt	2019-06-12 21:26:52.437012200 +0900
+@@ -6,7 +6,7 @@ option (USE_SUITESPARSE "Add support for
+ 
+ # Version number
+ set (libbiosig_VERSION_MAJOR 1)
+-set (libbiosig_VERSION_MINOR 8)
++set (libbiosig_VERSION_MINOR 9)
+ set (libbiosig_VERSION_PATCH 4)
+ 
+ find_program (GAWK NAMES gawk)
+@@ -51,16 +51,25 @@ set (sources
+   t220/sopen_scp_write.c
+   t230/sopen_hl7aecg.cpp
+   test0/sandbox.c
+-  XMLParser/tinystr.cpp
+-  XMLParser/tinyxml.cpp
+-  XMLParser/tinyxmlerror.cpp
+-  XMLParser/tinyxmlparser.cpp
+   biosig.c
+   gdftime.c
+   mdc_ecg_codes.c
+   physicalunits.c
+ )
+ 
++include(FindPkgConfig)
++pkg_check_modules(TINYXML tinyxml QUIET)
++if (TINYXML_FOUND)
++  add_definitions(-DWITH_LIBTINYXML)
++else()
++  list(APPEND sources
++    XMLParser/tinystr.cpp
++    XMLParser/tinyxml.cpp
++    XMLParser/tinyxmlerror.cpp
++    XMLParser/tinyxmlparser.cpp
++  )
++endif()
++
+ if (WIN32)
+   list (APPEND sources
+     win32/getdelim.c
+@@ -78,20 +87,22 @@ endif ()
+ 
+ # Cannot have same name for static and shared library, 
+ # so we'll correct that later on
+-add_library (biosigstatic STATIC
+-  ${headers}
+-  ${sources}
+-)
+-set_target_properties(biosigstatic PROPERTIES OUTPUT_NAME biosig)
++if (NOT BUILD_SHARED_LIBS)
++  add_library (biosigstatic STATIC
++    ${headers}
++    ${sources}
++  )
++  set_target_properties(biosigstatic PROPERTIES OUTPUT_NAME biosig)
+ 
+-add_library (biosig2static STATIC
+-  ${headers}
+-  biosig2.h
+-  biosig-dev.h
+-  ${sources}
+-  biosig2.c
+-)
++  add_library (biosig2static STATIC
++    ${headers}
++    biosig2.h
++    biosig-dev.h
++    ${sources}
++    biosig2.c
++  )
+ set_target_properties(biosig2static PROPERTIES OUTPUT_NAME biosig2)
++endif()
+ 
+ add_library (biosigshared SHARED
+   ${headers}
+@@ -103,6 +114,12 @@ if (APPLE)
+      INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
+      )
+ endif ()
++if (CYGWIN)
++  set_target_properties(biosigshared PROPERTIES SOVERSION 0)
++endif()
++if (TINYXML_FOUND)
++  target_link_libraries(biosigshared ${TINYXML_LIBRARIES})
++endif()
+ 
+ add_library (biosig2shared SHARED
+   ${headers}
+@@ -117,17 +134,31 @@ if (APPLE)
+      INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
+      )
+ endif ()
+-
+-add_dependencies (biosigstatic eventcodes units annexb)
++if (CYGWIN)
++  set_target_properties(biosig2shared PROPERTIES SOVERSION 0)
++endif()
++if (TINYXML_FOUND)
++  target_link_libraries(biosig2shared ${TINYXML_LIBRARIES})
++endif()
++
++if (NOT BUILD_SHARED_LIBS)
++  add_dependencies (biosigstatic eventcodes units annexb)
++endif()
+ add_dependencies (biosigshared eventcodes units annexb)
+-add_dependencies (biosig2static eventcodes units annexb)
++if (NOT BUILD_SHARED_LIBS)
++  add_dependencies (biosig2static eventcodes units annexb)
++endif()
+ add_dependencies (biosig2shared eventcodes units annexb)
+ 
+ FIND_LIBRARY( ICONV_LIBRARY NAMES iconv )
+ MARK_AS_ADVANCED( ICONV_LIBRARY )
+-target_link_libraries( biosigstatic ${ICONV_LIBRARY} )
++if (NOT BUILD_SHARED_LIBS)
++  target_link_libraries( biosigstatic ${ICONV_LIBRARY} )
++endif()
+ target_link_libraries( biosigshared ${ICONV_LIBRARY} )
+-target_link_libraries( biosig2static ${ICONV_LIBRARY} )
++if (NOT BUILD_SHARED_LIBS)
++  target_link_libraries( biosig2static ${ICONV_LIBRARY} )
++endif()
+ target_link_libraries( biosig2shared ${ICONV_LIBRARY} )
+ 
+ if (USE_ZLIB)
+@@ -135,9 +166,13 @@ if (USE_ZLIB)
+   find_package( ZLIB REQUIRED )
+     if ( ZLIB_FOUND )
+       include_directories( ${ZLIB_INCLUDE_DIRS} )
+-      target_link_libraries( biosigstatic ${ZLIB_LIBRARIES} )
++      if (NOT BUILD_SHARED_LIBS)
++        target_link_libraries( biosigstatic ${ZLIB_LIBRARIES} )
++      endif()
+       target_link_libraries( biosigshared ${ZLIB_LIBRARIES} )
+-      target_link_libraries( biosig2static ${ZLIB_LIBRARIES} )
++      if (NOT BUILD_SHARED_LIBS)
++        target_link_libraries( biosig2static ${ZLIB_LIBRARIES} )
++      endif()
+       target_link_libraries( biosig2shared ${ZLIB_LIBRARIES} )
+     endif( ZLIB_FOUND )
+ endif ()
+@@ -146,19 +181,27 @@ if (USE_SUITESPARSE)
+   add_definitions (-D=WITH_CHOLMOD)
+   FIND_LIBRARY( CHOLMOD_LIBRARY NAMES cholmod )
+   MARK_AS_ADVANCED( CHOLMOD_LIBRARY )
+-  target_link_libraries( biosigstatic ${CHOLMOD_LIBRARY} )
++  if (NOT BUILD_SHARED_LIBS)
++    target_link_libraries( biosigstatic ${CHOLMOD_LIBRARY} )
++  endif()
+   target_link_libraries( biosigshared ${CHOLMOD_LIBRARY} )
+-  target_link_libraries( biosig2static ${CHOLMOD_LIBRARY} )
++  if (NOT BUILD_SHARED_LIBS)
++    target_link_libraries( biosig2static ${CHOLMOD_LIBRARY} )
++  endif()
+   target_link_libraries( biosig2shared ${CHOLMOD_LIBRARY} )
+ endif ()
+ 
+ add_definitions (-D=WITHOUT_NETWORK)
+ 
+-install (TARGETS biosigstatic DESTINATION lib)
+-install (TARGETS biosigshared DESTINATION lib)
+-install (TARGETS biosig2static DESTINATION lib)
+-install (TARGETS biosig2shared DESTINATION lib)
+-install (FILES  biosig.h DESTINATION include)
+-install (FILES  biosig2.h DESTINATION include)
+-install (FILES  biosig-dev.h DESTINATION include)
+-install (FILES  gdftime.h DESTINATION include)
++if (NOT BUILD_SHARED_LIBS)
++  install (TARGETS biosigstatic DESTINATION lib)
++endif()
++install (TARGETS biosigshared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++if (NOT BUILD_SHARED_LIBS)
++  install (TARGETS biosig2static DESTINATION lib)
++endif()
++install (TARGETS biosig2shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install (FILES  biosig.h DESTINATION include/biosig)
++install (FILES  biosig2.h DESTINATION include/biosig)
++install (FILES  biosig-dev.h DESTINATION include/biosig)
++install (FILES  gdftime.h DESTINATION include/biosig)
