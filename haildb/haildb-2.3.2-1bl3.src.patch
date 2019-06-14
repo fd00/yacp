@@ -1,0 +1,87 @@
+--- origsrc/haildb-2.3.2/Makefile.am	2011-01-12 10:07:59.000000000 +0900
++++ src/haildb-2.3.2/Makefile.am	2019-06-14 11:02:53.796570400 +0900
+@@ -18,7 +18,7 @@ ACLOCAL_AMFLAGS = -I m4 --force
+ 
+ include_HEADERS = haildb.h
+ 
+-libhaildb_la_LDFLAGS	= -version-info $(IB_API_VERSION) $(LD_VERSION_SCRIPT)
++libhaildb_la_LDFLAGS	= -no-undefined -version-info $(IB_API_VERSION) $(LD_VERSION_SCRIPT)
+ 
+ libhaildb_la_CFLAGS= \
+         ${AM_CFLAGS} \
+@@ -259,6 +259,9 @@ tests_ib_mt_drv_SOURCES= \
+ 			 tests/ib_mt_t1.c \
+ 			 tests/ib_mt_t2.c
+ libtest0aux_la_SOURCES= tests/test0aux.c
++libtest0aux_la_CFLAGS = -mcmodel=large
++libtest0aux_la_LDFLAGS = -no-undefined
++libtest0aux_la_LIBADD = libhaildb.la
+ 
+ TESTS= $(check_PROGRAMS)
+  
+@@ -283,3 +286,6 @@ test-stress: all test-clean
+ test-clean:
+ 	cd $(top_srcdir)/tests && \
+ 	rm -fr log/ dict_test/ t/ test/ ibdata1
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/haildb-2.3.2/config.h.in	2011-01-12 10:08:30.000000000 +0900
++++ src/haildb-2.3.2/config.h.in	2019-06-14 11:04:59.107234400 +0900
+@@ -352,8 +352,7 @@
+ /* Use Solaris 10 atomic_ops(3C) from libc */
+ #undef IB_ATOMIC_MODE_SOLARIS_ATOMICS
+ 
+-/* Define to the sub-directory in which libtool stores uninstalled libraries.
+-   */
++/* Define to the sub-directory where libtool stores uninstalled libraries. */
+ #undef LT_OBJDIR
+ 
+ /* Define to 1 if assertions should be disabled. */
+@@ -501,6 +500,11 @@
+ # endif
+ #endif
+ 
++/* Enable large inode numbers on Mac OS X 10.5.  */
++#ifndef _DARWIN_USE_64_BIT_INODE
++# define _DARWIN_USE_64_BIT_INODE 1
++#endif
++
+ /* Number of bits in a file offset, on hosts where this is settable. */
+ #undef _FILE_OFFSET_BITS
+ 
+--- origsrc/haildb-2.3.2/configure.ac	2011-01-12 10:07:59.000000000 +0900
++++ src/haildb-2.3.2/configure.ac	2019-06-14 11:02:53.749692200 +0900
+@@ -449,7 +449,7 @@ AM_CONDITIONAL([HAVE_PTHREAD_BARRIER], [
+ AM_CPPFLAGS="${AM_CPPFLAGS} -I\$(top_srcdir)/include -I\$(top_builddir)/include"
+ AM_CFLAGS="${AM_CFLAGS} ${NO_WERROR}"
+ 
+-AC_CONFIG_FILES([ Makefile haildb.spec ])
++AC_CONFIG_FILES([haildb.pc  Makefile haildb.spec ])
+ 
+ AC_OUTPUT
+ 
+--- origsrc/haildb-2.3.2/haildb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/haildb-2.3.2/haildb.pc.in	2019-06-14 11:02:53.577807400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: haildb
++Description: Relational database that is embeddable within applications
++Version: @VERSION@
++Libs: -L${libdir} -lhaildb
++Cflags: -I${includedir}
+--- origsrc/haildb-2.3.2/os/os0thread.c	2011-01-12 10:07:59.000000000 +0900
++++ src/haildb-2.3.2/os/os0thread.c	2019-06-14 10:45:50.055637600 +0900
+@@ -37,6 +37,8 @@ Created 9/8/1995 Heikki Tuuri
+ #include <sys/select.h>
+ #endif /* HAVE_SYS_SELECT_H */
+ 
++#include <sys/time.h>
++
+ #ifndef UNIV_HOTBACKUP
+ 
+ #include "srv0srv.h"
