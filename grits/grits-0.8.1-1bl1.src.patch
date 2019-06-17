@@ -1,0 +1,59 @@
+--- origsrc/grits/configure.ac	2019-06-17 16:17:28.000000000 +0900
++++ src/grits/configure.ac	2019-06-17 16:21:46.586005300 +0900
+@@ -44,7 +44,7 @@ AC_SUBST(GTK_VERSION)
+ # Test for windowing system
+ case "${host}" in
+ 	*mingw32*) SYS="WIN" ;;
+-	*cygwin*)  SYS="WIN" ;;
++	*cygwin*)  SYS="X11" ;;
+ 	*apple*)   SYS="MAC" ;;
+ 	*)         SYS="X11" ;;
+ esac
+--- origsrc/grits/src/Makefile.am	2019-06-17 16:17:29.000000000 +0900
++++ src/grits/src/Makefile.am	2019-06-17 16:28:32.955726700 +0900
+@@ -3,11 +3,11 @@ SUBDIRS = data objects . plugins
+ AM_CFLAGS   = -Wall --std=gnu99 -I$(top_srcdir)/src
+ AM_CPPFLAGS = $(GLIB_CFLAGS) $(GTK_CFLAGS) $(GL_CFLAGS) $(SOUP_CFLAGS)
+ AM_LDADD    = $(GLIB_LIBS) $(GTK_LIBS) $(GL_LIBS) $(SOUP_LIBS)
+-AM_LDFLAGS  = 
++AM_LDFLAGS  = -no-undefined
+ 
+ # System dependant flags
+ if SYS_WIN
+-AM_LDFLAGS += -mwindows -no-undefined
++AM_LDFLAGS += -mwindows
+ endif
+ if SYS_MAC
+ AM_CFLAGS  += -ObjC
+--- origsrc/grits/src/plugins/Makefile.am	2019-06-17 16:17:29.000000000 +0900
++++ src/grits/src/plugins/Makefile.am	2019-06-17 16:33:28.408126800 +0900
+@@ -2,12 +2,9 @@ MAINTAINERCLEANFILES = Makefile.in
+ 
+ AM_CFLAGS   = -Wall --std=gnu99 -I$(top_srcdir)/src
+ AM_CPPFLAGS = $(GLIB_CFLAGS) $(GTK_CFLAGS) $(GL_CFLAGS) $(SOUP_CFLAGS)
+-AM_LDFLAGS  = -shared -module -avoid-version
+-LIBS        = $(top_srcdir)/src/libgrits.la
++AM_LDFLAGS  = -no-undefined -shared -module -avoid-version
++LIBS        = $(top_builddir)/src/libgrits.la
+ 
+-if SYS_WIN
+-AM_LDFLAGS += -no-undefined
+-endif
+ if !SYS_MAC
+ AM_LDFLAGS += -Wl,--as-needed
+ endif
+@@ -16,10 +13,14 @@ pluginsdir  = "$(libdir)/$(GRITS_SUBDIR)
+ 
+ plugins_LTLIBRARIES = sat.la elev.la map.la env.la test.la
+ sat_la_SOURCES      = sat.c  sat.h
++sat_la_LDFLAGS      = $(AM_LDFLAGS)
+ elev_la_SOURCES     = elev.c elev.h
++elev_la_LDFLAGS      = $(AM_LDFLAGS)
+ map_la_SOURCES      = map.c  map.h
++map_la_LDFLAGS      = $(AM_LDFLAGS)
+ env_la_SOURCES      = env.c  env.h
+ test_la_SOURCES     = test.c test.h
++test_la_LDFLAGS      = $(AM_LDFLAGS)
+ 
+ env_la_CPPFLAGS     = $(AM_CPPFLAGS)
+ env_la_LDFLAGS      = $(AM_LDFLAGS)
