@@ -1,0 +1,80 @@
+--- origsrc/libetpan-1.9.3/Makefile.am	2019-01-23 04:40:22.000000000 +0900
++++ src/libetpan-1.9.3/Makefile.am	2019-06-20 11:12:06.992128100 +0900
+@@ -54,3 +54,6 @@ $(top_builddir)/stamp-prepare: libetpan-
+ libetpan-config.h: libetpan-config.h.in config.h
+ 	cat $(srcdir)/libetpan-config.h.in | $(CPP) -I$(top_builddir) - \
+ 	| sed -e '/^#/d;/^[ \t]*$$/d;s/^@/#/' > $@
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libetpan.pc
+--- origsrc/libetpan-1.9.3/configure.ac	2019-01-23 04:40:22.000000000 +0900
++++ src/libetpan-1.9.3/configure.ac	2019-06-20 11:11:45.704338700 +0900
+@@ -156,8 +156,10 @@ AC_HEADER_STDC
+ AC_CHECK_HEADERS(fcntl.h unistd.h ctype.h sys/types.h sys/stat.h sys/mman.h limits.h)
+ AC_CHECK_HEADERS(netdb.h netinet/in.h sys/socket.h)
+ AC_CHECK_HEADERS(sys/param.h sys/select.h inttypes.h)
+-AC_CHECK_HEADERS(arpa/inet.h winsock2.h)
+-
++AC_CHECK_HEADERS(arpa/inet.h)
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_HEADERS(winsock2.h)  
++fi
+ 
+ AC_ARG_WITH([poll], use poll intead of select, use_poll=yes, use_poll=no)
+ 
+@@ -755,7 +757,7 @@ AC_SUBST(VERSION)
+ 
+ # Further checks.
+ 
+-AC_CONFIG_FILES(libetpan-config
++AC_CONFIG_FILES(libetpan.pc libetpan-config
+ 		Makefile
+ 		build-windows/Makefile
+                 include/Makefile
+--- origsrc/libetpan-1.9.3/libetpan.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libetpan-1.9.3/libetpan.pc.in	2019-06-20 11:11:08.014727600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++includedir=@includedir@
++libdir=@libdir@
++
++Name: libetpan
++Description: Libetpan C library.
++Version: @VERSION@
++Libs: -L${libdir} -letpan@LIBSUFFIX@ @LDFLAGS@ @SSLLIBS@ @GNUTLSLIB@ @LIBICONV@ @DBLIB@ @LIBS@ @SASLLIBS@
++Cflags: -I${includedir}
+--- origsrc/libetpan-1.9.3/src/Makefile.am	2019-01-23 04:40:22.000000000 +0900
++++ src/libetpan-1.9.3/src/Makefile.am	2019-06-20 10:48:41.661637900 +0900
+@@ -43,7 +43,6 @@ SUFFIXES: .rc .lo
+ 	$(LTRCCOMPILE) -i $< -o $@
+ 
+ libetpan_res = versioninfo.lo
+-no_undefined = -no-undefined
+ 
+ libetpan_deps = $(libetpan_res)
+ 
+@@ -51,11 +50,11 @@ else
+ 
+ libetpan_res =
+ libetpan_res_ldflag =
+-no_undefined =
+ 
+ libetpan_deps =
+ endif
+ 
++no_undefined = -no-undefined
+ 
+ if HAVE_MINGW32_SYSTEM
+   arch_sources = dummy.cpp
+--- origsrc/libetpan-1.9.3/src/low-level/smtp/mailsmtp.c	2019-01-23 04:40:22.000000000 +0900
++++ src/libetpan-1.9.3/src/low-level/smtp/mailsmtp.c	2019-06-20 10:40:25.293526000 +0900
+@@ -276,7 +276,7 @@ static int get_hostname(mailsmtp * sessi
+     if (r != 0)
+       return MAILSMTP_ERROR_HOSTNAME;
+ 
+-#if (defined __linux__ || defined WIN32 || defined __sun)
++#if (defined __linux__ || defined WIN32 || defined __sun || defined(__CYGWIN__))
+     r = getnameinfo(&addr, sizeof(addr), hostname, HOSTNAME_SIZE, NULL, 0, NI_NUMERICHOST);
+ #else
+     r = getnameinfo(&addr, addr.sa_len, hostname, HOSTNAME_SIZE, NULL, 0, NI_NUMERICHOST);
