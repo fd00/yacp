@@ -1,0 +1,40 @@
+--- origsrc/arbiter/CMakeLists.txt	2019-06-27 05:58:13.000000000 +0900
++++ src/arbiter/CMakeLists.txt	2019-06-27 06:09:14.513228500 +0900
+@@ -84,9 +84,21 @@ endif()
+ 
+ target_link_libraries(arbiter PUBLIC ${SHLWAPI})
+ 
+-add_subdirectory(third/gtest-1.7.0)
+-include_directories(src third/gtest-1.7.0/include third/gtest-1.7.0)
++if (NOT CYGWIN)
++    add_subdirectory(third/gtest-1.7.0)
++    include_directories(src third/gtest-1.7.0/include third/gtest-1.7.0)
++endif()
+ add_subdirectory(test)
+ 
+-install(TARGETS arbiter DESTINATION lib)
++install(TARGETS arbiter RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
++if (CYGWIN)
++    set_target_properties(arbiter PROPERTIES SOVERSION 0)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/arbiter.pc.in ${CMAKE_BINARY_DIR}/arbiter.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/arbiter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/arbiter/arbiter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arbiter/arbiter.pc.in	2019-06-27 06:09:14.403853700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arbiter
++Description: Uniform access to the filesystem
++Version: @VERSION@
++Libs: -L${libdir} -larbiter
++Cflags: -I${includedir}
