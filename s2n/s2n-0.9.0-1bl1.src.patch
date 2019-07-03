@@ -1,0 +1,104 @@
+--- origsrc/s2n-0.9.0/CMakeLists.txt	2019-05-15 06:06:17.000000000 +0900
++++ src/s2n-0.9.0/CMakeLists.txt	2019-07-04 00:24:18.677356600 +0900
+@@ -118,6 +118,10 @@ file(GLOB S2N_SRC
+ add_library(${CMAKE_PROJECT_NAME} ${S2N_HEADERS} ${S2N_SRC})
+ set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
+ 
++if (CYGWIN)
++    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ set(CMAKE_C_FLAGS_DEBUGOPT "")
+ 
+ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -pedantic -std=c99 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts
+@@ -214,15 +218,22 @@ configure_file("cmake/${CMAKE_PROJECT_NA
+         @ONLY)
+ 
+ install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}/"
+         NAMESPACE AWS::
+         COMPONENT Development)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}-config.cmake"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${CMAKE_PROJECT_NAME}/cmake/"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}/"
+         COMPONENT Development)
+ 
+ install(FILES "cmake/modules/FindLibCrypto.cmake"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}/"
+         COMPONENT Development)
+ 
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/s2n.pc.in ${CMAKE_BINARY_DIR}/s2n.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/s2n.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/s2n-0.9.0/bin/s2nd.c	2019-05-15 06:06:17.000000000 +0900
++++ src/s2n-0.9.0/bin/s2nd.c	2019-07-04 00:08:56.776988500 +0900
+@@ -13,7 +13,6 @@
+  * permissions and limitations under the License.
+  */
+ 
+-#include <netinet/tcp.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+@@ -21,6 +20,7 @@
+ #include <sys/mman.h>
+ #include <poll.h>
+ #include <netdb.h>
++#include <netinet/tcp.h>
+ 
+ #include <stdlib.h>
+ #include <signal.h>
+--- origsrc/s2n-0.9.0/cmake/modules/FindLibCrypto.cmake	2019-05-15 06:06:17.000000000 +0900
++++ src/s2n-0.9.0/cmake/modules/FindLibCrypto.cmake	2019-07-04 00:07:50.098454900 +0900
+@@ -21,7 +21,7 @@ find_path(LibCrypto_INCLUDE_DIR
+ 
+ if (BUILD_SHARED_LIBS)
+     find_library(LibCrypto_LIBRARY
+-            NAMES libcrypto.so libcrypto.a
++            NAMES libcrypto.dll.a libcrypto.so libcrypto.a
+             HINTS
+             ${CMAKE_PREFIX_PATH}/build/crypto
+             ${CMAKE_PREFIX_PATH}/build
+--- origsrc/s2n-0.9.0/s2n.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/s2n-0.9.0/s2n.pc.in	2019-07-04 00:24:18.583611300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: s2n
++Description: Implementation of the TLS/SSL protocols
++Version: @VERSION@
++Libs: -L${libdir} -ls2n
++Cflags: -I${includedir}
+--- origsrc/s2n-0.9.0/utils/s2n_asn1_time.c	2019-05-15 06:06:17.000000000 +0900
++++ src/s2n-0.9.0/utils/s2n_asn1_time.c	2019-07-04 00:12:18.446994700 +0900
+@@ -45,7 +45,7 @@ typedef enum parser_state {
+ } parser_state;
+ 
+ static inline long get_gmt_offset(struct tm *t) {
+-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__) && defined(__MACH__)
++#if defined(__CYGWIN__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__) && defined(__MACH__)
+     return t->tm_gmtoff;
+ #else
+     return t->__tm_gmtoff;
+--- origsrc/s2n-0.9.0/utils/s2n_safety.c	2019-05-15 06:06:17.000000000 +0900
++++ src/s2n-0.9.0/utils/s2n_safety.c	2019-07-04 00:06:09.260520400 +0900
+@@ -17,7 +17,9 @@
+ #undef _POSIX_C_SOURCE          /* For syscall() on Mac OS X */
+ 
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/types.h>
+ #include <stdint.h>
+ 
