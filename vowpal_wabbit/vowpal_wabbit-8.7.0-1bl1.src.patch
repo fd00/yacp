@@ -1,0 +1,73 @@
+--- origsrc/vowpal_wabbit-8.7.0/CMakeLists.txt	2019-06-07 11:58:48.000000000 +0900
++++ src/vowpal_wabbit-8.7.0/CMakeLists.txt	2019-07-04 21:04:38.213639700 +0900
+@@ -141,12 +141,18 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURC
+   endif()
+ endif()
+ 
+-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/rapidjson/CMakeLists.txt")
+-  message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+-endif()
++if (CYGWIN)
++  include(FindPkgConfig)
++  pkg_check_modules(RPAIDJSON RapidJSON)
++  add_library(rapidjson INTERFACE)
++else()
++  if(NOT EXISTS "${PROJECT_SOURCE_DIR}/rapidjson/CMakeLists.txt")
++    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
++  endif()
+ 
+-add_library(rapidjson INTERFACE)
+-target_include_directories(rapidjson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
++  add_library(rapidjson INTERFACE)
++  target_include_directories(rapidjson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include)
++endif()
+ 
+ add_subdirectory(cluster)
+ add_subdirectory(library)
+--- origsrc/vowpal_wabbit-8.7.0/vowpalwabbit/CMakeLists.txt	2019-06-07 11:58:48.000000000 +0900
++++ src/vowpal_wabbit-8.7.0/vowpalwabbit/CMakeLists.txt	2019-07-05 16:23:12.270237600 +0900
+@@ -4,6 +4,9 @@ configure_file(config.h.in config.h)
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+ add_library(allreduce allreduce_sockets.cc allreduce_threads.cc vw_exception.cc)
++if(CYGWIN)
++  set_target_properties(allreduce PROPERTIES SOVERSION 0)
++endif()
+ target_include_directories(allreduce PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ # Winsock32 should be available on Windows
+ if(WIN32)
+@@ -61,6 +64,9 @@ set(explore_all_headers
+ source_group(explore FILES ${explore_all_headers})
+ 
+ add_library(vw ${vw_all_sources} ${vw_all_headers} ${explore_all_headers})
++if(CYGWIN)
++  set_target_properties(vw PROPERTIES SOVERSION 0)
++endif()
+ 
+ target_link_libraries(vw PUBLIC rapidjson Boost::program_options ${LINK_THREADS} ZLIB::ZLIB allreduce ${CMAKE_DL_LIBS})
+ 
+@@ -142,11 +148,16 @@ if(NOT DEFINED DO_NOT_BUILD_VW_C_WRAPPER
+     add_library(vw_c_wrapper SHARED vwdll.cpp)
+   endif()
+ 
++  if(CYGWIN)
++    set_target_properties(vw_c_wrapper PROPERTIES SOVERSION 0)
++  endif()
++
+   target_compile_definitions(vw_c_wrapper PUBLIC VWDLL_EXPORTS _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE ZLIB_WINAPI)
+   target_link_libraries(vw_c_wrapper PUBLIC vw)
+ 
+   if(VW_INSTALL)
+     install(TARGETS vw_c_wrapper
++      RUNTIME DESTINATION bin
+       ARCHIVE DESTINATION lib
+       LIBRARY DESTINATION lib
+     )
+@@ -165,6 +176,7 @@ if(VW_INSTALL)
+ 
+   # Install libs
+   install(TARGETS allreduce vw
++  RUNTIME DESTINATION bin
+   ARCHIVE DESTINATION lib
+   LIBRARY DESTINATION lib
+ )
