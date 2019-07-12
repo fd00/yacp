@@ -1,0 +1,56 @@
+--- origsrc/cctz-2.3/CMakeLists.txt	2019-04-04 06:33:05.000000000 +0900
++++ src/cctz-2.3/CMakeLists.txt	2019-07-12 13:33:41.377301400 +0900
+@@ -99,6 +99,10 @@ set_target_properties(cctz PROPERTIES
+ target_link_libraries(cctz PUBLIC $<$<PLATFORM_ID:Darwin>:${CoreFoundation}>)  
+ add_library(cctz::cctz ALIAS cctz)
+ 
++if (CYGWIN)
++  set_target_properties(cctz PROPERTIES SOVERSION 0)
++endif()
++
+ if (BUILD_TOOLS)
+   add_executable(time_tool src/time_tool.cc)
+   cctz_target_set_cxx_standard(time_tool)
+@@ -159,6 +163,7 @@ include(GNUInstallDirs)
+ install(TARGETS cctz
+   EXPORT ${PROJECT_NAME}-targets
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cctz
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   )
+@@ -178,3 +183,10 @@ install(FILES cmake/${PROJECT_NAME}-conf
+   )
+ 
+ feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cctz.pc.in ${CMAKE_BINARY_DIR}/cctz.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cctz.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cctz-2.3/cctz.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cctz-2.3/cctz.pc.in	2019-07-12 13:33:41.127298700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cctz
++Description: C++ library for translating between absolute and civil times using the rules of a time zone
++Version: @VERSION@
++Libs: -L${libdir} -lcctz
++Cflags: -I${includedir}
+--- origsrc/cctz-2.3/src/zone_info_source.cc	2019-04-04 06:33:05.000000000 +0900
++++ src/cctz-2.3/src/zone_info_source.cc	2019-07-12 12:11:30.372682300 +0900
+@@ -59,7 +59,7 @@ ZoneInfoSourceFactory default_factory =
+ #if !defined(__has_attribute)
+ #define __has_attribute(x) 0
+ #endif
+-#if __has_attribute(weak) || defined(__GNUC__)
++#if (__has_attribute(weak) || defined(__GNUC__)) && !defined(__CYGWIN__)
+ ZoneInfoSourceFactory zone_info_source_factory
+     __attribute__((weak)) = DefaultFactory;
+ #else
