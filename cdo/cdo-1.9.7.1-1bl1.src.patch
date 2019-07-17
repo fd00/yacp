@@ -1,0 +1,95 @@
+--- origsrc/cdo-1.9.7.1/Makefile.am	2019-06-07 21:27:45.000000000 +0900
++++ src/cdo-1.9.7.1/Makefile.am	2019-07-17 19:39:38.574753400 +0900
+@@ -1,7 +1,7 @@
+ # Process this file with automake to produce Makefile.in
+ SUBDIRS = libcdi src/lib/ncl src/lib/yac  src/lib/gradsdes src contrib test/data test
+ if MAINTAINER_MODE
+-SUBDIRS += test/bandit_tests
++# SUBDIRS += test/bandit_tests
+ endif
+ #
+ ACLOCAL_AMFLAGS = -I m4 -I libcdi/m4
+--- origsrc/cdo-1.9.7.1/libcdi/app/cdi.c	2019-06-07 21:26:58.000000000 +0900
++++ src/cdo-1.9.7.1/libcdi/app/cdi.c	2019-07-17 18:14:13.841397000 +0900
+@@ -56,9 +56,10 @@ void cdiDefTableID(int tableID);
+ 
+ int getopt(int argc, char *const argv[], const char *optstring);
+ 
++#if !defined(__CYGWIN__)
+ extern char *optarg;
+ extern int optind, opterr, optopt;
+-
++#endif
+ 
+ static char *Progname;
+ 
+--- origsrc/cdo-1.9.7.1/libcdi/configure.ac	2019-06-13 15:53:21.000000000 +0900
++++ src/cdo-1.9.7.1/libcdi/configure.ac	2019-07-17 18:20:28.159444000 +0900
+@@ -22,7 +22,7 @@ AC_CANONICAL_HOST
+ AC_CANONICAL_BUILD
+ 
+ 
+-AM_INIT_AUTOMAKE([1.16.1 foreign serial-tests])
++AM_INIT_AUTOMAKE([1.15.1 foreign serial-tests])
+ AC_CONFIG_HEADERS([src/config.h])
+ AM_MAINTAINER_MODE([disable])
+ 
+--- origsrc/cdo-1.9.7.1/libcdi/src/Makefile.am	2019-06-07 21:26:58.000000000 +0900
++++ src/cdo-1.9.7.1/libcdi/src/Makefile.am	2019-07-17 18:50:58.478314200 +0900
+@@ -10,12 +10,15 @@ lib_LTLIBRARIES =
+ if ENABLE_CDI_LIB
+   lib_LTLIBRARIES += libcdi.la
+   include_HEADERS += cdi.h
++  libcdi_la_LDFLAGS = -no-undefined
++  libcdi_la_LIBADD = -lhdf5
+ # add cdi.inc only if cfortran interface is required
+ if USE_FC
+   include_HEADERS += cdi.inc
+ endif
+ if CREATE_ISOC
+   lib_LTLIBRARIES += libcdi_f2003.la
++  libcdi_f2003_la_LDFLAGS = -no-undefined
+ endif
+ else
+   noinst_LTLIBRARIES += libcdi.la
+@@ -197,6 +200,7 @@ if USE_MPI
+ if ENABLE_CDI_LIB
+ lib_LTLIBRARIES += libcdipio.la
+ include_HEADERS += cdipio.h cdipio.inc
++libcdipio_la_LDFLAGS = -no-undefined
+ else
+ noinst_LTLIBRARIES += libcdipio.la
+ endif
+--- origsrc/cdo-1.9.7.1/libcdi/src/cgribexlib.c	2019-06-07 21:26:58.000000000 +0900
++++ src/cdo-1.9.7.1/libcdi/src/cgribexlib.c	2019-07-17 18:17:26.479440700 +0900
+@@ -5744,7 +5744,7 @@ void gribRepair1(int nrec, long recsize,
+ #if defined(__cplusplus)
+ extern "C" {
+ #endif
+-#include <szlib.h>
++#include <szip/szlib.h>
+ #ifdef  __cplusplus
+ }
+ #endif
+--- origsrc/cdo-1.9.7.1/m4/acx_options.m4	2019-06-07 21:27:45.000000000 +0900
++++ src/cdo-1.9.7.1/m4/acx_options.m4	2019-07-17 18:14:43.415442100 +0900
+@@ -40,7 +40,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+--- origsrc/cdo-1.9.7.1/src/cdo.cc	2019-06-12 20:21:33.000000000 +0900
++++ src/cdo-1.9.7.1/src/cdo.cc	2019-07-17 19:26:56.359696300 +0900
+@@ -149,7 +149,7 @@ cdo_stackframe()
+ static int
+ cdo_feenableexcept(int excepts)
+ {
+-#if defined HAVE_FEENABLEEXCEPT
++#if defined HAVE_FEENABLEEXCEPT && !defined(__CYGWIN__)
+   int feenableexcept(int);
+   int old_excepts = feenableexcept(excepts);
+   return old_excepts;
