@@ -1,0 +1,59 @@
+--- origsrc/libgetar-1.0.1/CMakeLists.txt	2019-07-18 22:03:35.000000000 +0900
++++ src/libgetar-1.0.1/CMakeLists.txt	2019-07-21 07:39:46.363685200 +0900
+@@ -11,24 +11,38 @@ set(GETAR_SRC
+     src/SqliteArchive.cpp
+     src/TarArchive.cpp
+     src/ZipArchive.cpp
+-    lz4/lz4.c
+-    lz4/lz4hc.c
+     miniz/miniz.cpp
+-    sqlite3/sqlite3.c
+ )
+ 
+-SET(LINK_LIBS ${LINK_LIBS} ${CMAKE_DL_LIBS})
++INCLUDE(FindPkgConfig)
++PKG_CHECK_MODULES(LIBLZ4 REQUIRED liblz4)
++PKG_CHECK_MODULES(SQLITE3 REQUIRED sqlite3)
++
++SET(LINK_LIBS ${LINK_LIBS} ${CMAKE_DL_LIBS} ${LIBLZ4_LIBRARIES} ${SQLITE3_LIBRARIES})
+ 
+ find_package(Threads)
+ 
+ if(LIBGETAR_SHARED)
+   ADD_LIBRARY(getar SHARED ${GETAR_SRC})
++  if(CYGWIN)
++    SET_TARGET_PROPERTIES(getar PROPERTIES SOVERSION 0)
++  endif()
+ else()
+   ADD_LIBRARY(getar STATIC ${GETAR_SRC})
+ endif()
+ 
+ target_link_libraries(getar ${LINK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+ 
+-install(TARGETS getar LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++file(GLOB headers "src/*.hpp" "vogl_miniz/*.h")
++install(FILES ${headers} DESTINATION include/getar)
++
++install(TARGETS getar RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+ 
+ add_subdirectory(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgetar.pc.in ${CMAKE_BINARY_DIR}/libgetar.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libgetar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgetar-1.0.1/libgetar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgetar-1.0.1/libgetar.pc.in	2019-07-21 07:40:13.567240400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgetar
++Description: Library to read and write GEneric Trajectory ARchives
++Version: @VERSION@
++Libs: -L${libdir} -lgetar
++Cflags: -I${includedir}/getar
