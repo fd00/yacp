@@ -1,0 +1,94 @@
+--- origsrc/partio-1.10.1/CMakeLists.txt	2019-07-11 11:11:02.000000000 +0900
++++ src/partio-1.10.1/CMakeLists.txt	2019-08-16 06:11:03.410145900 +0900
+@@ -35,14 +35,16 @@ CMAKE_MINIMUM_REQUIRED( VERSION 3.8.0 )
+ SET( CMAKE_SKIP_RPATH TRUE )
+ 
+ ## project name & version
+-PROJECT(partio LANGUAGES CXX VERSION 1.5.2)
++PROJECT(partio LANGUAGES CXX VERSION 1.10.1)
+ 
+ option(GTEST_ENABLED "Enable GTest for tests" false)
+ 
+ # Enable C++11
+-SET(CMAKE_CXX_STANDARD 11)
+-SET(CMAKE_CXX_STANDARD_REQUIRED YES)
+-SET(CMAKE_CXX_EXTENSIONS NO)
++IF(NOT CYGWIN)
++  SET(CMAKE_CXX_STANDARD 11)
++  SET(CMAKE_CXX_STANDARD_REQUIRED YES)
++  SET(CMAKE_CXX_EXTENSIONS NO)
++ENDIF()
+ 
+ ## Setup platform specific helper defines build variants
+ IF(WIN32)
+@@ -119,3 +121,10 @@ ADD_SUBDIRECTORY (src/tools)
+ ADD_SUBDIRECTORY (src/py)
+ ADD_SUBDIRECTORY (src/tests)
+ ADD_SUBDIRECTORY (src/doc)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/partio.pc.in ${CMAKE_BINARY_DIR}/partio.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/partio.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/partio-1.10.1/partio.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/partio-1.10.1/partio.pc.in	2019-08-16 06:14:33.086723000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: partio
++Description: Library for particle IO and manipulation
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lpartio
++Cflags: -I${includedir}
+--- origsrc/partio-1.10.1/src/doc/CMakeLists.txt	2019-07-11 11:11:02.000000000 +0900
++++ src/partio-1.10.1/src/doc/CMakeLists.txt	2019-08-16 05:53:54.027009600 +0900
+@@ -31,9 +31,11 @@
+ # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ 
++option(ENABLE_DOC "enable doc" OFF)
++
+ find_package(Doxygen)
+ 
+-IF(DOXYGEN_FOUND)
++IF(ENABLE_DOC AND DOXYGEN_FOUND)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+   FILE(GLOB DOCUMENTED_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.h)
+ 
+@@ -46,4 +48,4 @@ IF(DOXYGEN_FOUND)
+   add_custom_target(doc ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.txt ${DOCUMENTED_FILES})
+ 
+   INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION ${CMAKE_INSTALL_DOCDIR})
+-ENDIF(DOXYGEN_FOUND)
++ENDIF(ENABLE_DOC AND DOXYGEN_FOUND)
+--- origsrc/partio-1.10.1/src/lib/CMakeLists.txt	2019-07-11 11:11:02.000000000 +0900
++++ src/partio-1.10.1/src/lib/CMakeLists.txt	2019-08-16 05:55:27.134485200 +0900
+@@ -50,7 +50,11 @@ if (ZLIB_FOUND)
+     target_link_libraries(partio PUBLIC ${ZLIB_LIBRARY})
+ endif (ZLIB_FOUND)
+ 
+-install(TARGETS partio DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (CYGWIN)
++    set_target_properties(partio PROPERTIES SOVERSION 0)
++endif (CYGWIN)
++
++install(TARGETS partio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ file(GLOB public_includes "*.h")
+ install(FILES ${public_includes} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+--- origsrc/partio-1.10.1/src/py/CMakeLists.txt	2019-07-11 11:11:02.000000000 +0900
++++ src/partio-1.10.1/src/py/CMakeLists.txt	2019-08-16 06:03:17.529782700 +0900
+@@ -36,7 +36,7 @@
+ FIND_PACKAGE(SWIG)
+ IF(SWIG_FOUND) 
+ 
+-FIND_PACKAGE(PythonInterp)
++FIND_PACKAGE(PythonInterp 3)
+ IF(PythonInterp_FOUND)
+ 
+ INCLUDE(${SWIG_USE_FILE})
