@@ -1,0 +1,59 @@
+--- origsrc/hjson-cpp-1.2.1/CMakeLists.txt	2018-10-08 01:32:08.000000000 +0900
++++ src/hjson-cpp-1.2.1/CMakeLists.txt	2019-09-28 19:12:50.093372700 +0900
+@@ -20,8 +20,8 @@ if(HJSON_VERSIONED_INSTALL)
+   set(include_dest "include/hjson-${HJSON_VERSION}")
+   set(lib_dest "lib/hjson-${HJSON_VERSION}")
+ else()
+-  set(include_dest "include/hjson")
+-  set(lib_dest "lib/hjson")
++  set(include_dest "include")
++  set(lib_dest "lib")
+ endif()
+ 
+ add_subdirectory(src)
+@@ -38,8 +38,15 @@ if(HJSON_ENABLE_INSTALL)
+   install(FILES
+     ${CMAKE_CURRENT_BINARY_DIR}/hjson-config.cmake
+     ${CMAKE_CURRENT_BINARY_DIR}/hjson-config-version.cmake
+-    DESTINATION ${lib_dest}
++    DESTINATION ${lib_dest}/cmake/hjson
+   )
+ 
+-  install(EXPORT hjson DESTINATION ${lib_dest})
++  install(EXPORT hjson DESTINATION ${lib_dest}/cmake/hjson)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/hjson-cpp.pc.in ${CMAKE_BINARY_DIR}/hjson-cpp.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/hjson-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/hjson-cpp-1.2.1/hjson-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/hjson-cpp-1.2.1/hjson-cpp.pc.in	2019-09-28 19:30:39.050000500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: hjson-cpp
++Description: Hjson for C++
++Version: @VERSION@
++Libs: -L${libdir} -lhjson
++Cflags: -I${includedir}
+--- origsrc/hjson-cpp-1.2.1/src/CMakeLists.txt	2018-10-08 01:32:08.000000000 +0900
++++ src/hjson-cpp-1.2.1/src/CMakeLists.txt	2019-09-28 19:10:46.297316600 +0900
+@@ -21,8 +21,11 @@ set_target_properties(hjson PROPERTIES
+   CXX_EXTENSIONS NO
+   DEBUG_POSTFIX "d"
+ )
++if(CYGWIN)
++  set_target_properties(hjson PROPERTIES SOVERSION 0)
++endif()
+ 
+ if(HJSON_ENABLE_INSTALL)
+-  install(TARGETS hjson EXPORT hjson DESTINATION ${lib_dest})
++  install(TARGETS hjson EXPORT hjson RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   install(FILES ${header} DESTINATION ${include_dest})
+ endif()
