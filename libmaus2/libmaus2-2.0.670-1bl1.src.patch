@@ -1,0 +1,227 @@
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/configure.ac	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/configure.ac	2019-09-29 00:54:53.720998300 +0900
+@@ -3475,7 +3475,7 @@ AC_MSG_RESULT([${irods}])
+ fi
+ 
+ case $host_os in
+-  *mingw32*)
++  *mingw32*|*cygwin*)
+     LIBMAUSLDFLAGS="${LIBMAUSLDFLAGS} -no-undefined" # -avoid-version
+     ;;
+   *)
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/Makefile.am	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/Makefile.am	2019-09-29 08:39:39.859133200 +0900
+@@ -9,7 +9,7 @@ abs_builddir = @abs_builddir@
+ abs_srcdir = @abs_srcdir@
+ 
+ lib_LTLIBRARIES = libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+-lib_LIBRARIES = libmaus2_irods.a libmaus2fftw.a
++lib_LTLIBRARIES += libmaus2_irods.la libmaus2fftw.la
+ 
+ libmaus2_simd_align_128_la_SOURCES = \
+ 	libmaus2/lcs/SimdX86GlobalAlignmentConstants128.cpp \
+@@ -19,6 +19,7 @@ libmaus2_simd_align_128_la_SOURCES = \
+ 	libmaus2/lcs/SimdX86GlobalAlignmentX128_16.cpp
+ libmaus2_simd_align_128_la_CXXFLAGS = @MSSE2@ @MSSSE3@ @MSSE41@ @LIBMAUSCXXFLAGS@ ${AM_CXXFLAGS} @WARNCXXFLAGS@
+ libmaus2_simd_align_128_la_LDFLAGS = @LIBMAUSLDFLAGS@ -version-info ${LIBRARY_VERSION} @LIBMAUSSTATIC@
++libmaus2_simd_align_128_la_LIBADD = libmaus2.la
+ 
+ libmaus2_simd_align_256_la_SOURCES = \
+ 	libmaus2/lcs/SimdX86GlobalAlignmentConstants256.cpp \
+@@ -30,16 +31,21 @@ libmaus2_simd_align_256_la_SOURCES = \
+ 	libmaus2/lcs/AlignmentOneAgainstManyAVX2.cpp
+ libmaus2_simd_align_256_la_CXXFLAGS = @MSSE2@ @MSSSE3@ @MSSE41@ @MAVX2@ @LIBMAUSCXXFLAGS@ ${AM_CXXFLAGS} @WARNCXXFLAGS@
+ libmaus2_simd_align_256_la_LDFLAGS = @LIBMAUSLDFLAGS@ -version-info ${LIBRARY_VERSION} @LIBMAUSSTATIC@
++libmaus2_simd_align_256_la_LIBADD = libmaus2.la
+ 
+ libmaus2_modules_LTLIBRARIES = libmaus2_scram_mod.la
+ libmaus2_modulesdir = $(libdir)/libmaus2/$(PACKAGE_VERSION)
+ 
+-libmaus2_irods_a_SOURCES = libmaus2/irods/IRodsSystem.cpp libmaus2/irods/IRodsFileBase.cpp
+-libmaus2_irods_a_CPPFLAGS = ${AM_CPPFLAGS} @IRODSCPPFLAGS@
+-libmaus2_irods_a_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@
+-
+-libmaus2fftw_a_SOURCES = libmaus2/math/binom_fftw.cpp libmaus2/math/Convolution_fftw.cpp
+-libmaus2fftw_a_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@ @FFTWCPPFLAGS@
++libmaus2_irods_la_SOURCES = libmaus2/irods/IRodsSystem.cpp libmaus2/irods/IRodsFileBase.cpp
++libmaus2_irods_la_CPPFLAGS = ${AM_CPPFLAGS} @IRODSCPPFLAGS@
++libmaus2_irods_la_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@
++libmaus2_irods_la_LDFLAGS = @LIBMAUSLDFLAGS@ -version-info ${LIBRARY_VERSION} @LIBMAUSSTATIC@
++libmaus2_irods_la_LIBADD = libmaus2.la
++
++libmaus2fftw_la_SOURCES = libmaus2/math/binom_fftw.cpp libmaus2/math/Convolution_fftw.cpp
++libmaus2fftw_la_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@ @FFTWCPPFLAGS@
++libmaus2fftw_la_LDFLAGS = @LIBMAUSLDFLAGS@ -version-info ${LIBRARY_VERSION} @LIBMAUSSTATIC@
++libmaus2fftw_la_LIBADD = libmaus2.la
+ 
+ libmaus2_la_SOURCES = libmaus2/StaticInitialization.cpp \
+ 	libmaus2/autoarray/AutoArray.cpp \
+@@ -2285,11 +2291,11 @@ testbytetocompact_LDADD = libmaus2.la li
+ testbytetocompact_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@ 
+ 
+ testscramtosam_SOURCES = test/testscramtosam.cpp
+-testscramtosam_LDADD    = libmaus2_irods.a libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la @IRODSLIBS@ @DLLIB@
++testscramtosam_LDADD    = libmaus2_irods.la libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la @IRODSLIBS@ @DLLIB@
+ testscramtosam_CPPFLAGS = ${AM_CPPFLAGS} @IRODSCPPFLAGS@
+ testscramtosam_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@
+ testscramtosam_LDFLAGS  = ${AM_LDFLAGS} @IRODSLDFLAGS@
+-testscramtosam_DEPENDENCIES = libmaus2_irods.a libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
++testscramtosam_DEPENDENCIES = libmaus2_irods.la libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+ 
+ testpacdecode_SOURCES = test/testpacdecode.cpp
+ testpacdecode_LDADD = libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+@@ -2528,11 +2534,11 @@ testexternalmemoryindex_CXXFLAGS = ${AM_
+ testexternalmemoryindex_LDFLAGS  = ${AM_LDFLAGS} @SNAPPYLDFLAGS@
+ 
+ testirods_SOURCES  = test/testirods.cpp
+-testirods_LDADD    = libmaus2_irods.a libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la @IRODSLIBS@ 
++testirods_LDADD    = libmaus2_irods.la libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la @IRODSLIBS@ 
+ testirods_CPPFLAGS = @IRODSCPPFLAGS@
+ testirods_CXXFLAGS = ${AM_CXXFLAGS} @WARNCXXFLAGS@
+ testirods_LDFLAGS  = ${AM_LDFLAGS} @IRODSLDFLAGS@
+-testirods_DEPENDENCIES = libmaus2_irods.a libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
++testirods_DEPENDENCIES = libmaus2_irods.la libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+ 
+ testfastqtobam_SOURCES  = test/testfastqtobam.cpp
+ testfastqtobam_LDADD    = libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+@@ -2689,7 +2695,7 @@ testmatrix_CXXFLAGS = @WARNCXXFLAGS@ ${A
+ testmatrix_LDFLAGS  = ${AM_LDFLAGS}
+ 
+ testconvpowercache_SOURCES  = test/testconvpowercache.cpp
+-testconvpowercache_LDADD    = libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la libmaus2fftw.a ${DLLIB} @FFTWLIBS@
++testconvpowercache_LDADD    = libmaus2.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la libmaus2fftw.la ${DLLIB} @FFTWLIBS@
+ testconvpowercache_CPPFLAGS = ${AM_CPPFLAGS} @FFTWCPPFLAGS@
+ testconvpowercache_CXXFLAGS = @WARNCXXFLAGS@ ${AM_CXXFLAGS}
+ testconvpowercache_LDFLAGS  = ${AM_LDFLAGS} @FFTWLDFLAGS@
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/lcs/AlignerFactory.cpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/lcs/AlignerFactory.cpp	2019-09-29 08:17:18.244652400 +0900
+@@ -108,7 +108,7 @@ libmaus2::lcs::Aligner::unique_ptr_type
+ 		}
+ 		case libmaus2_lcs_AlignerFactory_x128_8:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -134,7 +134,7 @@ libmaus2::lcs::Aligner::unique_ptr_type
+ 		}
+ 		case libmaus2_lcs_AlignerFactory_x128_16:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -162,7 +162,7 @@ libmaus2::lcs::Aligner::unique_ptr_type
+ 		}
+ 		case libmaus2_lcs_AlignerFactory_y256_8:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -193,7 +193,7 @@ libmaus2::lcs::Aligner::unique_ptr_type
+ 		}
+ 		case libmaus2_lcs_AlignerFactory_y256_16:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) && !defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/lcs/BandedAlignerFactory.cpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/lcs/BandedAlignerFactory.cpp	2019-09-29 08:15:42.626278900 +0900
+@@ -96,7 +96,7 @@ libmaus2::lcs::BandedAligner::unique_ptr
+ 		}
+ 		case libmaus2_lcs_BandedAlignerFactory_x128_8:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -122,7 +122,7 @@ libmaus2::lcs::BandedAligner::unique_ptr
+ 		}
+ 		case libmaus2_lcs_BandedAlignerFactory_x128_16:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_X128_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -150,7 +150,7 @@ libmaus2::lcs::BandedAligner::unique_ptr
+ 		}
+ 		case libmaus2_lcs_BandedAlignerFactory_y256_8:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_8) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+@@ -181,7 +181,7 @@ libmaus2::lcs::BandedAligner::unique_ptr
+ 		}
+ 		case libmaus2_lcs_BandedAlignerFactory_y256_16:
+ 		{
+-			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32)
++			#if defined(LIBMAUS2_HAVE_GLOBAL_ALIGNMENT_Y256_16) && defined(LIBMAUS2_USE_ASSEMBLY) && defined(LIBMAUS2_HAVE_i386) &&!defined(_WIN32) && !defined(__CYGWIN__)
+ 			if (
+ 				libmaus2::util::I386CacheLineSize::hasSSE2()
+ 				&&
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/math/IntegerInterval.hpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/math/IntegerInterval.hpp	2019-09-29 02:34:52.079214500 +0900
+@@ -30,6 +30,10 @@
+ #include <cstring>
+ #include <libmaus2/exception/LibMausException.hpp>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace math
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/math/Rational.hpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/math/Rational.hpp	2019-09-29 07:47:57.783074600 +0900
+@@ -26,6 +26,10 @@
+ #include <cassert>
+ #include <cmath>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace math
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/serialize/Serialize.hpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/serialize/Serialize.hpp	2019-09-29 01:05:02.753871500 +0900
+@@ -28,6 +28,10 @@
+ #include <libmaus2/exception/LibMausException.hpp>
+ #include <libmaus2/util/Demangle.hpp>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace serialize
+--- origsrc/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/util/MemLimit.cpp	2019-09-27 18:09:49.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_670/src/libmaus2/util/MemLimit.cpp	2019-09-29 02:22:18.369633400 +0900
+@@ -75,6 +75,7 @@ void libmaus2::util::MemLimit::setReside
+ 	rlimit const lim = {
+ 		static_cast<rlim_t>(maxmem),
+ 		static_cast<rlim_t>(maxmem) };
++#if defined(RLIMIT_RSS)
+ 	if ( setrlimit(RLIMIT_RSS,&lim) != 0 )
+ 	{
+ 		::libmaus2::exception::LibMausException se;
+@@ -82,5 +83,6 @@ void libmaus2::util::MemLimit::setReside
+ 		se.finish();
+ 		throw se;
+ 	}
++#endif
+ 	#endif
+ }
