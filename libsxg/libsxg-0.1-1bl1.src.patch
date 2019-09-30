@@ -1,0 +1,59 @@
+--- origsrc/libsxg-0.1/CMakeLists.txt	2019-09-11 16:12:24.000000000 +0900
++++ src/libsxg-0.1/CMakeLists.txt	2019-09-30 22:28:29.755668800 +0900
+@@ -47,7 +47,7 @@ set_property(
+ 
+ find_package (OpenSSL REQUIRED)
+ 
+-add_library(sxg
++add_library(sxg SHARED
+   src/sxg_buffer.c
+   src/sxg_buffer_debug.c
+   src/sxg_codec.c
+@@ -68,10 +68,13 @@ target_include_directories(
+ 
+ target_link_libraries(
+   sxg
+-  INTERFACE
+     ${OPENSSL_LIBRARIES}
+ )
+ 
++if(CYGWIN)
++  set_target_properties(sxg PROPERTIES SOVERSION 0)
++endif()
++
+ ########################################
+ ## Installing
+ ########################################
+@@ -80,7 +83,7 @@ set_target_properties (sxg PROPERTIES PU
+ install (
+   TARGETS sxg
+   ARCHIVE DESTINATION lib
+-  LIBRARY DESTINATION lib
++  RUNTIME DESTINATION bin
+   COMPONENT library
+ )
+ install (
+@@ -221,3 +224,10 @@ endfunction ()
+ if (NOT SKIP_TEST)
+   configure_fuzzer(signer_fuzzer)
+ endif ()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libsxg.pc.in ${CMAKE_BINARY_DIR}/libsxg.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libsxg.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsxg-0.1/libsxg.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsxg-0.1/libsxg.pc.in	2019-09-30 22:28:29.599410600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsxg
++Description: Signed HTTP Exchange library
++Version: @VERSION@
++Libs: -L${libdir} -lsxg
++Cflags: -I${includedir}
