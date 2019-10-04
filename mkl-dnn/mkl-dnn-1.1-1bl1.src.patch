@@ -1,17 +1,17 @@
---- origsrc/mkl-dnn-1.0.1/CMakeLists.txt	2019-07-26 09:33:10.000000000 +0900
-+++ src/mkl-dnn-1.0.1/CMakeLists.txt	2019-08-15 17:05:49.705960000 +0900
-@@ -134,10 +134,19 @@ add_subdirectory(src)
+--- origsrc/mkl-dnn-1.1/CMakeLists.txt	2019-10-03 10:48:17.000000000 +0900
++++ src/mkl-dnn-1.1/CMakeLists.txt	2019-10-04 20:43:33.942344200 +0900
+@@ -117,10 +117,19 @@ add_subdirectory(src)
  add_subdirectory(examples)
  add_subdirectory(tests)
  
--if(MKLDNN_INSTALL_MODE STREQUAL "BUNDLE")
+-if(DNNL_INSTALL_MODE STREQUAL "BUNDLE")
 -    install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_PREFIX})
 -    install(FILES README.md DESTINATION ${CMAKE_INSTALL_PREFIX})
 -else()
 -    # Cannot use CMAKE_INSTALL_DOCDIR since it uses PROJECT_NAME and not LIB_NAME
 -    install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
 +if(NOT CYGWIN)
-+    if(MKLDNN_INSTALL_MODE STREQUAL "BUNDLE")
++    if(DNNL_INSTALL_MODE STREQUAL "BUNDLE")
 +        install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_PREFIX})
 +        install(FILES README.md DESTINATION ${CMAKE_INSTALL_PREFIX})
 +    else()
@@ -26,8 +26,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mkl-dnn.pc.in ${CMAKE_BINARY_DIR}/mkl-dnn.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/mkl-dnn.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/mkl-dnn-1.0.1/cmake/SDL.cmake	2019-07-26 09:33:10.000000000 +0900
-+++ src/mkl-dnn-1.0.1/cmake/SDL.cmake	2019-08-15 15:54:49.196217800 +0900
+--- origsrc/mkl-dnn-1.1/cmake/SDL.cmake	2019-10-03 10:48:17.000000000 +0900
++++ src/mkl-dnn-1.1/cmake/SDL.cmake	2019-10-04 16:33:53.560212300 +0900
 @@ -52,7 +52,7 @@ if(UNIX)
      if(APPLE)
          append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-bind_at_load")
@@ -37,8 +37,8 @@
          append(CMAKE_EXE_LINKER_FLAGS "-pie")
          append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
          append(CMAKE_EXE_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
---- origsrc/mkl-dnn-1.0.1/mkl-dnn.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/mkl-dnn-1.0.1/mkl-dnn.pc.in	2019-08-15 17:04:51.092316900 +0900
+--- origsrc/mkl-dnn-1.1/mkl-dnn.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mkl-dnn-1.1/mkl-dnn.pc.in	2019-10-04 20:44:07.960714700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -48,10 +48,21 @@
 +Name: mkl-dnn
 +Description: Intel(R) Math Kernel Library for Deep Neural Networks
 +Version: @PROJECT_VERSION@
-+Libs: -L${libdir} -lmkldnn
++Libs: -L${libdir} -ldnnl
 +Cflags: -I${includedir}
---- origsrc/mkl-dnn-1.0.1/src/common/tag_traits.hpp	2019-07-26 09:33:10.000000000 +0900
-+++ src/mkl-dnn-1.0.1/src/common/tag_traits.hpp	2019-08-15 15:25:58.694086500 +0900
+--- origsrc/mkl-dnn-1.1/src/CMakeLists.txt	2019-10-03 10:48:17.000000000 +0900
++++ src/mkl-dnn-1.1/src/CMakeLists.txt	2019-10-04 20:41:40.038864300 +0900
+@@ -140,7 +140,7 @@ if (WIN32)
+         DEPENDS ${LIB_NAME})
+     install(FILES $<TARGET_FILE_DIR:${LIB_NAME}>/mkldnn.lib
+         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+-else()
++elseif(NOT CYGWIN)
+     if(DNNL_LIBRARY_TYPE STREQUAL "SHARED")
+         set_ternary(ext APPLE "dylib" "so")
+         set(vers ".${DNNL_VERSION_MAJOR};.${DNNL_VERSION_MAJOR}.${DNNL_VERSION_MINOR}")
+--- origsrc/mkl-dnn-1.1/src/common/tag_traits.hpp	2019-10-03 10:48:17.000000000 +0900
++++ src/mkl-dnn-1.1/src/common/tag_traits.hpp	2019-10-04 16:34:29.159856600 +0900
 @@ -22,6 +22,10 @@
  #include "c_types_map.hpp"
  #include "utils.hpp"
@@ -60,18 +71,6 @@
 +#undef _B
 +#endif
 +
- namespace mkldnn {
+ namespace dnnl {
  namespace impl {
  
---- origsrc/mkl-dnn-1.0.1/tests/gtests/gtest/CMakeLists.txt	2019-07-26 09:33:10.000000000 +0900
-+++ src/mkl-dnn-1.0.1/tests/gtests/gtest/CMakeLists.txt	2019-08-15 15:54:52.858751800 +0900
-@@ -6,6 +6,8 @@ source_group("" FILES ${MAIN_SRC})
- include_directories(${CMAKE_CURRENT_SOURCE_DIR}
-                     ${CMAKE_CURRENT_SOURCE_DIR}/..
-   )
--find_package(Threads REQUIRED)
-+if(NOT CYGWIN)
-+  find_package(Threads REQUIRED)
-+endif()
- add_library(${TARGET_NAME} STATIC ${MAIN_SRC})
- target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
