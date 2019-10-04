@@ -1,15 +1,5 @@
---- origsrc/libvdpau-1.2/src/Makefile.am	2019-03-01 03:40:30.000000000 +0900
-+++ src/libvdpau-1.2/src/Makefile.am	2019-03-02 20:39:20.200642200 +0900
-@@ -23,6 +23,7 @@ endif
- libvdpau_la_LIBADD = \
-     $(DLOPEN_LIBS) \
-     $(PTHREAD_LIBS) \
-+    $(X11_LIBS) \
-     $(XEXT_LIBS)
- 
- libvdpau_la_LDFLAGS = -version-info 1:0:0 -no-undefined
---- origsrc/libvdpau-1.2/src/vdpau_wrapper.c	2018-02-24 06:33:01.000000000 +0900
-+++ src/libvdpau-1.2/src/vdpau_wrapper.c	2019-03-02 20:33:41.783677800 +0900
+--- origsrc/libvdpau-1.3/src/vdpau_wrapper.c	2019-08-29 02:57:55.000000000 +0900
++++ src/libvdpau-1.3/src/vdpau_wrapper.c	2019-10-04 09:35:28.682403800 +0900
 @@ -69,8 +69,13 @@ static void _vdp_wrapper_error_breakpoin
  
  #endif
@@ -24,7 +14,7 @@
  
  static char * _vdp_get_driver_name_from_dri2(
      Display *             display,
-@@ -185,8 +190,14 @@ static VdpStatus _vdp_open_driver(
+@@ -185,8 +190,13 @@ static VdpStatus _vdp_open_driver(
      if (vdpau_trace && atoi(vdpau_trace)) {
          SetDllHandle * set_dll_handle;
  
@@ -35,22 +25,21 @@
          _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/libvdpau_trace.so.1",
                                  RTLD_NOW | RTLD_GLOBAL);
 +#endif
-+
          if (!_vdp_trace_dll) {
              fprintf(stderr, "Failed to open VDPAU trace library %s\n", dlerror());
              _VDP_ERROR_BREAKPOINT();
---- origsrc/libvdpau-1.2/test/dlclose.c	2019-03-01 03:40:30.000000000 +0900
-+++ src/libvdpau-1.2/test/dlclose.c	2019-03-02 20:33:41.783677800 +0900
+--- origsrc/libvdpau-1.3/test/dlclose.c	2019-08-29 02:57:55.000000000 +0900
++++ src/libvdpau-1.3/test/dlclose.c	2019-10-04 09:42:21.705569000 +0900
 @@ -34,8 +34,13 @@ int main(void)
      // Generic Event Extension causes an identical bug to the one this program
      // is trying to test for.
      int nOpenFDs = countOpenFDs();
 +#if defined(__CYGWIN__)
 +    void *libXext = dlopen("cygXext-6.dll", RTLD_LAZY);
-+    void *libvdpau = dlopen("../src/.libs/cygvdpau-1.dll", RTLD_LAZY);
++    void *libvdpau = dlopen("src/cygvdpau-1.dll", RTLD_LAZY);
 +#else
      void *libXext = dlopen("libXext.so.6", RTLD_LAZY);
-     void *libvdpau = dlopen("../src/.libs/libvdpau.so", RTLD_LAZY);
+     void *libvdpau = dlopen("src/libvdpau.so", RTLD_LAZY);
 +#endif
      Display *dpy = XOpenDisplay(NULL);
      VdpDeviceCreateX11 *pvdp_device_create_x11;
