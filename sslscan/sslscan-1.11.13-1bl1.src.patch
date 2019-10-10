@@ -1,0 +1,25 @@
+--- origsrc/sslscan-1.11.13-rbsec/Makefile	2019-03-25 03:32:05.000000000 +0900
++++ src/sslscan-1.11.13-rbsec/Makefile	2019-10-10 12:53:05.305048000 +0900
+@@ -32,7 +32,11 @@ WARNINGS  = -Wall -Wformat=2 -Wformat-se
+ DEFINES   = -DVERSION=\"$(GIT_VERSION)\"
+ 
+ # for dynamic linking
+-LIBS      = -lssl -lcrypto
++LIBS      =
++ifeq ($(findstring CYGWIN,$(OS)),CYGWIN)
++	LIBS += -L/usr/lib/openssl-1.0/lib
++endif
++LIBS      += -lssl -lcrypto
+ ifneq ($(OS), FreeBSD)
+ 	LIBS += -ldl
+ endif
+@@ -45,6 +49,9 @@ endif
+ # independent code, mark the relocation table read-only, and mark the global
+ # offset table read-only.
+ CFLAGS  += -D_FORTIFY_SOURCE=2 -fstack-protector-all -fPIE
++ifeq ($(findstring CYGWIN,$(OS)),CYGWIN)
++	CFLAGS += -I/usr/lib/openssl-1.0/include
++endif
+ 
+ # Don't enable some hardening flags on OS X because it uses an old version of Clang
+ ifneq ($(OS), Darwin)
