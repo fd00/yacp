@@ -1,5 +1,5 @@
---- origsrc/seafile-server-6.2.5-server/configure.ac	2018-01-15 14:53:19.000000000 +0900
-+++ src/seafile-server-6.2.5-server/configure.ac	2018-04-15 02:13:42.358000000 +0900
+--- origsrc/seafile-server-7.0.5-server/configure.ac	2019-09-21 19:10:24.000000000 +0900
++++ src/seafile-server-7.0.5-server/configure.ac	2019-10-10 14:03:10.575409300 +0900
 @@ -162,6 +162,7 @@ else
    LIB_MAC=
    MSVC_CFLAGS=
@@ -8,34 +8,60 @@
  fi
  
  AC_SUBST(LIB_WS32)
---- origsrc/seafile-server-6.2.5-server/lib/Makefile.am	2018-01-15 14:53:19.000000000 +0900
-+++ src/seafile-server-6.2.5-server/lib/Makefile.am	2018-04-15 01:26:35.592000000 +0900
+--- origsrc/seafile-server-7.0.5-server/lib/Makefile.am	2019-09-21 19:10:24.000000000 +0900
++++ src/seafile-server-7.0.5-server/lib/Makefile.am	2019-10-10 14:03:38.384421300 +0900
 @@ -33,7 +33,7 @@ seafile_HEADERS = seafile-object.h
  
  seafile-object.h: ${seafile_object_define}
  	rm -f $@
 -	valac --pkg posix ${seafile_object_define} -C -H seafile-object.h
-+	(cd $(srcdir) && valac --pkg posix ${seafile_object_define} -C -H $(abs_builddir)/seafile-object.h)
++	(cd $(srcdir) && valac --pkg posix ${seafile_object_define} -C -H seafile-object.h)
  
  DISTCLEANFILES = ${searpc_gen}
  
---- origsrc/seafile-server-6.2.5-server/server/repo-mgr.c	2018-01-15 14:53:19.000000000 +0900
-+++ src/seafile-server-6.2.5-server/server/repo-mgr.c	2018-04-15 02:16:57.967000000 +0900
-@@ -4024,10 +4024,7 @@ seaf_get_group_repos_by_user (SeafRepoMa
+--- origsrc/seafile-server-7.0.5-server/server/repo-mgr.c	2019-09-21 19:10:24.000000000 +0900
++++ src/seafile-server-7.0.5-server/server/repo-mgr.c	2019-10-10 15:10:01.259453900 +0900
+@@ -4320,7 +4320,7 @@ seaf_get_group_repos_by_user (SeafRepoMa
          return NULL;
  
      /* Get the groups this user belongs to. */
--    if (org_id < 0)
--        groups = ccnet_get_groups_by_user (rpc_client, user);
--    else
--        groups = ccnet_get_org_groups_by_user (rpc_client, user, org_id);
+-    groups = ccnet_get_groups_by_user (rpc_client, user, 1);
 +    groups = ccnet_get_groups_by_user (rpc_client, user);
- 
      if (!groups) {
          goto out;
---- origsrc/seafile-server-6.2.5-server/server/upload-file.c	2018-01-15 14:53:19.000000000 +0900
-+++ src/seafile-server-6.2.5-server/server/upload-file.c	2018-04-15 02:06:49.021000000 +0900
-@@ -2058,7 +2058,7 @@ out:
+     }
+@@ -4532,7 +4532,7 @@ seaf_repo_manager_convert_repo_path (Sea
+         goto out;
+ 
+     /* Get the groups this user belongs to. */
+-    groups = ccnet_get_groups_by_user (rpc_client, user, 1);
++    groups = ccnet_get_groups_by_user (rpc_client, user);
+     if (!groups) {
+         goto out;
+     }
+--- origsrc/seafile-server-7.0.5-server/server/repo-perm.c	2019-09-21 19:10:24.000000000 +0900
++++ src/seafile-server-7.0.5-server/server/repo-perm.c	2019-10-10 15:05:19.026669600 +0900
+@@ -55,7 +55,7 @@ check_group_permission_by_user (SeafRepo
+         return NULL;
+ 
+     /* Get the groups this user belongs to. */
+-    groups = ccnet_get_groups_by_user (rpc_client, user_name, 1);
++    groups = ccnet_get_groups_by_user (rpc_client, user_name);
+     if (!groups) {
+         goto out;
+     }
+@@ -170,7 +170,7 @@ check_perm_on_parent_repo (const char *o
+     }
+     g_hash_table_destroy (user_perms);
+ 
+-    groups = ccnet_get_groups_by_user (rpc_client, user, 1);
++    groups = ccnet_get_groups_by_user (rpc_client, user);
+     ccnet_rpc_client_free (rpc_client);
+     if (!groups) {
+         return NULL;
+--- origsrc/seafile-server-7.0.5-server/server/upload-file.c	2019-09-21 19:10:24.000000000 +0900
++++ src/seafile-server-7.0.5-server/server/upload-file.c	2019-10-10 15:08:35.706502600 +0900
+@@ -2503,7 +2503,7 @@ out:
          /* Set keepalive to 0. This will cause evhtp to close the
           * connection after sending the reply.
           */
@@ -44,7 +70,7 @@
  
          fsm->state = RECV_ERROR;
      }
-@@ -2259,8 +2259,8 @@ upload_headers_cb (evhtp_request_t *req,
+@@ -2787,8 +2787,8 @@ upload_headers_cb (evhtp_request_t *req,
      }
  
      /* Set up per-request hooks, so that we can read file data piece by piece. */
@@ -55,7 +81,7 @@
      /* Set arg for upload_cb or update_cb. */
      req->cbarg = fsm;
  
-@@ -2275,7 +2275,7 @@ err:
+@@ -2803,7 +2803,7 @@ err:
      /* Set keepalive to 0. This will cause evhtp to close the
       * connection after sending the reply.
       */
@@ -64,7 +90,7 @@
      send_error_reply (req, EVHTP_RES_BADREQ, err_msg);
  
      g_free (repo_id);
-@@ -2344,38 +2344,38 @@ upload_file_init (evhtp_t *htp, const ch
+@@ -2905,38 +2905,38 @@ upload_file_init (evhtp_t *htp, const ch
  
      cb = evhtp_set_regex_cb (htp, "^/upload/.*", upload_cb, NULL);
      /* upload_headers_cb() will be called after evhtp parsed all http headers. */
@@ -85,7 +111,8 @@
 +    evhtp_callback_set_hook(cb, evhtp_hook_on_headers, upload_headers_cb, NULL);
  
      /* cb = evhtp_set_regex_cb (htp, "^/upload-blks-aj/.*", upload_blks_ajax_cb, NULL); */
-     /* evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL); */
+-    /* evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL); */
++    /* evhtp_callback_set_hook(cb, evhtp_hook_on_headers, upload_headers_cb, NULL); */
  
      cb = evhtp_set_regex_cb (htp, "^/upload-aj/.*", upload_ajax_cb, NULL);
 -    evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL);
@@ -104,7 +131,8 @@
 +    evhtp_callback_set_hook(cb, evhtp_hook_on_headers, upload_headers_cb, NULL);
  
      /* cb = evhtp_set_regex_cb (htp, "^/update-blks-aj/.*", update_blks_ajax_cb, NULL); */
-     /* evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL); */
+-    /* evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL); */
++    /* evhtp_callback_set_hook(cb, evhtp_hook_on_headers, upload_headers_cb, NULL); */
  
      cb = evhtp_set_regex_cb (htp, "^/update-aj/.*", update_ajax_cb, NULL);
 -    evhtp_set_hook(&cb->hooks, evhtp_hook_on_headers, upload_headers_cb, NULL);
