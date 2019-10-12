@@ -1,0 +1,50 @@
+--- origsrc/libcppgenerate-cppgenerate-0.2/CMakeLists.txt	2019-07-06 04:55:47.000000000 +0900
++++ src/libcppgenerate-cppgenerate-0.2/CMakeLists.txt	2019-10-13 00:14:25.085033300 +0900
+@@ -64,13 +64,17 @@ set_property( TARGET objlib PROPERTY POS
+ add_library( cppgenerate SHARED $<TARGET_OBJECTS:objlib>)
+ set_target_properties( cppgenerate PROPERTIES VERSION ${CPPGENERATE_VERSION} SOVERSION ${CPPGENERATE_MAJOR} )
+ 
+-add_library( cppgenerate_static STATIC $<TARGET_OBJECTS:objlib>)
+-set_target_properties( cppgenerate_static PROPERTIES OUTPUT_NAME cppgenerate )
+-
++if( NOT BUILD_SHARED_LIBS )
++  add_library( cppgenerate_static STATIC $<TARGET_OBJECTS:objlib>)
++  set_target_properties( cppgenerate_static PROPERTIES OUTPUT_NAME cppgenerate )
++endif()
+ #
+ # Install information
+ #
+-set( install_targets ${install_targets} cppgenerate cppgenerate_static )
++set( install_targets ${install_targets} cppgenerate )
++if( NOT BUILD_SHARED_LIBS )
++  set( install_targets ${install_targets} cppgenerate_static )
++endif()
+ IF( UNIX )
+     include( GNUInstallDirs )
+     install( TARGETS ${install_targets}
+@@ -111,14 +115,20 @@ IF( UNIX )
+         "${CMAKE_CURRENT_SOURCE_DIR}/cppgenerate.pc.cmake"
+         "${CMAKE_CURRENT_BINARY_DIR}/cppgenerate.pc"
+     )
+-    CONFIGURE_FILE(
+-        "${CMAKE_CURRENT_SOURCE_DIR}/cppgenerate-static.pc.cmake"
+-        "${CMAKE_CURRENT_BINARY_DIR}/cppgenerate-static.pc"
+-    )
++    if( NOT BUILD_SHARED_LIBS )
++      CONFIGURE_FILE(
++          "${CMAKE_CURRENT_SOURCE_DIR}/cppgenerate-static.pc.cmake"
++          "${CMAKE_CURRENT_BINARY_DIR}/cppgenerate-static.pc"
++      )
++    endif()
+     INSTALL( FILES 
+              "${CMAKE_BINARY_DIR}/cppgenerate.pc"
+-             "${CMAKE_BINARY_DIR}/cppgenerate-static.pc"
+              DESTINATION lib/pkgconfig)
++    if( NOT BUILD_SHARED_LIBS )
++      INSTALL( FILES 
++              "${CMAKE_BINARY_DIR}/cppgenerate-static.pc"
++              DESTINATION lib/pkgconfig)
++    endif()
+ ENDIF( UNIX )
+ 
+ #
