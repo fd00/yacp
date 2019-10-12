@@ -1,0 +1,43 @@
+--- origsrc/aravis-0.7.1/src/arvgvdevice.c	2019-09-27 21:41:22.000000000 +0900
++++ src/aravis-0.7.1/src/arvgvdevice.c	2019-10-12 15:49:44.735087700 +0900
+@@ -41,14 +41,14 @@
+ #include <arvenumtypes.h>
+ #include <string.h>
+ #include <stdlib.h>
+-#ifndef __APPLE__
++#if defined(__linux__) 
+ #include <linux/ip.h>
+ #endif
+ #include <netinet/udp.h>
+ 
+ /* Shared data (main thread - heartbeat) */
+ 
+-#ifdef __APPLE__
++#if !defined(__linux__)
+ struct iphdr
+   {
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+--- origsrc/aravis-0.7.1/src/arvrealtime.c	2019-09-27 21:41:22.000000000 +0900
++++ src/aravis-0.7.1/src/arvrealtime.c	2019-10-12 15:50:43.538808600 +0900
+@@ -35,7 +35,9 @@
+ #include <sys/time.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ 
+ #define RTKIT_SERVICE_NAME "org.freedesktop.RealtimeKit1"
+ #define RTKIT_OBJECT_PATH "/org/freedesktop/RealtimeKit1"
+@@ -219,7 +221,11 @@ arv_rtkit_make_high_priority (GDBusConne
+ #endif
+ 
+ static pid_t _gettid(void) {
++#if defined(__CYGWIN__)
++		return getpid(); 
++#else
+         return (pid_t) syscall(SYS_gettid);
++#endif
+ }
+ 
+ /**
