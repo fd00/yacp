@@ -1,11 +1,11 @@
---- origsrc/aws-c-common-0.4.6/CMakeLists.txt	2019-09-04 07:45:34.000000000 +0900
-+++ src/aws-c-common-0.4.6/CMakeLists.txt	2019-09-05 18:50:07.423500100 +0900
+--- origsrc/aws-c-common-0.4.12/CMakeLists.txt	2019-10-04 06:30:06.000000000 +0900
++++ src/aws-c-common-0.4.12/CMakeLists.txt	2019-10-12 17:25:54.732414500 +0900
 @@ -14,7 +14,7 @@
  cmake_minimum_required(VERSION 3.0)
  option(STATIC_CRT "Windows specific option that to specify static/dynamic run-time library" OFF)
  
 -project(aws-c-common LANGUAGES C VERSION 0.1.0)
-+project(aws-c-common LANGUAGES C VERSION 0.3.15)
++project(aws-c-common LANGUAGES C VERSION 0.4.12)
  
  if (POLICY CMP0069)
      cmake_policy(SET CMP0069 NEW) # Enable LTO/IPO if available in the compiler, see AwsCFlags
@@ -22,11 +22,11 @@
  
  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-@@ -195,12 +199,12 @@ configure_file("cmake/${CMAKE_PROJECT_NA
-   @ONLY)
+@@ -201,12 +205,12 @@ else()
+ endif()
  
  install(EXPORT "${CMAKE_PROJECT_NAME}-targets"
--    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${CMAKE_PROJECT_NAME}/cmake/${TARGET_DIR}"
 +    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${CMAKE_PROJECT_NAME}"
      NAMESPACE AWS::
      COMPONENT Development)
@@ -37,7 +37,7 @@
      COMPONENT Development)
  
  list(APPEND EXPORT_MODULES
-@@ -213,7 +217,7 @@ list(APPEND EXPORT_MODULES
+@@ -219,7 +223,7 @@ list(APPEND EXPORT_MODULES
      )
  
  install(FILES ${EXPORT_MODULES}
@@ -46,7 +46,7 @@
          COMPONENT Development)
  
  # This should come last, to ensure all variables defined by cmake will be available for export
-@@ -229,3 +233,10 @@ if (NOT CMAKE_CROSSCOMPILING)
+@@ -235,3 +239,10 @@ if (NOT CMAKE_CROSSCOMPILING)
  endif()
  
  include(CPackConfig)
@@ -57,8 +57,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-common-0.4.6/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-common-0.4.6/aws-c-common.pc.in	2019-09-05 18:50:07.454736600 +0900
+--- origsrc/aws-c-common-0.4.12/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.4.12/aws-c-common.pc.in	2019-10-12 17:24:53.683861800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -70,22 +70,23 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -laws-c-common
 +Cflags: -I${includedir}
---- origsrc/aws-c-common-0.4.6/cmake/AwsCFlags.cmake	2019-09-04 07:45:34.000000000 +0900
-+++ src/aws-c-common-0.4.6/cmake/AwsCFlags.cmake	2019-09-05 18:50:07.470391200 +0900
-@@ -46,7 +46,10 @@ function(aws_set_common_properties targe
+--- origsrc/aws-c-common-0.4.12/cmake/AwsCFlags.cmake	2019-10-04 06:30:06.000000000 +0900
++++ src/aws-c-common-0.4.12/cmake/AwsCFlags.cmake	2019-10-12 17:01:40.841483600 +0900
+@@ -49,8 +49,10 @@ function(aws_set_common_properties targe
          list(APPEND AWS_C_FLAGS "${_FLAGS}")
  
      else()
 -        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes)
+-
 +        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes)
 +        if(NOT CYGWIN)
 +            list(APPEND AWS_C_FLAGS -Werror)
 +        endif()
- 
          if(NOT SET_PROPERTIES_NO_WEXTRA)
              list(APPEND AWS_C_FLAGS -Wextra)
---- origsrc/aws-c-common-0.4.6/source/arch/cpuid.c	2019-09-04 07:45:34.000000000 +0900
-+++ src/aws-c-common-0.4.6/source/arch/cpuid.c	2019-09-05 18:50:07.486004800 +0900
+         endif()
+--- origsrc/aws-c-common-0.4.12/source/arch/cpuid.c	2019-10-04 06:30:06.000000000 +0900
++++ src/aws-c-common-0.4.12/source/arch/cpuid.c	2019-10-12 17:02:19.380026500 +0900
 @@ -36,7 +36,7 @@
  static int cpuid_state = 2;
  
