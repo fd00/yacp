@@ -1,0 +1,194 @@
+--- origsrc/libfido2-1.2.0/CMakeLists.txt	2019-07-26 23:27:40.000000000 +0900
++++ src/libfido2-1.2.0/CMakeLists.txt	2019-10-13 13:01:29.023839800 +0900
+@@ -88,7 +88,9 @@ else()
+ 
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
+-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
++	if(NOT CYGWIN)
++		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
++	endif()
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wwrite-strings")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes")
+@@ -96,7 +98,9 @@ else()
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic-errors")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector-all")
+-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
++	if(NOT CYGWIN)
++		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
++	endif()
+ 
+ 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g2")
+ 	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fno-omit-frame-pointer")
+@@ -259,7 +263,7 @@ elseif(NOT MSVC)
+ 	# clang/gcc + gnu ld
+ 	string(CONCAT CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS}
+ 	    " -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/export.gnu")
+-	if(NOT WIN32)
++	if(NOT WIN32 AND NOT CYGWIN)
+ 		string(CONCAT CMAKE_SHARED_LINKER_FLAGS
+ 		    ${CMAKE_SHARED_LINKER_FLAGS}
+ 		    " -Wl,-z,noexecstack -Wl,-z,relro,-z,now")
+--- origsrc/libfido2-1.2.0/examples/CMakeLists.txt	2019-07-26 23:27:40.000000000 +0900
++++ src/libfido2-1.2.0/examples/CMakeLists.txt	2019-10-13 13:08:35.553678900 +0900
+@@ -17,28 +17,28 @@ set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS ""
+ 
+ # manifest
+ add_executable(manifest manifest.c ${COMPAT_SOURCES})
+-target_link_libraries(manifest fido2)
++target_link_libraries(manifest fido2_shared)
+ 
+ # info
+ add_executable(info info.c ${COMPAT_SOURCES})
+-target_link_libraries(info fido2)
++target_link_libraries(info fido2_shared)
+ 
+ # reset
+ add_executable(reset reset.c ${COMPAT_SOURCES})
+-target_link_libraries(reset fido2)
++target_link_libraries(reset fido2_shared)
+ 
+ # cred
+ add_executable(cred cred.c util.c ${COMPAT_SOURCES})
+-target_link_libraries(cred fido2)
++target_link_libraries(cred fido2_shared)
+ 
+ # assert
+ add_executable(assert assert.c util.c ${COMPAT_SOURCES})
+-target_link_libraries(assert fido2)
++target_link_libraries(assert fido2_shared)
+ 
+ # setpin
+ add_executable(setpin setpin.c ${COMPAT_SOURCES})
+-target_link_libraries(setpin fido2)
++target_link_libraries(setpin fido2_shared)
+ 
+ # retries
+ add_executable(retries retries.c ${COMPAT_SOURCES})
+-target_link_libraries(retries fido2)
++target_link_libraries(retries fido2_shared)
+--- origsrc/libfido2-1.2.0/openbsd-compat/readpassphrase.c	2019-07-26 23:27:40.000000000 +0900
++++ src/libfido2-1.2.0/openbsd-compat/readpassphrase.c	2019-10-13 13:10:35.521891500 +0900
+@@ -52,6 +52,10 @@
+ #  define _POSIX_VDISABLE       VDISABLE
+ #endif
+ 
++#if !defined(_NSIG)
++#define _NSIG NSIG
++#endif
++
+ static volatile sig_atomic_t signo[_NSIG];
+ 
+ static void handler(int);
+--- origsrc/libfido2-1.2.0/src/CMakeLists.txt	2019-07-26 23:27:40.000000000 +0900
++++ src/libfido2-1.2.0/src/CMakeLists.txt	2019-10-13 13:05:24.527633000 +0900
+@@ -37,7 +37,7 @@ if(WIN32)
+ 	list(APPEND COMPAT_SOURCES hid_win.c)
+ elseif(APPLE)
+ 	list(APPEND COMPAT_SOURCES hid_osx.c)
+-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
++elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CYGWIN)
+ 	list(APPEND COMPAT_SOURCES hid_linux.c)
+ endif()
+ 
+@@ -54,23 +54,25 @@ if(UNIX)
+ 	add_definitions(-DHAS_DEV_URANDOM)
+ endif()
+ 
+-# static library
+-add_library(fido2 STATIC ${FIDO_SOURCES} ${COMPAT_SOURCES})
+-target_link_libraries(fido2 ${CBOR_LIBRARIES} ${CRYPTO_LIBRARIES}
+-	${UDEV_LIBRARIES})
+-if(WIN32)
+-	if (MINGW)
+-		target_link_libraries(fido2 wsock32 ws2_32 bcrypt setupapi hid)
+-	else()
+-		target_link_libraries(fido2 wsock32 ws2_32 bcrypt SetupAPI hid)
+-		set_target_properties(fido2 PROPERTIES OUTPUT_NAME fido2_static)
++if(NOT BUILD_SHARED_LIBS)
++	# static library
++	add_library(fido2 STATIC ${FIDO_SOURCES} ${COMPAT_SOURCES})
++	target_link_libraries(fido2 ${CBOR_LIBRARIES} ${CRYPTO_LIBRARIES}
++		${UDEV_LIBRARIES})
++	if(WIN32)
++		if (MINGW)
++			target_link_libraries(fido2 wsock32 ws2_32 bcrypt setupapi hid)
++		else()
++			target_link_libraries(fido2 wsock32 ws2_32 bcrypt SetupAPI hid)
++			set_target_properties(fido2 PROPERTIES OUTPUT_NAME fido2_static)
++		endif()
++	elseif(APPLE)
++		target_link_libraries(fido2 "-framework CoreFoundation"
++			"-framework IOKit")
+ 	endif()
+-elseif(APPLE)
+-	target_link_libraries(fido2 "-framework CoreFoundation"
+-		"-framework IOKit")
++	install(TARGETS fido2 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+-install(TARGETS fido2 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ # dynamic library
+ add_library(fido2_shared SHARED ${FIDO_SOURCES} ${COMPAT_SOURCES})
+@@ -93,7 +95,7 @@ set_target_properties(fido2_shared PROPE
+ install(TARGETS fido2_shared
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-	RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR})
++	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+ install(FILES fido.h DESTINATION include)
+ install(DIRECTORY fido DESTINATION include)
+--- origsrc/libfido2-1.2.0/src/hid_linux.c	2019-07-26 23:27:40.000000000 +0900
++++ src/libfido2-1.2.0/src/hid_linux.c	2019-10-13 13:00:48.040634200 +0900
+@@ -7,10 +7,14 @@
+ #include <sys/types.h>
+ 
+ #include <sys/ioctl.h>
++#if defined(__linux__)
+ #include <linux/hidraw.h>
++#endif
+ 
+ #include <fcntl.h>
++#if defined(__linux__)
+ #include <libudev.h>
++#endif
+ #include <string.h>
+ #include <unistd.h>
+ 
+@@ -18,6 +22,8 @@
+ 
+ #define REPORT_LEN	65
+ 
++#if defined(__linux__)
++
+ static int
+ get_key_len(uint8_t tag, uint8_t *key, size_t *key_len)
+ {
+@@ -239,9 +245,12 @@ fail:
+ 	return (ok);
+ }
+ 
++#endif
++
+ int
+ fido_dev_info_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
+ {
++#if defined(__linux__)
+ 	struct udev		*udev = NULL;
+ 	struct udev_enumerate	*udev_enum = NULL;
+ 	struct udev_list_entry	*udev_list;
+@@ -280,6 +289,9 @@ fail:
+ 		udev_unref(udev);
+ 
+ 	return (r);
++#else
++	return FIDO_ERR_INTERNAL;
++#endif
+ }
+ 
+ void *
