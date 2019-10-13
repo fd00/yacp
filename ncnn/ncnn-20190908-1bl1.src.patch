@@ -1,0 +1,68 @@
+--- origsrc/ncnn-20190908/CMakeLists.txt	2019-09-08 11:52:47.000000000 +0900
++++ src/ncnn-20190908/CMakeLists.txt	2019-10-13 10:45:50.173148800 +0900
+@@ -40,7 +40,7 @@ else()
+     option(NCNN_BUILD_TOOLS "build tools" ON)
+ endif()
+ 
+-if(ANDROID OR IOS OR LINUX)
++if(ANDROID OR IOS OR LINUX OR CYGWIN)
+     option(NCNN_DISABLE_EXCEPTION "disable exception" ON)
+ else()
+     option(NCNN_DISABLE_EXCEPTION "disable exception" OFF)
+@@ -54,3 +54,10 @@ add_subdirectory(src)
+ if(NCNN_BUILD_TOOLS)
+     add_subdirectory(tools)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ncnn.pc.in ${CMAKE_BINARY_DIR}/ncnn.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ncnn.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ncnn-20190908/ncnn.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ncnn-20190908/ncnn.pc.in	2019-10-13 10:45:50.032548500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ncnn
++Description: High-performance neural network inference framework optimized for the mobile platform
++Version: @VERSION@
++Libs: -L${libdir} -lncnn
++Cflags: -I${includedir}
+--- origsrc/ncnn-20190908/src/CMakeLists.txt	2019-09-08 11:52:47.000000000 +0900
++++ src/ncnn-20190908/src/CMakeLists.txt	2019-10-13 10:37:28.233052100 +0900
+@@ -272,7 +272,10 @@ configure_file(layer_type_enum.h.in ${CM
+ configure_file(layer_shader_registry.h.in ${CMAKE_CURRENT_BINARY_DIR}/layer_shader_registry.h)
+ configure_file(layer_shader_spv_data.h.in ${CMAKE_CURRENT_BINARY_DIR}/layer_shader_spv_data.h)
+ 
+-add_library(ncnn STATIC ${ncnn_SRCS})
++add_library(ncnn SHARED ${ncnn_SRCS})
++if(CYGWIN)
++    set_target_properties(ncnn PROPERTIES SOVERSION 0)
++endif()
+ 
+ target_include_directories(ncnn
+     PUBLIC
+@@ -359,7 +362,7 @@ if(NCNN_OPENMP AND OpenMP_CXX_FOUND)
+ endif()
+ 
+ if(NCNN_INSTALL_SDK)
+-    install(TARGETS ncnn EXPORT ncnn ARCHIVE DESTINATION lib)
++    install(TARGETS ncnn EXPORT ncnn RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+     install(FILES
+         allocator.h
+         blob.h
+--- origsrc/ncnn-20190908/tools/CMakeLists.txt	2019-09-08 11:52:47.000000000 +0900
++++ src/ncnn-20190908/tools/CMakeLists.txt	2019-10-13 10:44:37.848046100 +0900
+@@ -19,3 +19,7 @@ target_link_libraries(ncnnoptimize PRIVA
+ if(NCNN_VULKAN)
+     target_link_libraries(ncnnoptimize PRIVATE ${Vulkan_LIBRARY})
+ endif()
++
++if(CYGWIN)
++    install(TARGETS ncnn2mem ncnnoptimize DESTINATION bin)
++endif()
