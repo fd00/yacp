@@ -1,0 +1,432 @@
+--- origsrc/osquery-4.0.0/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/CMakeLists.txt	2019-10-14 16:39:24.558071300 +0900
+@@ -37,7 +37,11 @@ function(main)
+   findPythonExecutablePath()
+   generateSpecialTargets()
+ 
+-  add_subdirectory("third-party")
++  find_package(LibXml2 REQUIRED)
++
++  if(NOT CYGWIN)
++    add_subdirectory("third-party")
++  endif()
+   add_subdirectory("osquery")
+   add_subdirectory("plugins")
+   add_subdirectory("tools")
+--- origsrc/osquery-4.0.0/cmake/globals.cmake	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/cmake/globals.cmake	2019-10-14 15:30:03.533470700 +0900
+@@ -25,12 +25,14 @@ set(PYTHON_PATH "${CMAKE_BINARY_DIR}/pyt
+ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+   set(PLATFORM_POSIX 1)
+   set(PLATFORM_LINUX 1)
+-
+ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+   set(PLATFORM_POSIX 1)
+   set(PLATFORM_MACOS 1)
+ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+   set(PLATFORM_WINDOWS 1)
++elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "CYGWIN")
++  set(PLATFORM_POSIX 1)
++  set(PLATFORM_CYGWIN 1)
+ else()
+   message(FATAL_ERROR "Unrecognized platform")
+ endif()
+--- origsrc/osquery-4.0.0/cmake/packaging.cmake	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/cmake/packaging.cmake	2019-10-14 15:34:33.828042100 +0900
+@@ -282,6 +282,7 @@ elseif(DEFINED PLATFORM_WINDOWS)
+   set(CPACK_PACKAGE_INSTALL_DIRECTORY "C:/Program Files/osquery")
+   set(CPACK_WIX_EXTENSIONS "WixUtilExtension")
+ elseif(DEFINED PLATFORM_FREEBSD)
++elseif(DEFINED PLATFORM_CYGWIN)
+ else()
+   message(FATAL_ERROR "Unsupported platform")
+ endif()
+--- origsrc/osquery-4.0.0/cmake/utilities.cmake	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/cmake/utilities.cmake	2019-10-14 19:45:41.100418500 +0900
+@@ -180,6 +180,15 @@ function(generateGlobalSettingsTargets)
+       _WIN32_WINNT=_WIN32_WINNT_WIN7
+       NTDDI_VERSION=NTDDI_WIN7
+     )
++  elseif(DEFINED PLATFORM_CYGWIN)
++    target_compile_definitions(global_settings INTERFACE
++      CYGWIN=1
++      POSIX=1
++      OSQUERY_CYGWIN=1
++      OSQUERY_POSIX=1
++      OSQUERY_BUILD_PLATFORM=cygwin
++      OSQUERY_BUILD_DISTRO=cygwin
++    )
+   else()
+     message(FATAL_ERROR "This platform is not yet supported")
+   endif()
+@@ -230,12 +239,18 @@ function(generateGlobalSettingsTargets)
+       -fno-limit-debug-info
+       -pipe
+       -pedantic
+-      -stdlib=libc++
+     )
++    if(CYGWIN)
++      target_compile_options(cxx_settings INTERFACE -stdlib=libstdc++)
++    else()
++      target_compile_options(cxx_settings INTERFACE -stdlib=libc++)
++    endif()
+ 
+-    target_link_options(cxx_settings INTERFACE
+-      -stdlib=libc++
+-    )
++    if(CYGWIN)
++      target_link_options(cxx_settings INTERFACE -stdlib=libstdc++)
++    else()
++      target_link_options(cxx_settings INTERFACE -stdlib=libc++)
++    endif()
+ 
+     if(DEFINED PLATFORM_MACOS)
+       target_compile_options(cxx_settings INTERFACE
+@@ -267,7 +282,9 @@ function(generateGlobalSettingsTargets)
+       )
+     endif()
+ 
+-    target_link_libraries(cxx_settings INTERFACE c++ c++abi)
++    if(NOT CYGWIN)
++      target_link_libraries(cxx_settings INTERFACE c++ c++abi)
++    endif()
+   endif()
+ 
+   target_compile_features(cxx_settings INTERFACE cxx_std_14)
+--- origsrc/osquery-4.0.0/osquery/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/CMakeLists.txt	2019-10-14 19:02:35.789001400 +0900
+@@ -32,6 +32,77 @@ function(osqueryMain)
+   add_subdirectory("experimental")
+   add_subdirectory("system")
+ 
++  if(CYGWIN)
++    add_library(osquery_tables_lldpd_llpdtable INTERFACE)
++    add_dependencies(osquery_tables_lldpd_llpdtable cygwin)
++
++    add_library(thirdparty_augeas INTERFACE)
++    add_dependencies(thirdparty_augeas augeas)
++
++    add_library(thirdparty_boost INTERFACE)
++    add_dependencies(thirdparty_boost boost_system)
++
++    add_library(thirdparty_gflags INTERFACE)
++    add_dependencies(thirdparty_gflags gflags)
++
++    add_library(thirdparty_glibc_dl INTERFACE)
++    add_dependencies(thirdparty_glibc_dl cygwin)
++
++    add_library(thirdparty_glibc_pthread INTERFACE)
++    add_dependencies(thirdparty_glibc_pthread cygwin)
++
++    add_library(thirdparty_glibc_resolv INTERFACE)
++    add_dependencies(thirdparty_glibc_resolv cygwin)
++
++    add_library(thirdparty_glog INTERFACE)
++    add_dependencies(thirdparty_glog glog)
++
++    add_library(thirdparty_googletest_headers INTERFACE)
++    add_dependencies(thirdparty_googletest_headers gtest)
++
++    add_library(thirdparty_libarchive INTERFACE)
++    add_dependencies(thirdparty_libarchive archive)
++
++    add_library(thirdparty_libmagic INTERFACE)
++    add_dependencies(thirdparty_libmagic magic)
++
++    add_library(thirdparty_libxml2 INTERFACE)
++    add_dependencies(thirdparty_libxml2 xml2)
++
++    add_library(thirdparty_linenoise-ng INTERFACE)
++    add_dependencies(thirdparty_linenoise-ng linenoise)
++
++    add_library(thirdparty_rapidjson INTERFACE)
++    add_dependencies(thirdparty_rapidjson rapidjson)
++
++    add_library(thirdparty_openssl INTERFACE)
++    add_dependencies(thirdparty_openssl ssl crypto)
++
++    add_library(thirdparty_rocksdb INTERFACE)
++    add_dependencies(thirdparty_rocksdb rocksdb)
++
++    add_library(thirdparty_sleuthkit INTERFACE)
++    add_dependencies(thirdparty_sleuthkit tsk)
++
++    add_library(thirdparty_sqlite INTERFACE)
++    add_dependencies(thirdparty_sqlite sqlite3)
++
++    add_library(thirdparty_ssdeep-cpp INTERFACE)
++    add_dependencies(thirdparty_ssdeep-cpp fuzzy)
++
++    add_library(thirdparty_thrift INTERFACE)
++    add_dependencies(thirdparty_thrift thrift)
++
++    add_library(thirdparty_yara INTERFACE)
++    add_dependencies(thirdparty_yara yara)
++
++    add_library(thirdparty_zstd INTERFACE)
++    add_dependencies(thirdparty_zstd zstd)
++
++    add_library(thirdparty_zlib INTERFACE)
++    add_dependencies(thirdparty_zlib z)
++  endif()
++
+   generateOsqueryHeaders()
+   generateOsqueryd()
+ endfunction()
+--- origsrc/osquery-4.0.0/osquery/core/system.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/core/system.cpp	2019-10-14 16:04:20.989459500 +0900
+@@ -18,7 +18,7 @@
+ 
+ #include <signal.h>
+ 
+-#if !defined(__FreeBSD__) && !defined(WIN32)
++#if !defined(__FreeBSD__) && !defined(WIN32) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ #include <uuid/uuid.h>
+ #endif
+--- origsrc/osquery-4.0.0/osquery/events/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/events/CMakeLists.txt	2019-10-14 16:09:29.536708100 +0900
+@@ -39,6 +39,11 @@ function(generateOsqueryEvents)
+     list(APPEND source_files
+       windows/windows_event_log.cpp
+     )
++
++  elseif(DEFINED PLATFORM_CYGWIN)
++    list(APPEND source_files
++      linux/syslog.cpp
++    )
+   endif()
+ 
+   add_osquery_library(osquery_events EXCLUDE_FROM_ALL
+@@ -102,6 +107,11 @@ function(generateOsqueryEvents)
+     set(platform_public_header_files
+       windows/windows_event_log.h
+     )
++
++  elseif(DEFINED PLATFORM_CYGWIN)
++    set(platform_public_header_files
++      linux/syslog.h
++    )
+   endif()
+ 
+   generateIncludeNamespace(osquery_events "osquery/events" "FULL_PATH" ${platform_public_header_files})
+--- origsrc/osquery-4.0.0/osquery/extensions/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/extensions/CMakeLists.txt	2019-10-14 21:29:07.665409300 +0900
+@@ -64,6 +64,7 @@ function(generateOsqueryExtensionsExtens
+     global_cxx_settings
+     osquery_headers
+     osquery_filesystem
++    osquery_extensions_implthrift
+   )
+ 
+   generateIncludeNamespace(osquery_extensions_extensionsinterface "osquery/extensions" "FILE_ONLY" ${public_header_files})
+--- origsrc/osquery-4.0.0/osquery/filesystem/posix/fileops.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/filesystem/posix/fileops.cpp	2019-10-14 15:49:50.131185100 +0900
+@@ -179,7 +179,7 @@ bool PlatformFile::getFileTimes(Platform
+     return false;
+   }
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   TIMESPEC_TO_TIMEVAL(&times.times[0], &file.st_atim);
+   TIMESPEC_TO_TIMEVAL(&times.times[1], &file.st_mtim);
+ #else
+--- origsrc/osquery-4.0.0/osquery/main/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/main/CMakeLists.txt	2019-10-14 21:50:12.038012000 +0900
+@@ -98,6 +98,27 @@ function(generateOsqueryMain)
+     main.h
+   )
+ 
++  if(CYGWIN)
++    target_link_libraries(osquery_main PUBLIC
++      archive
++      boost_context
++      boost_filesystem
++      boost_regex
++      boost_system
++      boost_thread
++      crypto
++      fuzzy
++      gflags
++      glog
++      linenoise
++      sqlite3
++      ssl
++      thrift
++      zstd
++      z
++    )
++  endif()
++
+   generateIncludeNamespace(osquery_main "osquery/main" "FILE_ONLY" ${public_header_files})
+ endfunction()
+ 
+--- origsrc/osquery-4.0.0/osquery/process/posix/process_ops.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/process/posix/process_ops.cpp	2019-10-14 15:41:05.704023700 +0900
+@@ -12,7 +12,9 @@
+ #include <stdlib.h>
+ 
+ #include <sys/resource.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/time.h>
+ #include <sys/types.h>
+ #include <sys/wait.h>
+--- origsrc/osquery-4.0.0/osquery/sql/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/sql/CMakeLists.txt	2019-10-14 21:52:24.423552100 +0900
+@@ -27,7 +27,11 @@ function(generateOsquerySql)
+     virtual_table.cpp
+   )
+ 
+-  if(DEFINED PLATFORM_LINUX OR DEFINED PLATFORM_MACOS OR DEFINED PLATFORM_WINDOWS)
++  if(CYGWIN)
++    include_directories(/usr/include/ssdeep)
++  endif()
++
++  if(DEFINED PLATFORM_LINUX OR DEFINED PLATFORM_MACOS OR DEFINED PLATFORM_WINDOWS OR DEFINED PLATFORM_CYGWIN)
+     list(APPEND source_files
+       sqlite_string.cpp
+     )
+@@ -46,6 +50,7 @@ function(generateOsquerySql)
+     osquery_core_plugins
+     osquery_hashing
+     osquery_process
++    osquery_sdk_pluginsdk
+     osquery_utils
+     osquery_utils_system_errno
+     thirdparty_boost
+--- origsrc/osquery-4.0.0/osquery/tables/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/CMakeLists.txt	2019-10-14 15:41:57.535141600 +0900
+@@ -9,7 +9,9 @@ function(osqueryTablesMain)
+   add_subdirectory("cloud")
+   add_subdirectory("events")
+   add_subdirectory("forensic")
+-  add_subdirectory("lldpd")
++  if(NOT CYGWIN)
++    add_subdirectory("lldpd")
++  endif()
+   add_subdirectory("networking")
+   add_subdirectory("sleuthkit")
+   add_subdirectory("smart")
+--- origsrc/osquery-4.0.0/osquery/tables/networking/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/networking/CMakeLists.txt	2019-10-14 16:35:53.958113500 +0900
+@@ -26,9 +26,13 @@ function(generateOsqueryTablesNetworking
+   if(DEFINED PLATFORM_POSIX)
+     list(APPEND source_files
+       posix/dns_resolvers.cpp
+-      posix/interfaces.cpp
+-      posix/utils.cpp
+     )
++    if(NOT DEFINED PLATFORM_CYGWIN)
++      list(APPEND source_files
++        posix/interfaces.cpp
++        posix/utils.cpp
++      )
++    endif()
+   endif()
+ 
+   if(DEFINED PLATFORM_LINUX)
+--- origsrc/osquery-4.0.0/osquery/tables/system/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/system/CMakeLists.txt	2019-10-14 16:48:03.828595700 +0900
+@@ -14,6 +14,12 @@ function(osqueryTablesSystemMain)
+ endfunction()
+ 
+ function(generateOsqueryTablesSystemSystemtable)
++
++  if(CYGWIN)
++    include_directories(/usr/include/ssdeep)
++    include_directories(${LIBXML2_INCLUDE_DIR})
++  endif()
++
+   set(source_files
+     cpuid.cpp
+     hash.cpp
+@@ -39,10 +45,14 @@ function(generateOsqueryTablesSystemSyst
+       posix/ssh_keys.cpp
+       posix/sudoers.cpp
+       posix/suid_bin.cpp
+-      posix/system_controls.cpp
+       posix/ulimit_info.cpp
+       posix/yum_sources.cpp
+     )
++    if (NOT DEFINED PLATFORM_CYGWIN)
++      list(APPEND source_files
++        posix/system_controls.cpp
++      )
++    endif()
+   endif()
+ 
+   if(DEFINED PLATFORM_LINUX)
+--- origsrc/osquery-4.0.0/osquery/tables/system/posix/logged_in_users.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/system/posix/logged_in_users.cpp	2019-10-14 16:44:51.836883000 +0900
+@@ -18,7 +18,9 @@ namespace tables {
+ Mutex utmpxEnumerationMutex;
+ 
+ const std::map<size_t, std::string> kLoginTypes = {
++#if defined(EMPTY)
+     {EMPTY, "empty"},
++#endif
+     {BOOT_TIME, "boot_time"},
+     {NEW_TIME, "new_time"},
+     {OLD_TIME, "old_time"},
+@@ -28,8 +30,10 @@ const std::map<size_t, std::string> kLog
+     {DEAD_PROCESS, "dead"},
+ #if !defined(FREEBSD)
+     {RUN_LVL, "runlevel"},
++#if defined(ACCOUNTING)
+     {ACCOUNTING, "accounting"},
+ #endif
++#endif
+ };
+ 
+ QueryData genLoggedInUsers(QueryContext& context) {
+--- origsrc/osquery-4.0.0/osquery/tables/system/posix/ulimit_info.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/system/posix/ulimit_info.cpp	2019-10-14 16:49:42.864998300 +0900
+@@ -26,9 +26,15 @@ const std::map<std::string, int> kLimits
+     {"core", RLIMIT_CORE},
+     {"nofile", RLIMIT_NOFILE},
+     {"as", RLIMIT_AS},
++#if defined(RLIMIT_RSS)
+     {"rss", RLIMIT_RSS},
++#endif
++#if defined(RLIMIT_MEMLOCK)
+     {"memlock", RLIMIT_MEMLOCK},
++#endif
++#if defined(RLIMIT_NPROC)
+     {"nproc", RLIMIT_NPROC},
++#endif
+ #ifdef RLIMIT_LOCKS
+     {"locks", RLIMIT_LOCKS},
+ #endif
+--- origsrc/osquery-4.0.0/osquery/tables/utility/file.cpp	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/osquery/tables/utility/file.cpp	2019-10-14 16:00:55.003222900 +0900
+@@ -81,7 +81,7 @@ void genFileInfo(const fs::path& path,
+   r["mtime"] = BIGINT(file_stat.st_mtime);
+   r["ctime"] = BIGINT(file_stat.st_ctime);
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   // No 'birth' or create time in Linux or Windows.
+   r["btime"] = "0";
+ #else
+--- origsrc/osquery-4.0.0/tools/codegen/CMakeLists.txt	2019-06-28 21:59:14.000000000 +0900
++++ src/osquery-4.0.0/tools/codegen/CMakeLists.txt	2019-10-14 15:37:49.919867800 +0900
+@@ -31,7 +31,7 @@ function(generateGentable)
+   add_custom_command(
+     OUTPUT "${gentable_file_path}"
+     COMMAND "${CMAKE_COMMAND}" -E create_symlink "${source_base_path}/gentable.py" "${gentable_file_path}"
+-    DEPENDS "codegen_gentable_utils_dependency" "thirdparty_python_modules"
++    DEPENDS "codegen_gentable_utils_dependency" # "thirdparty_python_modules"
+   )
+ 
+   add_custom_target("codegen_gentable" DEPENDS "${gentable_file_path}")
+@@ -199,7 +199,7 @@ function(generateTableCategoryAmalgamati
+     OUTPUT "${amalgamation_file}"
+     COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${PYTHON_PATH}" "${EX_TOOL_PYTHON3_EXECUTABLE_PATH}" "${CMAKE_SOURCE_DIR}/tools/codegen/amalgamate.py" --templates "${CMAKE_SOURCE_DIR}/tools/codegen/templates" ${amalgamation_type} --sources "${generateTables_output}" --output "${amalgamation_file}"
+     COMMENT "Generating amalgamation file for the ${category_name} tables..."
+-    DEPENDS "${category_spec_files}" ${generateTables_targetList} "thirdparty_python_modules"
++    DEPENDS "${category_spec_files}" ${generateTables_targetList} #"thirdparty_python_modules"
+   )
+ 
+   # Build the library
