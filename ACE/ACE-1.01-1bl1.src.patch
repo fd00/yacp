@@ -1,0 +1,56 @@
+--- origsrc/ACE-1.01/ace.cpp	2015-05-01 18:47:58.000000000 +0900
++++ src/ACE-1.01/ace.cpp	2019-10-22 19:25:27.106565800 +0900
+@@ -11,9 +11,9 @@
+ #include <math.h>
+ #include <omp.h>
+ #include <bitset>
++#include <malloc.h>
+ 
+ #ifdef __linux__
+-#include <malloc.h>
+ #include <sys/sysinfo.h>
+ #endif
+ 
+@@ -69,7 +69,7 @@ unsigned long N, G;
+ Read* Reads;
+ node*** root;
+ node** level;
+-node** prev;
++node** prev_;
+ bool* first;
+ unsigned long Index[20];
+ char filetype;
+@@ -136,12 +136,12 @@ void insert(unsigned long kmer, unsigned
+     if (first[x])
+     {
+       first[x] = false;
+-      prev[x] = level[x] = v;
++      prev_[x] = level[x] = v;
+     }
+     else
+     {
+-      prev[x]->children[3] = v;
+-      prev[x] = v;
++      prev_[x]->children[3] = v;
++      prev_[x] = v;
+       v->children[3] = 0;
+     }
+   }
+@@ -426,7 +426,7 @@ void finalize(char* argv[])
+   }	    
+   delete root;
+   delete level;
+-  delete prev;
++  delete prev_;
+   delete first;
+ }
+ 
+@@ -534,7 +534,7 @@ void Initialize(char* argv[])
+   cores=1<<2*p2_len;
+   root=new node**[cores];
+   level=new node*[cores];
+-  prev=new node*[cores];
++  prev_=new node*[cores];
+   first=new bool[cores];	
+   
+   #ifdef __linux__
