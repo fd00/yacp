@@ -1,0 +1,86 @@
+HOMEPAGE="https://healpix.jpl.nasa.gov/"
+SRC_URI="mirror://sourceforge/${PN}/Healpix_3.50_2018Dec10.tar.gz"
+SRC_DIR="Healpix_${PV}"
+
+CATEGORY="Science"
+SUMMARY="Hierarchical Equal Area isoLatitude Pixelization of a sphere"
+DESCRIPTION="HEALPix is an acronym for Hierarchical Equal Area isoLatitude Pixelization of
+a sphere. As suggested in the name, this pixelization produces a subdivision
+of a spherical surface in which each pixel covers the same surface area as
+every other pixel. The figure below shows the partitioning of a sphere at
+progressively higher resolutions, from left to right. The green sphere
+represents the lowest resolution possible with the HEALPix base partitioning
+of the sphere surface into 12 equal sized pixels. The yellow sphere has a
+HEALPix grid of 48 pixels, the red sphere has 192 pixels, and the blue sphere
+has a grid of 768 pixels (~7.3 degree resolution)."
+
+src_compile()
+{
+	for lang in C cxx
+	do
+		CYGCONF_SOURCE=${S}/src/${lang}/autotools
+		cd ${CYGCONF_SOURCE}
+		cygautoreconf
+
+		cd ${B}
+		mkdir -p ${lang}
+		pushd ${lang}
+		cygconf
+		cygmake
+	done
+}
+
+src_test()
+{
+	for lang in C cxx
+	do
+		cd ${B}/${lang}
+		cygtest
+	done
+}
+
+src_install()
+{
+	for lang in C cxx
+	do
+		cd ${B}/${lang}
+		cyginstall
+	done
+}
+
+DIFF_EXCLUDES="
+	healpy
+"
+
+PKG_NAMES="
+	healpix
+	libchealpix0
+	libchealpix-devel
+	libhealpix_cxx2
+	libhealpix_cxx-devel
+"
+healpix_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libchealpix0_CONTENTS="
+	usr/bin/cygchealpix-*.dll
+"
+libchealpix_devel_CONTENTS="
+	usr/include/chealpix.h
+	usr/lib/libchealpix.dll.a
+	usr/lib/pkgconfig/chealpix.pc
+"
+libhealpix_cxx2_CONTENTS="
+	usr/bin/cyghealpix_cxx-*.dll
+"
+libhealpix_cxx_devel_CONTENTS="
+	usr/include/healpix_cxx
+	usr/lib/libhealpix_cxx.dll.a
+	usr/lib/pkgconfig/healpix_cxx.pc
+"
+healpix_SUMMARY="${SUMMARY} (utilities)"
+libchealpix0_SUMMARY="${SUMMARY} (runtime / c)"
+libchealpix_devel_SUMMARY="${SUMMARY} (development / c)"
+libhealpix_cxx2_SUMMARY="${SUMMARY} (runtime / c++)"
+libhealpix_cxx_devel_SUMMARY="${SUMMARY} (development / c++)"
