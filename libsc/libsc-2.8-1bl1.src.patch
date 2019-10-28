@@ -1,0 +1,111 @@
+--- origsrc/libsc-2.8/Makefile.am	2019-02-24 23:56:07.000000000 +0900
++++ src/libsc-2.8/Makefile.am	2019-10-28 14:18:38.547976000 +0900
+@@ -30,16 +30,16 @@ Makefile.sc.mk : Makefile.sc.pre
+             -e 's,^\(.*prefix *=\),sc_\1,g' > $@
+ 
+ # install libsc m4 macros in a dedicated directory
+-scaclocaldir = $(datadir)/aclocal
+-dist_scaclocal_DATA = \
+-        config/sc_blas.m4 config/sc_builtin.m4 config/sc_c_check_flag.m4 \
+-        config/sc_c_version.m4 config/sc_cuda.m4 config/sc_include.m4 \
+-        config/sc_lapack.m4 config/sc_lint.m4 config/sc_mpi.m4 \
+-        config/ax_prefix_config_h.m4 config/ax_split_version.m4 \
+-        config/sc_package.m4 config/sc_trilinos.m4
++# scaclocaldir = $(datadir)/aclocal
++# dist_scaclocal_DATA = \
++#         config/sc_blas.m4 config/sc_builtin.m4 config/sc_c_check_flag.m4 \
++#         config/sc_c_version.m4 config/sc_cuda.m4 config/sc_include.m4 \
++#         config/sc_lapack.m4 config/sc_lint.m4 config/sc_mpi.m4 \
++#         config/ax_prefix_config_h.m4 config/ax_split_version.m4 \
++#         config/sc_package.m4 config/sc_trilinos.m4
+ 
+ # install example .ini files in a dedicated directory
+-scinidir = $(datadir)/ini
++scinidir = $(datadir)/libsc/ini
+ dist_scini_DATA =
+ 
+ # handle toplevel directory
+@@ -57,8 +57,6 @@ endif
+ 
+ # non-recursive build
+ include src/Makefile.am
+-include iniparser/Makefile.am
+-include libb64/Makefile.am
+ include test/Makefile.am
+ include example/bspline/Makefile.am
+ ## include example/cuda/Makefile.am
+@@ -117,3 +115,6 @@ doxygen: Doxyfile
+ ## .cu.o:
+ ## 	$(SC_NVCC) -o $@ -c $< @NVCCFLAGS@
+ ## endif
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libsc-2.8/configure.ac	2019-02-24 23:56:07.000000000 +0900
++++ src/libsc-2.8/configure.ac	2019-10-28 14:18:38.547976000 +0900
+@@ -3,7 +3,7 @@ dnl This file is part of the SC Library.
+ dnl
+ 
+ AC_INIT([libsc],
+-        [m4_esyscmd([build-aux/git-version-gen .tarball-version])],
++        [2.8],
+         [info@p4est.org])
+ AC_PREREQ(2.61)
+ AC_CONFIG_HEADERS([src/pre_config.h])
+@@ -88,6 +88,9 @@ echo "o---------------------------------
+ 
+ SC_CHECK_LIBRARIES([SC])
+ 
++PKG_CHECK_MODULES([INIPARSER], [iniparser])
++PKG_CHECK_MODULES([LIBB64], [libb64])
++
+ # Print summary.
+ 
+ AC_DEFINE_UNQUOTED(F77,         ["${F77}"],         [F77 compiler])
+@@ -129,7 +132,7 @@ dnl echo "| LAPACK_LIBS: $LAPACK_LIBS"
+ echo "o----------------------------------"
+ 
+ # Create output files.
+-AC_CONFIG_FILES([Makefile Makefile.sc.pre Doxyfile])
++AC_CONFIG_FILES([libsc.pc Makefile Makefile.sc.pre Doxyfile])
+ AC_OUTPUT
+ 
+ # Final notifications.
+--- origsrc/libsc-2.8/libsc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsc-2.8/libsc.pc.in	2019-10-28 14:18:38.438591800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsc
++Description: Aauxiliary library
++Version: @VERSION@
++Libs: -L${libdir} -lsc
++Cflags: -I${includedir}
+--- origsrc/libsc-2.8/src/Makefile.am	2019-02-24 23:56:07.000000000 +0900
++++ src/libsc-2.8/src/Makefile.am	2019-10-28 13:50:17.638465300 +0900
+@@ -39,8 +39,9 @@ lib_LTLIBRARIES += src/libsc.la
+ src_libsc_la_SOURCES = \
+         $(libsc_internal_headers) \
+         $(libsc_compiled_sources)
+-src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS)
+-src_libsc_la_LDFLAGS = -release $(VERSION)
++src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS) $(INIPARSER_CFLAGS) $(LIBB64_CFLAGS)
++src_libsc_la_LDFLAGS = -no-undefined -release $(VERSION)
++src_libsc_la_LIBADD = $(INIPARSER_LIBS) $(LIBB64_LIBS)
+ LDADD += @top_builddir@/src/libsc.la
+ 
+ nodist_include_HEADERS += $(libsc_generated_headers)
+--- origsrc/libsc-2.8/src/sc_io.c	2019-02-24 23:56:07.000000000 +0900
++++ src/libsc-2.8/src/sc_io.c	2019-10-28 13:46:47.207141700 +0900
+@@ -22,7 +22,7 @@
+ */
+ 
+ #include <sc_io.h>
+-#include <libb64.h>
++#include <b64/cencode.h>
+ #ifdef SC_HAVE_ZLIB
+ #include <zlib.h>
+ #endif
