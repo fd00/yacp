@@ -1,0 +1,57 @@
+--- origsrc/SISL-SISL-4.6.0/CMakeLists.txt	2013-06-07 21:26:29.000000000 +0900
++++ src/SISL-SISL-4.6.0/CMakeLists.txt	2019-10-29 17:43:18.487075000 +0900
+@@ -21,6 +21,10 @@ ADD_LIBRARY(sisl ${sisl_SRCS})
+ SET_PROPERTY(TARGET sisl
+   PROPERTY FOLDER "sisl/Libs")
+ 
++IF(CYGWIN)
++  SET_TARGET_PROPERTIES(sisl PROPERTIES SOVERSION 0)
++ENDIF()
++
+ # This line may be needed only on AMD 64 bit...
+ #IF(NOT WIN32)
+ #  SET_TARGET_PROPERTIES(sisl PROPERTIES COMPILE_FLAGS "-fPIC")
+@@ -67,7 +71,7 @@ IF(WIN32)
+ ELSE(WIN32)
+   # Linux
+   # lib
+-  INSTALL(TARGETS sisl DESTINATION lib COMPONENT sisl)
++  INSTALL(TARGETS sisl RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT sisl)
+   # include
+   INSTALL(DIRECTORY include/
+     COMPONENT sisl-dev
+@@ -86,3 +90,10 @@ IF(NOT GoTools_ALL_COMPILE)
+ ENDIF(NOT GoTools_ALL_COMPILE)
+ 
+ SET(CPACK_STRIP_FILES ${CPACK_STRIP_FILES} libsisl.so)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/sisl.pc.in ${CMAKE_BINARY_DIR}/sisl.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/sisl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/SISL-SISL-4.6.0/include/sislP.h	2013-06-07 21:26:29.000000000 +0900
++++ src/SISL-SISL-4.6.0/include/sislP.h	2019-10-29 15:49:39.413861900 +0900
+@@ -81,7 +81,7 @@
+ #include <limits.h>
+ 
+ /* Get system spesific values */
+-#if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__) || defined(__APPLE__)
++#if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__) || defined(__APPLE__) || defined(__CYGWIN__)
+ #  define MAXDOUBLE   1.79769313486231570e+308
+ #  define MAXFLOAT    ((float)3.40282346638528860e+38)
+ #  define MINDOUBLE   2.22507385850720140e-308
+--- origsrc/SISL-SISL-4.6.0/sisl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SISL-SISL-4.6.0/sisl.pc.in	2019-10-29 17:42:24.882462300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SISL
++Description: SINTEF Spline Library
++Version: @VERSION@
++Libs: -L${libdir} -lsisl
++Cflags: -I${includedir}
