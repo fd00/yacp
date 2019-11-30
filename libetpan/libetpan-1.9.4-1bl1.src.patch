@@ -1,0 +1,49 @@
+--- origsrc/libetpan-1.9.4/configure.ac	2019-11-02 02:58:50.000000000 +0900
++++ src/libetpan-1.9.4/configure.ac	2019-11-29 21:52:43.286681000 +0900
+@@ -159,8 +159,10 @@ AC_HEADER_STDC
+ AC_CHECK_HEADERS(fcntl.h unistd.h ctype.h sys/types.h sys/stat.h sys/mman.h limits.h)
+ AC_CHECK_HEADERS(netdb.h netinet/in.h sys/socket.h)
+ AC_CHECK_HEADERS(sys/param.h sys/select.h inttypes.h)
+-AC_CHECK_HEADERS(arpa/inet.h winsock2.h)
+-
++AC_CHECK_HEADERS(arpa/inet.h)
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_HEADERS(winsock2.h)  
++fi
+ 
+ AC_ARG_WITH([poll], use poll intead of select, use_poll=yes, use_poll=no)
+ 
+--- origsrc/libetpan-1.9.4/src/Makefile.am	2019-11-02 02:58:50.000000000 +0900
++++ src/libetpan-1.9.4/src/Makefile.am	2019-11-29 21:53:14.247451100 +0900
+@@ -43,7 +43,6 @@ SUFFIXES: .rc .lo
+ 	$(LTRCCOMPILE) -i $< -o $@
+ 
+ libetpan_res = versioninfo.lo
+-no_undefined = -no-undefined
+ 
+ libetpan_deps = $(libetpan_res)
+ 
+@@ -51,11 +50,11 @@ else
+ 
+ libetpan_res =
+ libetpan_res_ldflag =
+-no_undefined =
+ 
+ libetpan_deps =
+ endif
+ 
++no_undefined = -no-undefined
+ 
+ if HAVE_MINGW32_SYSTEM
+   arch_sources = dummy.cpp
+--- origsrc/libetpan-1.9.4/src/low-level/smtp/mailsmtp.c	2019-11-02 02:58:50.000000000 +0900
++++ src/libetpan-1.9.4/src/low-level/smtp/mailsmtp.c	2019-11-29 23:17:49.384791400 +0900
+@@ -276,7 +276,7 @@ static int get_hostname(mailsmtp * sessi
+     if (r != 0)
+       return MAILSMTP_ERROR_HOSTNAME;
+ 
+-#if (defined __linux__ || defined WIN32 || defined __sun)
++#if (defined __linux__ || defined WIN32 || defined __sun || defined(__CYGWIN__))
+     r = getnameinfo(&addr, sizeof(addr), hostname, HOSTNAME_SIZE, NULL, 0, NI_NUMERICHOST);
+ #else
+     r = getnameinfo(&addr, addr.sa_len, hostname, HOSTNAME_SIZE, NULL, 0, NI_NUMERICHOST);
