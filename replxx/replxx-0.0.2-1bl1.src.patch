@@ -1,0 +1,68 @@
+--- origsrc/replxx-release-0.0.2/CMakeLists.txt	2019-09-23 05:49:56.000000000 +0900
++++ src/replxx-release-0.0.2/CMakeLists.txt	2019-12-10 11:50:28.241512700 +0900
+@@ -8,7 +8,7 @@ option(REPLXX_BuildExamples "Build the e
+ option(BUILD_SHARED_LIBS "Build as a shared library" ON)
+ option(BUILD_STATIC_LIBS "Build as a static library" ON)
+ 
+-if (REPLXX_BuildExamples AND NOT BUILD_STATIC_LIBS)
++if (REPLXX_BuildExamples AND NOT BUILD_STATIC_LIBS AND NOT CYGWIN)
+ 	set( BUILD_STATIC_LIBS ON )
+ endif()
+ 
+@@ -117,10 +117,14 @@ if ( BUILD_SHARED_LIBS )
+ 	set_target_properties( replxx PROPERTIES RELEASE_OUTPUT_NAME replxx DEBUG_OUTPUT_NAME replxx-d )
+ 	set( TARGETS ${TARGETS} replxx )
+ 	target_compile_definitions(replxx PRIVATE REPLXX_BUILDING_DLL)
++
++	if (CYGWIN)
++		set_target_properties(replxx PROPERTIES SOVERSION 0)
++	endif()
+ endif()
+ 
+ # install
+-if ( MSVC )
++if ( MSVC OR CYGWIN )
+ 				install( TARGETS ${TARGETS} RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib )
+ else()
+ 	install( TARGETS ${TARGETS} DESTINATION lib )
+@@ -145,7 +149,7 @@ if (REPLXX_BuildExamples)
+ 
+ 	target_link_libraries(
+ 		example-cxx-api
+-		PRIVATE replxx-static
++		PRIVATE replxx
+ 	)
+ 
+ 	if ( NOT MSVC )
+@@ -159,7 +163,7 @@ if (REPLXX_BuildExamples)
+ 
+ 	target_link_libraries(
+ 		example-c-api
+-		PRIVATE replxx-static ${CXX_LIB}
++		PRIVATE replxx ${CXX_LIB}
+ 	)
+ endif()
+ 
+@@ -179,3 +183,9 @@ set(CPACK_STRIP_FILES "ON")
+ set(CPACK_PACKAGE_NAME "replxx")
+ set(CPACK_DEBIAN_PACKAGE_SECTION "utilities")
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/replxx.pc.in ${CMAKE_BINARY_DIR}/replxx.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/replxx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/replxx-release-0.0.2/replxx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/replxx-release-0.0.2/replxx.pc.in	2019-12-10 11:50:41.634969700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: replxx
++Description: Readline and libedit replacement
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lreplxx
++Cflags: -I${includedir}
