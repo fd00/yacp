@@ -1,0 +1,47 @@
+--- origsrc/zycore-c/CMakeLists.txt	2019-12-13 11:33:24.000000000 +0900
++++ src/zycore-c/CMakeLists.txt	2019-12-13 13:00:43.537216800 +0900
+@@ -39,7 +39,8 @@ option(ZYCORE_BUILD_TESTS
+ # =============================================================================================== #
+ 
+ # Download and unpack googletest
+-if (ZYCORE_BUILD_TESTS)
++option(USE_SYSTEM_GTEST "Use system gtest" OFF)
++if (ZYCORE_BUILD_TESTS AND NOT USE_SYSTEM_GTEST)
+     if (NOT DEFINED ZYCORE_DOWNLOADED_GTEST)
+         configure_file("CMakeLists.txt.in" "${CMAKE_BINARY_DIR}/gtest/download/CMakeLists.txt")
+         execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+@@ -190,6 +191,10 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux
+     target_link_libraries("Zycore" Threads::Threads)
+ endif ()
+ 
++if (CYGWIN)
++    set_target_properties(Zycore PROPERTIES SOVERSION 0)
++endif()
++
+ # TODO: Install CMake config.
+ install(TARGETS "Zycore"
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+@@ -253,3 +258,10 @@ if (ZYCORE_BUILD_TESTS)
+ endif ()
+ 
+ # =============================================================================================== #
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/zycore-c.pc.in ${CMAKE_BINARY_DIR}/zycore-c.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/zycore-c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/zycore-c/zycore-c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/zycore-c/zycore-c.pc.in	2019-12-13 13:01:52.681175500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: zycore-c
++Description: Zyan Core Library for C
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lzycore-c
++Cflags: -I${includedir}
