@@ -1,0 +1,65 @@
+--- origsrc/SKA-1.0/src/kmers.hpp	2018-10-25 23:24:05.000000000 +0900
++++ src/SKA-1.0/src/kmers.hpp	2019-12-18 11:56:57.799775900 +0900
+@@ -5,6 +5,7 @@
+ #include <unordered_map> //std::unordered_map
+ #include <string> //std::string
+ #include <array> //std::array
++#include <vector>
+ 
+ void ascii_bitstring(std::string & mybits);
+ 
+--- origsrc/SKA-1.0/tests/Makefile	2018-10-25 23:24:05.000000000 +0900
++++ src/SKA-1.0/tests/Makefile	2019-12-18 11:45:21.096184000 +0900
+@@ -27,7 +27,7 @@ CXX = g++ -std=c++0x
+ # Flags passed to the preprocessor.
+ # Set Google Test's header directory as a system directory, such that
+ # the compiler doesn't generate warnings in Google Test headers.
+-CPPFLAGS += -isystem $(GTEST_DIR)/include
++CPPFLAGS += -isystem $(GTEST_DIR)/include -D_GNU_SOURCE
+ 
+ # Flags passed to the C++ compiler.
+ CXXFLAGS += -g -Wall -Wextra -pthread
+@@ -78,34 +78,34 @@ gtest_main.a : gtest-all.o gtest_main.o
+ # gtest_main.a, depending on whether it defines its own main()
+ # function.
+ 
+-general.o : $(USER_DIR)/general.cpp $(USER_DIR)/general.hpp $(GTEST_HEADERS)
++general.o : $(USER_DIR)/general.cpp $(USER_DIR)/general.hpp
+ 	 $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/general.cpp
+ 
+ general_unittest.o : $(USER_TEST_DIR)/general_unittest.cpp \
+                      $(USER_DIR)/general.hpp $(GTEST_HEADERS)
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_TEST_DIR)/general_unittest.cpp
+ 
+-general_unittest : general.o general_unittest.cpp gtest_main.a 
+-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@ -lz
++general_unittest : general.o general_unittest.cpp
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@ -lz -lgtest -lgtest_main
+ 
+ 
+-DNA.o : $(USER_DIR)/DNA.cpp $(USER_DIR)/DNA.hpp $(GTEST_HEADERS)
++DNA.o : $(USER_DIR)/DNA.cpp $(USER_DIR)/DNA.hpp
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/DNA.cpp
+ 
+ DNA_unittest.o : $(USER_TEST_DIR)/DNA_unittest.cpp \
+                      $(USER_DIR)/DNA.hpp $(GTEST_HEADERS)
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_TEST_DIR)/DNA_unittest.cpp
+ 
+-DNA_unittest : DNA.o DNA_unittest.cpp gtest_main.a
+-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@  -lz
++DNA_unittest : DNA.o DNA_unittest.cpp
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@  -lz -lgtest -lgtest_main
+ 
+ 
+-kmers.o : $(USER_DIR)/kmers.cpp $(USER_DIR)/kmers.hpp $(GTEST_HEADERS)
++kmers.o : $(USER_DIR)/kmers.cpp $(USER_DIR)/kmers.hpp
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/kmers.cpp
+ 
+ kmers_unittest.o : $(USER_TEST_DIR)/kmers_unittest.cpp \
+                      $(USER_DIR)/kmers.hpp $(GTEST_HEADERS)
+ 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_TEST_DIR)/kmers_unittest.cpp
+ 
+-kmers_unittest : kmers.o DNA.o general.o kmers_unittest.cpp gtest_main.a
+-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@ -lz
++kmers_unittest : kmers.o DNA.o general.o kmers_unittest.cpp
++	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@ -lz -lgtest -lgtest_main
