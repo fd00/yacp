@@ -1,5 +1,5 @@
---- origsrc/NGT-1.8.3/CMakeLists.txt	2019-11-18 16:08:18.000000000 +0900
-+++ src/NGT-1.8.3/CMakeLists.txt	2019-12-05 14:55:42.003955100 +0900
+--- origsrc/NGT-1.8.4/CMakeLists.txt	2019-12-06 08:37:37.000000000 +0900
++++ src/NGT-1.8.4/CMakeLists.txt	2019-12-23 19:42:38.973520000 +0900
 @@ -67,3 +67,10 @@ if(${UNIX})
  	add_subdirectory("${PROJECT_SOURCE_DIR}/bin")
  	add_subdirectory("${PROJECT_SOURCE_DIR}/samples")
@@ -11,8 +11,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ngt.pc.in ${CMAKE_BINARY_DIR}/ngt.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/ngt.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/NGT-1.8.3/lib/NGT/CMakeLists.txt	2019-11-18 16:08:18.000000000 +0900
-+++ src/NGT-1.8.3/lib/NGT/CMakeLists.txt	2019-12-05 14:47:13.475067000 +0900
+--- origsrc/NGT-1.8.4/lib/NGT/CMakeLists.txt	2019-12-06 08:37:37.000000000 +0900
++++ src/NGT-1.8.4/lib/NGT/CMakeLists.txt	2019-12-23 19:52:54.517568100 +0900
 @@ -7,15 +7,19 @@ if( ${UNIX} )
  	file(GLOB HEADER_FILES *.h *.hpp)
  	file(GLOB NGTQ_HEADER_FILES NGTQ/*.h NGTQ/*.hpp)
@@ -38,12 +38,14 @@
  	if(${APPLE})
  		target_link_libraries(ngt gomp)
  	else(${APPLE})
-@@ -24,14 +28,22 @@ if( ${UNIX} )
+@@ -24,14 +28,24 @@ if( ${UNIX} )
  
  	add_custom_command(OUTPUT command DEPENDS ${NGT_SOURCES} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND sh ${PROJECT_SOURCE_DIR}/utils/mk_version_defs_h.sh ${PROJECT_SOURCE_DIR} version_defs.h)
  	add_custom_target(versiondef DEPENDS command)
 -	add_dependencies(ngtstatic versiondef)
-+	if (NOT BUILD_SHARED_LIBS)
++	if (BUILD_SHARED_LIBS)
++		add_dependencies(ngt versiondef)
++	else()
 +		add_dependencies(ngtstatic versiondef)
 +	endif()
  
@@ -53,6 +55,7 @@
  		RUNTIME DESTINATION bin
  		LIBRARY DESTINATION lib
  		ARCHIVE DESTINATION lib)
+-	install(FILES ${HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/defines.h  ${CMAKE_CURRENT_BINARY_DIR}/version_defs.h DESTINATION include/NGT)
 +	if (NOT BUILD_SHARED_LIBS)	
 +		install(TARGETS
 +			ngtstatic
@@ -60,11 +63,11 @@
 +			LIBRARY DESTINATION lib
 +			ARCHIVE DESTINATION lib)
 +	endif()
- 	install(FILES ${HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/defines.h  ${CMAKE_CURRENT_BINARY_DIR}/version_defs.h DESTINATION include/NGT)
++	install(FILES ${HEADER_FILES} ${CMAKE_CURRENT_BINARY_DIR}/defines.h ${CMAKE_CURRENT_BINARY_DIR}/version_defs.h DESTINATION include/NGT)
  	install(FILES ${NGTQ_HEADER_FILES} DESTINATION include/NGT/NGTQ)
  endif()
---- origsrc/NGT-1.8.3/ngt.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/NGT-1.8.3/ngt.pc.in	2019-12-05 14:58:52.589305600 +0900
+--- origsrc/NGT-1.8.4/ngt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/NGT-1.8.4/ngt.pc.in	2019-12-23 19:42:39.020312700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
