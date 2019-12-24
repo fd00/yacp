@@ -1,0 +1,52 @@
+--- origsrc/evmc-7.1.0/lib/instructions/CMakeLists.txt	2019-11-29 21:19:18.000000000 +0900
++++ src/evmc-7.1.0/lib/instructions/CMakeLists.txt	2019-12-24 11:44:49.359049600 +0900
+@@ -3,7 +3,7 @@
+ # Licensed under the Apache License, Version 2.0.
+ 
+ add_library(
+-    instructions STATIC
++    instructions SHARED
+     ${include_dir}/evmc/instructions.h
+     instruction_metrics.c
+     instruction_names.c
+@@ -14,10 +14,13 @@ set_target_properties(instructions PROPE
+     OUTPUT_NAME evmc-instructions
+     POSITION_INDEPENDENT_CODE TRUE
+ )
++if(CYGWIN)
++    set_target_properties(instructions PROPERTIES SOVERSION 0)
++endif()
+ target_include_directories(instructions PUBLIC
+     $<BUILD_INTERFACE:${include_dir}>$<INSTALL_INTERFACE:include>
+ )
+ 
+ if(EVMC_INSTALL)
+-    install(TARGETS instructions EXPORT evmcTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS instructions EXPORT evmcTargets RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+--- origsrc/evmc-7.1.0/lib/loader/CMakeLists.txt	2019-11-29 21:19:18.000000000 +0900
++++ src/evmc-7.1.0/lib/loader/CMakeLists.txt	2019-12-24 11:45:55.196876300 +0900
+@@ -3,7 +3,7 @@
+ # Licensed under the Apache License, Version 2.0.
+ 
+ add_library(
+-    loader STATIC
++    loader SHARED
+     ${include_dir}/evmc/loader.h
+     loader.c
+ )
+@@ -13,8 +13,11 @@ set_target_properties(loader PROPERTIES
+     OUTPUT_NAME evmc-loader
+     POSITION_INDEPENDENT_CODE TRUE
+ )
++if(CYGWIN)
++    set_target_properties(loader PROPERTIES SOVERSION 0)
++endif()
+ target_link_libraries(loader INTERFACE ${CMAKE_DL_LIBS} PUBLIC evmc::evmc)
+ 
+ if(EVMC_INSTALL)
+-    install(TARGETS loader EXPORT evmcTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
+-endif()
+\ No newline at end of file
++    install(TARGETS loader EXPORT evmcTargets RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
