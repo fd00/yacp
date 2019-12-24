@@ -1,5 +1,14 @@
+--- origsrc/libwebsock-2.0.0/Makefile.am	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/Makefile.am	2019-12-24 23:15:47.353440500 +0900
+@@ -1,3 +1,6 @@
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ SUBDIRS = src examples
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/libwebsock-2.0.0/configure.ac	2014-07-15 08:52:39.000000000 +0900
-+++ src/libwebsock-2.0.0/configure.ac	2014-12-29 23:38:34.140172400 +0900
++++ src/libwebsock-2.0.0/configure.ac	2019-12-24 23:15:47.353440500 +0900
 @@ -27,35 +27,14 @@ AC_FUNC_MALLOC
  AC_FUNC_REALLOC
  AC_CHECK_FUNCS([memset socket strstr])
@@ -36,15 +45,22 @@
 -  	
 +if test "x$with_ssl" != "xno"
 +then
-+        PKG_CHECK_MODULES([LIBEVENT_OPENSSL], [libevent_openssl], [have_ssl=yes], [have_ssl=no])
++        PKG_CHECK_MODULES([LIBEVENT_OPENSSL], [libevent_openssl openssl], [have_ssl=yes], [have_ssl=no])
 +else
 +        have_ssl=no
 +fi
  AS_IF([test "x$have_ssl" = "xyes"],
  	[
  		AC_DEFINE([WEBSOCK_HAVE_SSL], [1], [Define if building SSL support])
+@@ -68,5 +47,5 @@ AM_CONDITIONAL([HAVE_SSL], [test "x$have
+ AC_DEFINE_UNQUOTED([WEBSOCK_PACKAGE_VERSION], ["$PACKAGE_VERSION"], [libwebsock version])
+ AC_DEFINE_UNQUOTED([WEBSOCK_PACKAGE_STRING], ["$PACKAGE_STRING"], [libwebsock package string])
+ AC_DEFINE_UNQUOTED([WEBSOCK_PACKAGE_NAME], ["$PACKAGE_NAME"], [libwebsock package name])
+-AC_CONFIG_FILES([Makefile src/Makefile examples/Makefile])
++AC_CONFIG_FILES([libwebsock.pc Makefile src/Makefile examples/Makefile])
+ AC_OUTPUT
 --- origsrc/libwebsock-2.0.0/examples/Makefile.am	2014-07-15 08:52:39.000000000 +0900
-+++ src/libwebsock-2.0.0/examples/Makefile.am	2014-12-29 23:30:12.010775600 +0900
++++ src/libwebsock-2.0.0/examples/Makefile.am	2019-12-24 23:02:54.590468100 +0900
 @@ -1,5 +1,6 @@
  EXTRA_PROGRAMS = ws-echo autobahn-echo
  ws_echo_SOURCES = echo.c
@@ -53,8 +69,21 @@
 -LIBS = -lwebsock
 +autobahn_echo_LDADD = $(top_builddir)/src/libwebsock.la
  ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libwebsock-2.0.0/libwebsock.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libwebsock-2.0.0/libwebsock.pc.in	2019-12-24 23:15:47.306107700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libwebsock
++Description: C library for easy WebSockets server
++Version: @VERSION@
++Libs: -L${libdir} -lwebsock
++Cflags: -I${includedir}
 --- origsrc/libwebsock-2.0.0/src/Makefile.am	2014-07-15 08:52:39.000000000 +0900
-+++ src/libwebsock-2.0.0/src/Makefile.am	2014-12-29 23:31:51.198275600 +0900
++++ src/libwebsock-2.0.0/src/Makefile.am	2019-12-24 23:02:54.606097400 +0900
 @@ -7,8 +7,9 @@ else
  libwebsock_la_SOURCES = websock.c base64.c sha1.c frames.c default_callbacks.c api.c sha1.h base64.h utf.c util.c
  endif
@@ -67,8 +96,19 @@
  library_includedir=$(includedir)/websock
  library_include_HEADERS = websock.h api.h default_callbacks.h frames.h util.h utf.h types.h websock_config.h
  ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libwebsock-2.0.0/src/utf.h	2014-07-15 08:52:39.000000000 +0900
++++ src/libwebsock-2.0.0/src/utf.h	2019-12-24 23:13:32.640711000 +0900
+@@ -22,7 +22,7 @@
+ 
+ #include <stdint.h>
+ 
+-uint32_t inline decode(uint32_t *state, uint32_t *codep, uint32_t byte);
++extern uint32_t inline decode(uint32_t *state, uint32_t *codep, uint32_t byte);
+ 
+ 
+ #endif /* UTF_H_ */
 --- origsrc/libwebsock-2.0.0/src/websock_config.h	2014-07-15 08:52:39.000000000 +0900
-+++ src/libwebsock-2.0.0/src/websock_config.h	2014-12-29 23:41:23.077672400 +0900
++++ src/libwebsock-2.0.0/src/websock_config.h	2019-12-24 23:04:44.738456500 +0900
 @@ -2,10 +2,8 @@
  #ifndef WEBSOCK_CONFIG_H
  #define WEBSOCK_CONFIG_H 1
