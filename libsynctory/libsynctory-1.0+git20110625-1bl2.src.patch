@@ -1,0 +1,109 @@
+--- origsrc/libsynctory/CMakeLists.txt	2019-12-24 22:47:25.000000000 +0900
++++ src/libsynctory/CMakeLists.txt	2019-12-24 22:54:46.621969000 +0900
+@@ -60,7 +60,10 @@ else(LIBSYNCTORY_RELEASE)
+                 if(LIBSYNCTORY_STABLE)
+                     set(LIBSYNCTORY_VERSION ${LIBSYNCTORY_VERSION_MJ}.${LIBSYNCTORY_VERSION_MI}-STABLE)
+                     set(LIBSYNCTORY_LIBVERSION ${LIBSYNCTORY_VERSION_MJ}.${LIBSYNCTORY_VERSION_MI}-STABLE)
+-                else(LIBSYNCTORY_STABLE)
++                elseif(CYGWIN)
++                    set(LIBSYNCTORY_VERSION ${LIBSYNCTORY_VERSION_MJ}.0)
++                    set(LIBSYNCTORY_LIBVERSION ${LIBSYNCTORY_VERSION_MJ}.0)
++                else()
+                     set(LIBSYNCTORY_VERSION ${LIBSYNCTORY_VERSION_MJ}.0-CURRENT)
+                     set(LIBSYNCTORY_LIBVERSION ${LIBSYNCTORY_VERSION_MJ}.0-CURRENT)
+                 endif(LIBSYNCTORY_STABLE)
+@@ -79,11 +82,20 @@ set(CPACK_PACKAGE_VERSION ${PACKAGE_VERS
+ set(CPACK_SOURCE_IGNORE_FILES ".gitignore;.git/;/build/;libsynctory.kdev4;.kdev4/;.*~")
+ 
+ set(LIBSYNCTORY_LIBS "")
+-set(CMAKE_C_FLAGS "-std=c99 -pedantic -Wall -Wextra -pipe -O3 -fno-strict-aliasing")
++if(NOT CYGWIN)
++    set(CMAKE_C_FLAGS "-std=c99 -pedantic -Wall -Wextra -pipe -O3 -fno-strict-aliasing")
++endif()
+ set(CMAKE_REQUIRED_FLAGS ${CMAKE_ANSI_CFLAGS})
+ set(CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
+ set(CMAKE_REQUIRED_LIBRARIES ${LIBSYNCTORY_LIBS})
+ 
+ add_subdirectory(src)
+ add_subdirectory(doc)
+-include(CPack)
+\ No newline at end of file
++include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libsynctory.pc.in ${CMAKE_BINARY_DIR}/libsynctory.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libsynctory.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsynctory/libsynctory.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsynctory/libsynctory.pc.in	2019-12-24 22:55:33.125622500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsynctory
++Description: Library providing functionality for creating binary diffs and do binary patching of files
++Version: @LIBSYNCTORY_VERSION_MJ@.@LIBSYNCTORY_VERSION_MI@
++Libs: -L${libdir} -lsynctory
++Cflags: -I${includedir}
+--- origsrc/libsynctory/src/lib/CMakeLists.txt	2019-12-24 22:47:25.000000000 +0900
++++ src/libsynctory/src/lib/CMakeLists.txt	2019-12-24 22:47:28.513940400 +0900
+@@ -38,10 +38,10 @@ set(
+ #endif(LZMA_LIB)
+ 
+ # check whether libssl can be used
+-find_library(SSL_LIB ssl)
+-if(SSL_LIB)
+-    list(APPEND LIBSYNCTORY_LIBRARIES ${SSL_LIB})
+-endif(SSL_LIB)
++find_package(OpenSSL)
++if(OPENSSL_FOUND)
++    list(APPEND LIBSYNCTORY_LIBRARIES ${OPENSSL_LIBRARIES})
++endif(OPENSSL_FOUND)
+ 
+ # build shared library binary
+ add_library(synctory SHARED ${LIBSYNCTORY_SOURCEFILES})
+@@ -55,5 +55,6 @@ set_target_properties(synctory PROPERTIE
+ 
+ install(
+     TARGETS synctory
+-    LIBRARY DESTINATION lib
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
+ )
+\ No newline at end of file
+--- origsrc/libsynctory/src/test/helpers.c	2019-12-24 22:47:26.000000000 +0900
++++ src/libsynctory/src/test/helpers.c	2019-12-24 22:47:28.530134000 +0900
+@@ -27,6 +27,29 @@
+ 
+ #include "helpers.h"
+ 
++#if defined(__CYGWIN__)
++static u_long next = 1;
++static void sranddev()
++{
++	int fd, done;
++
++	done = 0;
++	fd = open("/dev/random", O_RDONLY, 0);
++	if (fd >= 0) {
++		if (read(fd, (void *) &next, sizeof(next)) == sizeof(next))
++			done = 1;
++		close(fd);
++	}
++
++	if (!done) {
++		struct timeval tv;
++		unsigned long junk;
++
++		gettimeofday(&tv, NULL);
++		srand((getpid() << 16) ^ tv.tv_sec ^ tv.tv_usec ^ junk);
++	}
++}
++#endif
+ 
+ size_t hlp_path_maxlen(void)
+ {
