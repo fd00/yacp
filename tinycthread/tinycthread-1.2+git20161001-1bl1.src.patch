@@ -1,0 +1,54 @@
+--- origsrc/tinycthread/CMakeLists.txt	2019-12-27 20:14:07.000000000 +0900
++++ src/tinycthread/CMakeLists.txt	2019-12-27 20:19:17.851316400 +0900
+@@ -4,11 +4,14 @@ enable_testing()
+ 
+ find_package(Threads REQUIRED)
+ 
+-add_library(tinycthread STATIC source/tinycthread.c)
++add_library(tinycthread SHARED source/tinycthread.c)
+ target_link_libraries(tinycthread ${CMAKE_THREAD_LIBS_INIT})
+ set_property(TARGET tinycthread APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/source")
+ set_property(TARGET tinycthread APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/source")
+ set_property(TARGET tinycthread PROPERTY POSITION_INDEPENDENT_CODE True)
++if(CYGWIN)
++  set_target_properties(tinycthread PROPERTIES SOVERSION 0)
++endif()
+ 
+ option(TINYCTHREAD_DISABLE_TESTS "Disable TinyCThread unit tests")
+ option(TINYCTHREAD_INSTALL "Install a static library for TinyCThread")
+@@ -23,9 +26,9 @@ endif(NOT TINYCTHREAD_DISABLE_TESTS)
+ 
+ if(TINYCTHREAD_INSTALL)
+   if(CMAKE_INSTALL_LIBDIR)
+-    install(TARGETS tinycthread ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++    install(TARGETS tinycthread RUNTIME DESTINATION bin ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+   else()
+-    install(TARGETS tinycthread ARCHIVE DESTINATION lib)
++    install(TARGETS tinycthread RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif()
+ 
+   if(CMAKE_INSTALL_INCLUDEDIR)
+@@ -34,3 +37,10 @@ if(TINYCTHREAD_INSTALL)
+     install(FILES source/tinycthread.h DESTINATION include)
+   endif()
+ endif(TINYCTHREAD_INSTALL)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/tinycthread.pc.in ${CMAKE_BINARY_DIR}/tinycthread.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/tinycthread.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tinycthread/tinycthread.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tinycthread/tinycthread.pc.in	2019-12-27 20:19:17.600588000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tinycthread
++Description: Small, portable implementation of the C11 threads API
++Version: @VERSION@
++Libs: -L${libdir} -ltinycthread
++Cflags: -I${includedir}
