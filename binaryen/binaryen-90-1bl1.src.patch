@@ -1,0 +1,38 @@
+--- origsrc/binaryen-version_90/CMakeLists.txt	2019-12-24 08:11:11.000000000 +0900
++++ src/binaryen-version_90/CMakeLists.txt	2020-01-01 18:35:27.231233400 +0900
+@@ -268,7 +268,10 @@ else()
+   message(STATUS "Building libbinaryen as shared library.")
+   add_library(binaryen SHARED ${binaryen_SOURCES} ${binaryen_objs})
+ endif()
+-install(TARGETS binaryen DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if(CYGWIN)
++  set_target_properties(binaryen PROPERTIES SOVERSION 0)
++endif()
++install(TARGETS binaryen RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ install(FILES src/binaryen-c.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+@@ -430,3 +433,10 @@ add_test(NAME exec-unit
+          COMMAND bin/wasm-opt test/unit.wat --fuzz-exec)
+ add_test(NAME exec-hello
+          COMMAND bin/wasm-opt test/hello_world.wat --fuzz-exec)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/binaryen.pc.in ${CMAKE_BINARY_DIR}/binaryen.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/binaryen.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/binaryen-version_90/binaryen.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/binaryen-version_90/binaryen.pc.in	2020-01-01 18:31:37.521082300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: binaryen
++Description: Compiler infrastructure and toolchain library for WebAssembly
++Version: @VERSION@
++Libs: -L${libdir} -lbinaryen
++Cflags: -I${includedir}
