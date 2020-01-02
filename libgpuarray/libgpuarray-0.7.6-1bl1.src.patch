@@ -1,0 +1,73 @@
+--- origsrc/libgpuarray-0.7.6/CMakeLists.txt	2018-04-24 05:05:42.000000000 +0900
++++ src/libgpuarray-0.7.6/CMakeLists.txt	2020-01-02 20:42:10.261539900 +0900
+@@ -37,3 +37,10 @@ configure_file(
+ 
+ add_custom_target(uninstall
+     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgpuarray.pc.in ${CMAKE_BINARY_DIR}/libgpuarray.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libgpuarray.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgpuarray-0.7.6/libgpuarray.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgpuarray-0.7.6/libgpuarray.pc.in	2020-01-02 20:42:10.136392000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgpuarray
++Description: Library to manipulate tensors on the GPU
++Version: @VERSION@
++Libs: -L${libdir} -lgpuarray
++Cflags: -I${includedir}
+--- origsrc/libgpuarray-0.7.6/src/CMakeLists.txt	2018-04-24 05:05:42.000000000 +0900
++++ src/libgpuarray-0.7.6/src/CMakeLists.txt	2020-01-02 20:32:52.073176000 +0900
+@@ -111,10 +111,14 @@ set_target_properties(gpuarray PROPERTIE
+   VERSION 3.0
+   )
+ 
+-add_library(gpuarray-static STATIC ${GPUARRAY_SRC})
++if (NOT BUILD_SHARED_LIBS)
++  add_library(gpuarray-static STATIC ${GPUARRAY_SRC})
++endif()
+ 
+ target_link_libraries(gpuarray ${CMAKE_DL_LIBS})
+-target_link_libraries(gpuarray-static ${CMAKE_DL_LIBS})
++if (NOT BUILD_SHARED_LIBS)
++  target_link_libraries(gpuarray-static ${CMAKE_DL_LIBS})
++endif()
+ 
+ # Generate gpuarray/abi_version.h that contains the ABI version number.
+ get_target_property(GPUARRAY_ABI_VERSION gpuarray VERSION)
+@@ -153,8 +157,15 @@ if(NOT UNIX)
+   install(FILES gpuarray/wincompat/stdint.h DESTINATION include/gpuarray/wincompat)
+ endif()
+ 
+-install(TARGETS gpuarray gpuarray-static
++install(TARGETS gpuarray
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+ )
++if (NOT BUILD_SHARED_LIBS)
++  install(TARGETS gpuarray-static
++    RUNTIME DESTINATION bin
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++  )
++endif()
+--- origsrc/libgpuarray-0.7.6/tests/CMakeLists.txt	2018-04-24 05:05:42.000000000 +0900
++++ src/libgpuarray-0.7.6/tests/CMakeLists.txt	2020-01-02 20:36:22.730103000 +0900
+@@ -71,7 +71,7 @@ target_link_libraries(check_util ${CHECK
+ add_test(test_util "${CMAKE_CURRENT_BINARY_DIR}/check_util")
+ 
+ add_executable(check_util_integerfactoring main.c check_util_integerfactoring.c)
+-target_link_libraries(check_util_integerfactoring ${CHECK_LIBRARIES} gpuarray-static)
++target_link_libraries(check_util_integerfactoring ${CHECK_LIBRARIES} gpuarray)
+ add_test(test_util_integerfactoring "${CMAKE_CURRENT_BINARY_DIR}/check_util_integerfactoring")
+ 
+ add_executable(check_reduction main.c device.c check_reduction.c)
