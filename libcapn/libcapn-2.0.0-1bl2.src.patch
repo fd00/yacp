@@ -1,18 +1,22 @@
 --- origsrc/libcapn-2.0.0/CMakeLists.txt	2016-06-21 07:26:07.000000000 +0900
-+++ src/libcapn-2.0.0/CMakeLists.txt	2017-06-24 14:22:47.737000000 +0900
-@@ -28,7 +28,11 @@ STRING(REPLACE "/" ";" CAPN_CC_LIST ${CM
++++ src/libcapn-2.0.0/CMakeLists.txt	2020-01-09 14:20:50.218100000 +0900
+@@ -28,9 +28,13 @@ STRING(REPLACE "/" ";" CAPN_CC_LIST ${CM
  LIST(GET CAPN_CC_LIST -1 CAPN_CC)
  
  IF("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 -    SET(CMAKE_C_FLAGS "-std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
+-    SET(CMAKE_C_FLAGS_DEBUGE "-g3 -O0 -DDEBUG")
+-    SET(CMAKE_C_FLAGS_RELEASE "-g2 -O3")
 +    IF(CYGWIN)
-+        SET(CMAKE_C_FLAGS "-std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
++        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
 +    ELSE()
-+        SET(CMAKE_C_FLAGS "-std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
++        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
++        SET(CMAKE_C_FLAGS_DEBUG "-g3 -O0 -DDEBUG")
++        SET(CMAKE_C_FLAGS_RELEASE "-g2 -O3")
 +    ENDIF()
-     SET(CMAKE_C_FLAGS_DEBUGE "-g3 -O0 -DDEBUG")
-     SET(CMAKE_C_FLAGS_RELEASE "-g2 -O3")
  ENDIF()
+ 
+ SET(CAPN_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 @@ -92,10 +96,12 @@ FOREACH(STRERROR_R_HEADER
  CAPN_TEST_STRERROR_R(${STRERROR_R_HEADER})
  ENDFOREACH(STRERROR_R_HEADER)
@@ -89,8 +93,19 @@
  
  INSTALL(TARGETS ${CAPN_LIB_NAME}
      RUNTIME DESTINATION ${CAPN_INSTALL_PATH_BIN}
+--- origsrc/libcapn-2.0.0/src/library/apn.c	2016-06-21 07:26:07.000000000 +0900
++++ src/libcapn-2.0.0/src/library/apn.c	2020-01-09 14:16:46.392608100 +0900
+@@ -57,6 +57,8 @@
+ #include <netdb.h>
+ #endif
+ 
++#include <sys/select.h>
++
+ typedef enum __apn_apple_errors {
+     APN_APNS_ERR_PROCESSING_ERROR = 1,
+     APN_APNS_ERR_MISSING_DEVICE_TOKEN,
 --- origsrc/libcapn-2.0.0/src/library/apn_payload.c	2016-06-21 07:26:07.000000000 +0900
-+++ src/libcapn-2.0.0/src/library/apn_payload.c	2017-06-24 14:24:17.267999800 +0900
++++ src/libcapn-2.0.0/src/library/apn_payload.c	2020-01-09 14:13:52.042188500 +0900
 @@ -24,7 +24,11 @@
  #include <errno.h>
  #include <assert.h>
