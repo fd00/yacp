@@ -1,0 +1,149 @@
+--- origsrc/mstdlib-1.7.0/base/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/base/Makefile.am	2020-01-08 21:35:20.462759700 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_la_SOURCES =                \
+ 	\
+ 	bincodec/m_base64.c                \
+--- origsrc/mstdlib-1.7.0/base/data/m_str_fmt.c	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/base/data/m_str_fmt.c	2020-01-08 21:30:38.175803100 +0900
+@@ -29,7 +29,9 @@
+ 
+ #ifdef HAVE_IO_H
+ #  include <io.h> /* _write */
+-#  define write(a,b,c) _write(a,b,(unsigned int)(c))
++#  if !defined(__CYGWIN__)
++#    define write(a,b,c) _write(a,b,(unsigned int)(c))
++#  endif
+ #endif
+ 
+ #include <mstdlib/mstdlib.h>
+--- origsrc/mstdlib-1.7.0/configure.ac	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/configure.ac	2020-01-08 20:16:24.594620000 +0900
+@@ -132,7 +132,7 @@ AC_ARG_ENABLE(valgrind-testing,
+ AC_CANONICAL_HOST()
+ 
+ case $host_os in
+-	*cygwin*|*mingw* )
++	*mingw* )
+ 		os_type=windows
+ 		;;
+ 	*linux*)
+@@ -839,7 +839,7 @@ if test "${build_mstdlib_tls}" = "yes" ;
+ 	AC_MSG_CHECKING(for ssl library location)
+ 	ssl_dir=""
+ 	for dir in $ssl_dirs ; do
+-		exts="so sl dylib a"
++		exts="so sl dylib a dll.a"
+ 		for ext in $exts ; do
+ 			if test -r "$dir/lib/libssl.${ext}" ; then
+ 				ssl_header_dir="$dir/include"
+--- origsrc/mstdlib-1.7.0/formats/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/formats/Makefile.am	2020-01-08 21:36:47.091281800 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_formats.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/base -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_formats_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_formats_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_formats_la_SOURCES =  \
+ 	csv/m_csv.c                  \
+ 	\
+--- origsrc/mstdlib-1.7.0/io/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/io/Makefile.am	2020-01-08 21:41:12.550958300 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_io.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/io @C_ARES_CPPFLAGS@ -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_io_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@ @C_ARES_LDFLAGS@
++libmstdlib_io_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@ @C_ARES_LDFLAGS@
+ libmstdlib_io_la_DEPENDENCIES = @ADD_OBJECTS@
+ libmstdlib_io_la_LIBADD = @ADD_OBJECTS@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la @C_ARES_LIBADD@
+ 
+--- origsrc/mstdlib-1.7.0/log/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/log/Makefile.am	2020-01-08 21:44:34.557896900 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_log.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/log -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_log_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_log_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_log_la_SOURCES = \
+ 	m_async_writer.c \
+ 	m_log_android.c \
+--- origsrc/mstdlib-1.7.0/sql/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/sql/Makefile.am	2020-01-08 21:47:56.977857400 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_sql.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/sql -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_sql_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_sql_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_sql_la_SOURCES = \
+ 	m_module.c              \
+ 	m_sql_connpool.c        \
+@@ -19,4 +19,4 @@ libmstdlib_sql_la_SOURCES = \
+ 	m_sql_trans.c
+ 
+ libmstdlib_sql_la_DEPENDENCIES = @ADD_OBJECTS@
+-libmstdlib_sql_la_LIBADD = @ADD_OBJECTS@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la $(top_builddir)/io/libmstdlib_io.la @MSTDLIB_SQL_LIBADD@
++libmstdlib_sql_la_LIBADD = @ADD_OBJECTS@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la $(top_builddir)/io/libmstdlib_io.la $(top_builddir)/formats/libmstdlib_formats.la @MSTDLIB_SQL_LIBADD@
+--- origsrc/mstdlib-1.7.0/sql/odbc/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/sql/odbc/Makefile.am	2020-01-08 21:51:16.131079400 +0900
+@@ -5,7 +5,7 @@ AM_CPPFLAGS = $(AM_CFLAGS)
+ mstdlib_sql_odbc_la_SOURCES      = mstdlib_sql_odbc.c odbc_db2.c odbc_mssql.c ../mysql/mysql_shared.c ../postgresql/postgresql_shared.c ../oracle/oracle_shared.c
+ mstdlib_sql_odbc_la_CFLAGS       = @ODBC_CPPFLAGS@
+ mstdlib_sql_odbc_la_LIBADD       = @ADD_OBJECTS@ @ODBC_LIBADD@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la $(top_builddir)/sql/libmstdlib_sql.la
+-mstdlib_sql_odbc_la_LDFLAGS      = -module -avoid-version @ODBC_LDFLAGS@ -export-dynamic
++mstdlib_sql_odbc_la_LDFLAGS      = -no-undefined -module -avoid-version @ODBC_LDFLAGS@ -export-dynamic
+ mstdlib_sql_odbc_la_DEPENDENCIES = @ADD_OBJECTS@
+ 
+ 
+--- origsrc/mstdlib-1.7.0/sql/postgresql/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/sql/postgresql/Makefile.am	2020-01-08 21:49:55.425470100 +0900
+@@ -5,7 +5,7 @@ AM_CPPFLAGS = $(AM_CFLAGS)
+ mstdlib_sql_postgresql_la_SOURCES      = mstdlib_sql_postgresql.c postgresql_shared.c
+ mstdlib_sql_postgresql_la_CFLAGS       = @POSTGRESQL_CPPFLAGS@
+ mstdlib_sql_postgresql_la_LIBADD       = @ADD_OBJECTS@ @POSTGRESQL_LIBADD@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la $(top_builddir)/sql/libmstdlib_sql.la
+-mstdlib_sql_postgresql_la_LDFLAGS      = -module -avoid-version @POSTGRESQL_LDFLAGS@ -export-dynamic
++mstdlib_sql_postgresql_la_LDFLAGS      = -no-undefined -module -avoid-version @POSTGRESQL_LDFLAGS@ -export-dynamic
+ mstdlib_sql_postgresql_la_DEPENDENCIES = @ADD_OBJECTS@
+ 
+ 
+--- origsrc/mstdlib-1.7.0/sql/sqlite/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/sql/sqlite/Makefile.am	2020-01-08 21:48:50.059542200 +0900
+@@ -8,7 +8,7 @@ mstdlib_sql_sqlite_la_SOURCES      += ..
+ endif
+ mstdlib_sql_sqlite_la_CFLAGS        = @SQLITE_CPPFLAGS@
+ mstdlib_sql_sqlite_la_LIBADD        = @ADD_OBJECTS@ @SQLITE_LIBADD@ $(top_builddir)/base/libmstdlib.la $(top_builddir)/thread/libmstdlib_thread.la $(top_builddir)/sql/libmstdlib_sql.la
+-mstdlib_sql_sqlite_la_LDFLAGS       = -module -avoid-version @SQLITE_LDFLAGS@ -export-dynamic
++mstdlib_sql_sqlite_la_LDFLAGS       = -no-undefined -module -avoid-version @SQLITE_LDFLAGS@ -export-dynamic
+ mstdlib_sql_sqlite_la_DEPENDENCIES  = @ADD_OBJECTS@
+ 
+ 
+--- origsrc/mstdlib-1.7.0/thread/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/thread/Makefile.am	2020-01-08 21:38:54.340838700 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_thread.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/base -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_thread_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_thread_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_thread_la_SOURCES = \
+ 	m_atomic.c \
+ 	m_popen.c \
+--- origsrc/mstdlib-1.7.0/tls/Makefile.am	2019-09-20 03:09:26.000000000 +0900
++++ src/mstdlib-1.7.0/tls/Makefile.am	2020-01-08 21:43:10.075770000 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libmstdlib_tls.la
+ AM_CFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include -I$(top_srcdir)/tls -DMSTDLIB_INTERNAL=1
+ AM_CPPFLAGS = $(AM_CFLAGS)
+ 
+-libmstdlib_tls_la_LDFLAGS = -export-dynamic -version-info @LIBTOOL_VERSION@
++libmstdlib_tls_la_LDFLAGS = -no-undefined -export-dynamic -version-info @LIBTOOL_VERSION@
+ libmstdlib_tls_la_SOURCES =  \
+ 	m_tls.c              \
+ 	m_tls_certs.c        \
