@@ -1,41 +1,31 @@
---- origsrc/cdo-1.9.7.1/Makefile.am	2019-06-07 21:27:45.000000000 +0900
-+++ src/cdo-1.9.7.1/Makefile.am	2019-07-17 19:39:38.574753400 +0900
+--- origsrc/cdo-1.9.8/Makefile.am	2019-10-18 17:22:52.000000000 +0900
++++ src/cdo-1.9.8/Makefile.am	2020-01-11 17:53:43.683259900 +0900
 @@ -1,7 +1,7 @@
  # Process this file with automake to produce Makefile.in
  SUBDIRS = libcdi src/lib/ncl src/lib/yac  src/lib/gradsdes src contrib test/data test
  if MAINTAINER_MODE
--SUBDIRS += test/bandit_tests
-+# SUBDIRS += test/bandit_tests
+-SUBDIRS += test/bandit_tests test/executeOnly
++SUBDIRS += # test/bandit_tests test/executeOnly
  endif
  #
  ACLOCAL_AMFLAGS = -I m4 -I libcdi/m4
---- origsrc/cdo-1.9.7.1/libcdi/app/cdi.c	2019-06-07 21:26:58.000000000 +0900
-+++ src/cdo-1.9.7.1/libcdi/app/cdi.c	2019-07-17 18:14:13.841397000 +0900
-@@ -56,9 +56,10 @@ void cdiDefTableID(int tableID);
+--- origsrc/cdo-1.9.8/libcdi/app/cdi.c	2019-10-04 15:05:48.000000000 +0900
++++ src/cdo-1.9.8/libcdi/app/cdi.c	2020-01-11 17:14:27.399457900 +0900
+@@ -54,11 +54,7 @@ void cdiDefTableID(int tableID);
+ }
+ #endif
  
- int getopt(int argc, char *const argv[], const char *optstring);
- 
-+#if !defined(__CYGWIN__)
- extern char *optarg;
- extern int optind, opterr, optopt;
+-int getopt(int argc, char *const argv[], const char *optstring);
 -
-+#endif
+-extern char *optarg;
+-extern int optind, opterr, optopt;
+-
++#include <getopt.h>
  
  static char *Progname;
  
---- origsrc/cdo-1.9.7.1/libcdi/configure.ac	2019-06-13 15:53:21.000000000 +0900
-+++ src/cdo-1.9.7.1/libcdi/configure.ac	2019-07-17 18:20:28.159444000 +0900
-@@ -22,7 +22,7 @@ AC_CANONICAL_HOST
- AC_CANONICAL_BUILD
- 
- 
--AM_INIT_AUTOMAKE([1.16.1 foreign serial-tests])
-+AM_INIT_AUTOMAKE([1.15.1 foreign serial-tests])
- AC_CONFIG_HEADERS([src/config.h])
- AM_MAINTAINER_MODE([disable])
- 
---- origsrc/cdo-1.9.7.1/libcdi/src/Makefile.am	2019-06-07 21:26:58.000000000 +0900
-+++ src/cdo-1.9.7.1/libcdi/src/Makefile.am	2019-07-17 18:50:58.478314200 +0900
+--- origsrc/cdo-1.9.8/libcdi/src/Makefile.am	2019-08-29 15:10:55.000000000 +0900
++++ src/cdo-1.9.8/libcdi/src/Makefile.am	2020-01-11 17:15:52.707125600 +0900
 @@ -10,12 +10,15 @@ lib_LTLIBRARIES =
  if ENABLE_CDI_LIB
    lib_LTLIBRARIES += libcdi.la
@@ -60,8 +50,8 @@
  else
  noinst_LTLIBRARIES += libcdipio.la
  endif
---- origsrc/cdo-1.9.7.1/libcdi/src/cgribexlib.c	2019-06-07 21:26:58.000000000 +0900
-+++ src/cdo-1.9.7.1/libcdi/src/cgribexlib.c	2019-07-17 18:17:26.479440700 +0900
+--- origsrc/cdo-1.9.8/libcdi/src/cgribexlib.c	2019-10-29 21:53:10.000000000 +0900
++++ src/cdo-1.9.8/libcdi/src/cgribexlib.c	2020-01-11 17:16:23.522980300 +0900
 @@ -5744,7 +5744,7 @@ void gribRepair1(int nrec, long recsize,
  #if defined(__cplusplus)
  extern "C" {
@@ -71,8 +61,8 @@
  #ifdef  __cplusplus
  }
  #endif
---- origsrc/cdo-1.9.7.1/m4/acx_options.m4	2019-06-07 21:27:45.000000000 +0900
-+++ src/cdo-1.9.7.1/m4/acx_options.m4	2019-07-17 18:14:43.415442100 +0900
+--- origsrc/cdo-1.9.8/m4/acx_options.m4	2019-08-06 16:05:11.000000000 +0900
++++ src/cdo-1.9.8/m4/acx_options.m4	2020-01-11 17:16:54.604940000 +0900
 @@ -40,7 +40,7 @@ AC_ARG_WITH([szlib],
              [AS_CASE(["$with_szlib"],
                       [no],[AC_MSG_CHECKING([for szlib library])
@@ -82,9 +72,9 @@
                              AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
                                             [sz],
                                             [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
---- origsrc/cdo-1.9.7.1/src/cdo.cc	2019-06-12 20:21:33.000000000 +0900
-+++ src/cdo-1.9.7.1/src/cdo.cc	2019-07-17 19:26:56.359696300 +0900
-@@ -149,7 +149,7 @@ cdo_stackframe()
+--- origsrc/cdo-1.9.8/src/cdo.cc	2019-10-22 21:23:15.000000000 +0900
++++ src/cdo-1.9.8/src/cdo.cc	2020-01-11 17:17:38.044342200 +0900
+@@ -157,7 +157,7 @@ cdo_stackframe()
  static int
  cdo_feenableexcept(int excepts)
  {
