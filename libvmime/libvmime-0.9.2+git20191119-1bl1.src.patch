@@ -1,0 +1,63 @@
+--- origsrc/vmime/CMakeLists.txt	2020-01-11 11:08:35.000000000 +0900
++++ src/vmime/CMakeLists.txt	2020-01-11 11:11:10.983864700 +0900
+@@ -213,6 +213,7 @@ IF(VMIME_BUILD_SHARED_LIBRARY)
+ 	INSTALL(
+ 		TARGETS ${VMIME_LIBRARY_NAME}
+ 		EXPORT ${VMIME_LIBRARY_NAME}-config
++		RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}" COMPONENT sharedlibs
+ 		LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" COMPONENT sharedlibs
+ 		ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" COMPONENT sharedlibs
+ 	)
+@@ -237,7 +238,7 @@ INSTALL_HEADERS_WITH_DIRECTORY(VMIME_LIB
+ #	COMPONENT headers
+ #)
+ 
+-install(EXPORT ${VMIME_LIBRARY_NAME}-config DESTINATION cmake)
++install(EXPORT ${VMIME_LIBRARY_NAME}-config DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake")
+ 
+ 
+ ##############################################################################
+--- origsrc/vmime/src/vmime/charsetConverter.hpp	2020-01-11 11:08:35.000000000 +0900
++++ src/vmime/src/vmime/charsetConverter.hpp	2020-01-11 11:12:07.861293500 +0900
+@@ -66,7 +66,7 @@ public:
+ 
+ 	/** Holds information about a conversion.
+ 	  */
+-	struct status {
++	struct VMIME_EXPORT status {
+ 
+ 		status();
+ 
+--- origsrc/vmime/src/vmime/net/smtp/SMTPResponse.hpp	2020-01-11 11:08:35.000000000 +0900
++++ src/vmime/src/vmime/net/smtp/SMTPResponse.hpp	2020-01-11 11:12:51.415801200 +0900
+@@ -71,7 +71,7 @@ public:
+ 	};
+ 
+ 	/** An element of a SMTP response. */
+-	class responseLine {
++	class VMIME_EXPORT responseLine {
+ 
+ 	public:
+ 
+--- origsrc/vmime/src/vmime/platforms/posix/posixHandler.cpp	2020-01-11 11:08:36.000000000 +0900
++++ src/vmime/src/vmime/platforms/posix/posixHandler.cpp	2020-01-11 11:13:43.167717200 +0900
+@@ -227,6 +227,8 @@ unsigned int posixHandler::getThreadId()
+ 	return static_cast <unsigned int>(::syscall(SYS_gettid));
+ #elif VMIME_HAVE_GETTHRID  // OpenBSD
+ 	return static_cast <unsigned int>(::getthrid());
++#elif defined(__CYGWIN__)
++	return getProcessId();
+ #else
+ 	#error We have no implementation of getThreadId() for this platform!
+ #endif
+--- origsrc/vmime/src/vmime/utility/filteredStream.hpp	2020-01-11 11:08:36.000000000 +0900
++++ src/vmime/src/vmime/utility/filteredStream.hpp	2020-01-11 11:14:33.354975000 +0900
+@@ -393,7 +393,7 @@ private:
+ };
+ 
+ 
+-template <>
++template <> VMIME_EXPORT
+ size_t stopSequenceFilteredInputStream <1>::read(byte_t* const data, const size_t count);
+ 
+ 
