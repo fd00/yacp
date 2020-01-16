@@ -1,17 +1,27 @@
---- origsrc/libwibble-0.1.28-1.1/wibble/Makefile.am	2012-04-17 05:06:09.000000000 +0900
-+++ src/libwibble-0.1.28-1.1/wibble/Makefile.am	2015-02-15 18:14:11.462925700 +0900
-@@ -127,7 +127,8 @@ libwibble_la_SOURCES = \
+--- origsrc/libwibble-1.1/configure.ac	2013-10-22 19:53:18.000000000 +0900
++++ src/libwibble-1.1/configure.ac	2020-01-16 15:12:35.746730100 +0900
+@@ -14,7 +14,7 @@ AC_ARG_ENABLE(docs,
+ AM_CONDITIONAL(DO_DOCS, test x$docs = xtrue)
+ 
+ dnl Doen not work when embedded
+-dnl AC_CONFIG_HEADERS(wibble/config.h)
++AC_CONFIG_HEADERS(wibble/config.h)
+ 
+ dnl To use subdirs
+ AC_PROG_MAKE_SET
+--- origsrc/libwibble-1.1/wibble/Makefile.am	2013-10-21 02:26:23.000000000 +0900
++++ src/libwibble-1.1/wibble/Makefile.am	2020-01-16 15:23:52.988629700 +0900
+@@ -127,7 +127,7 @@ libwibble_la_SOURCES = \
      net/http.cpp
  
  #libwibble_la_LIBADD = 
 -#libwibble_la_LDFLAGS = -no-undefined
 +libwibble_la_LDFLAGS = -no-undefined
-+libwibble_la_CXXFLAGS = -fpermissive
  
  EXTRA_DIST = README libwibble.m4 libwibble.pc.in \
      amorph.test.h \
---- origsrc/libwibble-0.1.28-1.1/wibble/exception.cpp	2012-04-17 05:06:09.000000000 +0900
-+++ src/libwibble-0.1.28-1.1/wibble/exception.cpp	2015-02-15 18:11:37.827182900 +0900
+--- origsrc/libwibble-1.1/wibble/exception.cpp	2010-10-31 00:10:53.000000000 +0900
++++ src/libwibble-1.1/wibble/exception.cpp	2020-01-16 15:04:22.860947400 +0900
 @@ -29,7 +29,7 @@
  #include <sstream>
  #include <iostream>
@@ -30,19 +40,19 @@
  void DefaultUnexpected()
  {
  	try {
---- origsrc/libwibble-0.1.28-1.1/wibble/sys/filelock.h	2012-04-17 05:06:09.000000000 +0900
-+++ src/libwibble-0.1.28-1.1/wibble/sys/filelock.h	2015-02-15 18:16:56.464391100 +0900
-@@ -2,6 +2,7 @@
- #define WIBBLE_SYS_FILELOCK_H
+--- origsrc/libwibble-1.1/wibble/sys/filelock.h	2013-10-21 07:29:57.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/filelock.h	2020-01-16 15:15:52.077253800 +0900
+@@ -5,6 +5,7 @@
  
- #include <fcntl.h>
+ #ifdef POSIX
+ 
 +#include <cstdio>
+ #include <fcntl.h>
  
  namespace wibble {
- namespace sys {
---- origsrc/libwibble-0.1.28-1.1/wibble/sys/mutex.h	2012-04-17 05:06:09.000000000 +0900
-+++ src/libwibble-0.1.28-1.1/wibble/sys/mutex.h	2015-02-15 18:38:17.903843700 +0900
-@@ -68,7 +68,7 @@ public:
+--- origsrc/libwibble-1.1/wibble/sys/mutex.h	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/mutex.h	2020-01-16 15:21:56.700329400 +0900
+@@ -64,13 +64,13 @@ public:
              pthread_mutexattr_t attr;
              pthread_mutexattr_init( &attr );
              if ( recursive ) {
@@ -51,9 +61,16 @@
                  pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
  #else
                  pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE_NP );
---- origsrc/libwibble-0.1.28-1.1/wibble/sys/process.cpp	2012-04-17 05:06:09.000000000 +0900
-+++ src/libwibble-0.1.28-1.1/wibble/sys/process.cpp	2015-02-15 18:37:02.013218700 +0900
-@@ -268,10 +268,14 @@ static string describe_rlimit_res_t(int
+ #endif
+             } else {
+-#ifndef NDEBUG
++#if !defined(NDEBUG) && defined(PTHREAD_MUTEX_ERRORCHECK_NP)
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+ #endif
+             }
+--- origsrc/libwibble-1.1/wibble/sys/process.cpp	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/process.cpp	2020-01-16 15:19:52.011581500 +0900
+@@ -271,10 +271,14 @@ static string describe_rlimit_res_t(int
  		case RLIMIT_DATA: return "max data size";
  		case RLIMIT_STACK: return "max stack size";
  		case RLIMIT_CORE: return "max core file size";
@@ -69,14 +86,14 @@
  		case RLIMIT_MEMLOCK: return "max locked-in-memory address spac";
  #endif
  #ifndef __APPLE__
-@@ -309,14 +313,22 @@ int getCPUTimeLimit(int* max) { return g
+@@ -312,14 +316,22 @@ int getCPUTimeLimit(int* max) { return g
  int getFileSizeLimit(int* max) { return getLimit(RLIMIT_FSIZE, max); }
  int getDataMemoryLimit(int* max) { return getLimit(RLIMIT_DATA, max); }
  int getCoreSizeLimit(int* max) { return getLimit(RLIMIT_CORE, max); }
 +#if defined(RLIMIT_NPROC)
  int getChildrenLimit(int* max) { return getLimit(RLIMIT_NPROC, max); }
 +#else
-+int getChildrenLimit(int* max) { return -1; }
++int getChildrenLimit(int* max) { return 0; }
 +#endif
  int getOpenFilesLimit(int* max) { return getLimit(RLIMIT_NOFILE, max); }
  
