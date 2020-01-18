@@ -1,0 +1,91 @@
+--- origsrc/gromacs-2020/CMakeLists.txt	2020-01-02 01:45:36.000000000 +0900
++++ src/gromacs-2020/CMakeLists.txt	2020-01-18 10:09:32.899125700 +0900
+@@ -800,7 +800,7 @@ set(GMX_INSTALL_GMXDATADIR ${CMAKE_INSTA
+ 
+ # If the nesting level wrt. the installation root is changed,
+ # gromacs-config.cmake.cmakein needs to be adapted.
+-set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
++set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_LIBDIR}/cmake)
+ 
+ # TODO: Make GMXRC adapt if this is changed
+ set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+--- origsrc/gromacs-2020/src/api/cpp/CMakeLists.txt	2020-01-02 01:45:36.000000000 +0900
++++ src/gromacs-2020/src/api/cpp/CMakeLists.txt	2020-01-18 09:31:36.924750300 +0900
+@@ -129,7 +129,7 @@ install(TARGETS gmxapi
+ # as a CMake import target Gromacs::gmxapi.
+ install(EXPORT gmxapi
+         NAMESPACE Gromacs::
+-        DESTINATION share/cmake/gmxapi/
++        DESTINATION lib/cmake/gmxapi/
+         )
+ add_library(Gromacs::gmxapi ALIAS gmxapi )
+ 
+@@ -138,7 +138,7 @@ include(CMakePackageConfigHelpers)
+ configure_package_config_file(
+     cmake/gmxapi-config.cmake.in
+     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake"
+-    INSTALL_DESTINATION share/cmake/gmxapi/
++    INSTALL_DESTINATION lib/cmake/gmxapi/
+ )
+ write_basic_package_version_file(
+     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake
+@@ -150,7 +150,7 @@ install(
+     FILES
+     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake
+     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake
+-    DESTINATION share/cmake/gmxapi/
++    DESTINATION lib/cmake/gmxapi/
+ )
+ 
+ # We need a CMake target to provide the internal interface(s) of the gmxapi
+--- origsrc/gromacs-2020/src/gromacs/hardware/identifyavx512fmaunits.cpp	2020-01-02 01:45:36.000000000 +0900
++++ src/gromacs-2020/src/gromacs/hardware/identifyavx512fmaunits.cpp	2020-01-18 08:45:36.110715100 +0900
+@@ -66,7 +66,7 @@ namespace gmx
+ namespace
+ {
+ 
+-#if GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
++#if GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED && !defined(__CYGWIN__)
+ /*\ brief Loop over mixed FMA and shuffle AVX512 instructions
+  *
+  * This function executes a meaningless loop that includes both
+@@ -278,7 +278,7 @@ int identifyAvx512FmaUnits()
+ 
+             if (haveAvx512Hardware)
+             {
+-#if GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
++#if GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED && !defined(__CYGWIN__)
+                 result = checkDualAvx512FmaUnits() ? 2 : 1;
+ #else
+                 result = -1; // Cannot run the tests
+--- origsrc/gromacs-2020/src/gromacs/mdrunutility/threadaffinity.cpp	2020-01-02 01:45:36.000000000 +0900
++++ src/gromacs-2020/src/gromacs/mdrunutility/threadaffinity.cpp	2020-01-18 08:49:41.500331100 +0900
+@@ -42,7 +42,7 @@
+ #include <cstdio>
+ #include <cstring>
+ 
+-#if HAVE_SCHED_AFFINITY
++#if HAVE_SCHED_AFFINITY && !defined(__CYGWIN__)
+ #    include <sched.h>
+ #    include <sys/syscall.h>
+ #endif
+@@ -480,7 +480,7 @@ static bool detectDefaultAffinityMask(co
+ {
+     bool detectedDefaultAffinityMask = true;
+ 
+-#if HAVE_SCHED_AFFINITY
++#if HAVE_SCHED_AFFINITY && !defined(__CYGWIN__)
+     cpu_set_t mask_current;
+     CPU_ZERO(&mask_current);
+     int ret;
+--- origsrc/gromacs-2020/src/testutils/CMakeLists.txt	2020-01-02 01:45:36.000000000 +0900
++++ src/gromacs-2020/src/testutils/CMakeLists.txt	2020-01-18 03:00:03.464551200 +0900
+@@ -69,7 +69,7 @@ add_library(testutils STATIC ${UNITTEST_
+ gmx_target_compile_options(testutils)
+ target_compile_definitions(testutils PRIVATE HAVE_CONFIG_H)
+ target_include_directories(testutils SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+-target_link_libraries(testutils PRIVATE libgromacs ${GMX_COMMON_LIBRARIES} gmock)
++target_link_libraries(testutils libgromacs ${GMX_COMMON_LIBRARIES} gmock)
+ 
+ if(HAVE_TINYXML2)
+     include_directories(SYSTEM ${TinyXML2_INCLUDE_DIR})
