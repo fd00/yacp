@@ -1,0 +1,45 @@
+--- origsrc/qd-2.3.22/fortran/Makefile.am	2018-10-31 01:05:01.000000000 +0900
++++ src/qd-2.3.22/fortran/Makefile.am	2020-01-20 11:27:55.649210900 +0900
+@@ -14,9 +14,10 @@ QDMOD=qdmodule.$(module_ext)
+ DDMOD=ddmodule.$(module_ext)
+ endif
+ 
+-lib_LTLIBRARIES = libqdmod.la libqd_f_main.la
++lib_LTLIBRARIES = libqdmod.la
+ libqdmod_la_SOURCES = ddext.f ddmod.f qdext.f qdmod.f f_dd.cpp f_qd.cpp
+-libqd_f_main_la_SOURCES = main.cpp
++libqdmod_la_LDFLAGS = -no-undefined
++libqdmod_la_LIBADD = -lgfortran $(top_builddir)/src/libqd.la
+ ddmod.lo: $(DDEXT) ddext.lo
+ qdmod.lo: ddmod.lo $(DDMOD) qdext.lo
+ $(QDMOD): qdmod.lo $(DDMOD)
+--- origsrc/qd-2.3.22/src/Makefile.am	2018-10-31 01:05:02.000000000 +0900
++++ src/qd-2.3.22/src/Makefile.am	2020-01-20 11:21:30.831791600 +0900
+@@ -4,6 +4,7 @@ SRC = c_dd.cpp c_qd.cpp dd_real.cpp dd_c
+ lib_LTLIBRARIES = libqd.la
+ 
+ libqd_la_SOURCES = $(SRC)
++libqd_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+--- origsrc/qd-2.3.22/tests/Makefile.am	2018-10-31 01:04:57.000000000 +0900
++++ src/qd-2.3.22/tests/Makefile.am	2020-01-20 11:28:23.583499500 +0900
+@@ -16,7 +16,6 @@ AM_FFLAGS = $(AM_FCFLAGS)
+ f_test_SOURCES = f_test.f
+ f_test_LINK=$(CXXLINK)
+ f_test_LDADD = $(top_builddir)/fortran/libqdmod.la \
+-               $(top_builddir)/fortran/libqd_f_main.la \
+                $(LDADD) $(top_builddir)/src/libqd.la $(FCLIBS)
+ endif
+ 
+--- origsrc/qd-2.3.22/tests/f_test.f	2018-10-31 01:04:57.000000000 +0900
++++ src/qd-2.3.22/tests/f_test.f	2020-01-20 11:31:07.656401700 +0900
+@@ -28,3 +28,7 @@ subroutine f_main
+   call f_fpu_fix_end (old_cw)
+ end
+ 
++program main
++  call f_main
++end
++
