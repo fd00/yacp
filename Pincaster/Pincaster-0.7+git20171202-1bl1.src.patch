@@ -1,0 +1,53 @@
+--- origsrc/Pincaster/configure.ac	2020-01-20 10:26:33.000000000 +0900
++++ src/Pincaster/configure.ac	2020-01-20 10:26:46.052542500 +0900
+@@ -54,9 +54,7 @@ case "$yajl" in
+   ;;
+   "system")
+     AC_MSG_RESULT([system])
+-    AC_CHECK_YAJL(,[
+-      AC_MSG_ERROR([YAJL library not found.])
+-    ])
++    PKG_CHECK_MODULES([YAJL], [yajl], [], AC_MSG_ERROR([YAJL library not found.]))
+   ;;
+   "embedded")
+     AC_MSG_RESULT([embedded])
+@@ -119,9 +117,7 @@ AC_CHECK_HEADERS([fcntl.h])
+ 
+ AC_SUBST([MAINT])
+ 
+-LEVENTDIR="levent2"
+-AC_CONFIG_SUBDIRS([src/levent2])
+-CPPFLAGS="-I$LEVENTDIR -I$LEVENTDIR/include $CPPFLAGS"
++PKG_CHECK_MODULES([LIBEVENT], [libevent libevent_pthreads])
+ 
+ dnl Output
+ 
+@@ -138,5 +134,3 @@ AC_CONFIG_FILES([Makefile
+                 ])
+ 
+ AC_OUTPUT
+-
+-(cd src/levent2 && $am_make)
+--- origsrc/Pincaster/src/Makefile.am	2020-01-20 10:26:33.000000000 +0900
++++ src/Pincaster/src/Makefile.am	2020-01-20 10:31:38.294965400 +0900
+@@ -1,12 +1,9 @@
+ 
+-pincaster_LDADD = \
+-        levent2/.libs/libevent_core.a \
+-        levent2/.libs/libevent_extra.a \
+-        levent2/.libs/libevent_pthreads.a \
++pincaster_LDADD = @LIBEVENT_LIBS@ \
+         @YAJL_LDADD@
+ 
+ AM_CFLAGS = \
+-        @YAJL_INCLUDE@
++        @YAJL_INCLUDE@ -I/usr/include/yajl
+ 
+ bin_PROGRAMS = \
+         pincaster
+@@ -66,4 +63,4 @@ pincaster_SOURCES = \
+         replication_slave.h
+ 
+ SUBDIRS = \
+-        ext levent2 yajl
++        ext yajl
