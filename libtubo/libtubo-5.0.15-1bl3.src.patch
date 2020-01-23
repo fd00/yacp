@@ -1,0 +1,50 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*.whl' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x tap-driver.sh -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x '*.stamp' -x '*.html' -x '*.bak' -x '*.sgml' -x '*.tmpl' -x '*.txt' -x '*.xml' -x '*.args' -x '*.devhelp*' -x '*.css' -x '*.hierarchy' -x '*.interfaces' -x '*.prerequisites' -x '*.signals' -x '*.png' -x '*.top' -x '*.bottom' -x 'gtk-doc.mak*' -x gtk-doc.m4 -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.pc' origsrc/libtubo0-5.0.15/configure.ac src/libtubo0-5.0.15/configure.ac
+--- origsrc/libtubo0-5.0.15/configure.ac	2015-02-26 00:54:33.000000000 +0900
++++ src/libtubo0-5.0.15/configure.ac	2020-01-23 13:23:48.852928800 +0900
+@@ -186,7 +186,10 @@ fi
+ 
+ AC_CHECK_HEADERS([sys/types.h sys/wait.h sys/mman.h])
+ AC_CHECK_HEADERS([unistd.h stdarg.h signal.h errno.h stdlib.h stdio.h string.h fcntl.h semaphore.h pthread.h])
+-AC_CHECK_HEADERS([windows.h process.h conio.h tchar.h])
++AC_CHECK_HEADERS([process.h conio.h tchar.h])
++if test "$host_os" != "cygwin"; then
++	AC_CHECK_HEADERS([windows.h])
++fi
+ AM_CONDITIONAL(WINDOZE, [test "$ac_cv_header_windows_h" = "yes"])
+ if test "$ac_cv_header_windows_h" = "yes" ; then
+   AC_CHECK_FUNCS([GetProcessId],[],[AC_MSG_ERROR("GetProcessId() not found. Try compiling with Mingw-w64 >= 3.0 instead.")])
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*.whl' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x aclocal.m4 -x configure -x config.h -x '*.h.in' -x COPYING -x INSTALL -x ansi2knr.c -x ar-lib -x config-ml.in -x elisp-comp -x mdate-sh -x mkinstalldirs -x py-compile -x symlink-tree -x tap-driver.sh -x test-driver -x texinfo.tex -x ylwrap -x Makefile.in -x GNUmakefile.in -x makefile.in -x libtool.m4 -x ltoptions.m4 -x ltsugar.m4 -x ltversion.m4 -x lt~obsolete.m4 -x ltmain.sh -x compile -x depcomp -x install-sh -x missing -x '*.stamp' -x '*.html' -x '*.bak' -x '*.sgml' -x '*.tmpl' -x '*.txt' -x '*.xml' -x '*.args' -x '*.devhelp*' -x '*.css' -x '*.hierarchy' -x '*.interfaces' -x '*.prerequisites' -x '*.signals' -x '*.png' -x '*.top' -x '*.bottom' -x 'gtk-doc.mak*' -x gtk-doc.m4 -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 -x '*.pc' origsrc/libtubo0-5.0.15/src/Makefile.am src/libtubo0-5.0.15/src/Makefile.am
+--- origsrc/libtubo0-5.0.15/src/Makefile.am	2014-02-12 07:26:56.000000000 +0900
++++ src/libtubo0-5.0.15/src/Makefile.am	2020-01-23 13:23:48.868555200 +0900
+@@ -5,10 +5,10 @@ AM_CPPFLAGS = -I$(top_srcdir)
+ #EXTRA_DIST = tubo.h.in 
+ 
+ if WINDOZE
+-no_undefined = -no-undefined
+ #FIXME: list symbols to export here
+ #export_symbols = -export-symbols 
+ endif
++no_undefined = -no-undefined
+ 
+ lib_LTLIBRARIES = libtubo.la	
+ libtubo_la_SOURCES =  tubo.h tubo_exec.c tubo_exec.i
+@@ -40,14 +40,14 @@ endif
+ 
+ if WANT_EXAMPLES
+ 
+-bin_PROGRAMS += example
+-example_CFLAGS =  @GLIB_CFLAGS@
+-example_LDADD =   @GLIB_LIBS@ -lpthread  @RT_LIB@  
+-example_SOURCES = example.c tubo.h tubo_exec.c tubo_exec.i
++bin_PROGRAMS += tubo-example
++tubo_example_CFLAGS =  @GLIB_CFLAGS@
++tubo_example_LDADD =   @GLIB_LIBS@ -lpthread  @RT_LIB@  
++tubo_example_SOURCES = example.c tubo.h tubo_exec.c tubo_exec.i
+ 
+ if WINDOZE 
+ if WANT_SEMAPHORES
+-example_SOURCES += sem.h sem.c
++tubo_example_SOURCES += sem.h sem.c
+ endif
+ endif
+ 
