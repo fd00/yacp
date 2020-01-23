@@ -1,0 +1,101 @@
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*.whl' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/bml-1.3.1/src/C-interface/bml_logger.c src/bml-1.3.1/src/C-interface/bml_logger.c
+--- origsrc/bml-1.3.1/src/C-interface/bml_logger.c	2019-06-27 16:03:24.000000000 +0900
++++ src/bml-1.3.1/src/C-interface/bml_logger.c	2020-01-23 10:22:28.793587500 +0900
+@@ -2,7 +2,9 @@
+ 
+ #include "bml_logger.h"
+ 
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <string.h>
+@@ -62,6 +64,7 @@ static void
+ print_backtrace(
+     void)
+ {
++#if !defined(__CYGWIN__)
+     void *buffer[TRACE_DEPTH];
+     size_t size;
+     char **strings;
+@@ -82,6 +85,7 @@ print_backtrace(
+     }
+ 
+     free(strings);
++#endif
+ }
+ 
+ /** Log a message.
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*.whl' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/bml-1.3.1/src/CMakeLists.txt src/bml-1.3.1/src/CMakeLists.txt
+--- origsrc/bml-1.3.1/src/CMakeLists.txt	2019-06-27 16:03:24.000000000 +0900
++++ src/bml-1.3.1/src/CMakeLists.txt	2020-01-23 10:43:29.515177900 +0900
+@@ -2,7 +2,7 @@ add_subdirectory(Fortran-interface)
+ add_subdirectory(C-interface)
+ add_subdirectory(internal-blas)
+ 
+-add_library(bml
++add_library(bml SHARED
+   $<TARGET_OBJECTS:bml-c>
+   $<TARGET_OBJECTS:bml-internal-blas-double_complex>
+   $<TARGET_OBJECTS:bml-internal-blas-double_real>
+@@ -32,14 +32,17 @@ set_target_properties(bml
+   PROPERTIES
+   SOVERSION ${PROJECT_VERSION}
+   POSITION_INDEPENDENT_CODE yes)
++target_link_libraries(bml blas lapack gomp)
+ 
+-add_library(bml_fortran
++add_library(bml_fortran SHARED
+   $<TARGET_OBJECTS:bml-fortran>)
+ set_target_properties(bml_fortran
+   PROPERTIES
+   SOVERSION ${PROJECT_VERSION}
+   POSITION_INDEPENDENT_CODE yes)
++target_link_libraries(bml_fortran bml)
+ 
+ install(TARGETS bml bml_fortran
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*.whl' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/bml-1.3.1/tests/CMakeLists.txt src/bml-1.3.1/tests/CMakeLists.txt
+--- origsrc/bml-1.3.1/tests/CMakeLists.txt	2019-06-27 16:03:24.000000000 +0900
++++ src/bml-1.3.1/tests/CMakeLists.txt	2020-01-23 10:52:01.286635300 +0900
+@@ -125,27 +125,29 @@ foreach(N
+   endforeach()
+ endforeach()
+ 
+-add_executable(test-backtrace test_backtrace.c)
+-target_link_libraries(test-backtrace bml ${LINK_LIBRARIES})
+-set_target_properties(test-backtrace
++if (NOT CYGWIN)
++  add_executable(test-backtrace test_backtrace.c)
++  target_link_libraries(test-backtrace bml ${LINK_LIBRARIES})
++  set_target_properties(test-backtrace
+   PROPERTIES
+   LINK_FLAGS "--coverage")
+-if(OPENMP_FOUND)
++  if(OPENMP_FOUND)
+   set_target_properties(test-backtrace
+     PROPERTIES
+     COMPILE_FLAGS ${OpenMP_C_FLAGS}
+     LINK_FLAGS ${OpenMP_C_FLAGS})
+-endif()
+-add_test(backtrace test-backtrace)
+-if(ADDR2LINE)
++  endif()
++  add_test(backtrace test-backtrace)
++  if(ADDR2LINE)
+   set_tests_properties(backtrace
+     PROPERTIES
+     # For some compiler combinations source line resolution is not working. In
+     # this case the backtrace will print out something like '??:0' which makes
+     # this test not very useful unfortunately.
+     PASS_REGULAR_EXPRESSION "test_backtrace.c:6[\\n]*.*test_backtrace.c:12;[?]+:[0?]")
+-else()
++  else()
+   set_tests_properties(backtrace
+     PROPERTIES
+     PASS_REGULAR_EXPRESSION "test-backtrace[(]foo.*[\\n]*.*test-backtrace[(]main;[?]+:[0?]")
++  endif()
+ endif()
