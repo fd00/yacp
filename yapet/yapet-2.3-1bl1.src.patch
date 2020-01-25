@@ -1,0 +1,92 @@
+--- origsrc/yapet-2.3/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/Makefile.am	2020-01-25 14:18:11.323871200 +0900
+@@ -6,7 +6,7 @@ LICENSE INSTALL.generic yapet.desktop.in
+ 
+ DIST_SUBDIRS = libyacurs src po tests doc
+ 
+-SUBDIRS = libyacurs src po tests doc
++SUBDIRS = src po tests doc
+ 
+ desktopfile_DATA = yapet.desktop
+ desktopfiledir = $(datadir)/applications
+--- origsrc/yapet-2.3/configure.ac	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/configure.ac	2020-01-25 14:35:32.226367800 +0900
+@@ -5,7 +5,6 @@ AC_CONFIG_AUX_DIR([build-aux])
+ AC_CONFIG_SRCDIR([config.h.in])
+ AC_CONFIG_HEADERS([config.h])
+ AC_CONFIG_MACRO_DIR([m4])
+-AC_CONFIG_SUBDIRS([libyacurs])
+ 
+ AM_INIT_AUTOMAKE([check-news dist-xz dist-bzip2 color-tests])
+ AM_SILENT_RULES([yes])
+@@ -92,7 +91,10 @@ AM_GNU_GETTEXT([external])
+ AM_GNU_GETTEXT_VERSION([0.18.1])
+ 
+ PKG_CHECK_MODULES([CPPUNIT], [cppunit])
+-PKG_CHECK_MODULES([ARGON2], [libargon2])
++PKG_CHECK_MODULES([ARGON2], [libargon2], ,
++	AC_CHECK_LIB([argon2], [main], , AC_MSG_ERROR(libargon2 missing))
++)
++PKG_CHECK_MODULES([LIBYACURS], [libyacurs])
+ 
+ # Some conditionals for the makefileS
+ AM_CONDITIONAL([USE_NLS], [test x$USE_NLS = xyes])
+--- origsrc/yapet-2.3/doc/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/doc/Makefile.am	2020-01-25 15:21:14.171935600 +0900
+@@ -15,3 +15,5 @@ endif # !DISABLEINSTALLDOC
+ 
+ distclean-local:
+ 	rm -f Makefile.doc
++
++-include Makefile.doc
+--- origsrc/yapet-2.3/src/converters/csv2yapet/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/src/converters/csv2yapet/Makefile.am	2020-01-25 14:59:36.032401100 +0900
+@@ -45,4 +45,4 @@ csv2yapet_LDADD = $(builddir)/libyapet-i
+ 	$(yapet_build_libdir)/globals/libyapet-globals.la \
+ 	$(yapet_build_libdir)/cfg/libyapet-cfg.la \
+ 	$(yapet_build_libdir)/libyapet-logger.la \
+-	$(top_builddir)/libyacurs/src/libyacurs.la
++	$(LIBYACURS_LIBS) -lncursesw
+--- origsrc/yapet-2.3/src/converters/yapet2csv/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/src/converters/yapet2csv/Makefile.am	2020-01-25 15:00:38.248369000 +0900
+@@ -45,6 +45,6 @@ yapet2csv_LDADD = $(builddir)/libyapet-e
+     $(yapet_build_libdir)/globals/libyapet-globals.la \
+ 	$(yapet_build_libdir)/cfg/libyapet-cfg.la \
+     $(yapet_build_libdir)/libyapet-logger.la \
+-	$(top_builddir)/libyacurs/src/libyacurs.la
++	$(LIBYACURS_LIBS) -lncursesw
+ 
+ 
+--- origsrc/yapet-2.3/src/yapet/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/src/yapet/Makefile.am	2020-01-25 14:57:37.475842600 +0900
+@@ -40,7 +40,7 @@ LDADD = $(yapet_build_libsdir)/ui/libyap
+ 	$(yapet_build_libsdir)/passwordrecord/libyapet-passwordrecord.la	\
+ 	$(yapet_build_libsdir)/globals/libyapet-globals.la \
+ 	$(yapet_build_libsdir)/libyapet-logger.la \
+-	$(top_builddir)/libyacurs/src/libyacurs.la
++	$(LIBYACURS_LIBS) -lncursesw
+ 
+ AM_LDFLAGS = $(LIBINTL)
+ 
+--- origsrc/yapet-2.3/tests/preload/Makefile.am	2019-02-21 03:24:34.000000000 +0900
++++ src/yapet-2.3/tests/preload/Makefile.am	2020-01-25 15:02:17.911468500 +0900
+@@ -36,8 +36,7 @@ checktestpwrecord_LDADD = $(yapet_libs)/
+ 	$(yapet_libs)/globals/libyapet-globals.la \
+ 	$(yapet_libs)/cfg/libyapet-cfg.la \
+ 	$(yapet_libs)/libyapet-logger.la \
+-	$(top_builddir)/libyacurs/src/libyacurs.la \
+-	$(LIBINTL)
++	$(LIBYACURS_LIBS) -lncursesw $(LIBINTL)
+ 
+ checkmasterpwchange_SOURCES = checkmasterpwchange.cc
+ checkmasterpwchange_CPPFLAGS = -I$(yapet_libs_srcdir)/pwgen \
+@@ -61,8 +60,7 @@ checkmasterpwchange_LDADD = $(yapet_libs
+ 	$(yapet_libs)/globals/libyapet-globals.la \
+ 	$(yapet_libs)/cfg/libyapet-cfg.la \
+ 	$(yapet_libs)/libyapet-logger.la \
+-	$(top_builddir)/libyacurs/src/libyacurs.la \
+-	$(LIBINTL)
++	$(LIBYACURS_LIBS) -lncursesw $(LIBINTL)
+ 
+ 
+ istty_SOURCES = istty.cc
