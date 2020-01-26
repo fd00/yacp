@@ -1,0 +1,51 @@
+HOMEPAGE="https://github.com/xiaoyeli/${PN}"
+SRC_URI="https://github.com/xiaoyeli/${PN}/archive/v${PV}.tar.gz"
+
+CATEGORY="Science"
+SUMMARY="Distributed memory, MPI based SuperLU"
+DESCRIPTION="SuperLU_DIST contains a set of subroutines to solve a sparse linear system
+A*X=B. It uses Gaussian elimination with static pivoting (GESP). Static
+pivoting is a technique that combines the numerical stability of partial
+pivoting with the scalability of Cholesky (no pivoting), to run accurately and
+efficiently on large numbers of processors."
+
+CYGCMAKE_GENERATOR="Unix Makefiles" # CMake Error: The Ninja generator does not support Fortran yet.
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+	-DCMAKE_INSTALL_INCLUDEDIR:STRING=include/${PN}
+	-DTPL_PARMETIS_INCLUDE_DIRS:STRING=/usr/include
+	-DTPL_PARMETIS_LIBRARIES:STRING=parmetis;metis
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/SRC:${PATH} cygtest
+}
+
+DIFF_EXCLUDES="
+	*.h
+	make.inc
+"
+
+PKG_NAMES="
+	superlu_dist
+	libsuperlu_dist6
+	libsuperlu_dist-devel
+"
+superlu_dist_CONTENTS="
+	usr/share
+"
+libsuperlu_dist6_CONTENTS="
+	usr/bin
+"
+libsuperlu_dist_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+superlu_dist_SUMMARY="${SUMMARY} (licensing & readmes)"
+libsuperlu_dist6_SUMMARY="${SUMMARY} (runtime)"
+libsuperlu_dist_devel_SUMMARY="${SUMMARY} (development)"
