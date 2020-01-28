@@ -1,0 +1,120 @@
+--- origsrc/qdldl-0.1.4/CMakeLists.txt	2019-09-07 07:03:56.000000000 +0900
++++ src/qdldl-0.1.4/CMakeLists.txt	2020-01-28 09:08:14.084468100 +0900
+@@ -101,25 +101,26 @@ target_include_directories(qdldlobject P
+ 
+ include(GNUInstallDirs)
+ 
+-# Static library
+-add_library (qdldlstatic STATIC ${qdldl_src} ${qdldl_headers})
+-# Give same name to static library output
+-set_target_properties(qdldlstatic PROPERTIES OUTPUT_NAME qdldl)
++if (NOT BUILD_SHARED_LIBS)
++  # Static library
++  add_library (qdldlstatic STATIC ${qdldl_src} ${qdldl_headers})
++  # Give same name to static library output
++  set_target_properties(qdldlstatic PROPERTIES OUTPUT_NAME qdldl)
+ 
+-# Declare include directories for the cmake exported target
+-target_include_directories(qdldlstatic
++  # Declare include directories for the cmake exported target
++  target_include_directories(qdldlstatic
+                            PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+                                   "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/qdldl>")
+ 
+-# Install Static Library
+-# ----------------------------------------------
++  # Install Static Library
++  # ----------------------------------------------
+ 
+-install(TARGETS qdldlstatic
++  install(TARGETS qdldlstatic
+         EXPORT  ${PROJECT_NAME}
+         ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+         LIBRARY       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+         RUNTIME       DESTINATION "${CMAKE_INSTALL_BINDIR}")
+-
++endif()
+ 
+ # Install Headers
+ # ----------------------------------------------
+@@ -131,6 +132,10 @@ install(FILES ${qdldl_headers} DESTINATI
+ # Create qdldl shared library
+ add_library (qdldl SHARED ${qdldl_src} ${qdldl_headers})
+ 
++if (CYGWIN)
++  set_target_properties(qdldl PROPERTIES SOVERSION 0)
++endif()
++
+ # Declare include directories for the cmake exported target
+ target_include_directories(qdldl
+ 	PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+@@ -143,9 +148,9 @@ install(TARGETS qdldl
+ 	ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ 	RUNTIME       DESTINATION "${CMAKE_INSTALL_BINDIR}")
+ 
+-# Create demo executable (linked to static library)
++# Create demo executable (linked to shared library)
+ add_executable (qdldl_example ${PROJECT_SOURCE_DIR}/examples/example.c)
+-target_link_libraries (qdldl_example qdldlstatic)
++target_link_libraries (qdldl_example qdldl)
+ 
+ 
+ # Create CMake packages for the build directory
+@@ -202,10 +207,17 @@ if (UNITTESTS)
+     add_executable(qdldl_tester
+                 ${PROJECT_SOURCE_DIR}/tests/qdldl_tester.c ${PROJECT_SOURCE_DIR}/tests/minunit.h
+                 ${test_headers})
+-    target_link_libraries (qdldl_tester qdldlstatic)
++    target_link_libraries (qdldl_tester qdldl)
+ 
+     # Add testing
+     include(CTest)
+     enable_testing()
+     add_test(NAME tester COMMAND $<TARGET_FILE:qdldl_tester>)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/qdldl.pc.in ${CMAKE_BINARY_DIR}/qdldl.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/qdldl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/qdldl-0.1.4/include/qdldl_types.h	1970-01-01 09:00:00.000000000 +0900
++++ src/qdldl-0.1.4/include/qdldl_types.h	2020-01-28 09:06:00.016886400 +0900
+@@ -0,0 +1,23 @@
++#ifndef QDLDL_TYPES_H
++# define QDLDL_TYPES_H
++
++# ifdef __cplusplus
++extern "C" {
++# endif /* ifdef __cplusplus */
++
++#include <limits.h> //for the QDLDL_INT_TYPE_MAX
++
++// QDLDL integer and float types
++
++typedef long long    QDLDL_int;   /* for indices */
++typedef double  QDLDL_float; /* for numerical values  */
++typedef unsigned char   QDLDL_bool;  /* for boolean values  */
++
++//Maximum value of the signed type QDLDL_int.
++#define QDLDL_INT_MAX LLONG_MAX
++
++# ifdef __cplusplus
++}
++# endif /* ifdef __cplusplus */
++
++#endif /* ifndef QDLDL_TYPES_H */
+--- origsrc/qdldl-0.1.4/qdldl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/qdldl-0.1.4/qdldl.pc.in	2020-01-28 09:08:14.053725700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: qdldl
++Description: Free LDL factorisation routine
++Version: @VERSION@
++Libs: -L${libdir} -lqdldl
++Cflags: -I${includedir}
