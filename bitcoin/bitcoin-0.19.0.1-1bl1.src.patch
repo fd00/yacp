@@ -1,0 +1,70 @@
+--- origsrc/bitcoin-0.19.0.1/configure.ac	2019-11-18 18:46:57.000000000 +0900
++++ src/bitcoin-0.19.0.1/configure.ac	2020-01-30 11:55:14.138392700 +0900
+@@ -617,6 +617,9 @@ case $host in
+    *hpux*)
+      LEVELDB_TARGET_FLAGS="-DOS_HPUX"
+      ;;
++   *cygwin*)
++     LEVELDB_TARGET_FLAGS="-DOS_CYGWIN"
++     ;;
+    *)
+      AC_MSG_ERROR(Cannot build leveldb for $host. Please file a bug report.)
+      ;;
+@@ -1656,7 +1659,7 @@ if test x$need_bundled_univalue = xyes;
+ fi
+ 
+ ac_configure_args="${ac_configure_args} --disable-shared --with-pic --enable-benchmark=no --with-bignum=no --enable-module-recovery --disable-jni"
+-AC_CONFIG_SUBDIRS([src/secp256k1])
++PKG_CHECK_MODULES([SECP256K1], [libsecp256k1])
+ 
+ AC_OUTPUT
+ 
+--- origsrc/bitcoin-0.19.0.1/src/Makefile.am	2019-11-18 18:46:57.000000000 +0900
++++ src/bitcoin-0.19.0.1/src/Makefile.am	2020-01-30 13:46:00.715732300 +0900
+@@ -21,7 +21,7 @@ endif
+ 
+ BITCOIN_INCLUDES=-I$(builddir) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS) $(CRYPTO_CFLAGS) $(SSL_CFLAGS)
+ 
+-BITCOIN_INCLUDES += -I$(srcdir)/secp256k1/include
++BITCOIN_INCLUDES += $(SECP256K1_CFLAGS)
+ BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
+ 
+ LIBBITCOIN_SERVER=libbitcoin_server.a
+@@ -31,7 +31,7 @@ LIBBITCOIN_CLI=libbitcoin_cli.a
+ LIBBITCOIN_UTIL=libbitcoin_util.a
+ LIBBITCOIN_CRYPTO_BASE=crypto/libbitcoin_crypto_base.a
+ LIBBITCOINQT=qt/libbitcoinqt.a
+-LIBSECP256K1=secp256k1/libsecp256k1.la
++LIBSECP256K1=$(SECP256K1_LIBS)
+ 
+ if ENABLE_ZMQ
+ LIBBITCOIN_ZMQ=libbitcoin_zmq.a
+@@ -543,7 +543,6 @@ bitcoind_LDADD = \
+   $(LIBBITCOIN_WALLET) \
+   $(LIBBITCOIN_SERVER) \
+   $(LIBBITCOIN_COMMON) \
+-  $(LIBUNIVALUE) \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBBITCOIN_ZMQ) \
+   $(LIBBITCOIN_CONSENSUS) \
+@@ -551,6 +550,7 @@ bitcoind_LDADD = \
+   $(LIBLEVELDB) \
+   $(LIBLEVELDB_SSE42) \
+   $(LIBMEMENV) \
++  $(LIBUNIVALUE) \
+   $(LIBSECP256K1)
+ 
+ bitcoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+@@ -585,11 +585,11 @@ bitcoin_tx_SOURCES += bitcoin-tx-res.rc
+ endif
+ 
+ bitcoin_tx_LDADD = \
+-  $(LIBUNIVALUE) \
+   $(LIBBITCOIN_COMMON) \
+   $(LIBBITCOIN_UTIL) \
+   $(LIBBITCOIN_CONSENSUS) \
+   $(LIBBITCOIN_CRYPTO) \
++  $(LIBUNIVALUE) \
+   $(LIBSECP256K1)
+ 
+ bitcoin_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
