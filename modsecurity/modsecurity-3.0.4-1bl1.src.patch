@@ -1,0 +1,349 @@
+--- origsrc/ModSecurity-3.0.4/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/Makefile.am	2020-02-01 10:57:37.752670800 +0900
+@@ -9,7 +9,6 @@ endif
+ 
+ 
+ SUBDIRS = \
+-	others \
+ 	src \
+ 	doc \
+ 	tools \
+--- origsrc/ModSecurity-3.0.4/build/lmdb.m4	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/build/lmdb.m4	2020-02-01 10:44:06.515483300 +0900
+@@ -11,7 +11,7 @@ AC_REQUIRE([PKG_PROG_PKG_CONFIG])
+ LMDB_POSSIBLE_LIB_NAMES="lmdb"
+ 
+ # Possible extensions for the library
+-LMDB_POSSIBLE_EXTENSIONS="so so0 la sl dll dylib so.0.0.0"
++LMDB_POSSIBLE_EXTENSIONS="so so0 la sl dll dll.a dylib so.0.0.0"
+ 
+ # Possible paths (if pkg-config was not found, proceed with the file lookup)
+ LMDB_POSSIBLE_PATHS="/usr/lib /usr/local/lib /usr/local/liblmdb /usr/local/lmdb /usr/local /opt/liblmdb /opt/lmdb /opt /usr /usr/lib64 /opt/local"
+--- origsrc/ModSecurity-3.0.4/build/ssdeep.m4	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/build/ssdeep.m4	2020-02-01 10:52:50.687941500 +0900
+@@ -9,10 +9,10 @@ AC_DEFUN([CHECK_SSDEEP],
+ SSDEEP_POSSIBLE_LIB_NAMES="fuzzy"
+ 
+ # Possible extensions for the library
+-SSDEEP_POSSIBLE_EXTENSIONS="so so0 la sl dll dylib so.0.0.0"
++SSDEEP_POSSIBLE_EXTENSIONS="so so0 la sl dll dll.a dylib so.0.0.0"
+ 
+ # Possible paths (if pkg-config was not found, proceed with the file lookup)
+-SSDEEP_POSSIBLE_PATHS="/usr/lib /usr/local/lib /usr/local/fuzzy /usr/local/libfuzzy /usr/local /opt /usr /usr/lib64 /opt/local"
++SSDEEP_POSSIBLE_PATHS="/usr/lib /usr/local/lib /usr/local/fuzzy /usr/local/libfuzzy /usr/local /opt /usr /usr/lib64 /opt/local /usr/include/ssdeep"
+ 
+ # Variables to be set by this very own script.
+ SSDEEP_CFLAGS=""
+--- origsrc/ModSecurity-3.0.4/configure.ac	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/configure.ac	2020-02-01 10:41:21.431305800 +0900
+@@ -55,25 +55,8 @@ AC_PROG_MAKE_SET
+ # AX_CXX_COMPILE_STDCXX_11(,mandatory)
+ 
+ # Check for libinjection
+-if ! test -f "others/libinjection/src/libinjection_html5.c"; then
+-AC_MSG_ERROR([\
+-
+-
+-  libInjection was not found within ModSecurity source directory.
+-
+-  libInjection code is available as part of ModSecurity source code in a format
+-  of a git-submodule. git-submodule allow us to specify the correct version of
+-  libInjection and still uses the libInjection repository to download it.
+-
+-  You can download libInjection using git:
+-
+-     $ git submodule init
+-     $ git submodule update
+-
+-   ])
+-fi
+-# Libinjection version
+-AC_DEFUN([LIBINJECTION_VERSION], m4_esyscmd_s(cd "others/libinjection" && git describe && cd ../..))
++PKG_CHECK_MODULES([LIBINJECTION], [libinjection])
++AC_DEFUN([LIBINJECTION_VERSION], m4_esyscmd_s(pkg-config --modversion libinjection))
+ 
+ # SecLang test version
+ AC_DEFUN([SECLANG_TEST_VERSION], m4_esyscmd_s(cd "test/test-cases/secrules-language-tests" && git log -1 --format="%h" --abbrev-commit && cd ../../..))
+@@ -192,6 +175,11 @@ case $host in
+     AC_DEFINE([LINUX], [1], [Define if the operating system is LINUX])
+     PLATFORM="HURD"
+     ;;
++  *cygwin*)
++    echo "Checking platform... Identified as Cygwin, treating as linux"
++    AC_DEFINE([LINUX], [1], [Define if the operating system is LINUX])
++    PLATFORM="CYGWIN"
++    ;;
+        *)
+     echo "Unknown CANONICAL_HOST $host"
+     exit
+--- origsrc/ModSecurity-3.0.4/examples/multiprocess_c/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/examples/multiprocess_c/Makefile.am	2020-02-01 14:37:16.703499400 +0900
+@@ -25,6 +25,7 @@ multi_LDFLAGS = \
+ 
+ multi_CFLAGS = \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	-I$(top_builddir) \
+ 	$(GLOBAL_CFLAGS)
+ 
+--- origsrc/ModSecurity-3.0.4/examples/reading_logs_via_rule_message/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/examples/reading_logs_via_rule_message/Makefile.am	2020-02-01 14:41:40.640997200 +0900
+@@ -6,7 +6,7 @@ simple_request_SOURCES = \
+ 	simple_request.cc
+ 
+ simple_request_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(GLOBAL_LDADD) \
+@@ -31,7 +31,9 @@ simple_request_CPPFLAGS = \
+ 	$(GLOBAL_CFLAGS) \
+ 	-std=c++11 \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	-I$(top_builddir) \
++	-I$(top_srcdir) \
+ 	-g \
+ 	-I../others \
+ 	-fPIC \
+--- origsrc/ModSecurity-3.0.4/examples/reading_logs_with_offset/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/examples/reading_logs_with_offset/Makefile.am	2020-02-01 14:39:06.787094300 +0900
+@@ -6,7 +6,7 @@ read_SOURCES = \
+ 	read.cc
+ 
+ read_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -30,6 +30,7 @@ read_CPPFLAGS = \
+ 	$(GLOBAL_CFLAGS) \
+ 	-std=c++11 \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	-I$(top_builddir) \
+ 	-g \
+ 	-I../others \
+--- origsrc/ModSecurity-3.0.4/examples/simple_example_using_c/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/examples/simple_example_using_c/Makefile.am	2020-02-01 14:42:35.140240300 +0900
+@@ -22,6 +22,7 @@ test_LDFLAGS = \
+ 
+ test_CFLAGS = \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	-I$(top_builddir) \
+ 	$(GLOBAL_CFLAGS)
+ 
+--- origsrc/ModSecurity-3.0.4/examples/using_bodies_in_chunks/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/examples/using_bodies_in_chunks/Makefile.am	2020-02-01 14:43:33.791747200 +0900
+@@ -6,7 +6,7 @@ simple_request_SOURCES = \
+ 	simple_request.cc
+ 
+ simple_request_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -31,6 +31,7 @@ simple_request_CPPFLAGS = \
+ 	$(GLOBAL_CFLAGS) \
+ 	-std=c++11 \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	-I$(top_builddir) \
+ 	-g \
+ 	-I../others \
+--- origsrc/ModSecurity-3.0.4/src/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/src/Makefile.am	2020-02-01 14:32:21.907456200 +0900
+@@ -61,21 +61,21 @@ libmodsecurity_includesub_actions_HEADER
+ 
+ 
+ noinst_HEADERS = \
+-	actions/*.h \
+-	actions/ctl/*.h \
+-	actions/data/*.h \
+-	actions/disruptive/*.h \
+-	actions/transformations/*.h \
+-	debug_log/*.h \
+-	audit_log/writer/*.h \
+-	collection/backend/*.h \
+-	operators/*.h \
+-	parser/*.h \
+-	request_body_processor/*.h \
+-	utils/*.h \
+-	variables/*.h \
+-	engine/*.h \
+-	*.h
++	$(srcdir)/actions/*.h \
++	$(srcdir)/actions/ctl/*.h \
++	$(srcdir)/actions/data/*.h \
++	$(srcdir)/actions/disruptive/*.h \
++	$(srcdir)/actions/transformations/*.h \
++	$(srcdir)/debug_log/*.h \
++	$(srcdir)/audit_log/writer/*.h \
++	$(srcdir)/collection/backend/*.h \
++	$(srcdir)/operators/*.h \
++	$(srcdir)/parser/*.h \
++	$(srcdir)/request_body_processor/*.h \
++	$(srcdir)/utils/*.h \
++	$(srcdir)/variables/*.h \
++	$(srcdir)/engine/*.h \
++	$(srcdir)/*.h
+ 
+ 
+ ENGINES = \
+@@ -303,6 +303,8 @@ libmodsecurity_la_CPPFLAGS = \
+ 	-fPIC \
+ 	-O3 \
+ 	-I../headers \
++	-I$(top_srcdir) \
++	-I$(top_srcdir)/headers \
+ 	$(GEOIP_CFLAGS) \
+ 	$(GLOBAL_CPPFLAGS) \
+ 	$(MODSEC_NO_LOGS) \
+@@ -317,6 +319,7 @@ libmodsecurity_la_CPPFLAGS = \
+ 
+ 
+ libmodsecurity_la_LDFLAGS = \
++	-no-undefined \
+ 	$(CURL_LDFLAGS) \
+ 	$(GEOIP_LDFLAGS) \
+ 	$(GLOBAL_LDFLAGS) \
+@@ -338,8 +341,8 @@ libmodsecurity_la_LIBADD = \
+ 	$(LIBXML2_LDADD) \
+ 	$(LMDB_LDADD) \
+ 	$(LUA_LDADD) \
+-	../others/libinjection.la \
+-	../others/libmbedtls.la \
++	$(LIBINJECTION_LIBS) \
++	-lmbedcrypto -lmbedtls \
+ 	$(PCRE_LDADD) \
+ 	$(MAXMIND_LDADD) \
+ 	$(SSDEEP_LDADD) \
+--- origsrc/ModSecurity-3.0.4/src/operators/detect_sqli.cc	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/src/operators/detect_sqli.cc	2020-02-01 12:01:55.823247500 +0900
+@@ -19,7 +19,7 @@
+ #include <list>
+ 
+ #include "src/operators/operator.h"
+-#include "others/libinjection/src/libinjection.h"
++#include <libinjection.h>
+ 
+ namespace modsecurity {
+ namespace operators {
+--- origsrc/ModSecurity-3.0.4/src/operators/detect_xss.cc	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/src/operators/detect_xss.cc	2020-02-01 12:02:32.269436800 +0900
+@@ -18,7 +18,7 @@
+ #include <string>
+ 
+ #include "src/operators/operator.h"
+-#include "others/libinjection/src/libinjection.h"
++#include <libinjection.h>
+ 
+ 
+ namespace modsecurity {
+--- origsrc/ModSecurity-3.0.4/test/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/test/Makefile.am	2020-02-01 14:53:14.515717700 +0900
+@@ -36,13 +36,13 @@ unit_tests_SOURCES = \
+ 
+ noinst_HEADERS = \
+        common/modsecurity_test.cc \
+-       common/*.h \
+-       unit/*.h \
+-       regression/*.h
++       $(srcdir)/common/*.h \
++       $(srcdir)/unit/*.h \
++       $(srcdir)/regression/*.h
+ 
+ 
+ unit_tests_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -70,6 +70,8 @@ unit_tests_CPPFLAGS = \
+ 	-I../ \
+ 	-g \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
++	-I$(top_srcdir) \
+ 	$(CURL_CFLAGS) \
+ 	$(MODSEC_NO_LOGS) \
+ 	$(GEOIP_CFLAGS) \
+@@ -92,7 +94,7 @@ regression_tests_SOURCES = \
+         regression/custom_debug_log.cc
+ 
+ regression_tests_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -120,6 +122,8 @@ regression_tests_CPPFLAGS = \
+ 	-I../ \
+ 	-g \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
++	-I$(top_srcdir) \
+ 	$(CURL_CFLAGS) \
+ 	$(MODSEC_NO_LOGS) \
+ 	$(GEOIP_CFLAGS) \
+@@ -141,7 +145,7 @@ rules_optimization_SOURCES = \
+         optimization/optimization.cc
+ 
+ rules_optimization_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -167,6 +171,8 @@ rules_optimization_CPPFLAGS = \
+ 	-I../ \
+ 	-g \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
++	-I$(top_srcdir) \
+ 	$(CURL_CFLAGS) \
+ 	$(MODSEC_NO_LOGS) \
+ 	$(GEOIP_CFLAGS) \
+--- origsrc/ModSecurity-3.0.4/test/benchmark/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/test/benchmark/Makefile.am	2020-02-01 14:44:48.106391800 +0900
+@@ -6,7 +6,7 @@ benchmark_SOURCES = \
+         benchmark.cc
+ 
+ benchmark_LDADD = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(CURL_LDADD) \
+ 	$(GEOIP_LDADD) \
+ 	$(MAXMIND_LDADD) \
+@@ -19,7 +19,7 @@ benchmark_LDADD = \
+ 	$(GLOBAL_LDADD)
+ 
+ benchmark_LDFLAGS = \
+-	$(top_builddir)/src/.libs/libmodsecurity.a \
++	$(top_builddir)/src/.libs/libmodsecurity.la \
+ 	$(GEOIP_LDFLAGS) \
+ 	$(MAXMIND_LDFLAGS) \
+ 	$(YAJL_LDFLAGS) \
+@@ -30,6 +30,7 @@ benchmark_LDFLAGS = \
+ benchmark_CPPFLAGS = \
+ 	-std=c++11 \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	$(GLOBAL_CPPFLAGS) \
+ 	$(PCRE_CFLAGS) \
+ 	$(LMDB_CFLAGS) \
+--- origsrc/ModSecurity-3.0.4/tools/rules-check/Makefile.am	2020-01-10 21:32:41.000000000 +0900
++++ src/ModSecurity-3.0.4/tools/rules-check/Makefile.am	2020-02-01 14:35:54.002632900 +0900
+@@ -30,6 +30,7 @@ modsec_rules_check_LDFLAGS = \
+ modsec_rules_check_CPPFLAGS = \
+ 	-std=c++11 \
+ 	-I$(top_builddir)/headers \
++	-I$(top_srcdir)/headers \
+ 	$(GLOBAL_CPPFLAGS) \
+ 	$(PCRE_CFLAGS) \
+ 	$(LMDB_CFLAGS) \
