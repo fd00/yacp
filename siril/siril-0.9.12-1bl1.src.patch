@@ -1,0 +1,69 @@
+--- origsrc/siril-0.9.12/Makefile.am	2019-11-04 18:09:59.000000000 +0900
++++ src/siril-0.9.12/Makefile.am	2020-02-01 20:47:56.938558700 +0900
+@@ -2,7 +2,7 @@
+ 
+ export CC CFLAGS CPPFLAGS
+ 
+-SUBDIRS = deps/kplot \
++SUBDIRS = \
+ 	po \
+ 	src \
+ 	pixmaps \
+--- origsrc/siril-0.9.12/configure.ac	2019-11-04 18:09:59.000000000 +0900
++++ src/siril-0.9.12/configure.ac	2020-02-01 20:48:34.041604800 +0900
+@@ -116,6 +116,8 @@ else
+ 	AC_MSG_ERROR([no C++ compiler found])
+ fi
+ 
++PKG_CHECK_MODULES([KPLOT], [kplot])
++
+ dnl ================ OPTIONAL DEPENDECIES ================
+ dnl check raw lib
+ PKG_CHECK_MODULES(LIBRAW, [libraw >= 0.17],
+--- origsrc/siril-0.9.12/src/Makefile.am	2019-11-04 18:09:59.000000000 +0900
++++ src/siril-0.9.12/src/Makefile.am	2020-02-01 21:13:11.454134900 +0900
+@@ -17,7 +17,7 @@ AM_CPPFLAGS = \
+ 	$(GSL_CFLAGS) \
+ 	$(FFMS2_CFLAGS) \
+ 	$(LIBCONFIG_CFLAGS) \
+-	-I$(top_builddir)/deps/kplot
++	$(KPLOT_CFLAGS)
+ 
+ siril_SOURCES = \
+ 	main.c \
+@@ -173,7 +173,7 @@ libdbghelp = -ldbghelp
+ endif
+ 
+ siril_LDADD = \
+-	$(top_builddir)/deps/kplot/libkplot.a \
++	$(KPLOT_LIBS) \
+ 	$(FFMPEG_LIBS) \
+ 	$(GTK_LIBS) \
+ 	${GTK_MAC_LIBS} \
+--- origsrc/siril-0.9.12/src/core/signals.c	2019-11-04 18:09:59.000000000 +0900
++++ src/siril-0.9.12/src/core/signals.c	2020-02-01 21:07:43.849554100 +0900
+@@ -25,7 +25,7 @@
+ #ifdef _WIN32
+ #include <windows.h>
+ #include <dbghelp.h>
+-#else
++#elif !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ 
+@@ -48,6 +48,7 @@ static void signal_handled(int s) {
+ 		g_printf(ANSI_COLOR_RED"%s\n"ANSI_COLOR_RESET, visit);
+ 	}
+ 
++#if !defined(__CYGWIN__)
+ #if (!defined _WIN32 && defined HAVE_EXECINFO_H)
+ 	int i;
+ 	void *stack[STACK_DEPTH];
+@@ -85,6 +86,7 @@ static void signal_handled(int s) {
+ 
+ 	free(symbol);
+ #endif
++#endif
+ 	g_free(visit);
+ 	gtk_main_quit();
+ }
