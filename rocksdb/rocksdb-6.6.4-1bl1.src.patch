@@ -1,5 +1,5 @@
---- origsrc/rocksdb-6.5.3/CMakeLists.txt	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/CMakeLists.txt	2020-01-20 13:41:51.361394200 +0900
+--- origsrc/rocksdb-6.6.4/CMakeLists.txt	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/CMakeLists.txt	2020-02-04 12:50:49.915144600 +0900
 @@ -469,7 +469,9 @@ endif()
  
  include_directories(${PROJECT_SOURCE_DIR})
@@ -11,56 +11,56 @@
  if(WITH_FOLLY_DISTRIBUTED_MUTEX)
    include_directories(${PROJECT_SOURCE_DIR}/third-party/folly)
  endif()
-@@ -788,9 +790,11 @@ else()
+@@ -794,9 +796,11 @@ else()
                          OUTPUT_NAME "rocksdb")
  endif()
  
 -add_library(${ROCKSDB_STATIC_LIB} STATIC ${SOURCES})
 -target_link_libraries(${ROCKSDB_STATIC_LIB}
--  ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
 +if (NOT BUILD_SHARED_LIBS)
 +  add_library(${ROCKSDB_STATIC_LIB} STATIC ${SOURCES})
 +  target_link_libraries(${ROCKSDB_STATIC_LIB}
-+    ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
+   ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
 +endif()
  
  if(WIN32)
    add_library(${ROCKSDB_IMPORT_LIB} SHARED ${SOURCES})
-@@ -844,13 +848,15 @@ if(NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDO
+@@ -850,6 +854,7 @@ if(NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDO
  
    install(DIRECTORY include/rocksdb COMPONENT devel DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
  
--  install(
--    TARGETS ${ROCKSDB_STATIC_LIB}
--    EXPORT RocksDBTargets
--    COMPONENT devel
--    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
--    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
--  )
-+  if (NOT BUILD_SHARED_LIBS)
-+    install(
-+      TARGETS ${ROCKSDB_STATIC_LIB}
-+      EXPORT RocksDBTargets
-+      COMPONENT devel
-+      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-+      INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-+    )
++  if(NOT BUILD_SHARED_LIBS)
+   install(
+     TARGETS ${ROCKSDB_STATIC_LIB}
+     EXPORT RocksDBTargets
+@@ -857,6 +862,7 @@ if(NOT WIN32 OR ROCKSDB_INSTALL_ON_WINDO
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+     INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+   )
 +  endif()
  
    install(
      TARGETS ${ROCKSDB_SHARED_LIB}
-@@ -880,7 +886,9 @@ endif()
- 
- option(WITH_TESTS "build with tests" ON)
- if(WITH_TESTS)
--  add_subdirectory(third-party/gtest-1.8.1/fused-src/gtest)
+@@ -888,7 +894,9 @@ option(WITH_TESTS "build with tests" ON)
+ # For test libraries, utilities, and exes that are build iff WITH_TESTS=ON and
+ # in Debug mode. Add test only code that is not #ifdefed for Release here.
+ if(WITH_TESTS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 +  if(NOT CYGWIN)
-+    add_subdirectory(third-party/gtest-1.8.1/fused-src/gtest)
+   add_subdirectory(third-party/gtest-1.8.1/fused-src/gtest)
 +  endif()
    set(TESTS
          cache/cache_test.cc
          cache/lru_cache_test.cc
-@@ -1115,3 +1123,10 @@ option(WITH_TOOLS "build with tools" ON)
+@@ -1102,7 +1110,7 @@ endif()
+ 
+ option(WITH_BENCHMARK_TOOLS "build with benchmarks" ON)
+ if(WITH_BENCHMARK_TOOLS)
+-  if(NOT TARGET gtest)
++  if(NOT TARGET gtest AND NOT CYGWIN)
+     add_subdirectory(third-party/gtest-1.8.1/fused-src/gtest)
+   endif()
+   set(BENCHMARKS
+@@ -1127,3 +1135,10 @@ option(WITH_TOOLS "build with tools" ON)
  if(WITH_TOOLS)
    add_subdirectory(tools)
  endif()
@@ -71,8 +71,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/rocksdb.pc.in ${CMAKE_BINARY_DIR}/rocksdb.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/rocksdb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/rocksdb-6.5.3/db/db_wal_test.cc	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/db/db_wal_test.cc	2020-01-20 13:41:51.377024500 +0900
+--- origsrc/rocksdb-6.6.4/db/db_wal_test.cc	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/db/db_wal_test.cc	2020-02-04 10:04:22.355828500 +0900
 @@ -7,6 +7,8 @@
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -82,9 +82,9 @@
  #include "db/db_test_util.h"
  #include "options/options_helper.h"
  #include "port/port.h"
---- origsrc/rocksdb-6.5.3/env/env_test.cc	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/env/env_test.cc	2020-01-20 13:41:51.392646800 +0900
-@@ -1354,7 +1354,7 @@ TEST_P(EnvPosixTestWithParam, Preallocat
+--- origsrc/rocksdb-6.6.4/env/env_test.cc	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/env/env_test.cc	2020-02-04 10:05:31.541286300 +0900
+@@ -1355,7 +1355,7 @@ TEST_P(EnvPosixTestWithParam, Preallocat
    std::unique_ptr<WritableFile> srcfile;
    EnvOptions soptions;
    soptions.use_direct_reads = soptions.use_direct_writes = direct_io_;
@@ -93,7 +93,7 @@
      if (soptions.use_direct_writes) {
        rocksdb::SyncPoint::GetInstance()->SetCallBack(
            "NewWritableFile:O_DIRECT", [&](void* arg) {
-@@ -1415,7 +1415,7 @@ TEST_P(EnvPosixTestWithParam, Consistent
+@@ -1416,7 +1416,7 @@ TEST_P(EnvPosixTestWithParam, Consistent
        const std::string path =
            test::TmpDir(env_) + "/" + "testfile_" + std::to_string(i);
        std::unique_ptr<WritableFile> file;
@@ -102,8 +102,8 @@
        if (soptions.use_direct_writes) {
          rocksdb::SyncPoint::GetInstance()->SetCallBack(
              "NewWritableFile:O_DIRECT", [&](void* arg) {
---- origsrc/rocksdb-6.5.3/env/io_posix.h	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/env/io_posix.h	2020-01-20 13:41:51.439538400 +0900
+--- origsrc/rocksdb-6.6.4/env/io_posix.h	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/env/io_posix.h	2020-02-04 10:06:03.724677300 +0900
 @@ -15,7 +15,7 @@
  
  // For non linux platform, the following macros are used only as place
@@ -113,8 +113,8 @@
  #define POSIX_FADV_NORMAL 0     /* [MC1] no further special treatment */
  #define POSIX_FADV_RANDOM 1     /* [MC1] expect random page refs */
  #define POSIX_FADV_SEQUENTIAL 2 /* [MC1] expect sequential page refs */
---- origsrc/rocksdb-6.5.3/port/port_posix.h	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/port/port_posix.h	2020-01-20 13:41:51.486456400 +0900
+--- origsrc/rocksdb-6.6.4/port/port_posix.h	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/port/port_posix.h	2020-02-04 10:11:20.282588500 +0900
 @@ -17,7 +17,9 @@
  // in fact, we could use that one
  #define ROCKSDB_PRIszt "zu"
@@ -125,8 +125,8 @@
  
  #define ROCKSDB_NOEXCEPT noexcept
  
---- origsrc/rocksdb-6.5.3/rocksdb.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/rocksdb-6.5.3/rocksdb.pc.in	2020-01-20 13:41:51.486456400 +0900
+--- origsrc/rocksdb-6.6.4/rocksdb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/rocksdb-6.6.4/rocksdb.pc.in	2020-02-04 12:52:29.761333400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -138,8 +138,19 @@
 +Version: @ROCKSDB_VERSION@
 +Libs: -L${libdir} -lrocksdb
 +Cflags: -I${includedir}
---- origsrc/rocksdb-6.5.3/util/filelock_test.cc	2020-01-11 02:58:14.000000000 +0900
-+++ src/rocksdb-6.5.3/util/filelock_test.cc	2020-01-20 13:41:51.502033700 +0900
+--- origsrc/rocksdb-6.6.4/tools/db_stress.cc	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/tools/db_stress.cc	2020-02-04 12:21:40.169702600 +0900
+@@ -15,7 +15,7 @@ int main() {
+   return 1;
+ }
+ #else
+-#include <rocksdb/db_stress_tool.h>
++#include "db_stress_tool.cc"
+ 
+ int main(int argc, char** argv) { return rocksdb::db_stress_tool(argc, argv); }
+ #endif  // GFLAGS
+--- origsrc/rocksdb-6.6.4/util/filelock_test.cc	2020-02-01 06:03:51.000000000 +0900
++++ src/rocksdb-6.6.4/util/filelock_test.cc	2020-02-04 10:07:02.199461000 +0900
 @@ -7,6 +7,7 @@
  #include "rocksdb/env.h"
  
