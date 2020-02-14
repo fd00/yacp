@@ -1,40 +1,60 @@
---- origsrc/kitchen_sync-1.17/CMakeLists.txt	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/CMakeLists.txt	2019-06-29 13:54:18.823941900 +0900
-@@ -9,12 +9,14 @@ CHECK_CXX_COMPILER_FLAG("-std=c++14" COM
- CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
- CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
- CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
+--- origsrc/kitchen_sync-2.0/CMakeLists.txt	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/CMakeLists.txt	2020-02-14 20:03:29.569844300 +0900
+@@ -4,20 +4,22 @@ project(kitchen_sync CXX C)
+ cmake_minimum_required(VERSION 2.8)
+ 
+ # suppress warnings about using c++11 features such as variadic templates
+-include(CheckCXXCompilerFlag)
+-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+-CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
 -if(COMPILER_SUPPORTS_CXX14)
--	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
--elseif(COMPILER_SUPPORTS_CXX11)
--	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
--elseif(COMPILER_SUPPORTS_CXX0X)
--	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 +if(NOT CYGWIN)
++	include(CheckCXXCompilerFlag)
++	CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
++	CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
++	CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
++	CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
 +	if(COMPILER_SUPPORTS_CXX14)
-+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+-elseif(COMPILER_SUPPORTS_CXX11)
 +	elseif(COMPILER_SUPPORTS_CXX11)
-+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-elseif(COMPILER_SUPPORTS_CXX0X)
 +	elseif(COMPILER_SUPPORTS_CXX0X)
-+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+-endif()
+-if(COMPILER_SUPPORTS_STDLIB)
++	endif()
++	if(COMPILER_SUPPORTS_STDLIB)
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 +	endif()
  endif()
- if(COMPILER_SUPPORTS_STDLIB)
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-@@ -46,8 +48,10 @@ find_package(Threads)
- set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "disable yaml tests")
- set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
- set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
+ 
+ # optionally compile with sanitizer checks
+@@ -43,12 +45,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR
+ find_package(Threads)
+ 
+ # vendored-in version of yaml-cpp for filter files
+-set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "disable yaml tests")
+-set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
+-set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
+-set(YAML_CPP_INSTALL OFF CACHE BOOL "disable yaml install target")
 -add_subdirectory(src/yaml-cpp EXCLUDE_FROM_ALL)
 -include_directories(src/yaml-cpp/include)
 +if(NOT CYGWIN)
++	set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "disable yaml tests")
++	set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
++	set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
++	set(YAML_CPP_INSTALL OFF CACHE BOOL "disable yaml install target")
 +	add_subdirectory(src/yaml-cpp EXCLUDE_FROM_ALL)
 +	include_directories(src/yaml-cpp/include)
 +endif()
  set(YamlCPP_LIBRARIES yaml-cpp)
  
  # the main program knows nothing but how to hook up the endpoints
-@@ -64,7 +68,7 @@ if(NOT APPLE)
+@@ -65,7 +69,7 @@ if(NOT APPLE)
  endif()
  
  # is backtrace in libc?
@@ -43,7 +63,7 @@
  	find_package(Backtrace)
  endif()
  
-@@ -72,9 +76,12 @@ if(Backtrace_FOUND OR APPLE)
+@@ -73,9 +77,12 @@ if(Backtrace_FOUND OR APPLE)
  	ADD_DEFINITIONS("-DUSE_BACKTRACE")
  endif()
  
@@ -58,9 +78,9 @@
  
  # turn on debugging symbols
  set(CMAKE_BUILD_TYPE Debug)
---- origsrc/kitchen_sync-1.17/test/CMakeLists.txt	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/test/CMakeLists.txt	2019-06-29 13:54:19.027115800 +0900
-@@ -2,21 +2,23 @@
+--- origsrc/kitchen_sync-2.0/test/CMakeLists.txt	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/test/CMakeLists.txt	2020-02-14 20:04:13.397558500 +0900
+@@ -2,24 +2,26 @@
  add_executable(ks_unit_tests ks_unit_tests.cpp db_url_test.cpp ../src/db_url.cpp basic_uint128_t_test.cpp sql_functions_test.cpp)
  add_test(unit_tests          ks_unit_tests)
  
@@ -70,6 +90,7 @@
  #   cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make test
 -add_test(prepare_for_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle install --quiet)
 -add_test(protocol_version_test   env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/protocol_version_test.rb)
+-add_test(idle_from_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/idle_from_test.rb)
 -add_test(snapshot_from_test      env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/snapshot_from_test.rb)
 -add_test(schema_from_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/schema_from_test.rb)
 -add_test(schema_to_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/schema_to_test.rb)
@@ -81,8 +102,11 @@
 -add_test(column_types_to_test    env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_to_test.rb)
 -add_test(column_types_from_test  env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_from_test.rb)
 -add_test(sync_to_test            env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/sync_to_test.rb)
+-add_test(spatial_from_test       env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/spatial_from_test.rb)
+-add_test(spatial_to_test         env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/spatial_to_test.rb)
 +add_test(prepare_for_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle install --quiet)
 +add_test(protocol_version_test   env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/protocol_version_test.rb)
++add_test(idle_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/idle_from_test.rb)
 +add_test(snapshot_from_test      env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/snapshot_from_test.rb)
 +add_test(schema_from_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_from_test.rb)
 +add_test(schema_to_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_to_test.rb)
@@ -94,11 +118,13 @@
 +add_test(column_types_to_test    env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_to_test.rb)
 +add_test(column_types_from_test  env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_from_test.rb)
 +add_test(sync_to_test            env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/sync_to_test.rb)
++add_test(spatial_from_test       env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/spatial_from_test.rb)
++add_test(spatial_to_test         env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/spatial_to_test.rb)
  
- # we also have a performance test utility that is not run as part of the test suite because there's no particular pass/fail criteria
- add_executable(ks_bench ks_bench.cpp ../src/xxHash/xxhash.cpp)
---- origsrc/kitchen_sync-1.17/test/basic_uint128_t_test.cpp	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/test/basic_uint128_t_test.cpp	2019-06-29 13:54:19.042755800 +0900
+ if(DEFINED ENV{SKIP_POSTGIS})
+ 	# this only works on later versions of ctest
+--- origsrc/kitchen_sync-2.0/test/basic_uint128_t_test.cpp	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/test/basic_uint128_t_test.cpp	2020-02-14 20:04:43.599947200 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -108,8 +134,8 @@
  
  TEST_CASE("addition", "[basic_uint128_t]") {
  	REQUIRE(basic_uint128_t{0, 1} + basic_uint128_t{0, 1} == basic_uint128_t{0, 2});
---- origsrc/kitchen_sync-1.17/test/db_url_test.cpp	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/test/db_url_test.cpp	2019-06-29 13:54:19.042755800 +0900
+--- origsrc/kitchen_sync-2.0/test/db_url_test.cpp	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/test/db_url_test.cpp	2020-02-14 20:04:56.488566900 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -119,14 +145,14 @@
  
  TEST_CASE("parsing full URLs", "[db_url]") {
  	DbUrl url("postgresql://someuser:mypassword@localhost:1000/sourcedb");
---- origsrc/kitchen_sync-1.17/test/ks_unit_tests.cpp	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/test/ks_unit_tests.cpp	2019-06-29 13:54:19.058334700 +0900
+--- origsrc/kitchen_sync-2.0/test/ks_unit_tests.cpp	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/test/ks_unit_tests.cpp	2020-02-14 20:05:15.040440800 +0900
 @@ -1,2 +1,2 @@
  #define CATCH_CONFIG_MAIN
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
---- origsrc/kitchen_sync-1.17/test/sql_functions_test.cpp	2019-05-18 12:16:03.000000000 +0900
-+++ src/kitchen_sync-1.17/test/sql_functions_test.cpp	2019-06-29 13:58:12.821208200 +0900
+--- origsrc/kitchen_sync-2.0/test/sql_functions_test.cpp	2020-01-20 18:51:06.000000000 +0900
++++ src/kitchen_sync-2.0/test/sql_functions_test.cpp	2020-02-14 20:05:32.966714700 +0900
 @@ -1,4 +1,4 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
