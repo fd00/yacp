@@ -1,0 +1,60 @@
+--- origsrc/jose-c-0.16.1/Makefile.am	2019-03-06 07:50:23.000000000 +0900
++++ src/jose-c-0.16.1/Makefile.am	2020-02-15 13:10:58.791185800 +0900
+@@ -38,7 +38,7 @@ if BUILD_TOOLS
+ bin_PROGRAMS = jwt-decode
+ jwt_decode_SOURCES = src/tools/jwt_decode.c
+ jwt_decode_CFLAGS = $(JANSSON_CFLAGS) -I$(top_srcdir)/lib
+-jwt_decode_LDADD = libjosec.la $(JANSSON_LIBS)
++jwt_decode_LDADD = libjosec.la $(JANSSON_LIBS) -largp
+ endif
+ 
+ lib_LTLIBRARIES = libjosec.la
+@@ -65,9 +65,11 @@ libjosec_la_SOURCES =	src/jwt.c \
+ if HAVE_GUILE
+ libjosec_la_SOURCES += src/guile/extension.c \
+                        src/guile/extension.h
++pkgguilesitedir = $(GUILE_SITE)/cryptotronix
++pkgguilesite_DATA = src/guile/cryptotronix/jose.scm
+ endif
+ 
+-libjosec_la_LDFLAGS = -version-info $(JOSEC_SO_VERSION) -release $(JOSEC_API_VERSION)
++libjosec_la_LDFLAGS = -no-undefined -version-info $(JOSEC_SO_VERSION) -release $(JOSEC_API_VERSION)
+ 
+ josec_includedir = $(includedir)/josec-$(JOSEC_API_VERSION)
+ nobase_josec_include_HEADERS = libjosec.h
+--- origsrc/jose-c-0.16.1/configure.ac	2019-03-06 07:50:23.000000000 +0900
++++ src/jose-c-0.16.1/configure.ac	2020-02-15 13:01:22.531569800 +0900
+@@ -19,10 +19,11 @@ AC_INIT([libjose-c], [0.16.1], [bugs@cry
+                      [https://github.com/cryptotronix/jose-c])
+ AC_PREREQ([2.59])
+ AC_USE_SYSTEM_EXTENSIONS
+-AM_INIT_AUTOMAKE([1.10 -Wall no-define])
++AM_INIT_AUTOMAKE([1.10 -Wall no-define foreign])
+ AC_CONFIG_MACRO_DIR([m4])
+ PKG_PROG_PKG_CONFIG
+ AM_PROG_AR
++AM_GNU_GETTEXT
+ 
+ AC_ARG_WITH([libglib],
+   AS_HELP_STRING([--with-libglib], [Link against libglib]))
+@@ -61,13 +62,13 @@ AM_CONDITIONAL([HAVE_GUILE], [test "x$wi
+ 
+ 
+ 
+-dnl AS_IF([test "x$with_guile" = "xyes"], [
+-dnl   # Guile Extensions
+-dnl   PKG_CHECK_MODULES([GUILE], [guile-2.0])
+-dnl   GUILE_PROGS
+-dnl   GUILE_FLAGS
+-dnl   GUILE_SITE_DIR
+-dnl ])
++AS_IF([test "x$with_guile" = "xyes"], [
++  # Guile Extensions
++  PKG_CHECK_MODULES([GUILE], [guile-2.2])
++  GUILE_PROGS
++  GUILE_FLAGS
++  GUILE_SITE_DIR
++])
+ 
+ AC_SUBST([JOSEC_SO_VERSION], [10:0:0])
+ #                              | | |
