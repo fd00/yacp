@@ -1,0 +1,181 @@
+--- origsrc/pcl-pcl-1.10.0/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/CMakeLists.txt	2020-02-15 21:31:44.567890700 +0900
+@@ -307,6 +307,12 @@ if(NOT PCL_SHARED_LIBS OR ((WIN32 AND NO
+ endif()
+ find_package(FLANN 1.7.0 REQUIRED)
+ 
++if (CYGWIN AND FLANN_FOUND)
++  pkg_check_modules(LIBLZ4 liblz4 REQUIRED)
++  include_directories(${LIBLZ4_INCLUDE_DIRS})
++  set(FLANN_LIBRARIES ${FLANN_LIBRARIES} ${LIBLZ4_LIBRARIES})
++endif()
++
+ # libusb-1.0
+ option(WITH_LIBUSB "Build USB RGBD-Camera drivers" TRUE)
+ if(WITH_LIBUSB)
+--- origsrc/pcl-pcl-1.10.0/cmake/pcl_utils.cmake	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/cmake/pcl_utils.cmake	2020-02-15 17:29:55.871407400 +0900
+@@ -106,6 +106,8 @@ macro(SET_INSTALL_DIRS)
+     set(PKGCFG_INSTALL_DIR "${LIB_INSTALL_DIR}/pkgconfig")
+     if(WIN32 AND NOT MINGW)
+         set(PCLCONFIG_INSTALL_DIR "cmake")
++      elseif(CYGWIN)
++        set(PCLCONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
+       else()
+         set(PCLCONFIG_INSTALL_DIR "share/${PROJECT_NAME_LOWER}-${PCL_VERSION_MAJOR}.${PCL_VERSION_MINOR}")
+       endif()
+--- origsrc/pcl-pcl-1.10.0/common/include/pcl/pcl_exports.h	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/common/include/pcl/pcl_exports.h	2020-02-15 17:31:02.578225800 +0900
+@@ -38,7 +38,7 @@
+ // Header 'pcl_macros' is not suitable since it includes <Eigen/Core>,
+ // which can't be eaten by nvcc (it's too weak)
+ 
+-#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+--- origsrc/pcl-pcl-1.10.0/common/include/pcl/pcl_macros.h	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/common/include/pcl/pcl_macros.h	2020-02-15 17:32:16.237303900 +0900
+@@ -243,7 +243,7 @@ pcl_round (float number)
+     #endif
+ #endif
+ 
+-#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+@@ -308,7 +308,7 @@ pcl_round (float number)
+   #define FREEBSD_MALLOC_ALIGNED 0
+ #endif
+ 
+-#if defined(__APPLE__) || defined(_WIN64) || GLIBC_MALLOC_ALIGNED || FREEBSD_MALLOC_ALIGNED
++#if defined(__APPLE__) || defined(_WIN64) || GLIBC_MALLOC_ALIGNED || FREEBSD_MALLOC_ALIGNED || defined(__CYGWIN__)
+   #define MALLOC_ALIGNED 1
+ #endif
+ 
+--- origsrc/pcl-pcl-1.10.0/common/include/pcl/range_image/range_image.h	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/common/include/pcl/range_image/range_image.h	2020-02-15 20:40:05.283864500 +0900
+@@ -71,7 +71,7 @@ namespace pcl
+       /** Constructor */
+       PCL_EXPORTS RangeImage ();
+       /** Destructor */
+-      PCL_EXPORTS virtual ~RangeImage () = default;
++      PCL_EXPORTS virtual ~RangeImage ();
+       
+       // =====STATIC VARIABLES=====
+       /** The maximum number of openmp threads that can be used in this class */
+@@ -783,10 +783,10 @@ namespace pcl
+ 
+ 
+       // =====STATIC PROTECTED=====
+-      static const int lookup_table_size;
+-      static std::vector<float> asin_lookup_table;
+-      static std::vector<float> atan_lookup_table;
+-      static std::vector<float> cos_lookup_table;
++      PCL_EXPORTS static const int lookup_table_size;
++      PCL_EXPORTS static std::vector<float> asin_lookup_table;
++      PCL_EXPORTS static std::vector<float> atan_lookup_table;
++      PCL_EXPORTS static std::vector<float> cos_lookup_table;
+       /** Create lookup tables for trigonometric functions */
+       static void
+       createLookupTables ();
+--- origsrc/pcl-pcl-1.10.0/common/src/range_image.cpp	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/common/src/range_image.cpp	2020-02-15 20:39:25.153756800 +0900
+@@ -117,6 +117,8 @@ RangeImage::RangeImage () :
+   unobserved_point.range = -std::numeric_limits<float>::infinity ();
+ }
+ 
++RangeImage::~RangeImage() {}
++
+ /////////////////////////////////////////////////////////////////////////
+ void
+ RangeImage::reset ()
+--- origsrc/pcl-pcl-1.10.0/io/include/pcl/io/low_level_io.h	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/io/include/pcl/io/low_level_io.h	2020-02-15 17:34:00.763589900 +0900
+@@ -60,6 +60,7 @@ using ssize_t = SSIZE_T;
+ # include <sys/stat.h>
+ # include <sys/fcntl.h>
+ # include <cerrno>
++# include <fcntl.h>
+ #endif
+ #include <cstddef>
+ 
+--- origsrc/pcl-pcl-1.10.0/kdtree/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/kdtree/CMakeLists.txt	2020-02-15 21:45:42.276598300 +0900
+@@ -31,7 +31,7 @@ set(impl_incs
+ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs})
+-target_link_libraries("${LIB_NAME}" pcl_common FLANN::FLANN)
++target_link_libraries("${LIB_NAME}" pcl_common flann lz4)
+ set(EXT_DEPS flann)
+ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS} EXT_DEPS ${EXT_DEPS})
+ 
+--- origsrc/pcl-pcl-1.10.0/outofcore/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/outofcore/CMakeLists.txt	2020-02-15 17:34:47.497811700 +0900
+@@ -12,8 +12,9 @@ if(NOT build)
+   return()
+ endif()
+ 
++PKG_CHECK_MODULES(LIBCJSON libcjson)
++
+ set(srcs
+-  src/cJSON.cpp
+   src/outofcore_node_data.cpp
+   src/outofcore_base_data.cpp
+ )
+@@ -63,7 +64,7 @@ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs} ${visualization_incs})
+ #PCL_ADD_SSE_FLAGS("${LIB_NAME}")
+-target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization ${Boost_SYSTEM_LIBRARY})
++target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization ${Boost_SYSTEM_LIBRARY} ${LIBCJSON_LIBRARIES})
+ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
+ 
+ # Install include files
+--- origsrc/pcl-pcl-1.10.0/search/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/search/CMakeLists.txt	2020-02-15 21:36:14.784454700 +0900
+@@ -41,7 +41,7 @@ set(impl_incs
+ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs})
+-target_link_libraries("${LIB_NAME}" pcl_common FLANN::FLANN pcl_octree pcl_kdtree)
++target_link_libraries("${LIB_NAME}" pcl_common flann pcl_octree pcl_kdtree)
+ list(APPEND EXT_DEPS flann)
+ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
+ 
+--- origsrc/pcl-pcl-1.10.0/test/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/test/CMakeLists.txt	2020-02-15 17:36:55.153288100 +0900
+@@ -10,10 +10,15 @@ if(NOT build)
+   return()
+ endif()
+ 
+-find_package(GTestSource REQUIRED)
+-include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
+-
+-add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
++option(USE_SYSTEM_GTEST "use system gtest" ON)
++if(USE_SYSTEM_GTEST)
++  add_library(pcl_gtest INTERFACE)
++  target_link_libraries(pcl_gtest INTERFACE gtest gtest_main)        
++else()
++  find_package(Gtest REQUIRED)
++  include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
++  add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
++endif()
+ 
+ enable_testing()
+ add_custom_target(tests "${CMAKE_CTEST_COMMAND}" "-V" VERBATIM)
+--- origsrc/pcl-pcl-1.10.0/test/features/CMakeLists.txt	2020-01-20 01:36:58.000000000 +0900
++++ src/pcl-pcl-1.10.0/test/features/CMakeLists.txt	2020-02-15 21:38:04.658677500 +0900
+@@ -91,7 +91,7 @@ if(BUILD_io)
+                ARGUMENTS "${PCL_SOURCE_DIR}/test/bun0.pcd")
+   PCL_ADD_TEST(features_narf test_narf
+                FILES test_narf.cpp
+-               LINK_WITH pcl_gtest pcl_features FLANN::FLANN)
++               LINK_WITH pcl_gtest pcl_features flann)
+   PCL_ADD_TEST(a_ii_normals_test test_ii_normals
+                FILES test_ii_normals.cpp
+                LINK_WITH pcl_gtest pcl_io pcl_features
