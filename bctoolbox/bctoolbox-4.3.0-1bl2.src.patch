@@ -1,0 +1,35 @@
+--- origsrc/bctoolbox-4.3.0/CMakeLists.txt	2019-11-07 19:23:16.000000000 +0900
++++ src/bctoolbox-4.3.0/CMakeLists.txt	2020-02-18 09:11:36.579326000 +0900
+@@ -148,6 +148,7 @@ set(EXPORT_TARGETS_NAME "bctoolbox")
+ 
+ check_library_exists("rt" "clock_gettime" "" HAVE_LIBRT)
+ check_library_exists("dl" "dladdr" "" HAVE_LIBDL)
++check_library_exists("iconv" "libiconv" "" HAVE_LIBICONV)
+ check_include_file("execinfo.h" HAVE_EXECINFO)
+ 
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+@@ -163,7 +164,11 @@ endif()
+ add_subdirectory(build)
+ 
+ include(CMakePackageConfigHelpers)
+-set(CONFIG_PACKAGE_LOCATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
++if(CYGWIN)
++	set(CONFIG_PACKAGE_LOCATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
++else()
++	set(CONFIG_PACKAGE_LOCATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
++endif()
+ 
+ write_basic_package_version_file(
+ 	"${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_TARGETS_NAME}ConfigVersion.cmake"
+--- origsrc/bctoolbox-4.3.0/src/CMakeLists.txt	2019-11-07 19:23:16.000000000 +0900
++++ src/bctoolbox-4.3.0/src/CMakeLists.txt	2020-02-18 09:09:15.937696400 +0900
+@@ -152,6 +152,9 @@ if(ENABLE_SHARED)
+ 	if(HAVE_LIBDL)
+ 		target_link_libraries(bctoolbox PRIVATE dl)
+ 	endif()
++	if(HAVE_LIBICONV)
++		target_link_libraries(bctoolbox PRIVATE iconv)
++	endif()
+ 	if(ANDROID)
+ 		target_link_libraries(bctoolbox PRIVATE log)
+ 	endif()
