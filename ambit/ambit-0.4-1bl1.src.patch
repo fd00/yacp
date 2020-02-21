@@ -1,0 +1,83 @@
+--- origsrc/ambit-0.4/CMakeLists.txt	2019-08-16 04:58:12.000000000 +0900
++++ src/ambit-0.4/CMakeLists.txt	2020-02-21 08:54:02.435448300 +0900
+@@ -18,7 +18,7 @@
+ 
+ cmake_policy(SET CMP0048 NEW)  # project_VERSION* variables populated from project(... VERSION x.x.x) string
+ project(ambit
+-        VERSION 0.3.0
++        VERSION 0.4
+         LANGUAGES C CXX)
+ set(ambit_AUTHORS      "Justin M. Turney")
+ set(ambit_DESCRIPTION  "C++ library for the implementation of tensor product calculations")
+@@ -172,7 +172,11 @@ add_subdirectory(src)
+ 
+ include(CMakePackageConfigHelpers)
+ # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
+-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++if (CYGWIN)
++    set(CMAKECONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
++else()
++    set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++endif()
+ configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
+         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+         INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR})
+@@ -186,3 +190,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR
+ 
+ # this has to be the very last CMake module to be included
+ #include(ConfigInfo)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ambit.pc.in ${CMAKE_BINARY_DIR}/ambit.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ambit.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ambit-0.4/ambit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ambit-0.4/ambit.pc.in	2020-02-21 08:56:52.245001800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ambit
++Description: 
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lambit
++Cflags: -I${includedir}
+--- origsrc/ambit-0.4/src/CMakeLists.txt	2019-08-16 04:58:12.000000000 +0900
++++ src/ambit-0.4/src/CMakeLists.txt	2020-02-21 08:42:15.696675500 +0900
+@@ -89,6 +89,9 @@ if (NOT STATIC_ONLY)
+                                                 tgt::hdf5)
+     set_target_properties (ambit-shared PROPERTIES OUTPUT_NAME "ambit"
+                                                    EXPORT_NAME "ambit")
++    if (CYGWIN)
++        set_target_properties(ambit-shared PROPERTIES SOVERSION 0)
++    endif()
+ endif()
+ 
+ if (NOT SHARED_ONLY)
+@@ -139,7 +142,8 @@ endif ()
+ if (NOT STATIC_ONLY)
+     install (TARGETS ambit-shared
+                      EXPORT "ambitTargets-shared"
+-                     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++                     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++                     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ if (NOT SHARED_ONLY)
+@@ -167,7 +171,11 @@ endif()
+ 
+ # <<<  Export Config  >>>
+ 
+-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++if (CYGWIN)
++    set(CMAKECONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
++else()
++    set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++endif()
+ if (NOT STATIC_ONLY)
+     install (EXPORT "${PROJECT_NAME}Targets-shared"
+                     NAMESPACE "${PROJECT_NAME}::"
