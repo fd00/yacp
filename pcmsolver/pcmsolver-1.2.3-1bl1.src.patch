@@ -1,0 +1,50 @@
+--- origsrc/pcmsolver-1.2.3/CMakeLists.txt	2019-02-14 23:56:24.000000000 +0900
++++ src/pcmsolver-1.2.3/CMakeLists.txt	2020-02-23 13:32:52.430145200 +0900
+@@ -81,3 +81,10 @@ include(libtaylor)
+ include(zlib)
+ include(autocmake_src)
+ include(test)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/pcmsolver.pc.in ${CMAKE_BINARY_DIR}/pcmsolver.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/pcmsolver.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/pcmsolver-1.2.3/cmake/custom/pcmsolver.cmake	2019-02-14 23:56:24.000000000 +0900
++++ src/pcmsolver-1.2.3/cmake/custom/pcmsolver.cmake	2020-02-23 13:21:34.438405200 +0900
+@@ -20,7 +20,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PRO
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+ # Hardcode to share, rather than use CMAKE_INSTALL_DATAROOTDIR as the latter
+ # might resolve to a place not recognized by CMake
+-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++set(CMAKECONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
+ 
+ if(NOT DEFINED PYMOD_INSTALL_LIBDIR)
+   message(STATUS "Setting (unspecified) option PYMOD_INSTALL_LIBDIR: python")
+--- origsrc/pcmsolver-1.2.3/pcmsolver.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/pcmsolver-1.2.3/pcmsolver.pc.in	2020-02-23 13:38:36.145622400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: pcmsolver
++Description: API for the Polarizable Continuum Model
++Version: @VERSION@
++Libs: -L${libdir} -lpcm
++Cflags: -I${includedir}
+--- origsrc/pcmsolver-1.2.3/src/CMakeLists.txt	2019-02-14 23:56:24.000000000 +0900
++++ src/pcmsolver-1.2.3/src/CMakeLists.txt	2020-02-23 13:21:34.439465200 +0900
+@@ -75,8 +75,8 @@ if(NOT STATIC_LIBRARY_ONLY)
+     EXPORT
+       "PCMSolverTargets-shared"
+     RUNTIME DESTINATION
+-      ${CMAKE_INSTALL_LIBDIR}
+-    LIBRARY DESTINATION
++      ${CMAKE_INSTALL_BINDIR}
++    ARCHIVE DESTINATION
+       ${CMAKE_INSTALL_LIBDIR}
+     )
+   add_dependencies(pcm-shared generate-config-hpp)
