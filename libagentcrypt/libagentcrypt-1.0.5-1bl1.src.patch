@@ -1,0 +1,43 @@
+--- origsrc/libagentcrypt-1.0.5/Makefile.am	2019-06-23 20:20:52.000000000 +0900
++++ src/libagentcrypt-1.0.5/Makefile.am	2020-02-23 10:07:45.606391600 +0900
+@@ -16,7 +16,7 @@ ACLOCAL_AMFLAGS = -I build-aux/m4
+ 
+ lib_LTLIBRARIES = libagentcrypt.la
+ libagentcrypt_la_SOURCES = libagentcrypt.c
+-libagentcrypt_la_LDFLAGS = -version-info $(LIBAGENTCRYPT_LIBRARY_VERSION)
++libagentcrypt_la_LDFLAGS = -no-undefined -version-info $(LIBAGENTCRYPT_LIBRARY_VERSION)
+ 
+ include_HEADERS = libagentcrypt.h
+ 
+--- origsrc/libagentcrypt-1.0.5/libagentcrypt.c	2019-06-23 20:20:52.000000000 +0900
++++ src/libagentcrypt-1.0.5/libagentcrypt.c	2020-02-23 10:14:23.073406900 +0900
+@@ -620,7 +620,9 @@ static int agent_sign(int fd, string_t *
+     switch (key_type(key_blob))
+     {
+         case KT_UNSUPPORTED:
++#if defined(ENOKEY)
+             errno = ENOKEY;
++#endif
+             goto done;
+ 
+         case KT_RSA:
+@@ -721,7 +723,9 @@ int agc_encrypt(const char *agent, const
+ 
+     if (agent_find_key_sha256(fd, key_sha256, &key_blob) < 0)
+     {
++#if defined(ENOKEY)
+         errno = ENOKEY;
++#endif
+         goto done;
+     }
+ 
+@@ -847,7 +851,9 @@ int agc_decrypt(const char *agent,
+     }
+     if (agent_find_key(fd, nonce, hash, &key_blob) < 0)
+     {
++#if defined(ENOKEY)
+         errno = ENOKEY;
++#endif
+         goto done;
+     }
+     buf = agc_malloc(buf_size);
