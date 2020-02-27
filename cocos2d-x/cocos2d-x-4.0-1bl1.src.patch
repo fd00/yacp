@@ -1,0 +1,971 @@
+--- origsrc/cocos2d-x-3rd-party-libs-bin-metal-support-22/CMakeLists.txt	2019-11-11 16:30:02.000000000 +0900
++++ src/cocos2d-x-3rd-party-libs-bin-metal-support-22/CMakeLists.txt	2020-02-25 23:12:16.160840600 +0900
+@@ -22,6 +22,8 @@ option(BUILD_EXT_MD5 "Build with interna
+ option(BUILD_EXT_ZLIB "Build with internal zlib support" ON)
+ option(BUILD_EXT_CURL "Build with internal curl support" ON)
+ option(BUILD_EXT_UNZIP "Build with internal unzip support" ON)
++option(BUILD_EXT_PNG "Build with internal png support" ON)
++option(BUILD_EXT_GLFW "Build with internal glfw support" ON)
+ 
+ add_library(external empty.cpp)
+ 
+@@ -116,10 +118,12 @@ if(NOT LINUX)
+         add_subdirectory(curl)
+         target_link_libraries(external ext_curl)
+     endif(BUILD_EXT_CURL)
++    if(BUILD_EXT_PNG)
+     add_subdirectory(png)
+     target_link_libraries(external 
+         ext_png
+     )
++    endif()
+ endif(NOT LINUX)
+     
+ if(LINUX)
+@@ -156,10 +160,12 @@ if(WINDOWS)
+ endif()
+ 
+ if(WINDOWS OR MACOSX OR LINUX)
++    if(BUILD_EXT_GLFW)
+     add_subdirectory(glfw3)
+     target_link_libraries(external 
+         ext_glfw3
+     )
++    endif()
+ endif()
+ 
+ if(MACOSX OR ANDROID OR WINDOWS)
+--- origsrc/cocos2d-x-cocos2d-x-4.0/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/CMakeLists.txt	2020-02-27 22:58:06.190872400 +0900
+@@ -47,7 +47,22 @@ include(PreventInSourceBuilds)
+ # works before build libcocos2d
+ include(CocosBuildSet)
+ 
+-set(BUILD_LUA_LIBS ON) 
++option(BUILD_LUA_LIBS ON) 
++
++include_directories(${COCOS2DX_ROOT_PATH}/external)
++include_directories(${COCOS2DX_ROOT_PATH}/external/ConvertUTF)
++include_directories(${COCOS2DX_ROOT_PATH}/external/edtaa3func)
++include_directories(${COCOS2DX_ROOT_PATH}/external/linux-specific/fmod/include)
++include_directories(${COCOS2DX_ROOT_PATH}/external/unzip)
++
++include(FindPkgConfig)
++pkg_check_modules(BULLET REQUIRED bullet)
++add_definitions(${BULLET_CFLAGS_OTHER})
++include_directories(${BULLET_INCLUDE_DIRS})
++pkg_check_modules(FREETYPE REQUIRED freetype2)
++include_directories(${FREETYPE_INCLUDE_DIRS})
++pkg_check_modules(GTK REQUIRED gtk+-3.0)
++include_directories(${GTK_INCLUDE_DIRS})
+ 
+ add_subdirectory(${COCOS2DX_ROOT_PATH}/cocos ${ENGINE_BINARY_PATH}/cocos/core)
+ 
+@@ -65,3 +80,16 @@ endif(BUILD_LUA_LIBS)
+ 
+ # add cpp-template-default into project(Cocos2d-x) for tmp test
+ add_subdirectory(${COCOS2DX_ROOT_PATH}/templates/cpp-template-default ${ENGINE_BINARY_PATH}/tests/HelloCpp)
++
++install(DIRECTORY cocos DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN scripting EXCLUDE)
++
++if(BUILD_EXTENSIONS)
++  install(DIRECTORY extensions DESTINATION include/cocos FILES_MATCHING PATTERN "*.h")
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cocos2d.pc.in ${CMAKE_BINARY_DIR}/cocos2d.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cocos2d.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cmake/Modules/CocosConfigDefine.cmake	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cmake/Modules/CocosConfigDefine.cmake	2020-02-25 19:44:54.248553200 +0900
+@@ -30,6 +30,8 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "iOS
+     set(APPLE TRUE)
+     set(IOS TRUE)
+     set(PLATFORM_FOLDER ios)
++elseif(CYGWIN)
++    set(PLATFORM_FOLDER linux)
+ else()
+     message(FATAL_ERROR "Unsupported platform, CMake will exit")
+     return()
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/2d/CCProgressTimer.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/2d/CCProgressTimer.cpp	2020-02-25 20:20:16.646707600 +0900
+@@ -34,6 +34,7 @@ THE SOFTWARE.
+ #include "renderer/CCRenderer.h"
+ #include "base/ccUtils.h"
+ #include "renderer/ccShaders.h"
++#include <cfloat>
+ #include "renderer/backend/ProgramState.h"
+ 
+ NS_CC_BEGIN
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/CMakeLists.txt	2020-02-27 22:49:46.756372900 +0900
+@@ -109,6 +109,46 @@ add_library(cocos2d ${COCOS_SRC})
+ add_subdirectory(${COCOS2DX_ROOT_PATH}/external ${ENGINE_BINARY_PATH}/external)
+ target_link_libraries(cocos2d external)
+ 
++target_link_libraries(cocos2d
++    ${BULLET_LIBRARIES}
++    ${FREETYPE_LIBRARIES}
++    ${GTK_LIBRARIES}
++)
++
++pkg_check_modules(CHIPMUNK REQUIRED chipmunk)
++target_link_libraries(cocos2d ${CHIPMUNK_LIBRARIES})
++pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
++target_link_libraries(cocos2d ${FONTCONFIG_LIBRARIES})
++pkg_check_modules(GLEW REQUIRED glew)
++target_link_libraries(cocos2d ${GLEW_LIBRARIES})
++pkg_check_modules(GLFW REQUIRED glfw3)
++target_link_libraries(cocos2d ${GLFW_LIBRARIES})
++pkg_check_modules(LIBCURL REQUIRED libcurl)
++target_link_libraries(cocos2d ${LIBCURL_LIBRARIES})
++pkg_check_modules(LIBJPEG REQUIRED libjpeg)
++target_link_libraries(cocos2d ${LIBJPEG_LIBRARIES})
++pkg_check_modules(LIBPNG REQUIRED libpng)
++target_link_libraries(cocos2d ${LIBPNG_LIBRARIES})
++pkg_check_modules(LIBWEBP REQUIRED libwebp)
++target_link_libraries(cocos2d ${LIBWEBP_LIBRARIES})
++pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
++target_link_libraries(cocos2d ${LIBWEBSOCKETS_LIBRARIES})
++pkg_check_modules(POLYCLIPPING REQUIRED polyclipping)
++target_link_libraries(cocos2d ${POLYCLIPPING_LIBRARIES})
++pkg_check_modules(TINYXML REQUIRED tinyxml2)
++target_link_libraries(cocos2d ${TINYXML_LIBRARIES})
++pkg_check_modules(X11 REQUIRED x11)
++target_link_libraries(cocos2d ${X11_LIBRARIES})
++pkg_check_modules(XXHASH REQUIRED xxhash)
++target_link_libraries(cocos2d ${XXHASH_LIBRARIES})
++pkg_check_modules(ZLIB REQUIRED zlib)
++target_link_libraries(cocos2d ${ZLIB_LIBRARIES})
++
++find_package(iconv)
++target_link_libraries(cocos2d ${Iconv_LIBRARY})
++
++set_target_properties(cocos2d PROPERTIES SOVERSION 0)
++
+ # add base macro define and compile options
+ use_cocos2dx_compile_define(cocos2d)
+ use_cocos2dx_compile_options(cocos2d)
+@@ -158,3 +198,5 @@ endif()
+ #    # TODO: Only turn this off if ${CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET} < 11.0
+ #    target_compile_options(cocos2d PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-fno-aligned-allocation>)
+ #endif()
++
++install(TARGETS cocos2d RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/audio/AudioEngine.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/audio/AudioEngine.cpp	2020-02-26 19:52:33.547166900 +0900
+@@ -37,7 +37,7 @@
+ #include "audio/apple/AudioEngine-inl.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+ #include "audio/win32/AudioEngine-win32.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "audio/linux/AudioEngine-linux.h"
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/audio/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/audio/CMakeLists.txt	2020-02-26 19:53:06.743644500 +0900
+@@ -105,7 +105,7 @@ elseif(ANDROID)
+         audio/android/tinysndfile.cpp
+         )
+ 
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+     set(COCOS_AUDIO_PLATFORM_HEADER
+         audio/linux/AudioEngine-linux.h
+         )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/audio/include/Export.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/audio/include/Export.h	2020-02-27 16:21:27.431538500 +0900
+@@ -29,7 +29,7 @@ THE SOFTWARE.
+ #if defined(SHP)
+     #include <FBaseConfig.h>
+     #define EXPORT_DLL  _EXPORT_
+-#elif defined(_WIN32)
++#elif defined(_WIN32) || defined(__CYGWIN__)
+     #if defined(CC_STATIC)
+         #define EXPORT_DLL
+     #else
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/audio/linux/AudioEngine-linux.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/audio/linux/AudioEngine-linux.cpp	2020-02-26 20:11:02.686068100 +0900
+@@ -71,12 +71,19 @@ AudioEngineImpl::AudioEngineImpl()
+ AudioEngineImpl::~AudioEngineImpl()
+ {
+     FMOD_RESULT result;
++#if defined(__CYGWIN__)
++    result = FMOD_OK;
++#else
+     result = pSystem->release();
++#endif
+     ERRCHECKWITHEXIT(result);
+ }
+ 
+ bool AudioEngineImpl::init()
+ {
++#if defined(__CYGWIN__)
++    return false;
++#else
+     FMOD_RESULT result;
+     /*
+     Create a System object and initialize.
+@@ -99,6 +106,7 @@ bool AudioEngineImpl::init()
+     g_AudioEngineImpl = this;
+ 
+     return true;
++#endif
+ }
+ 
+ int AudioEngineImpl::play2d(const std::string &fileFullPath, bool loop, float volume)
+@@ -117,26 +125,33 @@ int AudioEngineImpl::play2d(const std::s
+ 
+ void AudioEngineImpl::setVolume(int audioID, float volume)
+ {
++#if !defined(__CYGWIN__)    
+     try {
+         mapChannelInfo[audioID].channel->setVolume(volume);
+     }
+     catch (const std::out_of_range& oor) {
+         printf("AudioEngineImpl::setVolume: invalid audioID: %d\n", audioID);
+     }
++#endif
+ }
+ 
+ void AudioEngineImpl::setLoop(int audioID, bool loop)
+ {
++#if !defined(__CYGWIN__)
+     try {
+         mapChannelInfo[audioID].channel->setLoopCount(loop ? -1 : 0);
+     }
+     catch (const std::out_of_range& oor) {
+         printf("AudioEngineImpl::setLoop: invalid audioID: %d\n", audioID);
+     }
++#endif
+ }
+ 
+ bool AudioEngineImpl::pause(int audioID)
+ {
++#if defined(__CYGWIN__)
++    return false;
++#else
+     try {
+         mapChannelInfo[audioID].channel->setPaused(true);
+         AudioEngine::_audioIDInfoMap[audioID].state = AudioEngine::AudioState::PAUSED;
+@@ -146,10 +161,14 @@ bool AudioEngineImpl::pause(int audioID)
+         printf("AudioEngineImpl::pause: invalid audioID: %d\n", audioID);
+         return false;
+     }
++#endif
+ }
+ 
+ bool AudioEngineImpl::resume(int audioID)
+ {
++#if defined(__CYGWIN__)
++    return false;
++#else
+     try {
+         if (!mapChannelInfo[audioID].channel) {
+             FMOD::Channel *channel = nullptr;
+@@ -175,10 +194,14 @@ bool AudioEngineImpl::resume(int audioID
+         printf("AudioEngineImpl::resume: invalid audioID: %d\n", audioID);
+         return false;
+     }
++#endif
+ }
+ 
+ bool AudioEngineImpl::stop(int audioID)
+ {
++#if defined(__CYGWIN__)
++    return false;
++#else
+     try {
+         mapChannelInfo[audioID].channel->stop();
+         mapChannelInfo[audioID].channel = nullptr;
+@@ -188,19 +211,25 @@ bool AudioEngineImpl::stop(int audioID)
+         printf("AudioEngineImpl::stop: invalid audioID: %d\n", audioID);
+         return false;
+     }
++#endif
+ }
+ 
+ void AudioEngineImpl::stopAll()
+ {
++#if !defined(__CYGWIN__)
+     for (auto& it : mapChannelInfo) {
+         ChannelInfo & audioRef = it.second;
+         audioRef.channel->stop();
+         audioRef.channel = nullptr;
+     }
++#endif
+ }
+ 
+ float AudioEngineImpl::getDuration(int audioID)
+ {
++#if defined(__CYGWIN__)
++    return AudioEngine::TIME_UNKNOWN;
++#else
+     try {
+         FMOD::Sound * sound = mapChannelInfo[audioID].sound;
+         unsigned int length;
+@@ -213,10 +242,14 @@ float AudioEngineImpl::getDuration(int a
+         printf("AudioEngineImpl::getDuration: invalid audioID: %d\n", audioID);
+         return AudioEngine::TIME_UNKNOWN;
+     }
++#endif
+ }
+ 
+ float AudioEngineImpl::getCurrentTime(int audioID)
+ {
++#if defined(__CYGWIN__)
++    return AudioEngine::TIME_UNKNOWN;
++#else
+     try {
+         unsigned int position;
+         FMOD_RESULT result = mapChannelInfo[audioID].channel->getPosition(&position, FMOD_TIMEUNIT_MS);
+@@ -228,11 +261,13 @@ float AudioEngineImpl::getCurrentTime(in
+         printf("AudioEngineImpl::getCurrentTime: invalid audioID: %d\n", audioID);
+         return AudioEngine::TIME_UNKNOWN;
+     }
++#endif
+ }
+ 
+ bool AudioEngineImpl::setCurrentTime(int audioID, float time)
+ {
+     bool ret = false;
++#if !defined(__CYGWIN__)
+     try {
+         unsigned int position = (unsigned int)(time * 1000.0f);
+         FMOD_RESULT result = mapChannelInfo[audioID].channel->setPosition(position, FMOD_TIMEUNIT_MS);
+@@ -241,11 +276,13 @@ bool AudioEngineImpl::setCurrentTime(int
+     catch (const std::out_of_range& oor) {
+         printf("AudioEngineImpl::setCurrentTime: invalid audioID: %d\n", audioID);
+     }
++#endif
+     return ret;
+ }
+ 
+ void AudioEngineImpl::setFinishCallback(int audioID, const std::function<void (int, const std::string &)> &callback)
+ {
++#if !defined(__CYGWIN__)
+     try {
+         FMOD::Channel * channel = mapChannelInfo[audioID].channel;
+         mapChannelInfo[audioID].callback = callback;
+@@ -255,10 +292,12 @@ void AudioEngineImpl::setFinishCallback(
+     catch (const std::out_of_range& oor) {
+         printf("AudioEngineImpl::setFinishCallback: invalid audioID: %d\n", audioID);
+     }
++#endif
+ }
+ 
+ void AudioEngineImpl::onSoundFinished(FMOD::Channel * channel)
+ {
++#if !defined(__CYGWIN__)
+     int id = 0;
+     try {
+         void * data;
+@@ -272,10 +311,12 @@ void AudioEngineImpl::onSoundFinished(FM
+     catch (const std::out_of_range& oor) {
+         printf("AudioEngineImpl::onSoundFinished: invalid audioID: %d\n", id);
+     }
++#endif
+ }
+ 
+ void AudioEngineImpl::uncache(const std::string& path)
+ {
++#if !defined(__CYGWIN__)
+     std::string fullPath = FileUtils::getInstance()->fullPathForFilename(path);
+     std::map<std::string, FMOD::Sound *>::const_iterator it = mapSound.find(fullPath);
+     if (it!=mapSound.end()) {
+@@ -286,10 +327,12 @@ void AudioEngineImpl::uncache(const std:
+         mapSound.erase(it);
+     }
+     mapId.erase(path);
++#endif
+ }
+ 
+ void AudioEngineImpl::uncacheAll()
+ {
++#if !defined(__CYGWIN__)
+     for (const auto& it : mapSound) {
+         auto sound = it.second;
+         if (sound) {
+@@ -298,10 +341,14 @@ void AudioEngineImpl::uncacheAll()
+     }
+     mapSound.clear();
+     mapId.clear();
++#endif
+ }
+ 
+ int AudioEngineImpl::preload(const std::string& filePath, std::function<void(bool isSuccess)> callback)
+ {
++#if defined(__CYGWIN__)
++    return -1;
++#else
+     FMOD::Sound * sound = findSound(filePath);
+     if (!sound) {
+         std::string fullPath = FileUtils::getInstance()->fullPathForFilename(filePath);
+@@ -334,24 +381,35 @@ int AudioEngineImpl::preload(const std::
+         callback(true);
+     }
+     return id;
++#endif
+ }
+ 
+ void AudioEngineImpl::update(float dt)
+ {
++#if !defined(__CYGWIN__)
+     pSystem->update();
++#endif
+ }
+ 
+ FMOD::Sound * AudioEngineImpl::findSound(const std::string &path)
+ {
++#if defined(__CYGWIN__)
++    return nullptr;
++#else
+     std::string fullPath = FileUtils::getInstance()->fullPathForFilename(path);
+     std::map<std::string, FMOD::Sound *>::const_iterator it = mapSound.find(fullPath);
+     return (it != mapSound.end()) ? (it->second) : nullptr;
++#endif
+ }
+ 
+ FMOD::Channel * AudioEngineImpl::getChannel(FMOD::Sound *sound)
+ {
++#if defined(__CYGWIN__)
++    return nullptr;
++#else
+     void * data;
+     sound->getUserData(&data);
+     int id = static_cast<int>(reinterpret_cast<std::intptr_t>(data));
+     return mapChannelInfo[id].channel;
++#endif
+ }
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/audio/linux/AudioEngine-linux.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/audio/linux/AudioEngine-linux.h	2020-02-25 21:42:00.553270400 +0900
+@@ -24,7 +24,7 @@
+  ****************************************************************************/
+ #include "platform/CCPlatformConfig.h"
+ 
+-#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#if CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ 
+ #ifndef __AUDIO_ENGINE_LINUX_H_
+ #define __AUDIO_ENGINE_LINUX_H_
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController-linux-win32.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController-linux-win32.cpp	2020-02-25 21:33:55.189922300 +0900
+@@ -27,13 +27,13 @@ THE SOFTWARE.
+ 
+ #include "base/CCController.h"
+ 
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ #include <functional>
+ #include "base/ccMacros.h"
+ #include "base/CCDirector.h"
+ #include "base/CCScheduler.h"
+ #include "base/CCEventController.h"
+-#include "glfw3.h"
++#include <GLFW/glfw3.h>
+ 
+ NS_CC_BEGIN
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController.cpp	2020-02-26 14:01:54.423063600 +0900
+@@ -26,7 +26,7 @@
+ 
+ #include "base/CCController.h"
+ 
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 )
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ 
+ #include "base/CCEventDispatcher.h"
+ #include "base/CCEventController.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CCController.h	2020-02-25 21:35:24.140874200 +0900
+@@ -25,7 +25,7 @@
+ 
+ #ifndef __cocos2d_libs__CCController__
+ #define __cocos2d_libs__CCController__
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 )
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ 
+ #include "platform/CCPlatformMacros.h"
+ #include <string>
+@@ -221,7 +221,7 @@ private:
+     EventController *_keyEvent;
+     EventController *_axisEvent;
+ 
+-    #if ( CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 )
++    #if ( CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+     //FIXME: Once GLFW 3.3 is bundled with cocos2d-x, remove these unordered
+     //maps. They won't be needed. We will only need to provide a mapping from
+     //the GLFW gamepad key codes to the Controller::Key.
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CCData.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CCData.cpp	2020-02-25 21:04:52.857729000 +0900
+@@ -26,6 +26,7 @@
+ 
+ #include "base/CCData.h"
+ #include "base/CCConsole.h"
++#include <cstring>
+ 
+ NS_CC_BEGIN
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CCValue.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CCValue.cpp	2020-02-25 21:18:30.562773000 +0900
+@@ -28,6 +28,7 @@
+ #include <sstream>
+ #include <iomanip>
+ #include "base/ccUtils.h"
++#include <cfloat>
+ 
+ NS_CC_BEGIN
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/CMakeLists.txt	2020-02-25 21:16:50.622416900 +0900
+@@ -10,7 +10,7 @@ elseif(ANDROID)
+         base/CCUserDefault-android.cpp
+         base/CCController-android.cpp
+         )
+-elseif(LINUX OR WINDOWS)
++elseif(LINUX OR WINDOWS OR CYGWIN)
+     set(COCOS_BASE_SPECIFIC_SRC
+         base/CCController-linux-win32.cpp
+         )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/atitc.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/atitc.cpp	2020-02-25 21:20:41.008031400 +0900
+@@ -24,6 +24,7 @@
+  ****************************************************************************/
+ 
+ #include "base/atitc.h"
++#include <cstring>
+ 
+ //Decode ATITC encode block to 4x4 RGB32 pixels
+ static void atitc_decode_block(uint8_t **blockData,
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/atitc.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/atitc.h	2020-02-25 21:19:55.083599600 +0900
+@@ -28,6 +28,7 @@
+ /// @cond DO_NOT_SHOW
+ 
+ #include "platform/CCStdC.h"
++#include <sys/types.h>
+ 
+ enum class ATITCDecodeFlag
+ {
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/ccConfig.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/ccConfig.h	2020-02-27 00:20:22.146492900 +0900
+@@ -269,7 +269,7 @@ THE SOFTWARE.
+ 
+ /** Use 3d physics integration API. */
+ #ifndef CC_USE_3D_PHYSICS
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC || CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ #define CC_USE_3D_PHYSICS 1
+ #endif
+ #endif
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/ccUtils.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/ccUtils.cpp	2020-02-25 21:31:12.369655600 +0900
+@@ -28,6 +28,7 @@ THE SOFTWARE.
+ 
+ #include <cmath>
+ #include <stdlib.h>
++#include <sys/time.h>
+ #include "md5/md5.h"
+ 
+ #include "base/CCDirector.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/s3tc.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/s3tc.cpp	2020-02-25 21:33:00.164556500 +0900
+@@ -24,6 +24,7 @@
+  ****************************************************************************/
+ 
+ #include "base/s3tc.h"
++#include <cstring>
+ 
+ //Decode S3TC encode block to 4x4 RGB32 pixels
+ static void s3tc_decode_block(uint8_t **blockData,
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/base/s3tc.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/base/s3tc.h	2020-02-25 21:32:14.962716400 +0900
+@@ -28,6 +28,7 @@
+ /// @cond DO_NOT_SHOW
+ 
+ #include "platform/CCStdC.h"
++#include <sys/types.h>
+ 
+ enum class S3TCDecodeFlag
+ {
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/cocos2d.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/cocos2d.h	2020-02-25 22:45:55.115122400 +0900
+@@ -209,7 +209,7 @@ THE SOFTWARE.
+     #include "platform/mac/CCStdC-mac.h"
+ #endif // CC_TARGET_PLATFORM == CC_PLATFORM_MAC
+ 
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+     #include "platform/linux/CCApplication-linux.h"
+     #include "platform/desktop/CCGLViewImpl-desktop.h"
+     #include "platform/linux/CCGL-linux.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/editor-support/cocostudio/CocosStudioExport.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/editor-support/cocostudio/CocosStudioExport.h	2020-02-27 18:05:44.253991000 +0900
+@@ -25,7 +25,7 @@
+ #ifndef __CCCOCOSSTUDIO_H__
+ #define __CCCOCOSSTUDIO_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS))
++#if (defined(WIN32) && defined(_WINDOWS)) || defined(__CYGWIN__)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/physics/CCPhysicsWorld.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/physics/CCPhysicsWorld.cpp	2020-02-26 13:53:37.180519000 +0900
+@@ -28,7 +28,10 @@
+ #include <algorithm>
+ #include <climits>
+ 
+-#include "chipmunk/chipmunk_private.h"
++#include <chipmunk/chipmunk_private.h>
++extern "C" {
++#include <chipmunk/cpHastySpace.h>
++}
+ #include "physics/CCPhysicsBody.h"
+ #include "physics/CCPhysicsShape.h"
+ #include "physics/CCPhysicsContact.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/physics3d/CCPhysics3D.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/physics3d/CCPhysics3D.cpp	2020-02-27 10:44:34.568155800 +0900
+@@ -80,7 +80,7 @@ cocos2d::Mat4 convertbtTransformToMat4(
+ btTransform convertMat4TobtTransform( const cocos2d::Mat4 &mat4 )
+ {
+     btTransform btTrans;
+-    btTrans.setFromOpenGLMatrix(mat4.m);
++    btTrans.setFromOpenGLMatrix((const btScalar*)mat4.m);
+     return btTrans;
+ }
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/physics3d/CCPhysics3DConstraint.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/physics3d/CCPhysics3DConstraint.cpp	2020-02-27 09:56:29.358806500 +0900
+@@ -313,7 +313,7 @@ bool Physics3DHingeConstraint::getEnable
+ }
+ float Physics3DHingeConstraint::getMotorTargetVelosity() const
+ {
+-    return static_cast<btHingeConstraint*>(_constraint)->getMotorTargetVelosity();
++    return static_cast<btHingeConstraint*>(_constraint)->getMotorTargetVelocity();
+ }
+ float Physics3DHingeConstraint::getMaxMotorImpulse() const
+ {
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCApplication.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCApplication.h	2020-02-25 21:07:51.820328800 +0900
+@@ -38,7 +38,7 @@ THE SOFTWARE.
+ #include "platform/android/CCApplication-android.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+ #include "platform/win32/CCApplication-win32.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "platform/linux/CCApplication-linux.h"
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCGL.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCGL.h	2020-02-25 21:02:38.943282900 +0900
+@@ -34,7 +34,7 @@ THE SOFTWARE.
+ #include "platform/android/CCGL-android.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
+ #include "platform/win32/CCGL-win32.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "platform/linux/CCGL-linux.h"
+ #endif
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCImage.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCImage.cpp	2020-02-25 20:28:58.867592200 +0900
+@@ -96,7 +96,7 @@ extern "C"
+ #include "base/TGAlib.h"
+ 
+ #if CC_USE_WEBP
+-#include "decode.h"
++#include "webp/decode.h"
+ #endif // CC_USE_WEBP
+ 
+ #include "base/ccMacros.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCPlatformConfig.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCPlatformConfig.h	2020-02-25 19:56:29.281944100 +0900
+@@ -53,9 +53,10 @@ THE SOFTWARE.
+ // #define CC_PLATFORM_TIZEN             11
+ // #define CC_PLATFORM_QT5               12
+ // #define CC_PLATFORM_WINRT             13
++#define CC_PLATFORM_CYGWIN             14
+ 
+ // Determine target platform by compile environment macro.
+-#define CC_TARGET_PLATFORM             CC_PLATFORM_UNKNOWN
++#define CC_TARGET_PLATFORM             CC_PLATFORM_CYGWIN
+ 
+ // Apple: Mac and iOS
+ #if defined(__APPLE__) && !defined(ANDROID) // exclude android for binding generator.
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCPlatformDefine.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CCPlatformDefine.h	2020-02-25 19:59:27.315883400 +0900
+@@ -35,7 +35,7 @@ THE SOFTWARE.
+ #include "platform/ios/CCPlatformDefine-ios.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
+ #include "platform/android/CCPlatformDefine-android.h"
+-#elif CC_TARGET_PLATFORM == CC_PLATFORM_WIN32
++#elif CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN
+ #include "platform/win32/CCPlatformDefine-win32.h"
+ #elif CC_TARGET_PLATFORM == CC_PLATFORM_LINUX
+ #include "platform/linux/CCPlatformDefine-linux.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/CMakeLists.txt	2020-02-25 23:43:01.874426300 +0900
+@@ -104,7 +104,7 @@ elseif(APPLE)
+             )
+     endif()
+ 
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+ 
+     if(NOT CMAKE_CROSSCOMPILING)
+         include_directories(
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/desktop/CCGLViewImpl-desktop.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/desktop/CCGLViewImpl-desktop.h	2020-02-25 22:46:43.185853600 +0900
+@@ -30,7 +30,7 @@ THE SOFTWARE.
+ #include "base/CCRef.h"
+ #include "platform/CCCommon.h"
+ #include "platform/CCGLView.h"
+-#include "glfw3.h"
++#include <GLFW/glfw3.h>
+ 
+ #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+ #ifndef GLFW_EXPOSE_NATIVE_WIN32
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/platform/linux/CCApplication-linux.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/platform/linux/CCApplication-linux.h	2020-02-26 23:12:51.510101400 +0900
+@@ -32,7 +32,7 @@ THE SOFTWARE.
+ NS_CC_BEGIN
+ class Rect;
+ 
+-class Application : public ApplicationProtocol
++class CC_DLL Application : public ApplicationProtocol
+ {
+ public:
+     /**
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/renderer/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/renderer/CMakeLists.txt	2020-02-25 20:47:17.461153300 +0900
+@@ -74,7 +74,7 @@ set(COCOS_RENDERER_SRC
+     renderer/backend/RenderPassDescriptor.cpp
+     )
+ 
+-if(ANDROID OR WINDOWS OR LINUX) 
++if(ANDROID OR WINDOWS OR LINUX OR CYGWIN) 
+ 
+ list(APPEND COCOS_RENDERER_HEADER
+     renderer/backend/opengl/BufferGL.h
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/Device.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/Device.h	2020-02-27 17:47:38.599676600 +0900
+@@ -54,7 +54,7 @@ class RenderPass;
+ /**
+  * New or create resources from Device.
+  */
+-class Device : public cocos2d::Ref
++class CC_DLL Device : public cocos2d::Ref
+ {
+ public:
+     friend class ProgramCache;
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/Program.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/Program.h	2020-02-27 18:03:49.408361100 +0900
+@@ -47,7 +47,7 @@ class ShaderModule;
+ /**
+  * A program.
+  */
+-class Program : public Ref
++class CC_DLL Program : public Ref
+ {
+ public:
+     /**
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/ProgramState.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/ProgramState.h	2020-02-27 18:02:45.239992000 +0900
+@@ -72,7 +72,7 @@ struct TextureInfo
+  * A program state object can create or reuse a program.
+  * Each program state object keep its own unifroms and textures data.
+  */
+-class ProgramState : public Ref
++class CC_DLL ProgramState : public Ref
+ {
+ public:
+     using UniformCallback = std::function<void(ProgramState*, const UniformLocation &)>;
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/VertexLayout.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/renderer/backend/VertexLayout.h	2020-02-27 21:21:58.061992400 +0900
+@@ -42,7 +42,7 @@ CC_BACKEND_BEGIN
+ /**
+  * Store vertex attribute layout.
+  */
+-class VertexLayout
++class CC_DLL VertexLayout
+ {
+ public:
+     struct Attribute
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/ui/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/ui/CMakeLists.txt	2020-02-26 14:05:34.275799900 +0900
+@@ -49,7 +49,7 @@ elseif(APPLE)
+             ui/UIEditBox/iOS/UITextView+CCUITextInput.mm
+             )
+     endif()
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+     set(COCOS_UI_SPECIFIC_HEADER
+         ui/UIEditBox/UIEditBoxImpl-linux.h
+         )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/ui/GUIExport.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/ui/GUIExport.h	2020-02-27 12:17:33.339244500 +0900
+@@ -25,7 +25,7 @@
+ #ifndef __CCLIBGUI_H__
+ #define __CCLIBGUI_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS))
++#if (defined(WIN32) && defined(_WINDOWS)) || defined(__CYGWIN__)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/ui/UIEditBox/UIEditBoxImpl-linux.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/ui/UIEditBox/UIEditBoxImpl-linux.cpp	2020-02-26 14:06:19.414964600 +0900
+@@ -26,7 +26,7 @@
+ 
+ #include "ui/UIEditBox/UIEditBoxImpl-linux.h"
+ 
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ 
+ #include "ui/UIEditBox/UIEditBox.h"
+ #include "2d/CCLabel.h"
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/ui/UIEditBox/UIEditBoxImpl-linux.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/ui/UIEditBox/UIEditBoxImpl-linux.h	2020-02-26 14:05:58.952314000 +0900
+@@ -29,7 +29,7 @@
+ 
+ #include "platform/CCPlatformConfig.h"
+ 
+-#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
++#if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX || CC_TARGET_PLATFORM == CC_PLATFORM_CYGWIN)
+ 
+ #include "ui/UIEditBox/UIEditBoxImpl-common.h"
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos/ui/UILayout.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos/ui/UILayout.cpp	2020-02-25 22:07:28.134500200 +0900
+@@ -36,7 +36,7 @@ THE SOFTWARE.
+ #include "base/CCEventFocus.h"
+ #include "base/CCStencilStateManager.h"
+ #include "editor-support/cocostudio/CocosStudioExtension.h"
+-
++#include <cfloat>
+ 
+ NS_CC_BEGIN
+ 
+--- origsrc/cocos2d-x-cocos2d-x-4.0/cocos2d.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/cocos2d.pc.in	2020-02-27 22:57:25.476828200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cocos2d
++Description: Suite of open-source, cross-platform, game-development tools used by millions of developers all over the world
++Version: @VERSION@
++Libs: -L${libdir} -lcocos2d
++Cflags: -I${includedir}
+--- origsrc/cocos2d-x-cocos2d-x-4.0/extensions/ExtensionExport.h	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/extensions/ExtensionExport.h	2020-02-27 14:40:51.087783200 +0900
+@@ -25,7 +25,7 @@
+ #ifndef __CCEXTENSIONEXPORT_H__
+ #define __CCEXTENSIONEXPORT_H__
+ 
+-#if (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8)
++#if (defined(WIN32) && defined(_WINDOWS)) || defined(WINRT) || defined(WP8) || defined(__CYGWIN__)
+     #ifdef __MINGW32__
+         #include <string.h>
+     #endif
+--- origsrc/cocos2d-x-cocos2d-x-4.0/extensions/physics-nodes/CCPhysicsDebugNode.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/extensions/physics-nodes/CCPhysicsDebugNode.cpp	2020-02-26 15:34:35.287219200 +0900
+@@ -74,7 +74,7 @@ static void DrawShape(cpShape *shape, Dr
+     cpBody *body = cpShapeGetBody(shape);
+     Color4F color = ColorForBody(body);
+     
+-    switch (shape->CP_PRIVATE(klass)->type)
++    switch (shape->klass->type)
+     {
+         case CP_CIRCLE_SHAPE:
+         {
+--- origsrc/cocos2d-x-cocos2d-x-4.0/external/CMakeLists.txt	2019-11-11 16:30:02.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/external/CMakeLists.txt	2020-02-25 23:12:16.160840600 +0900
+@@ -22,6 +22,8 @@ option(BUILD_EXT_MD5 "Build with interna
+ option(BUILD_EXT_ZLIB "Build with internal zlib support" ON)
+ option(BUILD_EXT_CURL "Build with internal curl support" ON)
+ option(BUILD_EXT_UNZIP "Build with internal unzip support" ON)
++option(BUILD_EXT_PNG "Build with internal png support" ON)
++option(BUILD_EXT_GLFW "Build with internal glfw support" ON)
+ 
+ add_library(external empty.cpp)
+ 
+@@ -116,10 +118,12 @@ if(NOT LINUX)
+         add_subdirectory(curl)
+         target_link_libraries(external ext_curl)
+     endif(BUILD_EXT_CURL)
++    if(BUILD_EXT_PNG)
+     add_subdirectory(png)
+     target_link_libraries(external 
+         ext_png
+     )
++    endif()
+ endif(NOT LINUX)
+     
+ if(LINUX)
+@@ -156,10 +160,12 @@ if(WINDOWS)
+ endif()
+ 
+ if(WINDOWS OR MACOSX OR LINUX)
++    if(BUILD_EXT_GLFW)
+     add_subdirectory(glfw3)
+     target_link_libraries(external 
+         ext_glfw3
+     )
++    endif()
+ endif()
+ 
+ if(MACOSX OR ANDROID OR WINDOWS)
+--- origsrc/cocos2d-x-cocos2d-x-4.0/templates/cpp-template-default/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/templates/cpp-template-default/CMakeLists.txt	2020-02-26 23:56:50.983086600 +0900
+@@ -70,7 +70,7 @@ if(ANDROID)
+     list(APPEND GAME_SOURCE
+          proj.android/app/jni/hellocpp/main.cpp
+          )
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+     list(APPEND GAME_SOURCE
+          proj.linux/main.cpp
+          )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/tests/cpp-empty-test/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/tests/cpp-empty-test/CMakeLists.txt	2020-02-26 23:11:07.586572800 +0900
+@@ -68,7 +68,7 @@ if(ANDROID)
+     list(APPEND GAME_SOURCE
+          proj.android/app/jni/main.cpp
+          )
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+     list(APPEND GAME_SOURCE
+          proj.linux/main.cpp
+          )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/tests/cpp-tests/CMakeLists.txt	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/tests/cpp-tests/CMakeLists.txt	2020-02-27 22:39:44.688580300 +0900
+@@ -39,7 +39,7 @@ if(ANDROID)
+          Classes/JNITest/JNITest.cpp
+          proj.android/app/jni/main.cpp
+          )
+-elseif(LINUX)
++elseif(LINUX OR CYGWIN)
+     list(APPEND GAME_SOURCE
+          proj.linux/main.cpp
+          )
+--- origsrc/cocos2d-x-cocos2d-x-4.0/tests/cpp-tests/Classes/ChipmunkTest/ChipmunkTest.cpp	2019-11-29 18:39:40.000000000 +0900
++++ src/cocos2d-x-cocos2d-x-4.0/tests/cpp-tests/Classes/ChipmunkTest/ChipmunkTest.cpp	2020-02-27 22:36:49.852568600 +0900
+@@ -32,6 +32,10 @@
+ 
+ #include "ChipmunkTest.h"
+ 
++extern "C" {
++#include <chipmunk/cpHastySpace.h>
++}
++
+ USING_NS_CC;
+ USING_NS_CC_EXT;
+ 

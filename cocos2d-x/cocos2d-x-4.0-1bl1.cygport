@@ -1,0 +1,76 @@
+HOMEPAGE="https://github.com/cocos2d/${PN}"
+SRC_URI="
+	https://github.com/cocos2d/${PN}/archive/${P}.tar.gz
+	https://github.com/cocos2d/${PN}-3rd-party-libs-bin/archive/metal-support-22.tar.gz
+"
+SRC_DIR="${PN}-${P}"
+
+CATEGORY="Libs"
+SUMMARY="Suite of open-source, cross-platform, game-development tools used by millions of developers all over the world"
+DESCRIPTION="Cocos2d-x is a multi-platform framework for building 2d games, interactive
+books, demos and other graphical applications. It is based on cocos2d-iphone,
+but instead of using Objective-C, it uses C++. It works on iOS, Android,
+Windows Phone, OS X, Windows and Linux."
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_EXPORT_DLL_ -D_USEGUIDLL -D_USRDLL -D_USREXDLL -D_USRSTUDIODLL"
+
+inherit cmake
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -rf external
+	ln -fs ../cocos2d-x-3rd-party-libs-bin-metal-support-22 external
+}
+
+CYGCMAKE_ARGS="
+	-DBUILD_EDITOR_SPINE:BOOL=OFF
+	-DBUILD_EXT_BOX2D:BOOL=OFF
+	-DBUILD_EXT_BULLET:BOOL=OFF
+	-DBUILD_EXT_CHIPMUNK:BOOL=OFF
+	-DBUILD_EXT_CLIPPER:BOOL=OFF
+	-DBUILD_EXT_CURL:BOOL=OFF
+	-DBUILD_EXT_FREETYPE2:BOOL=OFF
+	-DBUILD_EXT_GLFW:BOOL=OFF
+	-DBUILD_EXT_JPEG:BOOL=OFF
+	-DBUILD_EXT_OPENSSL:BOOL=OFF
+	-DBUILD_EXT_PNG:BOOL=OFF
+	-DBUILD_EXT_TINYXML2:BOOL=OFF
+	-DBUILD_EXT_UV:BOOL=OFF
+	-DBUILD_EXT_WEBP:BOOL=OFF
+	-DBUILD_EXT_WEBSOCKETS:BOOL=OFF
+	-DBUILD_EXT_XXHASH:BOOL=OFF
+	-DBUILD_EXT_XXTEA:BOOL=OFF
+	-DBUILD_EXTENSIONS:BOOL=ON
+	-DBUILD_LUA_LIBS:BOOL=OFF
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DUSE_PREBUILT_LIBS:BOOL=OFF
+	-DVERSION:STRING=${PV}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/engine/cocos/core:${PATH} ./bin/cpp-empty-test/cpp-empty-test.exe || :
+	PATH=${B}/engine/cocos/core:${PATH} ./bin/cpp-tests/cpp-tests.exe || :
+}
+
+PKG_NAMES="
+	${PN}
+	libcocos2d0
+	libcocos2d-devel
+"
+cocos2d_x_CONTENTS="
+	usr/share
+"
+libcocos2d0_CONTENTS="
+	usr/bin
+"
+libcocos2d_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+cocos2d_x_SUMMARY="${SUMMARY} (licensing & readmes)"
+libcocos2d0_SUMMARY="${SUMMARY} (runtime)"
+libcocos2d_devel_SUMMARY="${SUMMARY} (development)"
