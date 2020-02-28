@@ -1,0 +1,87 @@
+--- origsrc/Celero-2.6.0/CMakeLists.txt	2019-10-18 10:13:19.000000000 +0900
++++ src/Celero-2.6.0/CMakeLists.txt	2020-02-28 15:09:15.195125500 +0900
+@@ -196,6 +196,10 @@ target_include_directories(${PROJECT_NAM
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include>
+ )
+ 
++if(CYGWIN)
++	set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ # ---------------------------------------------------------------------------
+ # Install and exports
+ # ---------------------------------------------------------------------------
+@@ -204,15 +208,21 @@ install(TARGETS ${PROJECT_NAME}
+   EXPORT ${PROJECT_NAME}-target
+   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/static
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ )
+ 
+ install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})
+ 
+ # export to be used from install location
+-install(EXPORT ${PROJECT_NAME}-target
++if(CYGWIN)
++	install(EXPORT ${PROJECT_NAME}-target
++		DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/Celero
++	)
++else()
++	install(EXPORT ${PROJECT_NAME}-target
+   DESTINATION ${CMAKE_INSTALL_PREFIX}/share
+-)
++	)
++endif()
+ 
+ # export to be used from build directory
+ export(EXPORT ${PROJECT_NAME}-target
+@@ -227,7 +237,9 @@ add_subdirectory(experiments)
+ 
+ if(CELERO_ENABLE_TESTS)
+ 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++	if(NOT CYGWIN)
+ 	add_subdirectory(googletest)
++	endif()
+ 	add_subdirectory(test)
+ endif()	
+ 
+@@ -316,3 +328,10 @@ if(CELERODEVOPS_ENABLE_TSAN)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Celero.pc.in ${CMAKE_BINARY_DIR}/Celero.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Celero.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Celero-2.6.0/Celero.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Celero-2.6.0/Celero.pc.in	2020-02-28 15:00:59.909617700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Celero
++Description: C++ Benchmark Authoring Library/Framework
++Version: @VERSION@
++Libs: -L${libdir} -lcelero
++Cflags: -I${includedir}
+--- origsrc/Celero-2.6.0/test/CMakeLists.txt	2019-10-18 10:13:19.000000000 +0900
++++ src/Celero-2.6.0/test/CMakeLists.txt	2020-02-28 14:53:13.981801400 +0900
+@@ -21,7 +21,11 @@ project(celero-test)
+ 
+ add_executable(${PROJECT_NAME})
+ 
+-add_dependencies(${PROJECT_NAME} gtest gtest_main)
++if(CYGWIN)
++	target_link_libraries(${PROJECT_NAME} gtest gtest_main)
++else()
++	add_dependencies(${PROJECT_NAME} gtest gtest_main)
++endif()
+ 
+ target_sources(${PROJECT_NAME} PRIVATE
+ 	Archive.test.cpp
