@@ -1,5 +1,5 @@
---- origsrc/CGNS-3.4.0/CGNS.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/CGNS-3.4.0/CGNS.pc.in	2019-05-30 13:15:30.551756200 +0900
+--- origsrc/CGNS-4.0.0/CGNS.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/CGNS-4.0.0/CGNS.pc.in	2020-02-28 17:11:58.866791900 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -11,8 +11,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lcgns
 +Cflags: -I${includedir}
---- origsrc/CGNS-3.4.0/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/CMakeLists.txt	2019-05-30 13:15:17.861903700 +0900
+--- origsrc/CGNS-4.0.0/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/CMakeLists.txt	2020-02-28 17:11:58.866791900 +0900
 @@ -389,3 +389,10 @@ endif (CGNS_BUILD_TESTING)
  # Include the src directory
  add_subdirectory(src)
@@ -24,25 +24,23 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/CGNS.pc.in ${CMAKE_BINARY_DIR}/CGNS.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/CGNS.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/CGNS-3.4.0/src/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/CMakeLists.txt	2019-05-30 11:52:24.277763900 +0900
+--- origsrc/CGNS-4.0.0/src/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/CMakeLists.txt	2020-02-28 17:11:58.913765600 +0900
 @@ -539,14 +539,15 @@ set(CGNS_BUILD_SHARED "ON" CACHE BOOL "B
  option(CGNS_USE_SHARED "Link programs to the CGNS shared library" "ON")
  
  # Build a static version of the library
 -if (CGNS_ENABLE_FORTRAN)
--    add_library(cgns_static STATIC ${cgns_FILES} $<TARGET_OBJECTS:cgns_f2c>)
++if (NOT CGNS_BUILD_SHARED)
++  if (CGNS_ENABLE_FORTRAN)
+     add_library(cgns_static STATIC ${cgns_FILES} $<TARGET_OBJECTS:cgns_f2c>)
 -else (CGNS_ENABLE_FORTRAN)
--  add_library(cgns_static STATIC ${cgns_FILES})
++  else (CGNS_ENABLE_FORTRAN)
+   add_library(cgns_static STATIC ${cgns_FILES})
 -endif (CGNS_ENABLE_FORTRAN)
 -# Needed to work around a CMake > 3.8 bug on Windows with MSVS and Intel Fortran
 -set_property(TARGET cgns_static PROPERTY LINKER_LANGUAGE C)
 -
-+if (NOT CGNS_BUILD_SHARED)
-+  if (CGNS_ENABLE_FORTRAN)
-+      add_library(cgns_static STATIC ${cgns_FILES} $<TARGET_OBJECTS:cgns_f2c>)
-+  else (CGNS_ENABLE_FORTRAN)
-+    add_library(cgns_static STATIC ${cgns_FILES})
 +  endif (CGNS_ENABLE_FORTRAN)
 +  # Needed to work around a CMake > 3.8 bug on Windows with MSVS and Intel Fortran
 +  set_property(TARGET cgns_static PROPERTY LINKER_LANGUAGE C)
@@ -95,8 +93,8 @@
  # Set the install path of the shared library
  if(CGNS_BUILD_SHARED)
    # for windows, need to install both cgnsdll.dll and cgnsdll.lib
---- origsrc/CGNS-3.4.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2019-05-30 11:55:43.533809600 +0900
+--- origsrc/CGNS-4.0.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/Test_UserGuideCode/C_code/CMakeLists.txt	2020-02-28 17:11:58.944936500 +0900
 @@ -4,7 +4,11 @@
  
  # Link all the executables to cgns and hdf5
@@ -110,8 +108,8 @@
  
  if (CGNS_ENABLE_HDF5 AND HDF5_LIBRARY)
    link_libraries(${HDF5_LIBRARY})
---- origsrc/CGNS-3.4.0/src/cgnstools/cgnscalc/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/cgnstools/cgnscalc/CMakeLists.txt	2019-05-30 11:57:05.084578000 +0900
+--- origsrc/CGNS-4.0.0/src/cgnstools/cgnscalc/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/cgnstools/cgnscalc/CMakeLists.txt	2020-02-28 17:11:58.960548000 +0900
 @@ -5,12 +5,12 @@
  include_directories(${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH})
  include_directories(../calclib)
@@ -129,8 +127,8 @@
  
  if (CGNS_ENABLE_HDF5 AND HDF5_LIBRARY)
    link_libraries(${HDF5_LIBRARY})
---- origsrc/CGNS-3.4.0/src/cgnstools/cgnsplot/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/cgnstools/cgnsplot/CMakeLists.txt	2019-05-30 11:57:56.067918700 +0900
+--- origsrc/CGNS-4.0.0/src/cgnstools/cgnsplot/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/cgnstools/cgnsplot/CMakeLists.txt	2020-02-28 17:11:58.960548000 +0900
 @@ -5,11 +5,11 @@
  include_directories(${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH} ${OPENGL_INCLUDE_DIR})
  include_directories(../common)
@@ -146,8 +144,8 @@
  link_libraries(tkogl ${TCL_LIBRARY} ${TK_LIBRARY}
  	${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY})
  
---- origsrc/CGNS-3.4.0/src/cgnstools/utilities/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/cgnstools/utilities/CMakeLists.txt	2019-05-30 11:58:28.923289800 +0900
+--- origsrc/CGNS-4.0.0/src/cgnstools/utilities/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/cgnstools/utilities/CMakeLists.txt	2020-02-28 17:11:58.976177500 +0900
 @@ -8,12 +8,12 @@ include_directories(../common)
  
  # cgns_info
@@ -165,8 +163,8 @@
  if (NOT WIN32)
    link_libraries(m)
  endif (NOT WIN32)
---- origsrc/CGNS-3.4.0/src/tests/CMakeLists.txt	2019-03-05 01:10:05.000000000 +0900
-+++ src/CGNS-3.4.0/src/tests/CMakeLists.txt	2019-05-30 11:59:03.209281900 +0900
+--- origsrc/CGNS-4.0.0/src/tests/CMakeLists.txt	2020-02-17 23:59:36.000000000 +0900
++++ src/CGNS-4.0.0/src/tests/CMakeLists.txt	2020-02-28 17:11:59.007551700 +0900
 @@ -4,7 +4,11 @@
  
  # Link all the executables to cgns and hdf5
