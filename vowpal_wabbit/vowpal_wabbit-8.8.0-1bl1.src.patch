@@ -1,0 +1,65 @@
+--- origsrc/vowpal_wabbit-8.8.0/CMakeLists.txt	2019-12-07 14:33:37.000000000 +0900
++++ src/vowpal_wabbit-8.8.0/CMakeLists.txt	2020-03-03 13:40:14.828698900 +0900
+@@ -193,17 +193,23 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURC
+   endif()
+ endif()
+ 
+-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/rapidjson/CMakeLists.txt")
++include(FindPkgConfig)
++if (CYGWIN)
++  pkg_check_modules(RAPIDJSON RapidJSON)
++  add_library(rapidjson INTERFACE)
++else()
++  if(NOT EXISTS "${PROJECT_SOURCE_DIR}/rapidjson/CMakeLists.txt")
+   message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+-endif()
++  endif()
+ 
+-add_library(rapidjson INTERFACE)
+-target_include_directories(rapidjson INTERFACE
++  add_library(rapidjson INTERFACE)
++  target_include_directories(rapidjson INTERFACE
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+-)
++  )
++endif()
+ 
+-if(VW_INSTALL)
++if(VW_INSTALL AND NOT RAPIDJSON_FOUND)
+   install(
+     TARGETS rapidjson
+     EXPORT VowpalWabbitConfig)
+--- origsrc/vowpal_wabbit-8.8.0/vowpalwabbit/CMakeLists.txt	2019-12-07 14:33:37.000000000 +0900
++++ src/vowpal_wabbit-8.8.0/vowpalwabbit/CMakeLists.txt	2020-03-03 11:24:00.962706200 +0900
+@@ -7,7 +7,9 @@ add_library(allreduce allreduce_sockets.
+ target_include_directories(allreduce PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+-
++if(CYGWIN)
++  set_target_properties(allreduce PROPERTIES SOVERSION 0)
++endif()
+ add_library(VowpalWabbit::allreduce ALIAS allreduce)
+ 
+ # Winsock32 should be available on Windows
+@@ -59,6 +61,9 @@ set(vw_all_sources
+ )
+ 
+ add_library(vw ${vw_all_sources} ${vw_all_headers})
++if(CYGWIN)
++  set_target_properties(vw PROPERTIES SOVERSION 0)
++endif()
+ 
+ target_link_libraries(vw
+   PUBLIC
+@@ -161,6 +166,9 @@ if(NOT DEFINED DO_NOT_BUILD_VW_C_WRAPPER
+   else()
+     add_library(vw_c_wrapper SHARED vwdll.cpp)
+   endif()
++  if(CYGWIN)
++    set_target_properties(vw_c_wrapper PROPERTIES SOVERSION 0)
++  endif()
+ 
+   add_library(VowpalWabbit::vw_c_wrapper ALIAS vw_c_wrapper)
+ 
