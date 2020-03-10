@@ -1,0 +1,75 @@
+--- origsrc/getdns-1.6.0/CMakeLists.txt	2020-02-28 23:39:53.000000000 +0900
++++ src/getdns-1.6.0/CMakeLists.txt	2020-03-10 10:03:38.863312300 +0900
+@@ -92,7 +92,7 @@ include(TargetSharedLibraryExports)
+ include(TargetSharedLibraryVersion)
+ 
+ # Target Platform
+-if (WIN32 OR MINGW OR MSYS OR CYGWIN)
++if (WIN32 OR MINGW OR MSYS)
+   set(HOSTOS "windows")
+   set(GETDNS_ON_WINDOWS 1)
+   set(USE_WINSOCK 1)
+@@ -286,10 +286,12 @@ check_include_file(sys/sysctl.h HAVE_SYS
+ check_include_file(sys/time.h HAVE_SYS_TIME_H)
+ check_include_file(sys/wait.h HAVE_SYS_WAIT_H)
+ 
+-check_include_file(windows.h HAVE_WINDOWS_H)
+-check_include_file(winsock.h HAVE_WINSOCK_H)
+-check_include_file(winsock2.h HAVE_WINSOCK2_H)
+-check_include_file(ws2tcpip.h HAVE_WS2TCPIP_H)
++if (NOT CYGWIN)
++  check_include_file(windows.h HAVE_WINDOWS_H)
++  check_include_file(winsock.h HAVE_WINSOCK_H)
++  check_include_file(winsock2.h HAVE_WINSOCK2_H)
++  check_include_file(ws2tcpip.h HAVE_WS2TCPIP_H)
++endif()
+ 
+ # Check for include declarations
+ check_symbol_exists(getentropy unistd.h HAVE_DECL_GETENTROPY)
+@@ -1043,27 +1045,27 @@ configure_file(getdns.pc.in getdns.pc @O
+ 
+ # Installing.
+ if (ENABLE_STATIC)
+-  install(TARGETS getdns LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++  install(TARGETS getdns RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   if (USE_LIBEV)
+-    install(TARGETS getdns_ex_ev LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_ev RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+   if (USE_LIBEVENT2)
+-    install(TARGETS getdns_ex_event LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_event RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+   if (USE_LIBUV)
+-    install(TARGETS getdns_ex_uv LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_uv RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+ endif ()
+ if (ENABLE_SHARED)
+-  install(TARGETS getdns_shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++  install(TARGETS getdns_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   if (USE_LIBEV)
+-    install(TARGETS getdns_ex_ev_shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_ev_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+   if (USE_LIBEVENT2)
+-    install(TARGETS getdns_ex_event_shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_event_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+   if (USE_LIBUV)
+-    install(TARGETS getdns_ex_uv_shared LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++    install(TARGETS getdns_ex_uv_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+   endif ()
+ endif ()
+ if (BUILD_GETDNS_QUERY)
+--- origsrc/getdns-1.6.0/src/compat/chacha_private.h	2020-02-28 23:39:53.000000000 +0900
++++ src/getdns-1.6.0/src/compat/chacha_private.h	2020-03-10 09:21:50.465362500 +0900
+@@ -6,6 +6,8 @@ Public domain.
+ 
+ /* $OpenBSD: chacha_private.h,v 1.2 2013/10/04 07:02:27 djm Exp $ */
+ 
++#include <sys/types.h>
++
+ typedef unsigned char u8;
+ typedef unsigned int u32;
+ 
