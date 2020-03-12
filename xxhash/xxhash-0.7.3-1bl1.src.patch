@@ -1,0 +1,51 @@
+--- origsrc/xxHash-0.7.3/cmake_unofficial/CMakeLists.txt	2020-03-05 11:37:01.000000000 +0900
++++ src/xxHash-0.7.3/cmake_unofficial/CMakeLists.txt	2020-03-12 23:57:25.945398700 +0900
+@@ -78,8 +78,8 @@ if (BUILD_SHARED_LIBS)
+   target_compile_definitions(xxhash PUBLIC XXH_EXPORT)
+ endif ()
+ set_target_properties(xxhash PROPERTIES
+-  SOVERSION "${XXHASH_VERSION_STRING}"
+-  VERSION "${XXHASH_VERSION_STRING}")
++  SOVERSION "${XXHASH_LIB_SOVERSION}"
++  VERSION "${XXHASH_LIB_VERSION}")
+ 
+ if(XXHASH_BUILD_XXHSUM)
+   # xxhsum
+@@ -118,7 +118,7 @@ if(NOT XXHASH_BUNDLED_MODE)
+ 
+   install(TARGETS xxhash
+     EXPORT xxHashTargets
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+   install(FILES "${XXHASH_DIR}/xxhash.h"
+     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+@@ -165,3 +165,7 @@ if(NOT XXHASH_BUNDLED_MODE)
+     DESTINATION ${xxHash_CONFIG_INSTALL_DIR}
+     NAMESPACE ${PROJECT_NAME}::)
+ endif(NOT XXHASH_BUNDLED_MODE)
++
++SET(PREFIX ${CMAKE_INSTALL_PREFIX})
++CONFIGURE_FILE(${XXHASH_DIR}/libxxhash.pc.in ${CMAKE_BINARY_DIR}/libxxhash.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libxxhash.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/xxHash-0.7.3/libxxhash.pc.in	2020-03-05 11:37:01.000000000 +0900
++++ src/xxHash-0.7.3/libxxhash.pc.in	2020-03-12 23:53:34.871368800 +0900
+@@ -9,6 +9,6 @@ libdir=${exec_prefix}/lib
+ Name: xxhash
+ Description: extremely fast hash algorithm
+ URL: https://www.xxhash.com/
+-Version: @VERSION@
++Version: @XXHASH_VERSION_STRING@
+ Libs: -L${libdir} -lxxhash
+ Cflags: -I${includedir}
+--- origsrc/xxHash-0.7.3/xxhsum.c	2020-03-05 11:37:01.000000000 +0900
++++ src/xxHash-0.7.3/xxhsum.c	2020-03-12 23:54:47.375363700 +0900
+@@ -88,7 +88,7 @@
+ #if (defined(__linux__) && (PLATFORM_POSIX_VERSION >= 1)) \
+  || (PLATFORM_POSIX_VERSION >= 200112L) \
+  || defined(__DJGPP__) \
+- || defined(__MSYS__)
++ || defined(__MSYS__) || defined(__CYGWIN__)
+ #  include <unistd.h>   /* isatty */
+ #  define IS_CONSOLE(stdStream) isatty(fileno(stdStream))
+ #elif defined(MSDOS) || defined(OS2)
