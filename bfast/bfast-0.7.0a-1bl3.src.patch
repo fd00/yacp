@@ -1,0 +1,155 @@
+--- origsrc/bfast-0.7.0a/bfast/BLib.c	2011-09-04 03:44:58.000000000 +0900
++++ src/bfast-0.7.0a/bfast/BLib.c	2020-03-13 11:15:53.646545000 +0900
+@@ -90,7 +90,7 @@ void ToLowerRead(char *r, int readLength
+ }
+ 
+ /* TODO */
+-inline char ToUpper(char a)
++char ToUpper(char a)
+ {
+   if(97 <= a && a < 122) return (char)(a - 32);
+   return a;
+--- origsrc/bfast-0.7.0a/bfast/BLib.h	2011-09-04 03:44:58.000000000 +0900
++++ src/bfast-0.7.0a/bfast/BLib.h	2020-03-13 11:16:05.207826000 +0900
+@@ -16,7 +16,7 @@ int GetFastaHeaderLine(FILE*, char*);
+ int ParseFastaHeaderLine(char*);
+ char ToLower(char);
+ void ToLowerRead(char*, int);
+-inline char ToUpper(char);
++char ToUpper(char);
+ void ToUpperRead(char*, int);
+ void ReverseRead(char*, char*, int);
+ void ReverseReadFourBit(int8_t*, int8_t*, int);
+--- origsrc/bfast-0.7.0a/bfast/RGMatch.c	2011-10-30 04:31:58.000000000 +0900
++++ src/bfast-0.7.0a/bfast/RGMatch.c	2020-03-13 11:10:36.725497700 +0900
+@@ -20,7 +20,7 @@ int32_t RGMatchRead(gzFile fp,
+ 	/* Read in the read length */
+ 	if(gzread64(fp, &m->readLength, sizeof(int32_t))!=sizeof(int32_t)||
+ 			gzread64(fp, &m->qualLength, sizeof(int32_t))!=sizeof(int32_t)) {
+-		if(feof(fp) != 0) {
++		if(gzeof(fp) != 0) {
+ 			return EOF;
+ 		}
+ 		else {
+--- origsrc/bfast-0.7.0a/bfast/ScoringMatrix.c	2011-09-04 03:44:58.000000000 +0900
++++ src/bfast-0.7.0a/bfast/ScoringMatrix.c	2020-03-13 11:18:02.204917500 +0900
+@@ -98,14 +98,14 @@ int32_t ScoringMatrixCheck(ScoringMatrix
+ 	return 1;
+ }
+ 
+-inline int32_t ScoringMatrixGetNTScore(char a,
++int32_t ScoringMatrixGetNTScore(char a,
+ 		char b,
+ 		ScoringMatrix *sm)
+ {
+ 	return (ToUpper(a) == ToUpper(b)) ? sm->ntMatch : sm->ntMismatch;
+ }
+ 
+-inline int32_t ScoringMatrixGetColorScore(char a, 
++int32_t ScoringMatrixGetColorScore(char a, 
+ 		char b, 
+ 		ScoringMatrix *sm) 
+ {
+--- origsrc/bfast-0.7.0a/bfast/ScoringMatrix.h	2011-09-04 03:44:59.000000000 +0900
++++ src/bfast-0.7.0a/bfast/ScoringMatrix.h	2020-03-13 11:18:11.261589200 +0900
+@@ -3,8 +3,8 @@
+ 
+ #include "BLibDefinitions.h"
+ 
+-inline int32_t ScoringMatrixGetNTScore(char, char, ScoringMatrix*);
+-inline int32_t ScoringMatrixGetColorScore(char, char, ScoringMatrix*);
++int32_t ScoringMatrixGetNTScore(char, char, ScoringMatrix*);
++int32_t ScoringMatrixGetColorScore(char, char, ScoringMatrix*);
+ 
+ int ScoringMatrixRead(char*, ScoringMatrix*, int);
+ void ScoringMatrixInitialize(ScoringMatrix*);
+--- origsrc/bfast-0.7.0a/configure.ac	2011-10-30 04:32:53.000000000 +0900
++++ src/bfast-0.7.0a/configure.ac	2020-03-13 11:10:38.526906100 +0900
+@@ -23,7 +23,7 @@ AC_PROG_INSTALL
+ AC_GNU_SOURCE
+ 
+ # set CFLAGS and CXXFLAGS
+-default_CFLAGS="-Wall -g -O2 -pthread";
++default_CFLAGS="-Wall -g -O2";
+ extended_CFLAGS="";# "-m64 -D_FILE_OFFSET_BITS=64";
+ 
+ # Define some variables
+--- origsrc/bfast-0.7.0a/tests/test.cleanup.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.cleanup.sh	2020-03-13 11:10:38.542548900 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Cleaning up files.";
+ 
+--- origsrc/bfast-0.7.0a/tests/test.diff.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.diff.sh	2020-03-13 11:10:38.559382000 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ #error()
+ #{
+--- origsrc/bfast-0.7.0a/tests/test.fasta2brg.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.fasta2brg.sh	2020-03-13 11:10:38.746960300 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ TMP_DIR="tmp/";
+ 
+ echo "      Building a reference genome.";
+--- origsrc/bfast-0.7.0a/tests/test.index.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.index.sh	2020-03-13 11:10:38.840680400 +0900
+@@ -1,5 +1,5 @@
+ #!/bin/sh 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Building an index.";
+ 
+--- origsrc/bfast-0.7.0a/tests/test.initialize.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.initialize.sh	2020-03-13 11:10:38.856254100 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Initializing data for tests.";
+ 
+--- origsrc/bfast-0.7.0a/tests/test.localalign.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.localalign.sh	2020-03-13 11:10:38.918823600 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Running local alignment.";
+ 
+--- origsrc/bfast-0.7.0a/tests/test.match.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.match.sh	2020-03-13 11:10:38.981332700 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Finding matches.";
+ 
+--- origsrc/bfast-0.7.0a/tests/test.postprocess.sh	2010-11-13 16:15:28.000000000 +0900
++++ src/bfast-0.7.0a/tests/test.postprocess.sh	2020-03-13 11:10:39.059582200 +0900
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-. test.definitions.sh
++. ./test.definitions.sh
+ 
+ echo "      Running postprocessing.";
+ 
