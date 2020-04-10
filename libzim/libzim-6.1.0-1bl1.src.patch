@@ -1,27 +1,27 @@
---- origsrc/libzim-6.0.2/meson.build	2019-09-26 22:52:20.000000000 +0900
-+++ src/libzim-6.0.2/meson.build	2019-10-12 11:30:44.399879700 +0900
+--- origsrc/libzim-6.1.0/meson.build	2020-04-09 02:16:41.000000000 +0900
++++ src/libzim-6.1.0/meson.build	2020-04-10 10:29:56.555191700 +0900
 @@ -1,7 +1,7 @@
  project('libzim', ['c', 'cpp'],
-   version : '6.0.2',
+   version : '6.1.0',
    license : 'GPL2',
 -  default_options : ['c_std=c11', 'cpp_std=c++11', 'werror=true'])
 +  default_options : ['c_std=c11', 'cpp_std=c++11'])
  
  if build_machine.system() != 'windows'
    add_project_arguments('-D_LARGEFILE64_SOURCE=1', '-D_FILE_OFFSET_BITS=64', language: 'cpp')
---- origsrc/libzim-6.0.2/src/buffer.cpp	2019-09-26 22:52:20.000000000 +0900
-+++ src/libzim-6.0.2/src/buffer.cpp	2019-10-12 11:29:35.550525600 +0900
+--- origsrc/libzim-6.1.0/src/buffer.cpp	2020-04-09 02:16:41.000000000 +0900
++++ src/libzim-6.1.0/src/buffer.cpp	2020-04-10 10:30:48.329495700 +0900
 @@ -46,7 +46,7 @@ MMapBuffer::MMapBuffer(int fd, offset_t
  {
    offset_t pa_offset(offset.v & ~(sysconf(_SC_PAGE_SIZE) - 1));
    _offset = offset-pa_offset;
--#if defined(__APPLE__)
-+#if defined(__APPLE__) || defined(__CYGWIN__)
+-#if defined(__APPLE__) || defined(__OpenBSD__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__CYGWIN__)
    #define MAP_FLAGS MAP_PRIVATE
  #else
    #define MAP_FLAGS MAP_PRIVATE|MAP_POPULATE
---- origsrc/libzim-6.0.2/src/debug.h	2019-09-26 22:52:20.000000000 +0900
-+++ src/libzim-6.0.2/src/debug.h	2019-10-12 11:27:06.752328600 +0900
+--- origsrc/libzim-6.1.0/src/debug.h	2020-04-09 02:16:41.000000000 +0900
++++ src/libzim-6.1.0/src/debug.h	2020-04-10 10:28:13.536547800 +0900
 @@ -27,7 +27,7 @@
  # define ASSERT(left, operator, right) (void(0))
  #else
@@ -40,14 +40,14 @@
    void *callstack[64];
    size_t size;
    size = backtrace(callstack, 64);
---- origsrc/libzim-6.0.2/src/fs_unix.cpp	2019-09-26 22:52:20.000000000 +0900
-+++ src/libzim-6.0.2/src/fs_unix.cpp	2019-10-12 11:31:29.116773800 +0900
+--- origsrc/libzim-6.1.0/src/fs_unix.cpp	2020-04-09 02:16:41.000000000 +0900
++++ src/libzim-6.1.0/src/fs_unix.cpp	2020-04-10 10:34:23.885704200 +0900
 @@ -34,7 +34,7 @@ namespace unix {
  
  zsize_t FD::readAt(char* dest, zsize_t size, offset_t offset) const
  {
--#ifdef __APPLE__
-+#if defined(__APPLE__) || defined(__CYGWIN__)
+-#if defined(__APPLE__) || defined(__OpenBSD__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__CYGWIN__)
  # define PREAD pread
  #else
  # define PREAD pread64
