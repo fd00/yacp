@@ -1,15 +1,6 @@
---- origsrc/libfreenect-0.5.7/CMakeLists.txt	2017-10-26 08:03:11.000000000 +0900
-+++ src/libfreenect-0.5.7/CMakeLists.txt	2018-03-03 00:56:35.589463200 +0900
-@@ -70,6 +70,8 @@ IF(PROJECT_OS_LINUX)
- 	OPTION(BUILD_CPACK_TGZ "Build an TGZ using CPack" OFF)
- ENDIF(PROJECT_OS_LINUX)
- 
-+OPTION(ENABLE_STATIC "Enable static" OFF)
-+
- ######################################################################################
- # Dependencies and Definitions
- ######################################################################################
-@@ -181,7 +183,7 @@ configure_file(
+--- origsrc/libfreenect-0.6.1/CMakeLists.txt	2020-03-22 02:55:44.000000000 +0900
++++ src/libfreenect-0.6.1/CMakeLists.txt	2020-06-11 12:02:58.139537100 +0900
+@@ -181,7 +181,7 @@ configure_file(
  
  # --- cmake config file ---
  CONFIGURE_FILE(libfreenectConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/libfreenectConfig.cmake @ONLY)
@@ -18,8 +9,8 @@
  
  add_custom_target(uninstall
    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/UninstallTarget.cmake)
---- origsrc/libfreenect-0.5.7/src/CMakeLists.txt	2017-10-26 08:03:11.000000000 +0900
-+++ src/libfreenect-0.5.7/src/CMakeLists.txt	2018-03-03 00:56:35.605024000 +0900
+--- origsrc/libfreenect-0.6.1/src/CMakeLists.txt	2020-03-22 02:55:44.000000000 +0900
++++ src/libfreenect-0.6.1/src/CMakeLists.txt	2020-06-11 12:04:16.717596800 +0900
 @@ -26,18 +26,23 @@ set_target_properties ( freenect PROPERT
    VERSION ${PROJECT_VER}
    SOVERSION ${PROJECT_APIVER})	
@@ -35,7 +26,7 @@
 -ENDIF()
 -install (TARGETS freenectstatic
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+if(ENABLE_STATIC)
++if(NOT BUILD_SHARED_LIBS)
 +  add_library (freenectstatic STATIC ${SRC})
 +  set_target_properties (freenectstatic PROPERTIES OUTPUT_NAME freenect)
 +  IF(UNIX AND NOT APPLE)
@@ -47,21 +38,21 @@
  
  target_link_libraries (freenect ${LIBUSB_1_LIBRARIES})
 -target_link_libraries (freenectstatic ${LIBUSB_1_LIBRARIES})
-+if(ENABLE_STATIC)
++if(NOT BUILD_SHARED_LIBS)
 +  target_link_libraries (freenectstatic ${LIBUSB_1_LIBRARIES})
 +endif()
  
  # Install the header files
  install (FILES "../include/libfreenect.h" "../include/libfreenect_registration.h" "../include/libfreenect_audio.h"
---- origsrc/libfreenect-0.5.7/wrappers/c_sync/CMakeLists.txt	2017-10-26 08:03:11.000000000 +0900
-+++ src/libfreenect-0.5.7/wrappers/c_sync/CMakeLists.txt	2018-03-03 00:56:35.621658100 +0900
+--- origsrc/libfreenect-0.6.1/wrappers/c_sync/CMakeLists.txt	2020-03-22 02:55:44.000000000 +0900
++++ src/libfreenect-0.6.1/wrappers/c_sync/CMakeLists.txt	2020-06-11 12:06:58.635568600 +0900
 @@ -7,19 +7,26 @@ find_package(Threads REQUIRED)
  include_directories(${THREADS_PTHREADS_INCLUDE_DIR})
  
  add_library (freenect_sync SHARED libfreenect_sync.c)
 -add_library (freenect_sync_static STATIC libfreenect_sync.c)
 -set_target_properties (freenect_sync_static PROPERTIES OUTPUT_NAME freenect_sync)
-+if(ENABLE_STATIC)
++if(NOT BUILD_SHARED_LIBS)
 +  add_library (freenect_sync_static STATIC libfreenect_sync.c)
 +  set_target_properties (freenect_sync_static PROPERTIES OUTPUT_NAME freenect_sync)
 +endif()
@@ -72,7 +63,7 @@
  
  target_link_libraries (freenect_sync freenect ${CMAKE_THREAD_LIBS_INIT})
 -target_link_libraries (freenect_sync_static freenect ${CMAKE_THREAD_LIBS_INIT})
-+if(ENABLE_STATIC)
++if(NOT BUILD_SHARED_LIBS)
 +  target_link_libraries (freenect_sync_static freenect ${CMAKE_THREAD_LIBS_INIT})
 +endif()
  
@@ -82,14 +73,14 @@
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 +  RUNTIME DESTINATION bin
 +  ARCHIVE DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+if(ENABLE_STATIC)
++if(NOT BUILD_SHARED_LIBS)
 +  install (TARGETS freenect_sync_static
 +    DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 +endif()
  install (FILES "libfreenect_sync.h"
    DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
---- origsrc/libfreenect-0.5.7/wrappers/opencv/CMakeLists.txt	2017-10-26 08:03:11.000000000 +0900
-+++ src/libfreenect-0.5.7/wrappers/opencv/CMakeLists.txt	2018-03-03 00:56:35.636309400 +0900
+--- origsrc/libfreenect-0.6.1/wrappers/opencv/CMakeLists.txt	2020-03-22 02:55:44.000000000 +0900
++++ src/libfreenect-0.6.1/wrappers/opencv/CMakeLists.txt	2020-06-11 12:01:37.577249400 +0900
 @@ -12,7 +12,8 @@ include_directories (../c_sync)
  target_link_libraries (freenect_cv freenect_sync ${OpenCV_LIBS})
  
