@@ -1,0 +1,65 @@
+--- origsrc/libsignal-protocol-c-2.3.3/CMakeLists.txt	2020-03-28 09:15:49.000000000 +0900
++++ src/libsignal-protocol-c-2.3.3/CMakeLists.txt	2020-06-19 09:18:12.301039300 +0900
+@@ -70,6 +70,10 @@ IF(COVERAGE)
+ 	add_custom_target( coverage DEPENDS run_coverage )
+ ENDIF(COVERAGE)
+ 
++INCLUDE(FindPkgConfig)
++PKG_CHECK_MODULES(LIBPROTOBUF_C REQUIRED libprotobuf-c)
++PKG_CHECK_MODULES(CURVE25519_DONNA REQUIRED curve25519-donna)
++
+ add_subdirectory(src)
+ 
+ IF(BUILD_TESTING)
+--- origsrc/libsignal-protocol-c-2.3.3/src/CMakeLists.txt	2020-03-28 09:15:49.000000000 +0900
++++ src/libsignal-protocol-c-2.3.3/src/CMakeLists.txt	2020-06-19 09:18:12.316670200 +0900
+@@ -62,17 +62,31 @@ set(signal_protocol_SRCS
+ )
+ 
+ add_subdirectory(curve25519)
+-add_subdirectory(protobuf-c)
+ 
+-add_library(signal-protocol-c
++if(LIBPROTOBUF_C_FOUND)
++	add_library(signal-protocol-c
++		${protobuf_SRCS}
++		${signal_protocol_SRCS}
++		$<TARGET_OBJECTS:curve25519>
++	)
++else()
++	add_subdirectory(protobuf-c)
++	add_library(signal-protocol-c
+ 	${protobuf_SRCS}
+ 	${signal_protocol_SRCS}
+ 	$<TARGET_OBJECTS:curve25519>
+ 	$<TARGET_OBJECTS:protobuf-c>
+-)
++	)
++endif()
+ 
+ if(BUILD_SHARED_LIBS)
+ 	target_link_libraries(signal-protocol-c ${M_LIB})
++	if(LIBPROTOBUF_C_FOUND)
++		target_link_libraries(signal-protocol-c ${LIBPROTOBUF_C_LIBRARIES})
++	endif()
++	if(CURVE25519_DONNA_FOUND)
++		target_link_libraries(signal-protocol-c ${CURVE25519_DONNA_LIBRARIES})
++	endif()
+ 	set_target_properties(signal-protocol-c PROPERTIES
+ 		VERSION ${SIGNAL_PROTOCOL_C_VERSION}
+ 		SOVERSION ${SIGNAL_PROTOCOL_C_VERSION_MAJOR}
+--- origsrc/libsignal-protocol-c-2.3.3/src/curve25519/CMakeLists.txt	2020-03-28 09:15:49.000000000 +0900
++++ src/libsignal-protocol-c-2.3.3/src/curve25519/CMakeLists.txt	2020-06-19 09:18:12.332319500 +0900
+@@ -100,7 +100,11 @@ set(ed25519_SRCS
+     ed25519/tests/internal_fast_tests.c
+ )
+ 
+-add_library(curve25519 OBJECT ${curve25519_SRCS} ${ed25519_SRCS})
++if(CURVE25519_DONNA_FOUND)
++    add_library(curve25519 OBJECT ${ed25519_SRCS})
++else()
++    add_library(curve25519 OBJECT ${curve25519_SRCS} ${ed25519_SRCS})
++endif()
+ 
+ # Add -fPIC flag
+ if(BUILD_SHARED_LIBS)
