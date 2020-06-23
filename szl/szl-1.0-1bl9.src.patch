@@ -1,5 +1,5 @@
 --- origsrc/szl-1.0/configure.ac	2010-08-16 07:04:18.000000000 +0900
-+++ src/szl-1.0/configure.ac	2018-12-03 08:32:21.382642100 +0900
++++ src/szl-1.0/configure.ac	2020-06-23 13:29:09.854614200 +0900
 @@ -39,6 +39,8 @@ AS_IF([test "x${ac_cv_env_CXXFLAGS_set}"
    AC_MSG_RESULT([use user-supplied: $CXXFLAGS])
  ])
@@ -10,7 +10,7 @@
  
  AC_PROG_LN_S
 --- origsrc/szl-1.0/src/Makefile.am	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/Makefile.am	2018-12-03 08:32:21.404620400 +0900
++++ src/szl-1.0/src/Makefile.am	2020-06-23 13:29:09.870235700 +0900
 @@ -250,12 +250,13 @@ libengine_la_SOURCES = \
  
  ##### Libraries to install
@@ -55,7 +55,7 @@
  ##### The szl program
  
 --- origsrc/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2018-12-03 08:32:21.431624300 +0900
++++ src/szl-1.0/src/emitters/tests/szlquantile_unittest.cc	2020-06-23 13:29:09.870235700 +0900
 @@ -233,7 +233,7 @@ bool SzlQuantileTest::CheckCorrectness(i
    // within the tolerable range. The ideal index
    // we are expecting is calculated as next_rank.
@@ -66,7 +66,7 @@
      dec.GetString(&vstr);
      CHECK_EQ(sscanf(vstr.c_str(), "xx-%d", &index), 1);
 --- origsrc/szl-1.0/src/engine/code.cc	2010-08-16 07:04:14.000000000 +0900
-+++ src/szl-1.0/src/engine/code.cc	2018-12-03 08:32:21.471616600 +0900
++++ src/szl-1.0/src/engine/code.cc	2020-06-23 13:29:09.917165100 +0900
 @@ -18,6 +18,7 @@
  #include <string>
  #include <errno.h>
@@ -76,7 +76,7 @@
  #include "engine/globals.h"
  #include "public/logging.h"
 --- origsrc/szl-1.0/src/engine/form.cc	2010-08-16 07:04:13.000000000 +0900
-+++ src/szl-1.0/src/engine/form.cc	2018-12-03 08:32:21.498616100 +0900
++++ src/szl-1.0/src/engine/form.cc	2020-06-23 13:29:09.948360800 +0900
 @@ -801,8 +801,7 @@ bool ArrayForm::IsEqual(Val* v1, Val* v2
  
  Val* ArrayForm::Cmp(Val* v1, Val* v2) const {
@@ -97,8 +97,20 @@
    TupleVal* t1 = v1->as_tuple();
    TupleVal* t2 = v2->as_tuple();
    assert(t1->type()->IsEqual(t2->type(), false));  // ignore proto info
+--- origsrc/szl-1.0/src/engine/protocolbuffers.cc	2010-08-16 07:04:13.000000000 +0900
++++ src/szl-1.0/src/engine/protocolbuffers.cc	2020-06-23 13:39:51.322854100 +0900
+@@ -20,7 +20,9 @@
+ #include "google/protobuf/io/coded_stream.h"
+ #include "google/protobuf/io/zero_copy_stream_impl.h"
+ #include "google/protobuf/wire_format_lite.h"
++#if !defined(__CYGWIN__)
+ #include "google/protobuf/wire_format_lite_inl.h"
++#endif
+ 
+ #include "engine/globals.h"
+ #include "public/commandlineflags.h"
 --- origsrc/szl-1.0/src/engine/scanner.h	2010-08-16 07:04:13.000000000 +0900
-+++ src/szl-1.0/src/engine/scanner.h	2018-12-03 08:32:21.515678600 +0900
++++ src/szl-1.0/src/engine/scanner.h	2020-06-23 13:29:09.979622000 +0900
 @@ -14,6 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -108,7 +120,7 @@
  namespace sawzall {
  
 --- origsrc/szl-1.0/src/engine/symboltable.cc	2010-08-16 07:04:14.000000000 +0900
-+++ src/szl-1.0/src/engine/symboltable.cc	2018-12-03 08:32:21.543778100 +0900
++++ src/szl-1.0/src/engine/symboltable.cc	2020-06-23 13:29:09.995238700 +0900
 @@ -44,7 +44,7 @@ namespace sawzall {
  // ------------------------------------------------------------------------------
  // Implementation of SymbolTable
@@ -118,10 +130,28 @@
  
  List<TableType*>* SymbolTable::table_types_ = NULL;
  TableType* SymbolTable::collection_type_ = NULL;
---- origsrc/szl-1.0/src/protoc_plugin/szl_generator.h	2010-08-16 07:29:52.000000000 +0900
-+++ src/szl-1.0/src/protoc_plugin/szl_generator.h	2018-12-03 08:32:21.560611500 +0900
-@@ -22,6 +22,8 @@
+--- origsrc/szl-1.0/src/protoc_plugin/linked_ptr.h	2010-08-16 07:03:37.000000000 +0900
++++ src/szl-1.0/src/protoc_plugin/linked_ptr.h	2020-06-23 13:53:56.477953600 +0900
+@@ -48,6 +48,9 @@
+ #ifndef _LINKED_PTR_H__
+ #define _LINKED_PTR_H__
  
++#if defined(__CYGWIN__)
++#include <google/protobuf/stubs/logging.h>
++#endif
+ 
+ // This is used internally by all instances of linked_ptr<>.  It needs to be
+ // a non-template class because different types of linked_ptr<> can refer to
+--- origsrc/szl-1.0/src/protoc_plugin/szl_generator.h	2010-08-16 07:29:52.000000000 +0900
++++ src/szl-1.0/src/protoc_plugin/szl_generator.h	2020-06-23 14:01:31.427019300 +0900
+@@ -20,8 +20,14 @@
+ #include <set>
+ #include <string>
+ 
++#if defined(__CYGWIN__)
++#include <google/protobuf/stubs/mutex.h>
++#endif
++
  #include "google/protobuf/compiler/code_generator.h"
  
 +using namespace std;
@@ -129,8 +159,21 @@
  namespace google {
  namespace protobuf {
  
+--- origsrc/szl-1.0/src/protoc_plugin/topologicalsorter-inl.h	2010-08-16 07:03:37.000000000 +0900
++++ src/szl-1.0/src/protoc_plugin/topologicalsorter-inl.h	2020-06-23 13:53:10.496771200 +0900
+@@ -24,6 +24,10 @@
+ #include <queue>
+ #include <vector>
+ 
++#if defined(__CYGWIN__)
++#include <google/protobuf/stubs/logging.h>
++#endif
++
+ #include "protoc_plugin/topologicalsorter.h"
+ 
+ 
 --- origsrc/szl-1.0/src/public/porting.h	2010-08-16 07:04:17.000000000 +0900
-+++ src/szl-1.0/src/public/porting.h	2018-12-03 08:32:21.575928100 +0900
++++ src/szl-1.0/src/public/porting.h	2020-06-23 13:29:10.042137500 +0900
 @@ -48,7 +48,9 @@ typedef uint64_t uint64;
  
  typedef signed char schar;
@@ -142,7 +185,7 @@
  typedef unsigned long uword_t;
  
 --- origsrc/szl-1.0/src/utilities/port_ieee.h	2010-08-16 07:04:16.000000000 +0900
-+++ src/szl-1.0/src/utilities/port_ieee.h	2018-12-03 08:32:21.590607300 +0900
++++ src/szl-1.0/src/utilities/port_ieee.h	2020-06-23 13:29:10.057745500 +0900
 @@ -14,7 +14,7 @@
  // ------------------------------------------------------------------------
  
@@ -153,7 +196,7 @@
  #elif defined(OS_MACOSX)
  #include <machine/endian.h>
 --- origsrc/szl-1.0/src/utilities/random_base.cc	2010-08-16 07:04:15.000000000 +0900
-+++ src/szl-1.0/src/utilities/random_base.cc	2018-12-03 08:32:21.600620400 +0900
++++ src/szl-1.0/src/utilities/random_base.cc	2020-06-23 13:29:10.073344600 +0900
 @@ -18,6 +18,7 @@
  #include <string>
  #include <memory.h>
