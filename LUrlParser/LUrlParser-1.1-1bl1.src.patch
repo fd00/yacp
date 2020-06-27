@@ -1,0 +1,42 @@
+--- origsrc/LUrlParser-release-1.1/CMakeLists.txt	2020-01-08 17:06:09.000000000 +0900
++++ src/LUrlParser-release-1.1/CMakeLists.txt	2020-06-27 21:07:28.846234700 +0900
+@@ -2,7 +2,22 @@ cmake_minimum_required(VERSION 3.0)
+ 
+ project("LUrlParser")
+ 
+-add_executable(Example Example.cpp LUrlParser.cpp LUrlParser.h)
+-
+-set_property(TARGET Example PROPERTY CXX_STANDARD 11)
+-set_property(TARGET Example PROPERTY CXX_STANDARD_REQUIRED ON)
++if (CYGWIN)
++    add_library(LUrlParser SHARED LUrlParser.cpp LUrlParser.h)
++    set_target_properties(LUrlParser PROPERTIES SOVERSION 0)
++    add_executable(lurlparser Example.cpp)
++    target_link_libraries(lurlparser LUrlParser)
++    install(FILES LUrlParser.h DESTINATION include)
++    install(TARGETS LUrlParser RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++    install(TARGETS lurlparser RUNTIME DESTINATION bin)
++    SET(prefix ${CMAKE_INSTALL_PREFIX})
++    SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++    SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++    SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/LUrlParser.pc.in ${CMAKE_BINARY_DIR}/LUrlParser.pc @ONLY)
++    INSTALL(FILES ${CMAKE_BINARY_DIR}/LUrlParser.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++else()
++    add_executable(Example Example.cpp LUrlParser.cpp LUrlParser.h)
++    set_property(TARGET Example PROPERTY CXX_STANDARD 11)
++    set_property(TARGET Example PROPERTY CXX_STANDARD_REQUIRED ON)
++endif()
+--- origsrc/LUrlParser-release-1.1/LUrlParser.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/LUrlParser-release-1.1/LUrlParser.pc.in	2020-06-27 20:54:15.798068400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: LUrlParser
++Description: Lightweight URL & URI parser (RFC 1738, RFC 3986)
++Version: @VERSION@
++Libs: -L${libdir} -lLUrlParser
++Cflags: -I${includedir}
