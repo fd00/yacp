@@ -1,5 +1,5 @@
---- origsrc/console_bridge-0.4.4/CMakeLists.txt	2019-11-15 03:30:07.000000000 +0900
-+++ src/console_bridge-0.4.4/CMakeLists.txt	2019-11-19 19:29:19.354955300 +0900
+--- origsrc/console_bridge-1.0.0/CMakeLists.txt	2020-05-28 03:31:59.000000000 +0900
++++ src/console_bridge-1.0.0/CMakeLists.txt	2020-07-03 09:28:50.947871900 +0900
 @@ -26,7 +26,7 @@ if (HAS_VISIBILITY)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
  endif()
@@ -9,7 +9,7 @@
    # Use c++11 compiler flag, since it's needed for console.cpp
    # It isn't in a header file, so it doesn't need to be exported
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
-@@ -71,6 +71,8 @@ install(FILES ${PROJECT_BINARY_DIR}/${PR
+@@ -74,6 +74,8 @@ install(FILES ${PROJECT_BINARY_DIR}/${PR
  
  if(WIN32 AND NOT CYGWIN)
    set(CMAKE_CONFIG_INSTALL_DIR CMake)
@@ -18,19 +18,14 @@
  else()
    set(CMAKE_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/)
  endif()
---- origsrc/console_bridge-0.4.4/test/CMakeLists.txt	2019-11-15 03:30:07.000000000 +0900
-+++ src/console_bridge-0.4.4/test/CMakeLists.txt	2019-11-19 19:31:10.433288100 +0900
+--- origsrc/console_bridge-1.0.0/test/CMakeLists.txt	2020-05-28 03:31:59.000000000 +0900
++++ src/console_bridge-1.0.0/test/CMakeLists.txt	2020-07-03 09:32:56.857939000 +0900
 @@ -1,19 +1,22 @@
 -link_directories(
 -  ${PROJECT_BINARY_DIR}/test
 -)
-+option(USE_SYSTEM_GTEST "use system gtest" ON)
- 
-+if (NOT USE_SYSTEM_GTEST)
-+  link_directories(
-+    ${PROJECT_BINARY_DIR}/test
-+  )
- 
+-
+-
 -# Build gtest
 -add_library(gtest STATIC gtest/src/gtest-all.cc)
 -target_include_directories(gtest
@@ -39,6 +34,15 @@
 -  ${PROJECT_SOURCE_DIR}/test/gtest
 -  ${PROJECT_SOURCE_DIR}/test
 -)
++option(USE_SYSTEM_GTEST "use system gtest" ON)
+ 
+-add_library(gtest_main STATIC gtest/src/gtest_main.cc)
+-target_link_libraries(gtest_main gtest)
++if (NOT USE_SYSTEM_GTEST)
++  link_directories(
++    ${PROJECT_BINARY_DIR}/test
++  )
++
 +  # Build gtest
 +  add_library(gtest STATIC gtest/src/gtest-all.cc)
 +  target_include_directories(gtest
@@ -47,12 +51,29 @@
 +    ${PROJECT_SOURCE_DIR}/test/gtest
 +    ${PROJECT_SOURCE_DIR}/test
 +  )
- 
--add_library(gtest_main STATIC gtest/src/gtest_main.cc)
--target_link_libraries(gtest_main gtest)
++
 +  add_library(gtest_main STATIC gtest/src/gtest_main.cc)
 +  target_link_libraries(gtest_main gtest)
 +endif()
  
  execute_process(COMMAND cmake -E remove_directory ${CMAKE_BINARY_DIR}/test_results)
  execute_process(COMMAND cmake -E make_directory ${CMAKE_BINARY_DIR}/test_results)
+@@ -27,10 +30,14 @@ foreach(GTEST_SOURCE_file ${tests})
+   string(REGEX REPLACE ".cc" "" BINARY_NAME ${GTEST_SOURCE_file})
+   add_executable(${BINARY_NAME} ${GTEST_SOURCE_file})
+ 
+-  add_dependencies(${BINARY_NAME}
+-      console_bridge
+-      gtest
+-      gtest_main)
++  if (USE_SYSTEM_GTEST)
++    add_dependencies(${BINARY_NAME} console_bridge)
++  else()
++    add_dependencies(${BINARY_NAME}
++        console_bridge
++        gtest
++        gtest_main)
++  endif()
+ 
+   target_link_libraries(${BINARY_NAME}
+      gtest_main
