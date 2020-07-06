@@ -1,0 +1,39 @@
+--- origsrc/curlcpp-1.4/CMakeLists.txt	2020-06-03 13:35:13.000000000 +0900
++++ src/curlcpp-1.4/CMakeLists.txt	2020-07-06 10:56:59.475220100 +0900
+@@ -39,3 +39,10 @@ set(CURLCPP_LIB_LOCATION "$<TARGET_FILE:
+ 
+ configure_file(CMake/curlcppConfig.cmake.in
+   ${CMAKE_INSTALL_PREFIX}/lib/curlcpp/curlcppConfig.cmake @ONLY)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/curlcpp.pc.in ${CMAKE_BINARY_DIR}/curlcpp.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/curlcpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/curlcpp-1.4/curlcpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/curlcpp-1.4/curlcpp.pc.in	2020-07-06 11:00:46.705707700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: curlcpp
++Description: Object oriented C++ wrapper for CURL
++Version: @VERSION@
++Libs: -L${libdir} -lcurlcpp
++Cflags: -I${includedir}
+--- origsrc/curlcpp-1.4/src/CMakeLists.txt	2020-06-03 13:35:13.000000000 +0900
++++ src/curlcpp-1.4/src/CMakeLists.txt	2020-07-06 10:49:30.042237000 +0900
+@@ -78,5 +78,9 @@ if(IPO_SUPPORTED AND CMAKE_BUILD_TYPE ST
+     set_target_properties(curlcpp PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+ endif()
+ 
+-install (TARGETS curlcpp LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++if(CYGWIN)
++    set_target_properties(curlcpp PROPERTIES SOVERSION 0)
++endif()
++
++install (TARGETS curlcpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install (FILES ${CURLCPP_HEADER_LIST} DESTINATION include/curlcpp)
