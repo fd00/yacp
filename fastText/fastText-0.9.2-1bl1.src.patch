@@ -1,0 +1,42 @@
+--- origsrc/fastText-0.9.2/CMakeLists.txt	2020-04-28 18:40:33.000000000 +0900
++++ src/fastText-0.9.2/CMakeLists.txt	2020-07-06 20:10:23.190716200 +0900
+@@ -57,22 +57,29 @@ if (NOT MSVC)
+ endif()
+ 
+ add_library(fasttext-shared SHARED ${SOURCE_FILES} ${HEADER_FILES})
+-add_library(fasttext-static STATIC ${SOURCE_FILES} ${HEADER_FILES})
+-add_library(fasttext-static_pic STATIC ${SOURCE_FILES} ${HEADER_FILES})
++if (NOT BUILD_SHARED_LIBS)
++  add_library(fasttext-static STATIC ${SOURCE_FILES} ${HEADER_FILES})
++  add_library(fasttext-static_pic STATIC ${SOURCE_FILES} ${HEADER_FILES})
++endif()
+ set_target_properties(fasttext-shared PROPERTIES OUTPUT_NAME fasttext
+   SOVERSION "${fasttext_VERSION_MAJOR}")
+-set_target_properties(fasttext-static PROPERTIES OUTPUT_NAME fasttext)
+-set_target_properties(fasttext-static_pic PROPERTIES OUTPUT_NAME fasttext_pic
+-  POSITION_INDEPENDENT_CODE True)
++if (NOT BUILD_SHARED_LIBS)
++  set_target_properties(fasttext-static PROPERTIES OUTPUT_NAME fasttext)
++  set_target_properties(fasttext-static_pic PROPERTIES OUTPUT_NAME fasttext_pic
++    POSITION_INDEPENDENT_CODE True)
++endif()
+ add_executable(fasttext-bin src/main.cc)
+-target_link_libraries(fasttext-bin pthread fasttext-static)
++target_link_libraries(fasttext-bin pthread fasttext-shared)
+ set_target_properties(fasttext-bin PROPERTIES PUBLIC_HEADER "${HEADER_FILES}" OUTPUT_NAME fasttext)
+ install (TARGETS fasttext-shared
+-    LIBRARY DESTINATION lib)
+-install (TARGETS fasttext-static
+-    ARCHIVE DESTINATION lib)
+-install (TARGETS fasttext-static_pic
++    RUNTIME DESTINATION bin
+     ARCHIVE DESTINATION lib)
++if (NOT BUILD_SHARED_LIBS)
++  install (TARGETS fasttext-static
++      ARCHIVE DESTINATION lib)
++  install (TARGETS fasttext-static_pic
++      ARCHIVE DESTINATION lib)
++endif()
+ install (TARGETS fasttext-bin
+     RUNTIME DESTINATION bin
+  PUBLIC_HEADER DESTINATION include/fasttext)
