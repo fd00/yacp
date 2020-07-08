@@ -1,0 +1,125 @@
+--- origsrc/g3log-1.3.3/Build.cmake	2020-06-07 07:40:36.000000000 +0900
++++ src/g3log-1.3.3/Build.cmake	2020-07-08 13:16:22.912182600 +0900
+@@ -87,7 +87,7 @@ FIND_PACKAGE(Threads REQUIRED)
+ TARGET_LINK_LIBRARIES(${G3LOG_LIBRARY} Threads::Threads )
+ 
+ # check for backtrace and cxa_demangle only in non-Windows dev environments
+-IF(NOT(MSVC OR MINGW))
++IF(NOT(MSVC OR MINGW OR CYGWIN))
+ 	# the backtrace module does not provide a modern cmake target
+ 	FIND_PACKAGE(Backtrace REQUIRED)
+ 	if(Backtrace_FOUND)
+--- origsrc/g3log-1.3.3/CMakeLists.txt	2020-06-07 07:40:36.000000000 +0900
++++ src/g3log-1.3.3/CMakeLists.txt	2020-07-08 14:32:36.451368400 +0900
+@@ -204,7 +204,9 @@ IF (NOT MSVC)
+    )
+ ENDIF()
+ 
+-
+-
+-
+-
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/g3log.pc.in ${CMAKE_BINARY_DIR}/g3log.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/g3log.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/g3log-1.3.3/g3log.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/g3log-1.3.3/g3log.pc.in	2020-07-08 14:32:48.519561600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: g3log
++Description: Asynchronous, 'crash safe', logger that is easy to use
++Version: @VERSION@
++Libs: -L${libdir} -lg3logger
++Cflags: -I${includedir}
+--- origsrc/g3log-1.3.3/src/crashhandler_unix.cpp	2020-06-07 07:40:36.000000000 +0900
++++ src/g3log-1.3.3/src/crashhandler_unix.cpp	2020-07-08 14:09:18.249453600 +0900
+@@ -19,7 +19,9 @@
+ #include <csignal>
+ #include <cstring>
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <cxxabi.h>
+ #include <cstdlib>
+ #include <sstream>
+@@ -147,9 +149,12 @@ namespace g3 {
+ 
+          const size_t max_dump_size = 50;
+          void* dump[max_dump_size];
+-         size_t size = backtrace(dump, max_dump_size);
+-         char** messages = backtrace_symbols(dump, static_cast<int>(size)); // overwrite sigaction with caller's address
+-
++         size_t size = 0;
++         char** messages = NULL;
++#if !defined(__CYGWIN__)
++         size = backtrace(dump, max_dump_size);
++         messages = backtrace_symbols(dump, static_cast<int>(size)); // overwrite sigaction with caller's address
++#endif
+          // dump stack: skip first frame, since that is here
+          std::ostringstream oss;
+          for (size_t idx = 1; idx < size && messages != nullptr; ++idx) {
+--- origsrc/g3log-1.3.3/test_unit/Test.cmake	2020-06-07 07:40:36.000000000 +0900
++++ src/g3log-1.3.3/test_unit/Test.cmake	2020-07-08 14:19:00.603109200 +0900
+@@ -39,18 +39,22 @@
+       # when building with Visual Studio
+       set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+ 
+-      # Add googletest directly to our build. This adds
+-      # the following targets: gtest, gtest_main, gmock
+-      # and gmock_main
+-      add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+-            ${CMAKE_BINARY_DIR}/googletest-build)
+-
+-      # The gtest/gmock targets carry header search path
+-      # dependencies automatically when using CMake 2.8.11 or
+-      # later. Otherwise we have to add them here ourselves.
+-      if (CMAKE_VERSION VERSION_LESS 2.8.11)
+-         include_directories("${gtest_SOURCE_DIR}/include"
+-                  "${gmock_SOURCE_DIR}/include")
++      option(USE_SYSTEM_GTEST "Use system gtest" ON)
++
++      if (NOT USE_SYSTEM_GTEST)
++         # Add googletest directly to our build. This adds
++         # the following targets: gtest, gtest_main, gmock
++         # and gmock_main
++         add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
++               ${CMAKE_BINARY_DIR}/googletest-build)
++
++         # The gtest/gmock targets carry header search path
++         # dependencies automatically when using CMake 2.8.11 or
++         # later. Otherwise we have to add them here ourselves.
++         if (CMAKE_VERSION VERSION_LESS 2.8.11)
++            include_directories("${gtest_SOURCE_DIR}/include"
++                     "${gmock_SOURCE_DIR}/include")
++         endif()
+       endif()
+ 
+       enable_testing()
+@@ -84,6 +88,9 @@
+            set_target_properties(${test} PROPERTIES COMPILE_FLAGS "-isystem -pthread ")
+         ENDIF( NOT(MSVC)) 
+         target_link_libraries(${test} g3logger gtest_main)
++        if (USE_SYSTEM_GTEST)
++         target_link_libraries(${test} gtest)
++        endif()
+ 		add_test( ${test} ${test} )
+       ENDFOREACH(test)
+    
+@@ -98,6 +105,9 @@
+        set_target_properties(test_dynamic_loaded_shared_lib PROPERTIES COMPILE_DEFINITIONS "GTEST_HAS_TR1_TUPLE=0")
+        set_target_properties(test_dynamic_loaded_shared_lib PROPERTIES COMPILE_DEFINITIONS "GTEST_HAS_RTTI=0")
+        target_link_libraries(test_dynamic_loaded_shared_lib  ${G3LOG_LIBRARY} -ldl gtest_main)
++       if (USE_SYSTEM_GTEST)
++         target_link_libraries(test_dynamic_loaded_shared_lib gtest)
++       endif()
+     ENDIF()
+ ELSE() 
+   message( STATUS "-DADD_G3LOG_UNIT_TEST=OFF" ) 
