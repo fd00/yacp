@@ -1,0 +1,145 @@
+--- origsrc/grive2-0.5.1/CMakeLists.txt	2019-11-13 07:05:31.000000000 +0900
++++ src/grive2-0.5.1/CMakeLists.txt	2020-07-09 12:18:16.582121400 +0900
+@@ -1,3 +1,5 @@
++project(grive)
++
+ cmake_minimum_required(VERSION 2.8)
+ 
+ include(GNUInstallDirs)
+@@ -12,4 +14,10 @@ add_definitions( -D_FILE_OFFSET_BITS=64
+ add_subdirectory( systemd )
+ add_subdirectory( libgrive )
+ add_subdirectory( grive )
+-	
+\ No newline at end of file
++	
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/grive.pc.in ${CMAKE_BINARY_DIR}/grive.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/grive.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/grive2-0.5.1/grive.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/grive2-0.5.1/grive.pc.in	2020-07-09 12:21:59.466518400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: grive
++Description: Open source Linux client for Google Drive
++Version: @GRIVE_VERSION@
++Libs: -L${libdir} -lgrive
++Cflags: -I${includedir}
+--- origsrc/grive2-0.5.1/libgrive/CMakeLists.txt	2019-11-13 07:05:31.000000000 +0900
++++ src/grive2-0.5.1/libgrive/CMakeLists.txt	2020-07-09 12:28:18.290186200 +0900
+@@ -7,10 +7,13 @@ find_package(CURL REQUIRED)
+ find_package(Boost 1.40.0 COMPONENTS program_options filesystem unit_test_framework regex system REQUIRED)
+ find_package(BFD)
+ find_package(CppUnit)
+-find_package(Iberty)
++if ( NOT CYGWIN )
++	find_package(Iberty)
++endif()
+ 
+ find_package(PkgConfig)
+ pkg_check_modules(YAJL REQUIRED yajl)
++pkg_check_modules(EXPAT REQUIRED expat)
+ 
+ add_definitions(-Wall)
+ 
+@@ -20,7 +23,7 @@ IF ( CPPUNIT_FOUND )
+ ENDIF ( CPPUNIT_FOUND )
+ 
+ # build bfd classes if libbfd is found
+-if ( BFD_FOUND )
++if ( BFD_FOUND AND NOT CYGWIN )
+ 	set( OPT_LIBS	${DL_LIBRARY} ${BFD_LIBRARY} )
+ 	file( GLOB OPT_SRC
+ 		src/bfd/*.cc
+@@ -43,6 +46,10 @@ include_directories(
+ 	${YAJL_INCLUDE_DIRS}
+ )
+ 
++file (GLOB DRIVE_HEADERS
++	${libgrive_SOURCE_DIR}/src/drive2/*.hh
++)
++
+ file (GLOB PROTOCOL_HEADERS
+     ${libgrive_SOURCE_DIR}/src/protocol/*.hh
+ )
+@@ -63,6 +70,7 @@ file (GLOB LIBGRIVE_SRC
+ 	src/json/*.cc
+ 	src/util/*.cc
+ 	src/util/log/*.cc
++	src/xml/*.cc
+ )
+ 
+ add_definitions(
+@@ -71,7 +79,7 @@ add_definitions(
+ )
+ 
+ #add_library( grive SHARED ${LIBGRIVE_SRC} ${OPT_SRC} )
+-add_library( grive STATIC ${LIBGRIVE_SRC} ${OPT_SRC} )
++add_library( grive ${LIBGRIVE_SRC} ${OPT_SRC} )
+ 
+ target_link_libraries( grive
+ 	${YAJL_LIBRARIES}
+@@ -82,12 +90,13 @@ target_link_libraries( grive
+ 	${Boost_REGEX_LIBRARY}
+ 	${Boost_SYSTEM_LIBRARY}
+ 	${IBERTY_LIBRARY}
++	${EXPAT_LIBRARIES}
+ 	${OPT_LIBS}
+ )
+ 
+-#set_target_properties(grive PROPERTIES
+-#    SOVERSION 0 VERSION ${GRIVE_VERSION}
+-#)
++set_target_properties(grive PROPERTIES
++    SOVERSION 0 VERSION ${GRIVE_VERSION}
++)
+ 
+ #set_target_properties(grive grive-static PROPERTIES OUTPUT_NAME grive)
+ 
+@@ -97,12 +106,12 @@ else()
+ endif()
+ 
+ # don't install libgrive for now
+-#install(TARGETS grive LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
+-#install(TARGETS grive ARCHIVE DESTINATION ${LIB_INSTALL_DIR} )
+-#install(FILES ${DRIVE_HEADERS} DESTINATION include/grive/drive)
+-#install(FILES ${PROTOCOL_HEADERS} DESTINATION include/grive/protocol)
+-#install(FILES ${UTIL_HEADERS} DESTINATION include/grive/util)
+-#install(FILES ${XML_HEADERS} DESTINATION include/grive/xml)
++install(TARGETS grive RUNTIME DESTINATION bin )
++install(TARGETS grive ARCHIVE DESTINATION ${LIB_INSTALL_DIR} )
++install(FILES ${DRIVE_HEADERS} DESTINATION include/grive/drive2)
++install(FILES ${PROTOCOL_HEADERS} DESTINATION include/grive/protocol)
++install(FILES ${UTIL_HEADERS} DESTINATION include/grive/util)
++install(FILES ${XML_HEADERS} DESTINATION include/grive/xml)
+ 
+ IF ( CPPUNIT_FOUND )
+ 	message("-- Building unitary tests along with the library and the binary")
+--- origsrc/grive2-0.5.1/libgrive/src/util/OS.cc	2019-11-13 07:05:31.000000000 +0900
++++ src/grive2-0.5.1/libgrive/src/util/OS.cc	2020-07-09 12:10:53.379654800 +0900
+@@ -39,7 +39,7 @@
+ 
+ namespace gr { namespace os {
+ 
+-void Stat( const fs::path& filename, DateTime *t, off_t *size, FileType *ft )
++void Stat( const fs::path& filename, DateTime *t, off64_t *size, FileType *ft )
+ {
+ 	Stat( filename.string(), t, size, ft ) ;
+ }
+--- origsrc/grive2-0.5.1/libgrive/src/xml/TreeBuilder.cc	2019-11-13 07:05:31.000000000 +0900
++++ src/grive2-0.5.1/libgrive/src/xml/TreeBuilder.cc	2020-07-09 11:28:01.031068800 +0900
+@@ -23,6 +23,7 @@
+ #include "Node.hh"
+ #include "util/log/Log.hh"
+ 
++#include <expat.h>
+ 
+ #include <cassert>
+ #include <iostream>
