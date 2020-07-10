@@ -1,5 +1,5 @@
---- origsrc/ios-webkit-debug-proxy-1.8.6/Makefile.am	2020-03-05 16:20:12.000000000 +0900
-+++ src/ios-webkit-debug-proxy-1.8.6/Makefile.am	2020-06-19 11:17:57.625255300 +0900
+--- origsrc/ios-webkit-debug-proxy-1.8.7/Makefile.am	2020-07-04 16:37:58.000000000 +0900
++++ src/ios-webkit-debug-proxy-1.8.7/Makefile.am	2020-07-11 00:19:16.508874100 +0900
 @@ -3,3 +3,6 @@
  
  AUTOMAKE_OPTIONS = foreign
@@ -7,42 +7,33 @@
 +
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = ios-webkit-debug-proxy.pc
---- origsrc/ios-webkit-debug-proxy-1.8.6/configure.ac	2020-03-05 16:20:12.000000000 +0900
-+++ src/ios-webkit-debug-proxy-1.8.6/configure.ac	2020-06-19 11:24:53.350129900 +0900
-@@ -17,20 +17,14 @@ PKG_PROG_PKG_CONFIG
- 
- # Checks for libraries.
- PKG_CHECK_MODULES(libimobiledevice, libimobiledevice-1.0 >= 1.2.0)
--PKG_CHECK_MODULES(libplist, libplist >= 1.12)
-+PKG_CHECK_MODULES(libplist, libplist-2.0 >= 2.2.0)
+--- origsrc/ios-webkit-debug-proxy-1.8.7/configure.ac	2020-07-04 16:37:58.000000000 +0900
++++ src/ios-webkit-debug-proxy-1.8.7/configure.ac	2020-07-10 18:44:13.749704900 +0900
+@@ -19,13 +19,7 @@ PKG_PROG_PKG_CONFIG
+ PKG_CHECK_MODULES(libimobiledevice, libimobiledevice-1.0 >= 1.3.0)
+ PKG_CHECK_MODULES(libplist, libplist-2.0 >= 2.2.0)
  PKG_CHECK_MODULES(openssl, openssl >= 0.9.8)
--AC_CHECK_LIB([plist], [plist_to_xml],
+-AC_CHECK_LIB([plist-2.0], [plist_to_xml],
 -             [ ], [AC_MSG_FAILURE([*** Unable to link with libplist])],
 -             [$libplist_LIBS])
  AC_CHECK_LIB([m], [log10])
--AC_CHECK_LIB([imobiledevice], [idevice_new],
+-AC_CHECK_LIB([imobiledevice-1.0], [idevice_new],
 -             [ ], [AC_MSG_FAILURE([*** Unable to link with libimobiledevice])],
 -             [$libimobiledevice_LIBS])
  LT_INIT
  
  # Defines versions of required modules
- libimobiledevice_version=`$PKG_CONFIG --modversion libimobiledevice-1.0`
--libplist_version=`$PKG_CONFIG --modversion libplist`
-+libplist_version=`$PKG_CONFIG --modversion libplist-2.0`
+@@ -79,7 +73,7 @@ fi
  
- AC_DEFINE_UNQUOTED([LIBIMOBILEDEVICE_VERSION], ["$libimobiledevice_version"], [ ])
- AC_DEFINE_UNQUOTED([LIBPLIST_VERSION], ["$libplist_version"], [ ])
-@@ -84,7 +78,7 @@ CFLAGS="$CFLAGS $libimobiledevice_CFLAGS
- AC_CHECK_DECL(idevice_connection_get_fd, [AC_DEFINE([HAVE_IDEVICE_CONNECTION_GET_FD], 1, [ ])], [], [#include <libimobiledevice/libimobiledevice.h>])
- CFLAGS=$SAVE_CFLAGS
+ AC_CHECK_FUNCS([memmove memset regcomp select socket strcasecmp strncasecmp strchr strdup strndup strrchr strstr strtol strcasestr getline])
  
 -AC_CONFIG_FILES([Makefile src/Makefile include/Makefile examples/Makefile])
 +AC_CONFIG_FILES([ios-webkit-debug-proxy.pc Makefile src/Makefile include/Makefile examples/Makefile])
  
  CFLAGS="${CFLAGS} -Wall -Werror"
  
---- origsrc/ios-webkit-debug-proxy-1.8.6/examples/Makefile.am	2020-03-05 16:20:12.000000000 +0900
-+++ src/ios-webkit-debug-proxy-1.8.6/examples/Makefile.am	2020-06-19 11:17:57.640879500 +0900
+--- origsrc/ios-webkit-debug-proxy-1.8.7/examples/Makefile.am	2020-07-04 16:37:58.000000000 +0900
++++ src/ios-webkit-debug-proxy-1.8.7/examples/Makefile.am	2020-07-10 18:34:20.491736100 +0900
 @@ -22,30 +22,18 @@ ws_echo2_SOURCES = ws_echo2.c \
      socket_manager.h \
      hash_table.h \
@@ -77,8 +68,8 @@
 -    ../src/device_listener.o \
 -    ../src/hash_table.o
 +dl_client_LDADD = $(top_builddir)/src/libios_webkit_debug_proxy.la
---- origsrc/ios-webkit-debug-proxy-1.8.6/ios-webkit-debug-proxy.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/ios-webkit-debug-proxy-1.8.6/ios-webkit-debug-proxy.pc.in	2020-06-19 11:17:57.656495300 +0900
+--- origsrc/ios-webkit-debug-proxy-1.8.7/ios-webkit-debug-proxy.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ios-webkit-debug-proxy-1.8.7/ios-webkit-debug-proxy.pc.in	2020-07-10 18:45:41.234097000 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -90,8 +81,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lios_webkit_debug_proxy
 +Cflags: -I${includedir}
---- origsrc/ios-webkit-debug-proxy-1.8.6/src/Makefile.am	2020-03-05 16:20:12.000000000 +0900
-+++ src/ios-webkit-debug-proxy-1.8.6/src/Makefile.am	2020-06-19 11:17:57.672124800 +0900
+--- origsrc/ios-webkit-debug-proxy-1.8.7/src/Makefile.am	2020-07-04 16:37:58.000000000 +0900
++++ src/ios-webkit-debug-proxy-1.8.7/src/Makefile.am	2020-07-10 18:34:48.740671300 +0900
 @@ -8,7 +8,7 @@ AM_LDFLAGS = $(libimobiledevice_LIBS) $(
  
  lib_LTLIBRARIES = libios_webkit_debug_proxy.la
