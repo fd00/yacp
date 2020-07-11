@@ -1,0 +1,181 @@
+--- origsrc/iowow-1.4.4/src/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/CMakeLists.txt	2020-07-11 08:37:00.811703800 +0900
+@@ -221,11 +221,13 @@ if (NOT BUILD_SHARED_LIBS)
+     add_library(iowow_s ALIAS iowow)
+ else()
+     add_library(iowow SHARED ${ALL_SRC})
+-    add_library(iowow_s STATIC ${ALL_SRC})
++    if (NOT CYGWIN)
++        add_library(iowow_s STATIC ${ALL_SRC})
++    endif()
+ endif()
+ 
+ target_link_libraries(iowow ${PROJECT_LLIBRARIES})
+-if (BUILD_SHARED_LIBS)
++if (BUILD_SHARED_LIBS AND NOT CYGWIN)
+     target_link_libraries(iowow_s ${PROJECT_LLIBRARIES})
+ endif()
+ 
+@@ -247,10 +249,12 @@ if (BUILD_SHARED_LIBS)
+                           PUBLIC_HEADER "${PUB_HDRS}"
+                           DEFINE_SYMBOL IW_API_EXPORTS)
+ 
+-    set_target_properties(iowow_s PROPERTIES
+-                          VERSION ${PROJECT_VERSION}
+-                          COMPILE_FLAGS "-DIW_NODLL"
+-                          OUTPUT_NAME iowow-${PROJECT_VERSION_MAJOR})
++    if (NOT CYGWIN)
++        set_target_properties(iowow_s PROPERTIES
++                              VERSION ${PROJECT_VERSION}
++                              COMPILE_FLAGS "-DIW_NODLL"
++                              OUTPUT_NAME iowow-${PROJECT_VERSION_MAJOR})
++    endif()
+ else()
+ 
+     set_target_properties(iowow PROPERTIES
+@@ -268,10 +272,15 @@ install(TARGETS iowow
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         PUBLIC_HEADER DESTINATION ${IW_PUBLIC_HEADER_DESTINATION})
+ 
+-install(EXPORT iowow-exports
+-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME})
++if (CYGWIN)
++    install(EXPORT iowow-exports
++            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
++else()
++    install(EXPORT iowow-exports
++            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME})
++endif()
+ 
+-if (BUILD_SHARED_LIBS)
++if (BUILD_SHARED_LIBS AND NOT CYGWIN)
+     install(TARGETS iowow_s
+         EXPORT iowow-static-exports
+         FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR}
+@@ -296,14 +305,14 @@ install(FILES
+ 
+ if (CMAKE_VERSION VERSION_GREATER 3.0)
+     export(EXPORT iowow-exports)
+-  if (BUILD_SHARED_LIBS)
++  if (BUILD_SHARED_LIBS AND NOT CYGWIN)
+     export(EXPORT iowow-static-exports)
+-  endif(BUILD_SHARED_LIBS)
++  endif(BUILD_SHARED_LIBS AND NOT CYGWIN)
+ else()
+   export(TARGETS iowow FILE iowow-exports.cmake)
+-  if (BUILD_SHARED_LIBS)
++  if (BUILD_SHARED_LIBS AND NOT CYGWIN)
+     export(TARGETS iowow_s FILE iowow-static-exports.cmake)
+-  endif(BUILD_SHARED_LIBS)
++  endif(BUILD_SHARED_LIBS AND NOT CYGWIN)
+ endif()
+ 
+ include(InstallRequiredSystemLibraries)
+--- origsrc/iowow-1.4.4/src/fs/tests/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/fs/tests/CMakeLists.txt	2020-07-11 08:21:54.594272400 +0900
+@@ -1,4 +1,8 @@
+-link_libraries(iowow_s ${CUNIT_LIBRARIES})
++if (BUILD_SHARED_LIBS)
++    link_libraries(iowow ${CUNIT_LIBRARIES})
++else()
++    link_libraries(iowow_s ${CUNIT_LIBRARIES})
++endif()
+ include_directories(${CUNIT_INCLUDE_DIRS})
+ 
+ set(TEST_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
+@@ -6,8 +10,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TES
+ 
+ foreach(TN IN ITEMS iwfs_test1 iwfs_test2 iwfs_test3)
+     add_executable(${TN} ${TN}.c)
+-    set_target_properties(${TN} PROPERTIES 
+-                          COMPILE_FLAGS "-DIW_STATIC")
++    if (NOT BUILD_SHARED_LIBS)
++        set_target_properties(${TN} PROPERTIES 
++                            COMPILE_FLAGS "-DIW_STATIC")
++    endif()
+     add_test(NAME ${TN} WORKING_DIRECTORY ${TEST_DATA_DIR} 
+              COMMAND ${TEST_TOOL_CMD} $<TARGET_FILE:${TN}>)
+ endforeach()
+--- origsrc/iowow-1.4.4/src/kv/examples/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/kv/examples/CMakeLists.txt	2020-07-11 08:13:19.210683000 +0900
+@@ -1,5 +1,11 @@
+-link_libraries(iowow_s)
++if (BUILD_SHARED_LIBS)
++    link_libraries(iowow)
++else()
++    link_libraries(iowow_s)
++endif()
+ foreach(EX IN ITEMS example1 cursors1 compoundkeys1)
+     add_executable(${EX} ${EX}.c)
+-    set_target_properties(${EX} PROPERTIES COMPILE_FLAGS "-DIW_STATIC")
++    if (NOT BUILD_SHARED_LIBS)
++        set_target_properties(${EX} PROPERTIES COMPILE_FLAGS "-DIW_STATIC")
++    endif()
+ endforeach()
+--- origsrc/iowow-1.4.4/src/kv/tests/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/kv/tests/CMakeLists.txt	2020-07-11 08:23:16.266627700 +0900
+@@ -20,9 +20,13 @@ foreach(TN IN ITEMS iwkv_test1
+                     iwkv_test10
+                     )
+     add_executable(${TN} ${TN}.c)
+-    target_link_libraries(${TN} iowow_s ${CUNIT_LIBRARIES})
+-    set_target_properties(${TN} PROPERTIES
+-                          COMPILE_FLAGS "-DIW_STATIC")
++    if (BUILD_SHARED_LIBS)
++        target_link_libraries(${TN} iowow ${CUNIT_LIBRARIES})
++    else()
++        target_link_libraries(${TN} iowow_s ${CUNIT_LIBRARIES})
++        set_target_properties(${TN} PROPERTIES
++                              COMPILE_FLAGS "-DIW_STATIC")
++    endif()
+     add_test(NAME ${TN} WORKING_DIRECTORY ${TEST_DATA_DIR}
+              COMMAND ${TEST_TOOL_CMD} $<TARGET_FILE:${TN}>)
+ endforeach()
+--- origsrc/iowow-1.4.4/src/log/tests/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/log/tests/CMakeLists.txt	2020-07-11 08:20:36.552577600 +0900
+@@ -1,11 +1,17 @@
+-link_libraries(iowow_s ${CUNIT_LIBRARIES})
++if (BUILD_SHARED_LIBS)
++    link_libraries(iowow ${CUNIT_LIBRARIES})
++else()
++    link_libraries(iowow_s ${CUNIT_LIBRARIES})
++endif()
+ include_directories(${CUNIT_INCLUDE_DIRS})
+ 
+ set(TEST_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TEST_DATA_DIR})
+ 
+ add_executable(iwlog_test1 iwlog_test1.c)
+-set_target_properties(iwlog_test1 PROPERTIES 
+-                      COMPILE_FLAGS "-DIW_STATIC")
++if (NOT BUILD_SHARED_LIBS)
++    set_target_properties(iwlog_test1 PROPERTIES 
++                        COMPILE_FLAGS "-DIW_STATIC")
++endif()
+ add_test(NAME iwlog_test1 WORKING_DIRECTORY ${TEST_DATA_DIR} 
+ 		 COMMAND ${TEST_TOOL_CMD} $<TARGET_FILE:iwlog_test1>)
+--- origsrc/iowow-1.4.4/src/utils/tests/CMakeLists.txt	2020-05-02 21:38:31.000000000 +0900
++++ src/iowow-1.4.4/src/utils/tests/CMakeLists.txt	2020-07-11 08:17:44.600413400 +0900
+@@ -1,4 +1,8 @@
+-link_libraries(iowow_s ${CUNIT_LIBRARIES})
++if (BUILD_SHARED_LIBS)
++    link_libraries(iowow ${CUNIT_LIBRARIES})
++else()
++    link_libraries(iowow_s ${CUNIT_LIBRARIES})
++endif()
+ include_directories(${CUNIT_INCLUDE_DIRS})
+ 
+ set(TEST_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
+@@ -6,8 +10,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TES
+ 
+ foreach(TN IN ITEMS iwarr_test1 iwutils_test1)
+     add_executable(${TN} ${TN}.c)
+-    set_target_properties(${TN} PROPERTIES
+-                          COMPILE_FLAGS "-DIW_STATIC")
++    if (NOT BUILD_SHARED_LIBS)
++        set_target_properties(${TN} PROPERTIES
++                            COMPILE_FLAGS "-DIW_STATIC")
++    endif()
+     add_test(NAME ${TN} WORKING_DIRECTORY ${TEST_DATA_DIR}
+              COMMAND ${TEST_TOOL_CMD} $<TARGET_FILE:${TN}>)
+ endforeach()
