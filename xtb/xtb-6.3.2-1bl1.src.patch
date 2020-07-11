@@ -1,0 +1,166 @@
+--- origsrc/xtb-6.3.2/CMakeLists.txt	2020-07-03 01:41:41.000000000 +0900
++++ src/xtb-6.3.2/CMakeLists.txt	2020-07-11 21:02:36.932402300 +0900
+@@ -39,25 +39,27 @@ target_include_directories(xtb-object
+   $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
+ )
+ 
+-# Static Library
+-add_library(lib-xtb-static STATIC $<TARGET_OBJECTS:xtb-object> )
+-target_link_libraries(lib-xtb-static
+-  PUBLIC
+-  ${BLAS_LIBRARIES}
+-  ${LAPACK_LIBRARIES}
+-  $<$<BOOL:${OpenMP_Fortran_FOUND}>:OpenMP::OpenMP_Fortran>
+-)
+-set_target_properties(lib-xtb-static PROPERTIES
+-  Fortran_MODULE_DIRECTORY ${xtb-mod}
+-  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+-  POSITION_INDEPENDENT_CODE ON
+-  OUTPUT_NAME xtb
+-)
+-target_include_directories(lib-xtb-static
+-  PUBLIC
+-  $<BUILD_INTERFACE:${xtb-dir}/include>
+-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
+-)
++if (NOT BUILD_SHARED_LIBS)
++  # Static Library
++  add_library(lib-xtb-static STATIC $<TARGET_OBJECTS:xtb-object> )
++  target_link_libraries(lib-xtb-static
++    PUBLIC
++    ${BLAS_LIBRARIES}
++    ${LAPACK_LIBRARIES}
++    $<$<BOOL:${OpenMP_Fortran_FOUND}>:OpenMP::OpenMP_Fortran>
++  )
++  set_target_properties(lib-xtb-static PROPERTIES
++    Fortran_MODULE_DIRECTORY ${xtb-mod}
++    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
++    POSITION_INDEPENDENT_CODE ON
++    OUTPUT_NAME xtb
++  )
++  target_include_directories(lib-xtb-static
++    PUBLIC
++    $<BUILD_INTERFACE:${xtb-dir}/include>
++    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
++  )
++endif()
+ 
+ # Shared Library
+ add_library(lib-xtb-shared SHARED $<TARGET_OBJECTS:xtb-object> )
+@@ -72,6 +74,9 @@ set_target_properties(lib-xtb-shared PRO
+   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+   OUTPUT_NAME xtb
+ )
++if (CYGWIN)
++  set_target_properties(lib-xtb-shared PROPERTIES SOVERSION 0)
++endif()
+ target_include_directories(lib-xtb-shared
+   PUBLIC
+   $<BUILD_INTERFACE:${xtb-dir}/include>
+@@ -80,10 +85,14 @@ target_include_directories(lib-xtb-share
+ 
+ # Executables
+ add_executable(xtb-exe ${prog})
+-target_link_libraries(xtb-exe
+-  PRIVATE
+-  lib-xtb-static
+-)
++if (BUILD_SHARED_LIBS)
++  target_link_libraries(xtb-exe PRIVATE lib-xtb-shared)
++else()
++  target_link_libraries(xtb-exe
++    PRIVATE
++    lib-xtb-static
++  )
++endif()
+ set_target_properties(xtb-exe PROPERTIES
+   Fortran_MODULE_DIRECTORY ${xtb-mod}
+   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+@@ -103,12 +112,20 @@ install(FILES
+   "${xtb-dir}/.param_gfnff.xtb"
+   DESTINATION share/xtb/
+ )
+-install(TARGETS lib-xtb-static lib-xtb-shared xtb-exe
++install(TARGETS lib-xtb-shared xtb-exe
+   EXPORT xtbTargets
+   LIBRARY DESTINATION lib
+   ARCHIVE DESTINATION lib
+   RUNTIME DESTINATION bin
+ )
++if (NOT BUILD_SHARED_LIBS)
++  install(TARGETS lib-xtb-static
++    EXPORT xtbTargets
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin
++  )
++endif()
+ # CMake package files
+ include(CMakePackageConfigHelpers)
+ # -- Config version file
+@@ -121,21 +138,28 @@ write_basic_package_version_file(
+ configure_package_config_file(
+   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in"
+   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfig.cmake"
+-  INSTALL_DESTINATION share/cmake/xtb
++  INSTALL_DESTINATION lib/cmake/xtb
+ )
+ # -- Install config and configVersion
+ install(
+   FILES
+   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfig.cmake"
+   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfigVersion.cmake"
+-  DESTINATION share/cmake/xtb
++  DESTINATION lib/cmake/xtb
+ )
+ # -- Targets file
+ # -- This makes the project importable from the build directory
+ export(EXPORT xtbTargets FILE "${CMAKE_CURRENT_BINARY_DIR}/xtbTargets.cmake")
+ # -- This makes the project importable from the install directory
+ install(EXPORT xtbTargets FILE "xtbTargets.cmake"
+-  DESTINATION share/cmake/xtb
++  DESTINATION lib/cmake/xtb
+ )
+ 
+ add_subdirectory("TESTSUITE")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/xtb.pc.in ${CMAKE_BINARY_DIR}/xtb.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/xtb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/xtb-6.3.2/TESTSUITE/CMakeLists.txt	2020-07-03 01:41:41.000000000 +0900
++++ src/xtb-6.3.2/TESTSUITE/CMakeLists.txt	2020-07-11 20:47:05.864036600 +0900
+@@ -45,10 +45,14 @@ set(tests
+ 
+ # Build Tests
+ add_executable(xtb_tests_static ${tests})
+-target_link_libraries(xtb_tests_static
+-  PUBLIC
+-  lib-xtb-static
+-)
++if (BUILD_SHARED_LIBS)
++  target_link_libraries(xtb_tests_static PUBLIC lib-xtb-shared)
++else()
++  target_link_libraries(xtb_tests_static
++    PUBLIC
++    lib-xtb-static
++  )
++endif()
+ set_target_properties(xtb_tests_static PROPERTIES
+   Fortran_MODULE_DIRECTORY ${xtb-mod}
+   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+--- origsrc/xtb-6.3.2/xtb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/xtb-6.3.2/xtb.pc.in	2020-07-11 21:03:20.752339900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: xtb
++Description: Semiempirical Extended Tight-Binding Program Package
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lxtb
++Cflags: -I${includedir}
