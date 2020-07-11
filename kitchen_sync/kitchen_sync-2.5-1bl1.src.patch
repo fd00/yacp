@@ -1,5 +1,5 @@
---- origsrc/kitchen_sync-2.0/CMakeLists.txt	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/CMakeLists.txt	2020-02-14 20:03:29.569844300 +0900
+--- origsrc/kitchen_sync-2.5/CMakeLists.txt	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/CMakeLists.txt	2020-07-11 18:27:49.897076300 +0900
 @@ -4,20 +4,22 @@ project(kitchen_sync CXX C)
  cmake_minimum_required(VERSION 2.8)
  
@@ -10,30 +10,34 @@
 -CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 -CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
 -if(COMPILER_SUPPORTS_CXX14)
-+if(NOT CYGWIN)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+-elseif(COMPILER_SUPPORTS_CXX11)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-elseif(COMPILER_SUPPORTS_CXX0X)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+-endif()
+-if(COMPILER_SUPPORTS_STDLIB)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
++if (NOT CYGWIN)
 +	include(CheckCXXCompilerFlag)
 +	CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 +	CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 +	CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 +	CHECK_CXX_COMPILER_FLAG("-stdlib=libc++" COMPILER_SUPPORTS_STDLIB)
 +	if(COMPILER_SUPPORTS_CXX14)
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
--elseif(COMPILER_SUPPORTS_CXX11)
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 +	elseif(COMPILER_SUPPORTS_CXX11)
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
--elseif(COMPILER_SUPPORTS_CXX0X)
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 +	elseif(COMPILER_SUPPORTS_CXX0X)
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
--endif()
--if(COMPILER_SUPPORTS_STDLIB)
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 +	endif()
 +	if(COMPILER_SUPPORTS_STDLIB)
- 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 +	endif()
  endif()
  
  # optionally compile with sanitizer checks
-@@ -43,12 +45,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR
+@@ -43,12 +45,15 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR
  find_package(Threads)
  
  # vendored-in version of yaml-cpp for filter files
@@ -43,7 +47,8 @@
 -set(YAML_CPP_INSTALL OFF CACHE BOOL "disable yaml install target")
 -add_subdirectory(src/yaml-cpp EXCLUDE_FROM_ALL)
 -include_directories(src/yaml-cpp/include)
-+if(NOT CYGWIN)
++option(USE_SYSTEM_YAML_CPP "Use system yaml-cpp" ON)
++if (NOT USE_SYSTEM_YAML_CPP)
 +	set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "disable yaml tests")
 +	set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
 +	set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
@@ -54,7 +59,7 @@
  set(YamlCPP_LIBRARIES yaml-cpp)
  
  # the main program knows nothing but how to hook up the endpoints
-@@ -65,7 +69,7 @@ if(NOT APPLE)
+@@ -65,7 +70,7 @@ if(NOT APPLE)
  endif()
  
  # is backtrace in libc?
@@ -63,23 +68,22 @@
  	find_package(Backtrace)
  endif()
  
-@@ -73,9 +77,12 @@ if(Backtrace_FOUND OR APPLE)
- 	ADD_DEFINITIONS("-DUSE_BACKTRACE")
- endif()
+@@ -112,8 +117,11 @@ endif()
+ set(BLAKE3_OBJECTS $<TARGET_OBJECTS:blake3>)
  
-+include(FindPkgConfig)
-+pkg_check_modules(XXHASH REQUIRED xxhash)
-+
  # the endpoints do the actual work
--set(ks_endpoint_SRCS src/schema.cpp src/subdivision.cpp src/filters.cpp src/abortable_barrier.cpp src/xxHash/xxhash.cpp)
+-set(ks_endpoint_SRCS src/schema.cpp src/subdivision.cpp src/filters.cpp src/abortable_barrier.cpp src/xxHash/xxhash.cpp ${BLAKE3_OBJECTS})
 -set(ks_endpoint_LIBS ${OPENSSL_LIBRARIES} ${YamlCPP_LIBRARIES})
-+set(ks_endpoint_SRCS src/schema.cpp src/subdivision.cpp src/filters.cpp src/abortable_barrier.cpp)
++include(FindPkgConfig)
++pkg_check_modules(XXHASH REQUIRED libxxhash)
++
++set(ks_endpoint_SRCS src/schema.cpp src/subdivision.cpp src/filters.cpp src/abortable_barrier.cpp ${BLAKE3_OBJECTS})
 +set(ks_endpoint_LIBS ${OPENSSL_LIBRARIES} ${YamlCPP_LIBRARIES} ${XXHASH_LIBRARIES})
  
  # turn on debugging symbols
  set(CMAKE_BUILD_TYPE Debug)
---- origsrc/kitchen_sync-2.0/test/CMakeLists.txt	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/test/CMakeLists.txt	2020-02-14 20:04:13.397558500 +0900
+--- origsrc/kitchen_sync-2.5/test/CMakeLists.txt	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/test/CMakeLists.txt	2020-07-11 18:17:53.692102200 +0900
 @@ -2,24 +2,26 @@
  add_executable(ks_unit_tests ks_unit_tests.cpp db_url_test.cpp ../src/db_url.cpp basic_uint128_t_test.cpp sql_functions_test.cpp)
  add_test(unit_tests          ks_unit_tests)
@@ -123,8 +127,8 @@
  
  if(DEFINED ENV{SKIP_POSTGIS})
  	# this only works on later versions of ctest
---- origsrc/kitchen_sync-2.0/test/basic_uint128_t_test.cpp	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/test/basic_uint128_t_test.cpp	2020-02-14 20:04:43.599947200 +0900
+--- origsrc/kitchen_sync-2.5/test/basic_uint128_t_test.cpp	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/test/basic_uint128_t_test.cpp	2020-07-11 18:18:26.887788600 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -134,8 +138,8 @@
  
  TEST_CASE("addition", "[basic_uint128_t]") {
  	REQUIRE(basic_uint128_t{0, 1} + basic_uint128_t{0, 1} == basic_uint128_t{0, 2});
---- origsrc/kitchen_sync-2.0/test/db_url_test.cpp	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/test/db_url_test.cpp	2020-02-14 20:04:56.488566900 +0900
+--- origsrc/kitchen_sync-2.5/test/db_url_test.cpp	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/test/db_url_test.cpp	2020-07-11 18:18:41.991345400 +0900
 @@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
@@ -145,17 +149,20 @@
  
  TEST_CASE("parsing full URLs", "[db_url]") {
  	DbUrl url("postgresql://someuser:mypassword@localhost:1000/sourcedb");
---- origsrc/kitchen_sync-2.0/test/ks_unit_tests.cpp	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/test/ks_unit_tests.cpp	2020-02-14 20:05:15.040440800 +0900
+--- origsrc/kitchen_sync-2.5/test/ks_unit_tests.cpp	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/test/ks_unit_tests.cpp	2020-07-11 18:18:58.647036900 +0900
 @@ -1,2 +1,2 @@
  #define CATCH_CONFIG_MAIN
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
---- origsrc/kitchen_sync-2.0/test/sql_functions_test.cpp	2020-01-20 18:51:06.000000000 +0900
-+++ src/kitchen_sync-2.0/test/sql_functions_test.cpp	2020-02-14 20:05:32.966714700 +0900
-@@ -1,4 +1,4 @@
+--- origsrc/kitchen_sync-2.5/test/sql_functions_test.cpp	2020-07-02 20:01:51.000000000 +0900
++++ src/kitchen_sync-2.5/test/sql_functions_test.cpp	2020-07-11 18:19:15.206023000 +0900
+@@ -1,6 +1,6 @@
 -#include "../../catch2/catch.hpp"
 +#include "src/catch2/catch.hpp"
  
- #include "../src/sql_functions.h"
+-#include "../src/sql_functions.h"
++#include "src/sql_functions.h"
  
+ TEST_CASE("quote_identifier", "[sql_functions]") {
+ 	REQUIRE(quote_identifier("foo", '`') == "`foo`");
