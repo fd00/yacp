@@ -1,0 +1,62 @@
+--- origsrc/libfyaml-0.5.7/configure.ac	2020-05-18 05:42:14.000000000 +0900
++++ src/libfyaml-0.5.7/configure.ac	2020-07-13 10:46:58.597433000 +0900
+@@ -105,6 +105,7 @@ AC_DEFINE_UNQUOTED([HAVE_QSORT_R], [$HAV
+ AM_CONDITIONAL([HAVE_QSORT_R], [ test x$HAVE_QSORT_R = x1 ])
+ 
+ PKG_CHECK_MODULES(LIBYAML, [ yaml-0.1 ], HAVE_LIBYAML=1, HAVE_LIBYAML=0)
++PKG_CHECK_MODULES([XXHASH], [libxxhash])
+ 
+ # update with pkg-config's flags
+ if test "x$HAVE_LIBYAML" != "x1" ; then
+--- origsrc/libfyaml-0.5.7/src/Makefile.am	2020-05-18 05:42:14.000000000 +0900
++++ src/libfyaml-0.5.7/src/Makefile.am	2020-07-13 10:48:27.713974400 +0900
+@@ -2,6 +2,7 @@ AM_CPPFLAGS = \
+         -I$(top_srcdir)/src \
+         -I$(top_srcdir)/include
+ AM_CFLAGS =
++AM_LDFLAGS = -no-undefined
+ 
+ lib_LTLIBRARIES = libfyaml-@MAJOR@.@MINOR@.la
+ libfyaml_@MAJOR@_@MINOR@_la_SOURCES = \
+@@ -21,16 +22,16 @@ libfyaml_@MAJOR@_@MINOR@_la_SOURCES = \
+ 	lib/fy-emit.c lib/fy-emit.h \
+ 	lib/fy-utils.c lib/fy-utils.h \
+ 	lib/fy-event.h \
+-	xxhash/xxhash.c xxhash/xxhash.h \
+ 	lib/fy-accel.c lib/fy-accel.h
+ 
+ libfyaml_@MAJOR@_@MINOR@_la_CPPFLAGS = $(AM_CPPFLAGS) \
+ 				       -I$(top_srcdir)/src/lib \
+-				       -I$(top_srcdir)/src/xxhash
++				       $(XXHASH_CFLAGS)
+ libfyaml_@MAJOR@_@MINOR@_la_CFLAGS = $(AM_CFLAGS)
+ libfyaml_@MAJOR@_@MINOR@_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) \
+ 		      $(VERSIONING_LDFLAGS) \
+ 		      -version-info 0:0:0
++libfyaml_@MAJOR@_@MINOR@_la_LIBADD = $(XXHASH_LIBS)
+ 
+ bin_PROGRAMS =
+ noinst_PROGRAMS =
+--- origsrc/libfyaml-0.5.7/src/lib/fy-doc.c	2020-05-18 05:42:14.000000000 +0900
++++ src/libfyaml-0.5.7/src/lib/fy-doc.c	2020-07-13 11:04:06.160831200 +0900
+@@ -5703,15 +5703,16 @@ static void update_xx32(void *state, con
+ 
+ int fy_node_hash_uint(struct fy_node *fyn, unsigned int *hashp)
+ {
+-	XXH32_state_t state;
++	XXH32_state_t* state = XXH32_createState();
+ 	int rc;
+ 
+-	XXH32_reset(&state, 2654435761U);
++	XXH32_reset(state, 2654435761U);
+ 
+-	rc = fy_node_hash_internal(fyn, update_xx32, &state); 
++	rc = fy_node_hash_internal(fyn, update_xx32, state); 
+ 	if (rc)
+ 		return rc;
+ 
+-	*hashp = XXH32_digest(&state);
++	*hashp = XXH32_digest(state);
++	XXH32_freeState(state);
+ 	return 0;
+ }
