@@ -1,0 +1,73 @@
+--- origsrc/volpack-1.0c7/Makefile.am	2004-11-11 09:52:36.000000000 +0900
++++ src/volpack-1.0c7/Makefile.am	2020-07-14 09:45:32.954802900 +0900
+@@ -10,4 +10,5 @@ SUBDIRS = \
+ 
+ DISTCLEANFILES = *~
+ 
+-
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/volpack-1.0c7/configure.in	2008-11-23 14:28:06.000000000 +0900
++++ src/volpack-1.0c7/configure.in	2020-07-14 09:45:43.797469400 +0900
+@@ -110,7 +110,7 @@ AC_CHECK_HEADERS(string.h memory.h)
+ AC_FUNC_VPRINTF
+ 
+ 
+-AC_OUTPUT([
++AC_OUTPUT([volpack.pc
+ 	Makefile
+ 	src/Makefile 
+ 	man/Makefile
+--- origsrc/volpack-1.0c7/examples/Makefile.am	2003-05-25 03:48:12.000000000 +0900
++++ src/volpack-1.0c7/examples/Makefile.am	2020-07-14 09:39:10.340352300 +0900
+@@ -1,9 +1,8 @@
+ # automake file for libvolpack examples, process with automake
+ # Andy Loening 2001.09.29
+ 
+-LDADD = -lvolpack -lm
+-INCLUDES = -I../src
+-AM_LDFLAGS = -L../src
++LDADD = $(top_builddir)/src/libvolpack.la -lm
++INCLUDES = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS = \
+ 	makevolume \
+--- origsrc/volpack-1.0c7/src/Makefile.am	2003-05-25 04:45:46.000000000 +0900
++++ src/volpack-1.0c7/src/Makefile.am	2020-07-14 09:35:01.631651800 +0900
+@@ -60,9 +60,9 @@ OPT_SRCS = \
+ 	vp_compAR31B.c \
+ 	vp_compAR32B.c
+ 
+-DEFAULT_HEADER = no_edit_header
+-COMP_IN = vp_compA.m4
+-WARP_IN = vp_warpA.m4
++DEFAULT_HEADER = $(srcdir)/no_edit_header
++COMP_IN = $(srcdir)/vp_compA.m4
++WARP_IN = $(srcdir)/vp_warpA.m4
+ 
+ VP_OPTS_SRCS = vp_opts.c
+ 
+@@ -93,8 +93,8 @@ WARP_SRCS = \
+ 	vp_warpA330R.c \
+ 	vp_warpA331R.c
+ 
+-makeopts: makeopts.c
+-	$(CC) -o makeopts makeopts.c
++makeopts: $(srcdir)/makeopts.c
++	$(CC) -o makeopts $(srcdir)/makeopts.c
+ 
+ $(VP_OPTS_SRCS): makeopts Makefile
+ 	./makeopts $@ $(CFLAGS)
+--- origsrc/volpack-1.0c7/volpack.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/volpack-1.0c7/volpack.pc.in	2020-07-14 09:44:37.077215400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: volpack
++Description: Volume rendering library
++Version: @VERSION@
++Libs: -L${libdir} -lvolpack
++Cflags: -I${includedir}
