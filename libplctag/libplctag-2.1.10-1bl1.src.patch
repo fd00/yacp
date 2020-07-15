@@ -1,0 +1,51 @@
+--- origsrc/libplctag-2.1.10/CMakeLists.txt	2020-07-12 02:56:48.000000000 +0900
++++ src/libplctag-2.1.10/CMakeLists.txt	2020-07-15 16:22:43.784485400 +0900
+@@ -284,14 +284,14 @@ if(BASE_LINK_FLAGS)
+     set_target_properties(plctag_dyn PROPERTIES LINK_FLAGS "${BASE_LINK_FLAGS}")
+ endif()
+ 
+-if(UNIX)
++if(UNIX AND NOT CYGWIN)
+ 	# static library
+ 	add_library(plctag_static STATIC ${libplctag_SRCS} )
+     set_target_properties(plctag_static PROPERTIES LINK_FLAGS "${BASE_LINK_FLAGS}")
+ 	set_target_properties(plctag_static PROPERTIES VERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}" OUTPUT_NAME "plctag")
+ 
+ 	set(tool_lib "plctag_dyn")
+-elseif(WIN32)
++elseif(WIN32 OR CYGWIN)
+     # skipping static lib on Windows
+ 
+ 	set(tool_lib "plctag_dyn")
+@@ -376,6 +376,8 @@ foreach ( example ${example_PROGRAMS} )
+     if(BASE_LINK_FLAGS)
+         set_target_properties(${example} PROPERTIES LINK_FLAGS "${BASE_LINK_FLAGS}")
+     endif()
++
++    install(TARGETS ${example} DESTINATION share/libplctag/example)
+ endforeach(example)
+ 
+ # simple.cpp is different because it is C++
+@@ -390,6 +392,7 @@ if(BASE_LINK_FLAGS)
+     set_target_properties(simple_cpp PROPERTIES LINK_FLAGS "${BASE_LINK_FLAGS}")
+ endif()
+ 
++install(TARGETS simple_cpp DESTINATION share/libplctag/example)
+ 
+ # Generate files from templates
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/libplctag.pc.in" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc" @ONLY)
+@@ -427,11 +430,11 @@ endif()
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/src/lib/libplctag.h" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.h" COPYONLY)
+ 
+ # for installation
+-if(UNIX)
++if(UNIX AND NOT CYGWIN)
+ 	install(TARGETS plctag_dyn DESTINATION lib${LIB_SUFFIX})
+ 	install(TARGETS plctag_static DESTINATION lib${LIB_SUFFIX})
+-elseif(WIN32)
+-	install(TARGETS plctag_dyn DESTINATION lib${LIB_SUFFIX})
++elseif(WIN32 OR CYGWIN)
++	install(TARGETS plctag_dyn RUNTIME DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ endif()
+ 
+ install(FILES "${lib_SRC_PATH}/libplctag.h" DESTINATION include)
