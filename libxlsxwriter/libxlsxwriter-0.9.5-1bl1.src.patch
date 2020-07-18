@@ -1,0 +1,86 @@
+--- origsrc/libxlsxwriter-RELEASE_0.9.5/CMakeLists.txt	2020-06-01 04:22:23.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.9.5/CMakeLists.txt	2020-07-18 21:33:02.678224300 +0900
+@@ -182,14 +182,20 @@ endif()
+ enable_language(CXX)
+ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
++find_package(PkgConfig REQUIRED)
++
+ # ZLIB
+-find_package(ZLIB REQUIRED "1.0")
++pkg_check_modules(ZLIB REQUIRED zlib>=1.0)
+ list(APPEND LXW_PRIVATE_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
+ message("zlib version: " ${ZLIB_VERSION})
+ 
+ # MINIZIP
+ if (USE_SYSTEM_MINIZIP)
+-    find_package(MINIZIP REQUIRED "1.0")
++    if (CYGWIN)
++        pkg_check_modules(MINIZIP REQUIRED minizip>=1.0)
++    else()
++        find_package(MINIZIP REQUIRED "1.0")
++    endif()
+     list(APPEND LXW_PRIVATE_INCLUDE_DIRS ${MINIZIP_INCLUDE_DIRS})
+ endif()
+ 
+@@ -254,6 +260,9 @@ target_include_directories(${PROJECT_NAM
+     PRIVATE ${LXW_PRIVATE_INCLUDE_DIRS}
+     PUBLIC include include/xlsxwriter
+ )
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
+ 
+ # TESTS
+ # -----
+@@ -352,3 +361,10 @@ install(DIRECTORY include/xlsxwriter
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+     FILES_MATCHING PATTERN "*.h"
+ )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libxlsxwriter.pc.in ${CMAKE_BINARY_DIR}/libxlsxwriter.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libxlsxwriter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libxlsxwriter-RELEASE_0.9.5/cmake/FindPackage.cmake	2020-06-01 04:22:23.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.9.5/cmake/FindPackage.cmake	2020-07-18 21:12:10.586708200 +0900
+@@ -43,7 +43,7 @@ macro(SetSuffixes packageName)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+         endif()
+     else()
+-        if(WIN32)
++        if(WIN32 OR CYGWIN)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a" ".dll" ".lib" ".a")
+         else()
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+--- origsrc/libxlsxwriter-RELEASE_0.9.5/include/xlsxwriter/packager.h	2020-06-01 04:22:23.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.9.5/include/xlsxwriter/packager.h	2020-07-18 21:25:26.290681000 +0900
+@@ -12,7 +12,12 @@
+ #include <stdint.h>
+ 
+ #ifdef USE_SYSTEM_MINIZIP
++#if defined(__CYGWIN__)
++#include "mz_compat.h"
++#include "zlib.h"
++#else
+ #include "minizip/zip.h"
++#endif
+ #else
+ #include "third_party/zip.h"
+ #endif
+--- origsrc/libxlsxwriter-RELEASE_0.9.5/libxlsxwriter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libxlsxwriter-RELEASE_0.9.5/libxlsxwriter.pc.in	2020-07-18 21:38:00.539495100 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libxlsxwriter
++Description: C library for creating Excel XLSX files
++Version: @VERSION@
++Libs: -L${libdir} -lxlsxwriter
++Cflags: -I${includedir}
++Requires: minizip zlib
