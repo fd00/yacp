@@ -1,11 +1,11 @@
---- origsrc/libvdpau-1.3/src/vdpau_wrapper.c	2019-08-29 02:57:55.000000000 +0900
-+++ src/libvdpau-1.3/src/vdpau_wrapper.c	2019-10-04 09:35:28.682403800 +0900
+--- origsrc/libvdpau-1.4/src/vdpau_wrapper.c	2020-04-09 23:45:23.000000000 +0900
++++ src/libvdpau-1.4/src/vdpau_wrapper.c	2020-07-18 14:49:15.643396200 +0900
 @@ -69,8 +69,13 @@ static void _vdp_wrapper_error_breakpoin
  
  #endif
  
 +#if defined(__CYGWIN__)
-+#define DRIVER_FALLBACK_LIB_FORMAT "cygvdpau_%s.dll"
++#define DRIVER_FALLBACK_LIB_FORMAT "libvdpau_%s.dll"
 +#define DRIVER_LIB_FORMAT "%s/cygvdpau_%s-1.dll"
 +#else
  #define DRIVER_FALLBACK_LIB_FORMAT "libvdpau_%s.so"
@@ -14,10 +14,11 @@
  
  static char * _vdp_get_driver_name_from_dri2(
      Display *             display,
-@@ -185,8 +190,13 @@ static VdpStatus _vdp_open_driver(
+@@ -184,9 +189,13 @@ static VdpStatus _vdp_open_driver(
+     vdpau_trace = secure_getenv("VDPAU_TRACE");
      if (vdpau_trace && atoi(vdpau_trace)) {
          SetDllHandle * set_dll_handle;
- 
+-
 +#if defined(__CYGWIN__)
 +        _vdp_trace_dll = dlopen(VDPAU_MODULEDIR "/cygvdpau_trace-1.dll",
 +                                RTLD_NOW | RTLD_GLOBAL);
@@ -28,40 +29,26 @@
          if (!_vdp_trace_dll) {
              fprintf(stderr, "Failed to open VDPAU trace library %s\n", dlerror());
              _VDP_ERROR_BREAKPOINT();
---- origsrc/libvdpau-1.3/test/dlclose.c	2019-08-29 02:57:55.000000000 +0900
-+++ src/libvdpau-1.3/test/dlclose.c	2019-10-04 09:42:21.705569000 +0900
-@@ -34,8 +34,13 @@ int main(void)
-     // Generic Event Extension causes an identical bug to the one this program
+--- origsrc/libvdpau-1.4/test/dlclose.c	2020-04-09 23:45:23.000000000 +0900
++++ src/libvdpau-1.4/test/dlclose.c	2020-07-18 14:51:13.096194200 +0900
+@@ -30,6 +30,8 @@ static int countOpenFDs(void)
+ 
+ #if defined(__sun)
+ static const char libXext_so[] = "libXext.so.0";
++#elif defined(__CYGWIN__)
++static const char libXext_so[] = "cygXext-6.dll";
+ #else
+ static const char libXext_so[] = "libXext.so.6";
+ #endif
+@@ -41,7 +43,11 @@ int main(void)
      // is trying to test for.
      int nOpenFDs = countOpenFDs();
+     void *libXext = dlopen(libXext_so, RTLD_LAZY);
 +#if defined(__CYGWIN__)
-+    void *libXext = dlopen("cygXext-6.dll", RTLD_LAZY);
 +    void *libvdpau = dlopen("src/cygvdpau-1.dll", RTLD_LAZY);
 +#else
-     void *libXext = dlopen("libXext.so.6", RTLD_LAZY);
      void *libvdpau = dlopen("src/libvdpau.so", RTLD_LAZY);
 +#endif
      Display *dpy = XOpenDisplay(NULL);
      VdpDeviceCreateX11 *pvdp_device_create_x11;
      VdpDevice device;
-@@ -43,12 +48,20 @@ int main(void)
-     VdpStatus status;
- 
-     if (!libXext) {
-+#if defined(__CYGWIN__)
-+        fprintf(stderr, "Failed to open cygXext-6.dll: %s", dlerror());
-+#else
-         fprintf(stderr, "Failed to open libXext.so.6: %s", dlerror());
-+#endif
-         return SKIP;
-     }
- 
-     if (!libvdpau) {
-+#if defined(__CYGWIN__)
-+        fprintf(stderr, "Failed to open cygvdpau-1.dll: %s", dlerror());
-+#else
-         fprintf(stderr, "Failed to open libvdpau.so: %s", dlerror());
-+#endif
-         return FAIL;
-     }
- 
