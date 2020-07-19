@@ -1,6 +1,6 @@
---- origsrc/libyang-1.0.109/CMakeLists.txt	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/CMakeLists.txt	2020-01-16 12:29:54.521795500 +0900
-@@ -317,7 +317,7 @@ find_package(PCRE REQUIRED)
+--- origsrc/libyang-1.0.176/CMakeLists.txt	2020-06-02 19:02:06.000000000 +0900
++++ src/libyang-1.0.176/CMakeLists.txt	2020-07-19 17:02:11.198612000 +0900
+@@ -245,7 +245,7 @@ find_package(PCRE REQUIRED)
  include_directories(${PCRE_INCLUDE_DIRS})
  target_link_libraries(yang ${PCRE_LIBRARIES})
  
@@ -9,20 +9,8 @@
  install(FILES ${headers} ${PROJECT_BINARY_DIR}/src/libyang.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
  
  find_package(PkgConfig)
---- origsrc/libyang-1.0.109/src/common.c	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/src/common.c	2020-01-16 12:30:31.208773100 +0900
-@@ -21,7 +21,9 @@
- #include <pthread.h>
- #include <string.h>
- #include <stdlib.h>
-+#if !defined(__CYGWIN__)
- #include <sys/syscall.h>
-+#endif
- #include <sys/types.h>
- #include <unistd.h>
- 
---- origsrc/libyang-1.0.109/src/extensions/CMakeLists.txt	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/src/extensions/CMakeLists.txt	2020-01-16 12:30:46.677242600 +0900
+--- origsrc/libyang-1.0.176/src/extensions/CMakeLists.txt	2020-06-02 19:02:06.000000000 +0900
++++ src/libyang-1.0.176/src/extensions/CMakeLists.txt	2020-07-19 17:02:59.046214600 +0900
 @@ -2,7 +2,7 @@ macro(EXTENSION_PLUGIN PLUGIN_NAME SRCS)
      add_library(${PLUGIN_NAME} SHARED ${SRCS})
      set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
@@ -32,10 +20,10 @@
  endmacro(EXTENSION_PLUGIN)
  
  foreach(EXTENSION ${EXTENSIONS_LIST})
---- origsrc/libyang-1.0.109/src/user_types/CMakeLists.txt	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/src/user_types/CMakeLists.txt	2020-01-16 12:31:03.119024400 +0900
+--- origsrc/libyang-1.0.176/src/user_types/CMakeLists.txt	2020-06-02 19:02:06.000000000 +0900
++++ src/libyang-1.0.176/src/user_types/CMakeLists.txt	2020-07-19 17:36:52.090671900 +0900
 @@ -2,7 +2,7 @@ macro(USER_TYPE_PLUGIN PLUGIN_NAME SRCS)
-     add_library(${PLUGIN_NAME} SHARED ${SRCS})
+     add_library(${PLUGIN_NAME} SHARED ${SRCS} $<TARGET_OBJECTS:compat>)
      set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
      target_link_libraries(${PLUGIN_NAME} yang)
 -    install(TARGETS ${PLUGIN_NAME} DESTINATION ${USER_TYPES_PLUGINS_DIR_MACRO})
@@ -43,20 +31,8 @@
  endmacro(USER_TYPE_PLUGIN)
  
  foreach(USER_TYPE ${USER_TYPE_LIST})
---- origsrc/libyang-1.0.109/src/xml.c	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/src/xml.c	2020-01-16 12:31:26.356775000 +0900
-@@ -23,7 +23,9 @@
- #include <pthread.h>
- #include <sys/stat.h>
- #include <sys/mman.h>
-+#if !defined(__CYGWIN__)
- #include <sys/syscall.h>
-+#endif
- #include <fcntl.h>
- 
- #include "common.h"
---- origsrc/libyang-1.0.109/swig/CMakeLists.txt	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/swig/CMakeLists.txt	2020-01-16 12:50:41.570988000 +0900
+--- origsrc/libyang-1.0.176/swig/CMakeLists.txt	2020-06-02 19:02:06.000000000 +0900
++++ src/libyang-1.0.176/swig/CMakeLists.txt	2020-07-19 17:04:40.876863600 +0900
 @@ -73,8 +73,13 @@ if(ENABLE_STATIC)
  else(ENABLE_STATIC)
      add_library(libyang-cpp SHARED ${LIBYANG_CPP_SOURCES})
@@ -82,9 +58,9 @@
  install(FILES ${LIBYANG_HPP_SOURCES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libyang)
  
  if (GEN_CPP_BINDINGS)
---- origsrc/libyang-1.0.109/swig/python/CMakeLists.txt	2019-12-13 22:23:19.000000000 +0900
-+++ src/libyang-1.0.109/swig/python/CMakeLists.txt	2020-01-16 12:33:53.543568600 +0900
-@@ -51,11 +51,18 @@ if(ENABLE_BUILD_TESTS)
+--- origsrc/libyang-1.0.176/swig/python/CMakeLists.txt	2020-06-02 19:02:06.000000000 +0900
++++ src/libyang-1.0.176/swig/python/CMakeLists.txt	2020-07-19 17:05:45.491818800 +0900
+@@ -51,11 +51,19 @@ if(ENABLE_BUILD_TESTS)
      ADD_PYTHON_TEST(test_tree_data)
      ADD_PYTHON_TEST(test_tree_schema)
  
@@ -93,7 +69,6 @@
 -            COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_SWIG_BINDING}.py" ${PY2_SWIG_DIR}/tests
 -        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 -        )
--
 +    if(CYGWIN)
 +        add_custom_command(TARGET ${SWIG_MODULE_${PYTHON_SWIG_BINDING}_REAL_NAME} POST_BUILD
 +            COMMAND cp "${CMAKE_CURRENT_BINARY_DIR}/_${PYTHON_SWIG_BINDING}.dll" ${PY2_SWIG_DIR}/tests
@@ -107,5 +82,6 @@
 +            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 +            )
 +    endif()
+ 
      configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.py.in" "${CMAKE_CURRENT_BINARY_DIR}/tests/config.py" ESCAPE_QUOTES @ONLY)
  endif()
