@@ -1,0 +1,194 @@
+--- origsrc/libzia-4.21/bin/Makefile.am	2016-09-18 07:00:00.000000000 +0900
++++ src/libzia-4.21/bin/Makefile.am	2020-07-21 09:08:07.700412800 +0900
+@@ -5,4 +5,4 @@ EXTRA_DIST = $(bin_SCRIPTS) zia-config.i
+ datarootdir = @datarootdir@
+ 
+ svnversion$(EXEEXT):
+-	(cd ..; /bin/sh svnver.sh)
++	(cd ${top_srcdir}; /bin/sh svnver.sh)
+--- origsrc/libzia-4.21/configure.ac	2020-02-11 04:02:50.000000000 +0900
++++ src/libzia-4.21/configure.ac	2020-07-21 09:26:50.295678700 +0900
+@@ -14,6 +14,8 @@ fi
+ LT_INIT([dlopen])
+ AC_CONFIG_MACRO_DIR([m4])
+ 
++AM_ICONV
++
+ dnl Determine default prefix
+ test x$prefix = "xNONE" && prefix="$ac_default_prefix"
+                                         
+@@ -36,6 +38,9 @@ case "$host_os" in
+ mingw*)
+     PLATFORM="mingw"
+     ;;
++cygwin*)
++    PLATFORM="cygwin"
++    ;;
+ *)    
+     PLATFORM=$(uname -s | sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/')
+     if test $? != 0 ; then 
+@@ -84,7 +89,10 @@ AM_CONDITIONAL([USE_WLMAP], [test "$app_
+ 
+ dnl Check for system header files
+ AC_HEADER_STDC
+-AC_CHECK_HEADERS(arpa/inet.h bfd.h cygwin/in.h ctype.h dbghelp.h dirent.h dlfcn.h errno.h execinfo.h fcntl.h getopt.h linux/i2c-dev.h linux/input.h linux/spi/spidev.h linux/wireless.h math.h netdb.h netinet/in.h psapi.h pty.h shlobj.h signal.h stdarg.h stdio.h string.h sys/ioctl.h sys/prctl.h sys/select.h sys/socket.h sys/time.h sys/types.h sys/wait.h termios.h time.h unistd.h win32api/ws2tcpip.h windows.h winsock2.h ws2tcpip.h)
++AC_CHECK_HEADERS(arpa/inet.h bfd.h cygwin/in.h ctype.h dirent.h dlfcn.h errno.h execinfo.h fcntl.h getopt.h linux/i2c-dev.h linux/input.h linux/spi/spidev.h linux/wireless.h math.h netdb.h netinet/in.h pty.h shlobj.h signal.h stdarg.h stdio.h string.h sys/ioctl.h sys/prctl.h sys/select.h sys/socket.h sys/time.h sys/types.h sys/wait.h termios.h time.h unistd.h)
++if test "$host_os" != "cygwin"; then
++    AC_CHECK_HEADERS(dbghelp.h psapi.h win32api/ws2tcpip.h windows.h winsock2.h ws2tcpip.h)
++fi
+ AC_HEADER_TIME
+ 
+ app_libc_ver="cross"
+@@ -484,5 +492,5 @@ echo ";") > src/settings.c
+ 
+ cat config.h |grep '^#define' | sed 's/#define \(.*\)/#define Z_\1/' > include/unix/zconfig.h
+ 
+-chmod +x svnver.sh bin/zia-config
++chmod +x ${srcdir}/svnver.sh bin/zia-config
+ 
+--- origsrc/libzia-4.21/include/libziaint.h	2019-10-25 04:52:44.000000000 +0900
++++ src/libzia-4.21/include/libziaint.h	2020-07-21 09:10:37.697297200 +0900
+@@ -55,8 +55,8 @@ msvc10 (vs2010):         WIN32 _MSC_VER=
+ // Z_MACHINE defined in unix/zconfig.h
+ #elif defined(__CYGWIN__)
+ #define Z_CYGWIN
+-#define Z_PLATFORM "cygwin"
+-#define Z_MACHINE "win32"
++// Z_PLATFORM defined in unix/zconfig.h
++// Z_MACHINE defined in unix/zconfig.h
+ #elif defined(ANDROID)
+ #define Z_ANDROID
+ #define Z_PLATFORM "android"
+@@ -66,7 +66,7 @@ msvc10 (vs2010):         WIN32 _MSC_VER=
+ #define Z_MACOS
+ #define Z_UNIX 
+ // Z_PLATFORM is "darwin"
+-// Z_MACHINE is "x86_64"
++// Z_MACHINE is "x86_64"
+ #else
+ #define Z_UNIX
+ // Z_PLATFORM defined in unix/zconfig.h
+--- origsrc/libzia-4.21/include/zfiledlg.h	2013-04-02 07:00:00.000000000 +0900
++++ src/libzia-4.21/include/zfiledlg.h	2020-07-21 09:11:11.926152100 +0900
+@@ -35,7 +35,7 @@ struct zfiledlg{
+     void *arg;
+     char *last_dir;
+     struct zselect *zsel;
+-#ifdef Z_MSC_MINGW_CYGWIN
++#ifdef Z_MSC_MINGW
+ 	OPENFILENAME ofn;
+ #elif defined(Z_HAVE_DLFCN_H)
+     GPtrArray *memlist;
+--- origsrc/libzia-4.21/src/Makefile.am	2019-07-09 23:47:38.000000000 +0900
++++ src/libzia-4.21/src/Makefile.am	2020-07-21 09:32:49.797954800 +0900
+@@ -1,8 +1,10 @@
+ datarootdir = @datarootdir@
+ 
++bin_PROGRAMS = map2d
++
+ bindir=$(exec_prefix)/lib/$(DEB_HOST_MULTIARCH)/libzia
+ if USE_WLMAP
+-bin_PROGRAMS = libzia-@VERSION@.so.d #zsdltest gpiotest
++bin_PROGRAMS += libzia-@VERSION@.so.d #zsdltest gpiotest
+ endif
+ 
+ lib_LTLIBRARIES = libzia.la
+@@ -73,8 +75,9 @@ libzia_la_SOURCES = \
+ 	zver.c
+ 
+ 
+-libzia_la_CFLAGS = $(Z_SVNVER) -I../include -I../include/unix 
+-libzia_la_LDFLAGS = -release @VERSION@
++libzia_la_CFLAGS = $(Z_SVNVER) -I../include -I../include/unix -I$(top_srcdir)/include
++libzia_la_LDFLAGS = -no-undefined -release @VERSION@
++libzia_la_LIBADD = $(LTLIBICONV) 
+ library_includedir = $(includedir)/libzia
+ 
+ #zsdltest_SOURCES = zsdltest.c
+@@ -96,7 +99,3 @@ libzia_@VERSION@_so_d_SOURCES = map2d.c
+ 
+ libzia-@VERSION@.so.d$(EXEEXT): libzia.la map2d
+ 	./map2d libzia.so.map libzia-@VERSION@.so.d
+-
+-map2d: map2d.c
+-	$(CC) map2d.c -o $@
+-
+--- origsrc/libzia-4.21/src/zbfd.c	2014-10-15 07:00:00.000000000 +0900
++++ src/libzia-4.21/src/zbfd.c	2020-07-21 09:13:36.477480100 +0900
+@@ -115,6 +115,7 @@ int z_backtrace(void **buffer, int size,
+         STACKSTEP(20);STACKSTEP(21);STACKSTEP(22);STACKSTEP(24);STACKSTEP(25);
+         STACKSTEP(26);STACKSTEP(27);STACKSTEP(28);STACKSTEP(29);STACKSTEP(30);
+     }while(0);*/
++#elif defined(__CYGWIN__)
+ #else
+     // Z_UNIX
+     i = backtrace(buffer, size);
+--- origsrc/libzia-4.21/src/zerror.c	2013-04-02 07:00:00.000000000 +0900
++++ src/libzia-4.21/src/zerror.c	2020-07-21 09:14:01.731757200 +0900
+@@ -98,7 +98,7 @@ void z_strerror(GString *gs, int err){
+ #endif
+ }
+ 
+-#ifdef Z_MSC_MINGW_CYGWIN
++#ifdef Z_MSC_MINGW
+ void z_lasterror(GString *gs){
+ 	z_lasterror_e(gs, GetLastError());
+ }
+--- origsrc/libzia-4.21/src/zfiledlg.c	2015-04-18 07:00:00.000000000 +0900
++++ src/libzia-4.21/src/zfiledlg.c	2020-07-21 09:14:40.413885500 +0900
+@@ -58,7 +58,7 @@ void zfiledlg_free(struct zfiledlg *dlg)
+ 
+ 
+ int zfiledlg_open(struct zfiledlg *dlg, struct zselect *zsel, void (*fce)(void *, char *), void *arg, const char *filename, const char *ext){
+-#ifdef Z_MSC_MINGW_CYGWIN
++#ifdef Z_MSC_MINGW
+ 	int i, l, t;
+ 	GString *gs;
+ 	char *c, *ext2;
+@@ -144,13 +144,13 @@ int zfiledlg_open(struct zfiledlg *dlg,
+ }
+ 
+ static gpointer zfiledlg_thread_func(gpointer data){
+-#ifdef Z_MSC_MINGW_CYGWIN
++#ifdef Z_MSC_MINGW
+ 	struct zfiledlg *dlg = (struct zfiledlg *)data;
+ #endif
+ 
+ 	zg_thread_set_name("Libzia zfiledlg");
+ 
+-#ifdef Z_MSC_MINGW_CYGWIN
++#ifdef Z_MSC_MINGW
+ 
+     if (!GetOpenFileName(&dlg->ofn)){
+ 		zselect_msg_send(dlg->zsel, "ZFILEDLG;0x%x;X;%d", dlg, CommDlgExtendedError());
+--- origsrc/libzia-4.21/src/zi2c.c	2019-10-14 05:20:06.000000000 +0900
++++ src/libzia-4.21/src/zi2c.c	2020-07-21 09:36:45.977426500 +0900
+@@ -29,7 +29,7 @@
+ #endif
+ 
+ 
+-#ifdef Z_HAVE_LINUX_I2C_DEV_H
++//#ifdef Z_HAVE_LINUX_I2C_DEV_H
+ 
+ 
+ int zi2c_write(struct zbusdev *dev, void *buf, size_t len){
+@@ -55,7 +55,7 @@ int zi2c_read(struct zbusdev *dev, void
+     }
+     return ret;
+ }
+-#endif
++//#endif
+ 
+ struct zbusdev *zi2c_init(int busnr, int slave){
+     struct zbusdev *dev = (struct zbusdev *)g_new0(struct zbusdev, 1);
+--- origsrc/libzia-4.21/src/zselect.c	2020-02-11 04:59:46.000000000 +0900
++++ src/libzia-4.21/src/zselect.c	2020-07-21 09:15:45.390198600 +0900
+@@ -566,7 +566,7 @@ void alarm_handler(void *arg, siginfo_t
+ void check_for_select_race(void)
+ {
+     if (critical_section) {
+-#ifdef SIGALRM
++#if defined(SIGALRM) && defined(Z_UNIX_ANDROID)
+         zselect_signal_set(SIGALRM, alarm_handler, NULL, 1);
+ #endif
+         pending_alarm = 1;
