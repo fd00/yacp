@@ -1,0 +1,51 @@
+--- origsrc/libgrapple-0.9.8/Makefile.am	2009-08-04 20:31:50.000000000 +0900
++++ src/libgrapple-0.9.8/Makefile.am	2020-07-22 22:30:08.268846900 +0900
+@@ -3,3 +3,6 @@ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = src test
+ 
+ EXTRA_DIST = CREDITS LICENSE UPDATES BOUNTY README.advanced README.lobby README.nattrav grapple_logo.jpg
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libgrapple-0.9.8/configure.in	2009-08-04 20:31:55.000000000 +0900
++++ src/libgrapple-0.9.8/configure.in	2020-07-22 22:30:55.693042400 +0900
+@@ -87,12 +87,13 @@ AC_CHECK_HEADER([netdb.h], CFLAGS="$CFLA
+ 
+ AC_CHECK_HEADER([sys/ioctl.h], CFLAGS="$CFLAGS -DHAVE_SYS_IOCTL_H",)
+ 
+-AC_CHECK_HEADER([winsock2.h], CFLAGS="$CFLAGS -DHAVE_WINSOCK2_H" LIBS="$LIBS -lws2_32",)
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_HEADER([winsock2.h], CFLAGS="$CFLAGS -DHAVE_WINSOCK2_H" LIBS="$LIBS -lws2_32",)
+ 
+-AC_CHECK_HEADER([ws2tcpip.h], CFLAGS="$CFLAGS -DHAVE_WS2TCPIP_H",)
+-
+-AC_CHECK_HEADER([windows.h], CFLAGS="$CFLAGS -DHAVE_WINDOWS_H",)
++  AC_CHECK_HEADER([ws2tcpip.h], CFLAGS="$CFLAGS -DHAVE_WS2TCPIP_H",)
+ 
++  AC_CHECK_HEADER([windows.h], CFLAGS="$CFLAGS -DHAVE_WINDOWS_H",)
++fi
+ AC_CHECK_HEADER([unistd.h], CFLAGS="$CFLAGS -DHAVE_UNISTD_H",)
+ 
+ AC_CHECK_HEADER([ifaddrs.h], CFLAGS="$CFLAGS -DHAVE_IFADDRS_H",)
+@@ -126,7 +127,7 @@ AC_CHECK_HEADER([stropts.h], CFLAGS="$CF
+ AC_CHECK_FUNCS(inet_ntop inet_pton sigaction gettimeofday)
+ 
+ dnl Finally create all the generated files
+-AC_OUTPUT([
++AC_OUTPUT([libgrapple.pc
+   Makefile
+   src/Makefile
+   test/Makefile
+--- origsrc/libgrapple-0.9.8/libgrapple.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgrapple-0.9.8/libgrapple.pc.in	2020-07-22 22:30:08.190574000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgrapple
++Description: Library for client-server game networking
++Version: @VERSION@
++Libs: -L${libdir} -lgrapple
++Cflags: -I${includedir}
