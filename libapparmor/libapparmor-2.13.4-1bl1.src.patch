@@ -1,0 +1,63 @@
+--- origsrc/apparmor-2.13.4/libraries/libapparmor/src/Makefile.am	2020-03-12 20:17:10.000000000 +0900
++++ src/apparmor-2.13.4/libraries/libapparmor/src/Makefile.am	2020-07-24 01:29:12.056049900 +0900
+@@ -49,7 +49,7 @@ lib_LTLIBRARIES = libapparmor.la
+ noinst_HEADERS = grammar.h parser.h scanner.h af_protos.h private.h PMurHash.h
+ 
+ libapparmor_la_SOURCES = grammar.y libaalogparse.c kernel.c scanner.c private.c features.c kernel_interface.c policy_cache.c PMurHash.c
+-libapparmor_la_LDFLAGS = -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -dynamic -pthread \
++libapparmor_la_LDFLAGS = -no-undefined -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -dynamic -pthread \
+ 	-Wl,--version-script=$(top_srcdir)/src/libapparmor.map
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+--- origsrc/apparmor-2.13.4/libraries/libapparmor/src/kernel.c	2020-03-12 20:17:10.000000000 +0900
++++ src/apparmor-2.13.4/libraries/libapparmor/src/kernel.c	2020-07-24 01:31:48.677284600 +0900
+@@ -21,7 +21,9 @@
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/socket.h>
+ #include <fcntl.h>
+ #include <errno.h>
+@@ -39,10 +41,15 @@
+ # define PATH_MAX 4096
+ #endif
+ 
++#if defined(__ELF__)
+ #define symbol_version(real, name, version) \
+ 		__asm__ (".symver " #real "," #name "@" #version)
+ #define default_symbol_version(real, name, version) \
+ 		__asm__ (".symver " #real "," #name "@@" #version)
++#else
++#define symbol_version(real, name, version)
++#define default_symbol_version(real, name, version)
++#endif
+ 
+ #define UNCONFINED		"unconfined"
+ #define UNCONFINED_SIZE		strlen(UNCONFINED)
+@@ -893,6 +900,12 @@ extern typeof((query_label)) __aa_query_
+ symbol_version(__aa_query_label, aa_query_label, APPARMOR_1.1);
+ default_symbol_version(query_label, aa_query_label, APPARMOR_2.9);
+ 
++#if !defined(__ELF__)
++int aa_query_label(uint32_t mask, char *query, size_t size, int *allowed, int *audited)
++{
++	return query_label(mask, query, size, allowed, audited);
++}
++#endif
+ 
+ /**
+  * aa_query_file_path_len - query access permissions for a file @path
+--- origsrc/apparmor-2.13.4/libraries/libapparmor/swig/python/Makefile.am	2020-03-12 20:17:10.000000000 +0900
++++ src/apparmor-2.13.4/libraries/libapparmor/swig/python/Makefile.am	2020-07-24 01:34:58.135718700 +0900
+@@ -14,7 +14,7 @@ all-local: libapparmor_wrap.c setup.py
+ 	$(PYTHON) setup.py build
+ 
+ install-exec-local:
+-	$(PYTHON) setup.py install --root="/$(DESTDIR)" --prefix="$(prefix)"
++	$(PYTHON) setup.py install --root="$(DESTDIR)" --prefix="$(prefix)"
+ 
+ clean-local:
+ 	if test -x "$(PYTHON)"; then $(PYTHON) setup.py clean; fi
