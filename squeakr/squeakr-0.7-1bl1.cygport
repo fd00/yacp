@@ -1,0 +1,33 @@
+HOMEPAGE="https://github.com/splatlab/${PN}"
+SRC_URI="https://github.com/splatlab/${PN}/archive/V${PV}.tar.gz"
+
+CATEGORY="Science"
+SUMMARY="Exact and Approximate k-mer Counting System"
+DESCRIPTION="Squeakr is a k-mer-counting and multiset-representation system using the
+recently-introduced counting quotient filter (CQF) Pandey et al. (2017), a
+feature-rich approximate membership query (AMQ) data structure."
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake \
+		CFLAGS="${CFLAGS} -D_GNU_SOURCE -I${S}/include -Dstat64=stat -Dfstat64=fstat" \
+		CXXFLAGS="${CXXFLAGS} -D_GNU_SOURCE -I${S}/include -Dstat64=stat -Dfstat64=fstat -fpermissive"
+}
+
+src_test()
+{
+	cd ${B}
+	./${PN} count -e -k 28 -s 20 -t 1 -o /dev/null data/test.fastq
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ${PN}.exe
+
+	cd ${S}
+	insinto /usr/share/${PN}
+	doins data/test.fastq
+}
