@@ -1,0 +1,96 @@
+--- origsrc/grt-0.2.4/GRT/Util/GRTVersionInfo.h	2016-12-05 08:58:01.000000000 +0900
++++ src/grt-0.2.4/GRT/Util/GRTVersionInfo.h	2020-07-24 18:16:09.624956900 +0900
+@@ -36,7 +36,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN
+     #define __GRT_OSX_BUILD__
+ #endif
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+     #define __GRT_LINUX_BUILD__
+ #endif
+ 
+--- origsrc/grt-0.2.4/build/CMakeLists.txt	2016-12-05 08:58:01.000000000 +0900
++++ src/grt-0.2.4/build/CMakeLists.txt	2020-07-24 18:19:43.810700000 +0900
+@@ -129,6 +129,10 @@ add_library(${GRT_LIB_NAME}
+             ${GRT_HEADERS}
+ )
+ 
++if( CYGWIN )
++    set_target_properties(${GRT_LIB_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ #Add the options for what should be installed (when the user runs: sudo make install)
+ if(NOT EXCLUDE_FROM_INSTALL)
+ 	install(
+@@ -149,31 +153,33 @@ endif()
+ if( BUILD_TESTS )
+     ENABLE_TESTING()
+ 
+-    #Add a command that will automatically build the unit testing tools for us
+-    set(BUILD_GTEST
+-        ON
+-        CACHE
+-        BOOL
+-        "Builds the googletest subproject"
+-    )
+-    set(BUILD_GMOCK
+-        OFF
+-        CACHE
+-        BOOL
+-        "Builds the googlemock subproject"
+-    )
+-    set(gtest_force_shared_crt
+-        ON
+-        CACHE
+-        BOOL
+-        "Use shared (DLL) run-time lib even when Google Test is built as static lib."
+-    )
+-
+-    add_subdirectory(
+-        "${GTEST_DIR}"
+-        "${PROJECT_BINARY_DIR}/third_party/gtest"
+-        EXCLUDE_FROM_ALL
+-    )
++    if( NOT CYGWIN )
++        #Add a command that will automatically build the unit testing tools for us
++        set(BUILD_GTEST
++            ON
++            CACHE
++            BOOL
++            "Builds the googletest subproject"
++        )
++        set(BUILD_GMOCK
++            OFF
++            CACHE
++            BOOL
++            "Builds the googlemock subproject"
++        )
++        set(gtest_force_shared_crt
++            ON
++            CACHE
++            BOOL
++            "Use shared (DLL) run-time lib even when Google Test is built as static lib."
++        )
++
++        add_subdirectory(
++            "${GTEST_DIR}"
++            "${PROJECT_BINARY_DIR}/third_party/gtest"
++            EXCLUDE_FROM_ALL
++        )
++    endif()
+ 
+     #Add the unit tests
+     message(STATUS "Adding unit tests...")
+@@ -190,8 +196,10 @@ if( BUILD_TESTS )
+         #Include the main GRT include directory
+         include_directories( "${GRT_SRC_DIR}" )
+ 
+-        #Include the gtest parent directory
+-        include_directories( "${GRT_THIRD_PARTY_DIR}/gtest/googletest/include" )
++        if( NOT CYGWIN )
++            #Include the gtest parent directory
++            include_directories( "${GRT_THIRD_PARTY_DIR}/gtest/googletest/include" )
++        endif()
+ 
+         #Link against the main GRT library 
+         target_link_libraries(${unit_test_name} ${GRT_LIB_NAME} gtest)
