@@ -1,0 +1,38 @@
+inherit python3-wheel
+
+HOMEPAGE="http://wiki.ros.org/${PN#python36-}"
+SRC_URI="https://github.com/ros/ros/archive/${PV}.tar.gz"
+SRC_DIR="ros-${PV}"
+
+CATEGORY="Python"
+SUMMARY="Unit-testing package for ROS"
+DESCRIPTION="Unit-testing package for ROS. This is a lower-level library for rostest and
+handles unit tests, whereas rostest handles integration tests."
+
+export ROS_PYTHON_VERSION=3
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+    -DCATKIN_INSTALL_INTO_PREFIX_ROOT:BOOL=OFF
+	-DCMAKE_PREFIX_PATH:STRING=/usr
+"
+
+src_compile()
+{
+	CYGCMAKE_SOURCE=${S}/tools/${PN#python36-}
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+}
+
+src_test()
+{
+    cd ${B}
+    ninja_test
+}
+
+DOCS="
+	tools/${PN#python36-}/CHANGELOG.rst
+"
