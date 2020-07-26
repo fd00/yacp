@@ -1,0 +1,40 @@
+--- origsrc/rosconsole-1.14.1/CMakeLists.txt	2020-07-21 07:52:28.000000000 +0900
++++ src/rosconsole-1.14.1/CMakeLists.txt	2020-07-27 06:08:20.179594900 +0900
+@@ -67,9 +67,15 @@ ENDIF(${CMAKE_SYSTEM} MATCHES "Darwin-11
+ include_directories(include ${catkin_INCLUDE_DIRS} ${rosconsole_backend_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+ 
+ add_library(rosconsole_backend_interface src/rosconsole/rosconsole_backend.cpp)
++if(CYGWIN)
++  set_target_properties(rosconsole_backend_interface PROPERTIES SOVERSION 0)
++endif()
+ 
+ add_library(rosconsole src/rosconsole/rosconsole.cpp)
+ target_link_libraries(rosconsole ${rosconsole_backend_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
++if(CYGWIN)
++  set_target_properties(rosconsole PROPERTIES SOVERSION 0)
++endif()
+ 
+ if(ROSCONSOLE_BACKEND STREQUAL "log4cxx")
+   add_library(rosconsole_log4cxx src/rosconsole/impl/rosconsole_log4cxx.cpp)
+@@ -79,12 +85,21 @@ if(ROSCONSOLE_BACKEND STREQUAL "log4cxx"
+     add_executable(rosconsole_speed_test test/speed_test.cpp)
+     target_link_libraries(rosconsole_speed_test rosconsole ${rosconsole_backend_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+   endif()
++  if(CYGWIN)
++    set_target_properties(rosconsole_log4cxx PROPERTIES SOVERSION 0)
++  endif()
+ elseif(ROSCONSOLE_BACKEND STREQUAL "glog")
+   add_library(rosconsole_glog src/rosconsole/impl/rosconsole_glog.cpp)
+   target_link_libraries(rosconsole_glog rosconsole_backend_interface ${GLOG_LIBRARIES})
++  if(CYGWIN)
++    set_target_properties(rosconsole_glog PROPERTIES SOVERSION 0)
++  endif()
+ elseif(ROSCONSOLE_BACKEND STREQUAL "print")
+   add_library(rosconsole_print src/rosconsole/impl/rosconsole_print.cpp)
+   target_link_libraries(rosconsole_print rosconsole_backend_interface)
++  if(CYGWIN)
++    set_target_properties(rosconsole_print PROPERTIES SOVERSION 0)
++  endif()
+ else()
+   message(FATAL_ERROR "Unknown rosconsole backend '${ROSCONSOLE_BACKEND}'")
+ endif()
