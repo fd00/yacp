@@ -1,0 +1,22 @@
+--- origsrc/cutelyst-2.11.0/CMakeLists.txt	2020-05-13 06:35:48.000000000 +0900
++++ src/cutelyst-2.11.0/CMakeLists.txt	2020-07-27 11:40:38.171833500 +0900
+@@ -167,7 +167,7 @@ install(EXPORT CutelystTargets
+ 
+ add_subdirectory(Cutelyst)
+ 
+-if(UNIX AND NOT (APPLE OR HAIKU))
++if(UNIX AND NOT (APPLE OR HAIKU OR CYGWIN))
+     set(LINUX TRUE)
+ endif()
+ 
+--- origsrc/cutelyst-2.11.0/wsgi/localserver.cpp	2020-05-13 06:35:48.000000000 +0900
++++ src/cutelyst-2.11.0/wsgi/localserver.cpp	2020-07-27 13:33:26.240985700 +0900
+@@ -228,6 +228,8 @@ static inline int cutelyst_safe_accept(i
+         sockflags |= SOCK_NONBLOCK;
+ # if defined(Q_OS_NETBSD)
+     fd = ::paccept(s, addr, static_cast<socklen_t *>(addrlen), NULL, sockflags);
++# elif defined(__CYGWIN__)
++    fd = ::accept4(s, addr, reinterpret_cast<socklen_t *>(addrlen), sockflags);
+ # else
+     fd = ::accept4(s, addr, static_cast<socklen_t *>(addrlen), sockflags);
+ # endif

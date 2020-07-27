@@ -1,0 +1,58 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="C++ Web Framework built on top of Qt"
+DESCRIPTION="A Web Framework built on top of Qt, using the simple and elegant approach of
+Catalyst (Perl) framework."
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_EXAMPLES:BOOL=ON
+	-DBUILD_TESTS:BOOL=ON
+	-DPLUGIN_CSRFPROTECTION:BOOL=ON
+	-DPLUGIN_MEMCACHED:BOOL=ON
+	-DPLUGIN_MEMCACHEDSESSIONSTORE:BOOL=ON
+	-DPLUGIN_STATICCOMPRESSED:BOOL=ON
+	-DPLUGIN_VIEW_EMAIL:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	_path=${B}/Cutelyst:${PATH}
+	for p in `find ${B}/Cutelyst/Plugins -name '*.dll' | xargs -n 1 dirname`
+	do
+		_path=${_path}:${p}
+	done
+	PATH=${_path} ninja_test
+}
+
+PKG_NAMES="
+	cutelyst
+	libCutelyst2Qt5_2
+	libCutelyst2Qt5-devel
+"
+cutelyst_CONTENTS="
+	usr/bin/*.exe
+	usr/lib/cutelyst2-plugins
+	usr/share/cutelyst2
+	usr/share/doc
+	usr/share/man/man1
+"
+libCutelyst2Qt5_2_CONTENTS="
+	usr/bin/*.dll
+"
+libCutelyst2Qt5_devel_CONTENTS="
+	usr/include
+	usr/lib/cmake
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
+	usr/share/man/man5
+"
+cutelyst_SUMMARY="${SUMMARY} (utilities)"
+libCutelyst2Qt5_2_SUMMARY="${SUMMARY} (runtime)"
+libCutelyst2Qt5_devel_SUMMARY="${SUMMARY} (development)"
