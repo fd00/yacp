@@ -1,0 +1,66 @@
+--- origsrc/gdome2-0.8.1/configure.in	2003-10-05 23:39:27.000000000 +0900
++++ src/gdome2-0.8.1/configure.in	2020-07-27 22:24:07.185906700 +0900
+@@ -57,24 +57,9 @@ dnl
+ dnl find glib
+ dnl
+ 
+-GLIB_1="no"
+-AC_ARG_ENABLE(glib-1, 
+-        [  --enable-glib-1=[no]	            Specify if you want to use glib 1],
+-	GLIB_1=yes
+-)
+-
+-if test "x$GLIB_1" = "xyes"
+-then
+-	PKG_CHECK_MODULES(GLIB, glib)
+-	GLIB_REQUIRED="glib"
+-	GLIB_MIN_VERSION=1.2.10
+-        AM_PATH_GLIB($GLIB_MIN_VERSION,,AC_MSG_ERROR(Could not find GLIB (see config.log for details).))
+-else
+-	PKG_CHECK_MODULES(GLIB, glib-2.0)
+-	GLIB_REQUIRED="glib-2.0"
+-	GLIB_MIN_VERSION=2.2.0
+-        AM_PATH_GLIB_2_0($GLIB_MIN_VERSION,,AC_MSG_ERROR(Could not find GLIB (see config.log for details).))
+-fi
++GLIB_REQUIRED="glib-2.0"
++GLIB_MIN_VERSION=2.2.0
++PKG_CHECK_MODULES([GLIB], [$GLIB_REQUIRED >= $GLIB_MIN_VERSION])
+ AC_SUBST(GLIB_MIN_VERSION)
+ AC_SUBST(GLIB_LIBS)
+ AC_SUBST(GLIB_REQUIRED)
+--- origsrc/gdome2-0.8.1/libgdome/Makefile.am	2002-07-16 23:15:56.000000000 +0900
++++ src/gdome2-0.8.1/libgdome/Makefile.am	2020-07-27 18:12:17.775891100 +0900
+@@ -36,7 +36,7 @@ libgdome_la_LIBADD = 						\
+         $(GLIB_LIBS)                                            \
+ 	$(NULL)
+         
+-libgdome_la_LDFLAGS = -version-info @GDOME_VERSION_INFO@
++libgdome_la_LDFLAGS = -no-undefined -version-info @GDOME_VERSION_INFO@
+ 
+ # what is this include dir ?
+ libgdomeincdir = $(includedir)/libgdome
+--- origsrc/gdome2-0.8.1/libgdome/gdomecore/gdome-xml-documentt.c	2003-07-13 19:47:54.000000000 +0900
++++ src/gdome2-0.8.1/libgdome/gdomecore/gdome-xml-documentt.c	2020-07-27 18:45:08.744131300 +0900
+@@ -342,7 +342,11 @@ gdome_xml_dt_internalSubset (GdomeDocume
+ 	}
+ 	xmlNodeDumpOutput (out_buff, NULL, (xmlNode *)is, 0, 0, NULL);
+ 	xmlOutputBufferFlush(out_buff);
++#if defined(LIBXML2_NEW_BUFFER)
++	ret = g_strndup (xmlOutputBufferGetContent(out_buff), xmlOutputBufferGetSize(out_buff));
++#else
+ 	ret = g_strndup (out_buff->buffer->content, out_buff->buffer->use);
++#endif
+ 	(void)xmlOutputBufferClose(out_buff);
+ 
+ 	return gdome_xml_str_mkref_own (ret);
+--- origsrc/gdome2-0.8.1/test/bench.c	2001-11-07 17:13:06.000000000 +0900
++++ src/gdome2-0.8.1/test/bench.c	2020-07-27 22:31:05.854155300 +0900
+@@ -81,7 +81,7 @@ void traversal (GdomeElement *el) {
+ 			break;
+ 		case GDOME_TEXT_NODE:
+ 			str = gdome_t_data ((GdomeText *)child, &exc);
+-			printf (str->str);
++			printf ("%s\n", str->str);
+ 			gdome_str_unref (str);
+ 			break;
+ 		}
