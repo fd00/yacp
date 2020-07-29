@@ -1,0 +1,86 @@
+--- origsrc/nlopt-2.6.2/CMakeLists.txt	2020-04-16 01:58:01.000000000 +0900
++++ src/nlopt-2.6.2/CMakeLists.txt	2020-07-29 13:29:43.107494800 +0900
+@@ -303,8 +303,14 @@ endif ()
+ add_subdirectory (src/api)
+ 
+ if (NLOPT_PYTHON)
+-  find_package (PythonInterp)
+-  find_package (PythonLibs ${PYTHON_VERSION_STRING} EXACT)
++  if (CYGWIN)
++    find_package (Python3 COMPONENTS Development Interpreter)
++    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
++    set(PYTHONINTERP_FOUND ${Python3_Interpreter_FOUND})
++  else()
++    find_package (PythonInterp)
++    find_package (PythonLibs ${PYTHON_VERSION_STRING} EXACT)
++  endif()
+   find_package (NumPy)
+ endif ()
+ 
+--- origsrc/nlopt-2.6.2/cmake/FindGuile.cmake	2020-04-16 01:58:01.000000000 +0900
++++ src/nlopt-2.6.2/cmake/FindGuile.cmake	2020-07-29 12:06:37.612913900 +0900
+@@ -18,6 +18,7 @@
+ # Macports for OSX puts things in /opt/local
+ find_path (GUILE_INCLUDE_DIR libguile.h
+   PATH_SUFFIXES
++    guile/3.0
+     guile/2.2
+     guile/2.0
+     guile/1.8
+@@ -27,11 +28,16 @@ find_path (GUILE_INCLUDE_DIR libguile.h
+ )
+ 
+ # Look for the library
+-find_library (GUILE_LIBRARY NAMES guile-2.2 guile-2.0 guile
++find_library (GUILE_LIBRARY NAMES guile-3.0 guile-2.2 guile-2.0 guile
+   HINTS
+     /opt/local/lib
+ )
+ 
++if (CYGWIN)
++  find_package(PkgConfig)
++  pkg_check_modules(GUILE guile-3.0)
++  set(GUILE_INCLUDE_DIR ${GUILE_INCLUDE_DIRS})
++endif()
+ 
+ set (GUILE_LIBRARIES ${GUILE_LIBRARY})
+ set (GUILE_INCLUDE_DIRS ${GUILE_INCLUDE_DIR})
+--- origsrc/nlopt-2.6.2/cmake/FindNumPy.cmake	2020-04-16 01:58:01.000000000 +0900
++++ src/nlopt-2.6.2/cmake/FindNumPy.cmake	2020-07-29 11:53:06.820719900 +0900
+@@ -40,9 +40,19 @@
+ 
+ # Finding NumPy involves calling the Python interpreter
+ if(NumPy_FIND_REQUIRED)
+-    find_package(PythonInterp REQUIRED)
++    if(CYGWIN)
++        find_package(Python3 REQUIRED)
++        set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
++    else()
++        find_package(PythonInterp REQUIRED)
++    endif()
+ else()
+-    find_package(PythonInterp)
++    if(CYGWIN)
++        find_package(Python3)
++        set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
++    else()
++        find_package(PythonInterp)
++    endif()
+ endif()
+ 
+ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+--- origsrc/nlopt-2.6.2/src/swig/CMakeLists.txt	2020-04-16 01:58:01.000000000 +0900
++++ src/nlopt-2.6.2/src/swig/CMakeLists.txt	2020-07-29 13:32:20.210240200 +0900
+@@ -17,6 +17,12 @@ endif ()
+ include_directories (${NLOPT_PRIVATE_INCLUDE_DIRS})
+ set_source_files_properties (nlopt.i PROPERTIES CPLUSPLUS ON)
+ 
++if (CYGWIN)
++  set(PYTHONLIBS_FOUND ${Python3_FOUND})
++  set(PYTHON_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
++  set(PYTHON_LIBRARIES ${Python3_LIBRARIES})
++endif()
++
+ if (NUMPY_FOUND AND PYTHONLIBS_FOUND)
+ 
+   set (SWIG_MODULE_nlopt_python_EXTRA_DEPS nlopt-python.i numpy.i generate-cpp)
