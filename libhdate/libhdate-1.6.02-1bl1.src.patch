@@ -1,0 +1,137 @@
+--- origsrc/libhdate-1.6.02/bindings/python/Makefile.am	2013-02-22 06:27:08.000000000 +0900
++++ src/libhdate-1.6.02/bindings/python/Makefile.am	2020-08-03 11:31:47.196903300 +0900
+@@ -3,23 +3,11 @@ EXTRA_DIST = hdate.i
+ 
+ if WITH_PYTHON
+ 
+-DEPS= $(top_builddir)/src/libhdate.la
+-
+-CLEANFILES = *.o *.cxx *.so *wrap* *.py
+-
+-all-am: _hdate.so
+-	
+-
+-_hdate.so: hdate_wrap.cxx
+-	g++ -fpic -c hdate_wrap.cxx $(PY_CFLAGS) -I$(top_srcdir)/src
+-	g++ -shared ../../src/.libs/libhdate.so hdate_wrap.o -o _hdate.so
+-
+-hdate_wrap.cxx: hdate.i
+-	swig -python -c++ hdate.i
+-
+-install-data-local: _hdate.so
+-	$(mkinstalldirs) $(DESTDIR)$(PY_MODULES_PATH)
+-	$(INSTALL_DATA) _hdate.so $(DESTDIR)$(PY_MODULES_PATH)/_hdate.so
+-	$(INSTALL_DATA) hdate.py $(DESTDIR)$(PY_MODULES_PATH)/hdate.py
++python_PYTHON = $(builddir)/hdate.py
++pyexec_LTLIBRARIES = _hdate.la
++_hdate_la_SOURCES = $(builddir)/hdate_wrap.cxx hdate.i
++_hdate_la_CPPFLAGS = -I$(top_srcdir)/src $(PYTHON_CPPFLAGS)
++_hdate_la_LDFLAGS = -avoid-version -no-undefined -module $(PYTHON_LDFLAGS)
++_hdate_la_LIBADD = $(top_builddir)/src/libhdate.la $(PYTHON_LIBS)
+ 
+ endif
+--- origsrc/libhdate-1.6.02/configure.in	2013-02-22 06:27:08.000000000 +0900
++++ src/libhdate-1.6.02/configure.in	2020-08-03 13:03:41.464535100 +0900
+@@ -14,21 +14,19 @@ VERSION_INFO=$LIBHDATE_MAJOR_VERSION:$LI
+ AC_SUBST(VERSION_INFO)
+ 
+ AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
+-AM_MAINTAINER_MODE
+ 
+ dnl Checks for programs.
+ AC_ISC_POSIX
+ AC_GNU_SOURCE
+ AC_USE_SYSTEM_EXTENSIONS
+ AC_PROG_CC
++AC_PROG_CXX
+ AC_PROG_INSTALL
+ AC_PROG_LN_S
+ AC_PROG_MAKE_SET
+ AC_STDC_HEADERS
+ AM_PROG_LIBTOOL
+ 
+-AM_MAINTAINER_MODE
+-
+ AC_C_CONST
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+@@ -84,44 +82,16 @@ AM_CONDITIONAL(WITH_FPC, [test "$build_g
+ 
+ dnl =======================================================================================
+ 
+-AC_CHECK_PROG(have_python, "python", yes, no)
+-
+-build_python=$have_python
++AX_PKG_SWIG
+ 
+ AC_ARG_ENABLE([python], 
+   [AS_HELP_STRING([--disable-python],
+   [do not build python binding])],
+-  [build_python=no], [build_python=$have_python])
++  [build_python=no], [build_python=yes])
+ 
+-AC_ARG_WITH(python-sitelib-dir, 
+-  [AS_HELP_STRING([--with-python-sitelib-dir=PATH],
+-  [path to python site lib])])
+-
+-if test "$have_python" = "yes"; then
+-	  PY_PREFIX=`python -c 'import sys ; print sys.prefix'`
+-	  PY_VERSION=`python -c 'import sys ; print sys.version[[0:3]]'`
+-	  AC_MSG_CHECKING(for $PY_PREFIX/include/python$PY_VERSION/Python.h)
+-	  if test -f $PY_PREFIX/include/python$PY_VERSION/Python.h; then
+-		  AC_MSG_RESULT(yes)
+-		  PY_CFLAGS="-I$PY_PREFIX/include/python$PY_VERSION"
+-		  
+-		  if test "$with_python_sitelib_dir" = "" ; then
+-		    PY_MODULES_PATH="$PY_PREFIX/lib/python$PY_VERSION/dist-packages"
+-		  else
+-		    PY_MODULES_PATH=$with_python_sitelib_dir
+-		  fi
+-		  
+-		  AC_SUBST([PY_VERSION])
+-		  AC_SUBST([PY_CFLAGS])
+-		  AC_SUBST([PY_MODULES_PATH])
+-		  if test "$have_swig" = "no"; then
+-			build_python=no
+-		  fi
+-	  else
+-		  AC_MSG_RESULT(no)
+-		  build_python=no
+-	  fi
+-fi
++AM_PATH_PYTHON([3])
++AX_PYTHON_DEVEL
++AX_SWIG_PYTHON
+ 
+ AM_CONDITIONAL(WITH_PYTHON, test "$build_python" = "yes")
+ 
+--- origsrc/libhdate-1.6.02/examples/Makefile.am	2013-02-22 06:27:08.000000000 +0900
++++ src/libhdate-1.6.02/examples/Makefile.am	2020-08-03 13:11:10.978894400 +0900
+@@ -1 +1 @@
+-SUBDIRS = hcal bindings
++SUBDIRS = hcal # bindings
+--- origsrc/libhdate-1.6.02/examples/hcal/Makefile.am	2013-02-22 06:27:08.000000000 +0900
++++ src/libhdate-1.6.02/examples/hcal/Makefile.am	2020-08-03 13:10:57.772901500 +0900
+@@ -20,6 +20,6 @@ hcal_LDADD = $(ldadd)
+ endif
+ 
+ libhdatedocdir = ${prefix}/share/doc/libhdate/examples/hcal
+-libhdatedoc_DATA = hcal.c hdate.c local_functions.c
++# libhdatedoc_DATA = hcal.c hdate.c local_functions.c
+ 
+ EXTRA_DIST = $(libhdatedoc_DATA)
+\ No newline at end of file
+--- origsrc/libhdate-1.6.02/src/Makefile.am	2013-02-22 06:27:08.000000000 +0900
++++ src/libhdate-1.6.02/src/Makefile.am	2020-08-03 10:02:04.303091000 +0900
+@@ -12,9 +12,9 @@ libhdate_la_SOURCES = \
+ 	hdate.h\
+ 	support.h
+ 
+-libhdate_la_LDFLAGS = $(libhdate_LDFLAGS) -version-info $(VERSION_INFO)
++libhdate_la_LDFLAGS = -no-undefined $(libhdate_LDFLAGS) -version-info $(VERSION_INFO)
+ 
+-libhdate_la_LIBADD = 
++libhdate_la_LIBADD = $(LTLIBINTL)
+ 
+ include_HEADERS = hdate.h hdatepp.h
+ 
