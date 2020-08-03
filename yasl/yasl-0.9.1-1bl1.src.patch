@@ -1,0 +1,108 @@
+--- origsrc/yasl-0.9.1/CMakeLists.txt	2020-06-30 04:09:07.000000000 +0900
++++ src/yasl-0.9.1/CMakeLists.txt	2020-08-03 09:32:59.128608600 +0900
+@@ -19,10 +19,10 @@ if(MSVC)
+ endif()
+ 
+ if (NOT "${CMAKE_C_COMPILER_ID}" MATCHES ".*MSVC.*")
+-    set(CMAKE_C_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-vla -Wno-logical-op-parentheses -Wno-parentheses -Werror")
++    set(CMAKE_C_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-vla -Wno-logical-op-parentheses -Wno-parentheses")
+ endif()
+ if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*MSVC.*")
+-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-unused-variable -Wno-vla -Wno-deprecated -Wno-logical-op-parentheses -Wno-parentheses -Werror")
++    set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-unused-function -Wno-unused-variable -Wno-vla -Wno-deprecated -Wno-logical-op-parentheses -Wno-parentheses")
+ endif()
+ 
+ if (CMAKE_COMPILER_IS_GNUCC)
+@@ -43,51 +43,6 @@ include_directories(util)
+ include_directories(std)
+ include_directories(test)
+ 
+-add_executable(yasl
+-        opcode.h
+-        yasl.c
+-        yasl_aux.c
+-        main.c
+-        compiler/ast.c
+-        data-structures/YASL_ByteBuffer.c
+-        compiler/compiler.c
+-        compiler/env.c
+-        compiler/lexer.c
+-        compiler/lexinput.c
+-        compiler/parser.c
+-        compiler/middleend.c
+-        interpreter/upvalue.c
+-        interpreter/closure.c
+-        util/hash_function.c
+-        data-structures/YASL_Table.c
+-        interpreter/bool_methods.c
+-        interpreter/builtins.c
+-        interpreter/float_methods.c
+-        util/yasl_float.c
+-        interpreter/int_methods.c
+-        data-structures/YASL_List.c
+-        interpreter/list_methods.c
+-        interpreter/table_methods.c
+-        interpreter/VM.c
+-        interpreter/YASL_Object.c
+-        interpreter/refcount.c
+-        interpreter/str_methods.c
+-        data-structures/YASL_String.c
+-        interpreter/userdata.c
+-        interpreter/undef_methods.c
+-        util/prime.c
+-        std/yasl-std-io.c
+-        std/yasl-std-math.c
+-        std/yasl-std-require.c
+-        data-structures/YASL_Set.c
+-        std/yasl-std-collections.c
+-        util/IO.c
+-        util/varint.c
+-        yasl_conf.h
+-        yasl_error.h
+-        yasl_plat.h
+-        std/yasl-std-mt.c std/yasl-std-mt.h)
+-
+ add_library(yaslapi
+         opcode.h
+         yasl.c
+@@ -128,6 +83,12 @@ add_library(yaslapi
+         std/yasl-std-require.c
+         data-structures/YASL_Set.c
+         std/yasl-std-mt.c std/yasl-std-mt.h)
++if (CYGWIN)
++    set_target_properties(yaslapi PROPERTIES SOVERSION 0)
++endif()
++
++add_executable(yasl main.c)
++target_link_libraries(yasl yaslapi)
+ 
+ add_executable(tests2
+         test2/test2.c
+@@ -172,3 +133,14 @@ if (UNIX)
+     target_link_libraries(yaslapi dl)
+     target_link_libraries(tests2 dl)
+ endif()
++
++install(TARGETS yasl DESTINATION bin)
++install(TARGETS yaslapi RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES yasl.h yasl_error.h yasl_aux.h yasl_conf.h DESTINATION include)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/yasl.pc.in ${CMAKE_BINARY_DIR}/yasl.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/yasl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yasl-0.9.1/yasl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yasl-0.9.1/yasl.pc.in	2020-08-03 09:45:17.637054500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yasl
++Description: Bytecode Interpreter for Yet Another Scripting Language
++Version: @VERSION@
++Libs: -L${libdir} -lyaslapi
++Cflags: -I${includedir}
