@@ -1,0 +1,22 @@
+--- origsrc/xmrig-6.3.1/CMakeLists.txt	2020-07-31 15:20:56.000000000 +0900
++++ src/xmrig-6.3.1/CMakeLists.txt	2020-08-07 20:35:18.476213900 +0900
+@@ -205,7 +205,7 @@ if (WITH_DEBUG_LOG)
+ endif()
+ 
+ add_executable(${CMAKE_PROJECT_NAME} ${HEADERS} ${SOURCES} ${SOURCES_OS} ${SOURCES_CPUID} ${HEADERS_CRYPTO} ${SOURCES_CRYPTO} ${SOURCES_SYSLOG} ${TLS_SOURCES} ${XMRIG_ASM_SOURCES})
+-target_link_libraries(${CMAKE_PROJECT_NAME} ${XMRIG_ASM_LIBRARY} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${CPUID_LIB} ${ARGON2_LIBRARY} ${ETHASH_LIBRARY})
++target_link_libraries(${CMAKE_PROJECT_NAME} ${XMRIG_ASM_LIBRARY} ${ARGON2_LIBRARY} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${CPUID_LIB} ${ETHASH_LIBRARY})
+ 
+ if (WIN32)
+     add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+--- origsrc/xmrig-6.3.1/src/crypto/common/VirtualMemory_unix.cpp	2020-07-31 15:20:56.000000000 +0900
++++ src/xmrig-6.3.1/src/crypto/common/VirtualMemory_unix.cpp	2020-08-07 20:12:36.474747100 +0900
+@@ -81,6 +81,8 @@ void *xmrig::VirtualMemory::allocateLarg
+     void *mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
+ #   elif defined(__FreeBSD__)
+     void *mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_ALIGNED_SUPER | MAP_PREFAULT_READ, -1, 0);
++#   elif defined(__CYGWIN__)
++    void *mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+ #   else
+     void *mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_POPULATE, 0, 0);
+ #   endif
