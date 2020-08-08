@@ -1,0 +1,52 @@
+--- origsrc/wolfTPM-v.1.8/Makefile.am	2020-05-01 08:45:59.000000000 +0900
++++ src/wolfTPM-v.1.8/Makefile.am	2020-08-08 10:49:48.775413600 +0900
+@@ -103,3 +103,6 @@ merge-clean:
+ 	@find ./ | $(GREP) \.OTHER | xargs rm -f
+ 	@find ./ | $(GREP) \.BASE | xargs rm -f
+ 	@find ./ | $(GREP) \~$$ | xargs rm -f
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/wolfTPM-v.1.8/configure.ac	2020-05-01 08:45:59.000000000 +0900
++++ src/wolfTPM-v.1.8/configure.ac	2020-08-08 10:52:58.126102700 +0900
+@@ -130,7 +130,7 @@ AC_ARG_ENABLE([wolfcrypt],
+ 
+ if test "x$ENABLED_WOLFCRYPT" = "xyes"
+ then
+-    TAO_REQUIRE_LIBWOLFSSL
++    PKG_CHECK_MODULES([WOLFSSL], [wolfssl])
+ else
+     AM_CFLAGS="$AM_CFLAGS -DWOLFTPM2_NO_WOLFCRYPT"
+ fi
+@@ -252,7 +252,7 @@ AC_SUBST([AM_CFLAGS])
+ AC_SUBST([AM_LDFLAGS])
+ 
+ # FINAL
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([wolftpm.pc Makefile])
+ AC_CONFIG_FILES([wolftpm/version.h])
+ AC_CONFIG_FILES([wolftpm/options.h])
+ 
+--- origsrc/wolfTPM-v.1.8/src/include.am	2020-05-01 08:45:59.000000000 +0900
++++ src/wolfTPM-v.1.8/src/include.am	2020-08-08 10:45:51.096898400 +0900
+@@ -17,6 +17,6 @@ endif
+ src_libwolftpm_la_CFLAGS       = -DBUILDING_WOLFTPM $(AM_CFLAGS)
+ src_libwolftpm_la_CPPFLAGS     = -DBUILDING_WOLFTPM $(AM_CPPFLAGS)
+ src_libwolftpm_la_LDFLAGS      = ${AM_LDFLAGS} -no-undefined -version-info ${WOLFTPM_LIBRARY_VERSION} 
+-
++src_libwolftpm_la_LIBADD       = $(WOLFSSL_LIBS)
+ #src_libwolftpm_la_DEPENDENCIES =
+ #EXTRA_DIST +=
+--- origsrc/wolfTPM-v.1.8/wolftpm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/wolfTPM-v.1.8/wolftpm.pc.in	2020-08-08 10:53:05.098107600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: wolftpm
++Description: Portable TPM 2.0 project designed for embedded use
++Version: @VERSION@
++Libs: -L${libdir} -lwolftpm
++Cflags: -I${includedir}
