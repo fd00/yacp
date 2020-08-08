@@ -1,0 +1,36 @@
+--- origsrc/vsearch-2.15.0/configure.ac	2020-06-19 23:51:40.000000000 +0900
++++ src/vsearch-2.15.0/configure.ac	2020-08-08 19:25:33.567924100 +0900
+@@ -92,8 +92,11 @@ case $target in
+      powerpc64*) target_ppc="yes" ;;
+ esac
+ 
+-AC_CHECK_HEADERS([windows.h], [AM_CONDITIONAL(TARGET_WIN, true)], [AM_CONDITIONAL(TARGET_WIN, false)])
+-
++if test "$host_os" = "cygwin"; then
++  AM_CONDITIONAL(TARGET_WIN, false)
++else
++  AC_CHECK_HEADERS([windows.h], [AM_CONDITIONAL(TARGET_WIN, true)], [AM_CONDITIONAL(TARGET_WIN, false)])
++fi
+ AM_CONDITIONAL(HAVE_BZLIB, test "x${have_bzip2}" = "xyes")
+ AM_CONDITIONAL(HAVE_ZLIB, test "x${have_zlib}" = "xyes")
+ AM_CONDITIONAL(HAVE_PTHREADS, test "x${have_pthreads}" = "xyes")
+--- origsrc/vsearch-2.15.0/src/dynlibs.cc	2020-06-19 23:51:40.000000000 +0900
++++ src/vsearch-2.15.0/src/dynlibs.cc	2020-08-08 19:35:47.008701400 +0900
+@@ -67,6 +67,8 @@ HMODULE gz_lib;
+ # else
+ #  ifdef __APPLE__
+ const char gz_libname[] = "libz.dylib";
++#  elif defined(__CYGWIN__)
++const char gz_libname[] = "cygz.dll";
+ #  else
+ const char gz_libname[] = "libz.so";
+ #  endif
+@@ -88,6 +90,8 @@ HMODULE bz2_lib;
+ # else
+ #  ifdef __APPLE__
+ const char bz2_libname[] = "libbz2.dylib";
++#  elif defined(__CYGWIN__)
++const char bz2_libname[] = "cygbz2-1.dll";
+ #  else
+ const char bz2_libname[] = "libbz2.so";
+ #  endif
