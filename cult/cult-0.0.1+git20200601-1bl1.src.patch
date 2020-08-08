@@ -1,0 +1,29 @@
+--- origsrc/cult/CMakeLists.txt	2020-08-08 14:55:24.000000000 +0900
++++ src/cult/CMakeLists.txt	2020-08-08 15:07:26.010301600 +0900
+@@ -16,7 +16,13 @@ if(NOT DEFINED ASMJIT_STATIC)
+   set(ASMJIT_STATIC TRUE)
+ endif()
+ 
+-include("${ASMJIT_DIR}/CMakeLists.txt")
++option(USE_SYSTEM_ASMJIT "Use system asmjit" ON)
++if (USE_SYSTEM_ASMJIT)
++  include(FindPkgConfig)
++  pkg_check_modules(ASMJIT asmjit REQUIRED)
++else()
++  include("${ASMJIT_DIR}/CMakeLists.txt")
++endif()
+ 
+ set(CULT_SRC
+   src/cult/app.cpp
+@@ -35,6 +41,10 @@ set(CULT_SRC
+ )
+ 
+ add_executable(cult ${CULT_SRC})
+-target_link_libraries(cult AsmJit::AsmJit)
++if (USE_SYSTEM_ASMJIT)
++  target_link_libraries(cult ${ASMJIT_LIBRARIES})
++else()
++  target_link_libraries(cult AsmJit::AsmJit)
++endif()
+ target_compile_features(cult PUBLIC cxx_std_11)
+ set_property(TARGET cult PROPERTY CXX_VISIBILITY_PRESET hidden)
