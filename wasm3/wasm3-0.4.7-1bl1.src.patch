@@ -1,0 +1,66 @@
+--- origsrc/wasm3-0.4.7/CMakeLists.txt	2020-04-28 05:26:07.000000000 +0900
++++ src/wasm3-0.4.7/CMakeLists.txt	2020-08-08 16:51:22.783458500 +0900
+@@ -162,21 +162,28 @@ if(BUILD_WASI MATCHES "simple")
+ elseif(BUILD_WASI MATCHES "metawasi")
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Dd_m3HasMetaWASI")
+ elseif(BUILD_WASI MATCHES "uvwasi")
+-  include(FetchContent)
+-  FetchContent_Declare(
+-    uvwasi
+-    GIT_REPOSITORY https://github.com/cjihrig/uvwasi.git
+-    GIT_TAG v0.0.8
+-  )
++  if(CYGWIN)
++    include(FindPkgConfig)
++    pkg_check_modules(UVWASI libuv uvwasi REQUIRED)
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Dd_m3HasUVWASI")
++    target_link_libraries(${OUT_FILE} ${UVWASI_LIBRARIES})
++  else()
++    include(FetchContent)
++    FetchContent_Declare(
++      uvwasi
++      GIT_REPOSITORY https://github.com/cjihrig/uvwasi.git
++      GIT_TAG v0.0.8
++    )
+ 
+-  FetchContent_GetProperties(uvwasi)
+-  if(NOT uvwasi_POPULATED)
+-    FetchContent_Populate(uvwasi)
+-    include_directories("${uvwasi_SOURCE_DIR}/include")
+-    add_subdirectory(${uvwasi_SOURCE_DIR} ${uvwasi_BINARY_DIR} EXCLUDE_FROM_ALL)
++    FetchContent_GetProperties(uvwasi)
++    if(NOT uvwasi_POPULATED)
++      FetchContent_Populate(uvwasi)
++      include_directories("${uvwasi_SOURCE_DIR}/include")
++      add_subdirectory(${uvwasi_SOURCE_DIR} ${uvwasi_BINARY_DIR} EXCLUDE_FROM_ALL)
++    endif()
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Dd_m3HasUVWASI")
++    target_link_libraries(${OUT_FILE} uvwasi_a uv_a)
+   endif()
+-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Dd_m3HasUVWASI")
+-  target_link_libraries(${OUT_FILE} uvwasi_a uv_a)
+ endif()
+ 
+ check_ipo_supported(RESULT result)
+--- origsrc/wasm3-0.4.7/source/m3_api_wasi.c	2020-04-28 05:26:07.000000000 +0900
++++ src/wasm3-0.4.7/source/m3_api_wasi.c	2020-08-08 15:56:08.888408500 +0900
+@@ -25,7 +25,7 @@ typedef uint32_t __wasi_size_t;
+ #include <stdio.h>
+ #include <fcntl.h>
+ 
+-#if defined(__wasi__) || defined(__APPLE__) || defined(__ANDROID_API__) || defined(__OpenBSD__) || defined(__linux__)
++#if defined(__wasi__) || defined(__APPLE__) || defined(__ANDROID_API__) || defined(__OpenBSD__) || defined(__linux__) || defined(__CYGWIN__)
+ #  include <unistd.h>
+ #  include <sys/uio.h>
+ #  if defined(__APPLE__)
+--- origsrc/wasm3-0.4.7/source/m3_config_platforms.h	2020-04-28 05:26:07.000000000 +0900
++++ src/wasm3-0.4.7/source/m3_config_platforms.h	2020-08-08 15:56:08.904036500 +0900
+@@ -251,7 +251,7 @@
+ # endif
+ 
+ 
+-# if defined(M3_COMPILER_MSVC)
++# if defined(M3_COMPILER_MSVC) || defined(__CYGWIN__)
+ #  define M3_WEAK
+ # else
+ #  define M3_WEAK __attribute__((weak))
