@@ -1,0 +1,103 @@
+--- origsrc/uvwasi-0.0.10/CMakeLists.txt	2020-08-04 23:01:10.000000000 +0900
++++ src/uvwasi-0.0.10/CMakeLists.txt	2020-08-08 16:34:38.865326100 +0900
+@@ -25,18 +25,23 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+   list(APPEND uvwasi_defines _GNU_SOURCE _POSIX_C_SOURCE=200112)
+ endif()
+ 
+-include(FetchContent)
+-## https://libuv.org
+-FetchContent_Declare(
+-        libuv
+-        GIT_REPOSITORY https://github.com/libuv/libuv.git
+-        GIT_TAG ${LIBUV_VERSION})
+-
+-FetchContent_GetProperties(libuv)
+-if(NOT libuv_POPULATED)
+-    FetchContent_Populate(libuv)
+-    include_directories("${libuv_SOURCE_DIR}/include")
+-    add_subdirectory(${libuv_SOURCE_DIR} ${libuv_BINARY_DIR} EXCLUDE_FROM_ALL)
++if (CYGWIN)
++    include(FindPkgConfig)
++    pkg_check_modules(LIBUV libuv REQUIRED)
++else()
++    include(FetchContent)
++    ## https://libuv.org
++    FetchContent_Declare(
++            libuv
++            GIT_REPOSITORY https://github.com/libuv/libuv.git
++            GIT_TAG ${LIBUV_VERSION})
++
++    FetchContent_GetProperties(libuv)
++    if(NOT libuv_POPULATED)
++        FetchContent_Populate(libuv)
++        include_directories("${libuv_SOURCE_DIR}/include")
++        add_subdirectory(${libuv_SOURCE_DIR} ${libuv_BINARY_DIR} EXCLUDE_FROM_ALL)
++    endif()
+ endif()
+ 
+ ## uvwasi source code files.
+@@ -81,17 +86,19 @@ if(ASAN AND CMAKE_C_COMPILER_ID MATCHES
+     set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+ endif()
+ 
+-## Static library target.
+-add_library(uvwasi_a STATIC ${uvwasi_sources})
+-target_compile_definitions(uvwasi_a PRIVATE ${uvwasi_defines})
+-target_compile_options(uvwasi_a PRIVATE ${uvwasi_cflags})
+-target_include_directories(uvwasi_a PRIVATE ${PROJECT_SOURCE_DIR}/include)
++## Shared library target.
++add_library(uvwasi SHARED ${uvwasi_sources})
++target_compile_definitions(uvwasi PRIVATE ${uvwasi_defines})
++target_compile_options(uvwasi PRIVATE ${uvwasi_cflags})
++target_include_directories(uvwasi PRIVATE ${PROJECT_SOURCE_DIR}/include)
+ if(CODE_COVERAGE)
+-    target_link_libraries(uvwasi_a PUBLIC uv_a coverage_config)
++    target_link_libraries(uvwasi PUBLIC ${LIBUV_LIBRARIES} coverage_config)
+ else()
+-    target_link_libraries(uvwasi_a PRIVATE uv_a)
++    target_link_libraries(uvwasi PRIVATE ${LIBUV_LIBRARIES})
++endif()
++if(CYGWIN)
++    set_target_properties(uvwasi PROPERTIES SOVERSION 0)
+ endif()
+-
+ 
+ ## Test targets.
+ if(UVWASI_BUILD_TESTS)
+@@ -105,7 +112,7 @@ if(UVWASI_BUILD_TESTS)
+         target_include_directories(${test_name}
+                                     PRIVATE
+                                     ${PROJECT_SOURCE_DIR}/include)
+-        target_link_libraries(${test_name} PRIVATE uv_a uvwasi_a)
++        target_link_libraries(${test_name} PRIVATE ${LIBUV_LIBRARIES} uvwasi)
+         list(APPEND test_list ${test_name})
+     endforeach()
+ 
+@@ -125,3 +132,14 @@ message(STATUS "summary of build options
+     Libuv version:   ${LIBUV_VERSION}
+     Libuv lib:       ${libuv_BINARY_DIR}
+ ")
++
++file(GLOB_RECURSE HEADERS include/*)
++install(FILES ${HEADERS} DESTINATION include/uvwasi)
++install(TARGETS uvwasi RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/uvwasi.pc.in ${CMAKE_BINARY_DIR}/uvwasi.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/uvwasi.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/uvwasi-0.0.10/uvwasi.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/uvwasi-0.0.10/uvwasi.pc.in	2020-08-08 16:09:53.708695100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: uvwasi
++Description: WASI syscall API built atop libuv
++Version: @VERSION@
++Libs: -L${libdir} -luvwasi
++Cflags: -I${includedir}
