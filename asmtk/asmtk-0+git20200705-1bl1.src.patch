@@ -1,0 +1,83 @@
+--- origsrc/asmtk/CMakeLists.txt	2020-08-08 15:20:03.000000000 +0900
++++ src/asmtk/CMakeLists.txt	2020-08-08 15:36:39.221338600 +0900
+@@ -98,7 +98,13 @@ if (ASMTK_EMBED OR ASMTK_STATIC)
+   List(APPEND ASMTK_PRIVATE_CFLAGS "-DASMTK_STATIC")
+ endif()
+ 
+-include("${ASMJIT_DIR}/CMakeLists.txt")
++option(USE_SYSTEM_ASMJIT "Use system asmjit" ON)
++if (USE_SYSTEM_ASMJIT)
++  include(FindPkgConfig)
++  pkg_check_modules(ASMJIT asmjit REQUIRED)
++else()
++  include("${ASMJIT_DIR}/CMakeLists.txt")
++endif()
+ list(APPEND ASMTK_PRIVATE_CFLAGS ${ASMJIT_CFLAGS})
+ list(REMOVE_DUPLICATES ASMTK_PRIVATE_CFLAGS)
+ 
+@@ -133,6 +139,8 @@ set(ASMTK_SRC_LIST
+ )
+ asmtk_add_source(ASMTK_SRC src ${ASMTK_SRC_LIST})
+ 
++install(DIRECTORY src/asmtk/ DESTINATION include/asmtk FILES_MATCHING PATTERN *.h)
++
+ # =============================================================================
+ # [AsmTK - Summary]
+ # =============================================================================
+@@ -157,9 +165,17 @@ if (NOT ASMTK_EMBED)
+   target_compile_options(asmtk PRIVATE ${ASMTK_PRIVATE_CFLAGS}
+     $<$<CONFIG:Debug>:${ASMTK_PRIVATE_CFLAGS_DBG}>
+     $<$<NOT:$<CONFIG:Debug>>:${ASMTK_PRIVATE_CFLAGS_REL}>)
+-  target_link_libraries(asmtk PUBLIC AsmJit::AsmJit)
++  if (USE_SYSTEM_ASMJIT)
++    target_link_libraries(asmtk PUBLIC ${ASMJIT_LIBRARIES})
++  else()
++    target_link_libraries(asmtk PUBLIC AsmJit::AsmJit)
++  endif()
+   target_include_directories(asmtk BEFORE INTERFACE ${ASMTK_INCLUDE_DIRS})
+   set_property(TARGET asmtk PROPERTY CXX_VISIBILITY_PRESET hidden)
++  if (CYGWIN)
++    set_target_properties(asmtk PROPERTIES SOVERSION 0)
++  endif()
++  install(TARGETS asmtk RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+   # Add AsmTK::AsmTK target (alias to asmtk).
+   add_library(AsmTK::AsmTK ALIAS asmtk)
+@@ -172,11 +188,23 @@ if (NOT ASMTK_EMBED)
+ 
+     foreach(_target ${ASMTK_SAMPLES_SRC})
+       add_executable(${_target} "${ASMTK_DIR}/test/${_target}.cpp")
+-      target_link_libraries(${_target} AsmJit::AsmJit AsmTK::AsmTK)
++      if (USE_SYSTEM_ASMJIT)
++        target_link_libraries(${_target} ${ASMJIT_LIBRARIES} AsmTK::AsmTK)
++      else()
++        target_link_libraries(${_target} AsmJit::AsmJit AsmTK::AsmTK)
++      endif()
+       target_compile_features(${_target} PUBLIC cxx_std_11)
+       set_property(TARGET ${_target} PROPERTY CXX_VISIBILITY_PRESET hidden)
++      install(TARGETS ${_target} RUNTIME DESTINATION bin)
+     endforeach()
+   endif()
+ endif()
+ 
+ cmake_policy(POP)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/asmtk.pc.in ${CMAKE_BINARY_DIR}/asmtk.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/asmtk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/asmtk/asmtk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/asmtk/asmtk.pc.in	2020-08-08 15:36:39.174096000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: asmtk
++Description: Assembler toolkit based on AsmJit
++Version: @VERSION@
++Libs: -L${libdir} -lasmtk
++Cflags: -I${includedir}
