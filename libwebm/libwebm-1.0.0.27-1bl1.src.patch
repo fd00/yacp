@@ -1,0 +1,98 @@
+--- origsrc/libwebm/CMakeLists.txt	2020-08-10 08:43:40.000000000 +0900
++++ src/libwebm/CMakeLists.txt	2020-08-10 09:03:12.198437400 +0900
+@@ -12,7 +12,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/bui
+ set(LIBWEBM_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+ 
+ # Libwebm section.
+-add_library(webm STATIC
++add_library(webm SHARED
+             "${LIBWEBM_SRC_DIR}/mkvmuxer.cpp"
+             "${LIBWEBM_SRC_DIR}/mkvmuxer.hpp"
+             "${LIBWEBM_SRC_DIR}/mkvmuxertypes.hpp"
+@@ -32,15 +32,19 @@ if(WIN32)
+   set_target_properties(webm PROPERTIES PREFIX lib)
+ endif(WIN32)
+ 
++if(CYGWIN)
++  set_target_properties(webm PROPERTIES SOVERSION 0)
++endif(CYGWIN)
++
+ include_directories("${LIBWEBM_SRC_DIR}")
+ 
+ # Sample section.
+-add_executable(sample
++add_executable(webm_sample
+                "${LIBWEBM_SRC_DIR}/sample.cpp")
+-target_link_libraries(sample LINK_PUBLIC webm)
++target_link_libraries(webm_sample LINK_PUBLIC webm)
+ 
+ # Sample muxer section.
+-add_executable(sample_muxer
++add_executable(webm_sample_muxer
+                "${LIBWEBM_SRC_DIR}/sample_muxer.cpp"
+                "${LIBWEBM_SRC_DIR}/sample_muxer_metadata.cc"
+                "${LIBWEBM_SRC_DIR}/sample_muxer_metadata.h"
+@@ -48,7 +52,7 @@ add_executable(sample_muxer
+                "${LIBWEBM_SRC_DIR}/vttreader.h"
+                "${LIBWEBM_SRC_DIR}/webvttparser.cc"
+                "${LIBWEBM_SRC_DIR}/webvttparser.h")
+-target_link_libraries(sample_muxer LINK_PUBLIC webm)
++target_link_libraries(webm_sample_muxer LINK_PUBLIC webm)
+ 
+ # Vttdemux section.
+ add_executable(vttdemux
+@@ -62,3 +66,31 @@ add_executable(webm2pes
+                "${LIBWEBM_SRC_DIR}/webm2pes.cc"
+                "${LIBWEBM_SRC_DIR}/webm2pes.h")
+ target_link_libraries(webm2pes LINK_PUBLIC webm)
++
++install(TARGETS webm_sample RUNTIME DESTINATION bin)
++install(TARGETS webm_sample_muxer RUNTIME DESTINATION bin)
++install(TARGETS vttdemux RUNTIME DESTINATION bin)
++install(TARGETS webm2pes RUNTIME DESTINATION bin)
++install(FILES
++            "${LIBWEBM_SRC_DIR}/mkvmuxer.hpp"
++            "${LIBWEBM_SRC_DIR}/mkvmuxertypes.hpp"
++            "${LIBWEBM_SRC_DIR}/mkvmuxerutil.hpp"
++            "${LIBWEBM_SRC_DIR}/mkvparser.hpp"
++            "${LIBWEBM_SRC_DIR}/mkvreader.hpp"
++            "${LIBWEBM_SRC_DIR}/mkvwriter.hpp"
++            "${LIBWEBM_SRC_DIR}/webmids.hpp"
++        DESTINATION include)
++install(TARGETS webm
++        EXPORT webm
++        RUNTIME DESTINATION bin
++        ARCHIVE DESTINATION lib)
++install(EXPORT webm
++        FILE webm-config.cmake
++        DESTINATION lib/cmake/webm)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libwebm.pc.in ${CMAKE_BINARY_DIR}/libwebm.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libwebm.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libwebm/libwebm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libwebm/libwebm.pc.in	2020-08-10 09:03:12.136411000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libwebm
++Description: WebM File Parser
++Version: @VERSION@
++Libs: -L${libdir} -lwebm
++Cflags: -I${includedir}
+--- origsrc/libwebm/webm2pes.cc	2020-08-10 08:43:40.000000000 +0900
++++ src/libwebm/webm2pes.cc	2020-08-10 08:46:17.865332700 +0900
+@@ -7,6 +7,7 @@
+ // be found in the AUTHORS file in the root of the source tree.
+ #include "webm2pes.h"
+ 
++#include <cstring>
+ #include <vector>
+ 
+ namespace {
