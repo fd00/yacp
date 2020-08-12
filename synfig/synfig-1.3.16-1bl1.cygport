@@ -1,0 +1,67 @@
+HOMEPAGE="http://${PN}.org/"
+SRC_URI="https://github.com/${PN}/${PN}/archive/v1.3.16.tar.gz"
+
+CATEGORY="Graphics"
+SUMMARY="Open-source 2D Animation Software"
+DESCRIPTION="Synfig Studio is a free and open-source 2D animation software, designed as
+powerful industrial-strength solution for creating film-quality animation
+using a vector and bitmap artwork. It eliminates the need to create animation
+frame-by frame, allowing you to produce 2D animation of a higher quality with
+fewer people and resources. Synfig Studio is available for Windows, Linux and
+MacOS X."
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+
+	_ltdlsearchdir=
+	for _dir in ${B}/synfig-core/src/modules/*
+	do
+		_ltdlsearchdir="${_ltdlsearchdir}:${_dir}"
+	done
+	LTDL_LIBRARY_PATH=${_ltdlsearchdir} \
+	PATH=${B}/synfig-core/src/synfig:${B}/synfig-core/src/tool:${PATH} \
+	SYNFIG_MODULE_LIST=${S}/synfig-core/src/modules/synfig_modules.cfg \
+		cygninja build_images
+}
+
+DIFF_EXCLUDES="
+	autobuild
+	synfig_modules.cfg
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+	ETL
+"
+synfig_CONTENTS="
+	usr/bin/*.exe
+	usr/etc
+	usr/share
+"
+libsynfig0_CONTENTS="
+	usr/bin/*.dll
+	usr/lib/${PN}/modules/*.dll
+"
+libsynfig_devel_CONTENTS="
+	usr/include/synfig
+	usr/lib/cmake
+	usr/lib/lib${PN}*
+"
+ETL_CONTENTS="
+	usr/include/ETL
+"
+synfig_SUMMARY="${SUMMARY} (utilities)"
+libsynfig0_SUMMARY="${SUMMARY} (runtime)"
+libsynfig_devel_SUMMARY="${SUMMARY} (development)"
+ETL_CATEGORY="Devel"
+ETL_SUMMARY="Extended Template Library"
