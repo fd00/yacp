@@ -1,0 +1,140 @@
+--- origsrc/mlt-6.22.1/src/framework/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/framework/CMakeLists.txt	2020-08-12 15:01:12.625066800 +0900
+@@ -27,7 +27,7 @@ target_include_directories(mlt PUBLIC  $
+ if(WIN32)
+     install(TARGETS mlt DESTINATION ${CMAKE_INSTALL_BINDIR})
+ else()
+-    install(TARGETS mlt DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS mlt RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ file(GLOB mlt_head *.h)
+--- origsrc/mlt-6.22.1/src/framework/mlt_property.h	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/framework/mlt_property.h	2020-08-12 13:49:10.319705700 +0900
+@@ -30,7 +30,7 @@
+ #include <sys/param.h>
+ #endif
+ 
+-#if (defined(__GLIBC__) && !defined(__APPLE__)) || defined(HAVE_LOCALE_H)
++#if (defined(__GLIBC__) && !defined(__APPLE__)) || defined(HAVE_LOCALE_H) || defined(__CYGWIN__)
+ #  include <locale.h>
+ #elif defined(__APPLE__) || (defined(__FreeBSD_version) && __FreeBSD_version >= 900506)
+ #  include <xlocale.h>
+--- origsrc/mlt-6.22.1/src/melt/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/melt/CMakeLists.txt	2020-08-12 10:58:18.688674400 +0900
+@@ -12,7 +12,9 @@ else()
+         add_library(sdl2 ALIAS PkgConfig::sdl2)
+     endif()
+ endif()
+-if(TARGET sdl2)
++if(CYGWIN)
++    list(APPEND melt_lib "${SDL2_LIBRARIES}")
++elseif(TARGET sdl2)
+     if(MINGW)
+         list(APPEND melt_lib mingw32)
+     endif()
+--- origsrc/mlt-6.22.1/src/mlt++/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/mlt++/CMakeLists.txt	2020-08-12 14:24:21.025305000 +0900
+@@ -1,7 +1,7 @@
+ file(GLOB mlt++_src *.cpp)
+ add_library(mlt++ SHARED ${mlt++_src})
+ set_target_properties(mlt++ PROPERTIES SOVERSION 3 VERSION 3 CXX_STANDARD 14)
+-if(WIN32)
++if(WIN32 OR CYGWIN)
+     target_compile_definitions(mlt++ PUBLIC MLTPP_EXPORTS)
+ endif()
+ target_include_directories(mlt++ PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../)
+@@ -9,7 +9,7 @@ target_link_libraries(mlt++ mlt)
+ if(WIN32)
+     install(TARGETS mlt++ DESTINATION ${CMAKE_INSTALL_BINDIR})
+ else()
+-    install(TARGETS mlt++ DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS mlt++ RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ file(GLOB mlt++_head *.h)
+--- origsrc/mlt-6.22.1/src/mlt++/MltConfig.h	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/mlt++/MltConfig.h	2020-08-12 14:18:47.538959400 +0900
+@@ -21,7 +21,7 @@
+ #ifndef MLTPP_CONFIG_H
+ #define MLTPP_CONFIG_H
+ 
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__CYGWIN__)
+     #ifdef MLTPP_EXPORTS
+         #define MLTPP_DECLSPEC __declspec( dllexport )
+     #else
+--- origsrc/mlt-6.22.1/src/modules/gdk/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/modules/gdk/CMakeLists.txt	2020-08-12 14:06:15.027340400 +0900
+@@ -15,7 +15,11 @@ if(TARGET PkgConfig::GdkPixbuf)
+     endif()
+ endif()
+ 
+-pkg_check_modules(pango IMPORTED_TARGET pango)
++if(CYGWIN)
++    pkg_check_modules(pango IMPORTED_TARGET pangoft2)
++else()
++    pkg_check_modules(pango IMPORTED_TARGET pango)
++endif()
+ pkg_check_modules(fontconfig IMPORTED_TARGET fontconfig)
+ if(TARGET PkgConfig::pango AND TARGET PkgConfig::fontconfig)
+     list(APPEND mltgdk_src producer_pango.c)
+@@ -23,6 +27,11 @@ if(TARGET PkgConfig::pango AND TARGET Pk
+     list(APPEND mltgdk_def USE_PANGO)
+ endif()
+ 
++if(CYGWIN)
++    find_package(iconv)
++    list(APPEND mltgdk_lib ${Iconv_LIBRARY})
++endif()
++
+ # Only for MMX but not x86_64: deprecated
+ # list(APPEND mltgdk_src have_mmx.S scale_line_22_yuv_mmx.S)
+ add_library(mltgdk MODULE ${mltgdk_src})
+--- origsrc/mlt-6.22.1/src/modules/opengl/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/modules/opengl/CMakeLists.txt	2020-08-12 14:30:58.726877300 +0900
+@@ -9,13 +9,20 @@ if(TARGET PkgConfig::movit)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -FOpenGL")
+         set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} -lpthread -framework OpenGL")
+     endif()
++    if(CYGWIN)
++        find_package(OpenGL)
++        find_package(X11)
++    endif()
+ 
+     pkg_get_variable(SHADERDIR movit shaderdir)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSHADERDIR=\\\"${SHADERDIR}\\\"")
+ 
+     file(GLOB mltopengl_src *.c *.cpp)
+     add_library(mltopengl MODULE ${mltopengl_src})
+-    target_link_libraries(mltopengl mlt m PkgConfig::movit)
++    target_link_libraries(mltopengl mlt++ m PkgConfig::movit)
++    if(CYGWIN)
++        target_link_libraries(mltopengl OpenGL::GL ${X11_LIBRARIES})
++    endif()
+     # Create module in parent directory, for the benefit of "source setenv".
+     set_target_properties(mltopengl PROPERTIES LIBRARY_OUTPUT_DIRECTORY ..)
+     install(TARGETS mltopengl LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/mlt)
+--- origsrc/mlt-6.22.1/src/modules/plusgpl/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/modules/plusgpl/CMakeLists.txt	2020-08-12 14:37:47.646993000 +0900
+@@ -1,4 +1,4 @@
+-if(GPL)
++if(GPL AND NOT CYGWIN)
+     file(GLOB mltplusgpl_src *.c)
+     add_library(mltplusgpl MODULE ${mltplusgpl_src})
+     set(mltplusgpl_lib mlt m Threads::Threads)
+--- origsrc/mlt-6.22.1/src/modules/sdl2/CMakeLists.txt	2020-08-02 03:23:06.000000000 +0900
++++ src/mlt-6.22.1/src/modules/sdl2/CMakeLists.txt	2020-08-12 14:53:51.086607200 +0900
+@@ -1,7 +1,11 @@
+ if(TARGET sdl2)
++    if(CYGWIN)
++        find_package(SDL2)
++    endif()
+     file(GLOB mltsdl2_src *.c)
+     add_library(mltsdl2 MODULE ${mltsdl2_src})
+-    target_link_libraries(mltsdl2 mlt m Threads::Threads sdl2)
++    include_directories(${SDL2_INCLUDE_DIRS})
++    target_link_libraries(mltsdl2 mlt m Threads::Threads ${SDL2_LIBRARIES})
+     # Create module in parent directory, for the benefit of "source setenv".
+     set_target_properties(mltsdl2 PROPERTIES LIBRARY_OUTPUT_DIRECTORY ..)
+     install(TARGETS mltsdl2 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/mlt)
