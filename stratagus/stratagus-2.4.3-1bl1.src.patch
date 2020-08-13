@@ -1,0 +1,78 @@
+--- origsrc/stratagus-2.4.3/CMakeLists.txt	2020-04-25 17:05:52.000000000 +0900
++++ src/stratagus-2.4.3/CMakeLists.txt	2020-08-13 14:16:22.880593500 +0900
+@@ -630,7 +630,11 @@ endif()
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
+ 
+-find_package(Lua51 REQUIRED)
++if(CYGWIN)
++	find_package(Lua REQUIRED)
++else()
++	find_package(Lua51 REQUIRED)
++endif()
+ find_package(PNG REQUIRED)
+ find_package(SDL REQUIRED)
+ find_package(Tolua++ REQUIRED)
+@@ -853,7 +857,10 @@ endif()
+ # Stratagus needs to have char by default signed
+ # No idea how to tell this to other compilers
+ if(CMAKE_COMPILER_IS_GNUCXX)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char -std=gnu++0x -Werror")
++	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char -std=gnu++0x")
++	if(NOT CYGWIN)
++		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
++	endif()
+ endif()
+ if(CMAKE_COMPILER_IS_GNUC)
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsigned-char")
+@@ -1248,29 +1255,34 @@ endif()
+ 
+ ########### install files ###############
+ 
+-install(TARGETS stratagus DESTINATION ${GAMEDIR})
++if(CYGWIN)
++	install(TARGETS stratagus DESTINATION ${GDIR})
++else()
++	install(TARGETS stratagus DESTINATION ${GAMEDIR})
++endif()
+ install(TARGETS png2stratagus DESTINATION ${BINDIR})
+ 
+ if(SQLITE_FOUND)
+ 	install(TARGETS metaserver DESTINATION ${BINDIR} RENAME stratagus-metaserver)
+ endif()
+ 
++install(FILES doc/stratagus.6 DESTINATION ${MANDIR})
++install(FILES
++	doc/development.html
++	doc/faq.html
++	doc/gpl.html
++	doc/guichan-copyright.txt
++	doc/changelog.html
++	doc/index.html
++	doc/install.html
++	doc/media.html
++	doc/metaserver_protocol.txt
++	doc/README-SDL.txt
++	DESTINATION share/doc/stratagus
++)
++install(DIRECTORY doc/graphics doc/scripts DESTINATION ${DOCDIR})
+ if(ENABLE_DOC AND DOXYGEN_FOUND)
+-	install(FILES doc/stratagus.6 DESTINATION ${MANDIR})
+-	install(FILES
+-		doc/development.html
+-		doc/faq.html
+-		doc/gpl.html
+-		doc/guichan-copyright.txt
+-		doc/changelog.html
+-		doc/index.html
+-		doc/install.html
+-		doc/media.html
+-		doc/metaserver_protocol.txt
+-		doc/README-SDL.txt
+-		DESTINATION share/doc/stratagus
+-	)
+-	install(DIRECTORY doc/graphics doc/scripts ${CMAKE_CURRENT_BINARY_DIR}/doxygen DESTINATION ${DOCDIR})
++	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen DESTINATION ${DOCDIR})
+ endif(ENABLE_DOC AND DOXYGEN_FOUND)
+ 
+ if(ENABLE_DEV)
