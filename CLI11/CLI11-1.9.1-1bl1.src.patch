@@ -1,0 +1,31 @@
+--- origsrc/CLI11-1.9.1/tests/CMakeLists.txt	2020-06-20 23:29:27.000000000 +0900
++++ src/CLI11-1.9.1/tests/CMakeLists.txt	2020-08-13 17:03:07.178043200 +0900
+@@ -1,6 +1,10 @@
+-if(NOT EXISTS "${CLI11_SOURCE_DIR}/extern/googletest/CMakeLists.txt")
+-    message(FATAL_ERROR "You have requested tests be built, but googletest is not downloaded. Please run:
+-    git submodule update --init")
++
++find_package(gtest)
++if(NOT GTEST_FOUND)
++    if(NOT EXISTS "${CLI11_SOURCE_DIR}/extern/googletest/CMakeLists.txt")
++        message(FATAL_ERROR "You have requested tests be built, but googletest is not downloaded. Please run:
++        git submodule update --init")
++    endif()
+ endif()
+ 
+ list(APPEND CMAKE_MODULE_PATH "${CLI11_SOURCE_DIR}/cmake")
+@@ -30,7 +34,13 @@ else()
+ endif()
+ 
+ set(GOOGLE_TEST_INDIVIDUAL OFF)
+-include(AddGoogletest)
++if(GTEST_FOUND)
++    macro(add_gtest TESTNAME)
++        target_link_libraries(${TESTNAME} PUBLIC gtest gmock gtest_main)
++    endmacro()
++else()
++    include(AddGoogletest)
++endif()
+ 
+ set(CLI11_TESTS
+     HelpersTest
