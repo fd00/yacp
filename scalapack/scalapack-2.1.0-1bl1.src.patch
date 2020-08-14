@@ -1,0 +1,56 @@
+--- origsrc/scalapack-2.1.0/CMakeLists.txt	2019-11-27 05:37:04.000000000 +0900
++++ src/scalapack-2.1.0/CMakeLists.txt	2020-08-14 12:40:02.309920200 +0900
+@@ -74,6 +74,11 @@ else()
+    message(FATAL_ERROR "--> MPI Library NOT FOUND -- please set MPI_BASE_DIR accordingly --")
+ endif()
+ 
++if (CYGWIN)
++   set(PC_REQUIRES_MPI "ompi")
++else()
++   set(PC_REQUIRES_MPI "mpi")
++endif()
+ 
+ if (UNIX)
+    if ( "${CMAKE_Fortran_COMPILER}" MATCHES "ifort" )
+@@ -82,11 +87,18 @@ if (UNIX)
+ endif ()
+ 
+ macro(SCALAPACK_install_library lib)
+-  install(TARGETS ${lib} EXPORT scalapack-targets
+-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-    LIBRARY DESTINATION lib${LIB_SUFFIX}
+-    RUNTIME DESTINATION Testing
+-  )
++   if (CYGWIN)
++      install(TARGETS ${lib} EXPORT scalapack-targets
++         ARCHIVE DESTINATION lib
++         RUNTIME DESTINATION bin
++      )
++   else()
++      install(TARGETS ${lib} EXPORT scalapack-targets
++         ARCHIVE DESTINATION lib${LIB_SUFFIX}
++         LIBRARY DESTINATION lib${LIB_SUFFIX}
++         RUNTIME DESTINATION Testing
++      )
++   endif()
+ endmacro()
+ 
+ # --------------------------------------------------
+@@ -233,6 +245,9 @@ append_subdir_files(src-C "SRC")
+ if (UNIX)
+    add_library(scalapack ${blacs} ${tools} ${tools-C} ${extra_lapack} ${pblas} ${pblas-F} ${ptzblas} ${ptools} ${pbblas} ${redist} ${src} ${src-C})
+    target_link_libraries( scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
++   if (CYGWIN)
++      set_target_properties(scalapack PROPERTIES SOVERSION 0)
++   endif()
+    scalapack_install_library(scalapack)
+ else (UNIX) # Need to separate Fortran and C Code
+    OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON )
+--- origsrc/scalapack-2.1.0/scalapack.pc.in	2019-11-27 05:37:04.000000000 +0900
++++ src/scalapack-2.1.0/scalapack.pc.in	2020-08-14 12:40:07.057901100 +0900
+@@ -6,4 +6,4 @@ Description: SCALAPACK reference impleme
+ Version: @SCALAPACK_VERSION@
+ URL: http://www.netlib.org/scalapack/
+ Libs: -L${libdir} -lscalapack
+-Requires: mpi lapack blas
++Requires: @PC_REQUIRES_MPI@ lapack blas

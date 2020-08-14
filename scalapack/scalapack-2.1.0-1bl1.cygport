@@ -1,0 +1,56 @@
+HOMEPAGE="https://github.com/Reference-ScaLAPACK/${PN}"
+SRC_URI="https://github.com/Reference-ScaLAPACK/${PN}/archive/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Scalable LAPACK"
+DESCRIPTION="ScaLAPACK, or Scalable LAPACK, is a library of high performance linear algebra
+routines for distributed memory computers supporting MPI."
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+"
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${S}
+	includeinto blacs
+	doinclude BLACS/SRC/*.h
+	includeinto pblas
+	doinclude PBLAS/SRC/*.h
+}
+
+DIFF_EXCLUDES="
+	BLACS
+	PBLAS
+"
+
+PKG_NAMES="
+	scalapack
+	libscalapack0
+	libscalapack-devel
+"
+scalapack_CONTENTS="
+	usr/share
+"
+libscalapack0_CONTENTS="
+	usr/bin
+"
+libscalapack_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+scalapack_SUMMARY="${SUMMARY} (licensing & readmes)"
+libscalapack0_SUMMARY="${SUMMARY} (runtime)"
+libscalapack_devel_SUMMARY="${SUMMARY} (development)"
