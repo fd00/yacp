@@ -1,0 +1,116 @@
+--- origsrc/spla-1.0.0/src/CMakeLists.txt	2020-08-03 23:48:23.000000000 +0900
++++ src/spla-1.0.0/src/CMakeLists.txt	2020-08-14 13:49:39.531630900 +0900
+@@ -33,6 +33,10 @@ add_library(spla ${SPLA_LIBRARY_TYPE}
+ 	${SPLA_SOURCE_FILES}
+ 	)
+ 
++if(CYGWIN)
++	set_target_properties(spla PROPERTIES SOVERSION 0)
++endif()
++
+ # only enforces minimum standard
+ # target_compile_features(spla PUBLIC cxx_std_11)
+ 
+@@ -115,7 +119,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+ 
+ # installation commands
+ if(SPLA_INSTALL)
+-	install(TARGETS spla DESTINATION ${CMAKE_INSTALL_LIBDIR} EXPORT SPLATargets)
++	install(TARGETS spla EXPORT SPLATargets RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+ 	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/spla DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.f90")
+ 	install(FILES ${PROJECT_BINARY_DIR}/spla/config.h "${PROJECT_BINARY_DIR}/spla/spla_export.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spla)
+ 	install(EXPORT SPLATargets NAMESPACE SPLA:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/SPLA FILE ${SPLA_TARGETS_FILE})
+--- origsrc/spla-1.0.0/tests/CMakeLists.txt	2020-08-03 23:48:23.000000000 +0900
++++ src/spla-1.0.0/tests/CMakeLists.txt	2020-08-14 13:46:17.092567900 +0900
+@@ -7,47 +7,55 @@ set(INSTALL_GTEST OFF CACHE BOOL "")
+ mark_as_advanced(BUILD_GMOCK INSTALL_GTEST)
+ include(FetchContent)
+ 
+-# add googletest
+-FetchContent_Declare(
+-  googletest
+-  GIT_REPOSITORY https://github.com/google/googletest.git
+-  GIT_TAG        release-1.8.1
+-)
+-FetchContent_GetProperties(googletest)
+-if(NOT googletest_POPULATED)
+-  message(STATUS "Downloading Google Test repository...")
+-  FetchContent_Populate(googletest)
++find_package(gtest)
++if(GTEST_FOUND)
++  list(APPEND SPLA_TEST_LIBRARIES ${GTEST_LIBRARIES})
++else()
++  # add googletest
++  FetchContent_Declare(
++    googletest
++    GIT_REPOSITORY https://github.com/google/googletest.git
++    GIT_TAG        release-1.8.1
++  )
++  FetchContent_GetProperties(googletest)
++  if(NOT googletest_POPULATED)
++    message(STATUS "Downloading Google Test repository...")
++    FetchContent_Populate(googletest)
++  endif()
++  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
++  list(APPEND SPLA_TEST_LIBRARIES gtest_main)
+ endif()
+-add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+-list(APPEND SPLA_TEST_LIBRARIES gtest_main)
+ 
+-# add gtest_mpi
+-FetchContent_Declare(
+-  gtest_mpi
+-  GIT_REPOSITORY https://github.com/AdhocMan/gtest_mpi.git
+-  GIT_TAG        v1.0.0
+-)
+-FetchContent_GetProperties(gtest_mpi)
+-if(NOT gtest_mpi_POPULATED)
+-  message(STATUS "Downloading Google Test MPI extension repository...")
+-  FetchContent_Populate(gtest_mpi)
++if(NOT EXISTS "/usr/include/gtest_mpi")
++  # add gtest_mpi
++  FetchContent_Declare(
++    gtest_mpi
++    GIT_REPOSITORY https://github.com/AdhocMan/gtest_mpi.git
++    GIT_TAG        v1.0.0
++  )
++  FetchContent_GetProperties(gtest_mpi)
++  if(NOT gtest_mpi_POPULATED)
++    message(STATUS "Downloading Google Test MPI extension repository...")
++    FetchContent_Populate(gtest_mpi)
++  endif()
++  add_subdirectory(${gtest_mpi_SOURCE_DIR} ${gtest_mpi_BINARY_DIR})
++  list(APPEND SPLA_TEST_LIBRARIES gtest_mpi)
+ endif()
+-add_subdirectory(${gtest_mpi_SOURCE_DIR} ${gtest_mpi_BINARY_DIR})
+-list(APPEND SPLA_TEST_LIBRARIES gtest_mpi)
+ 
+-# add command line parser
+-FetchContent_Declare(
+-  cli11
+-  GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+-  GIT_TAG        v1.7.1
+-)
+-FetchContent_GetProperties(cli11)
+-if(NOT cli11_POPULATED)
+-  message(STATUS "Downloading CLI11 command line parser repository...")
+-  FetchContent_Populate(cli11)
++if(NOT EXISTS "/usr/include/CLI/CLI.hpp")
++  # add command line parser
++  FetchContent_Declare(
++    cli11
++    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
++    GIT_TAG        v1.7.1
++  )
++  FetchContent_GetProperties(cli11)
++  if(NOT cli11_POPULATED)
++    message(STATUS "Downloading CLI11 command line parser repository...")
++    FetchContent_Populate(cli11)
++  endif()
++  list(APPEND SPLA_TEST_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
+ endif()
+-list(APPEND SPLA_TEST_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
+-
+ 
+ if(NOT SPLA_BLAS_MKL)
+ 	find_package(SCALAPACK REQUIRED)
