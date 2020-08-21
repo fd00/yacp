@@ -1,0 +1,55 @@
+HOMEPAGE="https://dicom.offis.de/dcmtk.php.en"
+SRC_URI="https://dicom.offis.de/download/dcmtk/dcmtk365/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="DICOM Toolkit"
+DESCRIPTION="DCMTK is a collection of libraries and applications implementing large parts
+the DICOM standard. It includes software for examining, constructing and
+converting DICOM image files, handling offline media, sending and receiving
+images over a network connection, as well as demonstrative image storage and
+worklist servers."
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS=YES
+	-DDCMTK_CXX11_FLAGS=-std=gnu++11
+	-DDCMTK_WITH_OPENSSL=YES
+	-DDCMTK_WITH_PNG=YES
+	-DDCMTK_WITH_PRIVATE_TAGS=ON
+	-DDCMTK_WITH_TIFF=YES
+	-DDCMTK_WITH_XML=YES
+	-DDCMTK_WITH_ZLIB=YES
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	mv ${D}/usr/etc ${D}/
+
+	# internal APIs
+	rm -f ${D}/usr/lib/libcharls.dll.a
+}
+
+PKG_NAMES="
+	dcmtk
+	libdcmtk15
+	libdcmtk-devel
+"
+dcmtk_CONTENTS="
+	etc
+	usr/bin/*.exe
+	usr/share
+"
+libdcmtk15_CONTENTS="
+	usr/bin/*.dll
+"
+libdcmtk_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+dcmtk_SUMMARY="${SUMMARY} (utilities)"
+libdcmtk15_SUMMARY="${SUMMARY} (runtime)"
+libdcmtk_devel_SUMMARY="${SUMMARY} (development)"
