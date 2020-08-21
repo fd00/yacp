@@ -1,0 +1,102 @@
+--- origsrc/mimalloc-1.6.4/CMakeLists.txt	2020-08-07 05:37:11.000000000 +0900
++++ src/mimalloc-1.6.4/CMakeLists.txt	2020-08-21 23:11:26.121173300 +0900
+@@ -205,7 +205,11 @@ endif()
+ # Install and output names
+ # -----------------------------------------------------------------------------
+ 
+-set(mi_install_dir "${CMAKE_INSTALL_PREFIX}/lib/mimalloc-${mi_version}")
++if(CYGWIN)
++  set(mi_install_dir "${CMAKE_INSTALL_PREFIX}")
++else()
++  set(mi_install_dir "${CMAKE_INSTALL_PREFIX}/lib/mimalloc-${mi_version}")
++endif()
+ if(MI_SECURE MATCHES "ON")
+   set(mi_basename "mimalloc-secure")
+ else()
+@@ -242,6 +246,9 @@ message(STATUS "")
+ if(MI_BUILD_SHARED)
+   add_library(mimalloc SHARED ${mi_sources})
+   set_target_properties(mimalloc PROPERTIES VERSION ${mi_version} OUTPUT_NAME ${mi_basename} )
++  if(CYGWIN)
++    set_target_properties(mimalloc PROPERTIES SOVERSION 0)
++  endif()
+   target_compile_definitions(mimalloc PRIVATE ${mi_defines} MI_SHARED_LIB MI_SHARED_LIB_EXPORT)
+   target_compile_options(mimalloc PRIVATE ${mi_cflags})
+   target_link_libraries(mimalloc PUBLIC ${mi_libraries})
+@@ -257,8 +264,13 @@ if(MI_BUILD_SHARED)
+       COMMENT "Copy mimalloc-redirect.dll to output directory")
+   endif()
+ 
+-  install(TARGETS mimalloc EXPORT mimalloc DESTINATION ${mi_install_dir} LIBRARY)
+-  install(EXPORT mimalloc DESTINATION ${mi_install_dir}/cmake)
++  if(CYGWIN)
++    install(TARGETS mimalloc EXPORT mimalloc RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++    install(EXPORT mimalloc DESTINATION ${mi_install_dir}/lib/cmake/mimalloc)
++  else()
++    install(TARGETS mimalloc EXPORT mimalloc DESTINATION ${mi_install_dir} LIBRARY)
++    install(EXPORT mimalloc DESTINATION ${mi_install_dir}/cmake)
++  endif()
+ endif()
+ 
+ # static library
+@@ -288,8 +300,13 @@ endif()
+ install(FILES include/mimalloc.h DESTINATION ${mi_install_dir}/include)
+ install(FILES include/mimalloc-override.h DESTINATION ${mi_install_dir}/include)
+ install(FILES include/mimalloc-new-delete.h DESTINATION ${mi_install_dir}/include)
+-install(FILES cmake/mimalloc-config.cmake DESTINATION ${mi_install_dir}/cmake)
+-install(FILES cmake/mimalloc-config-version.cmake DESTINATION ${mi_install_dir}/cmake)
++if(CYGWIN)
++  install(FILES cmake/mimalloc-config.cmake DESTINATION ${mi_install_dir}/lib/cmake/mimalloc)
++  install(FILES cmake/mimalloc-config-version.cmake DESTINATION ${mi_install_dir}/lib/cmake/mimalloc)
++else()
++  install(FILES cmake/mimalloc-config.cmake DESTINATION ${mi_install_dir}/cmake)
++  install(FILES cmake/mimalloc-config-version.cmake DESTINATION ${mi_install_dir}/cmake)
++endif()
+ 
+ if(NOT WIN32 AND MI_BUILD_SHARED)
+   # install a symlink in the /usr/local/lib to the versioned library
+@@ -329,7 +346,7 @@ if (MI_BUILD_TESTS MATCHES "ON")
+   target_compile_definitions(mimalloc-test-api PRIVATE ${mi_defines})
+   target_compile_options(mimalloc-test-api PRIVATE ${mi_cflags})
+   target_include_directories(mimalloc-test-api PRIVATE include)
+-  target_link_libraries(mimalloc-test-api PRIVATE mimalloc-static ${mi_libraries})
++  target_link_libraries(mimalloc-test-api PRIVATE mimalloc ${mi_libraries})
+ 
+   add_executable(mimalloc-test-stress test/test-stress.c)
+   target_compile_definitions(mimalloc-test-stress PRIVATE ${mi_defines})
+@@ -359,3 +376,10 @@ if (MI_OVERRIDE MATCHES "ON")
+     endif()
+   endif()
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mimalloc.pc.in ${CMAKE_BINARY_DIR}/mimalloc.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/mimalloc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/mimalloc-1.6.4/mimalloc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mimalloc-1.6.4/mimalloc.pc.in	2020-08-21 23:11:26.016152500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mimalloc
++Description: Compact general purpose allocator with excellent performance
++Version: @VERSION@
++Libs: -L${libdir} -lmimalloc
++Cflags: -I${includedir}
+--- origsrc/mimalloc-1.6.4/src/os.c	2020-08-07 05:37:11.000000000 +0900
++++ src/mimalloc-1.6.4/src/os.c	2020-08-21 23:08:45.569666200 +0900
+@@ -931,7 +931,9 @@ static void* mi_os_alloc_huge_os_pagesx(
+ }
+ 
+ #elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__)
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #ifndef MPOL_PREFERRED
+ #define MPOL_PREFERRED 1
+ #endif
