@@ -1,0 +1,41 @@
+--- origsrc/libredwg-0.11.3787/bindings/python/Makefile.am	2020-08-07 19:54:14.000000000 +0900
++++ src/libredwg-0.11.3787/bindings/python/Makefile.am	2020-08-23 23:14:14.759087900 +0900
+@@ -46,8 +46,8 @@ _LibreDWG_la_SOURCES = $(BUILT_SOURCES)
+ ## more magic: SWIG_PYTHON_CPPFLAGS resolves to null and python includes
+ ## are not passed to gcc via -I
+ _LibreDWG_la_CPPFLAGS = -I$(top_srcdir)/include $(AX_SWIG_PYTHON_CPPFLAGS)
+-_LibreDWG_la_LDFLAGS = -module
+-_LibreDWG_la_LIBADD = ../../src/libredwg.la
++_LibreDWG_la_LDFLAGS = -avoid-version -no-undefined -module
++_LibreDWG_la_LIBADD = ../../src/libredwg.la $(PYTHON_LIBS)
+ 
+ ## not elegant, but works
+ ## With macports gcc you need -I/opt/local/lib/gcc6/gcc/x86_64-apple-darwin15/6.4.0/include
+--- origsrc/libredwg-0.11.3787/configure.ac	2020-08-07 19:54:14.000000000 +0900
++++ src/libredwg-0.11.3787/configure.ac	2020-08-23 23:47:47.685156400 +0900
+@@ -102,6 +102,8 @@ fi
+ AC_SUBST([XML2_CFLAGS])
+ AC_SUBST([XML2_LIBS])
+ 
++PKG_CHECK_MODULES([JSMN], [jsmn])
++
+ dnl Checks for header files
+ AC_HEADER_STDC
+ dnl Avoid rpl_malloc when cross-compiling. we don't need malloc.h
+--- origsrc/libredwg-0.11.3787/libredwg.pc.in	2020-08-07 19:54:14.000000000 +0900
++++ src/libredwg-0.11.3787/libredwg.pc.in	2020-08-24 01:08:56.261952000 +0900
+@@ -10,3 +10,4 @@ Version: @VERSION@
+ URL: @PACKAGE_URL@
+ Libs: -L${libdir} -lredwg
+ Cflags: -I${includedir}
++Requires: jsmn
+--- origsrc/libredwg-0.11.3787/src/Makefile.am	2020-08-07 19:54:14.000000000 +0900
++++ src/libredwg-0.11.3787/src/Makefile.am	2020-08-23 23:48:30.113189300 +0900
+@@ -21,6 +21,7 @@ lib_LTLIBRARIES = libredwg.la
+ WARN_CFLAGS = @WARN_CFLAGS@
+ AM_CFLAGS   = -I$(top_srcdir)/include -I. $(WARN_CFLAGS)
+ libredwg_la_LDFLAGS = -version-info $(LIBREDWG_SO_VERSION) -no-undefined -lm
++libredwg_la_LIBADD = $(JSMN_LIBS)
+ 
+ libredwg_la_SOURCES = \
+ 	dwg.c \
