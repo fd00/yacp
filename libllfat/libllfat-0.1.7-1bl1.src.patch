@@ -1,0 +1,130 @@
+--- origsrc/libllfat-0.1.7/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libllfat-0.1.7/Makefile.am	2020-08-24 08:23:39.400438100 +0900
+@@ -0,0 +1,32 @@
++AM_CPPFLAGS = -I$(top_srcdir)/lib
++
++bin_PROGRAMS = fattest fatexample fatview fatshrink fattool fatbackup
++fattest_SOURCES = tools/fattest.c
++fattest_LDADD = libllfat.la
++fatexample_SOURCES = tools/fatexample.c
++fatexample_LDADD = libllfat.la
++fatview_SOURCES = tools/fatview.c
++fatview_LDADD = libllfat.la
++fatshrink_SOURCES = tools/fatshrink.c
++fatshrink_LDADD = libllfat.la
++fattool_SOURCES = tools/fattool.c
++fattool_LDADD = libllfat.la
++fatbackup_SOURCES = tools/fatbackup.c
++fatbackup_LDADD = libllfat.la
++
++include_HEADERS = llfat.h
++llfat.h: lib/llfat.h.header lib/fs.h lib/entry.h lib/table.h lib/directory.h lib/reference.h lib/inverse.h lib/long.h lib/complex.h lib/debug.h
++	cat $^ > $@
++
++lib_LTLIBRARIES = libllfat.la
++libllfat_la_DEPENDENCIES = llfat.h
++libllfat_la_SOURCES = lib/fs.c lib/boot.c lib/table.c lib/unit.c lib/entry.c \
++lib/directory.c lib/reference.c lib/inverse.c lib/long.c lib/complex.c
++libllfat_la_LDFLAGS = -no-undefined
++libllfat_la_LIBADD = $(LTLIBICONV)
++
++man_MANS = docs/fattool.1 docs/fatshrink.1 docs/fatview.1 docs/fatbackup.1 \
++docs/fat_lib.3 docs/fat_functions.3 docs/fat.5
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libllfat-0.1.7/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libllfat-0.1.7/configure.ac	2020-08-24 08:07:46.224479700 +0900
+@@ -0,0 +1,40 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([libllfat], [0.1.7], [BUG-REPORT-ADDRESS])
++AC_CONFIG_SRCDIR([lib/boot.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++AC_PROG_MAKE_SET
++LT_INIT
++
++# Checks for libraries.
++AM_ICONV
++
++# Checks for header files.
++AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h malloc.h stdint.h stdlib.h string.h sys/ioctl.h unistd.h wchar.h wctype.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_INT32_T
++AC_TYPE_OFF_T
++AC_TYPE_SIZE_T
++AC_TYPE_UINT16_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT64_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_MKTIME
++AC_FUNC_MMAP
++AC_FUNC_REALLOC
++AC_FUNC_STRTOD
++AC_CHECK_FUNCS([bzero ftruncate localtime_r memmove memset munmap setenv strcasecmp strchr strdup strerror strndup strrchr strstr strtol strtoul tzset])
++
++AC_CONFIG_FILES([libllfat.pc Makefile])
++AC_OUTPUT
+--- origsrc/libllfat-0.1.7/lib/boot.c	2019-12-01 02:55:51.000000000 +0900
++++ src/libllfat-0.1.7/lib/boot.c	2020-08-24 08:24:52.279092300 +0900
+@@ -34,7 +34,9 @@
+ #include <endian.h>
+ #include <search.h>
+ #include <ctype.h>
++#if defined(__linux__)
+ #include <linux/fs.h>
++#endif
+ #include "boot.h"
+ #include "table.h"
+ 
+--- origsrc/libllfat-0.1.7/libllfat.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libllfat-0.1.7/libllfat.pc.in	2020-08-24 08:04:18.485313400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libllfat
++Description: Library for low-level access to a FAT12/16/32 filesystem
++Version: @VERSION@
++Libs: -L${libdir} -lllfat
++Cflags: -I${includedir}
+--- origsrc/libllfat-0.1.7/tools/fattool.c	2019-12-01 02:55:51.000000000 +0900
++++ src/libllfat-0.1.7/tools/fattool.c	2020-08-24 08:27:02.198962400 +0900
+@@ -37,7 +37,9 @@
+ #include <ctype.h>
+ #include <wctype.h>
+ #include <malloc.h>
++#if defined(__linux__)
+ #include <linux/fs.h>
++#endif
+ #include <llfat.h>
+ 
+ #define MAX(a,b) (((a) > (b)) ? (a) : (b))
+@@ -921,12 +923,14 @@ uint32_t filesize(char *file) {
+ 	}
+ 	if (S_ISREG(ss.st_mode))
+ 		return ss.st_size / sectorsize;
++#if defined(BLKGETSIZE)
+ 	else if (S_ISBLK(ss.st_mode)) {
+ 		fd = open(file, O_RDONLY);
+ 		ioctl(fd, BLKGETSIZE, &sectors);
+ 		close(fd);
+ 		return sectors;
+ 	}
++#endif
+ 	printf("unsupported file type\n");
+ 	return 0;
+ }
