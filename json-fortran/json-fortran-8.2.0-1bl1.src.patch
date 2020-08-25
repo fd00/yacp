@@ -1,11 +1,11 @@
---- origsrc/json-fortran-8.1.0/CMakeLists.txt	2020-06-22 12:37:49.000000000 +0900
-+++ src/json-fortran-8.1.0/CMakeLists.txt	2020-07-11 17:10:57.501262600 +0900
+--- origsrc/json-fortran-8.2.0/CMakeLists.txt	2020-08-17 08:04:10.000000000 +0900
++++ src/json-fortran-8.2.0/CMakeLists.txt	2020-08-25 14:54:51.550740200 +0900
 @@ -168,24 +168,30 @@ endif ()
  
  set ( LIB_NAME ${PROJECT_NAME} )
  add_library ( ${LIB_NAME}        SHARED ${JF_LIB_SRCS} )
 -add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
-+if (NOT BUILD_SHARED_LIBS)
++if (NOT CYGWIN)
 +  add_library ( ${LIB_NAME}-static STATIC ${JF_LIB_SRCS} )
 +endif()
  
@@ -14,7 +14,7 @@
      PRIVATE OpenCoarrays::caf_mpi_static)
 -  target_link_libraries(${LIB_NAME}-static
 -    PRIVATE OpenCoarrays::caf_mpi_static)
-+  if (NOT BUILD_SHARED_LIBS)
++  if (NOT CYGWIN)
 +    target_link_libraries(${LIB_NAME}-static
 +      PRIVATE OpenCoarrays::caf_mpi_static)
 +  endif()
@@ -29,7 +29,7 @@
 -  VERSION ${VERSION}
 -  ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
 -  Fortran_MODULE_DIRECTORY ${MODULE_DIR} )
-+if (NOT BUILD_SHARED_LIBS)
++if (NOT CYGWIN)
 +  set_target_properties ( ${LIB_NAME}-static
 +    PROPERTIES
 +    OUTPUT_NAME ${LIB_NAME}
@@ -52,34 +52,32 @@
  
    find_program ( JSONLINT jsonlint )
  
-@@ -408,11 +414,18 @@ endif ()
+@@ -408,10 +414,16 @@ endif ()
  # Perform the installation
  #-------------------------
  
 -install ( TARGETS ${LIB_NAME} ${LIB_NAME}-static
 +install ( TARGETS ${LIB_NAME}
-   EXPORT ${PACKAGE_NAME}-targets
--  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
++  EXPORT ${PACKAGE_NAME}-targets
 +  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
++if (NOT CYGWIN)
++install ( TARGETS ${LIB_NAME}-static
+   EXPORT ${PACKAGE_NAME}-targets
+   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
- 
-+if (NOT BUILD_SHARED_LIBS)
-+  install ( TARGETS ${LIB_NAME}-static
-+    EXPORT ${PACKAGE_NAME}-targets
-+    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-+    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" )
 +endif()
-+
+ 
  # Code to  fix the dylib install name on Mac.
  include ( cmake/fixupInstallNameDir.cmake )
- 
-@@ -464,7 +477,10 @@ install ( FILES
+@@ -464,7 +476,11 @@ install ( FILES
  #----------------------------------------------
  # Make build tree targets accessible for import
  #----------------------------------------------
 -export ( TARGETS ${LIB_NAME} ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
++
 +export ( TARGETS ${LIB_NAME} FILE ${PACKAGE_NAME}-targets.cmake )
-+if (NOT BUILD_SHARED_LIBS)
++if (NOT CYGWIN)
 +  export ( TARGETS ${LIB_NAME}-static FILE ${PACKAGE_NAME}-targets.cmake )
 +endif()
  
