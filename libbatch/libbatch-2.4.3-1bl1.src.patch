@@ -1,5 +1,5 @@
---- origsrc/libbatch/CMakeLists.txt	2019-11-29 06:15:22.357633500 +0900
-+++ src/libbatch/CMakeLists.txt	2019-11-29 06:15:25.810815900 +0900
+--- origsrc/libbatch/CMakeLists.txt	2020-08-25 10:07:05.385019900 +0900
++++ src/libbatch/CMakeLists.txt	2020-08-25 10:07:10.398062000 +0900
 @@ -46,7 +46,7 @@ IF(WIN32 AND NOT CYGWIN)
    # different installation directories for LibBatchConfig.cmake:
    SET(INSTALL_CMAKE_CONFIG_DIR cmake)
@@ -19,8 +19,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libbatch.pc.in ${CMAKE_BINARY_DIR}/libbatch.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/libbatch.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/libbatch/CMakeModules/FindLibbatchPython.cmake	2019-11-29 06:15:15.000000000 +0900
-+++ src/libbatch/CMakeModules/FindLibbatchPython.cmake	2019-11-29 06:15:25.826516300 +0900
+--- origsrc/libbatch/CMakeModules/FindLibbatchPython.cmake	2020-08-25 10:06:56.000000000 +0900
++++ src/libbatch/CMakeModules/FindLibbatchPython.cmake	2020-08-25 10:07:10.501022200 +0900
 @@ -75,7 +75,7 @@ IF(EXISTS "${PYTHON_ROOT_DIR}")
  ENDIF()
  
@@ -40,7 +40,7 @@
    SET(LibbatchPython_FIND_VERSION_EXACT ${_old_EXACT})
    SET(LibbatchPython_FIND_VERSION "${_old_VERSION}")
 --- origsrc/libbatch/libbatch.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libbatch/libbatch.pc.in	2019-11-29 06:15:25.842079700 +0900
++++ src/libbatch/libbatch.pc.in	2020-08-25 10:07:10.534013600 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -52,16 +52,16 @@
 +Version: @LIBBATCH_VERSION@
 +Libs: -L${libdir} -lbatch
 +Cflags: -I${includedir}
---- origsrc/libbatch/misc/CMakeLists.txt	2019-11-29 06:15:15.000000000 +0900
-+++ src/libbatch/misc/CMakeLists.txt	2019-11-29 06:15:25.842079700 +0900
+--- origsrc/libbatch/misc/CMakeLists.txt	2020-08-25 10:06:56.000000000 +0900
++++ src/libbatch/misc/CMakeLists.txt	2020-08-25 10:07:10.898063300 +0900
 @@ -21,4 +21,4 @@
  #
  
  INSTALL(FILES check_libbatch.m4
 -        DESTINATION share/libbatch/misc)
 +        DESTINATION share/aclocal)
---- origsrc/libbatch/src/CMakeLists.txt	2019-11-29 06:15:22.842014700 +0900
-+++ src/libbatch/src/CMakeLists.txt	2019-11-29 06:15:25.857693500 +0900
+--- origsrc/libbatch/src/CMakeLists.txt	2020-08-25 10:07:06.311689800 +0900
++++ src/libbatch/src/CMakeLists.txt	2020-08-25 10:07:10.926857200 +0900
 @@ -77,7 +77,8 @@ ENDIF (WIN32)
  
  INSTALL(TARGETS batch 
@@ -72,3 +72,21 @@
  INSTALL(FILES ${HDR_FILES} DESTINATION include/libbatch)
  
  IF (LIBBATCH_PYTHON_WRAPPING AND PYTHONINTERP_FOUND AND PYTHONLIBS_FOUND AND SWIG_FOUND)
+--- origsrc/libbatch/src/Local/BatchManager_Local.cxx	2020-08-25 10:06:56.000000000 +0900
++++ src/libbatch/src/Local/BatchManager_Local.cxx	2020-08-25 10:50:08.367541000 +0900
+@@ -306,6 +306,7 @@ namespace Batch {
+     tempOutputFile << "#!/bin/sh -f" << endl;
+     tempOutputFile << "cd " << workDir << endl;
+ 
++#if !defined(__CYGWIN__)
+     // Optional parameters (system limits on the job process)
+     if (param.find(MAXCPUTIME) != param.end()) {
+       long maxcputime = (long)param[MAXCPUTIME] * 60;
+@@ -321,6 +322,7 @@ namespace Batch {
+       long maxramsize = (long)param[MAXRAMSIZE] * 1024;
+       tempOutputFile << "ulimit -H -v " << maxramsize << endl;
+     }
++#endif
+ 
+     // Number of cores to use
+     int nbproc = 1;
