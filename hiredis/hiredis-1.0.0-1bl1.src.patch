@@ -1,0 +1,53 @@
+--- origsrc/hiredis-1.0.0/CMakeLists.txt	2020-08-04 03:18:07.000000000 +0900
++++ src/hiredis-1.0.0/CMakeLists.txt	2020-08-25 20:01:05.691186800 +0900
+@@ -45,6 +45,9 @@ ADD_LIBRARY(hiredis SHARED ${hiredis_sou
+ SET_TARGET_PROPERTIES(hiredis
+     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+     VERSION "${HIREDIS_SONAME}")
++IF(CYGWIN)
++    SET_TARGET_PROPERTIES(hiredis PROPERTIES SOVERSION "${HIREDIS_SONAME}")
++ENDIF()
+ IF(WIN32 OR MINGW)
+     TARGET_LINK_LIBRARIES(hiredis PRIVATE ws2_32)
+ ENDIF()
+@@ -72,7 +75,11 @@ export(EXPORT hiredis-targets
+     FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis-targets.cmake"
+     NAMESPACE hiredis::)
+ 
+-SET(CMAKE_CONF_INSTALL_DIR share/hiredis)
++IF (CYGWIN)
++    SET(CMAKE_CONF_INSTALL_DIR lib/cmake/hiredis)
++ELSE()
++    SET(CMAKE_CONF_INSTALL_DIR share/hiredis)
++ENDIF()
+ SET(INCLUDE_INSTALL_DIR include)
+ include(CMakePackageConfigHelpers)
+ configure_package_config_file(hiredis-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/hiredis-config.cmake
+@@ -108,10 +115,13 @@ IF(ENABLE_SSL)
+         PROPERTIES
+         WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+         VERSION "${HIREDIS_SONAME}")
++    IF (CYGWIN)
++        SET_TARGET_PROPERTIES(hiredis_ssl PROPERTIES SOVERSION "${HIREDIS_SONAME}")
++    ENDIF()
+ 
+     TARGET_INCLUDE_DIRECTORIES(hiredis_ssl PRIVATE "${OPENSSL_INCLUDE_DIR}")
+     TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE ${OPENSSL_LIBRARIES})
+-    IF (WIN32 OR MINGW)
++    IF (WIN32 OR MINGW OR CYGWIN)
+         TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE hiredis)
+     ENDIF()
+     CONFIGURE_FILE(hiredis_ssl.pc.in hiredis_ssl.pc @ONLY)
+@@ -132,7 +142,11 @@ IF(ENABLE_SSL)
+            FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-targets.cmake"
+            NAMESPACE hiredis::)
+ 
+-    SET(CMAKE_CONF_INSTALL_DIR share/hiredis_ssl)
++    IF(CYGWIN)
++        SET(CMAKE_CONF_INSTALL_DIR lib/cmake/hiredis_ssl)
++    ELSE()
++        SET(CMAKE_CONF_INSTALL_DIR share/hiredis_ssl)
++    ENDIF()
+     configure_package_config_file(hiredis_ssl-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-config.cmake
+                                   INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
+                                   PATH_VARS INCLUDE_INSTALL_DIR)
