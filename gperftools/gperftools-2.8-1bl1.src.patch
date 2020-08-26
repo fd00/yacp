@@ -1,0 +1,51 @@
+--- origsrc/gperftools-gperftools-2.8/Makefile.am	2020-07-06 18:51:43.000000000 +0900
++++ src/gperftools-gperftools-2.8/Makefile.am	2020-08-26 09:11:09.357463400 +0900
+@@ -945,7 +945,7 @@ libtcmalloc_internal_la_LIBADD = libstac
+ lib_LTLIBRARIES += libtcmalloc.la
+ libtcmalloc_la_SOURCES = $(TCMALLOC_CC) $(TCMALLOC_INCLUDES)
+ libtcmalloc_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG $(AM_CXXFLAGS) $(EMERGENCY_MALLOC_DEFINE)
+-libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
++libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@ -no-undefined
+ libtcmalloc_la_LIBADD = libtcmalloc_internal.la libmaybe_threads.la $(PTHREAD_LIBS)
+ 
+ if WITH_HEAP_CHECKER
+@@ -1192,8 +1192,8 @@ libtcmalloc_debug_la_SOURCES = src/debug
+ libtcmalloc_debug_la_CXXFLAGS = $(libtcmalloc_la_CXXFLAGS) \
+                                 -DTCMALLOC_FOR_DEBUGALLOCATION
+ libtcmalloc_debug_la_LDFLAGS = $(libtcmalloc_la_LDFLAGS) \
+-                               -version-info @TCMALLOC_SO_VERSION@
+-libtcmalloc_debug_la_LIBADD = $(libtcmalloc_la_LIBADD)
++                               -version-info @TCMALLOC_SO_VERSION@ -no-undefined
++libtcmalloc_debug_la_LIBADD = $(libtcmalloc_la_LIBADD) libtcmalloc.la
+ 
+ LIBS_TO_WEAKEN += libtcmalloc_debug.la
+ 
+--- origsrc/gperftools-gperftools-2.8/benchmark/malloc_bench.cc	2020-07-06 18:51:43.000000000 +0900
++++ src/gperftools-gperftools-2.8/benchmark/malloc_bench.cc	2020-08-26 11:04:57.990084200 +0900
+@@ -82,11 +82,13 @@ static void bench_fastpath_simple(long i
+   }
+ }
+ 
++#include "base/basictypes.h"
++
+ #ifdef __GNUC__
+ #define HAVE_SIZED_FREE_OPTION
+ 
+-extern "C" void tc_free_sized(void *ptr, size_t size) __attribute__((weak));
+-extern "C" void *tc_memalign(size_t align, size_t size) __attribute__((weak));
++extern "C" void tc_free_sized(void *ptr, size_t size) ATTRIBUTE_WEAK;
++extern "C" void *tc_memalign(size_t align, size_t size) ATTRIBUTE_WEAK;
+ 
+ static bool is_sized_free_available(void)
+ {
+--- origsrc/gperftools-gperftools-2.8/src/base/basictypes.h	2020-07-06 18:51:43.000000000 +0900
++++ src/gperftools-gperftools-2.8/src/base/basictypes.h	2020-08-26 10:54:45.123161800 +0900
+@@ -247,7 +247,7 @@ inline void bit_store(Dest *dest, const
+   memcpy(dest, source, sizeof(Dest));
+ }
+ 
+-#ifdef HAVE___ATTRIBUTE__
++#if defined(HAVE___ATTRIBUTE__) && !defined(__CYGWIN__)
+ # define ATTRIBUTE_WEAK      __attribute__((weak))
+ # define ATTRIBUTE_NOINLINE  __attribute__((noinline))
+ #else
