@@ -1,0 +1,76 @@
+--- origsrc/nats.c-2.2.0/CMakeLists.txt	2020-07-30 06:48:24.000000000 +0900
++++ src/nats.c-2.2.0/CMakeLists.txt	2020-08-28 23:33:53.860280900 +0900
+@@ -104,7 +104,7 @@ if(NATS_BUILD_USE_SODIUM)
+       ${NATS_SODIUM_DIR}
+   )
+   FIND_LIBRARY(NATS_SODIUM_LIBRARY
+-    NAMES libsodium.so libsodium.dylib libsodium.a libsodium.lib libsodium.dll
++    NAMES libsodium.so libsodium.dylib libsodium.a libsodium.lib libsodium.dll sodium.dll
+     HINTS ${NATS_SODIUM_DIR}
+   )
+   FIND_PACKAGE_HANDLE_STANDARD_ARGS(libsodium DEFAULT_MSG
+@@ -262,3 +262,10 @@ endif()
+ add_subdirectory(test)
+ add_subdirectory(test/dylib)
+ #----------------------------
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cnats.pc.in ${CMAKE_BINARY_DIR}/cnats.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cnats.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/nats.c-2.2.0/cnats.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/nats.c-2.2.0/cnats.pc.in	2020-08-28 23:36:02.680187200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cnats
++Description: C client for NATS
++Version: @NATS_VERSION_MAJOR@.@NATS_VERSION_MINOR@.@NATS_VERSION_PATCH@
++Libs: -L${libdir} -lnats
++Cflags: -I${includedir}
+--- origsrc/nats.c-2.2.0/src/CMakeLists.txt	2020-07-30 06:48:24.000000000 +0900
++++ src/nats.c-2.2.0/src/CMakeLists.txt	2020-08-28 22:23:01.873619000 +0900
+@@ -59,7 +59,7 @@ if(NATS_BUILD_LIB_SHARED)
+   set_property(TARGET nats PROPERTY DEBUG_POSTFIX d)
+   target_include_directories(nats PUBLIC
+         $<INSTALL_INTERFACE:include>)
+-  install(TARGETS nats EXPORT cnats-targets DESTINATION ${NATS_LIBDIR})
++  install(TARGETS nats EXPORT cnats-targets RUNTIME DESTINATION bin ARCHIVE DESTINATION ${NATS_LIBDIR})
+   install(EXPORT cnats-targets
+         NAMESPACE cnats::
+         FILE cnats-config.cmake
+--- origsrc/nats.c-2.2.0/test/CMakeLists.txt	2020-07-30 06:48:24.000000000 +0900
++++ src/nats.c-2.2.0/test/CMakeLists.txt	2020-08-28 22:21:09.512425400 +0900
+@@ -1,7 +1,7 @@
+ if(NOT BUILD_TESTING)
+   return()
+ endif()
+-if(NOT NATS_BUILD_LIB_STATIC)
++if(NOT NATS_BUILD_LIB_STATIC AND NOT CYGWIN)
+    MESSAGE(FATAL_ERROR
+      "Building tests require static library, or run CMake with -DBUILD_TESTING=OFF")
+   return()
+@@ -20,8 +20,16 @@ endif(NATS_BUILD_STREAMING)
+ # Build the test program
+ add_executable(testsuite test.c)
+ 
+-# Link statically with the library
+-target_link_libraries(testsuite nats_static ${NATS_EXTRA_LIB})
++# Link with the library
++if(NATS_BUILD_LIB_SHARED)
++  target_link_libraries(testsuite nats ${NATS_EXTRA_LIB})
++elseif(NATS_BUILD_LIB_STATIC)
++  target_link_libraries(testsuite nats_static ${NATS_EXTRA_LIB})
++else()
++  message("Building tests require shared or static library")
++  return()
++endif()
++
+ 
+ # Set the test index to 0
+ set(testIndex 0)
