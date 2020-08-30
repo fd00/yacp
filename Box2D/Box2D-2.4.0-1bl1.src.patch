@@ -1,0 +1,49 @@
+--- origsrc/box2d-2.4.0/Box2D.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/box2d-2.4.0/Box2D.pc.in	2020-08-30 12:06:31.655248600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Box2D
++Description: 2D Physics Engine for Games
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lbox2d
++Cflags: -I${includedir}
+--- origsrc/box2d-2.4.0/CMakeLists.txt	2020-07-27 15:03:45.000000000 +0900
++++ src/box2d-2.4.0/CMakeLists.txt	2020-08-30 12:06:54.601134400 +0900
+@@ -39,3 +39,10 @@ if (BOX2D_BUILD_TESTBED)
+ 		set_property(TARGET testbed PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/testbed")
+ 	endif()
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include/box2d)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Box2D.pc.in ${CMAKE_BINARY_DIR}/Box2D.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Box2D.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/box2d-2.4.0/src/CMakeLists.txt	2020-07-27 15:03:45.000000000 +0900
++++ src/box2d-2.4.0/src/CMakeLists.txt	2020-08-30 11:58:40.718493600 +0900
+@@ -95,7 +95,7 @@ set(BOX2D_HEADER_FILES
+ 	../include/box2d/b2_world_callbacks.h
+ 	../include/box2d/box2d.h)
+ 
+-add_library(box2d STATIC ${BOX2D_SOURCE_FILES} ${BOX2D_HEADER_FILES})
++add_library(box2d SHARED ${BOX2D_SOURCE_FILES} ${BOX2D_HEADER_FILES})
+ target_include_directories(box2d PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+ target_include_directories(box2d PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+ set_target_properties(box2d PROPERTIES
+@@ -103,6 +103,11 @@ set_target_properties(box2d PROPERTIES
+     CXX_STANDARD_REQUIRED YES
+     CXX_EXTENSIONS NO
+ )
++if (CYGWIN)
++	set_target_properties(box2d PROPERTIES SOVERSION 0)
++	install(TARGETS box2d RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++	install(FILES ${BOX2D_HEADER_FILES} DESTINATION include/box2d)
++endif()
+ 
+ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "src" FILES ${BOX2D_SOURCE_FILES})
+ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/../include" PREFIX "include" FILES ${BOX2D_HEADER_FILES})
