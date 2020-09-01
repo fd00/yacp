@@ -1,0 +1,109 @@
+--- origsrc/aws-c-event-stream-0.1.6/CMakeLists.txt	2020-07-24 09:06:45.000000000 +0900
++++ src/aws-c-event-stream-0.1.6/CMakeLists.txt	2020-09-01 10:32:29.023541900 +0900
+@@ -23,6 +23,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
+ # Append that generated list to the module search path
+ list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
+ 
++if (CYGWIN)
++    list(APPEND CMAKE_MODULE_PATH "/usr/lib/cmake/aws-c-common")
++endif()
++
+ include(AwsCFlags)
+ include(AwsSharedLibSetup)
+ include(AwsSanitizers)
+@@ -72,7 +76,11 @@ target_include_directories(${PROJECT_NAM
+ 
+ 
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++endif()
+ 
+ aws_use_package(aws-c-common)
+ aws_use_package(aws-checksums)
+@@ -91,19 +99,31 @@ else()
+    set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
+-    NAMESPACE AWS::
+-    COMPONENT Development)
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        NAMESPACE AWS::
++        COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
++        NAMESPACE AWS::
++        COMPONENT Development)
++endif()
+ 
+ configure_file("cmake/${PROJECT_NAME}-config.cmake"
+     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+     @ONLY)
+ 
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
+-    COMPONENT Development)
+-
++if (CYGWIN)
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        COMPONENT Development)
++else()
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++        COMPONENT Development)
++endif()
+ 
+ include(CTest)
+ enable_testing()
+@@ -114,3 +134,10 @@ if(NOT MSVC)
+ endif()
+ 
+ add_subdirectory(bin)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-event-stream.pc.in ${CMAKE_BINARY_DIR}/aws-c-event-stream.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-event-stream.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-event-stream-0.1.6/aws-c-event-stream.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-event-stream-0.1.6/aws-c-event-stream.pc.in	2020-09-01 10:27:21.674317100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-event-stream
++Description: C99 implementation of the vnd.amazon.eventstream content-type
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-event-stream
++Cflags: -I${includedir}
+--- origsrc/aws-c-event-stream-0.1.6/cmake/aws-c-event-stream-config.cmake	2020-07-24 09:06:45.000000000 +0900
++++ src/aws-c-event-stream-0.1.6/cmake/aws-c-event-stream-config.cmake	2020-09-01 10:11:53.024634500 +0900
+@@ -2,9 +2,12 @@ include(CMakeFindDependencyMacro)
+ find_dependency(aws-c-common)
+ find_dependency(aws-checksums)
+ 
+-if (BUILD_SHARED_LIBS)
+-    include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++if (CYGWIN)
++    include(${CMAKE_CURRENT_LIST_DIR}/@CMAKE_PROJECT_NAME@-targets.cmake)
+ else()
+-    include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    if (BUILD_SHARED_LIBS)
++        include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++    else()
++        include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    endif()
+ endif()
+-
