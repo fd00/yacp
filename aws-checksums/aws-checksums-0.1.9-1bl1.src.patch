@@ -1,0 +1,87 @@
+--- origsrc/aws-checksums-0.1.9/CMakeLists.txt	2020-08-15 03:03:43.000000000 +0900
++++ src/aws-checksums-0.1.9/CMakeLists.txt	2020-09-01 09:50:44.380184600 +0900
+@@ -28,6 +28,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
+ # Append that generated list to the module search path
+ list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
+ 
++if (CYGWIN)
++    list(APPEND CMAKE_MODULE_PATH "/usr/lib/cmake/aws-c-common")
++endif()
++
+ include(AwsCFlags)
+ include(AwsCheckHeaders)
+ include(AwsSharedLibSetup)
+@@ -120,7 +124,11 @@ aws_add_sanitizers(${PROJECT_NAME})
+ 
+ # We are not ABI stable yet
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++endif()
+ 
+ target_include_directories(${PROJECT_NAME} PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+@@ -139,20 +147,40 @@ else()
+     set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
+-        NAMESPACE AWS::
+-        COMPONENT Development)
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++            DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++            NAMESPACE AWS::
++            COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++            DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++            NAMESPACE AWS::
++            COMPONENT Development)
++endif()
+ 
+ configure_file("cmake/${PROJECT_NAME}-config.cmake"
+         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+         @ONLY)
+ 
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
+-        COMPONENT Development)
++if (CYGWIN)
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++            DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++            COMPONENT Development)
++else()
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++            DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++            COMPONENT Development)
++endif()
+ 
+ include(CTest)
+ if (BUILD_TESTING)
+     add_subdirectory(tests)
+ endif ()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-checksums.pc.in ${CMAKE_BINARY_DIR}/aws-checksums.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-checksums.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-checksums-0.1.9/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-checksums-0.1.9/aws-checksums.pc.in	2020-09-01 09:50:44.344187400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-checksums
++Description: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations
++Version: @VERSION@
++Libs: -L${libdir} -laws-checksums
++Cflags: -I${includedir}
