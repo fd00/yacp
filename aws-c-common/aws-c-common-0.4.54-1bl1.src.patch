@@ -1,0 +1,125 @@
+--- origsrc/aws-c-common-0.4.54/CMakeLists.txt	2020-08-29 02:36:18.000000000 +0900
++++ src/aws-c-common-0.4.54/CMakeLists.txt	2020-09-01 08:59:31.419594500 +0900
+@@ -173,7 +173,11 @@ endif()
+ 
+ # Our ABI is not yet stable
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++else()
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++endif()
+ 
+ target_include_directories(${PROJECT_NAME} PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+@@ -234,14 +238,25 @@ else()
+    set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
+-    NAMESPACE AWS::
+-    COMPONENT Development)
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
+-    COMPONENT Development)
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
++        COMPONENT Development)
++endif()
+ 
+ list(APPEND EXPORT_MODULES
+     "cmake/AwsCFlags.cmake"
+@@ -255,9 +270,15 @@ list(APPEND EXPORT_MODULES
+     "cmake/AwsFeatureTests.cmake"
+     )
+ 
+-install(FILES ${EXPORT_MODULES}
+-        DESTINATION "${LIBRARY_DIRECTORY}/cmake"
+-        COMPONENT Development)
++if (CYGWIN)
++    install(FILES ${EXPORT_MODULES}
++            DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++            COMPONENT Development)
++else()
++    install(FILES ${EXPORT_MODULES}
++            DESTINATION "${LIBRARY_DIRECTORY}/cmake"
++            COMPONENT Development)
++endif()
+ 
+ # This should come last, to ensure all variables defined by cmake will be available for export
+ configure_file(${CONFIG_HEADER_TEMPLATE}
+@@ -271,3 +292,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
+ endif()
+ 
+ include(CPackConfig)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-common-0.4.54/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.4.54/aws-c-common.pc.in	2020-09-01 08:59:54.906310400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-common
++Description: Core c99 package for AWS SDK for C
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-common
++Cflags: -I${includedir}
+--- origsrc/aws-c-common-0.4.54/cmake/AwsCFlags.cmake	2020-08-29 02:36:18.000000000 +0900
++++ src/aws-c-common-0.4.54/cmake/AwsCFlags.cmake	2020-09-01 08:45:35.241953700 +0900
+@@ -48,7 +48,10 @@ function(aws_set_common_properties targe
+         list(APPEND AWS_C_FLAGS "${_FLAGS}")
+ 
+     else()
+-        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes)
++        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes)
++        if (NOT CYGWIN)
++            list(APPEND AWS_C_FLAGS -Werror)
++        endif()
+ 
+         if(NOT SET_PROPERTIES_NO_WEXTRA)
+             list(APPEND AWS_C_FLAGS -Wextra)
+--- origsrc/aws-c-common-0.4.54/cmake/aws-c-common-config.cmake	2020-08-29 02:36:18.000000000 +0900
++++ src/aws-c-common-0.4.54/cmake/aws-c-common-config.cmake	2020-09-01 08:46:14.190981700 +0900
+@@ -4,9 +4,12 @@ if(WIN32 OR UNIX OR APPLE)
+     find_package(Threads REQUIRED)
+ endif()
+ 
+-if (BUILD_SHARED_LIBS)
+-    include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++if (CYGWIN)
++    include(${CMAKE_CURRENT_LIST_DIR}/@CMAKE_PROJECT_NAME@-targets.cmake)
+ else()
+-    include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    if (BUILD_SHARED_LIBS)
++        include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++    else()
++        include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    endif()
+ endif()
+-
