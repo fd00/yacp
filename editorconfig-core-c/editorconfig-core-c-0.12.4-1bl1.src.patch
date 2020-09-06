@@ -1,0 +1,54 @@
+--- origsrc/editorconfig-core-c-0.12.4/src/lib/CMakeLists.txt	2020-08-30 05:25:44.000000000 +0900
++++ src/editorconfig-core-c-0.12.4/src/lib/CMakeLists.txt	2020-09-06 13:52:42.558333100 +0900
+@@ -52,19 +52,21 @@ if (BUILD_STATICALLY_LINKED_EXE)
+         EXCLUDE_FROM_ALL 1)
+ endif()
+ 
+-add_library(editorconfig_static STATIC ${editorconfig_LIBSRCS})
+-target_include_directories(editorconfig_static
+-    INTERFACE $<INSTALL_INTERFACE:include>
+-)
+-set_target_properties(editorconfig_static PROPERTIES
+-    OUTPUT_NAME editorconfig_static
+-    VERSION ${PROJECT_VERSION})
++if (NOT CYGWIN)
++    add_library(editorconfig_static STATIC ${editorconfig_LIBSRCS})
++    target_include_directories(editorconfig_static
++        INTERFACE $<INSTALL_INTERFACE:include>
++    )
++    set_target_properties(editorconfig_static PROPERTIES
++        OUTPUT_NAME editorconfig_static
++        VERSION ${PROJECT_VERSION})
+ 
+-# We need to link Shwapi since we use PathIsRelative
+-if(WIN32)
+-    target_link_libraries(editorconfig_static Shlwapi)
++    # We need to link Shwapi since we use PathIsRelative
++    if(WIN32)
++        target_link_libraries(editorconfig_static Shlwapi)
++    endif()
++    target_link_libraries(editorconfig_static ${PCRE2_LIBRARIES})
+ endif()
+-target_link_libraries(editorconfig_static ${PCRE2_LIBRARIES})
+ 
+ # EditorConfig package name for find_package() and the CMake package registry.
+ # On UNIX the system registry is usually just "lib/cmake/<package>".
+@@ -76,11 +78,13 @@ set(editorconfig_CONFIG_EXPORT_NAME "${c
+ set(editorconfig_CONFIG_INSTALL_LIBDIR
+     "${CMAKE_INSTALL_LIBDIR}/cmake/${config_package_name}")
+ 
+-install(TARGETS editorconfig_static
+-    EXPORT ${editorconfig_CONFIG_EXPORT_NAME}
+-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (NOT CYGWIN)
++    install(TARGETS editorconfig_static
++        EXPORT ${editorconfig_CONFIG_EXPORT_NAME}
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+ 
+ if(NOT BUILD_STATICALLY_LINKED_EXE)
+     install(TARGETS editorconfig_shared
