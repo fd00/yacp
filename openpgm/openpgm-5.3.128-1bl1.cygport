@@ -1,5 +1,6 @@
 HOMEPAGE="https://code.google.com/p/openpgm"
-SRC_URI="https://openpgm.googlecode.com/files/${P}.tar.bz2"
+SRC_URI="https://github.com/steve-o/openpgm/archive/release-${PV//./-}.tar.gz"
+SRC_DIR="${PN}-release-${PV//./-}"
 
 CATEGORY="Libs"
 SUMMARY="Implementation of the PGM reliable multicast protocol"
@@ -11,22 +12,17 @@ PGM is a receiver-reliable protocol, which means the receiver is responsible
 for ensuring all data is received, absolving the sender of reception
 responsibility. PGM runs over a best effort datagram service, currently
 OpenPGM uses IP multicast but could be implemented above switched fabrics
-such as InfiniBand.
+such as InfiniBand."
 
-PGM is appropriate for applications that require duplicate-free multicast data
-delivery from multiple sources to multiple receivers. PGM does not support
-acknowledged delivery, nor does it guarantee ordering of packets from multiple
-senders.
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 
-PGM is primarly used on internal networks to help integrate disparate systems
-through a common communication platform. A lack of IPv4 multicast-enabled
-infrastructure leads to limited capability for internet applications, IPv6
-promotes multicast to be a part of the core functionality of IP but may still
-be disabled on core routers. Support of Source-Specific Multicast (SSM) allows
-for improved WAN deployment by allowing end-point router filtering of unwanted
-source traffic."
-
-export CPPFLAGS="-D_GNU_SOURCE"
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}/${PN}/pgm
+	2to3 -wn version_generator.py
+	cp openpgm-5.2.pc.in openpgm-5.3.pc.in
+}
 
 src_compile()
 {
@@ -48,20 +44,19 @@ DOCS="
 
 PKG_NAMES="
 	${PN}
-	${PN}5.2_0
-	${PN}-devel
+	libpgm${PV[1]}.${PV[2]}_0
+	libpgm-devel
 "
-libpgm_CONTENTS="
+openpgm_CONTENTS="
 	usr/share
 "
-libpgm5_2_0_CONTENTS="
+libpgm5_3_0_CONTENTS="
 	usr/bin
 "
 libpgm_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-
-libpgm_SUMMARY="${SUMMARY} (licensing & readmes)"
-libpgm5_2_0_SUMMARY="${SUMMARY} (runtime)"
+openpgm_SUMMARY="${SUMMARY} (licensing & readmes)"
+libpgm5_3_0_SUMMARY="${SUMMARY} (runtime)"
 libpgm_devel_SUMMARY="${SUMMARY} (development)"
