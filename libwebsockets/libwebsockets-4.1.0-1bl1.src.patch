@@ -1,0 +1,41 @@
+--- origsrc/libwebsockets-4.1.0/CMakeLists.txt	2020-09-04 21:42:57.000000000 +0900
++++ src/libwebsockets-4.1.0/CMakeLists.txt	2020-09-09 15:48:16.048504600 +0900
+@@ -303,7 +303,7 @@ endmacro()
+ #
+ 
+ find_package(Git)
+-if(GIT_EXECUTABLE)
++if(GIT_EXECUTABLE AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+ 	execute_process(
+ 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+ 		COMMAND "${GIT_EXECUTABLE}" describe --tags --always
+@@ -562,6 +562,7 @@ CHECK_INCLUDE_FILE(sys/capability.h LWS_
+ CHECK_INCLUDE_FILE(malloc.h LWS_HAVE_MALLOC_H)
+ CHECK_INCLUDE_FILE(pthread.h LWS_HAVE_PTHREAD_H)
+ CHECK_INCLUDE_FILE(inttypes.h LWS_HAVE_INTTYPES_H)
++CHECK_INCLUDE_FILE(net/route.h LWS_HAVE_NET_ROUTE_H)
+ 
+ if (WIN32 OR MSVC)
+ 	CHECK_C_SOURCE_COMPILES("#include <winsock2.h>
+--- origsrc/libwebsockets-4.1.0/lib/core/context.c	2020-09-04 21:42:57.000000000 +0900
++++ src/libwebsockets-4.1.0/lib/core/context.c	2020-09-09 15:49:56.988262300 +0900
+@@ -674,7 +674,7 @@ lws_create_context(const struct lws_cont
+ 
+ 	context->options = info->options;
+ 
+-#if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE) && !defined(WIN32)
++#if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE) && !defined(WIN32) && !defined(__CYGWIN__)
+ 	/*
+ 	 * If asked, try to set the rlimit / ulimit for process sockets / files.
+ 	 * We read the effective limit in a moment, so we will find out the
+--- origsrc/libwebsockets-4.1.0/lib/plat/unix/unix-sockets.c	2020-09-04 21:42:57.000000000 +0900
++++ src/libwebsockets-4.1.0/lib/plat/unix/unix-sockets.c	2020-09-09 15:48:05.828167000 +0900
+@@ -29,7 +29,7 @@
+ 
+ #include <sys/ioctl.h>
+ 
+-#if !defined(LWS_DETECTED_PLAT_IOS)
++#if defined(LWS_HAVE_NET_ROUTE_H)
+ #include <net/route.h>
+ #endif
+ 
