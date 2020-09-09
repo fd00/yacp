@@ -1,0 +1,71 @@
+--- origsrc/libqb-2.0.1/configure.ac	2020-07-29 16:28:23.000000000 +0900
++++ src/libqb-2.0.1/configure.ac	2020-09-09 08:22:04.528651600 +0900
+@@ -29,9 +29,12 @@ LT_PREREQ([2.2.6])
+ # --enable-new-dtags: Use RUNPATH instead of RPATH.
+ # It is necessary to have this done before libtool does linker detection.
+ # See also: https://github.com/kronosnet/kronosnet/issues/107
+-AX_CHECK_LINK_FLAG([-Wl,--enable-new-dtags],
+-		   [AM_LDFLAGS=-Wl,--enable-new-dtags],
+-		   [AC_MSG_ERROR(["Linker support for --enable-new-dtags is required"])])
++AC_CANONICAL_HOST
++if test "$host_os" != "cygwin"; then
++	AX_CHECK_LINK_FLAG([-Wl,--enable-new-dtags],
++			[AM_LDFLAGS=-Wl,--enable-new-dtags],
++			[AC_MSG_ERROR(["Linker support for --enable-new-dtags is required"])])
++fi
+ AC_SUBST([AM_LDFLAGS])
+ saved_LDFLAGS="$LDFLAGS"
+ LDFLAGS="$AM_LDFLAGS $LDFLAGS"
+--- origsrc/libqb-2.0.1/lib/Makefile.am	2020-07-29 16:28:23.000000000 +0900
++++ src/libqb-2.0.1/lib/Makefile.am	2020-09-09 08:09:37.196082800 +0900
+@@ -97,6 +97,8 @@ else
+ endif
+ endif
+ 
++libqb_la_LDFLAGS += -no-undefined
++
+ # nested sed expression is also escaping meta character for the outer one
+ qblog_script.ld: %.ld: %.ld.in
+ 	$(AM_V_GEN)$(CPP) -C -D_GNU_SOURCE -P $(AM_CPPFLAGS) -xc $< \
+--- origsrc/libqb-2.0.1/tests/Makefile.am	2020-07-29 16:28:23.000000000 +0900
++++ src/libqb-2.0.1/tests/Makefile.am	2020-09-09 08:43:11.016877500 +0900
+@@ -162,16 +162,11 @@ loop_test_CFLAGS = @CHECK_CFLAGS@
+ loop_test_LDADD = $(top_builddir)/lib/libqb.la @CHECK_LIBS@
+ 
+ ipc_test_SOURCES = check_ipc.c
+-ipc_test_CFLAGS = @CHECK_CFLAGS@
+-ipc_test_LDADD = $(top_builddir)/lib/libqb.la @CHECK_LIBS@
++ipc_test_CFLAGS = @CHECK_CFLAGS@ $(GLIB_CFLAGS)
++ipc_test_LDADD = $(top_builddir)/lib/libqb.la @CHECK_LIBS@ $(GLIB_LIBS)
+ if HAVE_FAILURE_INJECTION
+ ipc_test_LDADD += _failure_injection.la
+ 
+-if HAVE_GLIB
+-ipc_test_CFLAGS += $(GLIB_CFLAGS)
+-ipc_test_LDADD += $(GLIB_LIBS)
+-endif
+-
+ check_LTLIBRARIES += _failure_injection.la
+ _failure_injection_la_SOURCES = _failure_injection.c _failure_injection.h
+ _failure_injection_la_LDFLAGS = -module
+--- origsrc/libqb-2.0.1/tests/check_ipc.c	2020-07-29 16:28:23.000000000 +0900
++++ src/libqb-2.0.1/tests/check_ipc.c	2020-09-09 08:11:33.721491800 +0900
+@@ -1858,14 +1858,18 @@ test_ipc_server_fail(void)
+ 	fail_if(conn == NULL);
+ 
+ 	request_server_exit();
++#if defined(HAVE_FAILURE_INJECTION)
+ 	if (_fi_unlink_inject_failure == QB_TRUE) {
+ 		_fi_truncate_called = _fi_openat_called = 0;
+ 	}
++#endif
+ 	ck_assert_int_eq(QB_FALSE, qb_ipcc_is_connected(conn));
+ 	qb_ipcc_disconnect(conn);
++#if defined(HAVE_FAILURE_INJECTION)
+ 	if (_fi_unlink_inject_failure == QB_TRUE) {
+ 		ck_assert_int_ne(_fi_truncate_called + _fi_openat_called, 0);
+ 	}
++#endif
+ 	verify_graceful_stop(pid);
+ }
+ 
