@@ -1,0 +1,66 @@
+--- origsrc/libgff-2.0.0/CMakeLists.txt	2020-07-03 01:49:43.000000000 +0900
++++ src/libgff-2.0.0/CMakeLists.txt	2020-09-10 14:55:35.255861000 +0900
+@@ -23,7 +23,9 @@ set(PROJECT_VERSION ${CPACK_PACKAGE_VERS
+ 
+ set(CMAKE_CXX_STANDARD 14)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(CMAKE_CXX_EXTENSIONS OFF)
++if(NOT CYGWIN)
++  set(CMAKE_CXX_EXTENSIONS OFF)
++endif()
+ 
+ set(PROJECT_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+ set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+@@ -43,7 +45,7 @@ set(GFFLib_SRCS
+ 
+ include_directories(${PROJECT_INCLUDE_DIR})
+ 
+-add_library(${PROJECT_NAME} STATIC ${GFFLib_SRCS})
++add_library(${PROJECT_NAME} ${GFFLib_SRCS})
+ add_executable(TestGFFParse ${PROJECT_SOURCE_DIR}/TestGFFParse.cpp)
+ target_link_libraries(TestGFFParse ${PROJECT_NAME})
+ 
+@@ -51,15 +53,26 @@ target_link_libraries(TestGFFParse ${PRO
+ 
+ configure_package_config_file(libgffConfig.cmake.in
+   ${CMAKE_CURRENT_BINARY_DIR}/libgffConfig.cmake
+-  INSTALL_DESTINATION ${LIB_INSTALL_DIR}/libgff/cmake
++  INSTALL_DESTINATION ${LIB_INSTALL_DIR}/cmake/libgff
+   PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
+ write_basic_package_version_file(
+   ${CMAKE_CURRENT_BINARY_DIR}/libgffConfigVersion.cmake
+   VERSION ${ver_major}.${ver_minor}.${ver_patch}
+   COMPATIBILITY SameMajorVersion )
++if(CYGWIN)
++  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgffConfig.cmake
+               ${CMAKE_CURRENT_BINARY_DIR}/libgffConfigVersion.cmake
+-        DESTINATION ${LIB_INSTALL_DIR}/libgff/cmake )
++        DESTINATION ${LIB_INSTALL_DIR}/cmake/libgff)
+ 
+-install(FILES ${CMAKE_BINARY_DIR}/lib${PROJECT_NAME}.a DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+-install(DIRECTORY ${PROJECT_INCLUDE_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX})
++install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++file(GLOB HEADERS "include/*")
++install(FILES ${HEADERS} DESTINATION include/libgff)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include/libgff)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgff.pc.in ${CMAKE_BINARY_DIR}/libgff.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libgff.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgff-2.0.0/libgff.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgff-2.0.0/libgff.pc.in	2020-09-10 14:47:45.422956300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgff
++Description: Ligntweight C++ library for parsing GFF/GTF files
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lgff
++Cflags: -I${includedir}
