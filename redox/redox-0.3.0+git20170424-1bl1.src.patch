@@ -1,0 +1,39 @@
+--- origsrc/redox/CMakeLists.txt	2020-09-12 07:30:08.000000000 +0900
++++ src/redox/CMakeLists.txt	2020-09-12 07:43:24.657405800 +0900
+@@ -192,7 +192,11 @@ endif()
+ 
+ if (lib)
+   # Install the dynamic library to /usr/lib[64]
+-  install(TARGETS redox DESTINATION lib${LIB_SUFFIX})
++  if (CYGWIN)
++    install(TARGETS redox RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++  else()
++    install(TARGETS redox DESTINATION lib${LIB_SUFFIX})
++  endif()
+ endif()
+ 
+ if (static_lib)
+@@ -237,3 +241,10 @@ set(CPACK_RPM_PACKAGE_ARCHITECTURE "${AR
+ # Select CPack generators
+ set(CPACK_GENERATOR "DEB" "RPM")
+ include(CPack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/redox.pc.in ${CMAKE_BINARY_DIR}/redox.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/redox.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/redox/redox.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/redox/redox.pc.in	2020-09-12 07:43:58.023985000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: redox
++Description: Modern, asynchronous, and wicked fast C++11 client for Redis
++Version: @REDOX_VERSION_STRING@
++Libs: -L${libdir} -lredox
++Cflags: -I${includedir}
