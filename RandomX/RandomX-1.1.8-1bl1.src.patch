@@ -1,0 +1,67 @@
+--- origsrc/RandomX-1.1.8/CMakeLists.txt	2020-07-04 21:57:56.000000000 +0900
++++ src/RandomX-1.1.8/CMakeLists.txt	2020-09-11 14:36:40.595829600 +0900
+@@ -183,9 +183,13 @@ set_property(TARGET randomx PROPERTY CXX
+ set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
+ set_property(TARGET randomx PROPERTY PUBLIC_HEADER src/randomx.h)
+ 
++if(CYGWIN)
++  set_target_properties(randomx PROPERTIES SOVERSION 0)
++endif()
++
+ include(GNUInstallDirs)
+ install(TARGETS randomx
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+@@ -196,6 +200,10 @@ target_link_libraries(randomx-tests
+ set_property(TARGET randomx-tests PROPERTY POSITION_INDEPENDENT_CODE ON)
+ set_property(TARGET randomx-tests PROPERTY CXX_STANDARD 11)
+ 
++if(CYGWIN)
++  install(TARGETS randomx-tests DESTINATION bin)
++endif()
++
+ add_executable(randomx-codegen
+   src/tests/code-generator.cpp)
+ target_link_libraries(randomx-codegen
+@@ -204,6 +212,10 @@ target_link_libraries(randomx-codegen
+ set_property(TARGET randomx-codegen PROPERTY POSITION_INDEPENDENT_CODE ON)
+ set_property(TARGET randomx-codegen PROPERTY CXX_STANDARD 11)
+ 
++if(CYGWIN)
++  install(TARGETS randomx-codegen DESTINATION bin)
++endif()
++
+ if(NOT Threads_FOUND AND UNIX AND NOT APPLE)
+   set(THREADS_PREFER_PTHREAD_FLAG ON)
+   find_package(Threads)
+@@ -231,3 +243,14 @@ if(NOT HAVE_CXX_ATOMICS)
+ endif()
+ set_property(TARGET randomx-benchmark PROPERTY POSITION_INDEPENDENT_CODE ON)
+ set_property(TARGET randomx-benchmark PROPERTY CXX_STANDARD 11)
++
++if(CYGWIN)
++  install(TARGETS randomx-benchmark DESTINATION bin)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/RandomX.pc.in ${CMAKE_BINARY_DIR}/RandomX.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/RandomX.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/RandomX-1.1.8/RandomX.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/RandomX-1.1.8/RandomX.pc.in	2020-09-11 14:37:16.649785200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: RandomX
++Description: Proof of work algorithm based on random code execution
++Version: @VERSION@
++Libs: -L${libdir} -lrandomx
++Cflags: -I${includedir}
