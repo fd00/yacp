@@ -1,0 +1,66 @@
+--- origsrc/rttr-0.9.6/CMake/config.cmake	2018-03-27 06:13:00.000000000 +0900
++++ src/rttr-0.9.6/CMake/config.cmake	2020-09-13 12:44:51.283482400 +0900
+@@ -69,7 +69,11 @@ if(UNIX)
+ 
+   set(RTTR_INSTALL_FULL_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
+ 
+-  set(RTTR_CMAKE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/rttr/cmake")
++  if (CYGWIN)
++    set(RTTR_CMAKE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/rttr")
++  else()
++    set(RTTR_CMAKE_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/rttr/cmake")
++  endif()
+   set(RTTR_ADDITIONAL_FILES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/rttr")
+ 
+ elseif(WIN32)
+@@ -170,7 +174,9 @@ if (BUILD_INSTALLER)
+             DESTINATION ${RTTR_CMAKE_CONFIG_INSTALL_DIR}
+             COMPONENT Devel)
+ 
+-    install(FILES "${LICENSE_FILE}" "${README_FILE}"
+-            DESTINATION ${RTTR_ADDITIONAL_FILES_INSTALL_DIR}
+-            PERMISSIONS OWNER_READ)
++    if (NOT CYGWIN)
++      install(FILES "${LICENSE_FILE}" "${README_FILE}"
++              DESTINATION ${RTTR_ADDITIONAL_FILES_INSTALL_DIR}
++              PERMISSIONS OWNER_READ)
++    endif()
+ endif()
+--- origsrc/rttr-0.9.6/CMake/utility.cmake	2018-03-27 06:13:00.000000000 +0900
++++ src/rttr-0.9.6/CMake/utility.cmake	2020-09-13 11:50:09.483515600 +0900
+@@ -391,6 +391,9 @@ endfunction()
+ # target Target name
+ ####################################################################################
+ function( set_compiler_warnings target)
++  if(CYGWIN)
++    return()
++  endif()
+   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+     set(WARNINGS "-Werror"
+                  "-Wall")
+--- origsrc/rttr-0.9.6/CMakeLists.txt	2018-03-27 06:13:00.000000000 +0900
++++ src/rttr-0.9.6/CMakeLists.txt	2020-09-13 12:49:03.319845800 +0900
+@@ -85,3 +85,10 @@ add_subdirectory(src)
+ if (BUILD_DOCUMENTATION)
+     add_subdirectory(doc)
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/rttr.pc.in ${CMAKE_BINARY_DIR}/rttr.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/rttr.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/rttr-0.9.6/rttr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/rttr-0.9.6/rttr.pc.in	2020-09-13 12:50:35.130403200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: rttr
++Description: C++ Reflection Library
++Version: @RTTR_VERSION@
++Libs: -L${libdir} -lrttr
++Cflags: -I${includedir}
