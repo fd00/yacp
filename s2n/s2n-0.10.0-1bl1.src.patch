@@ -1,0 +1,150 @@
+--- origsrc/s2n-0.10.0/CMakeLists.txt	2020-05-02 02:40:40.000000000 +0900
++++ src/s2n-0.10.0/CMakeLists.txt	2020-09-17 08:43:05.567145000 +0900
+@@ -4,8 +4,8 @@ project (s2n C)
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+-set(INSTALL_LIB_DIR lib CACHE PATH "Installaction directory for libraries")
+-set(INSTALL_INCLUDE_DIR include CACHE PATH "installaction directory for header files")
++set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
++set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
+ set(INSTALL_CMAKE_DIR lib/cmake CACHE PATH "Installation directory for cmake files")
+ 
+ option(S2N_NO_PQ "Disables all Post Quantum Crypto code. You likely want this
+@@ -184,6 +184,10 @@ file(GLOB S2N_SRC
+ add_library(${PROJECT_NAME} ${S2N_HEADERS} ${S2N_SRC})
+ set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
+ 
++if(CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ set(CMAKE_C_FLAGS_DEBUGOPT "")
+ 
+ target_compile_options(${PROJECT_NAME} PRIVATE -pedantic -std=gnu99 -Wall -Werror -Wimplicit -Wunused -Wcomment -Wchar-subscripts
+@@ -314,16 +318,37 @@ else()
+    set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
+-        NAMESPACE AWS::
+-        COMPONENT Development)
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
+-        COMPONENT Development)
+-
+-install(FILES "cmake/modules/FindLibCrypto.cmake"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
+-        COMPONENT Development)
+-
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++            DESTINATION "${INSTALL_CMAKE_DIR}/${PROJECT_NAME}"
++            NAMESPACE AWS::
++            COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++            DESTINATION "${INSTALL_CMAKE_DIR}/${PROJECT_NAME}"
++            COMPONENT Development)
++
++    install(FILES "cmake/modules/FindLibCrypto.cmake"
++            DESTINATION "${INSTALL_CMAKE_DIR}/${PROJECT_NAME}"
++            COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++            NAMESPACE AWS::
++            COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
++            COMPONENT Development)
++
++    install(FILES "cmake/modules/FindLibCrypto.cmake"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/"
++            COMPONENT Development)
++endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/s2n.pc.in ${CMAKE_BINARY_DIR}/s2n.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/s2n.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/s2n-0.10.0/bin/s2nd.c	2020-05-02 02:40:40.000000000 +0900
++++ src/s2n-0.10.0/bin/s2nd.c	2020-09-17 08:08:04.123356800 +0900
+@@ -13,7 +13,6 @@
+  * permissions and limitations under the License.
+  */
+ 
+-#include <netinet/tcp.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+@@ -21,6 +20,7 @@
+ #include <sys/mman.h>
+ #include <poll.h>
+ #include <netdb.h>
++#include <netinet/tcp.h>
+ 
+ #include <stdlib.h>
+ #include <signal.h>
+@@ -766,6 +766,9 @@ int main(int argc, char *const *argv)
+         struct sigaction sa;
+ 
+         sa.sa_handler = SIG_IGN;
++#if !defined(SA_NOCLDWAIT)
++#define SA_NOCLDWAIT (0)
++#endif
+         sa.sa_flags = SA_NOCLDWAIT;
+         sigemptyset(&sa.sa_mask);
+         sigaction(SIGCHLD, &sa, NULL);
+--- origsrc/s2n-0.10.0/cmake/modules/FindLibCrypto.cmake	2020-05-02 02:40:40.000000000 +0900
++++ src/s2n-0.10.0/cmake/modules/FindLibCrypto.cmake	2020-09-17 08:04:26.143153200 +0900
+@@ -22,7 +22,7 @@ find_path(LibCrypto_INCLUDE_DIR
+         ${CMAKE_INSTALL_PREFIX}/include
+     )
+ find_library(LibCrypto_SHARED_LIBRARY
+-    NAMES libcrypto.so libcrypto.dylib
++    NAMES libcrypto.dll.a libcrypto.so libcrypto.dylib
+     HINTS
+     ${CMAKE_PREFIX_PATH}/build/crypto
+     ${CMAKE_PREFIX_PATH}/build
+--- origsrc/s2n-0.10.0/s2n.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/s2n-0.10.0/s2n.pc.in	2020-09-17 08:43:05.495148600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: s2n
++Description: Implementation of the TLS/SSL protocols
++Version: @VERSION@
++Libs: -L${libdir} -ls2n
++Cflags: -I${includedir}
+--- origsrc/s2n-0.10.0/utils/s2n_asn1_time.c	2020-05-02 02:40:40.000000000 +0900
++++ src/s2n-0.10.0/utils/s2n_asn1_time.c	2020-09-17 08:05:18.803169400 +0900
+@@ -45,7 +45,7 @@ typedef enum parser_state {
+ } parser_state;
+ 
+ static inline long get_gmt_offset(struct tm *t) {
+-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__) && defined(__MACH__)
++#if defined(__CYGWIN__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__) || defined(ANDROID) || defined(__APPLE__) && defined(__MACH__)
+     return t->tm_gmtoff;
+ #else
+     return t->__tm_gmtoff;
+--- origsrc/s2n-0.10.0/utils/s2n_safety.c	2020-05-02 02:40:40.000000000 +0900
++++ src/s2n-0.10.0/utils/s2n_safety.c	2020-09-17 08:05:38.835541500 +0900
+@@ -17,7 +17,9 @@
+ #undef _POSIX_C_SOURCE          /* For syscall() on Mac OS X */
+ 
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/types.h>
+ #include <stdint.h>
+ #include <stdio.h>
