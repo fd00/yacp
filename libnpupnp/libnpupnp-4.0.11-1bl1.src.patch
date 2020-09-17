@@ -1,0 +1,76 @@
+--- origsrc/libnpupnp-4.0.11/Makefile.am	2020-07-28 22:23:01.000000000 +0900
++++ src/libnpupnp-4.0.11/Makefile.am	2020-09-17 13:40:22.071912900 +0900
+@@ -25,10 +25,10 @@ endif
+ 
+ lib_LTLIBRARIES = libnpupnp.la
+ 
+-libnpupnp_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/src/inc 
++libnpupnp_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/src/inc $(libupnp_CFLAGS)
+ 
+ 
+-libnpupnp_la_LDFLAGS = \
++libnpupnp_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LT_VERSION_NPUPNP) \
+ 	$(LIBNPUPNP_LIBS)
+ 
+--- origsrc/libnpupnp-4.0.11/configure.ac	2020-09-03 18:44:43.000000000 +0900
++++ src/libnpupnp-4.0.11/configure.ac	2020-09-17 13:18:33.151272800 +0900
+@@ -244,7 +244,9 @@ if test X$useexpat = Xyes ; then
+    AC_DEFINE(USE_EXPAT, 1, [Use expat])
+ fi
+ 
+-LIBNPUPNP_LIBS="$curl_LIBS $libmicrohttpd_LIBS $expat_LIBS $LIBS"
++PKG_CHECK_MODULES([libupnp], [libupnp], [], AC_MSG_ERROR([libupnp not found]))
++
++LIBNPUPNP_LIBS="$curl_LIBS $libmicrohttpd_LIBS $expat_LIBS $libupnp_LIBS $LIBS"
+ echo "LIBNPUPNP_LIBS[" $LIBNPUPNP_LIBS "]"
+ AC_SUBST(LIBNPUPNP_LIBS)
+ 
+--- origsrc/libnpupnp-4.0.11/src/threadutil/ThreadPool.cpp	2020-08-19 17:50:11.000000000 +0900
++++ src/libnpupnp-4.0.11/src/threadutil/ThreadPool.cpp	2020-09-17 13:30:22.082402900 +0900
+@@ -44,6 +44,8 @@
+ #include <condition_variable>
+ #include <iostream>
+ 
++#include <ithread.h>
++
+ using namespace std::chrono;
+ 
+ /*! Internal ThreadPool Job. */
+@@ -262,13 +264,13 @@ static int SetPriority(ThreadPool::Threa
+     maxPriority = sched_get_priority_max(currentPolicy);
+     midPriority = (maxPriority - minPriority) / 2;
+     switch (priority) {
+-    case LOW_PRIORITY:
++    case ThreadPool::LOW_PRIORITY:
+         actPriority = minPriority;
+         break;
+-    case MED_PRIORITY:
++    case ThreadPool::MED_PRIORITY:
+         actPriority = midPriority;
+         break;
+-    case HIGH_PRIORITY:
++    case ThreadPool::HIGH_PRIORITY:
+         actPriority = maxPriority;
+         break;
+     default:
+--- origsrc/libnpupnp-4.0.11/src/utils/netif.cpp	2020-07-14 21:49:05.000000000 +0900
++++ src/libnpupnp-4.0.11/src/utils/netif.cpp	2020-09-17 13:37:53.379809100 +0900
+@@ -46,7 +46,7 @@
+ #include <ifaddrs.h>
+ #ifdef __linux__
+ #include <netpacket/packet.h>
+-#else
++#elif !defined(__CYGWIN__)
+ #include <net/if_dl.h>
+ #endif
+ 
+@@ -501,7 +501,7 @@ Interfaces::Internal::Internal()
+             ifit->m->sethwaddr(reinterpret_cast<const char*>(sll->sll_addr), sll->sll_halen);
+         }
+         break;
+-#else
++#elif !defined(__CYGWIN__)
+         case AF_LINK:
+         {
+             auto sdl = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
