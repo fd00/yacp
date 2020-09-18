@@ -1,0 +1,56 @@
+--- origsrc/spatialite-tools-5.0.0/Makefile.am	2020-08-24 02:50:42.000000000 +0900
++++ src/spatialite-tools-5.0.0/Makefile.am	2020-09-19 00:09:17.222117800 +0900
+@@ -78,12 +78,13 @@ spatialite_gml_LDADD = @LIBSPATIALITE_LI
+ spatialite_dem_LDADD = @LIBSPATIALITE_LIBS@ 
+ spatialite_LDADD = @LIBSPATIALITE_LIBS@ \
+ 	@LIBFREEXL_LIBS@ \
+-	@READLINE_LIBS@
++	@READLINE_LIBS@ $(LTLIBICONV)
+ spatialite_xml_validator_LDADD = @LIBXML2_LIBS@
+ spatialite_xml_load_LDADD = @LIBSPATIALITE_LIBS@ \
+ 	-lexpat
+ spatialite_xml_collapse_LDADD = @LIBSPATIALITE_LIBS@
+-spatialite_xml_print_LADD = @LIBSPATIALIATE_LIBS@
++spatialite_xml_print_LDADD = @LIBSPATIALITE_LIBS@
++spatialite_xml2utf8_LDADD = $(LTLIBICONV)
+ LDADD = @LIBSPATIALITE_LIBS@ \
+ 	@LIBFREEXL_LIBS@
+ 
+--- origsrc/spatialite-tools-5.0.0/configure.ac	2020-08-24 02:50:42.000000000 +0900
++++ src/spatialite-tools-5.0.0/configure.ac	2020-09-18 23:44:07.215400100 +0900
+@@ -95,6 +95,7 @@ AC_STRUCT_TM
+ AC_C_VOLATILE
+ 
+ # Checks for library functions.
++AM_ICONV
+ AC_FUNC_LSTAT
+ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
+ AC_FUNC_MEMCMP
+@@ -238,8 +239,7 @@ AC_ARG_ENABLE(minizip, [AS_HELP_STRING(
+   [--enable-minizip], [enables MiniZIP inclusion [default=yes]])],
+   [], [enable_minizip=yes])
+ if test x"$enable_minizip" != "xno"; then
+-  AC_CHECK_HEADERS(minizip/unzip.h,, [AC_MSG_ERROR([cannot find minizip/unzip.h, bailing out])])
+-  AC_SEARCH_LIBS(unzLocateFile, minizip,,AC_MSG_ERROR(['libminizip' is required but it doesn't seem to be installed on this system.]))
++  PKG_CHECK_MODULES([MINIZIP], [minizip], , AC_MSG_ERROR(['libminizip' is required but it doesn't seem to be installed on this system.]))
+   AC_DEFINE(ENABLE_MINIZIP)
+ fi
+ 
+--- origsrc/spatialite-tools-5.0.0/shp_sanitize.c	2020-08-24 02:50:42.000000000 +0900
++++ src/spatialite-tools-5.0.0/shp_sanitize.c	2020-09-19 00:05:56.824548800 +0900
+@@ -3812,6 +3812,7 @@ do_repair_shapefile (const void *cache,
+ 				is_invalid = 1;
+ 			}
+ 
++#if !defined(__CYGWIN__)
+ #ifdef ENABLE_RTTOPO		/* only if RTTOPO is enabled */
+ 		      if (is_invalid)
+ 			{
+@@ -3859,6 +3860,7 @@ do_repair_shapefile (const void *cache,
+ 			    geom = result;
+ 			}
+ #endif /* end RTTOPO conditional */
++#endif
+ 
+ 		      if (!do_export_geometry
+ 			  (geom, &bufshp, &buflen, shp_in->Shape,
