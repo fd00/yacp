@@ -1,0 +1,55 @@
+--- origsrc/ValyriaTear/src/CMakeLists.txt	2019-09-14 00:35:59.000000000 +0900
++++ src/ValyriaTear/src/CMakeLists.txt	2020-09-20 14:06:03.670996100 +0900
+@@ -112,6 +112,9 @@ IF (NOT DISABLE_TRANSLATIONS)
+     ELSEIF (CMAKE_SYSTEM_NAME STREQUAL SunOS)
+         # explicit linking to libintl is required on Solaris
+         SET(EXTRA_LIBRARIES intl)
++    ELSEIF (CYGWIN)
++        FIND_PACKAGE(LibIntl REQUIRED)
++        FIND_PACKAGE(Iconv REQUIRED)
+     ENDIF()
+ ENDIF()
+ 
+--- origsrc/ValyriaTear/src/common/app_settings.cpp	2019-07-29 19:49:37.000000000 +0900
++++ src/ValyriaTear/src/common/app_settings.cpp	2020-09-20 13:17:15.629493300 +0900
+@@ -50,7 +50,7 @@ static void _CopyOldSaveFiles(const std:
+         return;
+     }
+ 
+-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS))
++#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS) || defined(__CYGWIN__))
+     // We assume the old save files are in ~/.valyriatear
+     passwd *pw = getpwuid(getuid());
+     if(!pw)
+@@ -104,7 +104,7 @@ static void _CopyOldSettingsFile(const s
+         return;
+     }
+ 
+-#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS))
++#if (defined(__linux__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(SOLARIS) || defined(__CYGWIN__))
+     // We assume the old settings.lua file is in ~/.valyriatear
+     passwd *pw = getpwuid(getuid());
+     if(!pw)
+--- origsrc/ValyriaTear/src/common/global/shop/shop_data.h	2019-07-29 19:49:37.000000000 +0900
++++ src/ValyriaTear/src/common/global/shop/shop_data.h	2020-09-20 12:52:10.123268100 +0900
+@@ -11,6 +11,7 @@
+ #ifndef __SHOP_DATA_HEADER__
+ #define __SHOP_DATA_HEADER__
+ 
++#include <cstdint>
+ #include <map>
+ 
+ namespace vt_global {
+--- origsrc/ValyriaTear/src/engine/system.h	2019-07-29 19:49:37.000000000 +0900
++++ src/ValyriaTear/src/engine/system.h	2020-09-20 12:35:45.806569600 +0900
+@@ -31,6 +31,10 @@
+ #include <set>
+ #include <map>
+ 
++#if defined(DEFAULT_LOCALE)
++#undef DEFAULT_LOCALE
++#endif
++
+ namespace vt_mode_manager {
+ class GameMode;
+ }
