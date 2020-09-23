@@ -1,10 +1,9 @@
---- origsrc/xtb-6.3.2/CMakeLists.txt	2020-07-03 01:41:41.000000000 +0900
-+++ src/xtb-6.3.2/CMakeLists.txt	2020-07-11 21:02:36.932402300 +0900
-@@ -39,25 +39,27 @@ target_include_directories(xtb-object
-   $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
+--- origsrc/xtb-6.3.3/CMakeLists.txt	2020-09-17 19:10:45.000000000 +0900
++++ src/xtb-6.3.3/CMakeLists.txt	2020-09-23 14:08:14.517185400 +0900
+@@ -44,24 +44,26 @@ target_include_directories(xtb-object
  )
  
--# Static Library
+ # Static Library
 -add_library(lib-xtb-static STATIC $<TARGET_OBJECTS:xtb-object> )
 -target_link_libraries(lib-xtb-static
 -  PUBLIC
@@ -16,15 +15,14 @@
 -  Fortran_MODULE_DIRECTORY ${xtb-mod}
 -  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 -  POSITION_INDEPENDENT_CODE ON
--  OUTPUT_NAME xtb
+-  OUTPUT_NAME "${PROJECT_NAME}"
 -)
 -target_include_directories(lib-xtb-static
 -  PUBLIC
 -  $<BUILD_INTERFACE:${xtb-dir}/include>
--  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
+-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
 -)
-+if (NOT BUILD_SHARED_LIBS)
-+  # Static Library
++if (NOT CYGWIN)
 +  add_library(lib-xtb-static STATIC $<TARGET_OBJECTS:xtb-object> )
 +  target_link_libraries(lib-xtb-static
 +    PUBLIC
@@ -36,28 +34,18 @@
 +    Fortran_MODULE_DIRECTORY ${xtb-mod}
 +    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 +    POSITION_INDEPENDENT_CODE ON
-+    OUTPUT_NAME xtb
++    OUTPUT_NAME "${PROJECT_NAME}"
 +  )
 +  target_include_directories(lib-xtb-static
 +    PUBLIC
 +    $<BUILD_INTERFACE:${xtb-dir}/include>
-+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/xtb>
++    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
 +  )
 +endif()
  
  # Shared Library
  add_library(lib-xtb-shared SHARED $<TARGET_OBJECTS:xtb-object> )
-@@ -72,6 +74,9 @@ set_target_properties(lib-xtb-shared PRO
-   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-   OUTPUT_NAME xtb
- )
-+if (CYGWIN)
-+  set_target_properties(lib-xtb-shared PROPERTIES SOVERSION 0)
-+endif()
- target_include_directories(lib-xtb-shared
-   PUBLIC
-   $<BUILD_INTERFACE:${xtb-dir}/include>
-@@ -80,10 +85,14 @@ target_include_directories(lib-xtb-share
+@@ -86,10 +88,17 @@ target_include_directories(lib-xtb-share
  
  # Executables
  add_executable(xtb-exe ${prog})
@@ -65,8 +53,11 @@
 -  PRIVATE
 -  lib-xtb-static
 -)
-+if (BUILD_SHARED_LIBS)
-+  target_link_libraries(xtb-exe PRIVATE lib-xtb-shared)
++if (CYGWIN)
++  target_link_libraries(xtb-exe
++    PRIVATE
++    lib-xtb-shared
++  )
 +else()
 +  target_link_libraries(xtb-exe
 +    PRIVATE
@@ -76,50 +67,25 @@
  set_target_properties(xtb-exe PROPERTIES
    Fortran_MODULE_DIRECTORY ${xtb-mod}
    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
-@@ -103,12 +112,20 @@ install(FILES
+@@ -109,7 +118,16 @@ install(FILES
    "${xtb-dir}/.param_gfnff.xtb"
-   DESTINATION share/xtb/
+   DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}"
  )
 -install(TARGETS lib-xtb-static lib-xtb-shared xtb-exe
-+install(TARGETS lib-xtb-shared xtb-exe
-   EXPORT xtbTargets
-   LIBRARY DESTINATION lib
-   ARCHIVE DESTINATION lib
-   RUNTIME DESTINATION bin
- )
-+if (NOT BUILD_SHARED_LIBS)
++if (NOT CYGWIN)
 +  install(TARGETS lib-xtb-static
 +    EXPORT xtbTargets
-+    LIBRARY DESTINATION lib
-+    ARCHIVE DESTINATION lib
-+    RUNTIME DESTINATION bin
++    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 +  )
 +endif()
- # CMake package files
- include(CMakePackageConfigHelpers)
- # -- Config version file
-@@ -121,21 +138,28 @@ write_basic_package_version_file(
- configure_package_config_file(
-   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in"
-   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfig.cmake"
--  INSTALL_DESTINATION share/cmake/xtb
-+  INSTALL_DESTINATION lib/cmake/xtb
- )
- # -- Install config and configVersion
- install(
-   FILES
-   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfig.cmake"
-   "${CMAKE_CURRENT_BINARY_DIR}/xtbConfigVersion.cmake"
--  DESTINATION share/cmake/xtb
-+  DESTINATION lib/cmake/xtb
- )
- # -- Targets file
- # -- This makes the project importable from the build directory
- export(EXPORT xtbTargets FILE "${CMAKE_CURRENT_BINARY_DIR}/xtbTargets.cmake")
- # -- This makes the project importable from the install directory
- install(EXPORT xtbTargets FILE "xtbTargets.cmake"
--  DESTINATION share/cmake/xtb
-+  DESTINATION lib/cmake/xtb
++install(TARGETS lib-xtb-shared xtb-exe
+   EXPORT xtbTargets
+   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+@@ -146,3 +164,10 @@ install(EXPORT xtbTargets FILE "xtbTarge
  )
  
  add_subdirectory("TESTSUITE")
@@ -130,9 +96,9 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/xtb.pc.in ${CMAKE_BINARY_DIR}/xtb.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/xtb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/xtb-6.3.2/TESTSUITE/CMakeLists.txt	2020-07-03 01:41:41.000000000 +0900
-+++ src/xtb-6.3.2/TESTSUITE/CMakeLists.txt	2020-07-11 20:47:05.864036600 +0900
-@@ -45,10 +45,14 @@ set(tests
+--- origsrc/xtb-6.3.3/TESTSUITE/CMakeLists.txt	2020-09-17 19:10:45.000000000 +0900
++++ src/xtb-6.3.3/TESTSUITE/CMakeLists.txt	2020-09-23 13:43:43.886431700 +0900
+@@ -45,10 +45,17 @@ set(tests
  
  # Build Tests
  add_executable(xtb_tests_static ${tests})
@@ -140,8 +106,11 @@
 -  PUBLIC
 -  lib-xtb-static
 -)
-+if (BUILD_SHARED_LIBS)
-+  target_link_libraries(xtb_tests_static PUBLIC lib-xtb-shared)
++if (CYGWIN)
++  target_link_libraries(xtb_tests_static
++    PUBLIC
++    lib-xtb-shared
++  )
 +else()
 +  target_link_libraries(xtb_tests_static
 +    PUBLIC
@@ -151,8 +120,8 @@
  set_target_properties(xtb_tests_static PROPERTIES
    Fortran_MODULE_DIRECTORY ${xtb-mod}
    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
---- origsrc/xtb-6.3.2/xtb.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/xtb-6.3.2/xtb.pc.in	2020-07-11 21:03:20.752339900 +0900
+--- origsrc/xtb-6.3.3/xtb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/xtb-6.3.3/xtb.pc.in	2020-09-23 14:09:29.689263200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
