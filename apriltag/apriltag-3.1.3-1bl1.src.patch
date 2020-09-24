@@ -1,0 +1,56 @@
+--- origsrc/apriltag-3.1.3/CMakeLists.txt	2020-09-21 06:38:18.000000000 +0900
++++ src/apriltag-3.1.3/CMakeLists.txt	2020-09-24 10:31:35.631829500 +0900
+@@ -33,7 +33,7 @@ target_include_directories(${PROJECT_NAM
+ 
+ # install library
+ install(TARGETS ${PROJECT_NAME} EXPORT apriltagTargets
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+@@ -45,12 +45,21 @@ foreach(HEADER ${HEADER_FILES})
+ endforeach()
+ 
+ # export library
+-install(EXPORT apriltagTargets
+-    FILE apriltagTargets.cmake
+-    NAMESPACE apriltag::
+-    DESTINATION share/apriltag/cmake
+-)
+-install(FILES CMake/apriltagConfig.cmake DESTINATION share/apriltag/cmake)
++if (CYGWIN)
++    install(EXPORT apriltagTargets
++        FILE apriltagTargets.cmake
++        NAMESPACE apriltag::
++        DESTINATION lib/cmake/apriltag
++    )
++    install(FILES CMake/apriltagConfig.cmake DESTINATION lib/cmake/apriltag)
++else()
++    install(EXPORT apriltagTargets
++        FILE apriltagTargets.cmake
++        NAMESPACE apriltag::
++        DESTINATION share/apriltag/cmake
++    )
++    install(FILES CMake/apriltagConfig.cmake DESTINATION share/apriltag/cmake)
++endif()
+ export(TARGETS apriltag
+     NAMESPACE apriltag::
+     FILE apriltagTargets.cmake)
+@@ -66,6 +75,7 @@ SET(Python_ADDITIONAL_VERSIONS 3)
+ find_package(PythonLibs)
+ execute_process(COMMAND which python3 OUTPUT_QUIET RESULT_VARIABLE Python3_NOT_FOUND)
+ execute_process(COMMAND python3 -c "import numpy" RESULT_VARIABLE Numpy_NOT_FOUND)
++if (NOT CYGWIN)
+ if (NOT Python3_NOT_FOUND AND NOT Numpy_NOT_FOUND AND PYTHONLIBS_FOUND)
+ # TODO deal with both python2/3
+ execute_process(COMMAND python3 ${CMAKE_SOURCE_DIR}/python_build_flags.py OUTPUT_VARIABLE PY_OUT)
+@@ -93,7 +103,7 @@ execute_process(COMMAND python3 -m site
+ string(STRIP ${PY_DEST} PY_DEST)
+ install(CODE "execute_process(COMMAND cp ${PROJECT_BINARY_DIR}/apriltag${PY_EXT_SUFFIX} ${PY_DEST})")
+ endif (NOT Python3_NOT_FOUND AND NOT Numpy_NOT_FOUND AND PYTHONLIBS_FOUND)
+-
++endif (NOT CYGWIN)
+ 
+ # Examples
+ # apriltag_demo
