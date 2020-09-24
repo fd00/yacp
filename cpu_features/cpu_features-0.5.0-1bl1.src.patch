@@ -1,0 +1,62 @@
+--- origsrc/cpu_features-0.5.0/CMakeLists.txt	2020-09-22 16:29:46.000000000 +0900
++++ src/cpu_features-0.5.0/CMakeLists.txt	2020-09-24 16:12:20.436074600 +0900
+@@ -149,6 +149,9 @@ target_include_directories(cpu_features
+   PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cpu_features>
+ )
+ add_library(CpuFeature::cpu_features ALIAS cpu_features)
++if (CYGWIN)
++  set_target_properties(cpu_features PROPERTIES SOVERSION 0)
++endif()
+ 
+ #
+ # program : list_cpu_features
+@@ -180,7 +183,8 @@ if(BUILD_TESTING)
+   set(CMAKE_CXX_STANDARD_REQUIRED ON)
+   set(CMAKE_CXX_EXTENSIONS OFF) # prefer use of -std11 instead of -gnustd11
+   
+-  if(NOT TARGET gtest OR NOT TARGET gmock_main)
++  option(USE_SYSTEM_GTEST "use system gtest" ON)
++  if((NOT USE_SYSTEM_GTEST) AND (NOT TARGET gtest OR NOT TARGET gmock_main))
+     # Download and unpack googletest at configure time.
+     configure_file(
+       cmake/googletest.CMakeLists.txt.in
+@@ -254,3 +258,10 @@ install(
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CpuFeatures"
+   COMPONENT Devel
+ )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cpu_features.pc.in ${CMAKE_BINARY_DIR}/cpu_features.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/cpu_features.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpu_features-0.5.0/cpu_features.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpu_features-0.5.0/cpu_features.pc.in	2020-09-24 16:13:05.973293200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpu_features
++Description: Cross platform C99 library to get cpu features at runtime
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcpu_features
++Cflags: -I${includedir}
+--- origsrc/cpu_features-0.5.0/test/CMakeLists.txt	2020-09-22 16:29:46.000000000 +0900
++++ src/cpu_features-0.5.0/test/CMakeLists.txt	2020-09-24 15:52:03.691916900 +0900
+@@ -13,11 +13,11 @@ target_compile_definitions(filesystem_fo
+ ##------------------------------------------------------------------------------
+ add_library(hwcaps_for_testing hwcaps_for_testing.cc)
+ target_compile_definitions(hwcaps_for_testing PUBLIC CPU_FEATURES_MOCK_GET_ELF_HWCAP_FROM_GETAUXVAL)
+-target_link_libraries(hwcaps_for_testing filesystem_for_testing)
++target_link_libraries(hwcaps_for_testing string_view filesystem_for_testing)
+ ##------------------------------------------------------------------------------
+ add_library(stack_line_reader ../src/stack_line_reader.c)
+ target_compile_definitions(stack_line_reader PUBLIC STACK_LINE_READER_BUFFER_SIZE=1024)
+-target_link_libraries(stack_line_reader string_view)
++target_link_libraries(stack_line_reader string_view filesystem_for_testing)
+ ##------------------------------------------------------------------------------
+ add_library(stack_line_reader_for_test ../src/stack_line_reader.c)
+ target_compile_definitions(stack_line_reader_for_test PUBLIC STACK_LINE_READER_BUFFER_SIZE=16)
