@@ -1,0 +1,141 @@
+--- origsrc/htscodecs-0.5/Makefile.am	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/Makefile.am	2020-09-25 13:02:20.879314700 +0900
+@@ -41,6 +41,11 @@ nobase_include_HEADERS = \
+ 	htscodecs/rANS_static4x16.h \
+ 	htscodecs/tokenise_name3.h \
+ 	htscodecs/pack.h \
+-	htscodecs/rle.h
++	htscodecs/rle.h \
++	htscodecs/varint.h \
++	htscodecs/varint2.h
+ 
+ EXTRA_DIST = README.md LICENSE.md
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/htscodecs-0.5/configure.ac	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/configure.ac	2020-09-25 13:29:53.800539800 +0900
+@@ -111,9 +111,9 @@ dnl Checks for header files.
+ AC_HEADER_STDC
+ AC_HEADER_SYS_WAIT
+ AC_CHECK_HEADERS(fcntl.h limits.h unistd.h malloc.h)
+-AC_CHECK_HEADER(zlib.h)
++PKG_CHECK_MODULES([ZLIB], [zlib])
+ 
+ dnl Checks for library functions.
+ AC_SEARCH_LIBS([pthread_join], [pthread])
+ 
+-AC_OUTPUT(Makefile htscodecs/Makefile tests/Makefile)
++AC_OUTPUT(htscodecs.pc Makefile htscodecs/Makefile tests/Makefile)
+--- origsrc/htscodecs-0.5/htscodecs/Makefile.am	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/htscodecs/Makefile.am	2020-09-25 13:20:17.730599400 +0900
+@@ -53,5 +53,5 @@ libhtscodecs_la_SOURCES = \
+ 	c_simple_model.h \
+ 	varint.h
+ 
+-libhtscodecs_la_LDFLAGS = -version-info @VERS_CURRENT@:@VERS_REVISION@:@VERS_AGE@ 
+-libhtscodecs_la_LIBADD = @LIBZ@
++libhtscodecs_la_LDFLAGS = -no-undefined -version-info @VERS_CURRENT@:@VERS_REVISION@:@VERS_AGE@ 
++libhtscodecs_la_LIBADD = $(ZLIB_LIBS)
+--- origsrc/htscodecs-0.5/htscodecs.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/htscodecs-0.5/htscodecs.pc.in	2020-09-25 13:30:00.911711400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: htscodecs
++Description: Custom compression for CRAM and others
++Version: @VERSION@
++Libs: -L${libdir} -lhtscodecs
++Cflags: -I${includedir}
+--- origsrc/htscodecs-0.5/tests/arith_dynamic_test.c	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/tests/arith_dynamic_test.c	2020-09-25 13:27:47.609287800 +0900
+@@ -7,6 +7,7 @@
+ #include <sys/time.h>
+ #include <limits.h>
+ #include <fcntl.h>
++#include <getopt.h>
+ 
+ #include "htscodecs/arith_dynamic.h"
+ 
+@@ -58,9 +59,6 @@ int main(int argc, char **argv) {
+         _setmode(_fileno(stdout), _O_BINARY);
+ #endif
+ 
+-    extern char *optarg;
+-    extern int optind;
+-
+     while ((opt = getopt(argc, argv, "o:dtr")) != -1) {
+ 	switch (opt) {
+ 	case 'o': {
+--- origsrc/htscodecs-0.5/tests/fqzcomp_qual_test.c	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/tests/fqzcomp_qual_test.c	2020-09-25 13:27:10.692574400 +0900
+@@ -7,6 +7,7 @@
+ #include <fcntl.h>
+ #include <ctype.h>
+ #include <limits.h>
++#include <getopt.h>
+ 
+ #include "htscodecs/fqzcomp_qual.h"
+ #include "htscodecs/varint.h"
+@@ -293,8 +294,6 @@ int main(int argc, char **argv) {
+         _setmode(_fileno(stdout), _O_BINARY);
+ #endif
+ 
+-    extern char *optarg;
+-    extern int optind;
+     int opt;
+ 
+     while ((opt = getopt(argc, argv, "ds:s:b:r")) != -1) {
+--- origsrc/htscodecs-0.5/tests/rANS_static4x16pr_test.c	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/tests/rANS_static4x16pr_test.c	2020-09-25 13:27:17.534754800 +0900
+@@ -6,6 +6,7 @@
+ #include <string.h>
+ #include <fcntl.h>
+ #include <sys/time.h>
++#include <getopt.h>
+ 
+ #include "htscodecs/rANS_static4x16.h"
+ 
+@@ -57,9 +58,6 @@ int main(int argc, char **argv) {
+         _setmode(_fileno(stdout), _O_BINARY);
+ #endif
+ 
+-    extern char *optarg;
+-    extern int optind;
+-
+     while ((opt = getopt(argc, argv, "o:dtr")) != -1) {
+ 	switch (opt) {
+ 	case 'o': {
+--- origsrc/htscodecs-0.5/tests/rANS_static_test.c	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/tests/rANS_static_test.c	2020-09-25 13:28:25.637015200 +0900
+@@ -6,6 +6,7 @@
+ #include <string.h>
+ #include <fcntl.h>
+ #include <sys/time.h>
++#include <getopt.h>
+ 
+ #include "htscodecs/rANS_static.h"
+ 
+@@ -70,9 +71,6 @@ int main(int argc, char **argv) {
+         _setmode(_fileno(stdout), _O_BINARY);
+ #endif
+ 
+-    extern char *optarg;
+-    extern int optind;
+-
+     while ((opt = getopt(argc, argv, "o:dtr")) != -1) {
+ 	switch (opt) {
+ 	case 'o':
+--- origsrc/htscodecs-0.5/tests/tokenise_name3_test.c	2020-01-30 21:27:38.000000000 +0900
++++ src/htscodecs-0.5/tests/tokenise_name3_test.c	2020-09-25 13:22:46.196837800 +0900
+@@ -45,6 +45,7 @@
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <time.h>
++#include <getopt.h>
+ 
+ #include "htscodecs/tokenise_name3.h"
+ 
