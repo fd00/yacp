@@ -1,0 +1,68 @@
+--- origsrc/io_lib-1.14.13/Makefile.am	2020-06-19 23:37:33.000000000 +0900
++++ src/io_lib-1.14.13/Makefile.am	2020-09-25 15:19:31.375913200 +0900
+@@ -32,7 +32,7 @@
+ AUTOMAKE_OPTIONS = foreign no-dependencies
+ ACLOCAL_AMFLAGS = -I m4
+ 
+-SUBDIRS = htscodecs io_lib progs tests
++SUBDIRS = io_lib progs tests
+ 
+ man_MANS = \
+ 	man/man1/srf_index_hash.1 \
+@@ -120,3 +120,6 @@ EXTRA_DIST = README.md COPYRIGHT CHANGES
+ 
+ dist-hook:
+ 	rm -rf `find $(distdir)/man -name .svn`
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/io_lib-1.14.13/configure.ac	2020-07-04 00:43:28.000000000 +0900
++++ src/io_lib-1.14.13/configure.ac	2020-09-25 15:21:42.394072600 +0900
+@@ -16,7 +16,7 @@ AM_MAINTAINER_MODE
+ # compile these directly into libstaden-read itself.
+ 
+ dnl AC_CONFIG_SUBDIRS([htscodecs])
+-AX_SUBDIRS_CONFIGURE([htscodecs],[[--disable-shared],[--with-pic]])
++dnl AX_SUBDIRS_CONFIGURE([htscodecs],[[--disable-shared],[--with-pic]])
+ 
+ 
+ # For my own benefit, here's a summary of how versioning should work.
+@@ -209,10 +209,12 @@ AC_CHECK_FUNCS(strdup)
+ dnl AC_CHECK_FUNCS(mktime strspn strstr strtol)
+ AC_CHECK_FUNCS(fsync)
+ 
++PKG_CHECK_MODULES([HTSCODECS], [htscodecs])
++
+ AC_SUBST([SET_STDIO_EXT])
+ AC_SUBST([SET_CRAM_IO_CUSTOM_BUFFERING])
+ AC_SUBST([IOLIB_VERSION])
+ AC_SUBST([IOLIB_VERSION_MAJOR])
+ AC_SUBST([IOLIB_VERSION_MINOR])
+ AC_SUBST([IOLIB_VERSION_PATCH])
+-AC_OUTPUT(Makefile io_lib/Makefile progs/Makefile tests/Makefile io_lib-config io_lib/os.h io_lib/version.h)
++AC_OUTPUT(io_lib.pc Makefile io_lib/Makefile progs/Makefile tests/Makefile io_lib-config io_lib/os.h io_lib/version.h)
+--- origsrc/io_lib-1.14.13/io_lib/Makefile.am	2020-06-19 23:37:33.000000000 +0900
++++ src/io_lib-1.14.13/io_lib/Makefile.am	2020-09-25 12:54:15.363247500 +0900
+@@ -136,6 +136,6 @@ libstaden_read_la_SOURCES = \
+ 	cram_block_compression.h \
+ 	version.h
+ 
+-libstaden_read_la_CPPFLAGS = -I${top_srcdir} -I${top_srcdir}/htscodecs @LIBCURL_CPPFLAGS@
+-libstaden_read_la_LDFLAGS = -version-info @VERS_CURRENT@:@VERS_REVISION@:@VERS_AGE@ 
+-libstaden_read_la_LIBADD = @LIBZ@ @LIBCURL@ ${top_builddir}/htscodecs/htscodecs/libhtscodecs.la
++libstaden_read_la_CPPFLAGS = -I${top_srcdir} $(HTSCODECS_CFLAGS) @LIBCURL_CPPFLAGS@
++libstaden_read_la_LDFLAGS = -no-undefined -version-info @VERS_CURRENT@:@VERS_REVISION@:@VERS_AGE@ 
++libstaden_read_la_LIBADD = @LIBZ@ @LIBCURL@ $(HTSCODECS_LIBS)
+--- origsrc/io_lib-1.14.13/io_lib.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/io_lib-1.14.13/io_lib.pc.in	2020-09-25 15:20:25.739333200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: io_lib
++Description: General purpose library to handle gene sequencing machine trace files
++Version: @VERSION@
++Libs: -L${libdir} -lstaden-read
++Cflags: -I${includedir}
