@@ -1,0 +1,809 @@
+--- origsrc/osquery-4.5.0/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/CMakeLists.txt	2020-09-27 23:43:51.457751200 +0900
+@@ -66,7 +66,11 @@ function(main)
+   generateSpecialTargets()
+ 
+   add_subdirectory("libraries")
+-  importLibraries()
++  if(CYGWIN)
++    importLibrariesForCygwin()
++  else()
++    importLibraries()
++  endif()
+ 
+   add_subdirectory("osquery")
+   add_subdirectory("plugins")
+@@ -181,4 +185,51 @@ function(importLibraries)
+   endforeach()
+ endfunction()
+ 
++function(importLibrariesForCygwin)
++  set(library_descriptor_list
++    "augeas:augeas"
++    "gflags:gflags"
++    "gtest:googletest_headers"
++    "libarchive:libarchive"
++    "libglog:glog"
++    "libxml-2.0:libxml2"
++    "libzstd:zstd"
++    "linenoise:linenoise-ng"
++    "openssl:openssl"
++    "rapidjson:rapidjson"
++    "rocksdb:rocksdb"
++    "sleuthkit:sleuthkit"
++    "sqlite3:sqlite"
++    "ssdeep:ssdeep-cpp"
++    "thrift:thrift"
++    "yara:yara"
++    "zlib:zlib"
++  )
++
++  find_package(pkgconfig)
++
++  foreach(library_descriptor ${library_descriptor_list})
++    string(REPLACE ":" ";" library_descriptor "${library_descriptor}")
++    list(GET library_descriptor 0 pc)
++    list(GET library_descriptor 1 library)
++    pkg_check_modules("${library}" "${pc}" REQUIRED)
++    add_library("thirdparty_${library}" INTERFACE)
++    target_link_libraries("thirdparty_${library}" INTERFACE
++      ${${library}_LIBRARIES}
++    )
++  endforeach()
++
++  # no pc library
++  add_library(thirdparty_libmagic INTERFACE)
++  target_link_libraries(thirdparty_libmagic INTERFACE magic)
++  add_library(thirdparty_boost INTERFACE)
++  target_link_libraries(thirdparty_boost INTERFACE
++    boost_chrono
++    boost_context
++    boost_filesystem
++    boost_system
++    boost_thread
++  )
++endfunction()
++
+ main()
+--- origsrc/osquery-4.5.0/cmake/flags.cmake	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/cmake/flags.cmake	2020-09-27 22:02:05.198952700 +0900
+@@ -32,8 +32,14 @@ function(setupBuildFlags)
+ 
+   if(DEFINED PLATFORM_POSIX)
+ 
++    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
++      set(Q_UNUSED_ARGUMENTS -Qunused-arguments)
++      set(FNO_LIMIT_DEBUG_INFO -fno-limit-debug-info)
++      set(STDLIB_FLAG -stdlib=libc++)
++    endif()
++  
+     set(posix_common_compile_options
+-      -Qunused-arguments
++      ${Q_UNUSED_ARGUMENTS}
+       -Wno-shadow-field
+       -Wall
+       -Wextra
+@@ -57,13 +63,15 @@ function(setupBuildFlags)
+       -ffunction-sections
+       -fvisibility=hidden
+       -fvisibility-inlines-hidden
+-      -fno-limit-debug-info
++      ${FNO_LIMIT_DEBUG_INFO}
+       -pipe
+       -pedantic
+     )
+ 
+     if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+-      list(APPEND posix_common_compile_options INTERFACE -Oz)
++      if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
++        list(APPEND posix_common_compile_options INTERFACE -Oz)
++      endif()
+     endif()
+ 
+     set(osquery_posix_common_defines
+@@ -76,11 +84,11 @@ function(setupBuildFlags)
+       -Woverloaded-virtual
+       -Wnon-virtual-dtor
+       -Weffc++
+-      -stdlib=libc++
++      ${STDLIB_FLAG}
+     )
+ 
+     set(posix_cxx_link_options
+-      -stdlib=libc++
++      ${STDLIB_FLAG}
+       -ldl
+     )
+ 
+@@ -197,6 +205,7 @@ function(setupBuildFlags)
+       )
+ 
+       list(APPEND osquery_defines ${osquery_macos_common_defines})
++    elseif(CYGWIN)
+     else()
+       message(FATAL_ERROR "Platform not supported!")
+     endif()
+--- origsrc/osquery-4.5.0/cmake/globals.cmake	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/cmake/globals.cmake	2020-09-27 13:28:07.093160800 +0900
+@@ -47,6 +47,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "
+   set(PLATFORM_MACOS 1)
+ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+   set(PLATFORM_WINDOWS 1)
++elseif(CYGWIN)
++  set(PLATFORM_POSIX 1)
+ else()
+   message(FATAL_ERROR "Unrecognized platform")
+ endif()
+--- origsrc/osquery-4.5.0/cmake/options.cmake	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/cmake/options.cmake	2020-09-27 14:19:24.758165500 +0900
+@@ -12,33 +12,38 @@
+ # Verify if the final version is composed by three semver components, otherwise fail.
+ # Returns the final version in OSQUERY_VERSION_INTERNAL and its components in OSQUERY_VERSION_COMPONENTS
+ function(detectOsqueryVersion)
+-  set(OSQUERY_VERSION "" CACHE STRING "Overrides osquery version with this value")
+-  set(OSQUERY_VERSION_SUFFIX "" CACHE STRING "String to append when the version is automatically detected")
+-  set(OSQUERY_VERSION_AUTODETECTED "" CACHE STRING "osquery version autodetected through git. Do not manually set." FORCE)
+-  set(osquery_version 0.0.0)
++  if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
++    set(OSQUERY_VERSION "" CACHE STRING "Overrides osquery version with this value")
++    set(OSQUERY_VERSION_SUFFIX "" CACHE STRING "String to append when the version is automatically detected")
++    set(OSQUERY_VERSION_AUTODETECTED "" CACHE STRING "osquery version autodetected through git. Do not manually set." FORCE)
++    set(osquery_version 0.0.0)
+ 
+-  if(NOT OSQUERY_VERSION)
+-    find_package(Git REQUIRED)
++    if(NOT OSQUERY_VERSION)
++      find_package(Git REQUIRED)
+ 
+-    execute_process(
+-      COMMAND "${GIT_EXECUTABLE}" describe --tags --always --dirty
+-      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+-      OUTPUT_VARIABLE branch_version
+-      RESULT_VARIABLE exit_code
+-    )
++      execute_process(
++        COMMAND "${GIT_EXECUTABLE}" describe --tags --always --dirty
++        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
++        OUTPUT_VARIABLE branch_version
++        RESULT_VARIABLE exit_code
++      )
+ 
+-    if(NOT ${exit_code} EQUAL 0)
+-      message(WARNING "Failed to detect osquery version. Set it manually through OSQUERY_VERSION or 0.0.0 will be used")
+-    else()
+-      string(REGEX REPLACE "\n$" "" branch_version "${branch_version}")
+-      set(osquery_version ${branch_version})
+-      overwrite_cache_variable("OSQUERY_VERSION_AUTODETECTED" "STRING" ${osquery_version})
++      if(NOT ${exit_code} EQUAL 0)
++        message(WARNING "Failed to detect osquery version. Set it manually through OSQUERY_VERSION or 0.0.0 will be used")
++      else()
++        string(REGEX REPLACE "\n$" "" branch_version "${branch_version}")
++        set(osquery_version ${branch_version})
++        overwrite_cache_variable("OSQUERY_VERSION_AUTODETECTED" "STRING" ${osquery_version})
+ 
+-      if(OSQUERY_VERSION_SUFFIX)
+-        string(APPEND osquery_version "${OSQUERY_VERSION_SUFFIX}")
++        if(OSQUERY_VERSION_SUFFIX)
++          string(APPEND osquery_version "${OSQUERY_VERSION_SUFFIX}")
++        endif()
+       endif()
++    else()
++      set(osquery_version "${OSQUERY_VERSION}")
+     endif()
+   else()
++    option(OSQUERY_VERSION "0.0.0" "Overrides osquery version with this value")
+     set(osquery_version "${OSQUERY_VERSION}")
+   endif()
+ 
+--- origsrc/osquery-4.5.0/cmake/packaging.cmake	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/cmake/packaging.cmake	2020-09-27 13:31:11.594825900 +0900
+@@ -412,6 +412,7 @@ function(generatePackageTarget)
+       set(CPACK_NUGET_PACKAGE_TAGS "infosec tools security")
+     endif()
+   elseif(DEFINED PLATFORM_FREEBSD)
++  elseif(CYGWIN)
+   else()
+     message(FATAL_ERROR "Unsupported platform")
+   endif()
+--- origsrc/osquery-4.5.0/osquery/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/CMakeLists.txt	2020-09-27 23:46:59.100854600 +0900
+@@ -48,6 +48,8 @@ function(generateOsqueryd)
+   target_link_libraries(osqueryd PRIVATE
+     osquery_cxx_settings
+     osquery_main
++    osquery_extensions
++    osquery_sql
+   )
+ 
+   set(osquery_ext "")
+--- origsrc/osquery-4.5.0/osquery/core/shutdown.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/core/shutdown.cpp	2020-09-27 20:44:57.209885100 +0900
+@@ -11,6 +11,7 @@
+ #include <osquery/logger/data_logger.h>
+ 
+ #include <atomic>
++#include <condition_variable>
+ #include <mutex>
+ #include <string>
+ 
+--- origsrc/osquery-4.5.0/osquery/core/system.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/core/system.cpp	2020-09-27 16:33:07.006378700 +0900
+@@ -20,7 +20,9 @@
+ #include <signal.h>
+ 
+ #if !defined(__FreeBSD__) && !defined(WIN32)
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <uuid/uuid.h>
+ #endif
+ 
+--- origsrc/osquery-4.5.0/osquery/events/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/events/CMakeLists.txt	2020-09-27 13:35:38.155937200 +0900
+@@ -47,6 +47,11 @@ function(generateOsqueryEvents)
+       windows/windowseventlogparserservice.cpp
+       windows/windowseventlogparser.cpp
+     )
++
++  elseif(CYGWIN)
++    list(APPEND source_files
++      linux/syslog.cpp
++    )
+   endif()
+ 
+   add_osquery_library(osquery_events EXCLUDE_FROM_ALL
+@@ -119,6 +124,10 @@ function(generateOsqueryEvents)
+       windows/windowseventlogparserservice.h
+       windows/windowseventlogparser.h
+     )
++
++  elseif(CYGWIN)
++    set(platform_public_header_files
++      linux/syslog.h)
+   endif()
+ 
+   generateIncludeNamespace(osquery_events "osquery/events" "FULL_PATH" ${platform_public_header_files})
+--- origsrc/osquery-4.5.0/osquery/extensions/thrift/gen/Extension.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/extensions/thrift/gen/Extension.cpp	2020-09-27 15:23:08.822249400 +0900
+@@ -910,10 +910,10 @@ void ExtensionProcessor::process_shutdow
+   }
+ }
+ 
+-::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > ExtensionProcessorFactory::getProcessor(const ::apache::thrift::TConnectionInfo& connInfo) {
++::std::shared_ptr< ::apache::thrift::TProcessor > ExtensionProcessorFactory::getProcessor(const ::apache::thrift::TConnectionInfo& connInfo) {
+   ::apache::thrift::ReleaseHandler< ExtensionIfFactory > cleanup(handlerFactory_);
+-  ::apache::thrift::stdcxx::shared_ptr< ExtensionIf > handler(handlerFactory_->getHandler(connInfo), cleanup);
+-  ::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > processor(new ExtensionProcessor(handler));
++  ::std::shared_ptr< ExtensionIf > handler(handlerFactory_->getHandler(connInfo), cleanup);
++  ::std::shared_ptr< ::apache::thrift::TProcessor > processor(new ExtensionProcessor(handler));
+   return processor;
+ }
+ 
+--- origsrc/osquery-4.5.0/osquery/extensions/thrift/gen/Extension.h	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/extensions/thrift/gen/Extension.h	2020-09-27 15:22:20.192961000 +0900
+@@ -38,7 +38,7 @@ class ExtensionIfFactory {
+ 
+ class ExtensionIfSingletonFactory : virtual public ExtensionIfFactory {
+  public:
+-  ExtensionIfSingletonFactory(const ::apache::thrift::stdcxx::shared_ptr<ExtensionIf>& iface) : iface_(iface) {}
++  ExtensionIfSingletonFactory(const ::std::shared_ptr<ExtensionIf>& iface) : iface_(iface) {}
+   virtual ~ExtensionIfSingletonFactory() {}
+ 
+   virtual ExtensionIf* getHandler(const ::apache::thrift::TConnectionInfo&) {
+@@ -47,7 +47,7 @@ class ExtensionIfSingletonFactory : virt
+   virtual void releaseHandler(ExtensionIf* /* handler */) {}
+ 
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr<ExtensionIf> iface_;
++  ::std::shared_ptr<ExtensionIf> iface_;
+ };
+ 
+ class ExtensionNull : virtual public ExtensionIf {
+@@ -350,27 +350,27 @@ class Extension_shutdown_presult {
+ 
+ class ExtensionClient : virtual public ExtensionIf {
+  public:
+-  ExtensionClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
++  ExtensionClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
+     setProtocol(prot);
+   }
+-  ExtensionClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
++  ExtensionClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
+     setProtocol(iprot,oprot);
+   }
+  private:
+-  void setProtocol(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
++  void setProtocol(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
+   setProtocol(prot,prot);
+   }
+-  void setProtocol(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
++  void setProtocol(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
+     piprot_=iprot;
+     poprot_=oprot;
+     iprot_ = iprot.get();
+     oprot_ = oprot.get();
+   }
+  public:
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
+     return piprot_;
+   }
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
+     return poprot_;
+   }
+   void ping(ExtensionStatus& _return);
+@@ -383,15 +383,15 @@ class ExtensionClient : virtual public E
+   void send_shutdown();
+   void recv_shutdown();
+  protected:
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
+   ::apache::thrift::protocol::TProtocol* iprot_;
+   ::apache::thrift::protocol::TProtocol* oprot_;
+ };
+ 
+ class ExtensionProcessor : public ::apache::thrift::TDispatchProcessor {
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr<ExtensionIf> iface_;
++  ::std::shared_ptr<ExtensionIf> iface_;
+   virtual bool dispatchCall(::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, const std::string& fname, int32_t seqid, void* callContext);
+  private:
+   typedef  void (ExtensionProcessor::*ProcessFunction)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*);
+@@ -401,7 +401,7 @@ class ExtensionProcessor : public ::apac
+   void process_call(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+   void process_shutdown(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  public:
+-  ExtensionProcessor(::apache::thrift::stdcxx::shared_ptr<ExtensionIf> iface) :
++  ExtensionProcessor(::std::shared_ptr<ExtensionIf> iface) :
+     iface_(iface) {
+     processMap_["ping"] = &ExtensionProcessor::process_ping;
+     processMap_["call"] = &ExtensionProcessor::process_call;
+@@ -413,24 +413,24 @@ class ExtensionProcessor : public ::apac
+ 
+ class ExtensionProcessorFactory : public ::apache::thrift::TProcessorFactory {
+  public:
+-  ExtensionProcessorFactory(const ::apache::thrift::stdcxx::shared_ptr< ExtensionIfFactory >& handlerFactory) :
++  ExtensionProcessorFactory(const ::std::shared_ptr< ExtensionIfFactory >& handlerFactory) :
+       handlerFactory_(handlerFactory) {}
+ 
+-  ::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > getProcessor(const ::apache::thrift::TConnectionInfo& connInfo);
++  ::std::shared_ptr< ::apache::thrift::TProcessor > getProcessor(const ::apache::thrift::TConnectionInfo& connInfo);
+ 
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr< ExtensionIfFactory > handlerFactory_;
++  ::std::shared_ptr< ExtensionIfFactory > handlerFactory_;
+ };
+ 
+ class ExtensionMultiface : virtual public ExtensionIf {
+  public:
+-  ExtensionMultiface(std::vector<apache::thrift::stdcxx::shared_ptr<ExtensionIf> >& ifaces) : ifaces_(ifaces) {
++  ExtensionMultiface(std::vector<std::shared_ptr<ExtensionIf> >& ifaces) : ifaces_(ifaces) {
+   }
+   virtual ~ExtensionMultiface() {}
+  protected:
+-  std::vector<apache::thrift::stdcxx::shared_ptr<ExtensionIf> > ifaces_;
++  std::vector<std::shared_ptr<ExtensionIf> > ifaces_;
+   ExtensionMultiface() {}
+-  void add(::apache::thrift::stdcxx::shared_ptr<ExtensionIf> iface) {
++  void add(::std::shared_ptr<ExtensionIf> iface) {
+     ifaces_.push_back(iface);
+   }
+  public:
+@@ -470,27 +470,27 @@ class ExtensionMultiface : virtual publi
+ // only be used when you need to share a connection among multiple threads
+ class ExtensionConcurrentClient : virtual public ExtensionIf {
+  public:
+-  ExtensionConcurrentClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
++  ExtensionConcurrentClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
+     setProtocol(prot);
+   }
+-  ExtensionConcurrentClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
++  ExtensionConcurrentClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
+     setProtocol(iprot,oprot);
+   }
+  private:
+-  void setProtocol(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
++  void setProtocol(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) {
+   setProtocol(prot,prot);
+   }
+-  void setProtocol(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
++  void setProtocol(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) {
+     piprot_=iprot;
+     poprot_=oprot;
+     iprot_ = iprot.get();
+     oprot_ = oprot.get();
+   }
+  public:
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
+     return piprot_;
+   }
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
+     return poprot_;
+   }
+   void ping(ExtensionStatus& _return);
+@@ -503,8 +503,8 @@ class ExtensionConcurrentClient : virtua
+   int32_t send_shutdown();
+   void recv_shutdown(const int32_t seqid);
+  protected:
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
+   ::apache::thrift::protocol::TProtocol* iprot_;
+   ::apache::thrift::protocol::TProtocol* oprot_;
+   ::apache::thrift::async::TConcurrentClientSyncInfo sync_;
+--- origsrc/osquery-4.5.0/osquery/extensions/thrift/gen/ExtensionManager.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/extensions/thrift/gen/ExtensionManager.cpp	2020-09-27 15:23:53.679834100 +0900
+@@ -1990,10 +1990,10 @@ void ExtensionManagerProcessor::process_
+   }
+ }
+ 
+-::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > ExtensionManagerProcessorFactory::getProcessor(const ::apache::thrift::TConnectionInfo& connInfo) {
++::std::shared_ptr< ::apache::thrift::TProcessor > ExtensionManagerProcessorFactory::getProcessor(const ::apache::thrift::TConnectionInfo& connInfo) {
+   ::apache::thrift::ReleaseHandler< ExtensionManagerIfFactory > cleanup(handlerFactory_);
+-  ::apache::thrift::stdcxx::shared_ptr< ExtensionManagerIf > handler(handlerFactory_->getHandler(connInfo), cleanup);
+-  ::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > processor(new ExtensionManagerProcessor(handler));
++  ::std::shared_ptr< ExtensionManagerIf > handler(handlerFactory_->getHandler(connInfo), cleanup);
++  ::std::shared_ptr< ::apache::thrift::TProcessor > processor(new ExtensionManagerProcessor(handler));
+   return processor;
+ }
+ 
+--- origsrc/osquery-4.5.0/osquery/extensions/thrift/gen/ExtensionManager.h	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/extensions/thrift/gen/ExtensionManager.h	2020-09-27 15:23:19.198572800 +0900
+@@ -42,7 +42,7 @@ class ExtensionManagerIfFactory : virtua
+ 
+ class ExtensionManagerIfSingletonFactory : virtual public ExtensionManagerIfFactory {
+  public:
+-  ExtensionManagerIfSingletonFactory(const ::apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf>& iface) : iface_(iface) {}
++  ExtensionManagerIfSingletonFactory(const ::std::shared_ptr<ExtensionManagerIf>& iface) : iface_(iface) {}
+   virtual ~ExtensionManagerIfSingletonFactory() {}
+ 
+   virtual ExtensionManagerIf* getHandler(const ::apache::thrift::TConnectionInfo&) {
+@@ -51,7 +51,7 @@ class ExtensionManagerIfSingletonFactory
+   virtual void releaseHandler(ExtensionIf* /* handler */) {}
+ 
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> iface_;
++  ::std::shared_ptr<ExtensionManagerIf> iface_;
+ };
+ 
+ class ExtensionManagerNull : virtual public ExtensionManagerIf , virtual public ExtensionNull {
+@@ -686,13 +686,13 @@ class ExtensionManager_getQueryColumns_p
+ 
+ class ExtensionManagerClient : virtual public ExtensionManagerIf, public ExtensionClient {
+  public:
+-  ExtensionManagerClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
++  ExtensionManagerClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
+     ExtensionClient(prot, prot) {}
+-  ExtensionManagerClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) :    ExtensionClient(iprot, oprot) {}
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
++  ExtensionManagerClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) :    ExtensionClient(iprot, oprot) {}
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
+     return piprot_;
+   }
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
+     return poprot_;
+   }
+   void extensions(InternalExtensionList& _return);
+@@ -717,7 +717,7 @@ class ExtensionManagerClient : virtual p
+ 
+ class ExtensionManagerProcessor : public ExtensionProcessor {
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> iface_;
++  ::std::shared_ptr<ExtensionManagerIf> iface_;
+   virtual bool dispatchCall(::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, const std::string& fname, int32_t seqid, void* callContext);
+  private:
+   typedef  void (ExtensionManagerProcessor::*ProcessFunction)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*);
+@@ -730,7 +730,7 @@ class ExtensionManagerProcessor : public
+   void process_query(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+   void process_getQueryColumns(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  public:
+-  ExtensionManagerProcessor(::apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> iface) :
++  ExtensionManagerProcessor(::std::shared_ptr<ExtensionManagerIf> iface) :
+     ExtensionProcessor(iface),
+     iface_(iface) {
+     processMap_["extensions"] = &ExtensionManagerProcessor::process_extensions;
+@@ -746,28 +746,28 @@ class ExtensionManagerProcessor : public
+ 
+ class ExtensionManagerProcessorFactory : public ::apache::thrift::TProcessorFactory {
+  public:
+-  ExtensionManagerProcessorFactory(const ::apache::thrift::stdcxx::shared_ptr< ExtensionManagerIfFactory >& handlerFactory) :
++  ExtensionManagerProcessorFactory(const ::std::shared_ptr< ExtensionManagerIfFactory >& handlerFactory) :
+       handlerFactory_(handlerFactory) {}
+ 
+-  ::apache::thrift::stdcxx::shared_ptr< ::apache::thrift::TProcessor > getProcessor(const ::apache::thrift::TConnectionInfo& connInfo);
++  ::std::shared_ptr< ::apache::thrift::TProcessor > getProcessor(const ::apache::thrift::TConnectionInfo& connInfo);
+ 
+  protected:
+-  ::apache::thrift::stdcxx::shared_ptr< ExtensionManagerIfFactory > handlerFactory_;
++  ::std::shared_ptr< ExtensionManagerIfFactory > handlerFactory_;
+ };
+ 
+ class ExtensionManagerMultiface : virtual public ExtensionManagerIf, public ExtensionMultiface {
+  public:
+-  ExtensionManagerMultiface(std::vector<apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> >& ifaces) : ifaces_(ifaces) {
+-    std::vector<apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> >::iterator iter;
++  ExtensionManagerMultiface(std::vector<std::shared_ptr<ExtensionManagerIf> >& ifaces) : ifaces_(ifaces) {
++    std::vector<std::shared_ptr<ExtensionManagerIf> >::iterator iter;
+     for (iter = ifaces.begin(); iter != ifaces.end(); ++iter) {
+       ExtensionMultiface::add(*iter);
+     }
+   }
+   virtual ~ExtensionManagerMultiface() {}
+  protected:
+-  std::vector<apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> > ifaces_;
++  std::vector<std::shared_ptr<ExtensionManagerIf> > ifaces_;
+   ExtensionManagerMultiface() {}
+-  void add(::apache::thrift::stdcxx::shared_ptr<ExtensionManagerIf> iface) {
++  void add(::std::shared_ptr<ExtensionManagerIf> iface) {
+     ExtensionMultiface::add(iface);
+     ifaces_.push_back(iface);
+   }
+@@ -839,13 +839,13 @@ class ExtensionManagerMultiface : virtua
+ // only be used when you need to share a connection among multiple threads
+ class ExtensionManagerConcurrentClient : virtual public ExtensionManagerIf, public ExtensionConcurrentClient {
+  public:
+-  ExtensionManagerConcurrentClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
++  ExtensionManagerConcurrentClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
+     ExtensionConcurrentClient(prot, prot) {}
+-  ExtensionManagerConcurrentClient(apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) :    ExtensionConcurrentClient(iprot, oprot) {}
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
++  ExtensionManagerConcurrentClient(std::shared_ptr< ::apache::thrift::protocol::TProtocol> iprot, std::shared_ptr< ::apache::thrift::protocol::TProtocol> oprot) :    ExtensionConcurrentClient(iprot, oprot) {}
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getInputProtocol() {
+     return piprot_;
+   }
+-  apache::thrift::stdcxx::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
++  std::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
+     return poprot_;
+   }
+   void extensions(InternalExtensionList& _return);
+--- origsrc/osquery-4.5.0/osquery/extensions/thrift/gen/osquery_types.h	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/extensions/thrift/gen/osquery_types.h	2020-09-27 15:19:35.082156600 +0900
+@@ -15,8 +15,9 @@
+ #include <thrift/protocol/TProtocol.h>
+ #include <thrift/transport/TTransport.h>
+ 
++#if !defined(__CYGWIN__)
+ #include <thrift/stdcxx.h>
+-
++#endif
+ 
+ namespace osquery { namespace extensions {
+ 
+--- origsrc/osquery-4.5.0/osquery/filesystem/posix/fileops.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/filesystem/posix/fileops.cpp	2020-09-27 16:39:28.403920600 +0900
+@@ -180,7 +180,7 @@ bool PlatformFile::getFileTimes(Platform
+     return false;
+   }
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   TIMESPEC_TO_TIMEVAL(&times.times[0], &file.st_atim);
+   TIMESPEC_TO_TIMEVAL(&times.times[1], &file.st_mtim);
+ #else
+--- origsrc/osquery-4.5.0/osquery/numeric_monitoring/pre_aggregation_cache.h	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/numeric_monitoring/pre_aggregation_cache.h	2020-09-27 22:14:52.210417600 +0900
+@@ -10,6 +10,7 @@
+ #pragma once
+ 
+ #include <unordered_map>
++#include <vector>
+ 
+ #include <osquery/numeric_monitoring/numeric_monitoring.h>
+ 
+--- origsrc/osquery-4.5.0/osquery/process/posix/process_ops.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/process/posix/process_ops.cpp	2020-09-27 15:30:16.974899500 +0900
+@@ -13,7 +13,9 @@
+ #include <stdlib.h>
+ 
+ #include <sys/resource.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/time.h>
+ #include <sys/types.h>
+ #include <sys/wait.h>
+--- origsrc/osquery-4.5.0/osquery/sql/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/sql/CMakeLists.txt	2020-09-27 23:55:29.840506400 +0900
+@@ -28,7 +28,7 @@ function(generateOsquerySql)
+     virtual_table.cpp
+   )
+ 
+-  if(DEFINED PLATFORM_LINUX OR DEFINED PLATFORM_MACOS OR DEFINED PLATFORM_WINDOWS)
++  if(DEFINED PLATFORM_LINUX OR DEFINED PLATFORM_MACOS OR DEFINED PLATFORM_WINDOWS OR CYGWIN)
+     list(APPEND source_files
+       sqlite_string.cpp
+     )
+@@ -38,6 +38,10 @@ function(generateOsquerySql)
+     ${source_files}
+   )
+ 
++  target_include_directories(osquery_sql PUBLIC
++    ${ssdeep-cpp_INCLUDE_DIRS}
++  )
++
+   enableLinkWholeArchive(osquery_sql)
+ 
+   target_link_libraries(osquery_sql PUBLIC
+--- origsrc/osquery-4.5.0/osquery/tables/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/CMakeLists.txt	2020-09-27 19:36:26.295440500 +0900
+@@ -10,7 +10,9 @@ function(osqueryTablesMain)
+   add_subdirectory("cloud")
+   add_subdirectory("events")
+   add_subdirectory("forensic")
+-  add_subdirectory("lldpd")
++  if(NOT CYGWIN)
++    add_subdirectory("lldpd")
++  endif()
+   add_subdirectory("networking")
+   add_subdirectory("sleuthkit")
+   add_subdirectory("smart")
+@@ -27,8 +29,12 @@ function(generateOsqueryTablesTableimple
+   if(DEFINED PLATFORM_POSIX)
+     target_link_libraries(osquery_tables_tableimplementations INTERFACE
+       osquery_tables_yara_yaratable
+-      osquery_tables_lldpd_llpdtable
+     )
++    if(NOT CYGWIN)
++      target_link_libraries(osquery_tables_tableimplementations INTERFACE
++        osquery_tables_lldpd_llpdtable
++      )
++    endif()
+   elseif(DEFINED PLATFORM_WINDOWS)
+     target_link_libraries(osquery_tables_tableimplementations INTERFACE
+       osquery_tables_yara_yaratable
+--- origsrc/osquery-4.5.0/osquery/tables/applications/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/applications/CMakeLists.txt	2020-09-27 16:52:33.078335200 +0900
+@@ -26,11 +26,15 @@ function(generateOsqueryTablesApplicatio
+       posix/browser_opera.cpp
+       posix/carbon_black.cpp
+       posix/docker.cpp
+-      posix/lxd.cpp
+       posix/prometheus_metrics.cpp
+     )
+   endif()
+ 
++  if(NOT CYGWIN)
++    list(APPEND source_files
++      posix/lxd.cpp)
++  endif()
++
+   if(DEFINED PLATFORM_MACOS)
+     list(APPEND source_files
+       atom_packages.cpp
+--- origsrc/osquery-4.5.0/osquery/tables/applications/browser_firefox.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/applications/browser_firefox.cpp	2020-09-27 16:46:14.829353500 +0900
+@@ -24,7 +24,7 @@ namespace tables {
+ /// Each home directory will include custom extensions.
+ #if defined(__APPLE__)
+ #define kFirefoxPath "/Library/Application Support/Firefox/Profiles/"
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #define kFirefoxPath "/.mozilla/firefox/"
+ #elif defined(WIN32)
+ #define kFirefoxPath "\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles"
+--- origsrc/osquery-4.5.0/osquery/tables/networking/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/networking/CMakeLists.txt	2020-09-27 17:38:41.582780900 +0900
+@@ -27,11 +27,16 @@ function(generateOsqueryTablesNetworking
+   if(DEFINED PLATFORM_POSIX)
+     list(APPEND source_files
+       posix/dns_resolvers.cpp
+-      posix/interfaces.cpp
+       posix/utils.cpp
+     )
+   endif()
+ 
++  if(NOT CYGWIN)
++    list(APPEND source_files
++      posix/interfaces.cpp
++    )
++  endif()
++
+   if(DEFINED PLATFORM_LINUX)
+     list(APPEND source_files
+       linux/arp_cache.cpp
+--- origsrc/osquery-4.5.0/osquery/tables/networking/posix/utils.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/networking/posix/utils.cpp	2020-09-27 17:14:04.491844200 +0900
+@@ -12,7 +12,7 @@
+ 
+ #include <netdb.h>
+ 
+-#if defined(__linux__) || defined(__FreeBSD__)
++#if defined(__linux__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ #include <net/if.h>
+ #include <netinet/in.h>
+ #include <sys/ioctl.h>
+@@ -112,7 +112,7 @@ std::string macAsString(const struct ifa
+     return blank_mac;
+   }
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   if (addr->ifa_name == nullptr) {
+     return blank_mac;
+   }
+--- origsrc/osquery-4.5.0/osquery/tables/system/CMakeLists.txt	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/system/CMakeLists.txt	2020-09-27 19:03:57.707248200 +0900
+@@ -227,6 +227,10 @@ function(generateOsqueryTablesSystemSyst
+     ${source_files}
+   )
+ 
++  target_include_directories(osquery_tables_system_systemtable PUBLIC
++    ${libxml2_INCLUDE_DIRS}
++  )
++
+   target_link_libraries(osquery_tables_system_systemtable PUBLIC
+     osquery_cxx_settings
+     osquery_core
+--- origsrc/osquery-4.5.0/osquery/tables/system/posix/logged_in_users.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/system/posix/logged_in_users.cpp	2020-09-27 17:52:28.406594300 +0900
+@@ -19,7 +19,9 @@ namespace tables {
+ Mutex utmpxEnumerationMutex;
+ 
+ const std::map<size_t, std::string> kLoginTypes = {
++#if defined(EMPTY)
+     {EMPTY, "empty"},
++#endif
+     {BOOT_TIME, "boot_time"},
+     {NEW_TIME, "new_time"},
+     {OLD_TIME, "old_time"},
+@@ -29,8 +31,10 @@ const std::map<size_t, std::string> kLog
+     {DEAD_PROCESS, "dead"},
+ #if !defined(FREEBSD)
+     {RUN_LVL, "runlevel"},
++#if defined(ACCOUNTING)
+     {ACCOUNTING, "accounting"},
+ #endif
++#endif
+ };
+ 
+ QueryData genLoggedInUsers(QueryContext& context) {
+--- origsrc/osquery-4.5.0/osquery/tables/system/posix/sysctl_utils.h	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/system/posix/sysctl_utils.h	2020-09-27 17:58:06.975169900 +0900
+@@ -9,7 +9,11 @@
+ 
+ #pragma once
+ 
++#if defined(__CYGWIN__)
++#define CTL_MAXNAME 10
++#else
+ #include <sys/sysctl.h>
++#endif
+ 
+ #include <osquery/core/tables.h>
+ 
+--- origsrc/osquery-4.5.0/osquery/tables/system/posix/ulimit_info.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/system/posix/ulimit_info.cpp	2020-09-27 17:54:08.966824200 +0900
+@@ -27,9 +27,15 @@ const std::map<std::string, int> kLimits
+     {"core", RLIMIT_CORE},
+     {"nofile", RLIMIT_NOFILE},
+     {"as", RLIMIT_AS},
++#if defined(RLIMIT_RSS)
+     {"rss", RLIMIT_RSS},
++#endif
++#if defined(RLIMIT_MEMLOCK)
+     {"memlock", RLIMIT_MEMLOCK},
++#endif
++#if defined(RLIMIT_NPROC)
+     {"nproc", RLIMIT_NPROC},
++#endif
+ #ifdef RLIMIT_LOCKS
+     {"locks", RLIMIT_LOCKS},
+ #endif
+--- origsrc/osquery-4.5.0/osquery/tables/utility/file.cpp	2020-09-13 08:17:50.000000000 +0900
++++ src/osquery-4.5.0/osquery/tables/utility/file.cpp	2020-09-27 16:29:39.942702500 +0900
+@@ -85,7 +85,7 @@ void genFileInfo(const fs::path& path,
+   r["mtime"] = BIGINT(file_stat.st_mtime);
+   r["ctime"] = BIGINT(file_stat.st_ctime);
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+   // No 'birth' or create time in Linux or Windows.
+   r["btime"] = "0";
+   r["pid_with_namespace"] = "0";
