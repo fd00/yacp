@@ -1,0 +1,54 @@
+--- origsrc/firefly-1.0.0/CMakeLists.txt	2019-10-14 03:12:49.000000000 +0900
++++ src/firefly-1.0.0/CMakeLists.txt	2020-09-29 00:10:26.060936100 +0900
+@@ -3,11 +3,18 @@ cmake_minimum_required(VERSION 3.9)
+ project(firefly)
+ 
+ set (CMAKE_CXX_STANDARD 17)
+-set(${PROJECT_NAME}_VERSION_MAJOR 2)
++set(${PROJECT_NAME}_VERSION_MAJOR 1)
+ set(${PROJECT_NAME}_VERSION_MINOR 0)
+ set(${PROJECT_NAME}_VERSION_PATCH 0)
+ set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH})
+ 
+ include_directories(INCLUDES)
+ add_subdirectory(src)
+-add_subdirectory(tests)
+\ No newline at end of file
++add_subdirectory(tests)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/firefly.pc.in ${CMAKE_BINARY_DIR}/firefly.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/firefly.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/firefly-1.0.0/firefly.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/firefly-1.0.0/firefly.pc.in	2020-09-29 00:09:10.695757100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: firefly
++Description: Standalone C++ Library for vectors calculations
++Version: @firefly_VERSION@
++Libs: -L${libdir} -lfirefly
++Cflags: -I${includedir}
+--- origsrc/firefly-1.0.0/src/CMakeLists.txt	2019-10-14 03:12:49.000000000 +0900
++++ src/firefly-1.0.0/src/CMakeLists.txt	2020-09-29 00:04:55.713228600 +0900
+@@ -1,6 +1,11 @@
+ add_library(${PROJECT_NAME} SHARED firefly.cpp)
+ 
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ install(
+     TARGETS ${PROJECT_NAME}
+-    LIBRARY DESTINATION lib
+-)
+\ No newline at end of file
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
++)
