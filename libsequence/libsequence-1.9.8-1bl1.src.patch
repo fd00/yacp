@@ -1,0 +1,122 @@
+--- origsrc/libsequence-1.9.8/Makefile.am	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/Makefile.am	2020-09-29 18:34:45.926248800 +0900
+@@ -7,3 +7,6 @@ EXTRA_DIST=doc/libsequence.doxygen doc/M
+ 
+ libtool: $(LIBTOOL_DEPS)
+ 	$(SHELL) ./config.status libtool
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libsequence-1.9.8/Sequence/VariantMatrixCapsule.hpp	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/Sequence/VariantMatrixCapsule.hpp	2020-09-29 15:03:44.828932300 +0900
+@@ -4,6 +4,7 @@
+ #include <cstdint>
+ #include <memory>
+ #include <vector>
++#include <stdexcept>
+ 
+ namespace Sequence
+ {
+--- origsrc/libsequence-1.9.8/configure.ac	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/configure.ac	2020-09-29 18:34:45.928410800 +0900
+@@ -19,7 +19,7 @@ AM_MAINTAINER_MODE([disable])
+ LT_INIT
+ AC_PROG_LIBTOOL
+ AC_LANG(C++)
+-AC_CONFIG_FILES([Makefile src/Makefile Sequence/Makefile Sequence/bits/Makefile Sequence/SummStatsDeprecated/Makefile
++AC_CONFIG_FILES([libsequence.pc Makefile src/Makefile Sequence/Makefile Sequence/bits/Makefile Sequence/SummStatsDeprecated/Makefile
+ 				 Sequence/variant_matrix/Makefile Sequence/summstats/Makefile test/Makefile examples/Makefile doc/libsequence.doxygen])
+ 
+ dnl AC_ARG_ENABLE(debug,
+--- origsrc/libsequence-1.9.8/examples/Makefile.am	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/examples/Makefile.am	2020-09-29 15:59:50.300681000 +0900
+@@ -24,6 +24,7 @@ polySiteVector_test_SOURCES=polySiteVect
+ AM_CXXFLAGS=
+ AM_LIBS=-lsequence
+ AM_LDFLAGS=-L../src/.libs -Wl,-rpath,../src/.libs
++AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ #if DEBUG
+ #AM_CXXFLAGS+=-g
+--- origsrc/libsequence-1.9.8/libsequence.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsequence-1.9.8/libsequence.pc.in	2020-09-29 18:34:45.878250000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsequence
++Description: 
++Version: @VERSION@
++Libs: -L${libdir} -lsequence
++Cflags: -I${includedir}
+--- origsrc/libsequence-1.9.8/src/Makefile.am	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/src/Makefile.am	2020-09-29 14:35:56.148250300 +0900
+@@ -70,10 +70,12 @@ libsequence_la_SOURCES=  Grantham.cc\
+ 	summstats/auxillary.cc
+ 
+ 
+-AM_LDFLAGS=-version-info 20:0:0
++AM_LDFLAGS=-no-undefined -version-info 20:0:0
+ 
+ AM_CXXFLAGS= -Wall -W -Woverloaded-virtual  -Wnon-virtual-dtor -Wcast-qual -Wconversion -Wsign-conversion -Wsign-promo -Wsynth
+ 
++AM_CPPFLAGS = -I$(top_srcdir)
++
+ #if DEBUG
+ #AM_CXXFLAGS+=-g
+ #else
+--- origsrc/libsequence-1.9.8/src/RedundancyCom95.cc	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/src/RedundancyCom95.cc	2020-09-29 14:46:18.022063900 +0900
+@@ -32,6 +32,7 @@
+ #include <Sequence/RedundancyCom95.hpp>
+ #include <Sequence/SeqAlphabets.hpp>
+ #include <Sequence/Comparisons.hpp>
++#include <stdexcept>
+ 
+ namespace Sequence
+ {
+--- origsrc/libsequence-1.9.8/src/SimParams.cc	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/src/SimParams.cc	2020-09-29 14:41:45.235309000 +0900
+@@ -26,6 +26,10 @@ long with libsequence.  If not, see <htt
+ #include <cctype>
+ #include <sstream>
+ 
++#if defined(_howmany)
++#undef _howmany
++#endif
++
+ namespace Sequence
+ {
+   SimParams::SimParams (void):_command_line(""),_howmany(0),tsam(0)
+--- origsrc/libsequence-1.9.8/src/shortestPath.cc	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/src/shortestPath.cc	2020-09-29 15:01:59.232763600 +0900
+@@ -29,6 +29,7 @@
+ #include <Sequence/SeqAlphabets.hpp>
+ #include <Sequence/Comparisons.hpp>
+ #include <algorithm>
++#include <stdexcept>
+ 
+ namespace Sequence
+ {
+--- origsrc/libsequence-1.9.8/src/summstats_deprecated/Recombination.cc	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/src/summstats_deprecated/Recombination.cc	2020-09-29 14:44:18.114625000 +0900
+@@ -29,6 +29,7 @@
+ #include <Sequence/Recombination.hpp>
+ #include <Sequence/stateCounter.hpp>
+ #include <Sequence/SeqProperties.hpp>
++#include <stdexcept>
+ 
+ using std::pow;
+ using std::vector;
+--- origsrc/libsequence-1.9.8/test/Makefile.am	2019-06-19 03:30:53.000000000 +0900
++++ src/libsequence-1.9.8/test/Makefile.am	2020-09-29 15:42:28.729784700 +0900
+@@ -7,6 +7,7 @@ TESTS=$(check_PROGRAMS)
+ AM_CXXFLAGS=-g
+ AM_LDFLAGS=-L../src/.libs -Wl,-rpath,../src/.libs
+ AM_LIBS=-lsequence
++AM_CPPFLAGS=-I$(top_srcdir)
+ 
+ #if DEBUG
+ #AM_CXXFLAGS+=-g
