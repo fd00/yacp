@@ -1,0 +1,41 @@
+--- origsrc/zofu-1.0.0/meson.build	2020-03-02 09:58:11.000000000 +0900
++++ src/zofu-1.0.0/meson.build	2020-10-02 21:31:03.724491500 +0900
+@@ -1,6 +1,6 @@
+ # Zofu Meson build script
+ 
+-project('zofu', ['fortran'], version: '0.1.0')
++project('zofu', ['fortran'], version: '1.0.0')
+ 
+ if meson.get_compiler('fortran').get_id() == 'gcc'
+   f_args = ['-Wno-maybe-uninitialized']
+@@ -34,6 +34,7 @@ endforeach
+ zofu = shared_library('zofu',
+                       zofu_sources,
+                       fortran_args: f_args,
++                      soversion: 0,
+                       dependencies: deps,
+                       install: true)
+ 
+@@ -56,10 +57,18 @@ if includedir != ''
+   endforeach
+   # NB this is a temporary measure until Meson gets specific
+   # functionality for installing Fortran modules:
+-  install_subdir(join_paths('build', 'zofu@sha'),
+-                 install_dir: module_install_dir,
+-                 strip_directory: true,
+-                 exclude_files: zofu_objs)
++  if host_machine.system() == 'cygwin'
++    zofu_mods = []
++    foreach m: zofu_modules
++      zofu_mods += [join_paths(meson.current_build_dir(), 'zofu@sha', m.split('.')[0]) + '.mod']
++    endforeach
++    install_data(zofu_mods, install_dir: module_install_dir)
++  else
++    install_subdir(join_paths('build', 'zofu@sha'),
++                  install_dir: module_install_dir,
++                  strip_directory: true,
++                  exclude_files: zofu_objs)
++  endif
+   pkg = import('pkgconfig')
+   pkg.generate(zofu,
+                description: 'Zofu is Object-oriented Fortran Unit-testing')
