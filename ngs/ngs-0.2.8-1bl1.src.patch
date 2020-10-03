@@ -1,0 +1,52 @@
+--- origsrc/ngs-0.2.8/CMakeLists.txt	2020-07-27 02:26:46.000000000 +0900
++++ src/ngs-0.2.8/CMakeLists.txt	2020-10-03 13:29:20.716007800 +0900
+@@ -26,6 +26,10 @@ ENDIF()
+ 
+ find_program(SED NAMES gsed sed) # gsed - MacOS, sed - all the rest
+ find_file(PCRE_H pcre.h)
++find_program(LEG leg)
++if (NOT LEG)
++	message(FATAL_ERROR "leg required")
++endif()
+ add_custom_command(
+ 	OUTPUT
+ 		${CMAKE_CURRENT_BINARY_DIR}/syntax.include
+@@ -63,8 +67,10 @@ add_custom_command(
+ 
+ target_link_libraries(ngs m pthread gc ffi dl json-c pcre)
+ 
+-add_custom_target(man ALL WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc COMMAND make man DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/doc/*.1.md)
+-
++find_program(PANDOC pandoc)
++if (PANDOC)
++	add_custom_target(man ALL WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc COMMAND make man DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/doc/*.1.md)
++endif()
+ 
+ install(FILES "${PROJECT_BINARY_DIR}/ngs" DESTINATION bin)
+ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs DESTINATION bin)
+--- origsrc/ngs-0.2.8/obj.c	2020-07-27 02:26:46.000000000 +0900
++++ src/ngs-0.2.8/obj.c	2020-10-03 13:19:54.326823900 +0900
+@@ -1,5 +1,7 @@
+ #include <assert.h>
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <inttypes.h>
+ #include <string.h>
+ 
+@@ -35,6 +37,7 @@ static void _dump(FILE *f, VALUE v, int
+ 	}
+ 
+ 	if(IS_NATIVE_METHOD(v)) {
++#if !defined(__CYGWIN__)
+ 		symbols_buffer[0] = OBJ_DATA_PTR(v);
+ 		symbols = backtrace_symbols(symbols_buffer, 1);
+ 		fprintf(f, "%*s* native method %s at %p req_params=%d\n", level << 1, "", symbols[0], OBJ_DATA_PTR(v), NATIVE_METHOD_OBJ_N_REQ_PAR(v));
+@@ -43,6 +46,7 @@ static void _dump(FILE *f, VALUE v, int
+ 			_dump(f, NATIVE_METHOD_OBJ_PARAMS(v)[i*2+0], level+2);
+ 			_dump(f, NATIVE_METHOD_OBJ_PARAMS(v)[i*2+1], level+2);
+ 		}
++#endif
+ 		goto exit;
+ 	}
+ 
