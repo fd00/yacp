@@ -1,17 +1,17 @@
---- origsrc/libcint-3.1.1/CMakeLists.txt	2020-08-26 09:14:40.000000000 +0900
-+++ src/libcint-3.1.1/CMakeLists.txt	2020-09-01 23:10:56.724096000 +0900
-@@ -138,7 +138,9 @@ if(QUADMATH_FOUND)
- endif()
- target_link_libraries(cint "-lm")
+--- origsrc/libcint-4.0.2/CMakeLists.txt	2020-10-05 09:12:58.000000000 +0900
++++ src/libcint-4.0.2/CMakeLists.txt	2020-10-06 15:57:02.467942900 +0900
+@@ -154,7 +154,9 @@ set(CintHeaders
+   ${PROJECT_SOURCE_DIR}/include/cint_funcs.h
+   ${PROJECT_BINARY_DIR}/include/cint.h)
  
 -install(TARGETS cint DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" COMPONENT "lib")
 +install(TARGETS cint
 +  RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
 +  ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" COMPONENT "lib")
- set(CintHeaders
-   ${PROJECT_SOURCE_DIR}/include/cint_funcs.h
-   ${PROJECT_BINARY_DIR}/include/cint.h)
-@@ -203,3 +205,10 @@ endif()
+ install(FILES ${CintHeaders} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR} COMPONENT "dev")
+ 
+ 
+@@ -217,3 +219,10 @@ endif()
  set(CPACK_COMPONENTS_GROUPING "IGNORE")
  
  include(CPack)
@@ -22,13 +22,13 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libcint.pc.in ${CMAKE_BINARY_DIR}/libcint.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/libcint.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/libcint-3.1.1/examples/time_c2h6.c	2020-08-26 09:14:40.000000000 +0900
-+++ src/libcint-3.1.1/examples/time_c2h6.c	2020-09-01 23:00:46.426143900 +0900
+--- origsrc/libcint-4.0.2/examples/time_c2h6.c	2020-10-05 09:12:58.000000000 +0900
++++ src/libcint-4.0.2/examples/time_c2h6.c	2020-10-06 15:47:09.380434800 +0900
 @@ -716,9 +716,15 @@ void run_all(int *atm, int natm, int *ba
  
          printf("\tcint2e_sph without optimizer: total num ERI = %.2e\n", tot);
          pct = 0; count = 0;
-+#if defined(__CYGWIN__)
++#if defined(stdout)
 +#pragma omp parallel default(none) \
 +        shared(atm, natm, bas, nbas, env, ishls, jshls, non_opt, time0, pct, count) \
 +        private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
@@ -44,7 +44,7 @@
          printf("\tcint2e_sph with optimizer: total num ERI = %.2e\n", tot);
          pct = 0; count = 0;
  
-+#if defined(__CYGWIN__)
++#if defined(stdout)
 +#pragma omp parallel default(none) \
 +        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_cint2e, time0, pct, count) \
 +        private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
@@ -60,7 +60,7 @@
          tot = (double)ncgto*ncgto*ncgto*ncgto/2*3;
          printf("\tGradients with optimizer: total num ERI = %.2e\n", tot);
          pct = 0; count = 0;
-+#if defined(__CYGWIN__)
++#if defined(stdout)
 +#pragma omp parallel default(none) \
 +        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_ip1, time0, pct, count) \
 +        private(di, dj, dk, dl, i, j, k, l, ij, kl, shls, buf, time1)
@@ -72,13 +72,13 @@
  #pragma omp for nowait schedule(dynamic, 2)
          for (ij = 0; ij < nbas*nbas; ij++) {
                  i = ij / nbas;
---- origsrc/libcint-3.1.1/examples/time_c60.c	2020-08-26 09:14:40.000000000 +0900
-+++ src/libcint-3.1.1/examples/time_c60.c	2020-09-01 23:01:20.357792800 +0900
+--- origsrc/libcint-4.0.2/examples/time_c60.c	2020-10-05 09:12:58.000000000 +0900
++++ src/libcint-4.0.2/examples/time_c60.c	2020-10-06 15:43:39.856089700 +0900
 @@ -193,9 +193,15 @@ void run_all(int *atm, int natm, int *ba
          cint2e_sph_optimizer(&opt, atm, natm, bas, nbas, env);
  
          pct = 0; count = 0;
-+#if defined(__CYGWIN__)
++#if defined(stdout)
 +#pragma omp parallel default(none) \
 +        shared(atm, natm, bas, nbas, env, ishls, jshls, opt, time0, pct, count) \
 +        private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
@@ -90,8 +90,8 @@
  #pragma omp for nowait schedule(dynamic, 2)
          for (ij = 0; ij < nbas*(nbas+1)/2; ij++) {
                  i = ishls[ij];
---- origsrc/libcint-3.1.1/libcint.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libcint-3.1.1/libcint.pc.in	2020-09-01 23:13:13.849689100 +0900
+--- origsrc/libcint-4.0.2/libcint.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcint-4.0.2/libcint.pc.in	2020-10-06 16:01:05.323031800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
