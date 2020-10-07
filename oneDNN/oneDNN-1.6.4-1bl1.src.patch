@@ -1,0 +1,101 @@
+--- origsrc/oneDNN-1.6.4/CMakeLists.txt	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/CMakeLists.txt	2020-10-07 18:41:35.738151800 +0900
+@@ -163,9 +163,16 @@ if(DNNL_INSTALL_MODE STREQUAL "BUNDLE")
+     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_PREFIX})
+     install(FILES THIRD-PARTY-PROGRAMS DESTINATION ${CMAKE_INSTALL_PREFIX})
+     install(FILES ${PROJECT_BINARY_DIR}/README DESTINATION ${CMAKE_INSTALL_PREFIX})
+-else()
++elseif(NOT CYGWIN)
+     # Cannot use CMAKE_INSTALL_DOCDIR since it uses PROJECT_NAME and not LIB_NAME
+     install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
+     install(FILES THIRD-PARTY-PROGRAMS DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
+     install(FILES ${PROJECT_BINARY_DIR}/README DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/${LIB_NAME})
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/oneDNN.pc.in ${CMAKE_BINARY_DIR}/oneDNN.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/oneDNN.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/oneDNN-1.6.4/cmake/SDL.cmake	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/cmake/SDL.cmake	2020-10-07 11:10:53.600074500 +0900
+@@ -52,7 +52,7 @@ if(UNIX)
+     if(APPLE)
+         append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-bind_at_load")
+         append(CMAKE_EXE_LINKER_FLAGS "-Wl,-bind_at_load")
+-    else()
++    elseif(NOT CYGWIN)
+         append(CMAKE_EXE_LINKER_FLAGS "-pie")
+         append(CMAKE_SHARED_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
+         append(CMAKE_EXE_LINKER_FLAGS "-Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now")
+--- origsrc/oneDNN-1.6.4/cmake/version.cmake	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/cmake/version.cmake	2020-10-07 18:47:44.555226100 +0900
+@@ -28,7 +28,7 @@ list(GET VERSION_LIST 1 DNNL_VERSION_MIN
+ list(GET VERSION_LIST 2 DNNL_VERSION_PATCH)
+ 
+ find_package(Git)
+-if(GIT_FOUND)
++if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+     execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%H
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+         RESULT_VARIABLE RESULT
+--- origsrc/oneDNN-1.6.4/oneDNN.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/oneDNN-1.6.4/oneDNN.pc.in	2020-10-07 18:38:25.126730000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: oneDNN
++Description: Deep Neural Network Library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ldnnl
++Cflags: -I${includedir}
+--- origsrc/oneDNN-1.6.4/src/CMakeLists.txt	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/src/CMakeLists.txt	2020-10-07 11:11:52.485828400 +0900
+@@ -164,7 +164,7 @@ if (WIN32)
+         DEPENDS ${LIB_NAME})
+     install(FILES $<TARGET_LINKER_FILE_DIR:${LIB_NAME}>/${prefix}mkldnn${ext}
+         DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+-else()
++elseif(NOT CYGWIN)
+     if(DNNL_LIBRARY_TYPE STREQUAL "SHARED")
+         set_ternary(ext APPLE ".dylib" ".so")
+         set(vers ".${DNNL_VERSION_MAJOR};.${DNNL_VERSION_MAJOR}.${DNNL_VERSION_MINOR}")
+--- origsrc/oneDNN-1.6.4/src/common/memory_debug.cpp	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/src/common/memory_debug.cpp	2020-10-07 11:12:28.450391100 +0900
+@@ -21,7 +21,7 @@
+ #include <windows.h>
+ #endif
+ 
+-#if defined __linux__ || defined __APPLE__
++#if defined __linux__ || defined __APPLE__ || defined(__CYGWIN__)
+ #include <unistd.h>
+ #include <sys/mman.h>
+ #endif
+--- origsrc/oneDNN-1.6.4/src/common/tag_traits.hpp	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/src/common/tag_traits.hpp	2020-10-07 11:12:55.544255600 +0900
+@@ -22,6 +22,10 @@
+ #include "c_types_map.hpp"
+ #include "utils.hpp"
+ 
++#if defined(_B)
++#undef _B
++#endif
++
+ namespace dnnl {
+ namespace impl {
+ 
+--- origsrc/oneDNN-1.6.4/src/common/utils.cpp	2020-10-01 05:58:58.000000000 +0900
++++ src/oneDNN-1.6.4/src/common/utils.cpp	2020-10-07 11:13:11.790777600 +0900
+@@ -19,7 +19,7 @@
+ #include <windows.h>
+ #endif
+ 
+-#if defined __linux__ || defined __APPLE__
++#if defined __linux__ || defined __APPLE__ || defined(__CYGWIN__)
+ #include <unistd.h>
+ #endif
+ 
