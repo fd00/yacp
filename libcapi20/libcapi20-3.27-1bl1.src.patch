@@ -1,0 +1,72 @@
+--- origsrc/libcapi20-upstream-3.27/Makefile.am	2014-04-07 13:29:05.000000000 +0900
++++ src/libcapi20-upstream-3.27/Makefile.am	2020-10-08 20:44:31.323171600 +0900
+@@ -10,7 +10,7 @@ lib_LTLIBRARIES = libcapi20.la
+ lib_LIBRARIES   = libcapi20dyn.a
+ 
+ libcapi20_la_SOURCES = capi20.c capifunc.c convert.c capi_defs.h compat/byteswap.h
+-libcapi20_la_LDFLAGS = -version-info ${LIBCAPI_VERSION}:${LIBCAPI_VERSION_RELEASE}:${LIBCAPI_VERSION_AGE} -lc -rdynamic
++libcapi20_la_LDFLAGS = -no-undefined -version-info ${LIBCAPI_VERSION}:${LIBCAPI_VERSION_RELEASE}:${LIBCAPI_VERSION_AGE} -lc -rdynamic
+ libcapi20_la_CFLAGS = -fno-strict-aliasing -DLIBDIR=\"$(libdir)/capi\"
+ 
+ modulesdir = $(libdir)/capi
+@@ -21,18 +21,18 @@ modules_LTLIBRARIES += lib_capi_mod_std.
+ libcapi20_la_LDFLAGS += -lrt
+ lib_capi_mod_std_la_SOURCES = capi_mod_std.c
+ lib_capi_mod_std_la_CFLAGS = -fno-strict-aliasing
+-lib_capi_mod_std_la_LDFLAGS = -shared -version-info @CAPI_MODULE_LOADER_VERSION@:0:0 -no-undefined
++lib_capi_mod_std_la_LDFLAGS = -module -avoid-version -no-undefined
+ lib_capi_mod_std_la_LIBADD = libcapi20.la
+ endif
+ 
+ lib_capi_mod_fritzbox_la_SOURCES = capi_mod_fritzbox.c capi_mod_fritzbox.h
+ lib_capi_mod_fritzbox_la_CFLAGS = -fno-strict-aliasing
+-lib_capi_mod_fritzbox_la_LDFLAGS = -shared -version-info @CAPI_MODULE_LOADER_VERSION@:0:0 -no-undefined
++lib_capi_mod_fritzbox_la_LDFLAGS = -module -avoid-version -no-undefined
+ lib_capi_mod_fritzbox_la_LIBADD = libcapi20.la
+ 
+ lib_capi_mod_rcapi_la_SOURCES = capi_mod_rcapi.c
+ lib_capi_mod_rcapi_la_CFLAGS = -fno-strict-aliasing
+-lib_capi_mod_rcapi_la_LDFLAGS = -shared -version-info @CAPI_MODULE_LOADER_VERSION@:0:0 -no-undefined
++lib_capi_mod_rcapi_la_LDFLAGS = -module -avoid-version -no-undefined
+ lib_capi_mod_rcapi_la_LIBADD = libcapi20.la
+ 
+ libcapi20dyn_a_SOURCES = capidyn.c
+@@ -40,7 +40,7 @@ libcapi20dyn_a_CFLAGS = -fPIC
+ libcapi20_la_LIBADD = $(LIBADD_DL)
+ 
+ if WIN32
+-libcapi20_la_LDFLAGS+=-mwindows -mms-bitfields -Wl,-subsystem,windows -shared -Wl,-output-def,libcapi20.def --out-implib,libcapi20.dll.a -o libcapi20.dll -no-undefined -lws2_32
++libcapi20_la_LDFLAGS+=-mwindows -mms-bitfields -Wl,-subsystem,windows -shared -Wl,-output-def,libcapi20.def --out-implib,libcapi20.dll.a -o libcapi20.dll -lws2_32
+ lib_capi_mod_fritzbox_la_LDFLAGS += -module -L.libs -lcapi20
+ lib_capi_mod_rcapi_la_LDFLAGS += -module -L.libs -lcapi20
+ endif
+--- origsrc/libcapi20-upstream-3.27/capi20.c	2014-04-07 13:29:05.000000000 +0900
++++ src/libcapi20-upstream-3.27/capi20.c	2020-10-08 20:49:07.405415700 +0900
+@@ -770,7 +770,7 @@ static void InitModules( char *pnModuleD
+ 		/* read entry by entry */
+ #if __APPLE__ && __MACH__
+ 		pf_len = snprintf(mod_vers, 10, "%d.dylib", MODULE_LOADER_VERSION);
+-#elif __WIN32__
++#elif __WIN32__ || defined(__CYGWIN__)
+ 		pf_len = snprintf(mod_vers, 10, ".dll");
+ #else
+ 		pf_len = snprintf(mod_vers, 10, ".so.%d", MODULE_LOADER_VERSION);
+--- origsrc/libcapi20-upstream-3.27/configure.ac	2014-04-07 13:29:05.000000000 +0900
++++ src/libcapi20-upstream-3.27/configure.ac	2020-10-08 20:53:07.371616200 +0900
+@@ -11,14 +11,14 @@ AC_ARG_ENABLE([V2],
+ 	    ;;
+        no) LIBCAPI_VERSION=3
+ 	    LIBCAPI_VERSION_AGE=0
+-	    LIBCAPI_VERSION_RELEASE=6
++	    LIBCAPI_VERSION_RELEASE=27
+ 	    ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-V2) ;;
+      esac],
+      [
+         LIBCAPI_VERSION=3
+ 	LIBCAPI_VERSION_AGE=0
+-	LIBCAPI_VERSION_RELEASE=6
++	LIBCAPI_VERSION_RELEASE=27
+ ])
+ 
+ AM_INIT_AUTOMAKE(libcapi20,${LIBCAPI_VERSION}.${LIBCAPI_VERSION_RELEASE})
