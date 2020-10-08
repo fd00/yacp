@@ -1,0 +1,37 @@
+--- origsrc/qpid-proton-0.32.0/CMakeLists.txt	2020-08-20 17:11:27.000000000 +0900
++++ src/qpid-proton-0.32.0/CMakeLists.txt	2020-10-08 10:04:48.446075600 +0900
+@@ -415,7 +415,9 @@ endforeach(BINDING)
+ 
+ unset(BUILD_BINDINGS CACHE) # Remove from cache, only relevant when creating the initial cache.
+ 
+-install (FILES LICENSE.txt README.md tests/share/CMakeLists.txt DESTINATION ${PROTON_SHARE})
++if (NOT CYGWIN)
++  install (FILES LICENSE.txt README.md tests/share/CMakeLists.txt DESTINATION ${PROTON_SHARE})
++endif()
+ install (FILES tests/share/examples-README.md RENAME README.md DESTINATION ${PROTON_SHARE}/examples)
+ install (DIRECTORY tests DESTINATION ${PROTON_SHARE} PATTERN share EXCLUDE)
+ 
+--- origsrc/qpid-proton-0.32.0/c/src/proactor/libuv.c	2020-08-20 17:11:27.000000000 +0900
++++ src/qpid-proton-0.32.0/c/src/proactor/libuv.c	2020-10-08 10:07:37.840529000 +0900
+@@ -135,6 +135,10 @@ static void work_init(work_t* w, pn_proa
+ 
+ /* ================ IO ================ */
+ 
++#if defined(__CYGWIN__)
++#define addr_t libuv_addr_t
++#endif
++
+ /* A resolvable address */
+ typedef struct addr_t {
+   char addr_buf[PN_MAX_ADDR];
+--- origsrc/qpid-proton-0.32.0/c/tests/CMakeLists.txt	2020-08-20 17:11:27.000000000 +0900
++++ src/qpid-proton-0.32.0/c/tests/CMakeLists.txt	2020-10-08 10:44:51.023067300 +0900
+@@ -45,7 +45,7 @@ if (CMAKE_CXX_COMPILER)
+     add_executable(${exe} $<TARGET_OBJECTS:test_main> pn_test.cpp ${ARGN})
+     set_target_properties(${exe} PROPERTIES
+       COMPILE_FLAGS "${CXX_STANDARD} ${CMAKE_CXX_FLAGS} ${CXX_WARNING_FLAGS} ${LTO}"
+-      LINK_FLAGS "${CATCH_UNDEFINED} ${LINK_LTO}")
++      LINK_FLAGS "${CATCH_UNDEFINED} ${LINK_LTO} -Wl,--allow-multiple-definition")
+     pn_add_test(
+       EXECUTABLE
+       NAME ${exe}
