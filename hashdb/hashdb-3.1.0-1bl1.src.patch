@@ -1,0 +1,133 @@
+--- origsrc/hashdb-3.1.0/Makefile.am	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/Makefile.am	2020-10-09 11:13:07.304051600 +0900
+@@ -17,3 +17,5 @@ RELEASE	     = $(PACKAGE)-$(VERSION)
+ 
+ EXTRA_DIST = TESTS
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/hashdb-3.1.0/configure.ac	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/configure.ac	2020-10-09 11:12:53.545644500 +0900
+@@ -9,7 +9,7 @@ AC_PREREQ(2.57)
+ AC_INIT(hashdb, 3.1.0, github.com/NPS-DEEP/hashdb/issues)
+ AC_CONFIG_MACRO_DIR(m4)
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([hashdb.pc Makefile
+                  src_libhashdb/Makefile
+                  src/Makefile
+                  doc/Makefile
+@@ -218,7 +218,7 @@ fi
+ # LIBEWF is required for ingest and scan media interfaces
+ # Newer LIBEWF requires bz2
+ AC_CHECK_HEADER([libewf.h])
+-AC_CHECK_LIB([ewf], libewf_handle_read_random, [], [AC_MSG_ERROR([Could not find libewf])])
++AC_CHECK_LIB([ewf], libewf_handle_read_buffer_at_offset, [], [AC_MSG_ERROR([Could not find libewf])])
+ if test  x"$mingw" != x"yes";  then
+   AC_CHECK_LIB([bz2], BZ2_bzlibVersion, [], [AC_MSG_ERROR([Could not find bz2])])
+ fi
+--- origsrc/hashdb-3.1.0/hashdb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/hashdb-3.1.0/hashdb.pc.in	2020-10-09 11:53:34.103611500 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: hashdb
++Description: Block hash database tool and API
++Version: @VERSION@
++Libs: -L${libdir} -lhashdb -llmdb
++Cflags: -I${includedir}
++Requires: libewf zlib
+--- origsrc/hashdb-3.1.0/python_bindings/Makefile.am	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/python_bindings/Makefile.am	2020-10-09 11:05:36.145704400 +0900
+@@ -40,7 +40,7 @@ hashdb_wrap.cpp: hashdb.i \
+ python_PYTHON = $(builddir)/hashdb.py
+ 
+ # module, so no lib prefix
+-_hashdb_la_LDFLAGS = -module ${PYTHON_LDFLAGS}
++_hashdb_la_LDFLAGS = -no-undefined -avoid-version -module ${PYTHON_LDFLAGS}
+ 
+ # install _hashdb.la
+ pyexec_LTLIBRARIES = _hashdb.la
+@@ -49,7 +49,7 @@ pyexec_LTLIBRARIES = _hashdb.la
+ _hashdb_la_SOURCES = hashdb_wrap.cpp hashdb.i
+ 
+ # _hashdb.la requires relocatable hashdb library libhashdb.so
+-_hashdb_la_LIBADD = ../src_libhashdb/libhashdb.la
++_hashdb_la_LIBADD = ../src_libhashdb/libhashdb.la ${PYTHON_LIBS}
+ 
+ # c++ flags for compiling _hashdb.la
+ _hashdb_la_CPPFLAGS = ${PYTHON_CPPFLAGS} -Wno-deprecated-register -I${top_srcdir}/src_libhashdb
+--- origsrc/hashdb-3.1.0/src/Makefile.am	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/src/Makefile.am	2020-10-09 10:27:05.281721900 +0900
+@@ -26,8 +26,6 @@ AM_CXXFLAGS = $(HASHDB_CXXFLAGS)
+ 
+ hashdb_LDADD = ../src_libhashdb/libhashdb.la
+ 
+-hashdb_LDFLAGS = -static
+-
+ HASHDB_INCS = \
+ 	adder.hpp \
+ 	adder_set.hpp \
+--- origsrc/hashdb-3.1.0/src_libhashdb/Makefile.am	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/src_libhashdb/Makefile.am	2020-10-09 10:51:07.505835900 +0900
+@@ -54,43 +54,14 @@ EXTRA_DIST = \
+ 	rapidjson/stringbuffer.h \
+ 	rapidjson/writer.h
+ 
+-LMDB_INCS = \
+-	liblmdb/lmdb.h \
+-	liblmdb/mdb.c \
+-	liblmdb/midl.h \
+-	liblmdb/midl.c
+-
+ lib_LTLIBRARIES = libhashdb.la
+-libhashdb_la_LIBADD = liblmdb.la
+-noinst_LTLIBRARIES = liblmdb.la
+-liblmdb_la_SOURCES = $(LMDB_INCS)
+-
+-# NOTE: LMDB breaks when compiled with Homebrew gcc6.10 with these options:
+-# -fno-strict-aliasing removes gcc6 compiler optimization that results in runtime failure.
+-# -fpermissive to suppress error.
+-# -Wno-bad-function-cast to suppress warnings.
+-# -Wno-external-suffix is added to suppress warnings.
+-
+-## may remove -fno-strict-aliasing in future if LMDB gets fixed to allow removal
+-#liblmdb_la_CFLAGS = \
+-#	-pthread -fno-strict-aliasing \
+-#	-W -Wall -Wno-unused-parameter -Wno-bad-function-cast -Wuninitialized \
+-#	-Wno-external-suffix -Wno-format-extra-args
+-
+-# may remove -fno-strict-aliasing in future if LMDB gets fixed to allow removal
+-liblmdb_la_CFLAGS = \
+-	-pthread -fno-strict-aliasing \
+-	-W -Wall -Wno-unused-parameter -Wbad-function-cast -Wuninitialized \
+-	-Wno-format-extra-args
+-
+-liblmdb_la_LDFLAGS = -PIC
++libhashdb_la_LIBADD = -llmdb
+ 
+-libhashdb_la_LDFLAGS = -PIC -avoid-version -static -no-undefined
++libhashdb_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = \
+ 	-I${top_srcdir}/src_libhashdb/hasher \
+-	-I${top_srcdir}/src_libhashdb/liblmdb \
+-	-I${top_srcdir}/src_libhashdb/rapidjson
++	-I/usr/include/rapidjson
+ AM_CFLAGS = $(HASHDB_CFLAGS)
+ AM_CXXFLAGS = $(HASHDB_CXXFLAGS)
+ 
+--- origsrc/hashdb-3.1.0/src_libhashdb/hasher/ewf_file_reader.hpp	2017-05-20 03:40:12.000000000 +0900
++++ src/hashdb-3.1.0/src_libhashdb/hasher/ewf_file_reader.hpp	2020-10-09 10:54:49.650593200 +0900
+@@ -186,7 +186,7 @@ class ewf_file_reader_t {
+                    size_t* const bytes_read) const {
+ 
+     libewf_error_t *error=0;
+-    ssize_t ret = libewf_handle_read_random(libewf_handle,buffer,buffer_size,
++    ssize_t ret = libewf_handle_read_buffer_at_offset(libewf_handle,buffer,buffer_size,
+                                             offset,&error);
+     if(ret<0){
+       *bytes_read = 0;
