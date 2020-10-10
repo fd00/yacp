@@ -1,0 +1,39 @@
+--- origsrc/yaml-filter-0.2.0/CMakeLists.txt	2020-09-29 05:36:56.000000000 +0900
++++ src/yaml-filter-0.2.0/CMakeLists.txt	2020-10-10 10:43:51.185098800 +0900
+@@ -19,6 +19,12 @@ add_coverage(yamlp)
+ 
+ install(TARGETS yamlp RUNTIME DESTINATION bin)
+ 
++if (CYGWIN)
++	set_target_properties(yaml-path PROPERTIES SOVERSION 0)
++	install(TARGETS yaml-path RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++	install(FILES src/yaml-path.h DESTINATION include)
++endif()
++
+ if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+ 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe -std=c99 -W -Wall -Wnonnull -Wshadow -Wformat -Wundef -Wno-unused-parameter -Wmissing-prototypes -Wno-unknown-pragmas -D_GNU_SOURCE -D_POSIX_C_SOURCE=200112L")
+ endif()
+@@ -39,3 +45,10 @@ add_subdirectory("tests")
+ 
+ coverage_evaluate()
+ 
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/yaml-filter.pc.in ${CMAKE_BINARY_DIR}/yaml-filter.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/yaml-filter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yaml-filter-0.2.0/yaml-filter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yaml-filter-0.2.0/yaml-filter.pc.in	2020-10-10 10:44:27.065566100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yaml-filter
++Description: YAML document filtering for libyaml
++Version: @VERSION@
++Libs: -L${libdir} -lyaml-path
++Cflags: -I${includedir}
