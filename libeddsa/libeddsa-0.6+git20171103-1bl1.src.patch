@@ -1,0 +1,37 @@
+--- origsrc/libeddsa/CMakeLists.txt	2020-10-14 15:46:22.000000000 +0900
++++ src/libeddsa/CMakeLists.txt	2020-10-14 15:56:09.416208100 +0900
+@@ -63,3 +63,10 @@ endif ()
+ MESSAGE("bitness: " ${BITNESS})
+ MESSAGE("cleanup stack: " ${USE_STACKCLEAN})
+ MESSAGE("build test: " ${BUILD_TESTING})
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libeddsa.pc.in ${CMAKE_BINARY_DIR}/libeddsa.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libeddsa.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libeddsa/lib/CMakeLists.txt	2020-10-14 15:46:22.000000000 +0900
++++ src/libeddsa/lib/CMakeLists.txt	2020-10-14 15:53:47.990804800 +0900
+@@ -43,7 +43,7 @@ endif ()
+ set_property(TARGET eddsa PROPERTY VERSION ${EDDSA_VERSION_MAJOR}.${EDDSA_VERSION_MINOR})
+ set_property(TARGET eddsa PROPERTY SOVERSION ${EDDSA_VERSION_MAJOR})
+ set_property(TARGET eddsa PROPERTY MACOSX_RPATH TRUE)
+-install(TARGETS eddsa DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
++install(TARGETS eddsa RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+ 
+ install(FILES eddsa.h DESTINATION include)
+ 
+--- origsrc/libeddsa/libeddsa.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libeddsa/libeddsa.pc.in	2020-10-14 15:57:02.623607200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libeddsa
++Description: Cryptographic library for ed25519 and curve25519
++Version: @EDDSA_VERSION_MAJOR@.@EDDSA_VERSION_MINOR@
++Libs: -L${libdir} -leddsa
++Cflags: -I${includedir}
