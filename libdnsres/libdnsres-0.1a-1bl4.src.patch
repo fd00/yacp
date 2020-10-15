@@ -1,5 +1,5 @@
 --- origsrc/libdnsres-0.1a/Makefile.am	2005-07-14 09:14:27.000000000 +0900
-+++ src/libdnsres-0.1a/Makefile.am	2014-05-30 22:37:13.782012300 +0900
++++ src/libdnsres-0.1a/Makefile.am	2020-10-15 10:19:09.871754800 +0900
 @@ -10,8 +10,8 @@ libdnsres_la_SOURCES = res_comp.c res_de
  	res_data.c res_init.c res_query.c res_send.c resolv.h dnsres.h \
  	gethostnamadr.c getaddrinfo.c getservbyname.c getservent.c base64.c \
@@ -11,7 +11,7 @@
  
  include_HEADERS = dnsres.h
  
-@@ -23,7 +23,7 @@ man_MANS = dnsres.3
+@@ -23,9 +23,12 @@ man_MANS = dnsres.3
  noinst_PROGRAMS = simple_test
  simple_test_SOURCES = test/simple_test.c
  simple_test_INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/compat @EVENTINC@
@@ -20,8 +20,21 @@
  
  verify: libdnsres.a
  	cd $(srcdir)/test && make verify	
+ 
+ DISTCLEANFILES = *~ test/*~
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdnsres-0.1a/configure.in	2005-09-24 01:12:47.000000000 +0900
++++ src/libdnsres-0.1a/configure.in	2020-10-15 10:21:37.665920200 +0900
+@@ -210,4 +210,4 @@ AC_TRY_COMPILE([],
+    AC_DEFINE(__func__, __FILE__,
+          [Define to appropriate substitue if compiler doesnt have __func__])))
+ 
+-AC_OUTPUT(Makefile)
++AC_OUTPUT(libdnsres.pc Makefile)
 --- origsrc/libdnsres-0.1a/dnsres.h	2005-07-14 09:14:27.000000000 +0900
-+++ src/libdnsres-0.1a/dnsres.h	2014-05-30 22:37:13.797637300 +0900
++++ src/libdnsres-0.1a/dnsres.h	2020-10-15 10:14:17.182714500 +0900
 @@ -119,8 +119,10 @@
  
  #include <sys/param.h>
@@ -33,8 +46,22 @@
  #include <sys/cdefs.h>
  
  /*
+--- origsrc/libdnsres-0.1a/libdnsres.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdnsres-0.1a/libdnsres.pc.in	2020-10-15 10:27:29.808270900 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdnsres
++Description: Non-blocking DNS resolver library
++Version: @VERSION@
++Libs: -L${libdir} -ldnsres
++Cflags: -I${includedir}
++Requires: libevent
 --- origsrc/libdnsres-0.1a/res_debug.c	2005-07-14 09:14:28.000000000 +0900
-+++ src/libdnsres-0.1a/res_debug.c	2014-05-30 22:37:13.813262300 +0900
++++ src/libdnsres-0.1a/res_debug.c	2020-10-15 10:14:17.254661800 +0900
 @@ -232,6 +232,41 @@ do_rrset(struct dnsres *_resp,
  	return (cp);
  }
@@ -78,7 +105,7 @@
  __dnsres_p_query(struct dnsres *_resp, const u_char *msg)
  {
 --- origsrc/libdnsres-0.1a/resolv.h	2005-07-14 09:14:28.000000000 +0900
-+++ src/libdnsres-0.1a/resolv.h	2014-05-30 22:37:13.813262300 +0900
++++ src/libdnsres-0.1a/resolv.h	2020-10-15 10:14:17.352668800 +0900
 @@ -119,8 +119,12 @@
  #define	_RESOLV_H_
  
