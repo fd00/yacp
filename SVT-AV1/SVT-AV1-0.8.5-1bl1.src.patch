@@ -1,0 +1,247 @@
+--- origsrc/SVT-AV1-0.8.5/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/CMakeLists.txt	2020-10-16 13:37:18.994320400 +0900
+@@ -105,7 +105,7 @@ if(UNIX)
+         set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
+         set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+         set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+-    else()
++    elseif(NOT CYGWIN)
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z noexecstack -z relro -z now")
+     endif()
+ endif()
+@@ -230,6 +230,11 @@ macro(ASM_COMPILE_TO_TARGET target)
+     endif()
+ endmacro()
+ 
++if (CYGWIN AND X86)
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx2 -msse4.1")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -msse4.1")
++endif()
++
+ # Add Subdirectories
+ add_subdirectory(Source/Lib/Common)
+ if(BUILD_ENC)
+@@ -247,8 +252,11 @@ endif()
+ if(BUILD_TESTING)
+     include(CTest)
+     message(STATUS "Building UnitTests")
++    find_package(GTEST)
+     add_subdirectory(test)
+-    add_subdirectory(third_party/googletest)
++    if (NOT GTEST_FOUND)
++        add_subdirectory(third_party/googletest)
++    endif()
+ endif()
+ 
+ add_subdirectory(third_party/fastfeat)
+--- origsrc/SVT-AV1-0.8.5/Source/App/EncApp/EbAppConfig.c	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/Source/App/EncApp/EbAppConfig.c	2020-10-16 13:05:00.519033300 +0900
+@@ -25,6 +25,15 @@
+ #include <sys/file.h>
+ #endif
+ 
++#if defined(FOPEN)
++#undef FOPEN
++#endif
++#ifdef _WIN32
++#define FOPEN(f, s, m) fopen_s(&f, s, m)
++#else
++#define FOPEN(f, s, m) f = fopen(s, m)
++#endif
++
+ /**********************************
+  * Defines
+  **********************************/
+--- origsrc/SVT-AV1-0.8.5/Source/Lib/Common/Codec/EbUtility.c	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/Source/Lib/Common/Codec/EbUtility.c	2020-10-16 10:41:50.077283200 +0900
+@@ -248,8 +248,7 @@ uint64_t log2f_high_precision(uint64_t x
+ 
+ uint32_t log2f_32(uint32_t x) {
+     //return (x > 1) ? 1 + log2(x >> 1) : 0;
+-    uint32_t log = (uint32_t)log2(x);
+-    return log;
++    return (uint32_t)log2(x);
+ }
+ // concatenate two linked list, and return the pointer to the new concatenated list
+ EbLinkedListNode* concat_eb_linked_list(EbLinkedListNode* a, EbLinkedListNode* b) {
+--- origsrc/SVT-AV1-0.8.5/Source/Lib/Decoder/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/Source/Lib/Decoder/CMakeLists.txt	2020-10-16 13:09:31.645922300 +0900
+@@ -98,7 +98,7 @@ set_target_properties(SvtAv1Dec PROPERTI
+ set_target_properties(SvtAv1Dec PROPERTIES SOVERSION ${DEC_VERSION_MAJOR})
+ add_dependencies(SvtAv1Dec EbVersionHeaderGen)
+ target_link_libraries(SvtAv1Dec ${PLATFORM_LIBS})
+-install(TARGETS SvtAv1Dec DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++install(TARGETS SvtAv1Dec RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+ configure_file(pkg-config.pc.in ${CMAKE_BINARY_DIR}/SvtAv1Dec.pc @ONLY)
+ install(FILES ${CMAKE_BINARY_DIR}/SvtAv1Dec.pc DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig")
+--- origsrc/SVT-AV1-0.8.5/Source/Lib/Encoder/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/Source/Lib/Encoder/CMakeLists.txt	2020-10-16 13:09:09.740607800 +0900
+@@ -129,7 +129,7 @@ endif()
+ set_target_properties(SvtAv1Enc PROPERTIES VERSION ${ENC_VERSION})
+ set_target_properties(SvtAv1Enc PROPERTIES SOVERSION ${ENC_VERSION_MAJOR})
+ target_link_libraries(SvtAv1Enc ${PLATFORM_LIBS})
+-install(TARGETS SvtAv1Enc DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++install(TARGETS SvtAv1Enc RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+ configure_file(pkg-config.pc.in ${CMAKE_BINARY_DIR}/SvtAv1Enc.pc @ONLY)
+ install(FILES ${CMAKE_BINARY_DIR}/SvtAv1Enc.pc DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+--- origsrc/SVT-AV1-0.8.5/test/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/test/CMakeLists.txt	2020-10-16 14:45:02.668936900 +0900
+@@ -15,7 +15,6 @@
+ include_directories(${PROJECT_SOURCE_DIR}/test/
+     ${PROJECT_SOURCE_DIR}/test/ref
+     ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/
+-    ${PROJECT_SOURCE_DIR}/third_party/googletest/include third_party/googletest/src
+     ${PROJECT_SOURCE_DIR}/Source/API
+     ${PROJECT_SOURCE_DIR}/Source/Lib/Common/Codec
+     ${PROJECT_SOURCE_DIR}/Source/Lib/Common/C_DEFAULT/
+@@ -36,6 +35,9 @@ include_directories(${PROJECT_SOURCE_DIR
+     ${PROJECT_SOURCE_DIR}/Source/App/EncApp
+     ${PROJECT_SOURCE_DIR}/Source/API
+     ${PROJECT_SOURCE_DIR}/third_party/fastfeat/)
++if (NOT GTEST_FOUND)
++    include_directories(${PROJECT_SOURCE_DIR}/third_party/googletest/include third_party/googletest/src)
++endif()
+ 
+ # Define helper functions and macros used by Google Test.
+ include(../third_party/googletest/cmake/internal_utils.cmake)
+@@ -86,7 +88,12 @@ set(lib_list
+     $<TARGET_OBJECTS:ENCODER_ASM_AVX2>
+     $<TARGET_OBJECTS:ENCODER_ASM_AVX512>
+     $<TARGET_OBJECTS:ENCODER_GLOBALS>
+-    gtest_all)
++)
++if (GTEST_FOUND)
++    set(lib_list "${lib_list}" ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
++else()
++    set(lib_list "${lib_list} gtest_all")
++endif()
+ if(UNIX)
+   # App Source Files
+     add_executable(SvtAv1UnitTests
+@@ -114,4 +121,6 @@ install(TARGETS SvtAv1UnitTests RUNTIME
+ add_test(SvtAv1UnitTests ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/SvtAv1UnitTests)
+ 
+ add_subdirectory(api_test)
+-add_subdirectory(e2e_test)
++if (NOT CYGWIN) # bundled aom must be used
++    add_subdirectory(e2e_test)
++endif()
+--- origsrc/SVT-AV1-0.8.5/test/api_test/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/test/api_test/CMakeLists.txt	2020-10-16 14:29:26.570842400 +0900
+@@ -15,9 +15,12 @@
+ # Include Subdirectories
+ include_directories(${PROJECT_SOURCE_DIR}/test/
+     ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/
+-    ${PROJECT_SOURCE_DIR}/third_party/googletest/include
+-    ${PROJECT_SOURCE_DIR}/third_party/googletest/src
+     ${PROJECT_SOURCE_DIR}/Source/API)
++if (NOT GTEST_FOUND)
++    include_directories(
++        ${PROJECT_SOURCE_DIR}/third_party/googletest/include
++        ${PROJECT_SOURCE_DIR}/third_party/googletest/src)
++endif()
+ 
+ file(GLOB all_files
+     "*.h"
+@@ -25,7 +28,12 @@ file(GLOB all_files
+ 
+ set(lib_list
+     SvtAv1Enc
+-    gtest_all)
++)
++if (GTEST_FOUND)
++    set(lib_list "${lib_list}" ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
++else()
++    set(lib_list "${lib_list} gtest_all")
++endif()
+ 
+ if(UNIX)
+   # App Source Files
+--- origsrc/SVT-AV1-0.8.5/test/e2e_test/CMakeLists.txt	2020-09-07 16:09:35.000000000 +0900
++++ src/SVT-AV1-0.8.5/test/e2e_test/CMakeLists.txt	2020-10-16 14:40:11.127512400 +0900
+@@ -14,24 +14,36 @@
+ include(ProcessorCount)
+ set(SVT_AV1_E2E_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+ include("${SVT_AV1_E2E_ROOT}/test_data_util.cmake")
+-include("${SVT_AV1_E2E_ROOT}/libaom_dependency.cmake")
++find_package(pkgconfig)
++pkg_check_modules(LIBAOM aom)
++if (NOT LIBAOM_FOUND)
++    include("${SVT_AV1_E2E_ROOT}/libaom_dependency.cmake")
++endif()
+ 
+ # Include Subdirectories
+ include_directories(${PROJECT_SOURCE_DIR}/test/
+     ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/
+-    ${PROJECT_SOURCE_DIR}/third_party/googletest/include
+-    ${PROJECT_SOURCE_DIR}/third_party/googletest/src
+-    ${PROJECT_SOURCE_DIR}/third_party/aom/inc
+     ${PROJECT_SOURCE_DIR}/Source/API
+     ${PROJECT_SOURCE_DIR}/Source/Lib/Decoder/Codec)
++# if (NOT LIBAOM_FOUND) # aom/inspection.h not found
++    include_directories(
++        ${PROJECT_SOURCE_DIR}/third_party/aom/inc)
++# endif()
++if (NOT GTEST_FOUND)
++    include_directories(
++        ${PROJECT_SOURCE_DIR}/third_party/googletest/include
++        ${PROJECT_SOURCE_DIR}/third_party/googletest/src)
++endif()
+ 
+ # Link Subdirectories
+-if(APPLE)
+-    link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/mac)
+-elseif(UNIX)
+-    link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/linux)
+-else()
+-    link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/msvc)
++if (NOT LIBAOM_FOUND)
++    if(APPLE)
++        link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/mac)
++    elseif(UNIX)
++        link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/linux)
++    else()
++        link_directories(${PROJECT_SOURCE_DIR}/third_party/aom/lib/msvc)
++    endif()
+ endif()
+ 
+ file(GLOB all_files
+@@ -43,9 +55,13 @@ file(GLOB all_files
+ set(lib_list
+     SvtAv1Enc
+     SvtAv1Dec
+-    gtest_all
+     #SDL2.lib
+     aom)
++if (GTEST_FOUND)
++    set(lib_list "${lib_list}" ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
++else()
++    set(lib_list "${lib_list} gtest_all")
++endif()
+ 
+ if(MSVC)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRT_SECURE_NO_WARNINGS")
+@@ -59,7 +75,7 @@ if(UNIX)
+     if(APPLE)
+         add_custom_command(TARGET SvtAv1E2ETests POST_BUILD
+             COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/third_party/aom/lib/mac/* ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/)
+-    else()
++    elseif(LINUX)
+         add_custom_command(TARGET SvtAv1E2ETests POST_BUILD
+             COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/third_party/aom/lib/linux/* ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/)
+     endif()
+@@ -82,7 +98,11 @@ endif()
+ install(TARGETS SvtAv1E2ETests RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+ add_test(SvtAv1E2ETests ${PROJECT_SOURCE_DIR}/Bin/${CMAKE_BUILD_TYPE}/SvtAv1E2ETests)
+-add_dependencies(SvtAv1E2ETests DepLibAom)
++if (LIBAOM_FOUND)
++    target_link_libraries(SvtAv1E2ETests ${LIBAOM_LIBRARIES})
++else()
++    add_dependencies(SvtAv1E2ETests DepLibAom)
++endif()
+ 
+ # testdata download targets.
+ set(TEST_DATA_LIST_FILE "${SVT_AV1_E2E_ROOT}/test_vector_list.txt")
