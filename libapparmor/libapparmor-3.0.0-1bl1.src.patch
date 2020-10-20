@@ -1,6 +1,16 @@
---- origsrc/apparmor-2.13.4/libraries/libapparmor/src/Makefile.am	2020-03-12 20:17:10.000000000 +0900
-+++ src/apparmor-2.13.4/libraries/libapparmor/src/Makefile.am	2020-07-24 01:29:12.056049900 +0900
-@@ -49,7 +49,7 @@ lib_LTLIBRARIES = libapparmor.la
+--- origsrc/apparmor-v3.0.0/libraries/libapparmor/include/sys/apparmor.h	2020-10-02 01:50:10.000000000 +0900
++++ src/apparmor-v3.0.0/libraries/libapparmor/include/sys/apparmor.h	2020-10-20 14:43:11.867459300 +0900
+@@ -21,6 +21,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <unistd.h>
++#include <sys/socket.h>
+ #include <sys/types.h>
+ 
+ #ifdef __cplusplus
+--- origsrc/apparmor-v3.0.0/libraries/libapparmor/src/Makefile.am	2020-10-02 01:50:10.000000000 +0900
++++ src/apparmor-v3.0.0/libraries/libapparmor/src/Makefile.am	2020-10-20 14:47:41.254635400 +0900
+@@ -52,7 +52,7 @@ lib_LTLIBRARIES = libapparmor.la
  noinst_HEADERS = grammar.h parser.h scanner.h af_protos.h private.h PMurHash.h
  
  libapparmor_la_SOURCES = grammar.y libaalogparse.c kernel.c scanner.c private.c features.c kernel_interface.c policy_cache.c PMurHash.c
@@ -9,8 +19,25 @@
  	-Wl,--version-script=$(top_srcdir)/src/libapparmor.map
  
  pkgconfigdir = $(libdir)/pkgconfig
---- origsrc/apparmor-2.13.4/libraries/libapparmor/src/kernel.c	2020-03-12 20:17:10.000000000 +0900
-+++ src/apparmor-2.13.4/libraries/libapparmor/src/kernel.c	2020-07-24 01:31:48.677284600 +0900
+@@ -65,13 +65,13 @@ CLEANFILES = libapparmor.pc
+ 	$(SHELL) ./config.status --file="src/$@"
+ 
+ tst_aalogmisc_SOURCES = tst_aalogmisc.c
+-tst_aalogmisc_LDADD = .libs/libapparmor.a
++tst_aalogmisc_LDADD = libapparmor.la
+ 
+ tst_features_SOURCES = tst_features.c
+-tst_features_LDADD = .libs/libapparmor.a
++tst_features_LDADD = libapparmor.la
+ 
+ tst_kernel_SOURCES = tst_kernel.c
+-tst_kernel_LDADD = .libs/libapparmor.a
++tst_kernel_LDADD = libapparmor.la
+ tst_kernel_LDFLAGS = -pthread
+ 
+ check_PROGRAMS = tst_aalogmisc tst_features tst_kernel
+--- origsrc/apparmor-v3.0.0/libraries/libapparmor/src/kernel.c	2020-10-02 01:50:10.000000000 +0900
++++ src/apparmor-v3.0.0/libraries/libapparmor/src/kernel.c	2020-10-20 13:20:33.616311900 +0900
 @@ -21,7 +21,9 @@
  #include <unistd.h>
  #include <sys/types.h>
@@ -37,7 +64,7 @@
  
  #define UNCONFINED		"unconfined"
  #define UNCONFINED_SIZE		strlen(UNCONFINED)
-@@ -893,6 +900,12 @@ extern typeof((query_label)) __aa_query_
+@@ -1009,6 +1016,12 @@ extern typeof((query_label)) __aa_query_
  symbol_version(__aa_query_label, aa_query_label, APPARMOR_1.1);
  default_symbol_version(query_label, aa_query_label, APPARMOR_2.9);
  
@@ -50,10 +77,10 @@
  
  /**
   * aa_query_file_path_len - query access permissions for a file @path
---- origsrc/apparmor-2.13.4/libraries/libapparmor/swig/python/Makefile.am	2020-03-12 20:17:10.000000000 +0900
-+++ src/apparmor-2.13.4/libraries/libapparmor/swig/python/Makefile.am	2020-07-24 01:34:58.135718700 +0900
-@@ -14,7 +14,7 @@ all-local: libapparmor_wrap.c setup.py
- 	$(PYTHON) setup.py build
+--- origsrc/apparmor-v3.0.0/libraries/libapparmor/swig/python/Makefile.am	2020-10-02 01:50:10.000000000 +0900
++++ src/apparmor-v3.0.0/libraries/libapparmor/swig/python/Makefile.am	2020-10-20 13:20:33.666324300 +0900
+@@ -17,7 +17,7 @@ all-local: libapparmor_wrap.c setup.py
+ 	CC="$(CC)" CFLAGS="$(PYTHON_CPPFLAGS) $(EXTRA_WARNINGS)" LDSHARED="$(CC) -shared" LDFLAGS="$(PYTHON_LDFLAGS)" $(PYTHON) setup.py build
  
  install-exec-local:
 -	$(PYTHON) setup.py install --root="/$(DESTDIR)" --prefix="$(prefix)"
