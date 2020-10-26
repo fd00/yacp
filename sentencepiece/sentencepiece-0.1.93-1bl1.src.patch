@@ -1,0 +1,42 @@
+--- origsrc/sentencepiece-0.1.93/src/CMakeLists.txt	2020-10-14 11:57:36.000000000 +0900
++++ src/sentencepiece-0.1.93/src/CMakeLists.txt	2020-10-26 21:57:01.396658000 +0900
+@@ -186,16 +186,21 @@ if (SPM_ENABLE_SHARED)
+   add_library(sentencepiece_train SHARED ${SPM_TRAIN_SRCS})
+ endif()
+ 
+-add_library(sentencepiece-static STATIC ${SPM_SRCS})
+-add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
++if (NOT CYGWIN)
++  add_library(sentencepiece-static STATIC ${SPM_SRCS})
++  add_library(sentencepiece_train-static STATIC ${SPM_TRAIN_SRCS})
+ 
+-target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
+-target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
++  target_link_libraries(sentencepiece-static INTERFACE ${SPM_LIBS})
++  target_link_libraries(sentencepiece_train-static INTERFACE sentencepiece-static ${SPM_LIBS})
++endif()
+ 
+ if (SPM_ENABLE_SHARED)
+   target_link_libraries(sentencepiece ${SPM_LIBS})
+   target_link_libraries(sentencepiece_train ${SPM_LIBS} sentencepiece)
+-  set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train sentencepiece-static sentencepiece_train-static)
++  set(SPM_INSTALLTARGETS sentencepiece sentencepiece_train)
++  if (NOT CYGWIN)
++    list(SPM_INSTALLTARGETS APPEND sentencepiece-static sentencepiece_train-static)
++  endif()
+   set_target_properties(sentencepiece sentencepiece_train PROPERTIES SOVERSION 0 VERSION 0.0.0)
+   set_target_properties(sentencepiece PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+   set_target_properties(sentencepiece_train PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
+@@ -212,8 +217,10 @@ else()
+   set(SPM_INSTALLTARGETS sentencepiece-static sentencepiece_train-static)
+ endif()
+ 
+-set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiece")
+-set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train")
++if (NOT CYGWIN)
++  set_target_properties(sentencepiece-static PROPERTIES OUTPUT_NAME "sentencepiece")
++  set_target_properties(sentencepiece_train-static PROPERTIES OUTPUT_NAME "sentencepiece_train")
++endif()
+ 
+ if (NOT MSVC)
+   if (SPM_COVERAGE)
