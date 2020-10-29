@@ -1,0 +1,106 @@
+--- origsrc/libhsplasma-2020.08.30/CMakeLists.txt	2020-08-31 03:40:11.000000000 +0900
++++ src/libhsplasma-2020.08.30/CMakeLists.txt	2020-10-29 20:12:37.801756500 +0900
+@@ -64,4 +64,8 @@ if(ENABLE_NET)
+     add_subdirectory(net)
+ endif()
+ 
+-install(EXPORT HSPlasma-targets DESTINATION share/cmake/HSPlasma)
++if (CYGWIN)
++    install(EXPORT HSPlasma-targets DESTINATION lib/cmake/HSPlasma)
++else()
++    install(EXPORT HSPlasma-targets DESTINATION share/cmake/HSPlasma)
++endif()
+--- origsrc/libhsplasma-2020.08.30/Python/CMakeLists.txt	2020-08-31 03:40:11.000000000 +0900
++++ src/libhsplasma-2020.08.30/Python/CMakeLists.txt	2020-10-29 20:07:49.071573000 +0900
+@@ -756,7 +756,14 @@ add_library(PyHSPlasma SHARED
+ target_link_libraries(PyHSPlasma HSPlasma ${PYTHON_LIBRARIES})
+ set_target_properties(PyHSPlasma PROPERTIES PREFIX "")
+ 
+-if(NOT WIN32)
++if (CYGWIN)
++    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(prefix='${CMAKE_INSTALL_PREFIX}'))"
++                    OUTPUT_VARIABLE _PYTHON_LIB_DIR
++    )
++    install(TARGETS PyHSPlasma
++            RUNTIME DESTINATION ${_PYTHON_LIB_DIR}
++    )
++elseif(NOT WIN32)
+     set_target_properties(PyHSPlasma PROPERTIES
+                           SUFFIX ".so"
+     )
+--- origsrc/libhsplasma-2020.08.30/core/CMakeLists.txt	2020-08-31 03:40:11.000000000 +0900
++++ src/libhsplasma-2020.08.30/core/CMakeLists.txt	2020-10-29 20:03:48.029863300 +0900
+@@ -810,6 +810,10 @@ target_include_directories(HSPlasma PUBL
+                            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+                            $<INSTALL_INTERFACE:include/HSPlasma>)
+ 
++if (CYGWIN)
++    set_target_properties(HSPlasma PROPERTIES SOVERSION 0)
++endif()
++
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libhsplasma.pc.in.cmake ${CMAKE_CURRENT_BINARY_DIR}/libhsplasma.pc @ONLY)
+ 
+ # Package Installation
+@@ -821,11 +825,19 @@ install(TARGETS HSPlasma
+ )
+ 
+ include(CMakePackageConfigHelpers)
+-configure_package_config_file(HSPlasmaConfig.cmake.in
+-                              ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
+-                              INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasma)
+-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
+-        DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasma)
++if (CYGWIN)
++    configure_package_config_file(HSPlasmaConfig.cmake.in
++                                ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
++                                INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/HSPlasma)
++    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
++            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/HSPlasma)
++else()
++    configure_package_config_file(HSPlasmaConfig.cmake.in
++                                ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
++                                INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasma)
++    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaConfig.cmake
++            DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasma)
++endif()
+ 
+ install(FILES ${DEBUG_HEADERS} DESTINATION include/HSPlasma/Debug)
+ install(FILES ${MATH_HEADERS} DESTINATION include/HSPlasma/Math)
+--- origsrc/libhsplasma-2020.08.30/net/CMakeLists.txt	2020-08-31 03:40:11.000000000 +0900
++++ src/libhsplasma-2020.08.30/net/CMakeLists.txt	2020-10-29 20:04:19.094559200 +0900
+@@ -108,6 +108,10 @@ target_include_directories(HSPlasmaNet P
+                            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+                            $<INSTALL_INTERFACE:include/HSPlasmaNet>)
+ 
++if (CYGWIN)
++    set_target_properties(HSPlasmaNet PROPERTIES SOVERSION 0)
++endif()
++
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libhsplasmanet.pc.in.cmake ${CMAKE_CURRENT_BINARY_DIR}/libhsplasmanet.pc @ONLY)
+ 
+ # Package installation
+@@ -119,11 +123,19 @@ install(TARGETS HSPlasmaNet
+ )
+ 
+ include(CMakePackageConfigHelpers)
+-configure_package_config_file(HSPlasmaNetConfig.cmake.in
+-                              ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
+-                              INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasmaNet)
+-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
+-        DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasmaNet)
++if (CYGWIN)
++    configure_package_config_file(HSPlasmaNetConfig.cmake.in
++                                ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
++                                INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/HSPlasmaNet)
++    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
++            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/HSPlasmaNet)
++else()
++    configure_package_config_file(HSPlasmaNetConfig.cmake.in
++                                ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
++                                INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasmaNet)
++    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/HSPlasmaNetConfig.cmake
++            DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/HSPlasmaNet)
++endif()
+ 
+ install(FILES ${PN_AUTH_HEADERS} DESTINATION include/HSPlasmaNet/auth)
+ install(FILES ${PN_CRYPT_HEADERS} DESTINATION include/HSPlasmaNet/crypt)
