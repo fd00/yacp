@@ -1,0 +1,154 @@
+--- origsrc/folly-2020.10.26.00/CMake/folly-deps.cmake	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/CMake/folly-deps.cmake	2020-11-02 18:25:01.876503900 +0900
+@@ -163,7 +163,11 @@ check_cxx_symbol_exists(swapcontext ucon
+ cmake_pop_check_state()
+ 
+ set(FOLLY_USE_SYMBOLIZER OFF)
+-CHECK_INCLUDE_FILE_CXX(elf.h FOLLY_HAVE_ELF)
++if (CYGWIN)
++  add_definitions(-DFOLLY_HAVE_ELF=0)
++else()
++  CHECK_INCLUDE_FILE_CXX(elf.h FOLLY_HAVE_ELF)
++endif()
+ find_package(Backtrace)
+ 
+ set(FOLLY_HAVE_BACKTRACE ${Backtrace_FOUND})
+--- origsrc/folly-2020.10.26.00/CMakeLists.txt	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/CMakeLists.txt	2020-11-02 23:04:12.729208800 +0900
+@@ -381,6 +381,9 @@ add_library(folly
+   $<TARGET_OBJECTS:folly_base>
+ )
+ set_property(TARGET folly PROPERTY VERSION ${PACKAGE_VERSION})
++if (CYGWIN)
++  set_target_properties(folly PROPERTIES SOVERSION 0)
++endif()
+ apply_folly_compile_options_to_target(folly)
+ target_compile_features(folly INTERFACE cxx_generic_lambdas)
+ 
+@@ -392,6 +395,10 @@ add_library(folly_test_util
+   ${FOLLY_DIR}/test/JsonTestUtil.cpp
+ )
+ set_property(TARGET folly_test_util PROPERTY VERSION ${PACKAGE_VERSION})
++if (CYGWIN)
++  set_target_properties(folly_test_util PROPERTIES SOVERSION 0)
++endif()
++
+ target_link_libraries(folly_test_util
+   PUBLIC
+     ${BOOST_LIBRARIES}
+--- origsrc/folly-2020.10.26.00/folly/CMakeLists.txt	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/CMakeLists.txt	2020-11-02 23:03:53.406129100 +0900
+@@ -17,6 +17,9 @@ add_library(
+     Benchmark.cpp
+ )
+ set_property(TARGET follybenchmark PROPERTY VERSION ${PACKAGE_VERSION})
++if (CYGWIN)
++  set_target_properties(follybenchmark PROPERTIES SOVERSION 0)
++endif()
+ target_link_libraries(follybenchmark PUBLIC folly)
+ apply_folly_compile_options_to_target(follybenchmark)
+ install(
+--- origsrc/folly-2020.10.26.00/folly/Singleton.cpp	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/Singleton.cpp	2020-11-02 19:32:10.153117000 +0900
+@@ -34,7 +34,7 @@
+ #include <folly/detail/SingletonStackTrace.h>
+ #include <folly/portability/Config.h>
+ 
+-#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__)
++#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(__CYGWIN__)
+ #define FOLLY_SINGLETON_HAVE_DLSYM 1
+ #endif
+ 
+--- origsrc/folly-2020.10.26.00/folly/experimental/symbolizer/SignalHandler.cpp	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/experimental/symbolizer/SignalHandler.cpp	2020-11-02 18:42:57.584356100 +0900
+@@ -281,11 +281,14 @@ const char* sigbus_reason(int si_code) {
+ 
+ const char* sigtrap_reason(int si_code) {
+   switch (si_code) {
++#if defined(TRAP_BRKPT)
+     case TRAP_BRKPT:
+       return "process breakpoint";
++#endif
++#if defined(TRAP_TRACE)
+     case TRAP_TRACE:
+       return "process trace trap";
+-
++#endif
+       // TRAP_BRANCH and TRAP_HWBKPT: in sigaction(2) but not in headers.
+ 
+     default:
+@@ -315,19 +318,30 @@ const char* sigchld_reason(int si_code)
+ 
+ const char* sigio_reason(int si_code) {
+   switch (si_code) {
++#if defined(POLL_IN)
+     case POLL_IN:
+       return "data input available";
++#endif
++#if defined(POLL_OUT)
+     case POLL_OUT:
+       return "output buffers available";
++#endif
++#if defined(POLL_MSG)
+     case POLL_MSG:
+       return "input message available";
++#endif
++#if defined(POLL_ERR)
+     case POLL_ERR:
+       return "I/O error";
++#endif
++#if defined(POLL_PRI)
+     case POLL_PRI:
+       return "high priority input available";
++#endif
++#if defined(POLL_HUP)
+     case POLL_HUP:
+       return "device disconnected";
+-
++#endif
+     default:
+       return nullptr;
+   }
+--- origsrc/folly-2020.10.26.00/folly/logging/test/AsyncFileWriterTest.cpp	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/logging/test/AsyncFileWriterTest.cpp	2020-11-02 20:53:40.534279600 +0900
+@@ -15,6 +15,7 @@
+  */
+ 
+ #include <thread>
++#include <sys/wait.h>
+ 
+ #include <folly/Conv.h>
+ #include <folly/Exception.h>
+--- origsrc/folly-2020.10.26.00/folly/portability/Stdlib.cpp	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/portability/Stdlib.cpp	2020-11-02 18:56:31.407715000 +0900
+@@ -142,7 +142,7 @@ int unsetenv(const char* name) {
+ 
+ #endif
+ 
+-#if !__linux__ && !FOLLY_MOBILE && !defined(__wasm32__)
++#if !__linux__ && !FOLLY_MOBILE && !defined(__wasm32__) && !defined(__CYGWIN__)
+ 
+ #include <string>
+ #include <vector>
+--- origsrc/folly-2020.10.26.00/folly/portability/SysSyscall.h	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/portability/SysSyscall.h	2020-11-02 17:03:15.837174600 +0900
+@@ -16,7 +16,7 @@
+ 
+ #pragma once
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ 
+ #if defined(__APPLE__)
+--- origsrc/folly-2020.10.26.00/folly/system/ThreadId.h	2020-10-25 18:16:06.000000000 +0900
++++ src/folly-2020.10.26.00/folly/system/ThreadId.h	2020-11-02 17:09:46.115165300 +0900
+@@ -88,6 +88,8 @@ inline uint64_t getOSThreadID() {
+   long tid;
+   thr_self(&tid);
+   return uint64_t(tid);
++#elif defined(__CYGWIN__)
++  return (uint64_t) pthread_self();
+ #else
+   return uint64_t(syscall(FOLLY_SYS_gettid));
+ #endif
