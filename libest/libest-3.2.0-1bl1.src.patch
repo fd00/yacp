@@ -1,0 +1,104 @@
+--- origsrc/libest-r3.2.0/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/Makefile.am	2020-11-02 11:13:10.048391000 +0900
+@@ -7,3 +7,6 @@ SUBDIRS = safe_c_stub src java/jni examp
+ endif
+ 
+ EXTRA_DIST = autogen.sh example/util LICENSE README.brski $(srcdir)/build.gradle $(srcdir)/example/build_examples.gradle
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libest-r3.2.0/configure.ac	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/configure.ac	2020-11-02 11:13:10.050397900 +0900
+@@ -198,5 +198,5 @@ AC_PREFIX_DEFAULT([/usr/local/est])
+ 
+ cp confdefs.h est_config.h
+ 
+-AC_CONFIG_FILES([Makefile version safe_c_stub/Makefile safe_c_stub/lib/Makefile java/jni/Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/client-brski/Makefile example/server/Makefile example/proxy/Makefile])
++AC_CONFIG_FILES([libest.pc Makefile version safe_c_stub/Makefile safe_c_stub/lib/Makefile java/jni/Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/client-brski/Makefile example/server/Makefile example/proxy/Makefile])
+ AC_OUTPUT
+--- origsrc/libest-r3.2.0/example/util/utils.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/example/util/utils.c	2020-11-02 10:59:30.465707200 +0900
+@@ -29,6 +29,7 @@
+  * detail to the user regarding the cause of the
+  * failure.
+  */
++#if 0
+ void ossl_dump_ssl_errors ()
+ {
+     BIO		*e = NULL;
+@@ -45,6 +46,7 @@ void ossl_dump_ssl_errors ()
+     printf("\nOSSL error: %s\n", bptr->data); 
+     BIO_free_all(e);
+ }
++#endif
+ 
+ /*
+  * Reads a file into an unsigned char array.
+--- origsrc/libest-r3.2.0/libest.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libest-r3.2.0/libest.pc.in	2020-11-02 11:13:09.889387700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libest
++Description: Library that implements RFC 7030 (Enrollment over Secure Transport)
++Version: @VERSION@
++Libs: -L${libdir} -lest
++Cflags: -I${includedir}
+--- origsrc/libest-r3.2.0/safe_c_stub/lib/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/safe_c_stub/lib/Makefile.am	2020-11-02 11:04:47.459951200 +0900
+@@ -7,14 +7,14 @@
+ # used with safec
+ #
+ #
+-noinst_LIBRARIES= libsafe_lib.a
++noinst_LTLIBRARIES= libsafe_lib.la
+ #libsafe_lib_a_LDFLAGS= -module -avoid-version -no-undefined
+ 
+-libsafe_lib_a_SOURCES =  \
++libsafe_lib_la_SOURCES =  \
+ ../src/safe_mem_stub.c \
+ ../src/safe_str_stub.c
+ 
+-libsafe_lib_a_CFLAGS=-I../include $(AM_CFLAGS) -fPIC
++libsafe_lib_la_CFLAGS=-I$(top_srcdir)/safe_c_stub/include $(AM_CFLAGS) -fPIC
+ 
+ 
+ 
+--- origsrc/libest-r3.2.0/src/est/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/Makefile.am	2020-11-02 10:39:16.764292300 +0900
+@@ -1,7 +1,7 @@
+ if ENABLE_CLIENT_ONLY 
+ lib_LTLIBRARIES = libest_client.la
+-AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
+-libest_client_la_LDFLAGS = -release $(PACKAGE_VERSION) 
++AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(top_srcdir)/safe_c_stub/include -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
++libest_client_la_LDFLAGS = -no-undefined -release $(PACKAGE_VERSION) 
+ libest_client_la_SOURCES = est.c est_client.c est_client_http.c est_ossl_util.c est_client_proxy.c jsmn.c \
+                            multipart_parser.c
+ 
+@@ -13,8 +13,8 @@ EXTRA_DIST = est_locl.h est_ossl_util.h
+ else
+ 
+ lib_LTLIBRARIES = libest.la
+-AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
+-libest_la_LDFLAGS = -release $(PACKAGE_VERSION) 
++AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(top_srcdir)/safe_c_stub/include -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
++libest_la_LDFLAGS = -no-undefined -release $(PACKAGE_VERSION) 
+ libest_la_SOURCES = est.c est_client.c est_server.c est_server_http.c \
+                     est_proxy.c est_client_http.c est_ossl_util.c \
+                     est_client_proxy.c jsmn.c multipart_parser.c \
+--- origsrc/libest-r3.2.0/src/est/est_locl.h	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/est_locl.h	2020-11-02 10:57:49.145767200 +0900
+@@ -590,7 +590,9 @@ typedef struct est_oid_list {
+ /*
+  * Index used to link the EST Ctx into the SSL structures
+  */
++#if 0
+ int e_ctx_ssl_exdata_index;
++#endif
+ 
+ LIBEST_TEST_API void est_log (EST_LOG_LEVEL lvl, char *format, ...);
+ LIBEST_TEST_API void est_log_backtrace (void);
