@@ -1,0 +1,125 @@
+--- origsrc/wimlib-1.13.3/configure.ac	2020-10-27 12:49:10.000000000 +0900
++++ src/wimlib-1.13.3/configure.ac	2020-11-04 10:29:58.517643300 +0900
+@@ -46,6 +46,12 @@ linux*)
+ 	WITH_NTFS_3G_DEFAULT="yes"
+ 	WITH_FUSE_DEFAULT="yes"
+ 	;;
++cygwin*)
++	# Cygwin
++	WITH_NTFS_3G_DEFAULT="no"
++	WITH_FUSE_DEFAULT="no"
++	PLATFORM_LDFLAGS="-no-undefined"
++	;;
+ *)
+ 	# Other UNIX
+ 	WITH_NTFS_3G_DEFAULT="yes"
+--- origsrc/wimlib-1.13.3/include/wimlib/file_io.h	2017-09-20 11:55:16.000000000 +0900
++++ src/wimlib-1.13.3/include/wimlib/file_io.h	2020-11-04 10:29:58.563688400 +0900
+@@ -26,7 +26,7 @@ full_write(struct filedes *fd, const voi
+ extern int
+ full_pwrite(struct filedes *fd, const void *buf, size_t count, off_t offset);
+ 
+-#ifndef __WIN32__
++#if !defined(O_BINARY)
+ #  define O_BINARY 0
+ #endif
+ 
+--- origsrc/wimlib-1.13.3/tests/test-imagex	2018-07-22 04:55:58.000000000 +0900
++++ src/wimlib-1.13.3/tests/test-imagex	2020-11-04 10:45:33.823365900 +0900
+@@ -5,9 +5,9 @@
+ 
+ set -e
+ cd tests
+-srcdir="${srcdir:-.}/.."
+-srcdir="$(cd $srcdir; pwd)"
+-. "$srcdir/tests/test_utils.sh"
++_srcdir="${_srcdir:-.}/.."
++_srcdir="$(cd $_srcdir; pwd)"
++. "$_srcdir/tests/test_utils.sh"
+ 
+ TEST_SUBDIR=tmpdir_test-imagex
+ 
+@@ -18,7 +18,7 @@ cd $TEST_SUBDIR
+ 
+ # Make test directory
+ mkdir dir
+-cp $srcdir/src/*.c dir
++cp $_srcdir/src/*.c dir
+ mkdir dir/subdir
+ echo 'hello' > dir/subdir/hello
+ echo 'hello' > dir/subdir/hello2
+--- origsrc/wimlib-1.13.3/tests/test-imagex-capture_and_apply	2018-07-22 02:21:18.000000000 +0900
++++ src/wimlib-1.13.3/tests/test-imagex-capture_and_apply	2020-11-04 10:45:52.499959700 +0900
+@@ -10,9 +10,9 @@
+ 
+ set -e
+ cd tests
+-srcdir="${srcdir:-.}/.."
+-srcdir="$(cd $srcdir; pwd)"
+-. "$srcdir/tests/test_utils.sh"
++_srcdir="${_srcdir:-.}/.."
++_srcdir="$(cd $_srcdir; pwd)"
++. "$_srcdir/tests/test_utils.sh"
+ 
+ TEST_SUBDIR=tmpdir_test-imagex-capture_and_apply
+ 
+@@ -140,7 +140,7 @@ mkdir $TEST_SUBDIR
+ cd $TEST_SUBDIR
+ mkdir in.dir out.dir
+ 
+-. $srcdir/tests/common_tests.sh
++. $_srcdir/tests/common_tests.sh
+ 
+ # Make sure exclusion list works
+ __msg "Testing default capture configuration file"
+@@ -207,7 +207,7 @@ exclusionlist_test() {
+ 	diff expected_out actual_out
+ }
+ 
+-for t_file in "$srcdir/tests/exclusionlists"/*; do
++for t_file in "$_srcdir/tests/exclusionlists"/*; do
+ 	exclusionlist_test "$t_file"
+ done
+ 
+@@ -257,7 +257,7 @@ echo 1 > in.dir/1
+ ln in.dir/1 in.dir/1link
+ echo 5 > 5
+ mkdir otherdir
+-cp $srcdir/src/add_image.c otherdir
++cp $_srcdir/src/add_image.c otherdir
+ cat > srclist << EOF
+ in.dir /
+ 5      /5
+--- origsrc/wimlib-1.13.3/tests/test-imagex-update_and_extract	2018-07-22 03:50:15.000000000 +0900
++++ src/wimlib-1.13.3/tests/test-imagex-update_and_extract	2020-11-04 10:46:12.966626000 +0900
+@@ -4,9 +4,9 @@
+ 
+ set -e
+ cd tests
+-srcdir="${srcdir:-.}/.."
+-srcdir="$(cd $srcdir; pwd)"
+-. "$srcdir/tests/test_utils.sh"
++_srcdir="${_srcdir:-.}/.."
++_srcdir="$(cd $_srcdir; pwd)"
++. "$_srcdir/tests/test_utils.sh"
+ 
+ TEST_SUBDIR=tmpdir_test-imagex-update_and_extract
+ 
+@@ -38,7 +38,7 @@ do_apply() {
+ }
+ 
+ prepare_empty_wim
+-cp $srcdir/src/add_image.c file
++cp $_srcdir/src/add_image.c file
+ echo 1 > 1
+ echo 2 > 2
+ 
+@@ -184,7 +184,7 @@ msg "Testing adding files to WIM image"
+ rm -rf in.dir
+ mkdir in.dir
+ wimappend in.dir test.wim "2"
+-cp $srcdir/src/*.c in.dir
++cp $_srcdir/src/*.c in.dir
+ wimupdate test.wim 2 << EOF
+ add in.dir /
+ add file /file
