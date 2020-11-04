@@ -1,0 +1,34 @@
+--- origsrc/tools-1.6.2/CMakeLists.txt	2020-08-22 22:31:14.000000000 +0900
++++ src/tools-1.6.2/CMakeLists.txt	2020-11-04 13:42:54.880676300 +0900
+@@ -26,8 +26,11 @@ enable_language(CXX)
+ include(CheckCXXCompilerFlag)
+ set(CMAKE_CXX_STANDARD 14)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(CMAKE_CXX_EXTENSIONS OFF) #...without compiler extensions like gnu++11
+-
++if (CYGWIN)
++  set(CMAKE_CXX_EXTENSIONS ON)
++else()
++  set(CMAKE_CXX_EXTENSIONS OFF) #...without compiler extensions like gnu++11
++endif()
+ 
+ ########################################################################
+ # User input options                                                   #
+--- origsrc/tools-1.6.2/scripts/CMakeLists.txt	2020-08-22 22:31:14.000000000 +0900
++++ src/tools-1.6.2/scripts/CMakeLists.txt	2020-11-04 13:53:20.461210800 +0900
+@@ -19,8 +19,13 @@ if (WITH_RC_FILES)
+   endif(APPLE)
+   configure_file(VOTCARC.csh.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh @ONLY)
+   configure_file(VOTCARC.bash.in ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash @ONLY)
+-  install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
+-    ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION ${CMAKE_INSTALL_BINDIR})
++  if (CYGWIN)
++    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
++      ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION /etc/profile.d)
++  else()
++    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.csh
++      ${CMAKE_CURRENT_BINARY_DIR}/VOTCARC.bash DESTINATION ${CMAKE_INSTALL_BINDIR})
++  endif()
+ endif (WITH_RC_FILES)
+ 
+ foreach(SCRIPT votca_compare)
