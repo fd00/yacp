@@ -1,0 +1,31 @@
+--- origsrc/cutelyst-2.13.0/CMakeLists.txt	2020-10-21 23:39:50.000000000 +0900
++++ src/cutelyst-2.13.0/CMakeLists.txt	2020-11-06 07:21:28.664944300 +0900
+@@ -167,7 +167,7 @@ install(EXPORT CutelystTargets
+ 
+ add_subdirectory(Cutelyst)
+ 
+-if(UNIX AND NOT (APPLE OR HAIKU))
++if(UNIX AND NOT (APPLE OR HAIKU OR CYGWIN))
+     set(LINUX TRUE)
+ endif()
+ 
+--- origsrc/cutelyst-2.13.0/Cutelyst/Plugins/StatusMessage/CutelystQt5StatusMessage.pc.in	2020-10-21 23:39:50.000000000 +0900
++++ src/cutelyst-2.13.0/Cutelyst/Plugins/StatusMessage/CutelystQt5StatusMessage.pc.in	2020-11-06 07:53:50.682996600 +0900
+@@ -7,5 +7,5 @@ Name: Cutelyst Qt5 Status Message
+ Description: Cutelyst Status Message module
+ Version: @PROJECT_VERSION@
+ Requires: Qt5Core Cutelyst@PROJECT_VERSION_MAJOR@Qt5Core
+-Libs: -L${libdir} -lCutelyst@PROJECT_VERSION_MAJOR@Qt5StatusMtessage
++Libs: -L${libdir} -lCutelyst@PROJECT_VERSION_MAJOR@Qt5StatusMessage
+ Cflags: -I${includedir}/Cutelyst -I${includedir}
+--- origsrc/cutelyst-2.13.0/wsgi/localserver.cpp	2020-10-21 23:39:50.000000000 +0900
++++ src/cutelyst-2.13.0/wsgi/localserver.cpp	2020-11-06 07:21:28.752946700 +0900
+@@ -228,6 +228,8 @@ static inline int cutelyst_safe_accept(i
+         sockflags |= SOCK_NONBLOCK;
+ # if defined(Q_OS_NETBSD)
+     fd = ::paccept(s, addr, static_cast<socklen_t *>(addrlen), NULL, sockflags);
++# elif defined(__CYGWIN__)
++    fd = ::accept4(s, addr, reinterpret_cast<socklen_t *>(addrlen), sockflags);
+ # else
+     fd = ::accept4(s, addr, static_cast<socklen_t *>(addrlen), sockflags);
+ # endif
