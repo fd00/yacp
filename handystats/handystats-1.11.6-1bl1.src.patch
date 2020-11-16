@@ -1,0 +1,74 @@
+--- origsrc/handystats-1.11.6/CMakeLists.txt	2017-07-03 21:22:51.000000000 +0900
++++ src/handystats-1.11.6/CMakeLists.txt	2020-11-17 07:50:46.746278600 +0900
+@@ -3,7 +3,7 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
+ 
+ SET (LIB_MAJOR_VERSION "1")
+ SET (LIB_MINOR_VERSION "11")
+-SET (LIB_PATCH_VERSION "4")
++SET (LIB_PATCH_VERSION "6")
+ SET (LIB_SOVERSION "1")
+ 
+ SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -g -std=c++0x -Wreorder -Wreturn-type -Wunused-variable -pedantic -D_GLIBCXX_USE_NANOSLEEP -D_GLIBCXX_USE_CLOCK_MONOTONIC -D_GLIBCXX_USE_SCHED_YIELD")
+@@ -41,3 +41,9 @@ ADD_SUBDIRECTORY (benchmarks EXCLUDE_FRO
+ ENABLE_TESTING ()
+ ADD_SUBDIRECTORY (tests)
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/handystats.pc.in ${CMAKE_BINARY_DIR}/handystats.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/handystats.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/handystats-1.11.6/handystats.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/handystats-1.11.6/handystats.pc.in	2020-11-17 07:50:23.550836400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: handystats
++Description: C++ library for collecting user-defined in-process runtime statistics with low overhead
++Version: @LIB_MAJOR_VERSION@.@LIB_MINOR_VERSION@.@LIB_PATCH_VERSION@
++Libs: -L${libdir} -lhandystats
++Cflags: -I${includedir}
+--- origsrc/handystats-1.11.6/include/handystats/rapidjson/writer.h	2017-07-03 21:22:51.000000000 +0900
++++ src/handystats-1.11.6/include/handystats/rapidjson/writer.h	2020-11-17 07:12:40.204402700 +0900
+@@ -164,7 +164,12 @@ protected:
+ 
+ 	//! \todo Optimization with custom double-to-string converter.
+ 	void WriteDouble(double d) {
+-		if (isnan(d)) {
++#if defined(__CYGWIN__)
++		if (std::isnan(d))
++#else
++		if (isnan(d))
++#endif
++		{
+ 			d = 0;
+ 		}
+ 		char buffer[100];
+--- origsrc/handystats-1.11.6/src/core.cpp	2017-07-03 21:22:51.000000000 +0900
++++ src/handystats-1.11.6/src/core.cpp	2020-11-17 07:14:07.469687300 +0900
+@@ -18,7 +18,9 @@
+ #include <chrono>
+ #include <algorithm>
+ #include <thread>
++#if !defined(__CYGWIN__)
+ #include <sys/prctl.h>
++#endif
+ #include <handystats/atomic.hpp>
+ 
+ #include <handystats/chrono.hpp>
+@@ -64,9 +66,9 @@ static void run_processor() noexcept {
+ 	memset(thread_name, 0, sizeof(thread_name));
+ 
+ 	sprintf(thread_name, "handystats");
+-
++#if !defined(__CYGWIN__)
+ 	prctl(PR_SET_NAME, thread_name);
+-
++#endif
+ 	while (is_enabled()) {
+ 		if (!message_queue::empty()) {
+ 			process_message_queue();
