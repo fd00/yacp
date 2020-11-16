@@ -1,0 +1,80 @@
+--- origsrc/ctapimkt-1.0.1/Makefile.am	2008-03-22 21:28:08.000000000 +0900
++++ src/ctapimkt-1.0.1/Makefile.am	2020-11-16 19:21:40.526925100 +0900
+@@ -7,13 +7,19 @@ EXTRA_DIST = README
+ 
+ lib_LTLIBRARIES  = libctapimkt.la
+ 
+-libctapimkt_la_SOURCES = ctapi.c ctapi.h
++libctapimkt_la_SOURCES = ctapi.c
++libctapimkt_la_LDFLAGS = -no-undefined
++
++include_HEADERS = ctapi.h
+ 
+ bin_PROGRAMS = mktlin mkter
+ mktlin_SOURCES = mktlin.c
+ mktlin_LDADD = $(LDADD)
+ mkter_SOURCES = mkter.c
+ mkter_LDADD = $(LDADD)
+-LDADD = -lctapimkt
++LDADD = libctapimkt.la
+ 
+ MAINTAINERCLEANFILES = autom4te.cache
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/ctapimkt-1.0.1/configure.in	2008-03-22 21:19:42.000000000 +0900
++++ src/ctapimkt-1.0.1/configure.in	2020-11-16 19:29:44.450647500 +0900
+@@ -9,7 +9,7 @@ dnl License: GPL
+ dnl Initialize autoconf by any header file of the source
+ dnl
+ 
+-AC_INIT([ctapimkt], [1.0.0], [Claudia Neumann <dr.claudia.neumann@gmx.de>])
++AC_INIT([ctapimkt], [1.0.1], [Claudia Neumann <dr.claudia.neumann@gmx.de>])
+ AC_PREREQ([2.54])
+ AC_CONFIG_SRCDIR([ctapi.h])
+ 
+@@ -60,7 +60,7 @@ AC_CHECK_LIB([m], [cos])
+ 
+ AC_FUNC_VPRINTF
+ 
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([ctapimkt.pc 
+ 	Makefile
+ ])
+ AC_OUTPUT
+--- origsrc/ctapimkt-1.0.1/ctapi.c	2008-04-04 05:56:47.000000000 +0900
++++ src/ctapimkt-1.0.1/ctapi.c	2020-11-16 19:21:40.543962200 +0900
+@@ -110,6 +110,9 @@ char CT_init (  unsigned short  ctn, uns
+       tios.c_oflag&=~OPOST;
+       tios.c_cflag&=~(CSTOPB|PARODD|CRTSCTS);
+       tios.c_cflag|=PARENB|CLOCAL;
++#if !defined(XCASE)
++#define XCASE 0x0
++#endif
+       tios.c_lflag&=~(ISIG|ICANON|XCASE|ECHO);
+       tios.c_cc[VTIME]=0;
+       cfsetspeed(&tios,B9600);
+@@ -336,10 +339,3 @@ char CT_close ( unsigned short  ctn )
+    ctn2fd[ctn] = 0;
+    return OK;
+ }
+-
+-
+-   
+-   
+-
+-
+-
+--- origsrc/ctapimkt-1.0.1/ctapimkt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ctapimkt-1.0.1/ctapimkt.pc.in	2020-11-16 19:21:40.582957100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ctapimkt
++Description: Library and program to read KVK and eGK
++Version: @VERSION@
++Libs: -L${libdir} -lctapimkt
++Cflags: -I${includedir}
