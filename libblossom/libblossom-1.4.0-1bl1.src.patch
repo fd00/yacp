@@ -1,0 +1,75 @@
+--- origsrc/libblossom-1.4.0/Makefile.am	2019-11-01 04:29:23.000000000 +0900
++++ src/libblossom-1.4.0/Makefile.am	2020-11-23 20:21:38.549439600 +0900
+@@ -5,7 +5,7 @@ LC_ALL=c
+ 
+ AM_CFLAGS=-O2 -Wall -W -Wshadow -Werror -Wextra -fvisibility=hidden \
+ 	  	  	$(PTHREAD_CFLAGS)
+-AM_LDFLAGS=-Wl,-O2,--no-undefined-version,--enable-new-dtags,--as-needed,--warn-common
++# AM_LDFLAGS=-Wl,-O2,--no-undefined-version,--enable-new-dtags,--as-needed,--warn-common
+ AM_CC=$(PTHREAD_CC)
+ AM_CPPFLAGS=-I $(SRCDIR)/src/libblossom
+ 
+@@ -19,6 +19,7 @@ nodist_pkgconfig_DATA=libblossom.pc
+ LIBS+=$(PTHREAD_LIBS)
+ 
+ check_PROGRAMS=blossomtest
++TESTS=$(check_PROGRAMS)
+ 
+ dist_man_MANS = blossom.3
+ 
+@@ -28,23 +29,21 @@ include_HEADERS=src/libblossom/blossom.h
+ 
+ lib_LTLIBRARIES=libblossom.la
+ libblossom_la_SOURCES=src/libblossom/blossom.c
++libblossom_la_LDFLAGS=-no-undefined
+ 
+ blossomtest_SOURCES=src/blossomtest/blossomtest.c
+ blossomtest_LDADD=libblossom.la
+ 
+-check: blossomtest
+-	./$^
+-
+ %.pc: %.pc.in configure.ac
+ 	sed -e 's@#PREFIX#@${prefix}@' \
+ 		-e 's@#VERSION#@${VERSION}@' \
+ 		< $< > $@
+ 
+ %.3: $(doc_DIR)/man/man3/%.xml $(doc_DIR)/@PACKAGE_NAME@.ent
+-	$(XSLTPROC) --path $(doc_DIR) -o $@ --nonet /usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $<
++	$(XSLTPROC) --path $(doc_DIR) -o $@ --nonet /usr/share/sgml/docbook/xsl-stylesheets/manpages/docbook.xsl $<
+ 
+ %.xhtml: $(doc_DIR)/man/man3/%.xml $(doc_DIR)/@PACKAGE_NAME@.ent
+-	$(XSLTPROC) --path $(doc_DIR) -o $@ --nonet /usr/share/xml/docbook/stylesheet/docbook-xsl/xhtml-1_1/docbook.xsl $<
++	$(XSLTPROC) --path $(doc_DIR) -o $@ --nonet /usr/share/sgml/docbook/xsl-stylesheets/xhtml-1_1/docbook.xsl $<
+ 
+ $(doc_DIR)/@PACKAGE_NAME@.ent:
+ 	@mkdir -p $(@D)
+--- origsrc/libblossom-1.4.0/src/libblossom/blossom.c	2019-11-01 04:29:23.000000000 +0900
++++ src/libblossom-1.4.0/src/libblossom/blossom.c	2020-11-23 19:31:00.620399700 +0900
+@@ -12,6 +12,8 @@
+ #include <sys/param.h>
+ #include <sys/cpuset.h>
+ typedef cpuset_t cpu_set_t;
++#elif defined(__CYGWIN__)
++#include <sys/cpuset.h>
+ #else
+ #error "Need cpu_set_t definition for this platform" // solaris is psetid_t
+ #endif
+@@ -33,7 +35,7 @@ portable_cpuset_count(void){
+ #if defined(__freebsd__)
+ 	if(cpuset_getaffinity(CPU_LEVEL_CPUSET,CPU_WHICH_CPUSET,-1,
+ 				sizeof(mask),&mask) == 0){
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ 	// We might be only a subthread of a larger application; use the
+ 	// affinity mask of the thread which initializes us.
+ 	if(pthread_getaffinity_np(pthread_self(),sizeof(mask),&mask) == 0){
+@@ -366,7 +368,7 @@ int blossom_on_pe(const blossom_ctl *ctl
+ #if defined(__freebsd__)
+ 	if(cpuset_getaffinity(CPU_LEVEL_CPUSET,CPU_WHICH_CPUSET,-1,
+ 				sizeof(mask),&mask) == 0){
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ 	// We might be only a subthread of a larger application; use the
+ 	// affinity mask of the thread which initializes us.
+ 	if(pthread_getaffinity_np(pthread_self(),sizeof(mask),&mask) == 0){
