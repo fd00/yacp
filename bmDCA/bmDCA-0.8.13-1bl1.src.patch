@@ -1,0 +1,44 @@
+--- origsrc/bmDCA-0.8.13/configure.ac	2020-06-09 11:55:34.000000000 +0900
++++ src/bmDCA-0.8.13/configure.ac	2020-11-25 08:57:37.691304400 +0900
+@@ -10,6 +10,7 @@ AC_CANONICAL_HOST
+ build_linux=no
+ build_macos=no
+ build_windows=no
++build_cygwin=no
+ 
+ # Detect the target system
+ case "${host_os}" in
+@@ -19,9 +20,12 @@ case "${host_os}" in
+   darwin*)
+     build_macos=yes
+     ;;
+-  cygwin*|mingw*|msys*)
++  mingw*|msys*)
+     build_windows=yes
+     ;;
++  cygwin*)
++    build_cygwin=yes
++    ;;
+   *)
+     AC_MSG_ERROR(["'$host_os' is not supported"])
+     ;;
+@@ -31,6 +35,7 @@ esac
+ AM_CONDITIONAL([LINUX], [test x$build_linux = xyes])
+ AM_CONDITIONAL([MACOS], [test x$build_macos = xyes])
+ AM_CONDITIONAL([WINDOWS], [test x$build_windows = xyes])
++AM_CONDITIONAL([CYGWIN], [test x$build_cygwin = xyes])
+ 
+ AM_INIT_AUTOMAKE([foreign])
+ AM_MAINTAINER_MODE([enable])
+--- origsrc/bmDCA-0.8.13/src/Makefile.am	2020-06-09 11:55:34.000000000 +0900
++++ src/bmDCA-0.8.13/src/Makefile.am	2020-11-25 08:58:13.025430900 +0900
+@@ -12,6 +12,9 @@ if WINDOWS
+ AM_LDFLAGS = -static -static-libgcc -static-libstdc++ \
+              -lm $(ARMADILLO_LIBS).dll -lopenblas -llapack
+ endif
++if CYGWIN
++AM_LDFLAGS = -lm $(ARMADILLO_LIBS) -lblas -llapack
++endif
+ 
+ DISTCLEANFILES = Makefile.in
+ 
