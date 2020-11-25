@@ -1,0 +1,91 @@
+--- origsrc/libdlo-0.1.2/Makefile.am	2009-10-09 09:20:55.000000000 +0900
++++ src/libdlo-0.1.2/Makefile.am	2020-11-25 11:23:18.206347700 +0900
+@@ -12,7 +12,7 @@ EXTRA_DIST = \
+ 	Guide-v104.pdf \
+ 	mkdox.sh
+ 
+-TESTS_ENVIRONMENT = sudo
++# TESTS_ENVIRONMENT = sudo
+ TESTS = test/test1
+ 
+ MAINTAINERCLEANFILES = depcomp INSTALL install-sh missing aclocal.m4 config.guess config.sub configure
+@@ -28,4 +28,6 @@ maintainer-clean-local:
+ 	test -d ./autom4te.cache && rm -Rf ./autom4te.cache || true
+ 	find . -name \*~ -exec rm {} \;
+ 	find . -name \*.in -exec rm {} \;
+-	
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdlo-0.1.2/configure.ac	2009-10-19 11:41:33.000000000 +0900
++++ src/libdlo-0.1.2/configure.ac	2020-11-25 11:22:50.898664900 +0900
+@@ -39,14 +39,12 @@ AC_TYPE_UINT64_T
+ AC_TYPE_UINT8_T
+ 
+ # Checks for library functions.
+-AC_CHECK_LIB(usb,usb_open)
+-AC_CHECK_FUNC([usb_get_driver_np],,[AC_MSG_ERROR([Can't find libusb. On ubuntu, try sudo apt-get install libusb-dev])])
+-AC_CHECK_FUNC([usb_get_configuration],[AC_MSG_ERROR([libdlo currently uses libusb-0.12 or 0.13. You appear to have 1.0])]) 
++PKG_CHECK_MODULES([LIBUSB], [libusb])
+ AC_FUNC_MALLOC
+ AC_FUNC_REALLOC
+ AC_CHECK_FUNCS([gettimeofday strchr])
+ 
+-AC_CONFIG_FILES([Makefile
++AC_CONFIG_FILES([libdlo.pc Makefile
+                  src/Makefile
+                  test/Makefile
+                 ])
+--- origsrc/libdlo-0.1.2/libdlo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdlo-0.1.2/libdlo.pc.in	2020-11-25 11:22:50.653545500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdlo
++Description: DisplayLink LGPL Library
++Version: @VERSION@
++Libs: -L${libdir} -ldlo
++Cflags: -I${includedir}
+--- origsrc/libdlo-0.1.2/src/Makefile.am	2009-10-09 09:20:55.000000000 +0900
++++ src/libdlo-0.1.2/src/Makefile.am	2020-11-25 11:12:01.381096500 +0900
+@@ -20,7 +20,7 @@ libdlo_la_SOURCES = \
+ 	libdlo.c
+ 
+ libdlo_la_CFLAGS = 
+-libdlo_la_LDFLAGS = \
+-	-lusb \
++libdlo_la_LDFLAGS = -no-undefined \
++	$(LIBUSB_LIBS) \
+ 	-version-info $(LIBDLO_LT_CURRENT):$(LIBDLO_LT_REVISION):$(LIBDLO_LT_AGE)
+ 
+--- origsrc/libdlo-0.1.2/src/dlo_usb.c	2009-10-09 09:20:55.000000000 +0900
++++ src/libdlo-0.1.2/src/dlo_usb.c	2020-11-25 11:18:13.015144300 +0900
+@@ -315,6 +315,7 @@ dlo_retcode_t dlo_usb_open(dlo_device_t
+   /* Establish the connection with the device */
+   //DPRINTF("usb: open: setting config...\n");
+ 
++#if defined(__linux__)
+   /*
+    * Because some displaylink devices may report 
+    * a class code (like HID or MSC) that gets
+@@ -341,7 +342,8 @@ dlo_retcode_t dlo_usb_open(dlo_device_t
+       usb_detach_kernel_driver_np(uhand,i);
+     }
+   }
+-   
++#endif
++
+   UERR(usb_set_configuration(uhand, 1));
+ 
+   //DPRINTF("usb: open: claiming iface...\n");
+--- origsrc/libdlo-0.1.2/test/Makefile.am	2009-10-09 09:20:55.000000000 +0900
++++ src/libdlo-0.1.2/test/Makefile.am	2020-11-25 11:22:20.984565600 +0900
+@@ -1,3 +1,3 @@
+ bin_PROGRAMS = test1
+ test1_SOURCES = test1.c
+-test1_LDADD = ../src/libdlo.la -lusb
+\ No newline at end of file
++test1_LDADD = ../src/libdlo.la $(LIBUSB_LIBS)
