@@ -1,13 +1,13 @@
---- origsrc/libnpupnp-4.0.12/Makefile.am	2020-09-20 23:28:03.000000000 +0900
-+++ src/libnpupnp-4.0.12/Makefile.am	2020-10-22 10:36:06.498384900 +0900
-@@ -25,13 +25,13 @@ endif
+--- origsrc/libnpupnp-4.0.14/Makefile.am	2020-11-15 22:25:30.000000000 +0900
++++ src/libnpupnp-4.0.14/Makefile.am	2020-11-26 09:57:20.524514100 +0900
+@@ -32,13 +32,13 @@ endif
  
  lib_LTLIBRARIES = libnpupnp.la
  
 -libnpupnp_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/src/inc 
 +libnpupnp_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(srcdir)/src/inc $(libupnp_CFLAGS)
  if LINUX
- libnpupnp_la_CXXFLAGS = -fvisibility=hidden
+ libnpupnp_la_CXXFLAGS = -fvisibility=hidden -std=c++11
  endif
  
  
@@ -16,22 +16,21 @@
  	-version-info $(LT_VERSION_NPUPNP) \
  	$(LIBNPUPNP_LIBS)
  
---- origsrc/libnpupnp-4.0.12/configure.ac	2020-10-04 22:50:35.000000000 +0900
-+++ src/libnpupnp-4.0.12/configure.ac	2020-10-22 10:35:38.761496100 +0900
-@@ -257,7 +257,9 @@ if test X$useexpat = Xyes ; then
+--- origsrc/libnpupnp-4.0.14/configure.ac	2020-11-15 18:52:56.000000000 +0900
++++ src/libnpupnp-4.0.14/configure.ac	2020-11-26 09:56:46.850437100 +0900
+@@ -263,7 +263,8 @@ if test X$useexpat = Xyes ; then
     AC_DEFINE(USE_EXPAT, 1, [Use expat])
  fi
  
 -LIBNPUPNP_LIBS="$curl_LIBS $libmicrohttpd_LIBS $expat_LIBS $LIBS"
 +PKG_CHECK_MODULES([libupnp], [libupnp], [], AC_MSG_ERROR([libupnp not found]))
-+
 +LIBNPUPNP_LIBS="$curl_LIBS $libmicrohttpd_LIBS $expat_LIBS $libupnp_LIBS $LIBS"
  echo "LIBNPUPNP_LIBS[" $LIBNPUPNP_LIBS "]"
  AC_SUBST(LIBNPUPNP_LIBS)
  
---- origsrc/libnpupnp-4.0.12/src/threadutil/ThreadPool.cpp	2020-08-19 17:50:11.000000000 +0900
-+++ src/libnpupnp-4.0.12/src/threadutil/ThreadPool.cpp	2020-10-22 10:41:50.137239800 +0900
-@@ -44,6 +44,8 @@
+--- origsrc/libnpupnp-4.0.14/src/threadutil/ThreadPool.cpp	2020-11-03 22:40:05.000000000 +0900
++++ src/libnpupnp-4.0.14/src/threadutil/ThreadPool.cpp	2020-11-26 09:54:34.956215200 +0900
+@@ -43,6 +43,8 @@
  #include <condition_variable>
  #include <iostream>
  
@@ -40,7 +39,7 @@
  using namespace std::chrono;
  
  /*! Internal ThreadPool Job. */
-@@ -182,13 +184,13 @@ void ThreadPool::Internal::CalcWaitTime(
+@@ -181,13 +183,13 @@ void ThreadPool::Internal::CalcWaitTime(
          duration_cast<milliseconds>(now - job->requestTime);
      auto diff = ms.count();
      switch (p) {
@@ -57,7 +56,7 @@
          StatsAccountHQ(diff);
          break;
      default:
-@@ -262,13 +264,13 @@ static int SetPriority(ThreadPool::Threa
+@@ -260,13 +262,13 @@ static int SetPriority(ThreadPool::Threa
      maxPriority = sched_get_priority_max(currentPolicy);
      midPriority = (maxPriority - minPriority) / 2;
      switch (priority) {
@@ -74,8 +73,8 @@
          actPriority = maxPriority;
          break;
      default:
---- origsrc/libnpupnp-4.0.12/src/utils/netif.cpp	2020-07-14 21:49:05.000000000 +0900
-+++ src/libnpupnp-4.0.12/src/utils/netif.cpp	2020-10-22 10:44:48.793327800 +0900
+--- origsrc/libnpupnp-4.0.14/src/utils/netif.cpp	2020-11-15 00:40:50.000000000 +0900
++++ src/libnpupnp-4.0.14/src/utils/netif.cpp	2020-11-26 10:00:48.335536800 +0900
 @@ -46,7 +46,7 @@
  #include <ifaddrs.h>
  #ifdef __linux__
@@ -85,12 +84,12 @@
  #include <net/if_dl.h>
  #endif
  
-@@ -501,7 +501,7 @@ Interfaces::Internal::Internal()
+@@ -498,7 +498,7 @@ Interfaces::Internal::Internal()
              ifit->m->sethwaddr(reinterpret_cast<const char*>(sll->sll_addr), sll->sll_halen);
          }
          break;
 -#else
-+#elif !defined(__CYGWIN__)
++#elif defined(AF_LINK)
          case AF_LINK:
          {
              auto sdl = reinterpret_cast<struct sockaddr_dl*>(ifa->ifa_addr);
