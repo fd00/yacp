@@ -1,16 +1,5 @@
---- origsrc/libzim-6.2.2/src/buffer.cpp	2020-09-03 01:22:41.000000000 +0900
-+++ src/libzim-6.2.2/src/buffer.cpp	2020-10-29 11:39:44.282007000 +0900
-@@ -105,7 +105,7 @@ MMapBuffer::MMapBuffer(int fd, offset_t
- {
-   offset_t pa_offset(offset.v & ~(sysconf(_SC_PAGE_SIZE) - 1));
-   _offset = offset-pa_offset;
--#if defined(__APPLE__) || defined(__OpenBSD__)
-+#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__CYGWIN__)
-   #define MAP_FLAGS MAP_PRIVATE
- #elif defined(__FreeBSD__)
-   #define MAP_FLAGS MAP_PRIVATE|MAP_PREFAULT_READ
---- origsrc/libzim-6.2.2/src/debug.h	2020-09-03 01:22:41.000000000 +0900
-+++ src/libzim-6.2.2/src/debug.h	2020-10-29 11:38:06.673010900 +0900
+--- origsrc/libzim-6.3.0/src/debug.h	2020-11-17 21:00:47.000000000 +0900
++++ src/libzim-6.3.0/src/debug.h	2020-12-01 14:29:08.034674000 +0900
 @@ -28,7 +28,7 @@
  # define ASSERT(left, operator, right) (void(0))
  #else
@@ -29,8 +18,19 @@
    void *callstack[64];
    size_t size;
    size = backtrace(callstack, 64);
---- origsrc/libzim-6.2.2/src/fs_unix.cpp	2020-09-03 01:22:41.000000000 +0900
-+++ src/libzim-6.2.2/src/fs_unix.cpp	2020-10-29 11:41:09.601294100 +0900
+--- origsrc/libzim-6.3.0/src/file_reader.cpp	2020-11-17 21:00:47.000000000 +0900
++++ src/libzim-6.3.0/src/file_reader.cpp	2020-12-01 14:31:22.088008300 +0900
+@@ -134,7 +134,7 @@ class MMapException : std::exception {};
+ char*
+ mmapReadOnly(int fd, offset_type offset, size_type size)
+ {
+-#if defined(__APPLE__) || defined(__OpenBSD__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__CYGWIN__)
+   const auto MAP_FLAGS = MAP_PRIVATE;
+ #elif defined(__FreeBSD__)
+   const auto MAP_FLAGS = MAP_PRIVATE|MAP_PREFAULT_READ;
+--- origsrc/libzim-6.3.0/src/fs_unix.cpp	2020-11-17 21:00:47.000000000 +0900
++++ src/libzim-6.3.0/src/fs_unix.cpp	2020-12-01 14:32:35.539010800 +0900
 @@ -34,7 +34,7 @@ namespace unix {
  
  zsize_t FD::readAt(char* dest, zsize_t size, offset_t offset) const
