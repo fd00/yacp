@@ -1,5 +1,5 @@
---- origsrc/bifrost-1.0.4/CMakeLists.txt	2020-06-04 07:36:05.000000000 +0900
-+++ src/bifrost-1.0.4/CMakeLists.txt	2020-07-23 10:58:41.803915700 +0900
+--- origsrc/bifrost-1.0.5/CMakeLists.txt	2020-09-17 08:05:38.000000000 +0900
++++ src/bifrost-1.0.5/CMakeLists.txt	2020-12-02 09:29:13.441798100 +0900
 @@ -53,3 +53,10 @@ MATH(EXPR PRINT_MAX_KMER_SIZE "${MAX_KME
  message("Maximum k-mer size: " ${PRINT_MAX_KMER_SIZE})
  
@@ -11,8 +11,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/bifrost.pc.in ${CMAKE_BINARY_DIR}/bifrost.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/bifrost.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/bifrost-1.0.4/bifrost.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/bifrost-1.0.4/bifrost.pc.in	2020-07-23 11:16:35.187125800 +0900
+--- origsrc/bifrost-1.0.5/bifrost.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bifrost-1.0.5/bifrost.pc.in	2020-12-02 09:29:13.452790200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -24,9 +24,9 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lbifrost
 +Cflags: -I${includedir}
---- origsrc/bifrost-1.0.4/src/CMakeLists.txt	2020-06-04 07:36:05.000000000 +0900
-+++ src/bifrost-1.0.4/src/CMakeLists.txt	2020-07-23 11:16:29.731767600 +0900
-@@ -1,28 +1,49 @@
+--- origsrc/bifrost-1.0.5/src/CMakeLists.txt	2020-09-17 08:05:38.000000000 +0900
++++ src/bifrost-1.0.5/src/CMakeLists.txt	2020-12-02 09:30:39.727194800 +0900
+@@ -1,28 +1,47 @@
  file(GLOB sources *.cpp roaring.c)
  file(GLOB headers *.h *.hpp *.hh *.tcc)
  
@@ -66,7 +66,7 @@
 -target_link_libraries(bifrost_static ${ZLIB_LIBRARIES})
 -target_link_libraries(bifrost_dynamic ${ZLIB_LIBRARIES})
 +
-+if (BUILD_SHARED_LIBS)
++if (CYGWIN)
 +    add_library(bifrost_dynamic SHARED ${sources} ${headers})
 +    set_target_properties(bifrost_dynamic PROPERTIES OUTPUT_NAME "bifrost")
 +    target_include_directories(bifrost_dynamic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -78,9 +78,7 @@
 +    if (XXHASH_FOUND)
 +        target_link_libraries(bifrost_dynamic ${XXHASH_LIBRARIES})
 +    endif()
-+    if (CYGWIN)
-+        set_target_properties(bifrost_dynamic PROPERTIES SOVERSION 0)
-+    endif()
++    set_target_properties(bifrost_dynamic PROPERTIES SOVERSION 0)
 +else()
 +    add_library(bifrost_static STATIC ${sources} ${headers})
 +    set_target_properties(bifrost_static PROPERTIES OUTPUT_NAME "bifrost")
@@ -91,12 +89,12 @@
  
  if (ZLIB_FOUND)
      include_directories(${ZLIB_INCLUDE_DIRS})
-@@ -30,10 +51,19 @@ else()
+@@ -30,10 +49,19 @@ else()
      message(FATAL_ERROR "zlib not found. Required for to output files")
  endif(ZLIB_FOUND)
  
 -target_link_libraries(Bifrost bifrost_dynamic)
-+if (BUILD_SHARED_LIBS)
++if (CYGWIN)
 +    target_link_libraries(Bifrost bifrost_dynamic)
 +else()
 +    target_link_libraries(Bifrost bifrost_static)
@@ -105,7 +103,7 @@
  install(TARGETS Bifrost DESTINATION bin)
 -install(TARGETS bifrost_dynamic DESTINATION lib)
 -install(TARGETS bifrost_static DESTINATION lib)
-+if (BUILD_SHARED_LIBS)
++if (CYGWIN)
 +    install(TARGETS bifrost_dynamic RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 +else()
 +    install(TARGETS bifrost_static DESTINATION lib)
