@@ -1,0 +1,210 @@
+--- origsrc/libassh-1.0rc1/src/Makefile.am	2020-09-27 03:22:12.000000000 +0900
++++ src/libassh-1.0rc1/src/Makefile.am	2020-12-06 17:48:01.331206400 +0900
+@@ -174,3 +174,5 @@ if COND_keyboard_userauth
+ libassh_la_SOURCES +=   assh_userauth_server_keyboard.c
+ endif
+ endif
++
++libassh_la_LDFLAGS = -no-undefined
+--- origsrc/libassh-1.0rc1/src/assh_deps.c	2020-09-27 03:22:12.000000000 +0900
++++ src/libassh-1.0rc1/src/assh_deps.c	2020-12-06 17:50:35.576038400 +0900
+@@ -125,7 +125,7 @@ assh_default_prng(void)
+ #include <assh/assh_sign.h>
+ #include <assh/assh_compress.h>
+ 
+-#ifdef __GNUC__
++#if defined(__GNUC__) && !defined(__CYGWIN__)
+ __attribute__((weak))
+ #endif
+ const struct assh_algo_s *assh_algo_table[] = {
+--- origsrc/libassh-1.0rc1/test/Makefile.am	2020-09-27 03:22:12.000000000 +0900
++++ src/libassh-1.0rc1/test/Makefile.am	2020-12-06 18:04:27.881278100 +0900
+@@ -18,10 +18,11 @@ AUTOMAKE_OPTIONS = serial-tests
+ 
+ AM_CPPFLAGS = -I$(top_builddir)/src/assh
+ 
+-noinst_LIBRARIES = libasshtest.a
++noinst_LTLIBRARIES = libasshtest.la
+ 
+-libasshtest_a_SOURCES = test.c
+-libasshtest_a_CFLAGS = -I$(top_srcdir)/src
++libasshtest_la_SOURCES = test.c
++libasshtest_la_CFLAGS = -I$(top_srcdir)/src
++libasshtest_la_LIBADD = $(top_builddir)/src/libassh.la
+ 
+ noinst_PROGRAMS =
+ TESTS =
+@@ -31,7 +32,7 @@ CLEANFILES = test.key
+ noinst_PROGRAMS += buffer
+ TESTS += buffer
+ buffer_SOURCES = buffer.c
+-buffer_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++buffer_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ buffer_CFLAGS = -I$(top_srcdir)/src
+ 
+ ############################## crypto tests
+@@ -39,34 +40,34 @@ buffer_CFLAGS = -I$(top_srcdir)/src
+ noinst_PROGRAMS += hash
+ TESTS += hash
+ hash_SOURCES = hash.c
+-hash_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++hash_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ hash_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += cipher
+ TESTS += cipher
+ cipher_SOURCES = cipher.c
+-cipher_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++cipher_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ cipher_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += cipher_bench
+ cipher_bench_SOURCES = cipher_bench.c
+-cipher_bench_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++cipher_bench_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ cipher_bench_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += mac
+ TESTS += mac
+ mac_SOURCES = mac.c
+-mac_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++mac_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ mac_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += mac_bench
+ mac_bench_SOURCES = mac_bench.c
+-mac_bench_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++mac_bench_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ mac_bench_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += prng
+ prng_SOURCES = prng.c
+-prng_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++prng_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ prng_CFLAGS = -I$(top_srcdir)/src
+ 
+ ############################## protocol tests
+@@ -74,7 +75,7 @@ prng_CFLAGS = -I$(top_srcdir)/src
+ noinst_PROGRAMS += replay
+ TESTS += replay
+ replay_SOURCES = replay.c
+-replay_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++replay_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ replay_CFLAGS = -I$(top_srcdir)/src
+ 
+ if COND_server
+@@ -84,37 +85,37 @@ if COND_key_create
+ noinst_PROGRAMS += userauth
+ TESTS += userauth
+ userauth_SOURCES = userauth.c
+-userauth_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++userauth_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ userauth_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += userauth_server
+ TESTS += userauth_server
+ userauth_server_SOURCES = userauth_server.c
+-userauth_server_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++userauth_server_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ userauth_server_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += kex_bench
+ kex_bench_SOURCES = kex_bench.c
+-kex_bench_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++kex_bench_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ kex_bench_CFLAGS = -I$(top_srcdir)/src
+ endif
+ 
+ noinst_PROGRAMS += connection
+ TESTS += connection
+ connection_SOURCES = connection.c
+-connection_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++connection_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ connection_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += connection2
+ TESTS += connection2
+ connection2_SOURCES = connection2.c
+-connection2_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++connection2_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ connection2_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += kex
+ TESTS += kex
+ kex_SOURCES = kex.c
+-kex_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++kex_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ kex_CFLAGS = -I$(top_srcdir)/src
+ endif
+ endif
+@@ -125,13 +126,13 @@ if COND_bignum_builtin
+ noinst_PROGRAMS += bignum
+ TESTS += bignum
+ bignum_SOURCES = bignum.c
+-bignum_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++bignum_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ bignum_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += gex_primes
+ #TESTS += gex_primes
+ gex_primes_SOURCES = gex_primes.c
+-gex_primes_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++gex_primes_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ gex_primes_CFLAGS = -I$(top_srcdir)/src
+ endif
+ 
+@@ -141,19 +142,19 @@ if COND_key_create
+ noinst_PROGRAMS += key_io
+ TESTS += key_io
+ key_io_SOURCES = key_io.c
+-key_io_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++key_io_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ key_io_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += sign_bench
+ sign_bench_SOURCES = sign_bench.c
+-sign_bench_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++sign_bench_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ sign_bench_CFLAGS = -I$(top_srcdir)/src
+ 
+ if COND_key_validate
+ noinst_PROGRAMS += signature
+ TESTS += signature
+ signature_SOURCES = signature.c
+-signature_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++signature_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ signature_CFLAGS = -I$(top_srcdir)/src
+ endif
+ endif
+@@ -161,27 +162,27 @@ endif
+ noinst_PROGRAMS += signature2
+ TESTS += signature2
+ signature2_SOURCES = signature2.c
+-signature2_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++signature2_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ signature2_CFLAGS = -I$(top_srcdir)/src
+ 
+ noinst_PROGRAMS += algo_list
+ TESTS += algo_list
+ algo_list_SOURCES = algo_list.c
+-algo_list_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++algo_list_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ algo_list_CFLAGS = -I$(top_srcdir)/src
+ 
+ if COND_key_create
+ if COND_libfuzzer
+ noinst_PROGRAMS += libfuzzer
+ libfuzzer_SOURCES = libfuzzer.c
+-libfuzzer_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++libfuzzer_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ libfuzzer_CFLAGS = -I$(top_srcdir)/src -fsanitize=fuzzer,address
+ endif
+ endif
+ 
+ noinst_PROGRAMS += fail
+ fail_SOURCES = fail.c
+-fail_LDADD = $(top_builddir)/src/libassh.la libasshtest.a
++fail_LDADD = libasshtest.la $(top_builddir)/src/libassh.la
+ fail_CFLAGS = -I$(top_srcdir)/src
+ TESTS += fail
+ XFAIL_TESTS = fail
