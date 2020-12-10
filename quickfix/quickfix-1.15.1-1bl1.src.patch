@@ -1,0 +1,155 @@
+--- origsrc/quickfix-1.15.1/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/Makefile.am	2020-12-11 07:06:24.281697500 +0900
+@@ -1,9 +1,5 @@
+ #Disable unit tests on Solaris, AIX
+-if NO_UNIT_TEST
+-SUBDIRS = src bin spec test examples doc
+-else
+-SUBDIRS = UnitTest++ src bin spec test examples doc
+-endif
++SUBDIRS = src bin spec test doc
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+--- origsrc/quickfix-1.15.1/configure.ac	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/configure.ac	2020-12-11 07:59:19.390378200 +0900
+@@ -3,7 +3,7 @@
+ 
+ AC_PREREQ([2.59])
+ 
+-AC_INIT([QuickFIX], [1.14.3], [ask@quickfixengine.org])
++AC_INIT([QuickFIX], [1.15.1], [ask@quickfixengine.org])
+ AC_CONFIG_MACRO_DIR([m4])
+ m4_include([m4/ax_lib_mysql.m4])
+ m4_include([m4/ax_lib_postgresql.m4])
+@@ -43,7 +43,7 @@ AX_JAVA()
+ 
+ AC_CANONICAL_HOST
+ 
+-build_no_unit_test = no
++build_no_unit_test=no
+ 
+ # Detect the target system
+ case "${host_os}" in
+@@ -297,9 +297,11 @@ AC_DEFINE(_REENTRANT, 1, enable reentran
+ # Checks for library functions.
+ AC_LANG_RESTORE
+ 
+-AC_CHECK_LIB(iberty, cplus_demangle,    
+-  AC_DEFINE(HAVE_CPLUS_DEMANGLE,1,whether or not we have to demangle names)
+-  LIBS="$LIBS -liberty")
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_LIB(iberty, cplus_demangle,    
++    AC_DEFINE(HAVE_CPLUS_DEMANGLE,1,whether or not we have to demangle names)
++    LIBS="$LIBS -liberty")
++fi
+ 
+ # Checks for runtime behavior
+ AC_MSG_CHECKING(if select modifies timeval parameter)
+--- origsrc/quickfix-1.15.1/src/C++/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/src/C++/Makefile.am	2020-12-10 20:12:56.985875100 +0900
+@@ -148,17 +148,9 @@ Allocator.h: Makefile
+ 	grep "_ALLOCATOR" $(top_builddir)/config.h >$@
+ 
+ all-local:
+-	rm -rf $(top_builddir)/lib/libquickfix.a
+-	rm -rf $(top_builddir)/lib/libquickfix.la
+-	rm -rf $(top_builddir)/lib/libquickfix.so
+-	rm -rf $(top_builddir)/lib/libquickfix.dylib
+-	ln -s ../src/C++/.libs/libquickfix.a $(top_builddir)/lib/libquickfix.a
+-	ln -s ../src/C++/.libs/libquickfix.la $(top_builddir)/lib/libquickfix.la
+-	ln -s ../src/C++/.libs/libquickfix.so $(top_builddir)/lib/libquickfix.so
+-	ln -s ../src/C++/.libs/libquickfix.dylib $(top_builddir)/lib/libquickfix.dylib
+-	bash ./copy.sh $(top_builddir)/include/quickfix *.h
+-	bash ./copy.sh $(top_builddir)/include/quickfix fix*/*.h
+-	bash ./copy.sh $(top_builddir)/include/quickfix wx/*.h
++	bash $(srcdir)/copy.sh $(top_builddir)/include/quickfix $(srcdir)/*.h
++	bash $(srcdir)/copy.sh $(top_builddir)/include/quickfix $(srcdir)/fix*/*.h
++	bash $(srcdir)/copy.sh $(top_builddir)/include/quickfix $(srcdir)/wx/*.h
+ 
+ clean-local:
+ 	rm -rf $(top_builddir)/lib/libquickfix.a
+@@ -178,23 +170,23 @@ install-exec-local: *.h
+ 	mkdir $(DESTDIR)$(pkgincludedir)/fix50sp2
+ 	mkdir $(DESTDIR)$(pkgincludedir)/fixt11
+ 	mkdir $(DESTDIR)$(pkgincludedir)/wx
+-	cp *.h $(DESTDIR)$(pkgincludedir)
+-	cp fix40/*.h $(DESTDIR)$(pkgincludedir)/fix40
+-	cp fix41/*.h $(DESTDIR)$(pkgincludedir)/fix41
+-	cp fix42/*.h $(DESTDIR)$(pkgincludedir)/fix42
+-	cp fix43/*.h $(DESTDIR)$(pkgincludedir)/fix43
+-	cp fix44/*.h $(DESTDIR)$(pkgincludedir)/fix44
+-	cp fix50/*.h $(DESTDIR)$(pkgincludedir)/fix50
+-	cp fix50sp1/*.h $(DESTDIR)$(pkgincludedir)/fix50sp1
+-	cp fix50sp2/*.h $(DESTDIR)$(pkgincludedir)/fix50sp2
+-	cp fixt11/*.h $(DESTDIR)$(pkgincludedir)/fixt11
+-	cp wx/*.h $(DESTDIR)$(pkgincludedir)/wx
++	cp $(srcdir)/*.h $(DESTDIR)$(pkgincludedir)
++	cp $(srcdir)/fix40/*.h $(DESTDIR)$(pkgincludedir)/fix40
++	cp $(srcdir)/fix41/*.h $(DESTDIR)$(pkgincludedir)/fix41
++	cp $(srcdir)/fix42/*.h $(DESTDIR)$(pkgincludedir)/fix42
++	cp $(srcdir)/fix43/*.h $(DESTDIR)$(pkgincludedir)/fix43
++	cp $(srcdir)/fix44/*.h $(DESTDIR)$(pkgincludedir)/fix44
++	cp $(srcdir)/fix50/*.h $(DESTDIR)$(pkgincludedir)/fix50
++	cp $(srcdir)/fix50sp1/*.h $(DESTDIR)$(pkgincludedir)/fix50sp1
++	cp $(srcdir)/fix50sp2/*.h $(DESTDIR)$(pkgincludedir)/fix50sp2
++	cp $(srcdir)/fixt11/*.h $(DESTDIR)$(pkgincludedir)/fixt11
++	cp $(srcdir)/wx/*.h $(DESTDIR)$(pkgincludedir)/wx
+ 
+ uninstall-local:
+ 	rm -rf $(DESTDIR)$(pkgincludedir)
+ 
+ EXTRA_DIST = strptime.c strptime.h
+ 
+-libquickfix_la_LDFLAGS = -version-info 17:0:0
++libquickfix_la_LDFLAGS = -no-undefined -version-info 17:0:0
+ 
+ INCLUDES =-I. -I.. -I../..
+--- origsrc/quickfix-1.15.1/src/C++/test/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/src/C++/test/Makefile.am	2020-12-10 14:13:07.625385100 +0900
+@@ -38,4 +38,4 @@ libquickfixcpptest_la_SOURCES = \
+ 	UtcTimeOnlyTestCase.cpp \
+ 	UtcTimeStampTestCase.cpp
+ 
+-INCLUDES = -I.. -I../../../UnitTest++/src
++INCLUDES = -I.. -I../../../UnitTest++/src -I$(top_srcdir)/src/C++ -I/usr/include/UnitTest++
+--- origsrc/quickfix-1.15.1/src/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/src/Makefile.am	2020-12-11 06:54:13.689305000 +0900
+@@ -28,8 +28,8 @@ at_LDADD = C++/libquickfix.la
+ ut_LDADD = C++/test/libquickfixcpptest.la C++/libquickfix.la
+ pt_LDADD = C++/libquickfix.la
+ 
+-INCLUDES =-IC++ -IC++/test -I../UnitTest++/src
+-LDFLAGS =-L../UnitTest++ -lUnitTest++
++INCLUDES =-IC++ -IC++/test -I../UnitTest++/src -I$(srcdir)/C++ -I$(srcdir)/C++/test -I/usr/include/UnitTest++
++LDFLAGS = -lUnitTest++
+ 
+ all-local:
+ 	rm -f ../test/ut ../test/pt ../test/at ../test/ut_debug
+--- origsrc/quickfix-1.15.1/src/python3/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/src/python3/Makefile.am	2020-12-11 07:13:21.546393200 +0900
+@@ -6,10 +6,10 @@ _quickfix_la_SOURCES = \
+ python_DATA = quickfix.py quickfix40.py quickfix41.py quickfix42.py quickfix43.py quickfix44.py quickfix50.py quickfix50sp1.py quickfix50sp2.py quickfixt11.py
+ 
+ _quickfix_la_CXXFLAGS = -DPYTHON_MAJOR_VERSION=3 -Wno-unused-variable -Wno-maybe-uninitialized
+-_quickfix_la_LDFLAGS = -version-info 13:0:0 -module
+-_quickfix_la_LIBADD = $(top_builddir)/src/C++/libquickfix.la 
++_quickfix_la_LDFLAGS = -avoid-version -no-undefined -module
++_quickfix_la_LIBADD = $(top_builddir)/src/C++/libquickfix.la -lpython3.6
+ 
+-INCLUDES = $(PYTHON3_CFLAGS) -I. -I.. -I../.. -I../C++
++INCLUDES = $(PYTHON3_CFLAGS) -I. -I.. -I../.. -I../C++ -I$(top_srcdir)/src/C++
+ 
+ local_python_src=$(top_builddir)/src/python3
+ local_python_lib=$(top_builddir)/lib/python3
+--- origsrc/quickfix-1.15.1/src/ruby/Makefile.am	2018-04-16 11:40:31.000000000 +0900
++++ src/quickfix-1.15.1/src/ruby/Makefile.am	2020-12-10 23:09:43.471700700 +0900
+@@ -7,7 +7,7 @@ local_ruby_lib=$(top_builddir)/lib/ruby
+ 
+ all-local:
+ 	mkdir -p $(local_ruby_lib)
+-	bash ./make_ruby.sh "$(CXX)" "$(CXXFLAGS)" "$(LIBS)"
++	bash $(srcdir)/make_ruby.sh "$(CXX)" "$(CXXFLAGS)" "$(LIBS)"
+ 	ln -sf $(local_ruby_src)/quickfix* $(local_ruby_lib)
+ 	ln -sf $(top_builddir)/spec spec
+ 
