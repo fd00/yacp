@@ -1,0 +1,117 @@
+--- origsrc/cdo-1.9.9/Makefile.am	2020-01-22 05:18:53.000000000 +0900
++++ src/cdo-1.9.9/Makefile.am	2020-12-11 13:27:20.462238700 +0900
+@@ -1,7 +1,7 @@
+ # Process this file with automake to produce Makefile.in
+ SUBDIRS = libcdi src/lib/ncl src/lib/yac  src/lib/gradsdes src contrib test/data test
+ if MAINTAINER_MODE
+-SUBDIRS += test/bandit_tests test/executeOnly
++# SUBDIRS += test/bandit_tests test/executeOnly
+ endif
+ #
+ ACLOCAL_AMFLAGS = -I m4 -I libcdi/m4
+--- origsrc/cdo-1.9.9/configure.ac	2020-10-14 21:31:42.000000000 +0900
++++ src/cdo-1.9.9/configure.ac	2020-12-11 09:09:02.993446400 +0900
+@@ -74,6 +74,7 @@ AC_CHECK_HEADERS(glob.h)
+ AC_CHECK_HEADERS(fnmatch.h)
+ AC_CHECK_HEADERS(wordexp.h)
+ AC_CHECK_HEADERS(execinfo.h)
++AC_CHECK_HEADERS(getopt.h)
+ #  ----------------------------------------------------------------------
+ # Checks for the availability of functions
+ AC_CHECK_FUNCS(mallinfo)
+--- origsrc/cdo-1.9.9/libcdi/app/cdi.c	2020-04-08 22:01:52.000000000 +0900
++++ src/cdo-1.9.9/libcdi/app/cdi.c	2020-12-11 09:14:02.995197800 +0900
+@@ -54,11 +54,14 @@ void cdiDefTableID(int tableID);
+ }
+ #endif
+ 
++#if defined(HAVE_GETOPT_H)
++#include <getopt.h>
++#else
+ int getopt(int argc, char *const argv[], const char *optstring);
+ 
+ extern char *optarg;
+ extern int optind, opterr, optopt;
+-
++#endif
+ 
+ static char *Progname;
+ 
+--- origsrc/cdo-1.9.9/libcdi/m4/acx_options.m4	2020-08-26 01:06:44.000000000 +0900
++++ src/cdo-1.9.9/libcdi/m4/acx_options.m4	2020-12-11 09:38:15.193287100 +0900
+@@ -35,7 +35,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS([szlib.h],,
++                     [yes],[AC_CHECK_HEADERS([szip/szlib.h],,
+                                              [AC_MSG_ERROR([Could not find szlib.h])],
+                                              [AC_INCLUDES_DEFAULT])
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+@@ -47,7 +47,7 @@ AC_ARG_WITH([szlib],
+                           AS_IF([test -d "$SZLIB_ROOT"],
+                                 [LDFLAGS="-L$SZLIB_ROOT/lib $LDFLAGS"
+                                  CPPFLAGS="-I$SZLIB_ROOT/include $CPPFLAGS"
+-                                 AC_CHECK_HEADERS([szlib.h],,
++                                 AC_CHECK_HEADERS([szip/szlib.h],,
+                                                   [AC_MSG_ERROR([Could not find szlib.h])],
+                                                   [AC_INCLUDES_DEFAULT])
+                                  AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+--- origsrc/cdo-1.9.9/libcdi/src/Makefile.am	2020-06-08 05:22:15.000000000 +0900
++++ src/cdo-1.9.9/libcdi/src/Makefile.am	2020-12-11 10:47:00.940629000 +0900
+@@ -9,6 +9,8 @@ lib_LTLIBRARIES =
+ 
+ if ENABLE_CDI_LIB
+   lib_LTLIBRARIES += libcdi.la
++  libcdi_la_LDFLAGS = -no-undefined
++  libcdi_la_LIBADD = -lhdf5
+   include_HEADERS += cdi.h
+ # add cdi.inc only if cfortran interface is required
+ if USE_FC
+@@ -16,6 +18,7 @@ if USE_FC
+ endif
+ if CREATE_ISOC
+   lib_LTLIBRARIES += libcdi_f2003.la
++  libcdi_f2003_la_LDFLAGS = =no-undefined
+ endif
+ else
+   noinst_LTLIBRARIES += libcdi.la
+@@ -197,6 +200,7 @@ libcdiresunpack_la_SOURCES = \
+ if USE_MPI
+ if ENABLE_CDI_LIB
+ lib_LTLIBRARIES += libcdipio.la
++libcdipio_la_LDFLAGS = -no-undefined
+ include_HEADERS += cdipio.h cdipio.inc
+ else
+ noinst_LTLIBRARIES += libcdipio.la
+--- origsrc/cdo-1.9.9/libcdi/src/cgribexlib.c	2020-04-30 16:29:11.000000000 +0900
++++ src/cdo-1.9.9/libcdi/src/cgribexlib.c	2020-12-11 09:11:54.365502800 +0900
+@@ -5727,7 +5727,7 @@ void gribRepair1(int nrec, long recsize,
+ #if defined(__cplusplus)
+ extern "C" {
+ #endif
+-#include <szlib.h>
++#include <szip/szlib.h>
+ #ifdef  __cplusplus
+ }
+ #endif
+--- origsrc/cdo-1.9.9/m4/acx_options.m4	2020-01-22 05:18:53.000000000 +0900
++++ src/cdo-1.9.9/m4/acx_options.m4	2020-12-11 09:37:51.698595700 +0900
+@@ -40,7 +40,7 @@ AC_ARG_WITH([szlib],
+             [AS_CASE(["$with_szlib"],
+                      [no],[AC_MSG_CHECKING([for szlib library])
+                            AC_MSG_RESULT([suppressed])],
+-                     [yes],[AC_CHECK_HEADERS(szlib.h)
++                     [yes],[AC_CHECK_HEADERS(szip/szlib.h)
+                             AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                            [sz],
+                                            [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
+@@ -50,7 +50,7 @@ AC_ARG_WITH([szlib],
+                           AS_IF([test -d "$SZLIB_ROOT"],
+                                 [LDFLAGS="-L$SZLIB_ROOT/lib $LDFLAGS"
+                                  CPPFLAGS="-I$SZLIB_ROOT/include $CPPFLAGS"
+-                                 AC_CHECK_HEADERS(szlib.h)
++                                 AC_CHECK_HEADERS(szip/szlib.h)
+                                  AC_SEARCH_LIBS([SZ_BufftoBuffCompress],
+                                                 [sz],
+                                                 [AC_DEFINE([HAVE_LIBSZ],[1],[Define to 1 for SZIP support])],
