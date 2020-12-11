@@ -1,0 +1,197 @@
+--- origsrc/draco-1.4.1/cmake/draco_install.cmake	2020-12-09 05:08:36.000000000 +0900
++++ src/draco-1.4.1/cmake/draco_install.cmake	2020-12-11 15:53:22.332112200 +0900
+@@ -24,9 +24,15 @@ macro(draco_setup_install_target)
+   set(DRACO_INCLUDE_DIRS "${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+   configure_file("${draco_root}/cmake/draco-config.cmake.template"
+                  "${draco_build}/draco-config.cmake" @ONLY NEWLINE_STYLE UNIX)
+-  install(
+-    FILES "${draco_build}/draco-config.cmake"
+-    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/cmake")
++  if (CYGWIN)
++    install(
++      FILES "${draco_build}/draco-config.cmake"
++      DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/cmake/draco")
++  else()
++    install(
++      FILES "${draco_build}/draco-config.cmake"
++      DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/cmake")
++  endif()
+ 
+   foreach(file ${draco_sources})
+     if(file MATCHES "h$")
+@@ -59,12 +65,15 @@ macro(draco_setup_install_target)
+     install(TARGETS draco DESTINATION
+                     "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+   else()
+-    install(TARGETS draco_static DESTINATION
+-                    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+-    if(BUILD_SHARED_LIBS)
+-      install(TARGETS draco_shared DESTINATION
++    if (NOT CYGWIN)
++      install(TARGETS draco_static DESTINATION
+                       "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+     endif()
++    if(BUILD_SHARED_LIBS)
++      install(TARGETS draco_shared
++                      RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
++                      ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++    endif()
+   endif()
+ 
+   if(DRACO_UNITY_PLUGIN)
+--- origsrc/draco-1.4.1/cmake/draco_tests.cmake	2020-12-09 05:08:36.000000000 +0900
++++ src/draco-1.4.1/cmake/draco_tests.cmake	2020-12-11 15:41:44.750152800 +0900
+@@ -65,33 +65,36 @@ macro(draco_setup_test_targets)
+       message(FATAL "googletest must be a sibling directory of ${draco_root}.")
+     endif()
+ 
+-    list(APPEND draco_test_defines GTEST_HAS_PTHREAD=0)
+-
+-    draco_add_library(TEST
+-                      NAME
+-                      draco_gtest
+-                      TYPE
+-                      STATIC
+-                      SOURCES
+-                      ${draco_gtest_all}
+-                      DEFINES
+-                      ${draco_defines}
+-                      ${draco_test_defines}
+-                      INCLUDES
+-                      ${draco_test_include_paths})
+-
+-    draco_add_library(TEST
+-                      NAME
+-                      draco_gtest_main
+-                      TYPE
+-                      STATIC
+-                      SOURCES
+-                      ${draco_gtest_main}
+-                      DEFINES
+-                      ${draco_defines}
+-                      ${draco_test_defines}
+-                      INCLUDES
+-                      ${draco_test_include_paths})
++    find_package(gtest)
++    if (NOT GTEST_FOUND)
++      list(APPEND draco_test_defines GTEST_HAS_PTHREAD=0)
++
++      draco_add_library(TEST
++                        NAME
++                        draco_gtest
++                        TYPE
++                        STATIC
++                        SOURCES
++                        ${draco_gtest_all}
++                        DEFINES
++                        ${draco_defines}
++                        ${draco_test_defines}
++                        INCLUDES
++                        ${draco_test_include_paths})
++
++      draco_add_library(TEST
++                        NAME
++                        draco_gtest_main
++                        TYPE
++                        STATIC
++                        SOURCES
++                        ${draco_gtest_main}
++                        DEFINES
++                        ${draco_defines}
++                        ${draco_test_defines}
++                        INCLUDES
++                        ${draco_test_include_paths})
++    endif()
+ 
+     set(DRACO_TEST_DATA_DIR "${draco_root}/testdata")
+     set(DRACO_TEST_TEMP_DIR "${draco_build}/draco_test_temp")
+@@ -102,32 +105,62 @@ macro(draco_setup_test_targets)
+                    "${draco_build}/testing/draco_test_config.h")
+ 
+     # Create the test targets.
+-    draco_add_executable(NAME
+-                         draco_tests
+-                         SOURCES
+-                         ${draco_test_sources}
+-                         DEFINES
+-                         ${draco_defines}
+-                         ${draco_test_defines}
+-                         INCLUDES
+-                         ${draco_test_include_paths}
+-                         LIB_DEPS
+-                         draco_static
+-                         draco_gtest
+-                         draco_gtest_main)
+-
+-    draco_add_executable(NAME
+-                         draco_factory_tests
+-                         SOURCES
+-                         ${draco_factory_test_sources}
+-                         DEFINES
+-                         ${draco_defines}
+-                         ${draco_test_defines}
+-                         INCLUDES
+-                         ${draco_test_include_paths}
+-                         LIB_DEPS
+-                         draco_static
+-                         draco_gtest
+-                         draco_gtest_main)
++    if (GTEST_FOUND)
++      draco_add_executable(NAME
++        draco_tests
++        SOURCES
++        ${draco_test_sources}
++        DEFINES
++        ${draco_defines}
++        ${draco_test_defines}
++        INCLUDES
++        ${draco_test_include_paths}
++        LIB_DEPS
++        draco
++        gtest
++        gtest_main)
++
++      draco_add_executable(NAME
++        draco_factory_tests
++        SOURCES
++        ${draco_factory_test_sources}
++        DEFINES
++        ${draco_defines}
++        ${draco_test_defines}
++        INCLUDES
++        ${draco_test_include_paths}
++        LIB_DEPS
++        draco
++        gtest
++        gtest_main)
++    else()
++      draco_add_executable(NAME
++                          draco_tests
++                          SOURCES
++                          ${draco_test_sources}
++                          DEFINES
++                          ${draco_defines}
++                          ${draco_test_defines}
++                          INCLUDES
++                          ${draco_test_include_paths}
++                          LIB_DEPS
++                          draco_static
++                          draco_gtest
++                          draco_gtest_main)
++
++      draco_add_executable(NAME
++                          draco_factory_tests
++                          SOURCES
++                          ${draco_factory_test_sources}
++                          DEFINES
++                          ${draco_defines}
++                          ${draco_test_defines}
++                          INCLUDES
++                          ${draco_test_include_paths}
++                          LIB_DEPS
++                          draco_static
++                          draco_gtest
++                          draco_gtest_main)
++    endif()
+   endif()
+ endmacro()
