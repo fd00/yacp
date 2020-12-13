@@ -1,0 +1,81 @@
+--- origsrc/rmcast-2.0.0/Makefile.am	2009-09-12 04:08:57.000000000 +0900
++++ src/rmcast-2.0.0/Makefile.am	2020-12-13 17:17:11.111983700 +0900
+@@ -8,3 +8,6 @@ dist-hook:
+ 
+ deb: all
+ 	tools/scripts/makedeb.sh `pwd` $(PACKAGE) $(PACKAGE_VERSION) $(libdir) $(bindir) $(includedir) $(datadir)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/rmcast-2.0.0/configure.in	2009-09-12 04:08:58.000000000 +0900
++++ src/rmcast-2.0.0/configure.in	2020-12-13 17:20:37.130570600 +0900
+@@ -39,4 +39,4 @@ AC_FUNC_SETVBUF_REVERSED
+ AC_TYPE_SIGNAL
+ AC_CHECK_FUNCS([alarm bzero gethostbyname gethostname gettimeofday inet_ntoa memset pow putenv select setlocale socket strchr strdup strerror strstr])
+ 
+-AC_OUTPUT(Makefile src/Makefile mcastproxy/Makefile rmchat/Makefile)
++AC_OUTPUT(rmcast.pc Makefile src/Makefile mcastproxy/Makefile rmchat/Makefile)
+--- origsrc/rmcast-2.0.0/rmcast.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/rmcast-2.0.0/rmcast.pc.in	2020-12-13 17:17:11.014976900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: rmcast
++Description: IP Multicast library
++Version: @VERSION@
++Libs: -L${libdir} -lrmcast
++Cflags: -I${includedir}
+--- origsrc/rmcast-2.0.0/rmchat/Makefile.am	2008-10-17 01:23:47.000000000 +0900
++++ src/rmcast-2.0.0/rmchat/Makefile.am	2020-12-13 17:04:39.850254300 +0900
+@@ -2,4 +2,4 @@ bin_PROGRAMS = rmchat
+ rmchat_SOURCES = rmchat.c
+ rmchat_LDADD = -L../src/.libs/ -lrmcast
+ rmchat_CFLAGS = -Wall
+-INCLUDES= -I../src
++INCLUDES= -I../src -I$(top_srcdir)/src
+--- origsrc/rmcast-2.0.0/src/Makefile.am	2009-09-12 04:08:59.000000000 +0900
++++ src/rmcast-2.0.0/src/Makefile.am	2020-12-13 16:50:35.270429300 +0900
+@@ -10,3 +10,4 @@ librmcast_la_CFLAGS = -Wall -fno-strict-
+                       -DRANDOM_TIMERS -DREFRESH -DSINGLE_NACK \
+                       -DSUPPORT_FOR_NEW_MEMBERS -D_REENTRANT -DMALLOC_CHECK_ \
+                       -D_POSIX_PTHREAD_SEMANTICS
++librmcast_la_LDFLAGS = -no-undefined
+--- origsrc/rmcast-2.0.0/src/rminternals.c	2009-09-12 04:09:00.000000000 +0900
++++ src/rmcast-2.0.0/src/rminternals.c	2020-12-13 16:17:54.191676600 +0900
+@@ -486,7 +486,7 @@ void *rmcastReceivePackets( void *user_s
+     sigset_t alrmset;
+     sigfillset( &alrmset );            /* fills the alarm set with all the signals */
+ 
+-    /* blocks all the signals, because they won´t be handled by this thread */
++    /* blocks all the signals, because they wonï¿½t be handled by this thread */
+     pthread_sigmask( SIG_BLOCK, &alrmset, NULL );
+ #endif
+ #ifdef DPROCESSING_TIME
+@@ -980,11 +980,15 @@ int rmcastSendPacket( int soc, BYTE *mes
+  *  Communication with it should be done using SIGUSR1.
+  *
+  *****************************************************************************************************/
++#if !defined(__CYGWIN__)
+ extern const char * const sys_siglist[];
++#endif
+ #define _GNU_SOURCE
+ #include <string.h>
+ char *strsignal( int sig );
++#if !defined(__CYGWIN__)
+ extern const char * const sys_siglist[];
++#endif
+ 
+ void *rmcastHandleSignals( void *arg )
+ {
+@@ -1663,7 +1667,7 @@ void rmcastProcessDataPacket( PACKET_INF
+     else
+     {
+         #ifdef DEBUG_CACHE
+-         fprintf( stderr, "DEBUG_CACHE rmcastProcessDataPacket: Couldn´t insert cache node.\n" );
++         fprintf( stderr, "DEBUG_CACHE rmcastProcessDataPacket: Couldnï¿½t insert cache node.\n" );
+         #endif
+     }
+ 
