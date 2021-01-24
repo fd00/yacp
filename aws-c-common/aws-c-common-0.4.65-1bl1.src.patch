@@ -1,5 +1,5 @@
---- origsrc/aws-c-common-0.4.63/CMakeLists.txt	2020-12-09 10:12:46.000000000 +0900
-+++ src/aws-c-common-0.4.63/CMakeLists.txt	2020-12-21 11:21:50.729722800 +0900
+--- origsrc/aws-c-common-0.4.65/CMakeLists.txt	2021-01-07 01:22:46.000000000 +0900
++++ src/aws-c-common-0.4.65/CMakeLists.txt	2021-01-24 12:55:29.808811500 +0900
 @@ -235,14 +235,25 @@ else()
     set (TARGET_DIR "static")
  endif()
@@ -64,8 +64,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-common-0.4.63/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-common-0.4.63/aws-c-common.pc.in	2020-12-21 11:22:05.094132400 +0900
+--- origsrc/aws-c-common-0.4.65/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.4.65/aws-c-common.pc.in	2021-01-24 12:55:29.733808500 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -77,22 +77,23 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-c-common
 +Cflags: -I${includedir}
---- origsrc/aws-c-common-0.4.63/cmake/AwsCFlags.cmake	2020-12-09 10:12:46.000000000 +0900
-+++ src/aws-c-common-0.4.63/cmake/AwsCFlags.cmake	2020-12-21 11:04:40.650463700 +0900
-@@ -51,7 +51,10 @@ function(aws_set_common_properties targe
+--- origsrc/aws-c-common-0.4.65/cmake/AwsCFlags.cmake	2021-01-07 01:22:46.000000000 +0900
++++ src/aws-c-common-0.4.65/cmake/AwsCFlags.cmake	2021-01-24 12:46:14.762351600 +0900
+@@ -53,7 +53,11 @@ function(aws_set_common_properties targe
          list(APPEND AWS_C_FLAGS "${_FLAGS}")
  
      else()
--        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes)
-+        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes)
-+        if (NOT CYGWIN)
+-        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes -fno-omit-frame-pointer)
++        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes -fno-omit-frame-pointer)
++
++        if(NOT CYGWIN)
 +            list(APPEND AWS_C_FLAGS -Werror)
 +        endif()
  
          if(NOT SET_PROPERTIES_NO_WEXTRA)
              list(APPEND AWS_C_FLAGS -Wextra)
---- origsrc/aws-c-common-0.4.63/cmake/aws-c-common-config.cmake	2020-12-09 10:12:46.000000000 +0900
-+++ src/aws-c-common-0.4.63/cmake/aws-c-common-config.cmake	2020-12-21 11:04:40.707439800 +0900
+--- origsrc/aws-c-common-0.4.65/cmake/aws-c-common-config.cmake	2021-01-07 01:22:46.000000000 +0900
++++ src/aws-c-common-0.4.65/cmake/aws-c-common-config.cmake	2021-01-24 12:45:09.527132100 +0900
 @@ -4,9 +4,12 @@ if(WIN32 OR UNIX OR APPLE)
      find_package(Threads REQUIRED)
  endif()
@@ -110,8 +111,8 @@
 +    endif()
  endif()
 -
---- origsrc/aws-c-common-0.4.63/source/posix/thread.c	2020-12-09 10:12:46.000000000 +0900
-+++ src/aws-c-common-0.4.63/source/posix/thread.c	2020-12-21 11:19:02.739325200 +0900
+--- origsrc/aws-c-common-0.4.65/source/posix/thread.c	2021-01-07 01:22:46.000000000 +0900
++++ src/aws-c-common-0.4.65/source/posix/thread.c	2021-01-24 12:47:02.331484500 +0900
 @@ -160,7 +160,7 @@ int aws_thread_launch(
   * NUMA or not is setup in interleave mode.
   * Thread afinity is also not supported on Android systems, and honestly, if you're running android on a NUMA
