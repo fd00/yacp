@@ -1,5 +1,5 @@
---- origsrc/aws-checksums-0.1.9/CMakeLists.txt	2020-08-15 03:03:43.000000000 +0900
-+++ src/aws-checksums-0.1.9/CMakeLists.txt	2020-10-18 10:44:48.702312200 +0900
+--- origsrc/aws-checksums-0.1.10/CMakeLists.txt	2020-09-12 08:26:35.000000000 +0900
++++ src/aws-checksums-0.1.10/CMakeLists.txt	2021-01-24 13:16:30.202669600 +0900
 @@ -28,6 +28,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
  # Append that generated list to the module search path
  list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
@@ -11,20 +11,17 @@
  include(AwsCFlags)
  include(AwsCheckHeaders)
  include(AwsSharedLibSetup)
-@@ -120,7 +124,11 @@ aws_add_sanitizers(${PROJECT_NAME})
+@@ -120,6 +124,9 @@ aws_add_sanitizers(${PROJECT_NAME})
  
  # We are not ABI stable yet
  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
--set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
 +if (CYGWIN)
 +    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
-+else()
-+    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
 +endif()
  
  target_include_directories(${PROJECT_NAME} PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-@@ -139,20 +147,40 @@ else()
+@@ -138,20 +145,40 @@ else()
      set (TARGET_DIR "static")
  endif()
  
@@ -72,8 +69,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-checksums.pc.in ${CMAKE_BINARY_DIR}/aws-checksums.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-checksums.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-checksums-0.1.9/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-checksums-0.1.9/aws-checksums.pc.in	2020-10-18 10:48:12.095030100 +0900
+--- origsrc/aws-checksums-0.1.10/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-checksums-0.1.10/aws-checksums.pc.in	2021-01-24 13:23:57.885485800 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -86,13 +83,13 @@
 +Libs: -L${libdir} -laws-checksums
 +Cflags: -I${includedir}
 +Requires: aws-c-common
---- origsrc/aws-checksums-0.1.9/cmake/aws-checksums-config.cmake	2020-08-15 03:03:43.000000000 +0900
-+++ src/aws-checksums-0.1.9/cmake/aws-checksums-config.cmake	2020-10-18 10:44:48.734297200 +0900
+--- origsrc/aws-checksums-0.1.10/cmake/aws-checksums-config.cmake	2020-09-12 08:26:35.000000000 +0900
++++ src/aws-checksums-0.1.10/cmake/aws-checksums-config.cmake	2021-01-24 13:14:28.549907800 +0900
 @@ -1,6 +1,9 @@
 -if (BUILD_SHARED_LIBS)
 -    include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
 +if (CYGWIN)
-+    include(${CMAKE_CURRENT_LIST_DIR}/@CMAKE_PROJECT_NAME@-targets.cmake)
++    include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
  else()
 -    include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
 +    if (BUILD_SHARED_LIBS)
