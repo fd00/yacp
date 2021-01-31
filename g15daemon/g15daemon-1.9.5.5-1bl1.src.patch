@@ -1,0 +1,123 @@
+--- origsrc/g15daemon-v1.9.5.5/Makefile.am	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/Makefile.am	2021-01-31 15:59:29.076709400 +0900
+@@ -1,6 +1,6 @@
+ LLIBDIR=@LIBDIR@
+ 
+-SUBDIRS =  libg15daemon_client g15daemon plugins
++SUBDIRS =  libg15daemon_client g15daemon # plugins
+ INCLUDES =  -I$(top_srcdir)/libg15daemon_client -I$(top_srcdir)/g15daemon
+ 
+ EXTRA_DIST = debian contrib Documentation lang-bindings patches rpm README.usage FAQ LICENSE images README.Linux README.FreeBSD README.Solaris
+@@ -36,3 +36,6 @@ dist-rpm: dist-bzip2
+ dist-archives:
+ 	$(MAKE) dist-bzip2
+ 	$(MAKE) dist-rpm                
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/g15daemon-v1.9.5.5/configure.in	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/configure.in	2021-01-31 15:59:29.077711300 +0900
+@@ -130,6 +130,6 @@ CPPFLAGS="$CPPFLAGS "'-DPLUGINDIR=\"$(G1
+ 
+ CPPFLAGS="$CPPFLAGS "'-I$(includedir)'
+ 
+-AC_CONFIG_FILES([Makefile g15daemon/Makefile libg15daemon_client/Makefile plugins/Makefile])
++AC_CONFIG_FILES([g15daemon.pc Makefile g15daemon/Makefile libg15daemon_client/Makefile plugins/Makefile])
+ 
+ AC_OUTPUT
+--- origsrc/g15daemon-v1.9.5.5/g15daemon/Makefile.am	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/g15daemon/Makefile.am	2021-01-31 11:51:49.010866500 +0900
+@@ -8,6 +8,6 @@ g15daemon_SOURCES = utility_funcs.c g15d
+ g15daemon_LDADD = -ldl
+ g15daemon_LDFLAGS = -rdynamic
+ g15daemontest_SOURCES = lcdclient_test.c
+-INCLUDES = -I$(top_builddir)/libg15daemon_client/
++INCLUDES = -I$(top_builddir)/libg15daemon_client/ -I$(top_srcdir)/libg15daemon_client/
+ g15daemontest_LDADD = $(top_builddir)/libg15daemon_client/libg15daemon_client.la
+ include_HEADERS = g15daemon.h
+--- origsrc/g15daemon-v1.9.5.5/g15daemon/g15daemon.h	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/g15daemon/g15daemon.h	2021-01-31 15:54:49.616873500 +0900
+@@ -200,7 +200,7 @@ struct lcdnode_s {
+     lcdnode_t *next;
+     lcdnode_t *last_priority;
+     lcd_t *lcd;
+-}lcdnode_s;
++};
+ 
+ struct g15daemon_s
+ {
+@@ -213,10 +213,10 @@ struct g15daemon_s
+     configfile_t *config;
+     unsigned int kb_backlight_state; // master state
+     unsigned int remote_keyhandler_sock;
+-}g15daemon_s;
++};
+ 
+-pthread_mutex_t lcdlist_mutex;
+-pthread_mutex_t g15lib_mutex;
++extern pthread_mutex_t lcdlist_mutex;
++extern pthread_mutex_t g15lib_mutex;
+ 
+ /* server hello */
+ #define SERV_HELO "G15 daemon HELLO"
+--- origsrc/g15daemon-v1.9.5.5/g15daemon/main.c	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/g15daemon/main.c	2021-01-31 15:55:03.424116000 +0900
+@@ -59,6 +59,11 @@ struct lcd_t *keyhandler = NULL;
+ 
+ static int loaded_plugins = 0;
+ 
++struct lcdnode_s lcdnode_s;
++struct g15daemon_s g15daemon_s;
++pthread_mutex_t lcdlist_mutex;
++pthread_mutex_t g15lib_mutex;
++
+ /* send event to foreground client's eventlistener */
+ int g15daemon_send_event(void *caller, unsigned int event, unsigned long value)
+ {
+--- origsrc/g15daemon-v1.9.5.5/g15daemon.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/g15daemon-v1.9.5.5/g15daemon.pc.in	2021-01-31 15:59:29.014101200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: g15daemon
++Description: Provides access to extra keys and the LCD available on the logitech G15 keyboard
++Version: @VERSION@
++Libs: -L${libdir} -lg15daemon
++Cflags: -I${includedir}
+--- origsrc/g15daemon-v1.9.5.5/libg15daemon_client/Makefile.am	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/libg15daemon_client/Makefile.am	2021-01-31 11:51:49.017868900 +0900
+@@ -1,6 +1,6 @@
+ 
+ METASOURCES = AUTO
+ lib_LTLIBRARIES = libg15daemon_client.la
+-libg15daemon_client_la_LDFLAGS = -version-info 1:2:0
++libg15daemon_client_la_LDFLAGS = -no-undefined -version-info 1:2:0
+ libg15daemon_client_la_SOURCES = g15daemon_client.h g15daemon_net.c
+ include_HEADERS= g15daemon_client.h
+\ No newline at end of file
+--- origsrc/g15daemon-v1.9.5.5/plugins/Makefile.am	2021-01-25 19:57:16.000000000 +0900
++++ src/g15daemon-v1.9.5.5/plugins/Makefile.am	2021-01-31 15:55:59.252229100 +0900
+@@ -5,16 +5,16 @@ AM_CFLAGS = -Wall
+ 
+ if UINPUT_INTERFACE_PLUGIN
+ g15plugin_uinput_la_SOURCES = g15_plugin_uinput.c
+-g15plugin_uinput_la_LDFLAGS = -avoid-version -module 
++g15plugin_uinput_la_LDFLAGS = -no-undefined -avoid-version -module 
+ input_la = g15plugin_uinput.la
+ endif
+ 
+ lib_LTLIBRARIES = ${input_la} g15plugin_tcpserver.la g15plugin_clock.la
+-INCLUDES = -I$(top_builddir)/libg15daemon_client/ -I$(top_builddir)/g15daemon
++INCLUDES = -I$(top_builddir)/libg15daemon_client/ -I$(top_builddir)/g15daemon -I$(top_srcdir)/g15daemon
+ 
+ g15plugin_tcpserver_la_SOURCES = g15_plugin_net.c
+-g15plugin_tcpserver_la_LDFLAGS = -avoid-version -module 
++g15plugin_tcpserver_la_LDFLAGS = -no-undefined -avoid-version -module 
+ 
+ g15plugin_clock_la_SOURCES = g15_plugin_clock.c
+-g15plugin_clock_la_LDFLAGS = -avoid-version -module 
++g15plugin_clock_la_LDFLAGS = -no-undefined -avoid-version -module 
+ 
