@@ -1,0 +1,106 @@
+--- origsrc/libcouchbase-3.0.7/CMakeLists.txt	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/CMakeLists.txt	2021-02-03 21:53:54.183635200 +0900
+@@ -373,8 +373,10 @@ ELSE()
+     ENDIF()
+ ENDIF()
+ 
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++endif()
+ SET(LCB_LINK_DEPS ${lcb_plat_libs} ${lcb_ssl_libs} ${LCB_HDR_HISTOGRAM_LINK})
+ IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     SET(LCB_LINK_DEPS ${LCB_LINK_DEPS} rt)
+--- origsrc/libcouchbase-3.0.7/example/subdoc/subdoc-tombstone.cc	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/example/subdoc/subdoc-tombstone.cc	2021-02-03 21:26:19.088182200 +0900
+@@ -17,6 +17,7 @@
+ 
+ #include <libcouchbase/couchbase.h>
+ #include <string>
++#include <cassert>
+ 
+ static void get_callback(lcb_INSTANCE *, int, const lcb_RESPGET *resp)
+ {
+--- origsrc/libcouchbase-3.0.7/plugins/io/libev/CMakeLists.txt	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/plugins/io/libev/CMakeLists.txt	2021-02-03 21:55:14.061203500 +0900
+@@ -14,9 +14,13 @@ ENDIF()
+ ADD_LIBRARY(couchbase_libev SHARED plugin-libev.c)
+ SET_TARGET_PROPERTIES(couchbase_libev
+     PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+     COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libev
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib")
++endif()
+ TARGET_LINK_LIBRARIES(couchbase_libev ${LIBEV_LIBRARIES})
+ INCLUDE_DIRECTORIES(AFTER ${LIBEV_INCLUDE_DIR})
+ 
+@@ -28,4 +32,4 @@ ENDIF()
+ 
+ INSTALL(TARGETS
+     couchbase_libev
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
++    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
+--- origsrc/libcouchbase-3.0.7/plugins/io/libevent/CMakeLists.txt	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/plugins/io/libevent/CMakeLists.txt	2021-02-03 21:56:00.075484600 +0900
+@@ -24,7 +24,7 @@ IF(LCB_EMBED_PLUGIN_LIBEVENT)
+     SET(LCB_LINK_SPEC "${LCB_LINKS_SPEC} ${LIBEVENT_LIBRARIES}")
+ ELSE()
+     ADD_LIBRARY(couchbase_libevent SHARED plugin-libevent.c)
+-    INSTALL(TARGETS couchbase_libevent LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
++    INSTALL(TARGETS couchbase_libevent RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
+     TARGET_LINK_LIBRARIES(couchbase_libevent ${LIBEVENT_LIBRARIES})
+ ENDIF()
+ 
+--- origsrc/libcouchbase-3.0.7/plugins/io/libuv/CMakeLists.txt	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/plugins/io/libuv/CMakeLists.txt	2021-02-03 21:57:00.420244500 +0900
+@@ -31,14 +31,17 @@ ADD_LIBRARY(couchbase_libuv SHARED plugi
+ #ENDIF()
+ SET_TARGET_PROPERTIES(couchbase_libuv
+     PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+     COMPILE_FLAGS "${CMAKE_C_FLAGS} ${LCB_CORE_FLAGS} ${_lcbuv_cflags}")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libuv
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib")
++endif()
+ 
+ TARGET_LINK_LIBRARIES(couchbase_libuv ${LIBUV_LIBRARIES} couchbase)
+ INCLUDE_DIRECTORIES(AFTER ${LIBUV_INCLUDE_DIR})
+ ADD_DEFINITIONS(-DLIBCOUCHBASE_INTERNAL=1)
+ INSTALL(TARGETS
+     couchbase_libuv
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}"
+-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/libcouchbase")
+--- origsrc/libcouchbase-3.0.7/src/dns-srv.cc	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/src/dns-srv.cc	2021-02-03 21:39:27.666742500 +0900
+@@ -14,7 +14,7 @@
+ #endif /* __NAMESER < NNN */
+ #endif /* HAVE_ARPA_NAMESER_H */
+ 
+-#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH)
++#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH) && !defined(__CYGWIN__)
+ #define CAN_SRV_LOOKUP
+ #include <sys/types.h>
+ #include <netinet/in.h>
+--- origsrc/libcouchbase-3.0.7/src/iofactory.c	2020-12-16 15:39:21.000000000 +0900
++++ src/libcouchbase-3.0.7/src/iofactory.c	2021-02-03 21:40:21.112878600 +0900
+@@ -65,6 +65,8 @@ typedef struct {
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_" NAME ".dll."
+ #endif /* _DEBUG */
++#elif defined(__CYGWIN__)
++#define PLUGIN_SO(NAME) "cygcouchbase_" NAME ".dll"
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_" NAME ".so"
+ #endif
