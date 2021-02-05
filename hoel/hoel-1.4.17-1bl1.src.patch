@@ -1,0 +1,34 @@
+--- origsrc/hoel-1.4.17/CMakeLists.txt	2020-12-13 06:53:57.000000000 +0900
++++ src/hoel-1.4.17/CMakeLists.txt	2021-02-05 17:20:21.963207300 +0900
+@@ -102,11 +102,17 @@ set(LIB_SRC
+ find_package (Threads)
+ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
+ 
++find_package(PkgConfig REQUIRED)
++pkg_check_modules(ORCANIA liborcania)
++if (ORCANIA_FOUND)
++  set(LIBS ${ORCANIA_LIBRARIES})
++endif()
++
+ include(FindJansson)
+ set(JANSSON_MIN_VERSION 2.4)
+ find_package(Jansson ${JANSSON_MIN_VERSION} REQUIRED)
+ if (JANSSON_FOUND)
+-  set(LIBS ${JANSSON_LIBRARIES})
++  set(LIBS ${LIBS} ${JANSSON_LIBRARIES})
+ endif ()
+ 
+ option(WITH_SQLITE3 "Use SQLite3 library" ON)
+@@ -178,7 +184,11 @@ if (WITH_SQLITE3)
+   set (PKGCONF_REQ_PRIVATE "${PKGCONF_REQ_PRIVATE}, sqlite3")
+ endif ()
+ if (WITH_MARIADB)
+-  set (PKGCONF_REQ_PRIVATE "${PKGCONF_REQ_PRIVATE}, mariadb")
++  if (CYGWIN)
++    set (PKGCONF_REQ_PRIVATE "${PKGCONF_REQ_PRIVATE}, libmariadb")
++  else()
++    set (PKGCONF_REQ_PRIVATE "${PKGCONF_REQ_PRIVATE}, mariadb")
++  endif()
+ endif ()
+ if (WITH_PGSQL)
+   set (PKGCONF_REQ_PRIVATE "${PKGCONF_REQ_PRIVATE}, libpq")
