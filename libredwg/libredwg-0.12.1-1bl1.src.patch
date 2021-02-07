@@ -1,0 +1,82 @@
+--- origsrc/libredwg-0.12.1/bindings/python/Makefile.am	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/bindings/python/Makefile.am	2021-02-07 12:39:38.151948500 +0900
+@@ -46,7 +46,7 @@ _LibreDWG_la_SOURCES = $(BUILT_SOURCES)
+ ## more magic: SWIG_PYTHON_CPPFLAGS resolves to null and python includes
+ ## are not passed to gcc via -I
+ _LibreDWG_la_CPPFLAGS = -I$(top_srcdir)/include $(AX_SWIG_PYTHON_CPPFLAGS)
+-_LibreDWG_la_LDFLAGS = -module -no-undefined $(PYTHON_EXTRA_LDFLAGS)
++_LibreDWG_la_LDFLAGS = -module -no-undefined $(PYTHON_EXTRA_LDFLAGS) -avoid-version
+ _LibreDWG_la_LIBADD = ../../src/libredwg.la $(PYTHON_LIBS) $(PYTHON_EXTRA_LIBS)
+ 
+ ## not elegant, but works
+--- origsrc/libredwg-0.12.1/configure.ac	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/configure.ac	2021-02-07 08:24:21.829176100 +0900
+@@ -110,6 +110,8 @@ AC_CHECK_LIB([xml2],[newXMLEntity],
+   fi])
+ AM_CONDITIONAL([HAVE_LIBXML2], [test x$have_libxml2 = xyes])
+ 
++PKG_CHECK_MODULES([JSMN], [jsmn])
++
+ dnl Checks for header files
+ AC_HEADER_STDC
+ dnl Avoid rpl_malloc when cross-compiling. we don't need malloc.h
+@@ -179,7 +181,6 @@ if test x$ac_cv_header_wchar_h = xyes; t
+ fi
+ dnl AX_GCC_BUILTIN(__builtin_offsetof)
+ AC_DEFINE([_POSIX_C_SOURCE],[200809L],[Needed for strdup])
+-AC_DEFINE([__XSI_VISIBLE],[700],[Needed for cygwin strdup])
+ 
+ AX_IS_RELEASE([git-directory])
+ dnl ability to override with a .git dir, to test release features
+--- origsrc/libredwg-0.12.1/examples/Makefile.am	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/examples/Makefile.am	2021-02-07 12:40:31.651200400 +0900
+@@ -186,7 +186,7 @@ EXTRA_DIST += unknown.pi ACAD_EVALUATION
+ EXTRA_man1_MANS = $(srcdir)/dwgfuzz.1
+ dist_man1_MANS = $(srcdir)/dwgadd.1
+ dist_man5_MANS = $(srcdir)/dwgadd.5
+-dist_data_DATA = dwgadd.example load_dwg.py
++dist_pkgdata_DATA = dwgadd.example load_dwg.py
+ 
+ CLEANFILES = {example,sample}_2000.svg alldwg.inc~ \
+ 	     alldxf_0.inc~ alldxf_1.inc~ alldxf_2.inc~
+--- origsrc/libredwg-0.12.1/include/dwg_api.h	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/include/dwg_api.h	2021-02-07 08:37:59.501134900 +0900
+@@ -58,7 +58,9 @@
+ #if (defined(__GNUC__) && ((__GNUC__ * 100) + __GNUC_MINOR__) >= 303) && !defined(__cplusplus)
+ #  undef __nonnull
+ #  define __nonnull(params) __attribute__ ((__nonnull__ params))
++#if !defined(__nonnull_all)
+ #  define __nonnull_all __attribute__ ((__nonnull__))
++#endif
+ #  define HAVE_NONNULL
+ #else
+ #  undef __nonnull
+--- origsrc/libredwg-0.12.1/libredwg.pc.in	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/libredwg.pc.in	2021-02-07 07:49:09.378044700 +0900
+@@ -10,3 +10,4 @@ Version: @VERSION@
+ URL: @PACKAGE_URL@
+ Libs: -L${libdir} -lredwg
+ Cflags: -I${includedir}
++Requires: jsmn
+--- origsrc/libredwg-0.12.1/src/Makefile.am	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/src/Makefile.am	2021-02-07 07:49:54.469239100 +0900
+@@ -21,6 +21,7 @@ lib_LTLIBRARIES = libredwg.la
+ WARN_CFLAGS = @WARN_CFLAGS@
+ AM_CFLAGS   = -I$(top_srcdir)/include -I. $(WARN_CFLAGS)
+ libredwg_la_LDFLAGS = -version-info $(LIBREDWG_SO_VERSION) -no-undefined -lm
++libredwg_la_LIBADD = $(JSMN_LIBS)
+ 
+ libredwg_la_SOURCES = \
+ 	dwg.c \
+--- origsrc/libredwg-0.12.1/src/common.h	2021-01-31 23:27:59.000000000 +0900
++++ src/libredwg-0.12.1/src/common.h	2021-02-07 08:20:22.154899300 +0900
+@@ -130,7 +130,9 @@
+ #if _GNUC_VERSION >= 303 && !defined(__cplusplus)
+ #  undef __nonnull
+ #  define __nonnull(params) __attribute__ ((__nonnull__ params))
++#if !defined(__nonnull_all)
+ #  define __nonnull_all __attribute__ ((__nonnull__))
++#endif
+ #  define HAVE_NONNULL
+ #else
+ #  define __nonnull(params)
