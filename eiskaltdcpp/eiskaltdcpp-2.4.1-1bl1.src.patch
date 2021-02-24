@@ -1,0 +1,159 @@
+--- origsrc/eiskaltdcpp-2.4.1/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/CMakeLists.txt
+@@ -427,3 +427,8 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+     IMMEDIATE @ONLY)
+ add_custom_target(uninstall
+     "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/cmake_uninstall.cmake")
++
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/${PROJECT_NAME_GLOBAL}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME_GLOBAL}.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_GLOBAL}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/eiskaltdcpp-2.4.1/dcpp/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/dcpp/CMakeLists.txt
+@@ -96,11 +96,11 @@ if (HAVE_IFADDRS_H)
+                  PROPERTY COMPILE_DEFINITIONS HAVE_IFADDRS_H APPEND)
+ endif (HAVE_IFADDRS_H)
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+     set_property(TARGET dcpp PROPERTY COMPILE_FLAGS)
+-else(WIN32)
++else ()
+     set_property(TARGET dcpp PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif ()
+ 
+ target_link_libraries (dcpp
+                        ${DHT_LIB}
+@@ -118,7 +118,10 @@ target_link_libraries (dcpp
+                        ${IDNA_LIBRARIES}
+                        ${XATTR_LIBRARIES}
+                        ${HAIKU_LIB})
+-set_target_properties(dcpp PROPERTIES VERSION ${SOVERSION} OUTPUT_NAME "eiskaltdcpp")
++set_target_properties(dcpp PROPERTIES
++                      VERSION ${SOVERSION}
++                      SOVERSION ${SOVERSION}
++                      OUTPUT_NAME "eiskaltdcpp")
+ 
+ if (APPLE)
+     set (LIBDIR ${PROJECT_NAME_GLOBAL}.app/Contents/Frameworks)
+@@ -131,7 +131,7 @@ endif(APPLE)
+ 
+ if (LINK STREQUAL SHARED)
+     install (TARGETS dcpp
+-             LIBRARY DESTINATION ${LIBDIR} NAMELINK_SKIP
++             LIBRARY DESTINATION ${LIBDIR}
+              BUNDLE DESTINATION ${LIBDIR})
+ endif (LINK STREQUAL SHARED)
+ 
+--- origsrc/eiskaltdcpp-2.4.1/dcpp/Util.h
++++ src/eiskaltdcpp-2.4.1/dcpp/Util.h
+@@ -243,7 +243,7 @@ public:
+     static int64_t toInt64(const string& aString) {
+ #ifdef _WIN32
+         return _atoi64(aString.c_str());
+-#elif defined(__HAIKU__)
++#elif defined(__HAIKU__) || !defined(__GLIBC__)
+         return strtoll(aString.c_str(), (char **)NULL, 10);
+ #else
+         return strtoq(aString.c_str(), (char **)NULL, 10);
+--- origsrc/eiskaltdcpp-2.4.1/dht/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/dht/CMakeLists.txt
+@@ -17,9 +17,9 @@ set (LINK STATIC)
+ 
+ add_library (dht ${LINK} ${dht_srcs})
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+     set_property(TARGET dht PROPERTY COMPILE_FLAGS)
+-else(WIN32)
++else ()
+     set_property(TARGET dht PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif ()
+ 
+--- origsrc/eiskaltdcpp-2.4.1/eiskaltdcpp-daemon/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/eiskaltdcpp-daemon/CMakeLists.txt
+@@ -75,7 +75,7 @@ if (BUILD_STATIC)
+     endif (UNIX AND NOT APPLE AND NOT HAIKU)
+ endif (BUILD_STATIC)
+ 
+-target_link_libraries (${PROJECT_NAME} dcpp ${LIBS})
++target_link_libraries (${PROJECT_NAME} extra dcpp ${LIBS})
+ 
+ if (DEBUG_DAEMON)
+     add_definitions(-D_DEBUG_DAEMON)
+--- origsrc/eiskaltdcpp-2.4.1/eiskaltdcpp-qt/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/eiskaltdcpp-qt/CMakeLists.txt
+@@ -482,11 +482,11 @@ else ()
+ endif ()
+ 
+ if (APPLE)
+-    target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp iconv)
++    target_link_libraries (${PROJECT_NAME} ${LIBS} extra dcpp iconv)
+ elseif (HAIKU)
+-    target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp be)
++    target_link_libraries (${PROJECT_NAME} ${LIBS} extra dcpp be)
+ else (APPLE)
+-    target_link_libraries (${PROJECT_NAME} ${LIBS} dcpp)
++    target_link_libraries (${PROJECT_NAME} ${LIBS} extra dcpp)
+ endif (APPLE)
+ 
+ if (WIN32 OR APPLE OR HAIKU)
+@@ -495,7 +495,9 @@ else ()
+     set_property (TARGET ${PROJECT_NAME} PROPERTY OUTPUT_NAME "${PROJECT_NAME}")
+ endif ()
+ 
+-install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${BINDIR} BUNDLE DESTINATION ${BUNDLEDIR})
++install (TARGETS ${PROJECT_NAME}
++    RUNTIME DESTINATION ${BINDIR} ARCHIVE DESTINATION ${LIBDIR}
++    BUNDLE DESTINATION ${BUNDLEDIR})
+ 
+ if (APPLE)
+     set (plugin_dest_dir ${PROJECT_NAME_GLOBAL}.app/Contents/MacOS)
+--- origsrc/eiskaltdcpp-2.4.1/eiskaltdcpp-qt/src/main.cpp
++++ src/eiskaltdcpp-2.4.1/eiskaltdcpp-qt/src/main.cpp
+@@ -86,7 +86,7 @@ void parseCmdLine(const QStringList &);
+ #if !defined(Q_OS_WIN)
+ #include <unistd.h>
+ #include <signal.h>
+-#if !defined (Q_OS_HAIKU)
++#if !defined (Q_OS_HAIKU) && defined (__GLIBC__)
+ #include <execinfo.h>
+ 
+ #ifdef ENABLE_STACKTRACE
+@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
+         return 0;
+     }
+ 
+-#if !defined (Q_OS_WIN) && !defined (Q_OS_HAIKU)
++#if !defined (Q_OS_WIN) && !defined (Q_OS_HAIKU) && defined (__GLIBC__)
+     installHandlers();
+ #endif
+ 
+--- origsrc/eiskaltdcpp-2.4.1/eiskaltdcpp.pc.in
++++ src/eiskaltdcpp-2.4.1/eiskaltdcpp.pc.in
+@@ -0,0 +1,5 @@
++Name: eiskaltdcpp
++Description: Cross-platform program that uses the Direct Connect and ADC protocols
++Version: @VERSION@
++Libs: -L@libdir@ -leiskaltdcpp
++Cflags: -I@includedir@
+--- origsrc/eiskaltdcpp-2.4.1/extra/CMakeLists.txt
++++ src/eiskaltdcpp-2.4.1/extra/CMakeLists.txt
+@@ -29,11 +29,11 @@ if (DEBUG_IPFILTER)
+     message (STATUS "Enabled debug output from filter of IP addresses!")
+ endif (DEBUG_IPFILTER)
+ 
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+     set_property(TARGET extra PROPERTY COMPILE_FLAGS)
+-else (WIN32)
++else ()
+     set_property(TARGET extra PROPERTY COMPILE_FLAGS -fPIC)
+-endif (WIN32)
++endif ()
+ 
+ target_link_libraries (extra
+                        ${MINIUPNP_LIBRARY}
