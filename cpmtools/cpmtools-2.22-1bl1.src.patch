@@ -1,0 +1,162 @@
+--- origsrc/cpmtools-2.22/Makefile.in	2020-10-27 23:48:00.000000000 +0900
++++ src/cpmtools-2.22/Makefile.in	2021-02-25 18:09:36.786939700 +0900
+@@ -21,7 +21,7 @@ EXEEXT =        @EXEEXT@
+ OBJEXT =        .@OBJEXT@
+ LIBS=           @LIBS@ @LDLIBS@
+ LDDEPS=		@LDDEPS@
+-CPPFLAGS=	@CPPFLAGS@ -DDISKDEFS=\"$(DISKDEFS)\" -DFORMAT=\"$(DEFFORMAT)\"
++CPPFLAGS=	-I. @CPPFLAGS@ -DDISKDEFS=\"$(DISKDEFS)\" -DFORMAT=\"$(DEFFORMAT)\"
+ #
+ # I'm only a novice and I haven't worked out how to autoconf this one
+ #
+@@ -115,4 +115,4 @@ tar:		distclean
+ depend:
+ 		$(MAKEDEPEND) $(CPPFLAGS) *.c >.depend
+ 
+-include .depend
++include @srcdir@/.depend
+--- origsrc/cpmtools-2.22/configure.in	2021-01-23 06:55:12.000000000 +0900
++++ src/cpmtools-2.22/configure.in	2021-02-25 18:11:09.730700400 +0900
+@@ -37,11 +37,6 @@ dnl Choose between posix and win32 drive
+ 
+ DISKDEFS='${datarootdir}/diskdefs'
+ 
+-if test "$CYGWIN" = "yes"
+-then
+-  DEVICE="win32"
+-#  DISKDEFS='%USERPROFILE%/diskdefs'
+-fi
+ if test "$MINGW32" = "yes"
+ then
+   DEVICE="win32"
+@@ -61,7 +56,7 @@ AC_CHECK_LIB(curses, printw, FSED_CPM=fs
+ if test x"$FSED_CPM" = x""; then
+   AC_CHECK_LIB(ncurses, printw, FSED_CPM=fsed.cpm LIBS="-lncurses $LIBS", FSED_CPM=)
+   if test x"$FSED_CPM" != x""; then
+-    AC_DEFINE(NEED_NCURSES)
++    AC_DEFINE([NEED_NCURSES],,[need ncurses])
+     AC_CHECK_HEADERS(ncurses/ncurses.h,have_ncurses_ncurses_h=yes)
+   fi
+ fi
+--- origsrc/cpmtools-2.22/cpmchattr.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmchattr.c	2021-02-25 18:25:02.677348700 +0900
+@@ -2,6 +2,7 @@
+ #include "config.h"
+ 
+ #include <ctype.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+--- origsrc/cpmtools-2.22/cpmchmod.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmchmod.c	2021-02-25 18:24:45.704245700 +0900
+@@ -3,6 +3,7 @@
+ 
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+--- origsrc/cpmtools-2.22/cpmcp.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmcp.c	2021-02-25 18:24:27.825897400 +0900
+@@ -5,6 +5,7 @@
+ #include <sys/types.h>
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <limits.h>
+--- origsrc/cpmtools-2.22/cpmfs.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmfs.c	2021-02-25 18:16:56.095815400 +0900
+@@ -5,10 +5,13 @@
+ #include <assert.h>
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
++#include <limits.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <time.h>
++#include <unistd.h>
+ 
+ #include "cpmdir.h"
+ #include "cpmfs.h"
+--- origsrc/cpmtools-2.22/cpmfs.h	2021-01-23 06:54:19.000000000 +0900
++++ src/cpmtools-2.22/cpmfs.h	2021-02-25 18:18:33.287361100 +0900
+@@ -39,6 +39,8 @@
+ extern "C" {
+ #endif
+ 
++#include <utime.h>
++
+ #include "device.h"
+ 
+ /* CP/M file attributes */
+--- origsrc/cpmtools-2.22/cpmls.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmls.c	2021-02-25 18:13:35.636269400 +0900
+@@ -3,6 +3,7 @@
+ 
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+--- origsrc/cpmtools-2.22/cpmrm.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/cpmrm.c	2021-02-25 18:23:59.915484400 +0900
+@@ -3,6 +3,7 @@
+ 
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+--- origsrc/cpmtools-2.22/device.h	2021-01-23 06:54:19.000000000 +0900
++++ src/cpmtools-2.22/device.h	2021-02-25 18:15:02.011373500 +0900
+@@ -1,6 +1,12 @@
+ #ifndef DEVICE_H
+ #define DEVICE_H
+ 
++#include <sys/types.h>
++
++#if defined(HAVE_LIBDSK_H)
++#include <libdsk.h>
++#endif
++
+ #ifdef _WIN32
+ /* The type of device the file system is on: */
+ #define CPMDRV_FILE  0 /* Regular file or Unix block device */
+--- origsrc/cpmtools-2.22/fsck.cpm.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/fsck.cpm.c	2021-02-25 18:25:44.450893800 +0900
+@@ -3,6 +3,7 @@
+ 
+ #include <assert.h>
+ #include <ctype.h>
++#include <fcntl.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+--- origsrc/cpmtools-2.22/fsed.cpm.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/fsed.cpm.c	2021-02-25 18:26:05.475546200 +0900
+@@ -4,6 +4,7 @@
+ #include <assert.h>
+ #include <ctype.h>
+ #include <errno.h>
++#include <fcntl.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
+--- origsrc/cpmtools-2.22/mkfs.cpm.c	2021-01-23 06:54:10.000000000 +0900
++++ src/cpmtools-2.22/mkfs.cpm.c	2021-02-25 18:25:23.205596300 +0900
+@@ -2,6 +2,7 @@
+ #include "config.h"
+ 
+ #include <ctype.h>
++#include <fcntl.h>
+ #include <errno.h>
+ #include <stdio.h>
+ #include <stdlib.h>
