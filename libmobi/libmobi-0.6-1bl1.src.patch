@@ -1,5 +1,5 @@
---- origsrc/libmobi-0.4/configure.ac	2018-06-20 19:44:48.000000000 +0900
-+++ src/libmobi-0.4/configure.ac	2018-08-19 13:00:47.874459700 +0900
+--- origsrc/libmobi-0.6/configure.ac	2020-08-01 23:24:30.000000000 +0900
++++ src/libmobi-0.6/configure.ac	2021-02-28 14:01:16.709885900 +0900
 @@ -101,6 +101,12 @@ case "$host" in
      ISO99_SOURCE="-D_ISOC99_SOURCE=1"
      WIN32=yes
@@ -13,9 +13,9 @@
    *)
      NO_UNDEFINED=
      AVOID_VERSION=
---- origsrc/libmobi-0.4/src/Makefile.am	2018-06-20 19:44:48.000000000 +0900
-+++ src/libmobi-0.4/src/Makefile.am	2018-08-19 12:59:41.833962200 +0900
-@@ -13,14 +13,14 @@ endif
+--- origsrc/libmobi-0.6/src/Makefile.am	2020-08-01 23:24:30.000000000 +0900
++++ src/libmobi-0.6/src/Makefile.am	2021-02-28 15:02:47.131159700 +0900
+@@ -13,14 +13,8 @@ endif
  if USE_ENCRYPTION
  libmobi_la_SOURCES += encryption.c encryption.h sha1.c sha1.h
  endif
@@ -25,21 +25,15 @@
 --DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES \
 --DMINIZ_NO_TIME -DMINIZ_NO_ARCHIVE_APIS -DMINIZ_NO_ARCHIVE_WRITING_APIS
 -libminiz_la_LDFLAGS =
-+# EXTRA_LTLIBRARIES = libminiz.la
-+# libminiz_la_SOURCES = miniz.c miniz.h
-+# libminiz_la_CFLAGS = $(VISIBILITY_HIDDEN) $(MINIZ_CFLAGS) \
-+# -DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES \
-+# -DMINIZ_NO_TIME -DMINIZ_NO_ARCHIVE_APIS -DMINIZ_NO_ARCHIVE_WRITING_APIS
-+# libminiz_la_LDFLAGS =
  if USE_MINIZ
 -libmobi_la_LIBADD = libminiz.la
-+libmobi_la_LIBADD = -lminiz # libminiz.la
++libmobi_la_LIBADD = -lminiz
  endif
  include_HEADERS = mobi.h
  libmobi_la_LDFLAGS = $(AVOID_VERSION) $(NO_UNDEFINED) $(DARWIN_LDFLAGS) $(LIBZ_LDFLAGS) $(LIBXML2_LDFLAGS)
---- origsrc/libmobi-0.4/tools/Makefile.am	2018-06-20 19:44:48.000000000 +0900
-+++ src/libmobi-0.4/tools/Makefile.am	2018-08-19 14:16:33.619684800 +0900
-@@ -2,31 +2,32 @@
+--- origsrc/libmobi-0.6/tools/Makefile.am	2020-08-01 23:24:30.000000000 +0900
++++ src/libmobi-0.6/tools/Makefile.am	2021-02-28 15:03:11.086879400 +0900
+@@ -2,27 +2,23 @@
  
  # this lists the binaries to produce, the (non-PHONY, binary) targets in
  # the previous manual Makefile
@@ -54,11 +48,11 @@
 +noinst_LTLIBRARIES = libcommon.la
 +libcommon_la_SOURCES = common.c common.h
  
- mobitool_SOURCES = mobitool.c mobitool.h
+ mobitool_SOURCES = mobitool.c
 -mobitool_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.a
 -mobitool_LDADD = $(top_builddir)/src/libmobi.la libcommon.a
-+mobitool_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.la
-+mobitool_LDADD = libcommon.la $(top_builddir)/src/libmobi.la
++mobitool_DEPENDENCIES = libcommon.la $(top_builddir)/src/libmobi.la
++mobitool_LDADD = libcommon.la $(top_builddir)/src/libmobi.la 
  mobitool_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
  mobitool_LDFLAGS = $(TOOLS_STATIC)
  
@@ -69,18 +63,17 @@
 -libminiz_a_CFLAGS = $(MINIZ_CFLAGS) -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES
 -mobitool_DEPENDENCIES += libminiz.a
 -mobitool_LDADD += libminiz.a
-+# noinst_LIBRARIES += libminiz.a
-+# libminiz_a_SOURCES = ../src/miniz.c ../src/miniz.h
-+# libminiz_a_CFLAGS = $(MINIZ_CFLAGS) -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES
-+# mobitool_DEPENDENCIES += libminiz.a
-+# mobitool_LDADD += libminiz.a
 +mobitool_LDADD += -lminiz
+ if USE_STATIC
+ if USE_MINIZ
+ mobitool_LDFLAGS += $(MOBI_ALLOW_MULTIPLE)
+@@ -31,7 +27,7 @@ endif
  endif
  
- mobimeta_SOURCES = mobimeta.c mobimeta.h
+ mobimeta_SOURCES = mobimeta.c
 -mobimeta_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.a
 -mobimeta_LDADD = $(top_builddir)/src/libmobi.la libcommon.a
-+mobimeta_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.la
++mobimeta_DEPENDENCIES = libcommon.la $(top_builddir)/src/libmobi.la
 +mobimeta_LDADD = libcommon.la $(top_builddir)/src/libmobi.la
  mobimeta_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
  mobimeta_LDFLAGS = $(TOOLS_STATIC)
