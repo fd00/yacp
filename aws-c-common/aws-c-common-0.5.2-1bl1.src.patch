@@ -1,6 +1,6 @@
---- origsrc/aws-c-common-0.4.65/CMakeLists.txt	2021-01-07 01:22:46.000000000 +0900
-+++ src/aws-c-common-0.4.65/CMakeLists.txt	2021-01-24 12:55:29.808811500 +0900
-@@ -235,14 +235,25 @@ else()
+--- origsrc/aws-c-common-0.5.2/CMakeLists.txt	2021-03-05 02:45:54.000000000 +0900
++++ src/aws-c-common-0.5.2/CMakeLists.txt	2021-03-11 16:20:53.581214400 +0900
+@@ -238,14 +238,25 @@ else()
     set (TARGET_DIR "static")
  endif()
  
@@ -34,7 +34,7 @@
  
  list(APPEND EXPORT_MODULES
      "cmake/AwsCFlags.cmake"
-@@ -256,9 +267,15 @@ list(APPEND EXPORT_MODULES
+@@ -259,9 +270,15 @@ list(APPEND EXPORT_MODULES
      "cmake/AwsFeatureTests.cmake"
      )
  
@@ -53,7 +53,7 @@
  
  # This should come last, to ensure all variables defined by cmake will be available for export
  configure_file(${CONFIG_HEADER_TEMPLATE}
-@@ -272,3 +289,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
+@@ -275,3 +292,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
  endif()
  
  include(CPackConfig)
@@ -64,8 +64,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-common-0.4.65/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-common-0.4.65/aws-c-common.pc.in	2021-01-24 12:55:29.733808500 +0900
+--- origsrc/aws-c-common-0.5.2/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.5.2/aws-c-common.pc.in	2021-03-11 16:21:04.820628400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -77,23 +77,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-c-common
 +Cflags: -I${includedir}
---- origsrc/aws-c-common-0.4.65/cmake/AwsCFlags.cmake	2021-01-07 01:22:46.000000000 +0900
-+++ src/aws-c-common-0.4.65/cmake/AwsCFlags.cmake	2021-01-24 12:46:14.762351600 +0900
-@@ -53,7 +53,11 @@ function(aws_set_common_properties targe
-         list(APPEND AWS_C_FLAGS "${_FLAGS}")
- 
-     else()
--        list(APPEND AWS_C_FLAGS -Wall -Werror -Wstrict-prototypes -fno-omit-frame-pointer)
-+        list(APPEND AWS_C_FLAGS -Wall -Wstrict-prototypes -fno-omit-frame-pointer)
-+
-+        if(NOT CYGWIN)
-+            list(APPEND AWS_C_FLAGS -Werror)
-+        endif()
- 
-         if(NOT SET_PROPERTIES_NO_WEXTRA)
-             list(APPEND AWS_C_FLAGS -Wextra)
---- origsrc/aws-c-common-0.4.65/cmake/aws-c-common-config.cmake	2021-01-07 01:22:46.000000000 +0900
-+++ src/aws-c-common-0.4.65/cmake/aws-c-common-config.cmake	2021-01-24 12:45:09.527132100 +0900
+--- origsrc/aws-c-common-0.5.2/cmake/aws-c-common-config.cmake	2021-03-05 02:45:54.000000000 +0900
++++ src/aws-c-common-0.5.2/cmake/aws-c-common-config.cmake	2021-03-11 16:16:31.084725700 +0900
 @@ -4,9 +4,12 @@ if(WIN32 OR UNIX OR APPLE)
      find_package(Threads REQUIRED)
  endif()
@@ -111,14 +96,3 @@
 +    endif()
  endif()
 -
---- origsrc/aws-c-common-0.4.65/source/posix/thread.c	2021-01-07 01:22:46.000000000 +0900
-+++ src/aws-c-common-0.4.65/source/posix/thread.c	2021-01-24 12:47:02.331484500 +0900
-@@ -160,7 +160,7 @@ int aws_thread_launch(
-  * NUMA or not is setup in interleave mode.
-  * Thread afinity is also not supported on Android systems, and honestly, if you're running android on a NUMA
-  * configuration, you've got bigger problems. */
--#if !defined(__MACH__) && !defined(__ANDROID__)
-+#if !defined(__MACH__) && !defined(__ANDROID__) && !defined(__CYGWIN__)
-         if (options->cpu_id >= 0) {
-             AWS_LOGF_INFO(
-                 AWS_LS_COMMON_THREAD,
