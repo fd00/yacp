@@ -1,0 +1,45 @@
+--- origsrc/libvmi-0.14.0/Makefile.am	2020-12-30 08:28:54.000000000 +0900
++++ src/libvmi-0.14.0/Makefile.am	2021-03-22 16:07:28.104850300 +0900
+@@ -146,8 +146,8 @@ AM_LDFLAGS = $(LDFLAGS)
+ lib_LTLIBRARIES= libvmi/libvmi.la
+ libvmi_libvmi_la_SOURCES= $(h_public) $(h_private) $(drivers) $(os) $(c_sources)
+ libvmi_libvmi_la_CFLAGS= -fvisibility=hidden $(GLIB_CFLAGS) $(JSONC_CFLAGS)
+-libvmi_libvmi_la_LDFLAGS= $(GLIB_LIBS) $(JSONC_LIBS) -no-undefined
+-libvmi_libvmi_la_LDFLAGS+= -version-info $(VERSION)
++libvmi_libvmi_la_LDFLAGS= $(GLIB_LIBS) $(JSONC_LIBS) $(LTLIBICONV) -no-undefined
++libvmi_libvmi_la_LDFLAGS+= -version-info $(SOVERSION)
+ 
+ if WITH_KVM
+     libvmi_libvmi_la_CFLAGS += $(LIBKVMI_CFLAGS)
+@@ -165,6 +165,7 @@ if ENABLE_CONFIGFILE
+     libvmi_config_libconfig_la_SOURCES= $(config_h_sources) $(config_c_sources)
+     libvmi_config_libconfig_la_CFLAGS= $(GLIB_CFLAGS)
+     libvmi_config_libconfig_la_LDFLAGS= $(GLIB_LIBS)
++    libvmi_config_libconfig_la_CPPFLAGS= -I$(top_srcdir)/libvmi -I$(top_srcdir)/libvmi/config
+ 
+     libvmi_libvmi_la_LIBADD= libvmi/config/libconfig.la
+ endif
+--- origsrc/libvmi-0.14.0/configure.ac	2020-12-30 08:28:54.000000000 +0900
++++ src/libvmi-0.14.0/configure.ac	2021-03-22 16:07:20.908741700 +0900
+@@ -18,11 +18,11 @@ LIBRARY_NAME=libvmi
+ MAJOR_VERSION=0
+ MINOR_VERSION=14
+ MICRO_VERSION=0
+-VERSION=$MAJOR_VERSION:$MINOR_VERSION:$MICRO_VERSION
++SOVERSION=$MAJOR_VERSION:$MINOR_VERSION:$MICRO_VERSION
+ RELEASE=$MAJOR_VERSION.$MINOR_VERSION
+ 
+ AC_SUBST(LIBRARY_NAME)
+-AC_SUBST(VERSION)
++AC_SUBST(SOVERSION)
+ AC_SUBST(RELEASE)
+ 
+ AC_MSG_CHECKING([for supported architecture])
+@@ -195,6 +195,7 @@ AC_PROG_CC
+ AM_PROG_CC_C_O
+ AM_SANITY_CHECK
+ AM_PROG_AS
++AM_ICONV
+ 
+ #####################################################
+ # AUTOHARDEN START
