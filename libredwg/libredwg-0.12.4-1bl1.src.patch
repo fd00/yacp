@@ -1,5 +1,5 @@
---- origsrc/libredwg-0.12.1/bindings/python/Makefile.am	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/bindings/python/Makefile.am	2021-02-07 12:39:38.151948500 +0900
+--- origsrc/libredwg-0.12.4/bindings/python/Makefile.am	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/bindings/python/Makefile.am	2021-04-21 17:10:40.074921800 +0900
 @@ -46,7 +46,7 @@ _LibreDWG_la_SOURCES = $(BUILT_SOURCES)
  ## more magic: SWIG_PYTHON_CPPFLAGS resolves to null and python includes
  ## are not passed to gcc via -I
@@ -9,8 +9,8 @@
  _LibreDWG_la_LIBADD = ../../src/libredwg.la $(PYTHON_LIBS) $(PYTHON_EXTRA_LIBS)
  
  ## not elegant, but works
---- origsrc/libredwg-0.12.1/configure.ac	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/configure.ac	2021-02-07 08:24:21.829176100 +0900
+--- origsrc/libredwg-0.12.4/configure.ac	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/configure.ac	2021-04-21 17:58:01.485217600 +0900
 @@ -110,6 +110,8 @@ AC_CHECK_LIB([xml2],[newXMLEntity],
    fi])
  AM_CONDITIONAL([HAVE_LIBXML2], [test x$have_libxml2 = xyes])
@@ -28,9 +28,26 @@
  
  AX_IS_RELEASE([git-directory])
  dnl ability to override with a .git dir, to test release features
---- origsrc/libredwg-0.12.1/examples/Makefile.am	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/examples/Makefile.am	2021-02-07 12:40:31.651200400 +0900
-@@ -186,7 +186,7 @@ EXTRA_DIST += unknown.pi ACAD_EVALUATION
+@@ -456,6 +457,7 @@ if test "x$host_os" = "xmingw32" -a "x$b
+    fi
+ fi
+ AM_CONDITIONAL([HAVE_WINE], [test -n "$WINE"])
++AM_CONDITIONAL([HAVE_MINGW_OR_CYGWIN], [test "x$host_os" = "xmingw32" -o "x$host_os" = "xcygwin"])
+ 
+ dnl Optional SWIG + python bindings
+ dnl Feature: --disable-python or --enable-python=python3.6
+--- origsrc/libredwg-0.12.4/examples/Makefile.am	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/examples/Makefile.am	2021-04-21 17:58:08.694124600 +0900
+@@ -46,7 +46,7 @@ llvmfuzz_CFLAGS             = $(CFLAGS)
+                               -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer
+ llvmfuzz_LDADD              = $(top_builddir)/src/libredwg.la $(top_builddir)/src/bits.lo -lm
+ llvmfuzz_standalone_SOURCES = llvmfuzz.c
+-if HAVE_MINGW
++if HAVE_MINGW_OR_CYGWIN
+ llvmfuzz_standalone_CFLAGS  = $(CFLAGS) $(AM_CFLAGS) -DSTANDALONE
+ else
+ llvmfuzz_standalone_CFLAGS  = $(CFLAGS) $(AM_CFLAGS) -DSTANDALONE -DHAVE_ASAN \
+@@ -200,7 +200,7 @@ EXTRA_DIST += unknown.pi ACAD_EVALUATION
  EXTRA_man1_MANS = $(srcdir)/dwgfuzz.1
  dist_man1_MANS = $(srcdir)/dwgadd.1
  dist_man5_MANS = $(srcdir)/dwgadd.5
@@ -39,8 +56,8 @@
  
  CLEANFILES = {example,sample}_2000.svg alldwg.inc~ \
  	     alldxf_0.inc~ alldxf_1.inc~ alldxf_2.inc~
---- origsrc/libredwg-0.12.1/include/dwg_api.h	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/include/dwg_api.h	2021-02-07 08:37:59.501134900 +0900
+--- origsrc/libredwg-0.12.4/include/dwg_api.h	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/include/dwg_api.h	2021-04-21 17:10:40.146928100 +0900
 @@ -58,7 +58,9 @@
  #if (defined(__GNUC__) && ((__GNUC__ * 100) + __GNUC_MINOR__) >= 303) && !defined(__cplusplus)
  #  undef __nonnull
@@ -51,15 +68,15 @@
  #  define HAVE_NONNULL
  #else
  #  undef __nonnull
---- origsrc/libredwg-0.12.1/libredwg.pc.in	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/libredwg.pc.in	2021-02-07 07:49:09.378044700 +0900
+--- origsrc/libredwg-0.12.4/libredwg.pc.in	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/libredwg.pc.in	2021-04-21 17:10:40.188994800 +0900
 @@ -10,3 +10,4 @@ Version: @VERSION@
  URL: @PACKAGE_URL@
  Libs: -L${libdir} -lredwg
  Cflags: -I${includedir}
 +Requires: jsmn
---- origsrc/libredwg-0.12.1/src/Makefile.am	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/src/Makefile.am	2021-02-07 07:49:54.469239100 +0900
+--- origsrc/libredwg-0.12.4/src/Makefile.am	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/src/Makefile.am	2021-04-21 17:10:40.202980000 +0900
 @@ -21,6 +21,7 @@ lib_LTLIBRARIES = libredwg.la
  WARN_CFLAGS = @WARN_CFLAGS@
  AM_CFLAGS   = -I$(top_srcdir)/include -I. $(WARN_CFLAGS)
@@ -68,8 +85,8 @@
  
  libredwg_la_SOURCES = \
  	dwg.c \
---- origsrc/libredwg-0.12.1/src/common.h	2021-01-31 23:27:59.000000000 +0900
-+++ src/libredwg-0.12.1/src/common.h	2021-02-07 08:20:22.154899300 +0900
+--- origsrc/libredwg-0.12.4/src/common.h	2021-04-06 20:41:41.000000000 +0900
++++ src/libredwg-0.12.4/src/common.h	2021-04-21 17:10:40.219915800 +0900
 @@ -130,7 +130,9 @@
  #if _GNUC_VERSION >= 303 && !defined(__cplusplus)
  #  undef __nonnull
