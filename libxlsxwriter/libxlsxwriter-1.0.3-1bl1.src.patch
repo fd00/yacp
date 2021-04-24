@@ -1,0 +1,66 @@
+--- origsrc/libxlsxwriter-RELEASE_1.0.3/CMakeLists.txt	2021-04-21 05:13:54.000000000 +0900
++++ src/libxlsxwriter-RELEASE_1.0.3/CMakeLists.txt	2021-04-24 19:29:36.724533000 +0900
+@@ -191,14 +191,24 @@ configure_file(dev/release/pkg-config.tx
+ enable_language(CXX)
+ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
++find_package(pkgconfig REQUIRED)
++
+ # ZLIB
+-find_package(ZLIB REQUIRED "1.0")
++if (CYGWIN)
++    pkg_check_modules(ZLIB REQUIRED zlib>=1.0)
++else()
++    find_package(ZLIB REQUIRED "1.0")
++endif()
+ list(APPEND LXW_PRIVATE_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
+ message("zlib version: " ${ZLIB_VERSION})
+ 
+ # MINIZIP
+ if (USE_SYSTEM_MINIZIP)
+-    find_package(MINIZIP REQUIRED "1.0")
++    if (CYGWIN)
++        pkg_check_modules(MINIZIP REQUIRED minizip>=1.0)
++    else()
++        find_package(MINIZIP REQUIRED "1.0")
++    endif()
+     list(APPEND LXW_PRIVATE_INCLUDE_DIRS ${MINIZIP_INCLUDE_DIRS})
+ endif()
+ 
+@@ -259,6 +269,10 @@ target_include_directories(${PROJECT_NAM
+     PUBLIC include include/xlsxwriter
+ )
+ 
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
++endif()
++
+ # TESTS
+ # -----
+ 
+--- origsrc/libxlsxwriter-RELEASE_1.0.3/cmake/FindPackage.cmake	2021-04-21 05:13:54.000000000 +0900
++++ src/libxlsxwriter-RELEASE_1.0.3/cmake/FindPackage.cmake	2021-04-24 19:30:08.559088100 +0900
+@@ -43,7 +43,7 @@ macro(SetSuffixes packageName)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+         endif()
+     else()
+-        if(WIN32)
++        if(WIN32 OR CYGWIN)
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".dll.a" ".dll" ".lib" ".a")
+         else()
+             set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
+--- origsrc/libxlsxwriter-RELEASE_1.0.3/include/xlsxwriter/packager.h	2021-04-21 05:13:54.000000000 +0900
++++ src/libxlsxwriter-RELEASE_1.0.3/include/xlsxwriter/packager.h	2021-04-24 19:32:55.851884000 +0900
+@@ -12,7 +12,12 @@
+ #include <stdint.h>
+ 
+ #ifdef USE_SYSTEM_MINIZIP
++#if defined(__CYGWIN__)
++#include "mz_compat.h"
++#include "zlib.h"
++#else
+ #include "minizip/zip.h"
++#endif
+ #else
+ #include "third_party/zip.h"
+ #endif
