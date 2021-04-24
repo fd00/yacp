@@ -1,0 +1,49 @@
+--- origsrc/tmx-tmx_1.4.0/CMakeLists.txt	2021-01-17 23:56:05.000000000 +0900
++++ src/tmx-tmx_1.4.0/CMakeLists.txt	2021-04-24 10:47:56.992795800 +0900
+@@ -52,11 +52,17 @@ endif()
+ 
+ if(WANT_ZSTD)
+     target_compile_definitions(tmx PRIVATE WANT_ZSTD)
+-    find_package(zstd REQUIRED)
+-    if (ZSTD_PREFER_STATIC)
+-        target_link_libraries(tmx zstd::libzstd_static)
++    if(CYGWIN)
++        find_package(pkgconfig)
++        pkg_check_modules(ZSTD libzstd)
++        target_link_libraries(tmx ${ZSTD_LIBRARIES})
+     else()
+-        target_link_libraries(tmx zstd::libzstd_shared)
++        find_package(zstd REQUIRED)
++        if (ZSTD_PREFER_STATIC)
++            target_link_libraries(tmx zstd::libzstd_static)
++        else()
++            target_link_libraries(tmx zstd::libzstd_shared)
++        endif()
+     endif()
+ else()
+     message("zstd not wanted")
+@@ -107,3 +113,10 @@ install(EXPORT tmx_exports
+         DESTINATION "lib/cmake/tmx")
+ install(FILES "${CMAKE_BINARY_DIR}/tmxConfig.cmake" "${CMAKE_BINARY_DIR}/tmxConfigVersion.cmake"
+         DESTINATION "lib/cmake/tmx")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/tmx.pc.in ${CMAKE_BINARY_DIR}/tmx.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/tmx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tmx-tmx_1.4.0/tmx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tmx-tmx_1.4.0/tmx.pc.in	2021-04-24 10:56:00.352282000 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tmx
++Description: C tmx map loader
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ltmx
++Cflags: -I${includedir}
++Requires: libxml-2.0 libzstd zlib
