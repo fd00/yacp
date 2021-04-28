@@ -1,6 +1,6 @@
---- origsrc/partio-1.13.0/CMakeLists.txt	2020-08-25 01:05:32.000000000 +0900
-+++ src/partio-1.13.0/CMakeLists.txt	2020-10-26 09:15:41.000299000 +0900
-@@ -53,7 +53,7 @@ endif()
+--- origsrc/partio-1.14.0/CMakeLists.txt	2020-12-02 10:19:18.000000000 +0900
++++ src/partio-1.14.0/CMakeLists.txt	2021-04-27 22:53:08.218206400 +0900
+@@ -60,7 +60,7 @@ endif()
  
  set(CMAKE_CXX_STANDARD_REQUIRED ON)
  set(THREADS_PREFER_PTHREAD_FLAG OFF)
@@ -9,7 +9,7 @@
  set(CMAKE_FIND_PACKAGE_RESOLVE_SYMLINKS ON)
  set(CMAKE_THREAD_PREFER_PTHREAD ON)
  set(THREADS_PREFER_PTHREAD_FLAG ON)
-@@ -107,8 +107,8 @@ set(OpenGL_GL_PREFERENCE GLVND)
+@@ -114,8 +114,8 @@ set(OpenGL_GL_PREFERENCE GLVND)
  find_package(Threads REQUIRED)
  find_package(GLUT REQUIRED)
  find_package(OpenGL REQUIRED)
@@ -20,10 +20,16 @@
  find_package(ZLIB)
  if (ZLIB_FOUND)
      add_definitions(-DPARTIO_USE_ZLIB)
-@@ -132,3 +132,10 @@ add_subdirectory(src/tools)
+@@ -138,4 +138,15 @@ add_subdirectory(src/lib)
+ add_subdirectory(src/tools)
  add_subdirectory(src/py)
  add_subdirectory(src/tests)
- add_subdirectory(src/doc)
+-add_subdirectory(src/doc)
++
++option(ENABLE_DOC "Enable doc" OFF)
++if (ENABLE_DOC)
++    add_subdirectory(src/doc)
++endif()
 +
 +SET(prefix ${CMAKE_INSTALL_PREFIX})
 +SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
@@ -31,9 +37,9 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/partio.pc.in ${CMAKE_BINARY_DIR}/partio.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/partio.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/partio-1.13.0/partio.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/partio-1.13.0/partio.pc.in	2020-10-26 09:33:54.307584600 +0900
-@@ -0,0 +1,11 @@
+--- origsrc/partio-1.14.0/partio.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/partio-1.14.0/partio.pc.in	2021-04-27 22:53:08.026204700 +0900
+@@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
 +libdir=@libdir@
@@ -44,26 +50,10 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lpartio
 +Cflags: -I${includedir}
-+Requires.private: zlib
---- origsrc/partio-1.13.0/src/doc/CMakeLists.txt	2020-08-25 01:05:32.000000000 +0900
-+++ src/partio-1.13.0/src/doc/CMakeLists.txt	2020-10-25 18:36:21.759961400 +0900
-@@ -31,9 +31,11 @@
- # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- 
-+option(ENABLE_DOC "Enable doc" OFF)
-+
- find_package(Doxygen)
- 
--if (DOXYGEN_FOUND)
-+if (ENABLE_DOC AND DOXYGEN_FOUND)
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-   file(GLOB DOCUMENTED_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.h)
- 
---- origsrc/partio-1.13.0/src/lib/CMakeLists.txt	2020-08-25 01:05:32.000000000 +0900
-+++ src/partio-1.13.0/src/lib/CMakeLists.txt	2020-10-25 18:37:14.845425500 +0900
-@@ -37,6 +37,10 @@ file(GLOB core_cpp "core/*.cpp")
- add_library(partio ${io_cpp} ${core_cpp})
+--- origsrc/partio-1.14.0/src/lib/CMakeLists.txt	2020-12-02 10:19:18.000000000 +0900
++++ src/partio-1.14.0/src/lib/CMakeLists.txt	2021-04-27 22:47:11.389553000 +0900
+@@ -42,6 +42,10 @@ endif()
+ add_library(partio ${PARTIO_LIBRARY_TYPE} ${io_cpp} ${core_cpp})
  set_target_properties(partio PROPERTIES OUTPUT_NAME partio POSITION_INDEPENDENT_CODE ON)
  
 +if (CYGWIN)
@@ -73,8 +63,8 @@
  target_include_directories(partio
      PUBLIC
          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-@@ -50,7 +54,7 @@ if (ZLIB_FOUND)
-     target_link_libraries(partio PUBLIC ${ZLIB_LIBRARY})
+@@ -51,7 +55,7 @@ if (ZLIB_FOUND)
+     target_link_libraries(partio PUBLIC ZLIB::ZLIB)
  endif()
  
 -install(TARGETS partio DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -82,17 +72,30 @@
  
  file(GLOB public_includes "*.h")
  install(FILES ${public_includes} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
---- origsrc/partio-1.13.0/src/tools/CMakeLists.txt	2020-08-25 01:05:32.000000000 +0900
-+++ src/partio-1.13.0/src/tools/CMakeLists.txt	2020-10-25 18:46:28.268500900 +0900
-@@ -40,9 +40,8 @@ if (GLUT_FOUND AND OPENGL_FOUND)
+--- origsrc/partio-1.14.0/src/tools/CMakeLists.txt	2020-12-02 10:19:18.000000000 +0900
++++ src/partio-1.14.0/src/tools/CMakeLists.txt	2021-04-27 22:49:02.246338100 +0900
+@@ -40,15 +40,16 @@ if (GLUT_FOUND AND OPENGL_FOUND)
          partview
          PRIVATE
          ${PARTIO_LIBRARIES}
 -        GLUT::GLUT
--        OpenGL::OpenGL
 -        OpenGL::GLU
 +        ${GLUT_LIBRARIES}
 +        ${OPENGL_LIBRARIES}
      )
+-    if(PARTIO_USE_GLVND)
+-        target_link_libraries(partview PRIVATE OpenGL::OpenGL)
+-    else()
+-        target_link_libraries(partview PRIVATE OpenGL::GL)
+-    endif()
+-    
++    if (NOT CYGWIN)
++        if(PARTIO_USE_GLVND)
++            target_link_libraries(partview PRIVATE OpenGL::OpenGL)
++        else()
++            target_link_libraries(partview PRIVATE OpenGL::GL)
++        endif()
++    endif()    
      install(TARGETS partview DESTINATION ${CMAKE_INSTALL_BINDIR})
  endif()
+ 
