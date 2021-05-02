@@ -1,0 +1,79 @@
+--- origsrc/leveldb-1.23/CMakeLists.txt	2021-02-24 05:54:37.000000000 +0900
++++ src/leveldb-1.23/CMakeLists.txt	2021-05-02 19:56:34.187045800 +0900
+@@ -289,27 +289,31 @@ target_link_libraries(leveldbutil leveld
+ if(LEVELDB_BUILD_TESTS)
+   enable_testing()
+ 
+-  # Prevent overriding the parent project's compiler/linker settings on Windows.
+-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+-  set(install_gtest OFF)
+-  set(install_gmock OFF)
+-  set(build_gmock ON)
+-
+-  # This project is tested using GoogleTest.
+-  add_subdirectory("third_party/googletest")
+-
+-  # This project uses Google benchmark for benchmarking.
+-  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+-  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+-  add_subdirectory("third_party/benchmark")
+-
+-  # GoogleTest triggers a missing field initializers warning.
+-  if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+-    set_property(TARGET gtest
+-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+-    set_property(TARGET gmock
+-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+-  endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++  option(USE_SYSTEM_GTEST "Use system gtest" ON)
++
++  if (NOT USE_SYSTEM_GTEST)
++    # Prevent overriding the parent project's compiler/linker settings on Windows.
++    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++    set(install_gtest OFF)
++    set(install_gmock OFF)
++    set(build_gmock ON)
++
++    # This project is tested using GoogleTest.
++    add_subdirectory("third_party/googletest")
++
++    # This project uses Google benchmark for benchmarking.
++    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
++    set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
++    add_subdirectory("third_party/benchmark")
++
++    # GoogleTest triggers a missing field initializers warning.
++    if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++      set_property(TARGET gtest
++          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
++      set_property(TARGET gmock
++          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
++    endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++  endif()
+ 
+   function(leveldb_test test_file)
+     get_filename_component(test_target_name "${test_file}" NAME_WE)
+@@ -493,3 +497,10 @@ if(LEVELDB_INSTALL)
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+   )
+ endif(LEVELDB_INSTALL)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/leveldb.pc.in ${CMAKE_BINARY_DIR}/leveldb.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/leveldb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/leveldb-1.23/leveldb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/leveldb-1.23/leveldb.pc.in	2021-05-02 19:56:55.994668100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: leveldb
++Description: Fast and lightweight key/value database library by Google
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lleveldb
++Cflags: -I${includedir}
