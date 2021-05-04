@@ -1,0 +1,129 @@
+--- origsrc/safexcore/CMakeLists.txt	2021-05-02 21:52:39.000000000 +0900
++++ src/safexcore/CMakeLists.txt	2021-05-04 21:34:45.939854000 +0900
+@@ -331,7 +331,7 @@ if (DATABASE STREQUAL "lmdb")
+   add_definitions("-DDEFAULT_DB_TYPE=\"lmdb\"")
+ elseif (DATABASE STREQUAL "berkeleydb")
+   find_package(BerkeleyDB)
+-  if(NOT BERKELEY_DB)
++  if(NOT BERKELEY_DB_INCLUDE_DIR OR NOT BERKELEY_DB_LIBRARIES)
+       die("Found BerkeleyDB includes, but could not find BerkeleyDB library. Please make sure you have installed libdb and libdb-dev / libdb++-dev or the equivalent.")
+   else()
+     message(STATUS "Found BerkeleyDB include (db.h) in ${BERKELEY_DB_INCLUDE_DIR}")
+@@ -362,7 +362,7 @@ add_definitions("-DBLOCKCHAIN_DB=${BLOCK
+ # Can't install hook in static build on OSX, because OSX linker does not support --wrap
+ # On ARM, having libunwind package (with .so's only) installed breaks static link.
+ # When possible, avoid stack tracing using libunwind in favor of using easylogging++.
+-if (APPLE)
++if (APPLE OR CYGWIN)
+   set(DEFAULT_STACK_TRACE OFF)
+   set(LIBUNWIND_LIBRARIES "")
+ elseif (DEPENDS AND NOT LINUX)
+@@ -496,7 +496,7 @@ else()
+     set(ARCH_FLAG "-march=${ARCH}")
+   endif()
+   set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=deprecated-declarations -Wno-unused-parameter -Wno-unused-variable -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized")
+-  if(NOT MINGW)
++  if(NOT MINGW AND NOT CYGWIN)
+     set(WARNINGS_AS_ERRORS_FLAG "-Werror")
+   endif()
+   if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+@@ -547,7 +547,7 @@ else()
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+ 
+   # if those don't work for your compiler, single it out where appropriate
+-  if(CMAKE_BUILD_TYPE STREQUAL "Release")
++  if(CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT CYGWIN)
+     set(C_SECURITY_FLAGS "${C_SECURITY_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1")
+     set(CXX_SECURITY_FLAGS "${CXX_SECURITY_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1")
+   endif()
+--- origsrc/safexcore/external/CMakeLists.txt	2021-05-02 21:52:39.000000000 +0900
++++ src/safexcore/external/CMakeLists.txt	2021-05-04 21:36:33.249914600 +0900
+@@ -38,18 +38,22 @@
+ 
+ find_package(Miniupnpc REQUIRED)
+ 
+-message(STATUS "Using in-tree miniupnpc")
++if (MINIUPNP_FOUND)
++  set(UPNP_LIBRARIES ${MINIUPNP_LIBRARY})
++else()
++  message(STATUS "Using in-tree miniupnpc")
+ 
+-add_subdirectory(miniupnp/miniupnpc)
++  add_subdirectory(miniupnp/miniupnpc)
+ 
+-set_property(TARGET libminiupnpc-static PROPERTY FOLDER "external")
+-if(MSVC)
+-  set_property(TARGET libminiupnpc-static APPEND_STRING PROPERTY COMPILE_FLAGS " -wd4244 -wd4267")
+-elseif(NOT MSVC)
+-  set_property(TARGET libminiupnpc-static APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-undef -Wno-unused-result -Wno-unused-value")
+-endif()
++  set_property(TARGET libminiupnpc-static PROPERTY FOLDER "external")
++  if(MSVC)
++    set_property(TARGET libminiupnpc-static APPEND_STRING PROPERTY COMPILE_FLAGS " -wd4244 -wd4267")
++  elseif(NOT MSVC)
++    set_property(TARGET libminiupnpc-static APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-undef -Wno-unused-result -Wno-unused-value")
++  endif()
+ 
+-set(UPNP_LIBRARIES "libminiupnpc-static" PARENT_SCOPE)
++  set(UPNP_LIBRARIES "libminiupnpc-static" PARENT_SCOPE)
++endif()
+ 
+ find_package(Unbound)
+ 
+@@ -80,4 +84,9 @@ endif()
+ 
+ add_subdirectory(db_drivers)
+ add_subdirectory(easylogging++)
+-add_subdirectory(randomx EXCLUDE_FROM_ALL)
++
++find_package(pkgconfig)
++pkg_check_modules(RANDOMX RandomX)
++if (NOT RANDOMX_FOUND)
++  add_subdirectory(randomx EXCLUDE_FROM_ALL)
++endif()
+--- origsrc/safexcore/external/db_drivers/CMakeLists.txt	2021-05-02 21:52:39.000000000 +0900
++++ src/safexcore/external/db_drivers/CMakeLists.txt	2021-05-03 08:56:35.615712700 +0900
+@@ -30,7 +30,9 @@
+ 
+ # We aren't even going to check the system for an installed LMDB driver, as it is too
+ # critical a consensus component to rely on dynamically linked libraries
+-message(STATUS "Using ${ARCH_WIDTH}-bit LMDB from source tree")
+-add_subdirectory(liblmdb)
++if (NOT CYGWIN)
++    message(STATUS "Using ${ARCH_WIDTH}-bit LMDB from source tree")
++    add_subdirectory(liblmdb)
++endif()
+ set(LMDB_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/liblmdb" CACHE STRING "LMDB Include path")
+ set(LMDB_LIBRARY "lmdb" CACHE STRING "LMDB Library name")
+--- origsrc/safexcore/external/easylogging++/easylogging++.h	2021-05-02 21:52:39.000000000 +0900
++++ src/safexcore/external/easylogging++/easylogging++.h	2021-05-02 22:19:17.083203400 +0900
+@@ -200,7 +200,7 @@ ELPP_INTERNAL_DEBUGGING_OUT_INFO << ELPP
+ #  define ELPP_INTERNAL_INFO(lvl, msg)
+ #endif  // (defined(ELPP_DEBUG_INFO))
+ #if (defined(ELPP_FEATURE_ALL)) || (defined(ELPP_FEATURE_CRASH_LOG))
+-#  if (ELPP_COMPILER_GCC && !ELPP_MINGW && !ELPP_OS_OPENBSD)
++#  if (ELPP_COMPILER_GCC && !ELPP_MINGW && !ELPP_OS_OPENBSD && !ELPP_CYGWIN)
+ #    define ELPP_STACKTRACE 1
+ #  else
+ #    define ELPP_STACKTRACE 0
+--- origsrc/safexcore/src/crypto/slow-hash.c	2021-05-02 21:52:40.000000000 +0900
++++ src/safexcore/src/crypto/slow-hash.c	2021-05-02 23:15:01.234161500 +0900
+@@ -623,7 +623,7 @@ void cn_slow_hash_allocate_state(void)
+                                         MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+ #else
+ #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || \
+-  defined(__DragonFly__)
++  defined(__DragonFly__) || defined(__CYGWIN__)
+     hp_state = mmap(0, MEMORY, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANON, 0, 0);
+ #else
+--- origsrc/safexcore/src/daemon/CMakeLists.txt	2021-05-02 21:52:40.000000000 +0900
++++ src/safexcore/src/daemon/CMakeLists.txt	2021-05-03 08:47:32.806604600 +0900
+@@ -105,6 +105,7 @@ target_link_libraries(daemon
+     ${CMAKE_THREAD_LIBS_INIT}
+     ${ZMQ_LIB}
+     ${GNU_READLINE_LIBRARY}
++    ${MINIUPNP_LIBRARY}
+     ${EXTRA_LIBRARIES})
+ set_property(TARGET daemon
+   PROPERTY
