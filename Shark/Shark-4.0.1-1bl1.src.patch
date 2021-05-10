@@ -1,0 +1,45 @@
+--- origsrc/Shark-4.0.1/CMakeLists.txt	2018-08-27 19:49:36.000000000 +0900
++++ src/Shark-4.0.1/CMakeLists.txt	2021-05-10 06:55:30.921609500 +0900
+@@ -57,7 +57,7 @@ mark_as_advanced( BUILD_OFFICIAL_RELEASE
+ 
+ set(SHARK_VERSION_MAJOR 4)
+ set(SHARK_VERSION_MINOR 0)
+-set(SHARK_VERSION_PATCH 0)
++set(SHARK_VERSION_PATCH 1)
+ set(SHARK_VERSION ${SHARK_VERSION_MAJOR}.${SHARK_VERSION_MINOR}.${SHARK_VERSION_PATCH})
+ set(SHARK_SOVERSION 0)
+ 
+@@ -511,3 +511,10 @@ configure_file(
+ add_custom_target(uninstall
+ 	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+ )
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Shark.pc.in ${CMAKE_BINARY_DIR}/Shark.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/Shark.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Shark-4.0.1/Shark.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Shark-4.0.1/Shark.pc.in	2021-05-09 22:59:25.015908200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Shark
++Description: Machine leaning library
++Version: @SHARK_VERSION@
++Libs: -L${libdir} -lshark
++Cflags: -I${includedir}
+--- origsrc/Shark-4.0.1/src/Data/Download.cpp	2018-08-27 19:49:36.000000000 +0900
++++ src/Shark-4.0.1/src/Data/Download.cpp	2021-05-09 23:28:52.815768800 +0900
+@@ -41,6 +41,7 @@
+ 
+ 	#pragma comment(lib, "ws2_32.lib")
+ #else
++	#include <sys/types.h>
+ 	#include <netinet/tcp.h>
+ 	#include <netinet/in.h>
+ 	#include <arpa/inet.h>
