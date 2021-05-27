@@ -1,6 +1,6 @@
---- origsrc/aws-c-cal-0.4.5/CMakeLists.txt	2020-11-21 14:21:48.000000000 +0900
-+++ src/aws-c-cal-0.4.5/CMakeLists.txt	2021-01-24 19:01:43.577586900 +0900
-@@ -31,6 +31,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
+--- origsrc/aws-c-cal-0.5.8/CMakeLists.txt	2021-05-19 23:51:06.000000000 +0900
++++ src/aws-c-cal-0.5.8/CMakeLists.txt	2021-05-28 05:46:16.839804800 +0900
+@@ -32,6 +32,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
  list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
  
@@ -11,7 +11,7 @@
  include(AwsCFlags)
  include(AwsCheckHeaders)
  include(AwsSharedLibSetup)
-@@ -108,6 +112,9 @@ endif()
+@@ -122,6 +126,9 @@ endif()
  
  # Our ABI is not yet stable
  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
@@ -21,7 +21,7 @@
  
  target_include_directories(${PROJECT_NAME} PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-@@ -132,22 +139,39 @@ else()
+@@ -146,22 +153,39 @@ else()
     set (TARGET_DIR "static")
  endif()
  
@@ -72,7 +72,7 @@
  
  if (NOT CMAKE_CROSSCOMPILING AND NOT BYO_CRYPTO)
      add_subdirectory(bin/sha256_profile)
-@@ -156,3 +180,10 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
+@@ -170,3 +194,10 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
          add_subdirectory(tests)
      endif()
  endif()
@@ -83,8 +83,8 @@
 +SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-cal.pc.in ${CMAKE_BINARY_DIR}/aws-c-cal.pc @ONLY)
 +INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-cal.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-cal-0.4.5/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-cal-0.4.5/aws-c-cal.pc.in	2021-01-24 19:04:12.509398400 +0900
+--- origsrc/aws-c-cal-0.5.8/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-cal-0.5.8/aws-c-cal.pc.in	2021-05-28 05:47:17.955518100 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -97,8 +97,8 @@
 +Libs: -L${libdir} -laws-c-cal
 +Cflags: -I${includedir}
 +Requires: aws-c-common libcrypto
---- origsrc/aws-c-cal-0.4.5/cmake/aws-c-cal-config.cmake	2020-11-21 14:21:48.000000000 +0900
-+++ src/aws-c-cal-0.4.5/cmake/aws-c-cal-config.cmake	2021-01-24 17:24:46.684026900 +0900
+--- origsrc/aws-c-cal-0.5.8/cmake/aws-c-cal-config.cmake	2021-05-19 23:51:06.000000000 +0900
++++ src/aws-c-cal-0.5.8/cmake/aws-c-cal-config.cmake	2021-05-28 05:24:24.680980100 +0900
 @@ -7,9 +7,12 @@ if (NOT BYO_CRYPTO AND NOT WIN32 AND NOT
      find_dependency(LibCrypto)
  endif()
@@ -116,8 +116,8 @@
 +    endif()
  endif()
 -
---- origsrc/aws-c-cal-0.4.5/cmake/modules/FindLibCrypto.cmake	2020-11-21 14:21:48.000000000 +0900
-+++ src/aws-c-cal-0.4.5/cmake/modules/FindLibCrypto.cmake	2021-01-24 18:39:48.026779300 +0900
+--- origsrc/aws-c-cal-0.5.8/cmake/modules/FindLibCrypto.cmake	2021-05-19 23:51:06.000000000 +0900
++++ src/aws-c-cal-0.5.8/cmake/modules/FindLibCrypto.cmake	2021-05-28 05:24:50.385721000 +0900
 @@ -22,7 +22,7 @@ find_path(LibCrypto_INCLUDE_DIR
          ${CMAKE_INSTALL_PREFIX}/include
      )
@@ -127,73 +127,70 @@
      HINTS
      ${CMAKE_PREFIX_PATH}/build/crypto
      ${CMAKE_PREFIX_PATH}/build
---- origsrc/aws-c-cal-0.4.5/source/unix/openssl_platform_init.c	2020-11-21 14:21:48.000000000 +0900
-+++ src/aws-c-cal-0.4.5/source/unix/openssl_platform_init.c	2021-01-24 18:58:40.219532200 +0900
-@@ -11,6 +11,8 @@
- 
- #include <aws/cal/private/opensslcrypto_common.h>
- 
-+#include <openssl/hmac.h>
-+
- #if defined(AWS_LIBCRYPTO_LOG_RESOLVE)
- #    define FLOGF(...)                                                                                                 \
-         do {                                                                                                           \
-@@ -28,6 +30,11 @@ static struct openssl_evp_md_ctx_table e
- struct openssl_hmac_ctx_table *g_aws_openssl_hmac_ctx_table = NULL;
- struct openssl_evp_md_ctx_table *g_aws_openssl_evp_md_ctx_table = NULL;
- 
+--- origsrc/aws-c-cal-0.5.8/source/unix/openssl_platform_init.c	2021-05-19 23:51:06.000000000 +0900
++++ src/aws-c-cal-0.5.8/source/unix/openssl_platform_init.c	2021-05-28 05:44:11.767841900 +0900
+@@ -43,6 +43,13 @@ extern int HMAC_Update(HMAC_CTX *, const
+ extern int HMAC_Final(HMAC_CTX *, unsigned char *, unsigned int *) __attribute__((weak, used));
+ extern int HMAC_Init_ex(HMAC_CTX *, const void *, size_t, const EVP_MD *, ENGINE *) __attribute__((weak, used));
+ #else
 +#if defined(__CYGWIN__)
-+/* Assume OpenSSL 1.1 */
++#define HMAC_CTX_new (NULL)
++#define HMAC_CTX_free (NULL)
++#define HMAC_CTX_reset (NULL)
 +#define HMAC_CTX_init (NULL)
 +#define HMAC_CTX_cleanup (NULL)
 +#else
- /* weak refs to libcrypto functions to force them to at least try to link
-  * and avoid dead-stripping
-  */
-@@ -45,6 +52,7 @@ extern int HMAC_Update(HMAC_CTX *, const
- extern int HMAC_Final(HMAC_CTX *, unsigned char *, unsigned int *) __attribute__((weak)) __attribute__((used));
- extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak))
- __attribute__((used));
+ /* 1.1 */
+ extern HMAC_CTX *HMAC_CTX_new(void) __attribute__((weak, used));
+ extern void HMAC_CTX_free(HMAC_CTX *) __attribute__((weak, used));
+@@ -56,6 +63,7 @@ extern void HMAC_CTX_cleanup(HMAC_CTX *)
+ extern int HMAC_Update(HMAC_CTX *, const unsigned char *, size_t) __attribute__((weak, used));
+ extern int HMAC_Final(HMAC_CTX *, unsigned char *, unsigned int *) __attribute__((weak, used));
+ extern int HMAC_Init_ex(HMAC_CTX *, const void *, int, const EVP_MD *, ENGINE *) __attribute__((weak, used));
 +#endif
  
  /* libcrypto 1.1 stub for init */
  static void s_hmac_ctx_init_noop(HMAC_CTX *ctx) {
-@@ -202,8 +210,12 @@ static int s_resolve_libcrypto_hmac(enum
- #    pragma push_macro("EVP_MD_CTX_create")
- #    undef EVP_MD_CTX_create
- #endif
+@@ -271,18 +279,30 @@ static evp_md_ctx_new s_EVP_MD_CTX_creat
+ #        pragma push_macro("EVP_MD_CTX_destroy")
+ #        undef EVP_MD_CTX_destroy
+ #    endif
 +#if defined(__CYGWIN__)
-+static evp_md_ctx_new s_EVP_MD_CTX_create = NULL; /* Assume OpenSSL 1.1.x */
-+#else
- extern EVP_MD_CTX *EVP_MD_CTX_create(void) __attribute__((weak, used));
- static evp_md_ctx_new s_EVP_MD_CTX_create = EVP_MD_CTX_create;
-+#endif
- #if defined(EVP_MD_CTX_create)
- #    pragma pop_macro("EVP_MD_CTX_create")
- #endif
-@@ -212,12 +224,17 @@ static evp_md_ctx_new s_EVP_MD_CTX_creat
- #    pragma push_macro("EVP_MD_CTX_destroy")
- #    undef EVP_MD_CTX_destroy
- #endif
-+#if defined(__CYGWIN__)
-+static evp_md_ctx_free s_EVP_MD_CTX_destroy = NULL; /* Assume OpenSSL 1.1.x */
++#define EVP_MD_CTX_destroy (NULL)
 +#else
  extern void EVP_MD_CTX_destroy(EVP_MD_CTX *) __attribute__((weak, used));
- static evp_md_ctx_free s_EVP_MD_CTX_destroy = EVP_MD_CTX_destroy;
 +#endif
- #if defined(EVP_MD_CTX_destroy)
- #    pragma pop_macro("EVP_MD_CTX_destroy")
- #endif
+ static evp_md_ctx_free s_EVP_MD_CTX_destroy = EVP_MD_CTX_destroy;
+ #    if defined(EVP_MD_CTX_destroy)
+ #        pragma pop_macro("EVP_MD_CTX_destroy")
+ #    endif
+ #endif /* !OPENSSL_IS_AWSLC */
  
-+#if !defined(__CYGWIN__)
- /* 1.1 */
++#if defined(__CYGWIN__)
++#define EVP_MD_CTX_new (NULL)
++#define EVP_MD_CTX_free (NULL)
++#define EVP_DigestInit_ex (NULL)
++#define EVP_DigestUpdate (NULL)
++#define EVP_DigestFinal_ex (NULL)
++#else
  extern EVP_MD_CTX *EVP_MD_CTX_new(void) __attribute__((weak, used));
  extern void EVP_MD_CTX_free(EVP_MD_CTX *) __attribute__((weak, used));
-@@ -226,6 +243,7 @@ extern void EVP_MD_CTX_free(EVP_MD_CTX *
  extern int EVP_DigestInit_ex(EVP_MD_CTX *, const EVP_MD *, ENGINE *) __attribute__((weak, used));
  extern int EVP_DigestUpdate(EVP_MD_CTX *, const void *, size_t) __attribute__((weak, used));
  extern int EVP_DigestFinal_ex(EVP_MD_CTX *, unsigned char *, unsigned int *) __attribute__((weak, used));
 +#endif
  
- static int s_resolve_libcrypto_md(enum aws_libcrypto_version version, void *module) {
-     /* OpenSSL changed the EVP api in 1.1 to use new/free verbs */
+ bool s_resolve_md_102(void *module) {
+ #if !defined(OPENSSL_IS_AWSLC)
+@@ -424,7 +444,11 @@ static enum aws_libcrypto_version s_reso
+ 
+ static enum aws_libcrypto_version s_resolve_libcrypto_lib(void) {
+     const char *libcrypto_102 = "libcrypto.so.1.0.0";
++#if defined(__CYGWIN__)
++    const char *libcrypto_111 = "cygcrypto-1.1.dll";
++#else
+     const char *libcrypto_111 = "libcrypto.so.1.1";
++#endif
+ 
+     FLOGF("loading libcrypto 1.0.2");
+     void *module = dlopen(libcrypto_102, RTLD_NOW);
