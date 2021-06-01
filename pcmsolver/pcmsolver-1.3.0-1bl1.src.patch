@@ -1,0 +1,133 @@
+--- origsrc/pcmsolver-1.3.0/CMakeLists.txt	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/CMakeLists.txt	2021-06-01 13:29:50.473722800 +0900
+@@ -76,3 +76,10 @@ include(${PROJECT_SOURCE_DIR}/cmake/cust
+ include(${PROJECT_SOURCE_DIR}/cmake/custom/zlib.cmake)
+ include(${PROJECT_SOURCE_DIR}/cmake/downloaded/autocmake_src.cmake)
+ include(${PROJECT_SOURCE_DIR}/cmake/custom/test.cmake)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/pcmsolver.pc.in ${CMAKE_BINARY_DIR}/pcmsolver.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/pcmsolver.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/pcmsolver-1.3.0/cmake/custom/pcmsolver.cmake	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/cmake/custom/pcmsolver.cmake	2021-06-01 13:23:22.615411700 +0900
+@@ -20,7 +20,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PRO
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+ # Hardcode to share, rather than use CMAKE_INSTALL_DATAROOTDIR as the latter
+ # might resolve to a place not recognized by CMake
+-set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++if (CYGWIN)
++  set(CMAKECONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
++else()
++  set(CMAKECONFIG_INSTALL_DIR "share/cmake/${PROJECT_NAME}")
++endif()
+ 
+ if(NOT DEFINED PYMOD_INSTALL_LIBDIR)
+   message(STATUS "Setting (unspecified) option PYMOD_INSTALL_LIBDIR: python")
+--- origsrc/pcmsolver-1.3.0/cmake/custom/test.cmake	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/cmake/custom/test.cmake	2021-06-01 12:11:03.956725200 +0900
+@@ -1,8 +1,13 @@
+ # Unit tests need to be linked to the static version of the library
+-cmake_dependent_option(
+-  ENABLE_TESTS "Enable PCMSolver unit tests" ON
+-  "NOT SHARED_LIBRARY_ONLY" OFF
+-  )
++
++if (CYGWIN)
++  option(ENABLE_TESTS "Enable PCMSolver unit tests" ON)
++else()
++  cmake_dependent_option(
++    ENABLE_TESTS "Enable PCMSolver unit tests" ON
++    "NOT SHARED_LIBRARY_ONLY" OFF
++    )
++endif()
+ 
+ include(CMakeParseArguments)
+ macro(add_Catch_test)
+--- origsrc/pcmsolver-1.3.0/pcmsolver.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/pcmsolver-1.3.0/pcmsolver.pc.in	2021-06-01 13:50:38.850871500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: pcmsolver
++Description: API for the Polarizable Continuum Model
++Version: @VERSION@
++Libs: -L${libdir} -lpcm
++Cflags: -I${includedir}
+--- origsrc/pcmsolver-1.3.0/src/CMakeLists.txt	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/src/CMakeLists.txt	2021-06-01 13:19:08.674678900 +0900
+@@ -68,8 +68,8 @@ if(NOT STATIC_LIBRARY_ONLY)
+     EXPORT
+       "PCMSolverTargets-shared"
+     RUNTIME DESTINATION
+-      ${CMAKE_INSTALL_LIBDIR}
+-    LIBRARY DESTINATION
++      ${CMAKE_INSTALL_BINDIR}
++    ARCHIVE DESTINATION
+       ${CMAKE_INSTALL_LIBDIR}
+     )
+   add_dependencies(pcm-shared generate-config-hpp)
+--- origsrc/pcmsolver-1.3.0/tests/CMakeLists.txt	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/tests/CMakeLists.txt	2021-06-01 13:11:35.978413000 +0900
+@@ -17,6 +17,11 @@ target_compile_definitions(unit_tests
+     "$<$<BOOL:${HAS_CXX11}>:HAS_CXX11>"
+     "$<$<NOT:$<BOOL:${HAS_CXX11}>>:CATCH_CONFIG_NO_CPP11>"
+   )
++target_include_directories(unit_tests
++  PRIVATE ${CMAKE_BINARY_DIR}/include
++  PRIVATE ${CMAKE_SOURCE_DIR}/include
++  PRIVATE ${CMAKE_SOURCE_DIR}/src
++)
+ 
+ add_subdirectory(benchmark)
+ add_subdirectory(bi_operators)
+@@ -30,11 +35,19 @@ add_subdirectory(mmfq)
+ add_subdirectory(numerical_quadrature)
+ add_subdirectory(utils)
+ 
+-target_link_libraries(unit_tests
+-  PRIVATE
+-    pcm-static
+-    Catch
+-  )
++if (CYGWIN)
++  target_link_libraries(unit_tests
++    PRIVATE
++      pcm-shared
++      Catch
++    )
++else()
++  target_link_libraries(unit_tests
++    PRIVATE
++      pcm-static
++      Catch
++    )
++endif()
+ 
+ add_subdirectory(C_host)
+ if(TEST_Fortran_API)
+--- origsrc/pcmsolver-1.3.0/tests/bi_operators/CMakeLists.txt	2020-12-01 05:21:39.000000000 +0900
++++ src/pcmsolver-1.3.0/tests/bi_operators/CMakeLists.txt	2021-06-01 13:11:48.456733400 +0900
+@@ -45,7 +45,16 @@ if(BUILD_STANDALONE)
+     PRIVATE
+       "$<$<BOOL:${HAS_CXX11}>:HAS_CXX11>"
+     )
+-  target_link_libraries(update_reference_files pcm-static)
++  target_include_directories(update_reference_files
++    PRIVATE ${CMAKE_BINARY_DIR}/include
++    PRIVATE ${CMAKE_SOURCE_DIR}/include
++    PRIVATE ${CMAKE_SOURCE_DIR}/src
++  )
++  if (CYGWIN)
++    target_link_libraries(update_reference_files pcm-shared)
++  else()
++    target_link_libraries(update_reference_files pcm-static)
++  endif()
+   target_include_directories(update_reference_files
+     PRIVATE
+       ${PROJECT_SOURCE_DIR}/tests
