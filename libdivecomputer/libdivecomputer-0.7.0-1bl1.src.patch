@@ -1,0 +1,62 @@
+File origsrc/libdivecomputer-0.7.0/include/libdivecomputer/version.h is a regular file while file src/libdivecomputer-0.7.0/include/libdivecomputer/version.h is a symbolic link
+--- origsrc/libdivecomputer-0.7.0/src/context-private.h	2021-05-08 04:23:36.000000000 +0900
++++ src/libdivecomputer-0.7.0/src/context-private.h	2021-06-04 10:43:02.676475800 +0900
+@@ -46,6 +46,10 @@ extern "C" {
+ #define ATTR_FORMAT_PRINTF(a,b)
+ #endif
+ 
++#if defined(ERROR)
++#undef ERROR
++#endif
++
+ #ifdef ENABLE_LOGGING
+ #define HEXDUMP(context, loglevel, prefix, data, size) dc_context_hexdump (context, loglevel, __FILE__, __LINE__, FUNCTION, prefix, data, size)
+ #define SYSERROR(context, errcode) dc_context_syserror (context, DC_LOGLEVEL_ERROR, __FILE__, __LINE__, FUNCTION, errcode)
+File origsrc/libdivecomputer-0.7.0/src/libdivecomputer.rc is a regular file while file src/libdivecomputer-0.7.0/src/libdivecomputer.rc is a symbolic link
+--- origsrc/libdivecomputer-0.7.0/src/oceanic_common.h	2021-05-08 04:23:36.000000000 +0900
++++ src/libdivecomputer-0.7.0/src/oceanic_common.h	2021-06-04 10:42:06.515696400 +0900
+@@ -28,6 +28,10 @@
+ extern "C" {
+ #endif /* __cplusplus */
+ 
++#if defined(PAGESIZE)
++#undef PAGESIZE
++#endif
++
+ #define PAGESIZE 0x10
+ #define FPMAXSIZE 0x20
+ 
+--- origsrc/libdivecomputer-0.7.0/src/serial_posix.c	2021-05-08 04:23:36.000000000 +0900
++++ src/libdivecomputer-0.7.0/src/serial_posix.c	2021-06-04 10:44:19.657988900 +0900
+@@ -299,6 +299,7 @@ dc_serial_open (dc_iostream_t **out, dc_
+ 		goto error_timer_free;
+ 	}
+ 
++#if defined(TIOCEXCL)
+ #ifndef ENABLE_PTY
+ 	// Enable exclusive access mode.
+ 	if (ioctl (device->fd, TIOCEXCL, NULL) != 0) {
+@@ -308,6 +309,7 @@ dc_serial_open (dc_iostream_t **out, dc_
+ 		goto error_close;
+ 	}
+ #endif
++#endif
+ 
+ 	// Retrieve the current terminal attributes, to
+ 	// be able to restore them when closing the device.
+@@ -346,6 +348,7 @@ dc_serial_close (dc_iostream_t *abstract
+ 		dc_status_set_error(&status, syserror (errcode));
+ 	}
+ 
++#if defined(TIOCNXCL)
+ #ifndef ENABLE_PTY
+ 	// Disable exclusive access mode.
+ 	if (ioctl (device->fd, TIOCNXCL, NULL)) {
+@@ -354,6 +357,7 @@ dc_serial_close (dc_iostream_t *abstract
+ 		dc_status_set_error(&status, syserror (errcode));
+ 	}
+ #endif
++#endif
+ 
+ 	// Close the device.
+ 	if (close (device->fd) != 0) {
