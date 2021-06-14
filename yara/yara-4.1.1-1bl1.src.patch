@@ -1,26 +1,32 @@
---- origsrc/yara-4.0.2/Makefile.am	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/Makefile.am	2020-08-07 16:58:37.470697100 +0900
-@@ -30,7 +30,7 @@ yara_SOURCES = \
+--- origsrc/yara-4.1.1/Makefile.am	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/Makefile.am	2021-06-14 19:02:58.554828700 +0900
+@@ -42,8 +42,8 @@ yara_SOURCES = \
    cli/threading.h \
    cli/yara.c
  
--yara_LDADD = libyara/.libs/libyara.a #-Llibyara/.libs -lyara
+-yara_LDADD = -Llibyara/.libs -lyara
+-yara_DEPENDENCIES = libyara/.libs/libyara.la
 +yara_LDADD = libyara/libyara.la
++yara_DEPENDENCIES = libyara/libyara.la
  
  yarac_SOURCES = \
     cli/args.c \
-@@ -38,30 +38,30 @@ yarac_SOURCES = \
+@@ -51,35 +51,35 @@ yarac_SOURCES = \
     cli/common.h \
     cli/yarac.c
  
 -yarac_LDADD = -Llibyara/.libs -lyara
+-yarac_DEPENDENCIES = libyara/.libs/libyara.la
 +yarac_LDADD = libyara/libyara.la
++yarac_DEPENDENCIES = libyara/libyara.la
  
- test_alignment_SOURCES = tests/test-alignment.c
- test_arena_SOURCES = tests/test-arena.c
+ test_alignment_SOURCES = tests/test-alignment.c tests/util.c
+-test_alignment_LDADD = libyara/.libs/libyara.a
++test_alignment_LDADD = libyara/libyara.la
+ test_arena_SOURCES = tests/test-arena.c tests/util.c
 -test_arena_LDADD = libyara/.libs/libyara.a
 +test_arena_LDADD = libyara/libyara.la
- test_atoms_SOURCES = tests/test-atoms.c tests/util.c libyara/atoms.c
+ test_atoms_SOURCES = tests/test-atoms.c tests/util.c
 -test_atoms_LDADD = libyara/.libs/libyara.a
 +test_atoms_LDADD = libyara/libyara.la
  test_rules_SOURCES = tests/test-rules.c tests/util.c
@@ -32,26 +38,31 @@
  test_elf_SOURCES = tests/test-elf.c tests/util.c
 -test_elf_LDADD = libyara/.libs/libyara.a
 +test_elf_LDADD = libyara/libyara.la
- test_version_SOURCES = tests/test-version.c
+ test_version_SOURCES = tests/test-version.c tests/util.c
+-test_version_LDADD = libyara/.libs/libyara.a
++test_version_LDADD = libyara/libyara.la
+ test_api_SOURCES = tests/test-api.c tests/util.c
 -test_api_LDADD = libyara/.libs/libyara.a
 +test_api_LDADD = libyara/libyara.la
- test_api_SOURCES = tests/test-api.c tests/util.c
- test_bitmask_SOURCES = tests/test-bitmask.c
+ test_bitmask_SOURCES = tests/test-bitmask.c tests/util.c
 -test_bitmask_LDADD = libyara/.libs/libyara.a
 +test_bitmask_LDADD = libyara/libyara.la
  test_math_SOURCES = tests/test-math.c tests/util.c
 -test_math_LDADD = libyara/.libs/libyara.a
 +test_math_LDADD = libyara/libyara.la
- test_stack_SOURCES = tests/test-stack.c
+ test_stack_SOURCES = tests/test-stack.c tests/util.c
 -test_stack_LDADD = libyara/.libs/libyara.a
 +test_stack_LDADD = libyara/libyara.la
- test_re_split_SOURCES = tests/test-re-split.c
+ test_re_split_SOURCES = tests/test-re-split.c tests/util.c
 -test_re_split_LDADD = libyara/.libs/libyara.a
 +test_re_split_LDADD = libyara/libyara.la
+ test_async_SOURCES = tests/test-async.c tests/util.c
+-test_async_LDADD = libyara/.libs/libyara.a
++test_async_LDADD = libyara/libyara.la
  
  TESTS = $(check_PROGRAMS)
  TESTS_ENVIRONMENT = TOP_SRCDIR=$(top_srcdir)
-@@ -86,32 +86,32 @@ if POSIX
+@@ -105,32 +105,32 @@ if POSIX
  if !ADDRESS_SANITIZER
  check_PROGRAMS+=test-exception
  test_exception_SOURCES = tests/test-exception.c tests/util.c
@@ -89,8 +100,8 @@
  endif
  
  # man pages
---- origsrc/yara-4.0.2/cli/yara.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/cli/yara.c	2020-08-07 18:24:40.856512300 +0900
+--- origsrc/yara-4.1.1/cli/yara.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/cli/yara.c	2021-06-14 19:05:47.293842200 +0900
 @@ -27,7 +27,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONT
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
@@ -100,27 +111,35 @@
  
  // for getline(3)
  #define _POSIX_C_SOURCE 200809L
-@@ -342,7 +342,7 @@ static char* file_queue_get()
+@@ -400,7 +400,7 @@ static char* file_queue_get(time_t deadl
+   return result;
  }
- 
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
- static bool is_directory(
-     const char* path)
-@@ -1027,7 +1027,7 @@ static int callback(
+ static bool is_directory(const char* path)
+ {
+@@ -1097,7 +1097,7 @@ static int callback(
+   return CALLBACK_ERROR;
  }
- 
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  static DWORD WINAPI scanning_thread(LPVOID param)
  #else
  static void* scanning_thread(void* param)
---- origsrc/yara-4.0.2/libyara/Makefile.am	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/Makefile.am	2020-08-07 16:59:37.860055200 +0900
-@@ -216,5 +216,7 @@ if USE_NO_PROC
+--- origsrc/yara-4.1.1/configure.ac	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/configure.ac	2021-06-14 19:37:14.216218300 +0900
+@@ -1,4 +1,4 @@
+-AC_INIT([yara], [4.1.0], [vmalvarez@virustotal.com])
++AC_INIT([yara], [4.1.1], [vmalvarez@virustotal.com])
+ 
+ AM_SILENT_RULES([yes])
+ AC_CONFIG_SRCDIR([cli/yara.c])
+--- origsrc/yara-4.1.1/libyara/Makefile.am	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/Makefile.am	2021-06-14 19:06:59.811932700 +0900
+@@ -243,5 +243,7 @@ if USE_NO_PROC
  libyara_la_SOURCES += proc/none.c
  endif
  
@@ -129,19 +148,19 @@
  pkgconfigdir = $(libdir)/pkgconfig
 -nodist_pkgconfig_DATA = yara.pc
 +pkgconfig_DATA = yara.pc
---- origsrc/yara-4.0.2/libyara/exception.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/exception.h	2020-08-07 18:00:57.590147300 +0900
+--- origsrc/yara-4.1.1/libyara/exception.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/exception.h	2021-06-14 19:09:45.553071700 +0900
 @@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <assert.h>
  #include <yara/globals.h>
  
 -#if _WIN32 || __CYGWIN__
-+#if _WIN32
++#if defined(_WIN32)
  
  #include <windows.h>
  
---- origsrc/yara-4.0.2/libyara/filemap.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/filemap.c	2020-08-07 18:01:24.088325700 +0900
+--- origsrc/yara-4.1.1/libyara/filemap.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/filemap.c	2021-06-14 19:10:21.698226100 +0900
 @@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <fcntl.h>
@@ -150,27 +169,27 @@
 +#if defined(_WIN32)
  #include <windows.h>
  #else
- #include <sys/stat.h>
-@@ -90,7 +90,7 @@ YR_API int yr_filemap_map(
- //       ERROR_COULD_NOT_MAP_FILE
+ #include <sys/mman.h>
+@@ -76,7 +76,7 @@ YR_API int yr_filemap_map(const char* fi
+ //   ERROR_COULD_NOT_OPEN_FILE
+ //   ERROR_COULD_NOT_MAP_FILE
  //
- 
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
  YR_API int yr_filemap_map_fd(
      YR_FILE_DESCRIPTOR file,
-@@ -278,7 +278,7 @@ YR_API int yr_filemap_map_fd(
- //       ERROR_COULD_NOT_MAP_FILE
+@@ -253,7 +253,7 @@ YR_API int yr_filemap_map_fd(
+ //   ERROR_COULD_NOT_OPEN_FILE
+ //   ERROR_COULD_NOT_MAP_FILE
  //
- 
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
  YR_API int yr_filemap_map_ex(
      const char* file_path,
---- origsrc/yara-4.0.2/libyara/include/yara/error.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/include/yara/error.h	2020-08-07 18:01:56.404691400 +0900
+--- origsrc/yara-4.1.1/libyara/include/yara/error.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/include/yara/error.h	2021-06-14 19:15:56.705605700 +0900
 @@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <string.h>
@@ -180,8 +199,8 @@
  #include <windows.h>
  #endif
  
---- origsrc/yara-4.0.2/libyara/include/yara/filemap.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/include/yara/filemap.h	2020-08-07 18:02:22.312650400 +0900
+--- origsrc/yara-4.1.1/libyara/include/yara/filemap.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/include/yara/filemap.h	2021-06-14 19:16:19.655328600 +0900
 @@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include <sys/types.h>
@@ -189,19 +208,19 @@
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  #include <windows.h>
- #define YR_FILE_DESCRIPTOR    HANDLE
+ #define YR_FILE_DESCRIPTOR HANDLE
  #else
-@@ -50,7 +50,7 @@ typedef struct _YR_MAPPED_FILE
-   YR_FILE_DESCRIPTOR  file;
-   size_t              size;
-   const uint8_t*      data;
--  #if defined(_WIN32) || defined(__CYGWIN__)
-+  #if defined(_WIN32)
-   HANDLE              mapping;
-   #endif
+@@ -49,7 +49,7 @@ typedef struct _YR_MAPPED_FILE
+   YR_FILE_DESCRIPTOR file;
+   size_t size;
+   const uint8_t* data;
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+   HANDLE mapping;
+ #endif
  
---- origsrc/yara-4.0.2/libyara/include/yara/limits.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/include/yara/limits.h	2020-08-07 18:02:35.891910100 +0900
+--- origsrc/yara-4.1.1/libyara/include/yara/limits.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/include/yara/limits.h	2021-06-14 19:16:37.526789300 +0900
 @@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #ifndef YR_LIMITS_H
  #define YR_LIMITS_H
@@ -211,8 +230,8 @@
  #include <windows.h>
  #endif
  
---- origsrc/yara-4.0.2/libyara/include/yara/pe.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/include/yara/pe.h	2020-08-07 18:02:48.004140400 +0900
+--- origsrc/yara-4.1.1/libyara/include/yara/pe.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/include/yara/pe.h	2021-06-14 19:17:03.421201700 +0900
 @@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #pragma pack(push, 1)
@@ -222,19 +241,19 @@
  #include <windows.h>
  
  // PKCS7_SIGNER_INFO is defined by wincrypt.h, but it conflicts with a type
---- origsrc/yara-4.0.2/libyara/include/yara/threading.h	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/include/yara/threading.h	2020-08-07 18:03:26.510897800 +0900
-@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- 
- 
+--- origsrc/yara-4.1.1/libyara/include/yara/threading.h	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/include/yara/threading.h	2021-06-14 19:17:20.813677800 +0900
+@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #ifndef YR_MUTEX_H
+ #define YR_MUTEX_H
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
  #include <windows.h>
  
---- origsrc/yara-4.0.2/libyara/lexer.l	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/lexer.l	2020-08-07 18:04:35.863166900 +0900
+--- origsrc/yara-4.1.1/libyara/lexer.l	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/lexer.l	2021-06-14 19:18:00.436992200 +0900
 @@ -51,7 +51,7 @@ with noyywrap then we can remove this pr
  #include <string.h>
  #include <setjmp.h>
@@ -253,7 +272,7 @@
    return strlen(path) > 2 &&
        path[1] == ':' && (path[2] == '/' || path[2] == '\\');
    #else
-@@ -931,7 +931,7 @@ int yr_lex_parse_rules_fd(
+@@ -946,7 +946,7 @@ int yr_lex_parse_rules_fd(
    size_t file_size;
    void* buffer;
  
@@ -262,7 +281,7 @@
    DWORD bytes_read;
    #endif
  
-@@ -940,7 +940,7 @@ int yr_lex_parse_rules_fd(
+@@ -955,7 +955,7 @@ int yr_lex_parse_rules_fd(
    if (setjmp(compiler->error_recovery) != 0)
      return compiler->errors;
  
@@ -271,7 +290,7 @@
    file_size = (size_t) GetFileSize(rules_fd, NULL);
    #else
    struct stat fs;
-@@ -962,7 +962,7 @@ int yr_lex_parse_rules_fd(
+@@ -977,7 +977,7 @@ int yr_lex_parse_rules_fd(
      return compiler->errors;
    }
  
@@ -280,9 +299,9 @@
    if (!ReadFile(rules_fd, buffer, file_size, &bytes_read, NULL))
    #else
    if (read(rules_fd, buffer, file_size) != file_size)
---- origsrc/yara-4.0.2/libyara/libyara.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/libyara.c	2020-08-07 18:04:54.670164100 +0900
-@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+--- origsrc/yara-4.1.1/libyara/libyara.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/libyara.c	2021-06-14 19:18:46.238443100 +0900
+@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  
  #include "crypto.h"
  
@@ -291,21 +310,21 @@
  #if !defined(_MSC_VER) || (defined(_MSC_VER) && (_MSC_VER < 1900))
  #define snprintf _snprintf
  #endif
---- origsrc/yara-4.0.2/libyara/mem.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/mem.c	2020-08-07 18:05:08.845414700 +0900
+--- origsrc/yara-4.1.1/libyara/mem.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/mem.c	2021-06-14 19:19:01.181891800 +0900
 @@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- #include <yara/mem.h>
  #include <yara/error.h>
+ #include <yara/mem.h>
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
  
- #include <windows.h>
  #include <string.h>
---- origsrc/yara-4.0.2/libyara/modules/cuckoo/cuckoo.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/modules/cuckoo/cuckoo.c	2020-08-07 18:05:37.524217300 +0900
-@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
- #include <yara/modules.h>
+ #include <windows.h>
+--- origsrc/yara-4.1.1/libyara/modules/cuckoo/cuckoo.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/modules/cuckoo/cuckoo.c	2021-06-14 19:19:19.800487300 +0900
+@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #include <yara/re.h>
  
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
@@ -313,8 +332,8 @@
  #define strcasecmp _stricmp
  #endif
  
---- origsrc/yara-4.0.2/libyara/threading.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/libyara/threading.c	2020-08-07 18:05:58.501025200 +0900
+--- origsrc/yara-4.1.1/libyara/threading.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/libyara/threading.c	2021-06-14 19:19:37.528126900 +0900
 @@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
  #include <yara/error.h>
  #include <yara/threading.h>
@@ -324,10 +343,10 @@
  
  YR_THREAD_ID yr_current_thread_id(void)
  {
---- origsrc/yara-4.0.2/tests/test-api.c	2020-06-26 16:17:35.000000000 +0900
-+++ src/yara-4.0.2/tests/test-api.c	2020-08-07 18:06:31.615876400 +0900
-@@ -3,7 +3,7 @@
- #include <unistd.h>
+--- origsrc/yara-4.1.1/tests/test-api.c	2021-05-24 18:20:19.000000000 +0900
++++ src/yara-4.1.1/tests/test-api.c	2021-06-14 19:20:10.260126900 +0900
+@@ -4,7 +4,7 @@
+ 
  #include "util.h"
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
@@ -335,16 +354,16 @@
  #include <fileapi.h>
  #else
  #include <unistd.h>
-@@ -108,7 +108,7 @@ void test_file_descriptor()
+@@ -109,7 +109,7 @@ void test_file_descriptor()
    YR_COMPILER* compiler = NULL;
    YR_RULES* rules = NULL;
  
 -#if defined(_WIN32) || defined(__CYGWIN__)
 +#if defined(_WIN32)
-   HANDLE fd = CreateFile("tests/data/baz.yar", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+   HANDLE fd = CreateFile(
+       "tests/data/baz.yar", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
    if (fd == INVALID_HANDLE_VALUE)
-   {
-@@ -138,7 +138,7 @@ void test_file_descriptor()
+@@ -140,7 +140,7 @@ void test_file_descriptor()
      exit(EXIT_FAILURE);
    }
  
