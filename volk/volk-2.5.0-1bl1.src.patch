@@ -1,0 +1,71 @@
+--- origsrc/volk-2.5.0/CMakeLists.txt	2021-06-05 20:01:46.000000000 +0900
++++ src/volk-2.5.0/CMakeLists.txt	2021-06-17 01:46:13.185506000 +0900
+@@ -50,7 +50,9 @@ endif(HAVE_C_LIMITED_RANGE)
+ 
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
++if(NOT CYGWIN)
++    add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
++endif()
+ 
+ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+     # Abort compilation if kernel implementations have inconsistent function
+@@ -140,17 +142,26 @@ else()
+   option(VOLK_CPU_FEATURES "Volk uses cpu_features" OFF)
+ endif()
+ if (VOLK_CPU_FEATURES)
+-  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cpu_features/CMakeLists.txt" )
+-    message(FATAL_ERROR "cpu_features/CMakeLists.txt not found. Did you forget to git clone recursively?\nFix with: git submodule update --init")
++  option(USE_SYSTEM_CPU_FEATURES "Use system cpu_features" ON)
++  if (USE_SYSTEM_CPU_FEATURES)
++    find_package(pkgconfig)
++    pkg_check_modules(CPU_FEATURES cpu_features)
++    if (NOT CPU_FEATURES_FOUND)
++      message(FATAL_ERROR "cpu_features not installed.")
++    endif()
++  else()
++    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cpu_features/CMakeLists.txt" )
++      message(FATAL_ERROR "cpu_features/CMakeLists.txt not found. Did you forget to git clone recursively?\nFix with: git submodule update --init")
++    endif()
++    message(STATUS "Building Volk with cpu_features")
++    set(BUILD_PIC ON CACHE BOOL
++      "Build cpu_features with Position Independent Code (PIC)."
++      FORCE)
++    set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
++    set(BUILD_SHARED_LIBS OFF)
++    add_subdirectory(cpu_features)
++    set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
+   endif()
+-  message(STATUS "Building Volk with cpu_features")
+-  set(BUILD_PIC ON CACHE BOOL
+-    "Build cpu_features with Position Independent Code (PIC)."
+-    FORCE)
+-  set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+-  set(BUILD_SHARED_LIBS OFF)
+-  add_subdirectory(cpu_features)
+-  set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
+ else()
+   message(STATUS "Building Volk without cpu_features")
+ endif()
+--- origsrc/volk-2.5.0/lib/CMakeLists.txt	2021-06-05 20:01:46.000000000 +0900
++++ src/volk-2.5.0/lib/CMakeLists.txt	2021-06-17 01:49:33.430215200 +0900
+@@ -515,10 +515,14 @@ target_include_directories(volk_obj
+     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+ if(VOLK_CPU_FEATURES)
+-  set_source_files_properties(volk_cpu.c PROPERTIES COMPILE_DEFINITIONS "VOLK_CPU_FEATURES=1")
+-  target_include_directories(volk_obj
+-    PRIVATE $<TARGET_PROPERTY:cpu_features,INTERFACE_INCLUDE_DIRECTORIES>
+-)
++    if (CPU_FEATURES_FOUND)
++        target_link_libraries(volk_obj ${CPU_FEATURES_LIBRARIES})
++    else()
++        set_source_files_properties(volk_cpu.c PROPERTIES COMPILE_DEFINITIONS "VOLK_CPU_FEATURES=1")
++        target_include_directories(volk_obj
++            PRIVATE $<TARGET_PROPERTY:cpu_features,INTERFACE_INCLUDE_DIRECTORIES>
++        )
++    endif()
+ endif()
+ 
+ #Configure object target properties
