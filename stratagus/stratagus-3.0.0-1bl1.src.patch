@@ -1,0 +1,39 @@
+--- origsrc/stratagus-3.0.0/CMakeLists.txt	2020-12-19 18:38:45.000000000 +0900
++++ src/stratagus-3.0.0/CMakeLists.txt	2021-06-19 18:07:55.971517500 +0900
+@@ -635,7 +635,13 @@ endif()
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
+ 
+-find_package(Lua51 REQUIRED)
++find_package(pkgconfig)
++pkg_check_modules(LUA lua-5.1)
++if (LUA_FOUND)
++	set(LUA_INCLUDE_DIR ${LUA_INCLUDE_DIRS})
++else()
++	find_package(Lua51 REQUIRED)
++endif()
+ find_package(PNG REQUIRED)
+ find_package(SDL2 REQUIRED)
+ find_package(SDL2_mixer REQUIRED)
+@@ -799,7 +805,7 @@ endif()
+ 
+ # Stratagus needs to have char by default signed
+ # No idea how to tell this to other compilers
+-if(CMAKE_COMPILER_IS_GNUCXX)
++if(CMAKE_COMPILER_IS_GNUCXX AND NOT CYGWIN)
+ 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char -Werror")
+ endif()
+ if(CMAKE_COMPILER_IS_GNUC)
+@@ -1171,7 +1177,11 @@ endif()
+ 
+ ########### install files ###############
+ 
+-install(TARGETS stratagus DESTINATION ${GAMEDIR})
++if (CYGWIN)
++	install(TARGETS stratagus DESTINATION ${BINDIR})
++else()
++	install(TARGETS stratagus DESTINATION ${GAMEDIR})
++endif()
+ install(TARGETS png2stratagus DESTINATION ${BINDIR})
+ 
+ if(ENABLE_DOC AND DOXYGEN_FOUND)
