@@ -1,0 +1,104 @@
+--- origsrc/bytecoin-3.5.1/CMakeLists.txt	2019-07-19 00:58:45.000000000 +0900
++++ src/bytecoin-3.5.1/CMakeLists.txt	2021-06-23 15:26:23.890128900 +0900
+@@ -34,7 +34,7 @@ else()
+     # Security options below, on old Linux replace -fstack-protector-strong with -fstack-protector
+     add_compile_options(-fPIE -fPIC -fstack-protector-strong)
+     add_definitions(-D_FORTIFY_SOURCE=2)
+-if(NOT APPLE)
++if(NOT APPLE AND NOT CYGWIN)
+     link_libraries("-pie -Wl,-z,now -Wl,-z,relro -Wl,-z,noexecstack")
+     # investigate -Wl,-z,noexecheap
+ endif()
+@@ -55,7 +55,13 @@ endif()
+     endif()
+ endif()
+ include_directories(vendor)
+-set(SRC_NO_WARNINGS vendor/sqlite/sqlite3.c)
++find_package(pkgconfig)
++pkg_check_modules(SQLITE sqlite3)
++if (SQLITE_FOUND)
++    set(SRC_NO_WARNINGS)
++else()
++    set(SRC_NO_WARNINGS vendor/sqlite/sqlite3.c)
++endif()
+ set(SRC_DB src/platform/DBsqlite3.cpp src/platform/DBsqlite3.hpp src/platform/DBmemory.cpp src/platform/DBmemory.hpp)
+ if(USE_SQLITE)
+     # Requires dl on Linux, we add it unconditionally for simplicity.
+@@ -63,11 +69,13 @@ if(USE_SQLITE)
+     add_definitions(-Dplatform_USE_SQLITE=1)
+ else()
+     message(STATUS "Database selected: LMDB")
+-    include_directories(../lmdb/libraries/liblmdb)
+-    if(NOT EXISTS "${PARENT_DIR}/lmdb/libraries/liblmdb/mdb.c")
+-        message(FATAL_ERROR "${PARENT_DIR}/lmdb/libraries/liblmdb/mdb.c not found. Make sure lmdb is cloned into ../lmdb/")
++    if (NOT CYGWIN)
++        include_directories(../lmdb/libraries/liblmdb)
++        if(NOT EXISTS "${PARENT_DIR}/lmdb/libraries/liblmdb/mdb.c")
++            message(FATAL_ERROR "${PARENT_DIR}/lmdb/libraries/liblmdb/mdb.c not found. Make sure lmdb is cloned into ../lmdb/")
++        endif()
++        set(SRC_NO_WARNINGS ${SRC_NO_WARNINGS} ../lmdb/libraries/liblmdb/mdb.c ../lmdb/libraries/liblmdb/midl.c)
+     endif()
+-    set(SRC_NO_WARNINGS ${SRC_NO_WARNINGS} ../lmdb/libraries/liblmdb/mdb.c ../lmdb/libraries/liblmdb/midl.c)
+     set(SRC_DB ${SRC_DB} src/platform/DBlmdb.cpp src/platform/DBlmdb.hpp)
+ endif()
+ 
+@@ -133,12 +141,14 @@ elseif(APPLE)
+         ${SRC_NO_WARNINGS}
+         vendor/hidapi/mac/hid.c
+     )
+-else()
++elseif(LINUX)
+     set(SRC_NO_WARNINGS
+         ${SRC_NO_WARNINGS}
+         vendor/hidapi/linux/hid.c
+     )
+     set(HID_LIBRARY "udev")
++elseif(CYGWIN)
++    set(HID_LIBRARY "hidapi")
+ endif()
+ 
+ # We compile those folders with full optimization even in debug mode, otherwise binaries will run much slower in debug
+@@ -172,14 +182,16 @@ set(SOURCE_FILES
+     src/version.hpp
+ )
+ 
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs")
++if (NOT CYGWIN)
++    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
++    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs")
++endif()
+ add_library(bytecoin-crypto ${SRC_CRYPTO})
+ if(APPLE)
+     link_libraries(-dead_strip  "-framework Foundation")
+ endif()
+ add_library(bytecoin-core ${SOURCE_FILES})
+-target_link_libraries(bytecoin-core bytecoin-crypto ${HID_LIBRARY})
++target_link_libraries(bytecoin-core bytecoin-crypto ${HID_LIBRARY} ${SQLITE_LIBRARIES})
+ 
+ link_libraries(bytecoin-crypto bytecoin-core)
+ if(NOT WIN32)
+@@ -206,7 +218,11 @@ add_executable(tests src/main_tests.cpp
+         tests/wallet_file/test_wallet_file.cpp tests/wallet_file/test_wallet_file.hpp tests/crypto/benchmarks.cpp tests/crypto/benchmarks.hpp)
+ endif()
+ 
+-set(Boost_USE_STATIC_LIBS ON)
++if (CYGWIN)
++    set(Boost_USE_STATIC_LIBS OFF)
++else()
++    set(Boost_USE_STATIC_LIBS ON)
++endif()
+ add_definitions(-DBOOST_BIND_NO_PLACEHOLDERS=1 -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE=1) # boost::_1 conflicts with std::_1
+ add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY=1 -DBOOST_SYSTEM_NO_DEPRECATED=1) # required for header-only compilation
+ add_definitions(-DBOOST_DATE_TIME_NO_LIB=1 -DBOOST_SYSTEM_NO_LIB=1 -DBOOST_REGEX_NO_LIB=1) # required for header-only compilation
+--- origsrc/bytecoin-3.5.1/src/crypto/hash.cpp	2019-07-19 00:58:45.000000000 +0900
++++ src/bytecoin-3.5.1/src/crypto/hash.cpp	2021-06-23 14:43:40.243632800 +0900
+@@ -37,7 +37,7 @@ CryptoNightContext::~CryptoNightContext(
+ #else
+ 
+ CryptoNightContext::CryptoNightContext() {
+-#if !defined(__APPLE__)
++#if !defined(__APPLE__) && !defined(__CYGWIN__)
+ 	data = mmap(nullptr, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+ #else
+ 	data = mmap(nullptr, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
