@@ -1,0 +1,41 @@
+--- origsrc/pacman-6.0.0/lib/libalpm/signing.c	2021-05-20 12:38:45.948119900 +0900
++++ src/pacman-6.0.0/lib/libalpm/signing.c	2021-06-23 09:00:57.086811700 +0900
+@@ -267,6 +267,9 @@ static int key_import_wkd(alpm_handle_t
+ 	CHECK_ERR();
+ 
+ 	mode = gpgme_get_keylist_mode(ctx);
++#if !defined(GPGME_KEYLIST_MODE_LOCATE)
++#define GPGME_KEYLIST_MODE_LOCATE (GPGME_KEYLIST_MODE_LOCAL | GPGME_KEYLIST_MODE_EXTERN)
++#endif
+ 	mode |= GPGME_KEYLIST_MODE_LOCATE;
+ 	gpg_err = gpgme_set_keylist_mode(ctx, mode);
+ 	CHECK_ERR();
+--- origsrc/pacman-6.0.0/meson.build	2021-05-20 12:38:45.948119900 +0900
++++ src/pacman-6.0.0/meson.build	2021-06-23 09:07:27.812761200 +0900
+@@ -341,7 +341,7 @@ pacman_bin = executable(
+   pacman_sources,
+   include_directories : includes,
+   link_with : [libalpm, libcommon],
+-  dependencies : [libarchive],
++  dependencies : [libarchive, libintl],
+   install : true,
+ )
+ 
+@@ -350,7 +350,7 @@ executable(
+   pacman_conf_sources,
+   include_directories : includes,
+   link_with : [libalpm, libcommon],
+-  dependencies : [libarchive],
++  dependencies : [libarchive, libintl],
+   install : true,
+ )
+ 
+@@ -359,7 +359,7 @@ executable(
+   testpkg_sources,
+   include_directories : includes,
+   link_with : [libalpm],
+-  dependencies : [libarchive],
++  dependencies : [libarchive, libintl],
+   install : true,
+ )
+ 
