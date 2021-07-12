@@ -1,18 +1,20 @@
---- origsrc/xraylib-xraylib-4.0.0/configure.ac	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/configure.ac	2020-10-02 09:47:13.654345400 +0900
-@@ -147,6 +147,11 @@ else
- 			LDFLAGS_IDL="-no-undefined"
- 			LDFLAGS_PYTHON="-no-undefined -Wl,-subsystem,windows"
- 			;;
-+		*cygwin*)
-+			LDFLAGS_FORTRAN="-no-undefined"
-+			LDFLAGS_IDL="-no-undefined"
-+			LDFLAGS_PYTHON="-no-undefined"
-+			;;
- 	esac
- fi
- AM_CONDITIONAL([OS_WINDOWS_64],[test x$OS_WINDOWS_64 = x1])
-@@ -172,7 +177,7 @@ AC_SUBST(LDFLAGS_PYTHON)
+--- origsrc/xraylib-xraylib-4.1.0/configure.ac	2021-06-06 05:09:52.000000000 +0900
++++ src/xraylib-xraylib-4.1.0/configure.ac	2021-07-12 19:35:10.515959600 +0900
+@@ -157,6 +157,13 @@ AC_SUBST(OS_WINDOWS)
+ AC_SUBST(OS_WINDOWS_32)
+ AC_SUBST(OS_WINDOWS_64)
+ 
++if test "$host_os" = "cygwin"; then
++	LDFLAGS_LIBXRL="-no-undefined"
++	LDFLAGS_FORTRAN="-no-undefined"
++	LDFLAGS_IDL="-no-undefined"
++	LDFLAGS_PYTHON="-no-undefined"
++fi
++
+ if test $OS_WINDOWS = 1 ; then
+ 	if test x$enable_static = xyes -a x$enable_shared = xyes; then
+ 		AC_MSG_ERROR([Can not build both shared and static at the same time on Windows.])
+@@ -188,7 +195,7 @@ LT_LIB_M
  # Taken from gtksourceview and modified where necessary
  HIDDEN_VISIBILITY_CFLAGS=""
  case "$host" in
@@ -21,22 +23,22 @@
          dnl on mingw32 we do -fvisibility=hidden and __declspec(dllexport)
          AC_DEFINE([XRL_EXTERN], [__attribute__((visibility("default"))) __declspec(dllexport) extern],
                    [defines how to decorate public symbols while building])
---- origsrc/xraylib-xraylib-4.0.0/lua/Makefile.am	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/lua/Makefile.am	2020-10-02 10:05:24.151610300 +0900
+--- origsrc/xraylib-xraylib-4.1.0/lua/Makefile.am	2021-06-06 05:09:52.000000000 +0900
++++ src/xraylib-xraylib-4.1.0/lua/Makefile.am	2021-07-12 19:54:15.791165800 +0900
 @@ -13,9 +13,9 @@ if ENABLE_LUA
  
  plugindir = $(libdir)/lua/$(LUA_VERSION)
  plugin_LTLIBRARIES = xraylib.la
 -xraylib_la_LIBADD = ../src/libxrl.la
-+xraylib_la_LIBADD = ../src/libxrl.la $(LUA_LIB) -llua-5.3
++xraylib_la_LIBADD = ../src/libxrl.la $(LUA_LIB)
  nodist_xraylib_la_SOURCES = xraylib_wrap.c
 -xraylib_la_LDFLAGS = -avoid-version -module -shared -export-dynamic
 +xraylib_la_LDFLAGS = -no-undefined -avoid-version -module -shared -export-dynamic
  xraylib_la_CPPFLAGS = $(LUA_INCLUDE) -I${top_builddir} -I${top_srcdir}/include -I$(top_srcdir)/src 
  xraylib_la_CFLAGS = $(WSTRICT_CFLAGS)
  
---- origsrc/xraylib-xraylib-4.0.0/perl/Makefile.am	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/perl/Makefile.am	2020-10-02 09:48:16.345082900 +0900
+--- origsrc/xraylib-xraylib-4.1.0/perl/Makefile.am	2021-06-06 05:09:52.000000000 +0900
++++ src/xraylib-xraylib-4.1.0/perl/Makefile.am	2021-07-12 19:49:33.721701300 +0900
 @@ -14,9 +14,9 @@ if ENABLE_PERL
  
  plugindir = $(PERL_EXT_LIB)/auto/xraylib
@@ -49,8 +51,8 @@
  xraylib_la_CPPFLAGS = $(PERL_EXT_CPPFLAGS) -I$(PERL_EXT_INC) -I${top_builddir} -I${top_srcdir}/include -I$(top_srcdir)/src
  xraylib_la_CFLAGS = $(WSTRICT_CFLAGS)
  
---- origsrc/xraylib-xraylib-4.0.0/python/Makefile.am	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/python/Makefile.am	2020-10-02 09:49:24.055236600 +0900
+--- origsrc/xraylib-xraylib-4.1.0/python/Makefile.am	2021-06-06 05:09:52.000000000 +0900
++++ src/xraylib-xraylib-4.1.0/python/Makefile.am	2021-07-12 19:43:36.609852500 +0900
 @@ -22,10 +22,8 @@ _xraylib_la_CFLAGS = $(PYTHON_CFLAGS) -I
  _xraylib_la_LIBADD = ../src/libxrl.la
  nodist__xraylib_la_SOURCES = xraylib_wrap.c
@@ -73,9 +75,9 @@
 -endif
  
  xraylib_np.c: ${srcdir}/xraylib_np.pyx ${srcdir}/xraylib_np_c.pxd
- 	$(AM_V_GEN) $(CYTHON) -X boundscheck=False,wraparound=False,cdivision=True -I${top_srcdir}/include -o ${builddir}/xraylib_np.c ${srcdir}/xraylib_np.pyx
---- origsrc/xraylib-xraylib-4.0.0/ruby/Makefile.am	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/ruby/Makefile.am	2020-10-02 09:49:55.260272100 +0900
+ 	$(AM_V_GEN) $(CYTHON) -X language_level=3,boundscheck=False,wraparound=False,cdivision=True -I${top_srcdir}/include -o ${builddir}/xraylib_np.c ${srcdir}/xraylib_np.pyx
+--- origsrc/xraylib-xraylib-4.1.0/ruby/Makefile.am	2021-06-06 05:09:52.000000000 +0900
++++ src/xraylib-xraylib-4.1.0/ruby/Makefile.am	2021-07-12 19:56:43.453431600 +0900
 @@ -15,9 +15,9 @@ plugindir = $(RUBYDIR)
  plugin_LTLIBRARIES = xraylib.la
  xraylib_la_CPPFLAGS = $(RUBY_EXT_CPPFLAGS) -DSWIGRUBY_TRICK -I${top_builddir} -I${top_srcdir}/include $(RUBY_EXT_INC) -I$(top_srcdir)/src
@@ -88,14 +90,3 @@
  
  
  xraylib_wrap.c: ${top_srcdir}/src/xraylib.i ${top_srcdir}/include/xraylib*h
---- origsrc/xraylib-xraylib-4.0.0/src/Makefile.am	2020-02-07 20:30:21.000000000 +0900
-+++ src/xraylib-xraylib-4.0.0/src/Makefile.am	2020-10-02 09:50:31.442199800 +0900
-@@ -100,7 +100,7 @@ libxrl_la_CFLAGS = $(ARCHFLAGS) $(HIDDEN
- 
- nodist_libxrl_la_SOURCES = xrayglob_inline.c
- 
--libxrl_la_LDFLAGS=-version-info @LIB_CURRENT@:@LIB_REVISION@:@LIB_AGE@ $(LDFLAGS_LIBXRL)
-+libxrl_la_LDFLAGS = -no-undefined -version-info @LIB_CURRENT@:@LIB_REVISION@:@LIB_AGE@ $(LDFLAGS_LIBXRL)
- 
- EXTRA_DIST = xraylib.i
- 
