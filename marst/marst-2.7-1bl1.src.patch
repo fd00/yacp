@@ -1,0 +1,49 @@
+--- origsrc/marst-2.7/Makefile.am	2013-03-09 18:00:00.000000000 +0900
++++ src/marst-2.7/Makefile.am	2021-08-12 17:45:04.479824500 +0900
+@@ -18,14 +18,19 @@ SUFFIXES = .alg
+ 	./marst -t -w $< -o $@
+ 
+ libalgol_la_SOURCES = alglib1.c alglib2.c alglib3.c
++libalgol_la_LDFLAGS = -no-undefined
+ 
+ $(libalgol_la_SOURCES): marst$(EXEEXT)
+ 
+ check: marst$(EXEEXT) macvt$(EXEEXT) libalgol.la
+-	./macvt -i -s examples/euler.txt -o examples/euler.alg
++	mkdir -p examples
++	./macvt -i -s $(srcdir)/examples/euler.txt -o examples/euler.alg
+ 	./marst examples/euler.alg -o examples/euler.c
+-	./marst examples/gps.alg -o examples/gps.c
+-	$(CC) $(CFLAGS) -I. examples/gps.c -o examples/gps $(LDFLAGS) \
+-		.libs/libalgol.a -lm
+-	./examples/gps
++	./marst $(srcdir)/examples/gps.alg -o examples/gps.c
++	$(CC) $(CFLAGS) -I. -I$(srcdir) examples/gps.c -o examples/gps $(LDFLAGS) \
++		-L.libs -lalgol -lm
++	PATH=$(builddir)/.libs:$(PATH) ./examples/gps
+ 	@echo "If matrix C = A * B is unity, the check is OK"
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/marst-2.7/configure.ac	2013-03-09 18:00:00.000000000 +0900
++++ src/marst-2.7/configure.ac	2021-08-12 17:45:04.479824500 +0900
+@@ -18,5 +18,5 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG],[:])
+ define([AC_LIBTOOL_LANG_F77_CONFIG],[:])
+ define([AC_LIBTOOL_LANG_GCJ_CONFIG],[:])
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([marst.pc Makefile])
+ AC_OUTPUT
+--- origsrc/marst-2.7/marst.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/marst-2.7/marst.pc.in	2021-08-12 17:47:11.649886600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: marst
++Description: Algol-to-C translator
++Version: @VERSION@
++Libs: -L${libdir} -lalgol
++Cflags: -I${includedir}
