@@ -1,0 +1,158 @@
+--- origsrc/fastdb/Makefile.am	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/Makefile.am	2021-08-27 14:36:04.883862000 +0900
+@@ -1,2 +1,4 @@
+ SUBDIRS = src examples
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/fastdb/configure.ac	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/configure.ac	2021-08-27 16:15:42.737984500 +0900
+@@ -2,7 +2,7 @@
+ # Process this file with autoconf to produce a configure script.
+ 
+ AC_PREREQ([2.63])
+-AC_INIT([fastdb], [3.53], [knizhnik@garret.ru])
++AC_INIT([fastdb], [3.76], [knizhnik@garret.ru])
+ AC_CONFIG_SRCDIR([src/database.cpp])
+ AC_CONFIG_AUX_DIR([config])
+ AC_CONFIG_HEADER([inc/acconfig.h])
+@@ -31,7 +31,7 @@ AC_CHECK_LIB(
+ AC_FUNC_ALLOCA
+ AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h locale.h malloc.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/ioctl.h sys/param.h sys/socket.h sys/time.h unistd.h])
+ AC_CANONICAL_HOST
+-AM_INIT_AUTOMAKE([fastdb], [3.53])
++AM_INIT_AUTOMAKE
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+ AC_HEADER_STDBOOL
+@@ -938,7 +938,7 @@ esac
+ CXXFLAGS="${CFLAGS}"
+ AC_CHECK_FUNCS([ftruncate gethostbyname gethostbyname_r gethostname getpagesize gettimeofday inet_ntoa localtime_r memmove memset munmap pow regcomp select setlocale socket sqrt strchr strdup strerror strrchr strstr uname])
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([fastdb.pc Makefile])
+ AC_OUTPUT(
+    src/Makefile
+    examples/Makefile
+--- origsrc/fastdb/examples/Makefile.am	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/examples/Makefile.am	2021-08-27 14:25:10.687443700 +0900
+@@ -53,7 +53,7 @@ testidx_SOURCES = testidx.cpp
+ testidx_LDADD = ${top_builddir}/src/libfastdb.la
+ 
+ clitest_SOURCES = clitest.c
+-clitest_LDADD = ${top_builddir}/src/libcli.la
++clitest_LDADD = ${top_builddir}/src/libfastdb.la
+ 
+ clitest2_SOURCES = clitest2.c
+ clitest2_LDADD = ${top_builddir}/src/libfastdb.la
+--- origsrc/fastdb/examples/guess.cpp	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/examples/guess.cpp	2021-08-27 14:11:29.971158400 +0900
+@@ -31,7 +31,7 @@ void input(char const* prompt, char* buf
+ {
+     char* p;
+     do { 
+-        printf(prompt);
++        printf("%s", prompt);
+         *buf = '\0';
+         fgets(buf, (int)buf_size, stdin);
+         p = buf + strlen(buf);
+--- origsrc/fastdb/examples/testdb.cpp	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/examples/testdb.cpp	2021-08-27 14:12:16.489317700 +0900
+@@ -70,7 +70,7 @@ void input(char const* prompt, char* buf
+ {
+     char* p;
+     do { 
+-        printf(prompt);
++        printf("%s", prompt);
+         *buf = '\0';
+         fgets(buf,(int) buf_size, stdin);
+         p = buf + strlen(buf);
+--- origsrc/fastdb/examples/testjoin.cpp	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/examples/testjoin.cpp	2021-08-27 14:13:18.383250400 +0900
+@@ -46,7 +46,7 @@ char* input(char const* prompt, char* bu
+ {
+     char* p;
+     do { 
+-        printf(prompt);
++        printf("%s", prompt);
+         *buf = '\0';
+         fgets(buf, (int)buf_size, stdin);
+         p = buf + strlen(buf);
+--- origsrc/fastdb/examples/testtimeseries.cpp	2013-02-18 04:47:32.000000000 +0900
++++ src/fastdb/examples/testtimeseries.cpp	2021-08-27 14:19:33.748813600 +0900
+@@ -47,8 +47,10 @@ REGISTER_TEMPLATE(DailyBlock);
+ REGISTER(Stock);
+ 
+ inline int random(unsigned mod) { return rand() % mod; }
++#if !defined(__CYGWIN__)
+ inline float fmax(float x, float y) { return x > y ? x : y; }
+ inline float fmin(float x, float y) { return x < y ? x : y; }
++#endif
+ 
+ int main(int argc, char* argv[])
+ {
+--- origsrc/fastdb/fastdb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/fastdb/fastdb.pc.in	2021-08-27 15:23:29.694384600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: fastdb
++Description: Main Memory Relational Database Management System
++Version: @VERSION@
++Libs: -L${libdir} -lfastdb
++Cflags: -I${includedir}
+--- origsrc/fastdb/src/Makefile.am	2013-02-18 04:47:31.000000000 +0900
++++ src/fastdb/src/Makefile.am	2021-08-27 14:53:12.509789100 +0900
+@@ -25,7 +25,8 @@ pkginclude_HEADERS = \
+    ${top_srcdir}/inc/timeseries.h \
+    ${top_srcdir}/inc/exception.h
+ 
+-lib_LTLIBRARIES = libfastdb.la libcli.la
++lib_LTLIBRARIES = libfastdb.la
++noinst_LTLIBRARIES = libcli.la
+ bin_PROGRAMS = subsql forcerecovery cleanupsem
+ noinst_PROGRAMS = cgistub
+ 
+@@ -55,7 +56,7 @@ endif
+ 
+ 
+ libfastdb_la_SOURCES = $(LIBSRC)
+-libfastdb_la_LDFLAGS = -version-info 2:0:0
++libfastdb_la_LDFLAGS = -no-undefined -version-info 2:0:0
+ 
+ libcli_la_SOURCES = cli.cpp unisock.cpp repsock.cpp stdtp.cpp
+ libcli_la_LDFLAGS = -version-info 2:0:0
+--- origsrc/fastdb/src/database.cpp	2014-04-26 01:43:48.000000000 +0900
++++ src/fastdb/src/database.cpp	2021-08-27 14:02:49.203446100 +0900
+@@ -2459,7 +2459,7 @@ bool dbDatabase::open(char_t const* dbNa
+         _stprintf(fileName, _T("%s.fdb"), dbName);
+     } else {
+         fileName = new char_t[_tcslen(fiName)+1];
+-        _stprintf(fileName, fiName);
++        _stprintf(fileName, _T("%s"), fiName);
+     }
+ 
+     dbInitializationMutex::initializationStatus status = initMutex.initialize(name);
+--- origsrc/fastdb/src/subsql.cpp	2013-02-18 04:47:31.000000000 +0900
++++ src/fastdb/src/subsql.cpp	2021-08-27 14:10:02.527322800 +0900
+@@ -775,7 +775,7 @@ void dbSubSql::dumpRecord(byte* base, db
+                 && strcmp(fd->components->name, "stamp") == 0) 
+             { 
+                 char buf[64];
+-                printf(((dbDateTime*)(base + fd->components->dbsOffs))->asString(buf, sizeof buf, dateFormat));
++                printf("%s", ((dbDateTime*)(base + fd->components->dbsOffs))->asString(buf, sizeof buf, dateFormat));
+                 continue;
+             }
+             printf("(");
+@@ -1860,7 +1860,7 @@ bool dbSubSql::parse()
+ 
+     while (true) { 
+         if (in == stdin) { 
+-            printf(prompt);
++            printf("%s", prompt);
+             tkn = scan();
+             pos += (int)strlen(prompt);
+         } else { 
