@@ -1,11 +1,10 @@
---- origsrc/hyphy-2.5.31/CMakeLists.txt	2021-04-13 22:49:48.000000000 +0000
-+++ src/hyphy-2.5.31/CMakeLists.txt	2021-05-31 03:12:25.380612400 +0000
-@@ -148,7 +148,11 @@ file(GLOB SRC_NEW src/new/*.cpp)
+--- origsrc/hyphy-2.5.32/CMakeLists.txt	2021-08-16 14:06:05.000000000 +0900
++++ src/hyphy-2.5.32/CMakeLists.txt	2021-08-29 11:25:24.200498500 +0900
+@@ -148,7 +148,10 @@ file(GLOB SRC_NEW src/new/*.cpp)
  file(GLOB SRC_CONTRIB src/contrib/*.cpp)
  
  set(SRC_LINK src/lib/link/THyPhy.cpp)
 -set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
-+
 +find_package(sqlite3)
 +if (NOT SQLite3_FOUND)
 +    set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
@@ -13,7 +12,7 @@
  set(SRC_UNIXMAIN src/mains/unix.cpp)
  set(SRC_UTILS src/utils/hyphyunixutils.cpp)
  
-@@ -405,6 +409,10 @@ else(${OPENMP_FOUND})
+@@ -400,6 +403,10 @@ else(${OPENMP_FOUND})
      target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES})
  endif(${OPENMP_FOUND})
  
@@ -24,7 +23,7 @@
  add_custom_target(MP DEPENDS hyphy)
  
  install(
-@@ -616,27 +624,27 @@ makeLink(HYPHYMP hyphy hyphy)
+@@ -611,27 +618,27 @@ makeLink(HYPHYMP hyphy hyphy)
  # TESTS
  #-------------------------------------------------------------------------------
  
@@ -38,7 +37,7 @@
 -add_test (NAME SLAC-PARTITIONED COMMAND HYPHYMP tests/hbltests/libv3/SLAC-partitioned.wbf)
 -add_test (NAME FEL COMMAND HYPHYMP tests/hbltests/libv3/FEL.wbf)
 -add_test (MEME HYPHYMP tests/hbltests/libv3/MEME.wbf)
-+add_test (NAME UNIT-TESTS COMMAND env "SRCDIR=${PROJECT_SOURCE_DIR}" bash "${PROJECT_SOURCE_DIR}/run_unit_tests.sh")
++add_test (NAME UNIT-TESTS COMMAND env "SRCDIR=${PROJECT_SOURCE_DIR}" bash run_unit_tests.sh)
 +add_test (CODON HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/SimpleOptimizations/SmallCodon.bf)
 +add_test (PROTEIN HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
 +add_test (MTCODON HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/mtDNA-code.wbf)
@@ -59,8 +58,6 @@
 -add_test (GARD HYPHYMP tests/hbltests/libv3/GARD.wbf)
 -add_test (FADE HYPHYMP tests/hbltests/libv3/FADE.wbf)
 -add_test (ABSREL HYPHYMP tests/hbltests/libv3/ABSREL.wbf)
--add_test (FMM HYPHYMP tests/hbltests/libv3/FMM.wbf)
--#add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)
 +add_test (MEME-PARTITIONED HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/MEME-partitioned.wbf)
 +add_test (BUSTED HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/BUSTED.wbf)
 +add_test (BUSTED-SRV HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/BUSTED-SRV.wbf)
@@ -71,11 +68,11 @@
 +add_test (GARD HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/GARD.wbf)
 +add_test (FADE HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/FADE.wbf)
 +add_test (ABSREL HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/ABSREL.wbf)
-+add_test (FMM HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/FMM.wbf)
-+#add_test (NAME ABSREL-MH COMMAND HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/ABSREL-MH.wbf)
+ #add_test (FMM HYPHYMP tests/hbltests/libv3/FMM.wbf)
+ #add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)
  
---- origsrc/hyphy-2.5.31/run_unit_tests.sh	2021-04-13 22:49:48.000000000 +0000
-+++ src/hyphy-2.5.31/run_unit_tests.sh	2021-05-31 03:12:25.380612400 +0000
+--- origsrc/hyphy-2.5.32/run_unit_tests.sh	2021-08-16 14:06:05.000000000 +0900
++++ src/hyphy-2.5.32/run_unit_tests.sh	2021-08-29 11:25:44.863040800 +0900
 @@ -13,7 +13,7 @@ testsRun=0
  testsFailed=0
  failedTests=()
@@ -85,8 +82,8 @@
    echo $filename
  
    # Run the test checking to see if it faield
---- origsrc/hyphy-2.5.31/src/core/avllist.cpp	2021-04-13 22:49:48.000000000 +0000
-+++ src/hyphy-2.5.31/src/core/avllist.cpp	2021-05-31 03:12:25.396237700 +0000
+--- origsrc/hyphy-2.5.32/src/core/avllist.cpp	2021-08-16 14:06:05.000000000 +0900
++++ src/hyphy-2.5.32/src/core/avllist.cpp	2021-08-29 11:27:24.880759900 +0900
 @@ -43,6 +43,7 @@
  #include <ctype.h>
  #include <math.h>
@@ -95,8 +92,8 @@
  
  #include "avllist.h"
  #include "hy_strings.h"
---- origsrc/hyphy-2.5.31/src/core/include/dataset_filter.h	2021-04-13 22:49:48.000000000 +0000
-+++ src/hyphy-2.5.31/src/core/include/dataset_filter.h	2021-05-31 03:12:25.396237700 +0000
+--- origsrc/hyphy-2.5.32/src/core/include/dataset_filter.h	2021-08-16 14:06:05.000000000 +0900
++++ src/hyphy-2.5.32/src/core/include/dataset_filter.h	2021-08-29 11:28:12.812204800 +0900
 @@ -39,6 +39,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN
  
  #pragma once
@@ -106,8 +103,8 @@
  #include "list.h"
  #include "stdlib.h"
  #include "dataset.h"
---- origsrc/hyphy-2.5.31/src/core/simplelist.cpp	2021-04-13 22:49:48.000000000 +0000
-+++ src/hyphy-2.5.31/src/core/simplelist.cpp	2021-05-31 03:12:25.396237700 +0000
+--- origsrc/hyphy-2.5.32/src/core/simplelist.cpp	2021-08-16 14:06:05.000000000 +0900
++++ src/hyphy-2.5.32/src/core/simplelist.cpp	2021-08-29 11:28:31.007760100 +0900
 @@ -43,6 +43,7 @@
  #include <math.h>
  #include <limits.h>
