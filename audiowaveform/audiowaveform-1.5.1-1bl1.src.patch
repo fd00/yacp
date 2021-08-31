@@ -1,0 +1,45 @@
+--- origsrc/audiowaveform-1.5.1/CMakeLists.txt	2021-07-31 23:32:58.000000000 +0900
++++ src/audiowaveform-1.5.1/CMakeLists.txt	2021-08-31 10:30:20.612799200 +0900
+@@ -185,7 +185,9 @@ if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CX
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "4.7")
+-    set(CMAKE_CXX_FLAGS "-std=c++11")
++    if (NOT CYGWIN)
++        set(CMAKE_CXX_FLAGS "-std=c++11")
++    endif()
+ else()
+     # Set GTEST_LANG_CXX11=0 to disable C++11 features when compiling googlemock.
+     # Without this compilation fails with g++ 4.6.3 on gmock-matchers.h.
+@@ -289,10 +291,14 @@ endif()
+ if(ENABLE_TESTS)
+     enable_testing()
+ 
++    find_package(gtest)
++
+     # Use EXCLUDE_FROM_ALL to prevent installing googletest headers as part of
+     # 'make install'.
+-    set(BUILD_GMOCK 1)
+-    add_subdirectory(googletest EXCLUDE_FROM_ALL)
++    if (NOT GTEST_FOUND)
++        set(BUILD_GMOCK 1)
++        add_subdirectory(googletest EXCLUDE_FROM_ALL)
++    endif()
+ 
+     set(TESTS
+         test/FileFormatTest.cpp
+@@ -315,8 +321,12 @@ if(ENABLE_TESTS)
+         test/util/Streams.cpp
+     )
+ 
+-    include_directories(${gtest_SOURCE_DIR}/include ${gmock_SOURCE_DIR}/include)
+-    set(TEST_LIBS gmock_main)
++    if (GTEST_FOUND)
++        set(TEST_LIBS GTest::gmock GTest::gmock_main GTest::gtest)
++    else()
++        include_directories(${gtest_SOURCE_DIR}/include ${gmock_SOURCE_DIR}/include)
++        set(TEST_LIBS gmock_main)
++    endif()
+     add_executable(audiowaveform_tests ${MODULES} ${TESTS})
+     target_link_libraries(audiowaveform_tests ${LIBS} ${TEST_LIBS})
+     add_test(audiowaveform_tests audiowaveform_tests)
