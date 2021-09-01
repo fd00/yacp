@@ -1,0 +1,164 @@
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/configure.ac	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/configure.ac	2021-09-01 08:37:17.070828600 +0900
+@@ -90,12 +90,16 @@ AC_CHECK_SIZEOF([unsigned long])
+ LIBMAUS2_SIZEOF_UNSIGNED_LONG="#define LIBMAUS2_SIZEOF_UNSIGNED_LONG $ac_cv_sizeof_unsigned_long"
+ 
+ AC_LANG_PUSH([C++])
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADER(winsock2.h, [LIBMAUS2_HAVE_WINSOCK2_H="#define LIBMAUS2_HAVE_WINSOCK2_H"], [LIBMAUS2_HAVE_WINSOCK2_H=])
+ AC_CHECK_HEADER(ws2tcpip.h, [LIBMAUS2_HAVE_WS2TCPIP_H="#define LIBMAUS2_HAVE_WS2TCPIP_H"], [LIBMAUS2_HAVE_WS2TCPIP_H=])
++fi
+ AC_CHECK_HEADER(sys/wait.h, [LIBMAUS2_HAVE_SYS_WAIT_H="#define LIBMAUS2_HAVE_SYS_WAIT_H"], [LIBMAUS2_HAVE_SYS_WAIT_H=])
+ AC_CHECK_HEADER(sys/ioctl.h, [LIBMAUS2_HAVE_SYS_IOCTL_H="#define LIBMAUS2_HAVE_SYS_IOCTL_H"], [LIBMAUS2_HAVE_SYS_IOCTL_H=])
+ AC_CHECK_HEADER(execinfo.h, [LIBMAUS2_HAVE_EXECINFO_H="#define LIBMAUS2_HAVE_EXECINFO_H"], [LIBMAUS2_HAVE_EXECINFO_H=])
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADER(windows.h, [LIBMAUS2_HAVE_WINDOWS_H="#define LIBMAUS2_HAVE_WINDOWS_H"], [LIBMAUS2_HAVE_WINDOWS_H=])
++fi
+ AC_CHECK_HEADER(unistd.h, [LIBMAUS2_HAVE_UNISTD_H="#define LIBMAUS2_HAVE_UNISTD_H"], [LIBMAUS2_HAVE_UNISTD_H=])
+ AC_CHECK_HEADER(linux/sysctl.h, [LIBMAUS2_HAVE_LINUX_SYSCTL_H="#define LIBMAUS2_HAVE_LINUX_SYSCTL_H"], [LIBMAUS2_HAVE_LINUX_SYSCTL_H=])
+ AC_CHECK_HEADER(features.h, [LIBMAUS2_HAVE_FEATURES_H="#define LIBMAUS2_HAVE_FEATURES_H"], [LIBMAUS2_HAVE_FEATURES_H=])
+@@ -2880,7 +2884,7 @@ if test "$have_unsigned_int128" = "yes"
+ fi
+ 
+ case $host_os in
+-  *mingw32*)
++  *mingw32*|*cygwin*)
+     LIBMAUSLDFLAGS="${LIBMAUSLDFLAGS} -no-undefined" # -avoid-version
+     ;;
+   *)
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/Makefile.am	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/Makefile.am	2021-09-01 10:22:53.985281300 +0900
+@@ -225,7 +225,7 @@ libmaus2_la_SOURCES = libmaus2/StaticIni
+ libmaus2_la_CPPFLAGS = ${AM_CPPFLAGS} @LIBMAUSCPPFLAGS@ @SNAPPYCPPFLAGS@ @ZLIBCPPFLAGS@ @NETTLECPPFLAGS@ @IGZIPCPPFLAGS@ @GMPCPPFLAGS@ @LIBMAUS2_LZMA_CPPFLAGS@ @LIBDEFLATECPPFLAGS@ @LIBMAUS2_LIBCURL_CPPFLAGS@ @LIBMAUS2_LIBSECRECY_CPPFLAGS@ @LIBMAUS2_PARASAIL_CPPFLAGS@ @IOLIBCPPFLAGS@
+ libmaus2_la_CXXFLAGS = @LIBMAUSCXXFLAGS@ ${AM_CXXFLAGS} @WARNCXXFLAGS@
+ libmaus2_la_LDFLAGS = @LIBMAUSLDFLAGS@ @SNAPPYLDFLAGS@ -version-info ${LIBRARY_VERSION} @LIBMAUSSTATIC@ @IGZIPLDFLAGS@ @NETTLELDFLAGS@ @GMPLDFLAGS@ @LIBDEFLATELDFLAGS@ @IOLIBLDFLAGS@
+-libmaus2_la_LIBADD = @IOLIBLIBS@ @DLLIB@ @SNAPPYLIBS@ @ZLIBLIBS@ @IGZIPLIBS@ @NETTLELIBS@ @GMPLIBS@ @LIBMAUS2_LZMA_LIBS@ @LIBMAUS2_LIBSECRECY_LIBS@ @LIBDEFLATELIBS@ @LIBMAUS2_LIBCURL_LIBS@ @LIBMAUS2_PARASAIL_LIBS@ @LIBMAUS2_WS2_32@ @LIBMAUS2_KERNEL32_LIB@ @LIBMAUS2_PSAPI_LIB@ libmaus2_parallel.la libmaus2_autoarray.la libmaus2_exception.la libmaus2_stacktrace.la libmaus2_posix.la libmaus2_demangle.la libmaus2_arch.la
++libmaus2_la_LIBADD = @IOLIBLIBS@ @DLLIB@ @SNAPPYLIBS@ @ZLIBLIBS@ @IGZIPLIBS@ @NETTLELIBS@ @GMPLIBS@ @LIBMAUS2_LZMA_LIBS@ @LIBMAUS2_LIBSECRECY_LIBS@ @LIBDEFLATELIBS@ @LIBMAUS2_LIBCURL_LIBS@ @LIBMAUS2_PARASAIL_LIBS@ @LIBMAUS2_WS2_32@ @LIBMAUS2_KERNEL32_LIB@ @LIBMAUS2_PSAPI_LIB@ libmaus2_parallel.la libmaus2_autoarray.la libmaus2_exception.la libmaus2_stacktrace.la libmaus2_posix.la libmaus2_demangle.la libmaus2_arch.la libmaus2_simd_align_128.la libmaus2_simd_align_256.la
+ 
+ noinst_HEADERS = libmaus2/lz/lz4.h
+ 
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/avl/AVLSet.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/avl/AVLSet.hpp	2021-09-01 14:23:17.865731900 +0900
+@@ -23,6 +23,7 @@
+ #include <vector>
+ #include <cassert>
+ #include <ostream>
++#include <limits>
+ 
+ // #define AVL_TREE_DEBUG
+ 
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/bambam/BamAlignmentDecoderBase.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/bambam/BamAlignmentDecoderBase.hpp	2021-09-01 00:13:27.421000800 +0900
+@@ -38,6 +38,8 @@
+ #include <libmaus2/bambam/PileQualityVectorElement.hpp>
+ #include <libmaus2/math/IntegerInterval.hpp>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace bambam
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/bambam/MdStringComputationContext.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/bambam/MdStringComputationContext.hpp	2021-09-01 00:18:22.947614200 +0900
+@@ -23,6 +23,8 @@
+ #include <libmaus2/bambam/BamAuxFilterVector.hpp>
+ #include <libmaus2/bambam/CigarOperation.hpp>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace bambam
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/math/IntegerInterval.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/math/IntegerInterval.hpp	2021-09-01 00:15:54.096072600 +0900
+@@ -30,6 +30,10 @@
+ #include <cstring>
+ #include <libmaus2/exception/LibMausException.hpp>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace math
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/math/Rational.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/math/Rational.hpp	2021-09-01 14:14:26.004645400 +0900
+@@ -24,6 +24,10 @@
+ #include <cassert>
+ #include <cmath>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace math
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/serialize/Serialize.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/serialize/Serialize.hpp	2021-09-01 00:16:52.753846400 +0900
+@@ -29,6 +29,10 @@
+ #include <sstream>
+ #include <libmaus2/demangle/Demangle.hpp>
+ 
++#if defined(_N)
++#undef _N
++#endif
++
+ namespace libmaus2
+ {
+ 	namespace serialize
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/DynamicWaveletTree.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/DynamicWaveletTree.hpp	2021-09-01 10:46:41.940843000 +0900
+@@ -26,6 +26,8 @@
+ 
+ #include <libmaus2/LibMausWindows.hpp>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace wavelet
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/HuffmanWaveletTree.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/HuffmanWaveletTree.hpp	2021-09-01 09:33:17.806686700 +0900
+@@ -31,6 +31,7 @@
+ #include <set>
+ #include <ctime>
+ 
++#include <alloca.h>
+ 
+ namespace libmaus2
+ {
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/ImpCompactHuffmanWaveletTree.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/ImpCompactHuffmanWaveletTree.hpp	2021-09-01 07:20:43.140682800 +0900
+@@ -27,6 +27,8 @@
+ #include <libmaus2/math/numbits.hpp>
+ #include <libmaus2/aio/InputStreamFactoryContainer.hpp>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace wavelet
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/ImpHuffmanWaveletTree.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/ImpHuffmanWaveletTree.hpp	2021-09-01 12:06:48.442096500 +0900
+@@ -28,6 +28,8 @@
+ #include <libmaus2/math/numbits.hpp>
+ #include <libmaus2/aio/InputStreamFactoryContainer.hpp>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace wavelet
+--- origsrc/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/WaveletTree.hpp	2021-08-30 17:29:09.000000000 +0900
++++ src/libmaus2-libmaus2_experimental_2_0_802/src/libmaus2/wavelet/WaveletTree.hpp	2021-09-01 10:50:34.116317300 +0900
+@@ -41,6 +41,8 @@
+ 
+ #include <iostream>
+ 
++#include <alloca.h>
++
+ namespace libmaus2
+ {
+ 	namespace wavelet
