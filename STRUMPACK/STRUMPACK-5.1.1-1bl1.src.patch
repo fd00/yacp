@@ -1,0 +1,132 @@
+--- origsrc/STRUMPACK-5.1.1/CMakeLists.txt	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/CMakeLists.txt	2021-09-05 20:12:26.740192500 +0900
+@@ -444,6 +444,10 @@ else()
+   add_library(strumpack "")
+ endif()
+ 
++if (CYGWIN)
++  set_target_properties(strumpack PROPERTIES SOVERSION 0)
++endif()
++
+ add_subdirectory(src)
+ 
+ target_sources(strumpack
+@@ -533,6 +537,7 @@ if(ButterflyPACK_FOUND)
+   ## for some reason just adding the MPI::MPI_Fortran target only
+   ## links with the f08 module, not with the regular fortran MPI
+   ## library
++  target_include_directories(strumpack PRIVATE /usr/include/ButterflyPACK)
+ endif()
+ 
+ if(TPL_ENABLE_SLATE)
+@@ -607,7 +612,7 @@ install(FILES
+   DESTINATION include)
+ 
+ install(TARGETS strumpack EXPORT STRUMPACKTargets
+-  LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++  RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ 
+ # export targets and all
+@@ -635,3 +640,10 @@ install(FILES "${CMAKE_BINARY_DIR}/strum
+ install(DIRECTORY cmake/Modules/
+   DESTINATION ${ConfigPackageLocation}
+   FILES_MATCHING PATTERN "*.cmake")
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/STRUMPACK.pc.in ${CMAKE_BINARY_DIR}/STRUMPACK.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/STRUMPACK.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/STRUMPACK-5.1.1/STRUMPACK.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/STRUMPACK-5.1.1/STRUMPACK.pc.in	2021-09-05 20:14:26.708838000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: STRUMPACK
++Description: Structured Matrix Package
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lstrumpack
++Cflags: -I${includedir}/STRUMPACK
+--- origsrc/STRUMPACK-5.1.1/src/HSS/HSSBasisID.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/HSS/HSSBasisID.hpp	2021-09-05 17:35:55.261288900 +0900
+@@ -33,6 +33,10 @@
+ 
+ #include "dense/DenseMatrix.hpp"
+ 
++#if defined(_P)
++#undef _P
++#endif
++
+ namespace strumpack {
+   namespace HSS {
+ 
+--- origsrc/STRUMPACK-5.1.1/src/HSS/HSSBasisIDMPI.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/HSS/HSSBasisIDMPI.hpp	2021-09-05 17:37:11.594085900 +0900
+@@ -32,6 +32,10 @@
+ 
+ #include "dense/DistributedMatrix.hpp"
+ 
++#if defined(_P)
++#undef _P
++#endif
++
+ namespace strumpack {
+   namespace HSS {
+ 
+--- origsrc/STRUMPACK-5.1.1/src/HSS/HSSExtra.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/HSS/HSSExtra.hpp	2021-09-05 17:36:38.660773200 +0900
+@@ -30,6 +30,10 @@
+ 
+ #include "dense/DenseMatrix.hpp"
+ 
++#if defined(_L)
++#undef _L
++#endif
++
+ namespace strumpack {
+   namespace HSS {
+ 
+--- origsrc/STRUMPACK-5.1.1/src/HSS/HSSExtraMPI.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/HSS/HSSExtraMPI.hpp	2021-09-05 17:39:17.709729700 +0900
+@@ -31,6 +31,10 @@
+ #include "HSSExtra.hpp"
+ #include "dense/DistributedMatrix.hpp"
+ 
++#if defined(_U)
++#undef _U
++#endif
++
+ namespace strumpack {
+   namespace HSS {
+ 
+--- origsrc/STRUMPACK-5.1.1/src/sparse/EliminationTreeMPI.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/sparse/EliminationTreeMPI.hpp	2021-09-05 17:19:07.710263100 +0900
+@@ -32,6 +32,10 @@
+ #include "EliminationTree.hpp"
+ #include "misc/MPIWrapper.hpp"
+ 
++#if defined(_P)
++#undef _P
++#endif
++
+ namespace strumpack {
+ 
+   // forward declarations
+--- origsrc/STRUMPACK-5.1.1/src/sparse/EliminationTreeMPIDist.hpp	2021-01-23 06:49:37.000000000 +0900
++++ src/STRUMPACK-5.1.1/src/sparse/EliminationTreeMPIDist.hpp	2021-09-05 17:16:09.664932800 +0900
+@@ -35,6 +35,10 @@
+ #include "PropMapSparseMatrix.hpp"
+ #include "dense/DistributedMatrix.hpp"
+ 
++#if defined(_P)
++#undef _P
++#endif
++
+ namespace strumpack {
+ 
+   // forward declarations
