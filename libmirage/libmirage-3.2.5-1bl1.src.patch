@@ -1,0 +1,34 @@
+--- origsrc/libmirage-3.2.5/CMakeLists.txt	2021-04-17 20:19:54.000000000 +0900
++++ src/libmirage-3.2.5/CMakeLists.txt	2021-09-06 19:49:04.265424300 +0900
+@@ -165,7 +165,7 @@ set_target_properties(mirage PROPERTIES
+     SOVERSION ${MIRAGE_SOVERSION_MAJOR}
+ )
+ 
+-install(TARGETS mirage DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS mirage RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES ${libmirage_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libmirage-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}/mirage)
+ 
+ # Translations; we use the version provided by our FindIntlTool.cmake
+@@ -182,7 +182,7 @@ if(INTROSPECTION_ENABLED AND INTROSPECTI
+         INCLUDES GObject-2.0 Gio-2.0 GLib-2.0 GModule-2.0
+         LIBRARY mirage
+         QUIET
+-        SCANNER_ARGS --c-include=mirage/mirage.h --warn-all
++        SCANNER_ARGS --c-include=mirage/mirage.h --warn-all --library-path=${PROJECT_BINARY_DIR}
+         COMPILER_ARGS --includedir=${PROJECT_SOURCE_DIR} --includedir=${PROJECT_BINARY_DIR}
+         CFLAGS -I${PROJECT_SOURCE_DIR} -I${PROJECT_BINARY_DIR}
+         SYMBOL_PREFIXES mirage
+--- origsrc/libmirage-3.2.5/mirage/mirage.c	2021-04-17 20:19:54.000000000 +0900
++++ src/libmirage-3.2.5/mirage/mirage.c	2021-09-06 19:50:41.401224100 +0900
+@@ -155,7 +155,11 @@ gboolean mirage_initialize (GError **err
+ 
+     /* Check every file in the plugin dir */
+     while ((plugin_file = g_dir_read_name(plugins_dir))) {
++#if defined(__CYGWIN__)
++        if (g_str_has_suffix(plugin_file, ".dll")) {
++#else
+         if (g_str_has_suffix(plugin_file, ".so")) {
++#endif
+             MiragePlugin *plugin;
+             gchar *fullpath;
+ 
