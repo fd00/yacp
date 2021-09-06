@@ -1,0 +1,33 @@
+--- origsrc/libptytty/CMakeLists.txt	2021-09-07 06:08:52.000000000 +0900
++++ src/libptytty/CMakeLists.txt	2021-09-07 06:12:07.551872500 +0900
+@@ -305,6 +305,9 @@ add_library(ptytty
+   src/ptytty.C)
+ target_include_directories(ptytty PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+ set_target_properties(ptytty PROPERTIES VERSION 0)
++if(CYGWIN)
++   set_target_properties(ptytty PROPERTIES SOVERSION 0)
++endif()
+ if(HAVE_LIBSUPCXX)
+   set_target_properties(ptytty PROPERTIES LINKER_LANGUAGE C)
+   target_link_libraries(ptytty PRIVATE supc++)
+@@ -349,7 +352,8 @@ add_custom_target(alldoc
+ 
+ install(
+   TARGETS ptytty
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(
+   FILES src/libptytty.h
+   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+--- origsrc/libptytty/src/logging.C	2021-09-07 06:08:52.000000000 +0900
++++ src/libptytty/src/logging.C	2021-09-07 06:20:05.534726400 +0900
+@@ -144,7 +144,7 @@ ptytty_unix::log_session (bool login, co
+ 
+   if (login_shell)
+     {
+-#if defined(WTMP_SUPPORT) && defined(HAVE_UPDWTMPX)
++#if defined(WTMP_SUPPORT) && defined(HAVE_UPDWTMPX) && defined(WTMPX_FILE)
+       updwtmpx (WTMPX_FILE, &utx);
+ #endif
+ 
