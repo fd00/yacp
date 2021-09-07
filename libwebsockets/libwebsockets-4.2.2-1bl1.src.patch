@@ -1,6 +1,6 @@
---- origsrc/libwebsockets-4.2.0/CMakeLists.txt	2021-04-16 01:44:02.000000000 +0900
-+++ src/libwebsockets-4.2.0/CMakeLists.txt	2021-04-24 16:40:30.388357700 +0900
-@@ -339,7 +339,7 @@ endmacro()
+--- origsrc/libwebsockets-4.2.2/CMakeLists.txt	2021-08-28 15:39:20.000000000 +0900
++++ src/libwebsockets-4.2.2/CMakeLists.txt	2021-09-08 00:14:54.681797100 +0900
+@@ -354,7 +354,7 @@ endmacro()
  #
  
  find_package(Git)
@@ -9,7 +9,7 @@
  	execute_process(
  		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
  		COMMAND "${GIT_EXECUTABLE}" describe --tags --always
-@@ -367,6 +367,8 @@ if(GIT_EXECUTABLE)
+@@ -382,6 +382,8 @@ if(GIT_EXECUTABLE)
  	endif()
  
  	message("Git commit hash: ${LWS_BUILD_HASH}")
@@ -17,10 +17,13 @@
 +	set(LWS_BUILD_HASH "unknown-build-hash")
  endif()
  
- set(PACKAGE "libwebsockets")
-@@ -376,7 +378,11 @@ set(CPACK_PACKAGE_VERSION_MAJOR "4")
+ if ("${LWS_BUILD_HASH}" STREQUAL "")
+@@ -393,9 +395,13 @@ set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+ set(CPACK_PACKAGE_NAME "${PACKAGE}")
+ set(CPACK_PACKAGE_VERSION_MAJOR "4")
  set(CPACK_PACKAGE_VERSION_MINOR "2")
- set(CPACK_PACKAGE_VERSION_PATCH_NUMBER "0")
+-set(CPACK_PACKAGE_VERSION_PATCH_NUMBER "1")
++set(CPACK_PACKAGE_VERSION_PATCH_NUMBER "2")
  
 -set(CPACK_PACKAGE_VERSION_PATCH "${CPACK_PACKAGE_VERSION_PATCH_NUMBER}-${LWS_BUILD_HASH}")
 +if(LWS_BUILD_HASH STREQUAL "unknown-build-hash")
@@ -31,7 +34,7 @@
  set(CPACK_PACKAGE_RELEASE 1)
  
  set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-@@ -606,6 +612,7 @@ CHECK_INCLUDE_FILE(malloc.h LWS_HAVE_MAL
+@@ -632,6 +638,7 @@ CHECK_INCLUDE_FILE(malloc.h LWS_HAVE_MAL
  CHECK_INCLUDE_FILE(pthread.h LWS_HAVE_PTHREAD_H)
  CHECK_INCLUDE_FILE(inttypes.h LWS_HAVE_INTTYPES_H)
  CHECK_INCLUDE_FILE(sys/resource.h LWS_HAVE_SYS_RESOURCE_H)
@@ -39,9 +42,9 @@
  
  if (WIN32 OR MSVC)
  	CHECK_C_SOURCE_COMPILES("#include <winsock2.h>
---- origsrc/libwebsockets-4.2.0/lib/CMakeLists.txt	2021-04-16 01:44:02.000000000 +0900
-+++ src/libwebsockets-4.2.0/lib/CMakeLists.txt	2021-04-24 16:00:21.227462700 +0900
-@@ -297,7 +297,7 @@ endif()
+--- origsrc/libwebsockets-4.2.2/lib/CMakeLists.txt	2021-08-28 15:39:20.000000000 +0900
++++ src/libwebsockets-4.2.2/lib/CMakeLists.txt	2021-09-07 21:54:13.478193200 +0900
+@@ -295,7 +295,7 @@ endif()
  # Generate and install pkgconfig.
  # (This is not indented, because the tabs will be part of the output)
  file(WRITE "${PROJECT_BINARY_DIR}/libwebsockets.pc"
@@ -50,31 +53,25 @@
  exec_prefix=\${prefix}
  libdir=\${exec_prefix}/lib${LIB_SUFFIX}
  includedir=\${prefix}/include
-@@ -338,9 +338,10 @@ if (NOT ${lws_requires} STREQUAL "")
-         file(APPEND "${PROJECT_BINARY_DIR}/libwebsockets_static.pc" "Requires: ${lws_requires}")
- endif()
+@@ -316,6 +316,7 @@ endif()
+ 	install(FILES "${PROJECT_BINARY_DIR}/libwebsockets.pc"
+ 		DESTINATION lib${LIB_SUFFIX}/pkgconfig)
  
--
 +if (NOT CYGWIN)
+ file(WRITE "${PROJECT_BINARY_DIR}/libwebsockets_static.pc"
+ "prefix=\"${CMAKE_INSTALL_PREFIX}\"
+ exec_prefix=\${prefix}
+@@ -339,7 +340,7 @@ endif()
+ 
  	install(FILES "${PROJECT_BINARY_DIR}/libwebsockets_static.pc"
  		DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+-
 +endif()
- 
  endif(UNIX)
  
---- origsrc/libwebsockets-4.2.0/lib/core/context.c	2021-04-16 01:44:02.000000000 +0900
-+++ src/libwebsockets-4.2.0/lib/core/context.c	2021-04-24 16:00:21.230459200 +0900
-@@ -879,7 +879,7 @@ lws_create_context(const struct lws_cont
  
- 	context->options = info->options;
- 
--#if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE) && !defined(WIN32)
-+#if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE) && !defined(WIN32) && !defined(__CYGWIN__)
- 	/*
- 	 * If asked, try to set the rlimit / ulimit for process sockets / files.
- 	 * We read the effective limit in a moment, so we will find out the
---- origsrc/libwebsockets-4.2.0/lib/plat/unix/unix-sockets.c	2021-04-16 01:44:02.000000000 +0900
-+++ src/libwebsockets-4.2.0/lib/plat/unix/unix-sockets.c	2021-04-24 16:08:46.975324000 +0900
+--- origsrc/libwebsockets-4.2.2/lib/plat/unix/unix-sockets.c	2021-08-28 15:39:20.000000000 +0900
++++ src/libwebsockets-4.2.2/lib/plat/unix/unix-sockets.c	2021-09-07 22:01:11.320630700 +0900
 @@ -29,7 +29,7 @@
  
  #include <sys/ioctl.h>
@@ -84,17 +81,8 @@
  #include <net/route.h>
  #endif
  
-@@ -225,7 +225,7 @@ lws_plat_set_socket_options_ip(lws_sockf
-       !defined(__NetBSD__) && \
-       !defined(__OpenBSD__) && \
-       !defined(__sun) && \
--      !defined(__HAIKU__)
-+      !defined(__HAIKU__) && !defined(__CYGWIN__)
- 
- 	/* the BSDs don't have SO_PRIORITY */
- 
---- origsrc/libwebsockets-4.2.0/plugins/CMakeLists.txt	2021-04-16 01:44:02.000000000 +0900
-+++ src/libwebsockets-4.2.0/plugins/CMakeLists.txt	2021-04-24 16:00:21.235464700 +0900
+--- origsrc/libwebsockets-4.2.2/plugins/CMakeLists.txt	2021-08-28 15:39:20.000000000 +0900
++++ src/libwebsockets-4.2.2/plugins/CMakeLists.txt	2021-09-07 21:56:08.469513900 +0900
 @@ -226,7 +226,7 @@ if (LWS_WITH_PLUGINS AND NOT LWS_WITH_PL
  
  	install(TARGETS ${PLUGINS_LIST}
