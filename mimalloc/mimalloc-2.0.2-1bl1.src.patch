@@ -1,0 +1,81 @@
+--- origsrc/mimalloc-2.0.2/CMakeLists.txt	2021-06-18 12:05:40.000000000 +0900
++++ src/mimalloc-2.0.2/CMakeLists.txt	2021-09-08 21:35:13.928223200 +0900
+@@ -208,9 +208,14 @@ endif()
+ # -----------------------------------------------------------------------------
+ 
+ if (MI_INSTALL_TOPLEVEL)
++  set(mi_install_bindir   "bin")
+   set(mi_install_libdir   "lib")
+   set(mi_install_incdir   "include")
+-  set(mi_install_cmakedir "cmake")
++  if (CYGWIN)
++    set(mi_install_cmakedir "lib/cmake")
++  else()
++    set(mi_install_cmakedir "cmake")
++  endif()
+ else()
+   set(mi_install_libdir   "lib/mimalloc-${mi_version}")
+   set(mi_install_incdir   "include/mimalloc-${mi_version}")
+@@ -260,6 +265,9 @@ message(STATUS "")
+ if(MI_BUILD_SHARED)
+   add_library(mimalloc SHARED ${mi_sources})
+   set_target_properties(mimalloc PROPERTIES VERSION ${mi_version} OUTPUT_NAME ${mi_basename} )
++  if (CYGWIN)
++    set_target_properties(mimalloc PROPERTIES SOVERSION ${mi_version})
++  endif()
+   target_compile_definitions(mimalloc PRIVATE ${mi_defines} MI_SHARED_LIB MI_SHARED_LIB_EXPORT)
+   target_compile_options(mimalloc PRIVATE ${mi_cflags})
+   target_link_libraries(mimalloc PUBLIC ${mi_libraries})
+@@ -281,7 +289,7 @@ if(MI_BUILD_SHARED)
+       COMMENT "Copy mimalloc-redirect${MIMALLOC_REDIRECT_SUFFIX}.dll to output directory")
+   endif()
+ 
+-  install(TARGETS mimalloc EXPORT mimalloc DESTINATION ${mi_install_libdir} LIBRARY)  
++  install(TARGETS mimalloc EXPORT mimalloc RUNTIME DESTINATION ${mi_install_bindir} ARCHIVE DESTINATION ${mi_install_libdir} LIBRARY)  
+   install(EXPORT mimalloc DESTINATION ${mi_install_cmakedir})
+ endif()
+ 
+@@ -356,7 +364,7 @@ if (MI_BUILD_TESTS)
+   target_compile_definitions(mimalloc-test-api PRIVATE ${mi_defines})
+   target_compile_options(mimalloc-test-api PRIVATE ${mi_cflags})
+   target_include_directories(mimalloc-test-api PRIVATE include)
+-  target_link_libraries(mimalloc-test-api PRIVATE mimalloc-static ${mi_libraries})
++  target_link_libraries(mimalloc-test-api PRIVATE mimalloc ${mi_libraries})
+ 
+   add_executable(mimalloc-test-stress test/test-stress.c)
+   target_compile_definitions(mimalloc-test-stress PRIVATE ${mi_defines})
+@@ -386,3 +394,10 @@ if (MI_OVERRIDE)
+     endif()
+   endif()
+ endif()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mimalloc.pc.in ${CMAKE_BINARY_DIR}/mimalloc.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/mimalloc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/mimalloc-2.0.2/mimalloc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mimalloc-2.0.2/mimalloc.pc.in	2021-09-08 21:35:13.890196500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mimalloc
++Description: Compact general purpose allocator with excellent performance
++Version: @VERSION@
++Libs: -L${libdir} -lmimalloc
++Cflags: -I${includedir}
+--- origsrc/mimalloc-2.0.2/src/os.c	2021-06-18 12:05:40.000000000 +0900
++++ src/mimalloc-2.0.2/src/os.c	2021-09-08 21:26:52.539741300 +0900
+@@ -992,7 +992,7 @@ static void* mi_os_alloc_huge_os_pagesx(
+   return VirtualAlloc(addr, size, flags, PAGE_READWRITE);
+ }
+ 
+-#elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__)
++#elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ #ifndef MPOL_PREFERRED
+ #define MPOL_PREFERRED 1
