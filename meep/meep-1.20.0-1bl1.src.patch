@@ -1,0 +1,113 @@
+--- origsrc/meep-1.20.0/libpympb/Makefile.am	2021-08-12 02:18:28.000000000 +0900
++++ src/meep-1.20.0/libpympb/Makefile.am	2021-09-08 18:15:11.658169600 +0900
+@@ -2,6 +2,7 @@ LIBMEEP = $(top_builddir)/src/libmeep.la
+ 
+ AM_CPPFLAGS =                   \
+     -Wfatal-errors              \
++    -I$(top_builddir)/src       \
+     -I$(top_srcdir)/src         \
+     -I$(top_builddir)
+ 
+@@ -10,5 +11,5 @@ pkginclude_HEADERS = pympb.hpp
+ 
+ libpympb_la_SOURCES = pympb.cpp pympb.hpp
+ libpympb_la_LIBADD = $(LIBMEEP)
+-libpympb_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
++libpympb_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@
+ libpympb_la_CPPFLAGS = $(AM_CPPFLAGS)
+--- origsrc/meep-1.20.0/python/Makefile.am	2021-08-12 02:18:28.000000000 +0900
++++ src/meep-1.20.0/python/Makefile.am	2021-09-08 18:43:13.630511800 +0900
+@@ -105,15 +105,16 @@ EXTRA_DIST = $(BUILT_SOURCES) meep.i mee
+ CLEANFILES = .coverage
+ MAINTAINERCLEANFILES = $(BUILT_SOURCES)
+ 
+-AM_CPPFLAGS = -I$(top_srcdir)/src               \
+-              -I$(top_srcdir)/libpympb		\
++AM_CPPFLAGS = -I$(top_builddir)/src     \
++              -I$(top_srcdir)/src               \
++              -I$(top_srcdir)/libpympb	\
+               -I$(top_builddir) # for config.h
+ 
+ LIBMEEP = $(top_builddir)/src/libmeep.la
+ 
+ _meep_la_SOURCES = meep-python.cxx
+-_meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
+-_meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
++_meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS) -lpython$(PYTHON_VERSION)
++_meep_la_LDFLAGS = -no-undefined -module -avoid-version
+ _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+ 
+ pkgpyexec_LTLIBRARIES = _meep.la
+@@ -130,8 +131,8 @@ if WITH_MPB
+   pympb_PYTHON = mpb.py solver.py mpb_data.py
+   pympb_LTLIBRARIES = _mpb.la
+   _mpb_la_SOURCES = mpb-python.cxx
+-  _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
+-  _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
++  _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la -lpython$(PYTHON_VERSION)
++  _mpb_la_LDFLAGS = -no-undefined -module -avoid-version
+   _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+ 
+ install-data-hook:
+@@ -229,7 +230,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__in
+ # Q: Why is this not redundant since e.g. the HL_IFACE files should
+ #    already be installed by virtue of being in pkgpython_PYTHON
+ ######################################################################
+-PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
++PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) # .libs/_meep.so
+ 
+ meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
+ 	mkdir -p meep/adjoint
+@@ -237,7 +238,7 @@ meep: _meep.la $(MPB_LA) __init__.py $(H
+ 	cp $(adjoint_PYTHON) meep/adjoint
+ if WITH_MPB
+ 	mkdir -p meep/mpb
+-	cp .libs/_mpb.so meep/mpb
++#	cp .libs/_mpb.so meep/mpb
+ 	cp $(MPB_PY_PATH) meep/mpb/__init__.py
+ 	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
+ endif
+--- origsrc/meep-1.20.0/scheme/Makefile.am	2021-08-12 02:18:28.000000000 +0900
++++ src/meep-1.20.0/scheme/Makefile.am	2021-09-08 18:11:08.172471300 +0900
+@@ -66,7 +66,7 @@ nodist_pkgdata_DATA = $(SPECIFICATION_FI
+ 
+ ##############################################################################
+ 
+-AM_CPPFLAGS = $(MY_DEFS) $(CTL_DEFS) $(CTL_H_CPPFLAG) @LIBCTL_CPPFLAGS@ -I$(top_srcdir)/src
++AM_CPPFLAGS = $(MY_DEFS) $(CTL_DEFS) $(CTL_H_CPPFLAG) @LIBCTL_CPPFLAGS@ -I$(top_builddir)/src -I$(top_srcdir)/src
+ 
+ # libctl install. dir., e.g. /usr/local/share/libctl
+ LIBCTL_DIR = @LIBCTL_DIR@
+--- origsrc/meep-1.20.0/src/Makefile.am	2021-08-12 02:18:28.000000000 +0900
++++ src/meep-1.20.0/src/Makefile.am	2021-09-08 17:49:35.426651700 +0900
+@@ -22,15 +22,16 @@ vec.cpp step_generic.cpp meepgeom.cpp GD
+ SUBDIRS = support
+ libmeep_la_LIBADD = support/libsupport.la
+ 
+-libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
++libmeep_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@
+ 
+ PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
+ 
+ noinst_PROGRAMS = sphere_quad
+ sphere_quad_SOURCES = sphere-quad.cpp
+-SPHERE_QUAD = $(top_builddir)/src/sphere_quad
++SPHERE_QUAD = $(top_builddir)/src/sphere_quad$(EXEEXT)
+ sphere-quad.h:
+-	make sphere_quad
++#	make sphere_quad
++	$(CC) $(top_srcdir)/src/sphere-quad.cpp -o sphere_quad$(EXEEXT)
+ 	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
+ 
+ step_generic_stride1.cpp: step_generic.cpp
+--- origsrc/meep-1.20.0/tests/Makefile.am	2021-08-12 02:18:28.000000000 +0900
++++ src/meep-1.20.0/tests/Makefile.am	2021-09-08 18:26:51.338976500 +0900
+@@ -12,7 +12,7 @@ DONE = $(SRC:.cpp=.done)
+ 
+ LIBMEEP = $(top_builddir)/src/libmeep.la
+ MEEPLIBS = $(LIBMEEP)
+-AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
++AM_CPPFLAGS = -I$(top_builddir)/src -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
+ 
+ .SUFFIXES = .dac .done
+ 
