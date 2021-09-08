@@ -1,0 +1,142 @@
+--- origsrc/apache-log4cxx-0.12.0/CMakeLists.txt	2021-05-02 05:48:54.000000000 +0900
++++ src/apache-log4cxx-0.12.0/CMakeLists.txt	2021-09-08 11:27:21.928588900 +0900
+@@ -93,8 +93,13 @@ if(UNIX)
+     "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx.pc"
+   )
+ 
+-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx.pc" 
+-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
++  if(CYGWIN)
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx.pc" 
++      DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++  else()
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx.pc" 
++      DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
++  endif()
+ 
+   if(LOG4CXX_QT_SUPPORT)
+       set(prefix "${CMAKE_INSTALL_PREFIX}")
+@@ -106,42 +111,73 @@ if(UNIX)
+ 	"${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx-qt.pc"
+       )
+ 
+-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx-qt.pc"
+-	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
++      if(CYGWIN)
++        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx-qt.pc"
++          DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++      else()
++        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblog4cxx-qt.pc"
++          DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
++      endif()
+   endif(LOG4CXX_QT_SUPPORT)
+ endif(UNIX)
+ 
+ # Support for find_package(log4cxx) in consuming CMake projects using
+ # target_include_directories(myApplication PRIVATE $<TARGET_PROPERTY:log4cxx,INTERFACE_INCLUDE_DIRECTORIES>)
+ # target_link_libraries( myApplication PRIVATE log4cxx)
+-install(EXPORT log4cxxTargets
+-  FILE        log4cxxConfig.cmake
+-  DESTINATION share/cmake/log4cxx
+-)
++if(CYGWIN)
++  install(EXPORT log4cxxTargets
++    FILE        log4cxxConfig.cmake
++    DESTINATION lib/cmake/log4cxx
++  )
++else()
++  install(EXPORT log4cxxTargets
++    FILE        log4cxxConfig.cmake
++    DESTINATION share/cmake/log4cxx
++  )
++endif()
+ # Support for find_package(log4cxx 0.11) in consuming CMake projects
+ include(CMakePackageConfigHelpers)
+ write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/log4cxxConfigVersion.cmake"
+   VERSION       ${PROJECT_VERSION}
+   COMPATIBILITY SameMinorVersion
+ )
+-install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxxConfigVersion.cmake"
+-  DESTINATION   share/cmake/log4cxx
+-)
++if(CYGWIN)
++  install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxxConfigVersion.cmake"
++    DESTINATION   lib/cmake/log4cxx
++  )
++else()
++  install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxxConfigVersion.cmake"
++    DESTINATION   share/cmake/log4cxx
++  )
++endif()
+ 
+ if(LOG4CXX_QT_SUPPORT)
+-    install(EXPORT log4cxx-qtTargets
+-      FILE        log4cxx-qtConfig.cmake
+-      DESTINATION share/cmake/log4cxx
+-    )
++    if(CYGWIN)
++      install(EXPORT log4cxx-qtTargets
++        FILE        log4cxx-qtConfig.cmake
++        DESTINATION lib/cmake/log4cxx
++      )
++    else()
++      install(EXPORT log4cxx-qtTargets
++        FILE        log4cxx-qtConfig.cmake
++        DESTINATION share/cmake/log4cxx
++      )
++    endif()
+     # Support for find_package(log4cxx 0.11) in consuming CMake projects
+     include(CMakePackageConfigHelpers)
+     write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/log4cxx-qtConfigVersion.cmake"
+       VERSION       ${PROJECT_VERSION}
+       COMPATIBILITY SameMinorVersion
+     )
+-    install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxx-qtConfigVersion.cmake"
+-      DESTINATION   share/cmake/log4cxx
+-    )
++    if(CYGWIN)
++      install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxx-qtConfigVersion.cmake"
++        DESTINATION   lib/cmake/log4cxx
++      )
++    else()
++      install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/log4cxx-qtConfigVersion.cmake"
++        DESTINATION   share/cmake/log4cxx
++      )
++    endif()
+ endif(LOG4CXX_QT_SUPPORT)
+ 
+ #
+--- origsrc/apache-log4cxx-0.12.0/src/CMakeLists.txt	2021-04-18 08:29:02.000000000 +0900
++++ src/apache-log4cxx-0.12.0/src/CMakeLists.txt	2021-09-08 11:07:27.567930900 +0900
+@@ -4,6 +4,9 @@ add_subdirectory(main)
+ target_compile_definitions(log4cxx PRIVATE ${LOG4CXX_COMPILE_DEFINITIONS} ${APR_COMPILE_DEFINITIONS} ${APR_UTIL_COMPILE_DEFINITIONS} )
+ target_include_directories(log4cxx INTERFACE $<INSTALL_INTERFACE:include> PRIVATE ${APR_INCLUDE_DIR} ${APR_UTIL_INCLUDE_DIR})
+ target_link_libraries(log4cxx PRIVATE ${APR_UTIL_LIBRARIES} EXPAT::EXPAT ${APR_LIBRARIES} ${APR_SYSTEM_LIBS})
++if(CYGWIN)
++	target_link_libraries(log4cxx PRIVATE esmtp)
++endif()
+ if(WIN32)
+ 	# The ODBC appender is always enabled in the Windows configuration
+ 	target_link_libraries(log4cxx PRIVATE odbc32.lib)
+--- origsrc/apache-log4cxx-0.12.0/src/main/CMakeLists.txt	2021-04-18 08:29:02.000000000 +0900
++++ src/apache-log4cxx-0.12.0/src/main/CMakeLists.txt	2021-09-08 11:31:51.546532900 +0900
+@@ -12,6 +12,7 @@ target_include_directories(log4cxx PUBLI
+ 
+ if(LOG4CXX_QT_SUPPORT)
+     target_include_directories(log4cxx-qt PUBLIC
+-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+     )
+ endif(LOG4CXX_QT_SUPPORT)
+--- origsrc/apache-log4cxx-0.12.0/src/main/cpp-qt/CMakeLists.txt	2021-04-18 08:29:02.000000000 +0900
++++ src/apache-log4cxx-0.12.0/src/main/cpp-qt/CMakeLists.txt	2021-09-08 12:23:22.499344700 +0900
+@@ -12,7 +12,7 @@ if(LOG4CXX_QT_SUPPORT)
+     endif()
+     add_dependencies(log4cxx-qt configure_log4cxx)
+     target_compile_definitions(log4cxx-qt PRIVATE "QT_NO_KEYWORDS")
+-    target_link_libraries(log4cxx-qt Qt5::Core)
++    target_link_libraries(log4cxx-qt Qt5::Core log4cxx)
+     target_sources(log4cxx-qt
+       PRIVATE
+       messagehandler.cpp
