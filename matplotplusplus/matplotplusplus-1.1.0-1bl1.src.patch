@@ -1,0 +1,69 @@
+--- origsrc/matplotplusplus-1.1.0/CMakeLists.txt	2021-05-21 07:23:48.000000000 +0900
++++ src/matplotplusplus-1.1.0/CMakeLists.txt	2021-09-08 14:54:19.339935400 +0900
+@@ -175,3 +175,10 @@ if (BUILD_INSTALLER AND BUILD_PACKAGE)
+     # Always include CPack at last
+     include(CPack)
+ endif ()
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/matplot.pc.in ${CMAKE_BINARY_DIR}/matplot.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/matplot.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/matplotplusplus-1.1.0/matplot.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/matplotplusplus-1.1.0/matplot.pc.in	2021-09-08 14:54:37.728461600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: matplotplusplus
++Description: C++ Graphics Library for Data Visualization
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmatplot
++Cflags: -I${includedir}
+--- origsrc/matplotplusplus-1.1.0/source/matplot/CMakeLists.txt	2021-05-21 07:23:48.000000000 +0900
++++ src/matplotplusplus-1.1.0/source/matplot/CMakeLists.txt	2021-09-08 13:42:02.310147600 +0900
+@@ -91,6 +91,10 @@ add_library(matplot
+ # Target alias
+ add_library(Matplot++::matplot ALIAS matplot)
+ 
++if (CYGWIN)
++    set_target_properties(matplot PROPERTIES SOVERSION 0)
++endif()
++
+ # Include dirs
+ target_include_directories(matplot
+     PUBLIC $<BUILD_INTERFACE:${MATPLOT_ROOT_DIR}/source>
+@@ -247,7 +251,7 @@ if (BUILD_INSTALLER)
+     # Install targets
+     install(TARGETS matplot
+             EXPORT Matplot++Targets
+-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+             )
+ 
+--- origsrc/matplotplusplus-1.1.0/source/matplot/backend/gnuplot.cpp	2021-05-21 07:23:48.000000000 +0900
++++ src/matplotplusplus-1.1.0/source/matplot/backend/gnuplot.cpp	2021-09-08 13:45:06.891996100 +0900
+@@ -37,8 +37,7 @@ namespace matplot::backend {
+ 
+     gnuplot::gnuplot() {
+         // 1st option: terminal in GNUTERM environment variable
+-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) ||              \
+-    defined(__CYGWIN__)
++#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__)
+         char *environment_terminal;
+         size_t len;
+         errno_t err = _dupenv_s(&environment_terminal, &len, "GNUTERM");
+@@ -51,7 +50,7 @@ namespace matplot::backend {
+             if (terminal_is_available(environment_terminal)) {
+                 terminal_ = environment_terminal;
+             }
+-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__CYGWIN__)
++#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__)
+         } else if (terminal_is_available("wxt")) {
+             // 2nd option: wxt on windows, even if not default
+             terminal_ = "wxt";
