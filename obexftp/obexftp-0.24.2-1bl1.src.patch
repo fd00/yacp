@@ -1,0 +1,76 @@
+--- origsrc/obexftp-0.24.2-Source/CMakeLists.txt	2016-04-08 04:40:25.000000000 +0900
++++ src/obexftp-0.24.2-Source/CMakeLists.txt	2021-09-10 10:21:28.489662500 +0900
+@@ -68,7 +68,11 @@ set ( exec_prefix "\${prefix}" )
+ set ( libdir      "\${prefix}/${CMAKE_INSTALL_LIBDIR}" )
+ set ( includedir  "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}" )
+ set ( VERSION     "${obexftp_VERSION}" )
+-set ( REQUIRES    "bluez openobex" )
++if (CYGWIN)
++  set ( REQUIRES    "openobex" )
++else()
++  set ( REQUIRES    "bluez openobex" )
++endif()
+ configure_file (
+   ${CMAKE_CURRENT_SOURCE_DIR}/obexftp.pc.in
+   ${CMAKE_CURRENT_BINARY_DIR}/obexftp.pc
+--- origsrc/obexftp-0.24.2-Source/obexftp/CMakeLists.txt	2016-04-07 04:05:05.000000000 +0900
++++ src/obexftp-0.24.2-Source/obexftp/CMakeLists.txt	2021-09-10 10:08:05.621231800 +0900
+@@ -51,6 +51,7 @@ target_link_libraries ( obexftp
+     multicobex
+     ${Bluetooth_LIBRARIES}
+     ${OpenObex_LIBRARIES}
++    ${iconv_LIBRARY}
+ )
+ 
+ install ( TARGETS obexftp
+--- origsrc/obexftp-0.24.2-Source/obexftp/client.c	2016-02-09 05:10:40.000000000 +0900
++++ src/obexftp-0.24.2-Source/obexftp/client.c	2021-09-10 10:06:07.907043600 +0900
+@@ -36,14 +36,18 @@
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
++#if !defined(O_BINARY)
+ #define O_BINARY (0)
++#endif
+ #define CREATE_MODE_FILE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+ #endif /* _WIN32 */
+ 
+ #ifdef HAVE_BLUETOOTH
+ #include "bt_kit.h"
+ #else
++#if !defined(ESOCKTNOSUPPORT)
+ #define ESOCKTNOSUPPORT	WSAESOCKTNOSUPPORT
++#endif
+ #endif /* HAVE_BLUETOOTH */
+ 
+ #include <openobex/obex.h>
+--- origsrc/obexftp-0.24.2-Source/swig/perl/CMakeLists.txt	2013-08-12 03:26:37.000000000 +0900
++++ src/obexftp-0.24.2-Source/swig/perl/CMakeLists.txt	2021-09-10 10:09:18.598100300 +0900
+@@ -28,6 +28,7 @@ set_target_properties ( ${SWIG_MODULE_ob
+ 
+ swig_link_libraries ( obexftp-perl
+   obexftp
++  ${PERL_LIBRARY}
+ )
+ 
+ #
+--- origsrc/obexftp-0.24.2-Source/swig/python/CMakeLists.txt	2013-08-12 03:26:37.000000000 +0900
++++ src/obexftp-0.24.2-Source/swig/python/CMakeLists.txt	2021-09-10 10:10:05.198574400 +0900
+@@ -29,6 +29,7 @@ set_target_properties ( ${SWIG_MODULE_ob
+ 
+ swig_link_libraries ( obexftp-python
+   obexftp
++  ${PYTHON_LIBRARY}
+ )
+ 
+ #
+--- origsrc/obexftp-0.24.2-Source/swig/ruby/CMakeLists.txt	2013-08-12 03:26:37.000000000 +0900
++++ src/obexftp-0.24.2-Source/swig/ruby/CMakeLists.txt	2021-09-10 10:12:09.323161300 +0900
+@@ -22,6 +22,7 @@ set_target_properties ( ${SWIG_MODULE_ob
+ 
+ swig_link_libraries ( obexftp-ruby
+   obexftp
++  ${Ruby_LIBRARY}
+ )
+ 
+ #
