@@ -1,0 +1,48 @@
+--- origsrc/spglib-1.16.2/CMakeLists.txt	2021-08-10 11:27:15.000000000 +0900
++++ src/spglib-1.16.2/CMakeLists.txt	2021-09-13 22:27:46.175940200 +0900
+@@ -66,14 +66,16 @@ if(NOT MSVC)
+ endif()
+ set_property(TARGET symspg PROPERTY VERSION ${serial})
+ set_property(TARGET symspg PROPERTY SOVERSION ${soserial})
+-install(TARGETS symspg LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS symspg RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ # Static link library
+-add_library(symspg_static STATIC ${SOURCES})
+-set_property(TARGET symspg_static PROPERTY VERSION ${serial})
+-set_property(TARGET symspg_static PROPERTY SOVERSION ${soserial})
+-set_property(TARGET symspg_static PROPERTY OUTPUT_NAME symspg)
+-install(TARGETS symspg_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++if (NOT CYGWIN)
++  add_library(symspg_static STATIC ${SOURCES})
++  set_property(TARGET symspg_static PROPERTY VERSION ${serial})
++  set_property(TARGET symspg_static PROPERTY SOVERSION ${soserial})
++  set_property(TARGET symspg_static PROPERTY OUTPUT_NAME symspg)
++  install(TARGETS symspg_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++endif()
+ 
+ # Header file
+ install(FILES ${PROJECT_SOURCE_DIR}/src/spglib.h
+@@ -102,3 +104,9 @@ add_custom_target(check
+     DEPENDS spglibtest
+     )
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/spglib.pc.in ${CMAKE_BINARY_DIR}/spglib.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/spglib.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/spglib-1.16.2/spglib.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/spglib-1.16.2/spglib.pc.in	2021-09-13 22:28:15.671824600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: spglib
++Description: C library for finding and handling crystal symmetries
++Version: @serial@
++Libs: -L${libdir} -lsymspg
++Cflags: -I${includedir}
