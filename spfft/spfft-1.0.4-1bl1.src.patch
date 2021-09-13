@@ -1,6 +1,6 @@
---- origsrc/SpFFT-0.9.13/src/CMakeLists.txt	2020-08-18 16:56:03.000000000 +0900
-+++ src/SpFFT-0.9.13/src/CMakeLists.txt	2020-09-19 00:44:15.954054000 +0900
-@@ -156,7 +156,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+--- origsrc/SpFFT-1.0.4/src/CMakeLists.txt	2021-07-02 16:08:17.000000000 +0900
++++ src/SpFFT-1.0.4/src/CMakeLists.txt	2021-09-13 21:18:34.132479000 +0900
+@@ -152,7 +152,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
  
  # installation commands
  if(SPFFT_INSTALL)
@@ -9,9 +9,9 @@
  	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/spfft DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.f90")
  	install(FILES ${PROJECT_BINARY_DIR}/spfft/config.h "${PROJECT_BINARY_DIR}/spfft/spfft_export.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spfft)
  	install(EXPORT SpFFTTargets NAMESPACE SpFFT:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/SpFFT FILE ${SPFFT_TARGETS_FILE})
---- origsrc/SpFFT-0.9.13/tests/CMakeLists.txt	2020-08-18 16:56:03.000000000 +0900
-+++ src/SpFFT-0.9.13/tests/CMakeLists.txt	2020-09-19 00:44:15.972037500 +0900
-@@ -6,61 +6,71 @@ if(SPFFT_BUILD_TESTS)
+--- origsrc/SpFFT-1.0.4/tests/CMakeLists.txt	2021-07-02 16:08:17.000000000 +0900
++++ src/SpFFT-1.0.4/tests/CMakeLists.txt	2021-09-13 21:40:06.457338200 +0900
+@@ -6,61 +6,72 @@ if(SPFFT_BUILD_TESTS)
  	mark_as_advanced(BUILD_GMOCK INSTALL_GTEST)
  	include(FetchContent)
  
@@ -38,21 +38,9 @@
 -	if(NOT gtest_mpi_POPULATED)
 -	  message(STATUS "Downloading Google Test MPI extension repository...")
 -	  FetchContent_Populate(gtest_mpi)
--	endif()
--	add_subdirectory(${gtest_mpi_SOURCE_DIR} ${gtest_mpi_BINARY_DIR})
--
--	# add command line parser
--	FetchContent_Declare(
--	  cli11
--	  GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
--	  GIT_TAG        v1.7.1
--	)
--	FetchContent_GetProperties(cli11)
--	if(NOT cli11_POPULATED)
--	  message(STATUS "Downloading CLI11 command line parser repository...")
--	  FetchContent_Populate(cli11)
-+	find_package(gtest)
-+	if(NOT GTEST_FOUND)
++# gtest-1.11.0: error: ‘Int32’ in namespace ‘testing::internal’ does not name a type
++#	find_package(gtest)
++#	if(NOT GTEST_FOUND)
 +		# add googletest
 +		FetchContent_Declare(
 +			googletest
@@ -65,24 +53,8 @@
 +			FetchContent_Populate(googletest)
 +		endif()
 +		add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
- 	endif()
--	list(APPEND SPFFT_EXTERNAL_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
- 
--	# add json parser
--	set(JSON_Install OFF CACHE BOOL "")
--	FetchContent_Declare(
--	  json
--	  GIT_REPOSITORY https://github.com/nlohmann/json.git
--	  GIT_TAG        v3.6.1
--	)
--	FetchContent_GetProperties(json)
--	if(NOT json_POPULATED)
--	  message(STATUS "Downloading json repository...")
--	  FetchContent_Populate(json)
--	endif()
--	set(JSON_BuildTests OFF CACHE INTERNAL "")
--	add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR})
--	list(APPEND SPFFT_EXTERNAL_LIBS nlohmann_json::nlohmann_json)
++#	endif()
++
 +	if (NOT EXISTS "/usr/include/gtest_mpi")
 +		# add gtest_mpi
 +		FetchContent_Declare(
@@ -96,8 +68,19 @@
 +			FetchContent_Populate(gtest_mpi)
 +		endif()
 +		add_subdirectory(${gtest_mpi_SOURCE_DIR} ${gtest_mpi_BINARY_DIR})
-+	endif()
-+
+ 	endif()
+-	add_subdirectory(${gtest_mpi_SOURCE_DIR} ${gtest_mpi_BINARY_DIR})
+ 
+-	# add command line parser
+-	FetchContent_Declare(
+-	  cli11
+-	  GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+-	  GIT_TAG        v1.7.1
+-	)
+-	FetchContent_GetProperties(cli11)
+-	if(NOT cli11_POPULATED)
+-	  message(STATUS "Downloading CLI11 command line parser repository...")
+-	  FetchContent_Populate(cli11)
 +	if (NOT EXISTS "/usr/include/CLI/CLI.hpp")
 +		# add command line parser
 +		FetchContent_Declare(
@@ -111,9 +94,20 @@
 +			FetchContent_Populate(cli11)
 +		endif()
 +		list(APPEND SPFFT_EXTERNAL_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
-+	endif()
+ 	endif()
+-	list(APPEND SPFFT_EXTERNAL_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
  
-+	# add json parser
+ 	# add json parser
+-	set(JSON_Install OFF CACHE BOOL "")
+-	FetchContent_Declare(
+-	  json
+-	  GIT_REPOSITORY https://github.com/nlohmann/json.git
+-	  GIT_TAG        v3.6.1
+-	)
+-	FetchContent_GetProperties(json)
+-	if(NOT json_POPULATED)
+-	  message(STATUS "Downloading json repository...")
+-	  FetchContent_Populate(json)
 +	find_package(PkgConfig)
 +	pkg_check_modules(NLOHMANN_JSON nlohmann_json)
 +	if(NOT NLOHMANN_JSON_FOUND)
@@ -131,11 +125,15 @@
 +		set(JSON_BuildTests OFF CACHE INTERNAL "")
 +		add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR})
 +		list(APPEND SPFFT_EXTERNAL_LIBS nlohmann_json::nlohmann_json)
-+	endif()
+ 	endif()
+-	set(JSON_BuildTests OFF CACHE INTERNAL "")
+-	add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR})
+-	list(APPEND SPFFT_EXTERNAL_LIBS nlohmann_json::nlohmann_json)
+-
  
  	list(APPEND SPFFT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/tests)
  
-@@ -81,7 +91,13 @@ if(SPFFT_BUILD_TESTS)
+@@ -81,7 +92,13 @@ if(SPFFT_BUILD_TESTS)
  		local_tests/test_disjoint.cpp
  		local_tests/test_local_transform.cpp
  		)
@@ -150,7 +148,7 @@
  	target_link_libraries(run_local_tests PRIVATE ${SPFFT_LIBS} ${SPFFT_EXTERNAL_LIBS})
  	target_compile_options(run_local_tests PRIVATE ${SPFFT_DEFINITIONS} ${SPFFT_EXTERNAL_COMPILE_OPTIONS})
  	target_include_directories(run_local_tests PRIVATE ${SPFFT_INCLUDE_DIRS} ${SPFFT_EXTERNAL_INCLUDE_DIRS})
-@@ -94,7 +110,13 @@ if(SPFFT_BUILD_TESTS)
+@@ -94,7 +111,13 @@ if(SPFFT_BUILD_TESTS)
  			mpi_tests/test_transpose.cpp
  			mpi_tests/test_transpose_gpu.cpp
  			)
