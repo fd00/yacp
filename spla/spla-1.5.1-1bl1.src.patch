@@ -1,6 +1,6 @@
---- origsrc/spla-1.4.0/src/CMakeLists.txt	2021-04-14 21:18:14.000000000 +0900
-+++ src/spla-1.4.0/src/CMakeLists.txt	2021-05-11 21:50:26.628987700 +0900
-@@ -128,7 +128,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+--- origsrc/spla-1.5.1/src/CMakeLists.txt	2021-07-02 15:44:21.000000000 +0900
++++ src/spla-1.5.1/src/CMakeLists.txt	2021-09-13 23:45:11.518407400 +0900
+@@ -139,7 +139,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
  
  # installation commands
  if(SPLA_INSTALL)
@@ -9,8 +9,8 @@
  	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/spla DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.f90")
  	install(FILES ${PROJECT_BINARY_DIR}/spla/config.h "${PROJECT_BINARY_DIR}/spla/spla_export.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spla)
  	install(EXPORT SPLATargets NAMESPACE SPLA:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/SPLA FILE ${SPLA_TARGETS_FILE})
---- origsrc/spla-1.4.0/tests/CMakeLists.txt	2021-04-14 21:18:14.000000000 +0900
-+++ src/spla-1.4.0/tests/CMakeLists.txt	2021-05-11 17:54:25.984866500 +0900
+--- origsrc/spla-1.5.1/tests/CMakeLists.txt	2021-07-02 15:44:21.000000000 +0900
++++ src/spla-1.5.1/tests/CMakeLists.txt	2021-09-13 23:45:50.901711700 +0900
 @@ -7,47 +7,55 @@ set(INSTALL_GTEST OFF CACHE BOOL "")
  mark_as_advanced(BUILD_GMOCK INSTALL_GTEST)
  include(FetchContent)
@@ -25,10 +25,13 @@
 -if(NOT googletest_POPULATED)
 -  message(STATUS "Downloading Google Test repository...")
 -  FetchContent_Populate(googletest)
-+find_package(gtest)
-+if(GTEST_FOUND)
-+  list(APPEND SPLA_TEST_LIBRARIES ${GTEST_LIBRARIES})
-+else()
+-endif()
+-add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+-list(APPEND SPLA_TEST_LIBRARIES gtest_main)
++# find_package(gtest)
++# if(GTEST_FOUND)
++#   list(APPEND SPLA_TEST_LIBRARIES ${GTEST_LIBRARIES})
++# else()
 +  # add googletest
 +  FetchContent_Declare(
 +    googletest
@@ -42,9 +45,7 @@
 +  endif()
 +  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
 +  list(APPEND SPLA_TEST_LIBRARIES gtest_main)
- endif()
--add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
--list(APPEND SPLA_TEST_LIBRARIES gtest_main)
++# endif()
  
 -# add gtest_mpi
 -FetchContent_Declare(
@@ -101,5 +102,5 @@
 -list(APPEND SPLA_TEST_INCLUDE_DIRS ${cli11_SOURCE_DIR}/include)
 -
  
- if(NOT SPLA_BLAS_MKL)
- 	find_package(SCALAPACK REQUIRED)
+ if(SPLA_BLAS_MKL)
+ 	set(_MKL_MPI mpich)
