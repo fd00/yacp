@@ -1,0 +1,66 @@
+--- origsrc/bliss-0.77/CMakeLists.txt	2021-02-18 18:59:33.000000000 +0900
++++ src/bliss-0.77/CMakeLists.txt	2021-09-17 07:04:46.411855700 +0900
+@@ -18,8 +18,8 @@ else()
+ endif()
+ 
+ if(USE_GMP)
+-  find_path(GMP_INCLUDE_DIR NAMES gmp.h)
+-  find_library(GMP_LIBRARIES NAMES gmp libgmp mpir REQUIRED)
++  find_package(pkgconfig)
++  pkg_check_modules(GMP gmp REQUIRED)
+   if (MSVC)
+     add_compile_options(/DBLISS_USE_GMP /I${GMP_INCLUDE_DIR})
+   else()
+@@ -50,15 +50,34 @@ endif(MSVC)
+ 
+ # Add the shared library
+ add_library(bliss SHARED ${BLISS_SOURCE_FILES})
++if (USE_GMP)
++  target_link_libraries(bliss  ${GMP_LIBRARIES})
++endif()
+ set_property(TARGET bliss PROPERTY POSITION_INDEPENDENT_CODE 1)
++if (CYGWIN)
++  set_target_properties(bliss PROPERTIES SOVERSION 0)
++endif()
+ 
+ # Add the static library
+-add_library(bliss_static STATIC ${BLISS_SOURCE_FILES})
++if (NOT CYGWIN)
++  add_library(bliss_static STATIC ${BLISS_SOURCE_FILES})
++endif()
+ 
+ # Add the executable
+ add_executable(bliss-executable src/bliss.cc)
+-target_link_libraries(bliss-executable bliss_static)
+-if(USE_GMP)
+-  target_link_libraries(bliss-executable ${GMP_LIBRARIES})
+-endif(USE_GMP)
++target_link_libraries(bliss-executable bliss)
+ set_target_properties(bliss-executable PROPERTIES OUTPUT_NAME bliss)
++
++# Install
++install(TARGETS bliss bliss-executable
++  RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++file(GLOB headers "src/*.h" "src/*.hh")
++install(FILES ${headers}
++  DESTINATION include/bliss)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/bliss.pc.in ${CMAKE_BINARY_DIR}/bliss.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/bliss.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/bliss-0.77/bliss.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bliss-0.77/bliss.pc.in	2021-09-17 07:04:46.281865300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bliss
++Description: Graphs, isomorphism, and canonical labeling
++Version: @VERSION@
++Libs: -L${libdir} -lbliss
++Cflags: -I${includedir}
