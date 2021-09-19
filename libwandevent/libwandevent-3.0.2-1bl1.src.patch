@@ -1,0 +1,49 @@
+--- origsrc/libwandevent-3.0.2/Makefile.am	2015-09-07 14:48:24.000000000 +0900
++++ src/libwandevent-3.0.2/Makefile.am	2021-09-19 22:51:44.861455900 +0900
+@@ -8,6 +8,7 @@ HELPERSOURCE=selecthelper.c selecthelper
+ endif
+ 
+ libwandevent_la_SOURCES = event.c libwandevent.h $(HELPERSOURCE)
+-libwandevent_la_LDFLAGS = -version-info 3:2:0
+-
++libwandevent_la_LDFLAGS = -no-undefined -version-info 3:2:0
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libwandevent-3.0.2/configure.ac	2015-09-07 14:48:18.000000000 +0900
++++ src/libwandevent-3.0.2/configure.ac	2021-09-19 22:39:56.417908400 +0900
+@@ -42,7 +42,7 @@ if test "x$want_epoll" != "xno"; then
+ 	AC_CHECK_HEADERS([sys/epoll.h])
+ fi
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libwandevent.pc Makefile])
+ 
+ AM_CONDITIONAL([BUILD_EPOLL],[test "$ac_cv_header_sys_epoll_h" = yes])
+ AC_OUTPUT
+--- origsrc/libwandevent-3.0.2/libwandevent.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libwandevent-3.0.2/libwandevent.pc.in	2021-09-19 22:39:56.350877000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libwandevent
++Description: API for developing event-driven programs
++Version: @VERSION@
++Libs: -L${libdir} -lwandevent
++Cflags: -I${includedir}
+--- origsrc/libwandevent-3.0.2/selecthelper.c	2013-07-01 07:21:35.000000000 +0900
++++ src/libwandevent-3.0.2/selecthelper.c	2021-09-19 22:37:26.967428500 +0900
+@@ -4,6 +4,10 @@
+ #include <assert.h>
+ #include <sys/ioctl.h>
+ 
++#if !defined(FIONREAD) && defined(TIOCINQ)
++#define FIONREAD TIOCINQ
++#endif
++
+ #include "selecthelper.h"
+ 
+ void process_select_event(wand_event_handler_t *ev_hdl,
