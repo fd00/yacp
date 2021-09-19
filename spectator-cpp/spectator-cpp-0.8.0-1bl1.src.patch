@@ -1,0 +1,69 @@
+--- origsrc/spectator-cpp-0.8.0/CMakeLists.txt	2020-07-15 04:47:57.000000000 +0900
++++ src/spectator-cpp-0.8.0/CMakeLists.txt	2021-09-19 18:37:48.956060500 +0900
+@@ -13,7 +13,10 @@ option (ASAN
+ 
+ # Code coverage for debug build
+ string(TOLOWER ${CMAKE_BUILD_TYPE} LC_CMAKE_BUILD_TYPE)
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DCURL_STATICLIB -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -Werror -fno-rtti -Wall -Wno-missing-braces")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -fno-rtti -Wall -Wno-missing-braces")
++if(NOT CYGWIN)
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCURL_STATICLIB -Werror")
++endif()
+ 
+ if(CMAKE_CXX_COMPILER_ID STREQUAL GNU AND LC_CMAKE_BUILD_TYPE STREQUAL debug)
+   MESSAGE(STATUS "Setting up CodeCoverage")
+@@ -59,7 +62,9 @@ add_library(spectator_cpp SHARED ${LIB_S
+ set_target_properties(spectator_cpp PROPERTIES COMPILE_FLAGS "-Wextra -Wno-missing-braces")
+ add_dependencies(spectator_cpp generated-files)
+ 
+-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
++if(CYGWIN)
++  set_target_properties(spectator_cpp PROPERTIES SOVERSION 0)
++elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+   configure_file(${CMAKE_SOURCE_DIR}/bundle/libcurl-linux.a libcurl.a COPYONLY)
+   configure_file(${CMAKE_SOURCE_DIR}/bundle/libcares-linux.a libcares.a COPYONLY)
+   add_library(spectatorStatic STATIC ${LIB_SOURCE_FILES})
+@@ -71,7 +76,11 @@ else()
+   configure_file(${CMAKE_SOURCE_DIR}/bundle/libcurl-osx.a libcurl.a COPYONLY)
+   configure_file(${CMAKE_SOURCE_DIR}/bundle/libcares-osx.a libcares.a COPYONLY)
+ endif()
+-target_link_libraries(spectator_cpp ${CMAKE_BINARY_DIR}/libcurl.a ${CMAKE_BINARY_DIR}/libcares.a z)
++if(CYGWIN)
++  target_link_libraries(spectator_cpp curl z)
++else()
++  target_link_libraries(spectator_cpp ${CMAKE_BINARY_DIR}/libcurl.a ${CMAKE_BINARY_DIR}/libcares.a z)
++endif()
+ 
+ # test configuration
+ enable_testing()
+@@ -80,17 +89,24 @@ file(GLOB TEST_SOURCE_FILES test/*.cc te
+ add_executable(runtests ${TEST_SOURCE_FILES})
+ set_target_properties(runtests PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")
+ 
+-add_library(gtest 3rd-party/src/gtest-all.cc)
++if (NOT CYGWIN)
++  add_library(gtest 3rd-party/src/gtest-all.cc)
++endif()
+ 
+ target_link_libraries(runtests spectator_cpp pthread gtest)
+ add_test(runtests runtests)
+ 
+-install(TARGETS spectator_cpp DESTINATION lib)
++install(TARGETS spectator_cpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY spectator DESTINATION include FILES_MATCHING PATTERN "*.h")
+-install(DIRECTORY 3rd-party/spdlog DESTINATION include FILES_MATCHING PATTERN "*.h")
+-install(DIRECTORY 3rd-party/ska DESTINATION include FILES_MATCHING PATTERN "*.hpp")
+-install(DIRECTORY 3rd-party/tsl DESTINATION include FILES_MATCHING PATTERN "*.h")
+-install(DIRECTORY 3rd-party/rapidjson DESTINATION include FILES_MATCHING PATTERN "*.h")
++if(CYGWIN)
++  install(DIRECTORY 3rd-party/ska DESTINATION include FILES_MATCHING PATTERN "*.hpp")
++  install(DIRECTORY 3rd-party/tsl DESTINATION include FILES_MATCHING PATTERN "*.h")
++else()
++  install(DIRECTORY 3rd-party/spdlog DESTINATION include FILES_MATCHING PATTERN "*.h")
++  install(DIRECTORY 3rd-party/ska DESTINATION include FILES_MATCHING PATTERN "*.hpp")
++  install(DIRECTORY 3rd-party/tsl DESTINATION include FILES_MATCHING PATTERN "*.h")
++  install(DIRECTORY 3rd-party/rapidjson DESTINATION include FILES_MATCHING PATTERN "*.h")
++endif()
+ 
+ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+   install(TARGETS spectatorStatic DESTINATION lib)
