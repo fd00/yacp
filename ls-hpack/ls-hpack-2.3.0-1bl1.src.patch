@@ -1,0 +1,184 @@
+--- origsrc/ls-hpack-2.3.0/CMakeLists.txt	2021-04-21 01:19:44.000000000 +0900
++++ src/ls-hpack-2.3.0/CMakeLists.txt	2021-09-19 20:56:24.679620000 +0900
+@@ -16,6 +16,10 @@ ELSE()
+ ENDIF()
+ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR})
+ 
++IF (CYGWIN)
++    SET_TARGET_PROPERTIES(ls-hpack PROPERTIES SOVERSION 0)
++ENDIF()
++
+ IF (NOT DEFINED XXH_HEADER_NAME)
+     SET(XXH_HEADER_NAME "xxhash.h")
+ ENDIF()
+@@ -28,6 +32,8 @@ ENDIF()
+ 
+ IF (LSHPACK_XXH)
+     TARGET_SOURCES(ls-hpack PRIVATE deps/xxhash/xxhash.c)
++ELSE()
++    TARGET_LINK_LIBRARIES(ls-hpack PRIVATE xxhash)
+ ENDIF()
+ 
+ IF (MSVC)
+@@ -53,7 +59,7 @@ IF (CMAKE_C_COMPILER_ID STREQUAL GNU
+         ENDIF()
+ ENDIF()
+ 
+-IF (NOT CMAKE_BUILD_TYPE STREQUAL Release)
++IF (NOT CMAKE_BUILD_TYPE STREQUAL Release OR CYGWIN)
+     SET(MY_CMAKE_FLAGS "${MY_CMAKE_FLAGS} -DLS_HPACK_EMIT_TEST_CODE=1")
+ ENDIF()
+ 
+@@ -71,12 +77,22 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MY
+ 
+ MESSAGE(STATUS "Compiler flags: ${CMAKE_C_FLAGS}")
+ 
+-IF (NOT CMAKE_BUILD_TYPE STREQUAL Release)
++IF (NOT CMAKE_BUILD_TYPE STREQUAL Release OR CYGWIN)
+     ENABLE_TESTING()
+     INCLUDE_DIRECTORIES("test")
+     ADD_SUBDIRECTORY("test")
+ ENDIF()
+ 
+-IF (CMAKE_SYSTEM_NAME STREQUAL Linux)
++IF (CMAKE_SYSTEM_NAME STREQUAL Linux OR CYGWIN)
+     ADD_SUBDIRECTORY(bin)
+ ENDIF()
++
++INSTALL(TARGETS ls-hpack RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++INSTALL(FILES lshpack.h lsxpack_header.h DESTINATION include/ls-hpack)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include/ls-hpack)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/ls-hpack.pc.in ${CMAKE_BINARY_DIR}/ls-hpack.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/ls-hpack.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ls-hpack-2.3.0/bin/CMakeLists.txt	2021-04-21 01:19:44.000000000 +0900
++++ src/ls-hpack-2.3.0/bin/CMakeLists.txt	2021-09-19 20:46:29.965905800 +0900
+@@ -1,16 +1,41 @@
+-add_executable(encode-qif encode-qif.c ../deps/xxhash/xxhash.c)
++add_executable(encode-qif encode-qif.c)
+ target_link_libraries(encode-qif PRIVATE ls-hpack)
++if (LSHPACK_XXH)
++    target_sources(encode-qif PRIVATE ../deps/xxhash/xxhash.c)
++else()
++    target_link_libraries(encode-qif PRIVATE xxhash)
++endif()
+ 
+ add_executable(gen-fast-dec-table gen-fast-dec-table.c)
+ 
+ add_executable(gen-fast-enc-table gen-fast-enc-table.c)
+ 
+-add_executable(huff-decode huff-decode.c ../deps/xxhash/xxhash.c)
++add_executable(huff-decode huff-decode.c)
+ target_link_libraries(huff-decode PRIVATE ls-hpack)
++if (LSHPACK_XXH)
++    target_sources(huff-decode PRIVATE ../deps/xxhash/xxhash.c)
++else()
++    target_link_libraries(huff-decode PRIVATE xxhash)
++endif()
+ 
+-add_executable(huff-encode huff-encode.c ../deps/xxhash/xxhash.c)
++add_executable(huff-encode huff-encode.c)
+ target_link_libraries(huff-encode PRIVATE ls-hpack)
+-
+-add_executable(calc-xxh calc-xxh.c ../deps/xxhash/xxhash.c)
+-
+-add_executable(find-xxh find-xxh.c ../deps/xxhash/xxhash.c)
++if (LSHPACK_XXH)
++    target_sources(huff-encode PRIVATE ../deps/xxhash/xxhash.c)
++else()
++    target_link_libraries(huff-encode PRIVATE xxhash)
++endif()
++
++add_executable(calc-xxh calc-xxh.c)
++if (LSHPACK_XXH)
++    target_sources(calc-xxh PRIVATE ../deps/xxhash/xxhash.c)
++else()
++    target_link_libraries(calc-xxh PRIVATE xxhash)
++endif()
++
++add_executable(find-xxh find-xxh.c)
++if (LSHPACK_XXH)
++    target_sources(find-xxh PRIVATE ../deps/xxhash/xxhash.c)
++else()
++    target_link_libraries(find-xxh PRIVATE xxhash)
++endif()
+--- origsrc/ls-hpack-2.3.0/bin/calc-xxh.c	2021-04-21 01:19:44.000000000 +0900
++++ src/ls-hpack-2.3.0/bin/calc-xxh.c	2021-09-19 20:45:29.839042400 +0900
+@@ -14,7 +14,7 @@ main (int argc, char **argv)
+     uint32_t seed, name_hash, nameval_hash;
+     size_t name_len, value_len;
+     const char *name, *value;
+-    XXH32_state_t hash_state;
++    XXH32_state_t* hash_state = XXH32_createState();
+     int mode;
+ 
+     if (argc != 5)
+@@ -47,11 +47,11 @@ main (int argc, char **argv)
+     switch (mode)
+     {
+     case 0:
+-        XXH32_reset(&hash_state, seed);
+-        XXH32_update(&hash_state, name, name_len);
+-        name_hash = XXH32_digest(&hash_state);
+-        XXH32_update(&hash_state, value, value_len);
+-        nameval_hash = XXH32_digest(&hash_state);
++        XXH32_reset(hash_state, seed);
++        XXH32_update(hash_state, name, name_len);
++        name_hash = XXH32_digest(hash_state);
++        XXH32_update(hash_state, value, value_len);
++        nameval_hash = XXH32_digest(hash_state);
+         break;
+     default:
+         name_hash = XXH32(name, name_len, seed);
+@@ -65,5 +65,6 @@ main (int argc, char **argv)
+ "nameval hash 0x%08"PRIX32"\n"
+         , mode, name, value, name_hash, nameval_hash);
+ 
++    XXH32_freeState(hash_state);
+     return 0;
+ }
+--- origsrc/ls-hpack-2.3.0/ls-hpack.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ls-hpack-2.3.0/ls-hpack.pc.in	2021-09-19 21:24:49.402597000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ls-hpack
++Description: LiteSpeed HPACK (RFC7541) Library
++Version: @VERSION@
++Libs: -L${libdir} -lls-hpack
++Cflags: -I${includedir}
+--- origsrc/ls-hpack-2.3.0/test/CMakeLists.txt	2021-04-21 01:19:44.000000000 +0900
++++ src/ls-hpack-2.3.0/test/CMakeLists.txt	2021-09-19 20:50:55.017583400 +0900
+@@ -2,13 +2,24 @@ ENABLE_TESTING()
+ 
+ FOREACH(HASH 0 1)
+     FOREACH(HTTP 0 1)
+-        ADD_EXECUTABLE(test_hpack_hash${HASH}_http${HTTP} test_hpack.c ../lshpack.c ../deps/xxhash/xxhash.c)
++        ADD_EXECUTABLE(test_hpack_hash${HASH}_http${HTTP} test_hpack.c)
++        TARGET_LINK_LIBRARIES(test_hpack_hash${HASH}_http${HTTP} ls-hpack)
++        IF (LSHPACK_XXH)
++            TARGET_SOURCES(test_hpack_hash${HASH}_http${HTTP} PRIVATE ../deps/xxhash/xxhash.c)
++        ELSE()
++            TARGET_LINK_LIBRARIES(test_hpack_hash${HASH}_http${HTTP} PRIVATE xxhash)
++        ENDIF()
+         SET_TARGET_PROPERTIES(test_hpack_hash${HASH}_http${HTTP}
+             PROPERTIES COMPILE_FLAGS "${CMAKE_C_FLAGS} -DLSHPACK_DEC_HTTP1X_OUTPUT=${HTTP} -DLSHPACK_DEC_CALC_HASH=${HASH}")
+         ADD_TEST(hpack-hash${HASH}-http${HTTP} test_hpack_hash${HASH}_http${HTTP})
+     ENDFOREACH(HTTP)
+ ENDFOREACH(HASH)
+ 
+-ADD_EXECUTABLE(test_int test_int.c ../deps/xxhash/xxhash.c)
++ADD_EXECUTABLE(test_int test_int.c)
++IF (LSHPACK_XXH)
++    TARGET_SOURCES(test_int PRIVATE ../deps/xxhash/xxhash.c)
++ELSE()
++    TARGET_LINK_LIBRARIES(test_int PRIVATE xxhash)
++ENDIF()
+ TARGET_LINK_LIBRARIES(test_int ls-hpack)
+ ADD_TEST(int test_int)
