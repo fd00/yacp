@@ -1,0 +1,75 @@
+--- origsrc/caterva-0.5.0/CMakeLists.txt	2021-07-13 19:42:01.000000000 +0900
++++ src/caterva-0.5.0/CMakeLists.txt	2021-09-20 17:28:04.482971400 +0900
+@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.12)
+ cmake_policy(SET CMP0048 NEW)
+ cmake_policy(SET CMP0077 NEW)
+ 
+-project(caterva VERSION 0.3.3 LANGUAGES C)
++project(caterva VERSION 0.5.0 LANGUAGES C)
+ 
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+@@ -104,7 +104,10 @@ if(CATERVA_SHARED_LIB)
+         target_link_libraries(caterva_shared ${LIBS})
+     endif()
+     set_target_properties(caterva_shared PROPERTIES OUTPUT_NAME caterva)
+-    install(TARGETS caterva_shared DESTINATION lib)
++    if (CYGWIN)
++        set_target_properties(caterva_shared PROPERTIES SOVERSION 0)
++    endif()
++    install(TARGETS caterva_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ endif()
+ 
+ if(CATERVA_STATIC_LIB)
+@@ -142,3 +145,9 @@ if(CATERVA_BUILD_TESTS)
+     add_subdirectory(tests)
+ endif()
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/caterva.pc.in ${CMAKE_BINARY_DIR}/caterva.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/caterva.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/caterva-0.5.0/bench/CMakeLists.txt	2021-07-13 19:42:01.000000000 +0900
++++ src/caterva-0.5.0/bench/CMakeLists.txt	2021-09-20 17:12:20.529412100 +0900
+@@ -13,5 +13,5 @@ foreach(source ${SOURCES})
+     get_filename_component(target_name ${source} NAME_WE)
+     set(target caterva_${target_name})
+     add_executable(${target} ${target_name}.c)
+-    target_link_libraries(${target} caterva_static ${LIBS})
++    target_link_libraries(${target} caterva_shared ${LIBS})
+ endforeach(source)
+--- origsrc/caterva-0.5.0/caterva.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/caterva-0.5.0/caterva.pc.in	2021-09-20 17:28:10.402153500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: caterva
++Description: Multidimensional data container on top of Blosc2
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcaterva
++Cflags: -I${includedir}
+--- origsrc/caterva-0.5.0/examples/CMakeLists.txt	2021-07-13 19:42:01.000000000 +0900
++++ src/caterva-0.5.0/examples/CMakeLists.txt	2021-09-20 17:11:38.802261700 +0900
+@@ -13,5 +13,5 @@ foreach(source ${SOURCES})
+     get_filename_component(target_name ${source} NAME_WE)
+     set(target caterva_${target_name})
+     add_executable(${target} ${target_name}.c)
+-    target_link_libraries(${target} caterva_static ${LIBS})
++    target_link_libraries(${target} caterva_shared ${LIBS})
+ endforeach(source)
+--- origsrc/caterva-0.5.0/tests/CMakeLists.txt	2021-07-13 19:42:01.000000000 +0900
++++ src/caterva-0.5.0/tests/CMakeLists.txt	2021-09-20 17:12:46.057221700 +0900
+@@ -13,7 +13,7 @@ foreach(source ${SOURCES})
+     get_filename_component(target_name ${source} NAME_WE)
+     set(target caterva_${target_name})
+     add_executable(${target} ${target_name}.c)
+-    target_link_libraries(${target} caterva_static ${LIBS})
++    target_link_libraries(${target} caterva_shared ${LIBS})
+     add_test(NAME ${target} COMMAND ${target})
+     set_tests_properties(${target} PROPERTIES LABELS "caterva")
+ endforeach(source)
