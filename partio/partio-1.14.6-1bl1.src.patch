@@ -1,0 +1,81 @@
+--- origsrc/partio-1.14.6/CMakeLists.txt	2021-06-08 01:43:45.000000000 +0900
++++ src/partio-1.14.6/CMakeLists.txt	2021-09-22 21:43:55.015623700 +0900
+@@ -58,7 +58,7 @@ endif()
+ 
+ set(CMAKE_CXX_STANDARD "${WDAS_CXX_STANDARD}")
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-set(CMAKE_CXX_EXTENSIONS OFF)
++option(CMAKE_CXX_EXTENSIONS OFF)
+ set(CMAKE_FIND_PACKAGE_RESOLVE_SYMLINKS ON)
+ set(CMAKE_INSTALL_MESSAGE LAZY)
+ set(CMAKE_SKIP_RPATH ON)
+@@ -138,3 +138,10 @@ add_subdirectory(src/tools)
+ add_subdirectory(src/py)
+ add_subdirectory(src/tests)
+ add_subdirectory(src/doc)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/partio.pc.in ${CMAKE_BINARY_DIR}/partio.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/partio.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/partio-1.14.6/partio.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/partio-1.14.6/partio.pc.in	2021-09-22 21:43:54.934627900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: partio
++Description: Library for particle IO and manipulation
++Version: @VERSION@
++Libs: -L${libdir} -lpartio
++Cflags: -I${includedir}
+--- origsrc/partio-1.14.6/src/doc/CMakeLists.txt	2021-06-08 01:43:45.000000000 +0900
++++ src/partio-1.14.6/src/doc/CMakeLists.txt	2021-09-22 21:41:32.420620000 +0900
+@@ -33,7 +33,7 @@
+ 
+ find_package(Doxygen)
+ 
+-if (DOXYGEN_FOUND)
++if (BUILD_DOC AND DOXYGEN_FOUND)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+   file(GLOB DOCUMENTED_FILES ${PROJECT_SOURCE_DIR}/src/lib/*.h)
+ 
+--- origsrc/partio-1.14.6/src/lib/CMakeLists.txt	2021-06-08 01:43:45.000000000 +0900
++++ src/partio-1.14.6/src/lib/CMakeLists.txt	2021-09-22 21:29:24.182936300 +0900
+@@ -55,7 +55,7 @@ if (ZLIB_FOUND)
+     target_link_libraries(partio PUBLIC ZLIB::ZLIB)
+ endif()
+ 
+-install(TARGETS partio DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS partio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ file(GLOB public_includes "*.h")
+ install(FILES ${public_includes} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+--- origsrc/partio-1.14.6/src/tools/CMakeLists.txt	2021-06-08 01:43:45.000000000 +0900
++++ src/partio-1.14.6/src/tools/CMakeLists.txt	2021-09-22 21:27:00.647737300 +0900
+@@ -40,13 +40,15 @@ if (GLUT_FOUND AND OPENGL_FOUND)
+         partview
+         PRIVATE
+         ${PARTIO_LIBRARIES}
+-        GLUT::GLUT
+-        OpenGL::GLU
++        ${GLUT_LIBRARIES}
++        ${OPENGL_LIBRARIES}
+     )
+-    if(PARTIO_USE_GLVND)
+-        target_link_libraries(partview PRIVATE OpenGL::OpenGL)
+-    else()
+-        target_link_libraries(partview PRIVATE OpenGL::GL)
++    if (NOT CYGWIN)
++        if(PARTIO_USE_GLVND)
++            target_link_libraries(partview PRIVATE OpenGL::OpenGL)
++        else()
++            target_link_libraries(partview PRIVATE OpenGL::GL)
++        endif()
+     endif()
+     
+     install(TARGETS partview DESTINATION ${CMAKE_INSTALL_BINDIR})
