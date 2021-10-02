@@ -1,0 +1,46 @@
+--- origsrc/hsluv-c-1.0.0/CMakeLists.txt	2020-05-02 18:19:05.000000000 +0900
++++ src/hsluv-c-1.0.0/CMakeLists.txt	2021-10-02 14:45:25.008315000 +0900
+@@ -35,3 +35,12 @@ if(HSLUV_C_TESTS)
+     enable_testing()
+     add_subdirectory(tests)
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/hsluv-c.pc.in ${CMAKE_BINARY_DIR}/hsluv-c.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/hsluv-c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/hsluv-c-1.0.0/hsluv-c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/hsluv-c-1.0.0/hsluv-c.pc.in	2021-10-02 14:44:24.429609400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: hsluv-c
++Description: C99 implementation of HSLuv
++Version: @VERSION@
++Libs: -L${libdir} -lhsluv-c
++Cflags: -I${includedir}
+--- origsrc/hsluv-c-1.0.0/src/CMakeLists.txt	2020-05-02 18:19:05.000000000 +0900
++++ src/hsluv-c-1.0.0/src/CMakeLists.txt	2021-10-02 14:37:43.879467000 +0900
+@@ -1,7 +1,14 @@
+ 
+-add_library(hsluv-c STATIC hsluv.h hsluv.c)
++add_library(hsluv-c hsluv.h hsluv.c)
+ 
+ # In Windows SDK, math functions are part of C runtime lib.
+ if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+     target_link_libraries(hsluv-c m)
+ endif()
++
++if (CYGWIN)
++    set_target_properties(hsluv-c PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
++install(TARGETS hsluv-c RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES hsluv.h DESTINATION include)
