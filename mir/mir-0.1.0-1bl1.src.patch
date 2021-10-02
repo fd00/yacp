@@ -1,0 +1,83 @@
+--- origsrc/mir-0.1.0/CMakeLists.txt	2021-08-12 04:58:19.000000000 +0900
++++ src/mir-0.1.0/CMakeLists.txt	2021-10-02 14:00:18.050476200 +0900
+@@ -40,29 +40,38 @@ option(BUILD_TESTING "" ON)
+ include(CTest)
+ 
+ # ------------------ LIBMIR -----------------------
+-add_library(mir STATIC mir.c mir-gen.c c2mir/c2mir.c mir.h mir-gen.h c2mir/c2mir.h)
++add_library(mir mir.c mir-gen.c c2mir/c2mir.c mir.h mir-gen.h c2mir/c2mir.h)
+ target_include_directories(mir PRIVATE ${PROJECT_SOURCE_DIR})
+ if(Threads_FOUND)
+   target_compile_definitions(mir PUBLIC "MIR_PARALLEL_GEN")
+ endif()
++if (CYGWIN)
++  set_target_properties(mir PROPERTIES SOVERSION ${SOVERSION})
++  install(TARGETS mir RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++  install(FILES mir.h mir-gen.h c2mir/c2mir.h DESTINATION include)
++endif()
+ 
+ # ------------------ C2M --------------------------
+ add_executable (c2m "c2mir/c2mir-driver.c")
+ target_include_directories(c2m PRIVATE ${PROJECT_SOURCE_DIR})
+ target_link_libraries(c2m mir ${CMAKE_DL_LIBS} )
++install(TARGETS c2m RUNTIME DESTINATION bin)
+ 
+ # ------------------ MIR utils --------------------
+ add_executable (m2b "mir-utils/m2b.c")
+ target_include_directories(m2b PRIVATE ${PROJECT_SOURCE_DIR})
+ target_link_libraries(m2b mir)
++install(TARGETS m2b RUNTIME DESTINATION bin)
+ 
+ add_executable (b2m "mir-utils/b2m.c")
+ target_include_directories(b2m PRIVATE ${PROJECT_SOURCE_DIR})
+ target_link_libraries(b2m mir)
++install(TARGETS b2m RUNTIME DESTINATION bin)
+ 
+ add_executable (b2ctab "mir-utils/b2ctab.c")
+ target_include_directories(b2ctab PRIVATE ${PROJECT_SOURCE_DIR})
+ target_link_libraries(b2ctab mir)
++install(TARGETS b2ctab RUNTIME DESTINATION bin)
+ 
+ # ------------------ ADT tests --------------------------
+ add_executable (varr_test "adt-tests/mir-varr-test.c")
+@@ -219,3 +228,11 @@ add_test(mir2c-test mir2c_test)
+ 
+ add_test(c2mir-simple-test c2m -v ${PROJECT_SOURCE_DIR}/sieve.c -ei)
+ 
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/mir.pc.in ${CMAKE_BINARY_DIR}/mir.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/mir.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/mir-0.1.0/c2mir/x86_64/mirc_x86_64_linux.h	2021-08-12 04:58:19.000000000 +0900
++++ src/mir-0.1.0/c2mir/x86_64/mirc_x86_64_linux.h	2021-10-02 13:34:55.801755500 +0900
+@@ -114,8 +114,12 @@ static char x86_64_mirc[]
+     "  void *overflow_arg_area;\n"
+     "  void *reg_save_area;\n"
+     "} __darwin_va_list[1];\n"
++#elif defined(__CYGWIN__)
++    "#define __CYGWIN__ 1\n"
++    "#define __unix 1\n"
++    "#define __unix__ 1\n"
+ #else
+-#error Uknown OS
++#error Unknown OS
+ #endif
+     "\n"
+     "void *alloca (unsigned long);\n";
+--- origsrc/mir-0.1.0/mir.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mir-0.1.0/mir.pc.in	2021-10-02 14:00:33.748947700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mir
++Description: Medium Internal Representation
++Version: @VERSION@
++Libs: -L${libdir} -lmir
++Cflags: -I${includedir}
