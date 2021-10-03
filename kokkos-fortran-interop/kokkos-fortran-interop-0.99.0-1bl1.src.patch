@@ -1,0 +1,86 @@
+--- origsrc/kokkos-fortran-interop-0.99.0/CMakeLists.txt	2021-09-03 07:09:31.000000000 +0900
++++ src/kokkos-fortran-interop-0.99.0/CMakeLists.txt	2021-10-03 16:25:12.227880400 +0900
+@@ -1,9 +1,8 @@
+ cmake_minimum_required(VERSION 3.19)
+ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+-project(flcl VERSION 0.5.0 LANGUAGES Fortran C CXX)
++project(flcl VERSION 0.99.0 LANGUAGES Fortran C CXX)
+ 
+ set(default_build_type "RelWithDebInfo")
+-set(BUILD_SHARED_LIBS OFF)
+ 
+ include(CMakeDetermineFortranCompiler)
+ include(CMakeDetermineCCompiler)
+@@ -19,7 +18,9 @@ include(GNUInstallDirs)
+ 
+ include(CTest)
+ 
+-add_link_options(LINKER:--disable-new-dtags)
++if (NOT CYGWIN)
++    add_link_options(LINKER:--disable-new-dtags)
++endif()
+ 
+ #flcl-fortran library
+ add_library(flcl-fortran
+@@ -75,20 +76,24 @@ target_link_libraries(flcl-cxx
+ )
+ 
+ add_library(flcl
+-    STATIC
+         $<TARGET_OBJECTS:flcl-fortran>
+         $<TARGET_OBJECTS:flcl-cxx>
+ )
+ set_target_properties(flcl PROPERTIES PUBLIC_HEADER "${flcl-cxx-public-headers}")
+ target_include_directories(flcl
++    PUBLIC
++        /usr/include/kokkos
+     INTERFACE
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mod>
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+ )
+ target_link_libraries(flcl
+-    INTERFACE
+-    Kokkos::kokkos
++    PUBLIC
++        Kokkos::kokkos
+ )
++if (CYGWIN)
++    set_target_properties(flcl PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ # add parallelism library link flags in kokkos > 3.1
+ if (Kokkos_VERSION VERSION_GREATER 3.1)
+@@ -137,6 +142,7 @@ install(
+ # install flcl library and headers
+ install(
+     TARGETS flcl
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+ )
+@@ -152,3 +158,12 @@ endif()
+ if(BUILD_EXAMPLES)
+   add_subdirectory(examples)
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/flcl.pc.in ${CMAKE_BINARY_DIR}/flcl.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/flcl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/kokkos-fortran-interop-0.99.0/flcl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/kokkos-fortran-interop-0.99.0/flcl.pc.in	2021-10-03 16:24:55.784529200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: flcl
++Description: Fortran Language Compatibility Layer
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lflcl
++Cflags: -I${includedir}
