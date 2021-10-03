@@ -1,0 +1,100 @@
+--- origsrc/libfyaml-0.7.1/configure.ac	2021-09-22 03:01:44.000000000 +0900
++++ src/libfyaml-0.7.1/configure.ac	2021-10-03 18:51:52.072411600 +0900
+@@ -142,6 +142,8 @@ if test "x$HAVE_CHECK" == "x1" ; then
+ 	CFLAGS="$save_CFLAGS"
+ fi
+ 
++PKG_CHECK_MODULES([XXHASH], [libxxhash])
++
+ AC_SUBST(HAVE_COMPATIBLE_CHECK)
+ AC_DEFINE_UNQUOTED([HAVE_COMPATIBLE_CHECK], [$HAVE_COMPATIBLE_CHECK], [Define to 1 if you have a compatible version of check available])
+ AM_CONDITIONAL([HAVE_COMPATIBLE_CHECK], [ test x$HAVE_COMPATIBLE_CHECK = x1 ])
+--- origsrc/libfyaml-0.7.1/src/Makefile.am	2021-09-22 03:01:44.000000000 +0900
++++ src/libfyaml-0.7.1/src/Makefile.am	2021-10-03 21:38:25.836494800 +0900
+@@ -21,7 +21,6 @@ libfyaml_@MAJOR@_@MINOR@_la_SOURCES = \
+ 	lib/fy-emit.c lib/fy-emit.h lib/fy-emit-accum.h \
+ 	lib/fy-utils.c lib/fy-utils.h \
+ 	lib/fy-event.h lib/fy-event.c \
+-	xxhash/xxhash.c xxhash/xxhash.h \
+ 	lib/fy-accel.c lib/fy-accel.h \
+ 	lib/fy-walk.c lib/fy-walk.h \
+ 	lib/fy-path.c lib/fy-path.h \
+@@ -29,11 +28,12 @@ libfyaml_@MAJOR@_@MINOR@_la_SOURCES = \
+ 
+ libfyaml_@MAJOR@_@MINOR@_la_CPPFLAGS = $(AM_CPPFLAGS) \
+ 				       -I$(top_srcdir)/src/lib \
+-				       -I$(top_srcdir)/src/xxhash
++				       $(XXHASH_CFLAGS)
+ libfyaml_@MAJOR@_@MINOR@_la_CFLAGS = $(AM_CFLAGS)
+ libfyaml_@MAJOR@_@MINOR@_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) \
+ 		      $(VERSIONING_LDFLAGS) \
+-		      -version-info 0:0:0
++		      -version-info 0:0:0 -no-undefined
++libfyaml_@MAJOR@_@MINOR@_la_LIBADD = $(XXHASH_LIBS)
+ 
+ bin_PROGRAMS =
+ noinst_PROGRAMS =
+@@ -49,7 +49,7 @@ libfyaml_parser_SOURCES = \
+ libfyaml_parser_CPPFLAGS = $(AM_CPPFLAGS) \
+ 			   -I$(top_srcdir)/src/valgrind \
+ 			   -I$(top_srcdir)/src/lib \
+-			   -I$(top_srcdir)/src/xxhash
++			   $(XXHASH_CFLAGS)
+ libfyaml_parser_LDADD = $(AM_LDADD) $(LIBYAML_LIBS) libfyaml-@MAJOR@.@MINOR@.la
+ libfyaml_parser_CFLAGS = $(AM_CFLAGS) $(LIBYAML_CFLAGS)
+ 
+--- origsrc/libfyaml-0.7.1/src/internal/libfyaml-parser.c	2021-09-22 03:01:44.000000000 +0900
++++ src/libfyaml-0.7.1/src/internal/libfyaml-parser.c	2021-10-03 18:51:14.815832400 +0900
+@@ -30,7 +30,7 @@
+ 
+ #include "fy-valgrind.h"
+ 
+-#include "xxhash.h"
++#include <xxhash.h>
+ 
+ #define QUIET_DEFAULT			false
+ #define INCLUDE_DEFAULT			""
+--- origsrc/libfyaml-0.7.1/src/lib/fy-accel.c	2021-09-22 03:01:44.000000000 +0900
++++ src/libfyaml-0.7.1/src/lib/fy-accel.c	2021-10-03 18:50:47.836016500 +0900
+@@ -19,7 +19,7 @@
+ 
+ #include "fy-accel.h"
+ 
+-#include "xxhash.h"
++#include <xxhash.h>
+ 
+ /* powers of two and the closest primes before
+  *
+--- origsrc/libfyaml-0.7.1/src/lib/fy-doc.c	2021-09-22 03:01:44.000000000 +0900
++++ src/libfyaml-0.7.1/src/lib/fy-doc.c	2021-10-03 18:50:12.064144400 +0900
+@@ -24,7 +24,7 @@
+ 
+ #include "fy-utils.h"
+ 
+-#include "xxhash.h"
++#include <xxhash.h>
+ 
+ static const struct fy_hash_desc hd_anchor;
+ static const struct fy_hash_desc hd_nanchor;
+@@ -6244,16 +6244,17 @@ static void update_xx32(void *state, con
+ 
+ int fy_node_hash_uint(struct fy_node *fyn, unsigned int *hashp)
+ {
+-	XXH32_state_t state;
++	XXH32_state_t* state = XXH32_createState();
+ 	int rc;
+ 
+-	XXH32_reset(&state, 2654435761U);
++	XXH32_reset(state, 2654435761U);
+ 
+-	rc = fy_node_hash_internal(fyn, update_xx32, &state);
++	rc = fy_node_hash_internal(fyn, update_xx32, state);
+ 	if (rc)
+ 		return rc;
+ 
+-	*hashp = XXH32_digest(&state);
++	*hashp = XXH32_digest(state);
++	XXH32_freeState(state);
+ 	return 0;
+ }
+ 
