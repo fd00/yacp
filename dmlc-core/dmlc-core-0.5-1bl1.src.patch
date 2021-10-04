@@ -1,0 +1,57 @@
+--- origsrc/dmlc-core-0.5/CMakeLists.txt	2021-04-14 23:06:33.000000000 +0900
++++ src/dmlc-core-0.5/CMakeLists.txt	2021-10-04 16:20:16.511029900 +0900
+@@ -1,6 +1,6 @@
+ cmake_minimum_required(VERSION 3.2)
+ 
+-project(dmlc VERSION 0.3 LANGUAGES C CXX)
++project(dmlc VERSION 0.5 LANGUAGES C CXX)
+ 
+ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/build/private/local_config.cmake)
+   include(${CMAKE_CURRENT_SOURCE_DIR}/build/private/local_config.cmake)
+@@ -208,6 +208,9 @@ else()
+   endif()
+ endif()
+ 
++if (CYGWIN)
++  set_target_properties(dmlc PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ include(GNUInstallDirs)
+ # ---[ Install Includes
+@@ -219,8 +222,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR
+ # ---[ Install the archive static lib and header files
+ install(TARGETS dmlc
+   EXPORT DMLCTargets
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(EXPORT DMLCTargets
+   FILE DMLCTargets.cmake
+   NAMESPACE dmlc::
+@@ -261,3 +264,12 @@ if(GOOGLE_TEST)
+   include(CTest)
+   add_subdirectory(test/unittest)
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/dmlc-core.pc.in ${CMAKE_BINARY_DIR}/dmlc-core.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/dmlc-core.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/dmlc-core-0.5/dmlc-core.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/dmlc-core-0.5/dmlc-core.pc.in	2021-10-04 16:20:22.606023900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: dmlc-core
++Description: Backbone library to support all DMLC projects
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ldmlc
++Cflags: -I${includedir}

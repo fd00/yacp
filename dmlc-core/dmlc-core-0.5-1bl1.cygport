@@ -1,0 +1,47 @@
+HOMEPAGE="https://github.com/dmlc/${PN}"
+SRC_URI="https://github.com/dmlc/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Backbone library to support all DMLC projects"
+DESCRIPTION="DMLC-Core is the backbone library to support all DMLC projects, offers the
+bricks to build efficient and scalable distributed machine learning libraries."
+
+BUILD_REQUIRES="libcurl-devel libssl-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DGOOGLE_TEST:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+	-DUSE_S3:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}:${PATH} ninja_test
+}
+
+DIFF_EXCLUDES="
+	build_config.h
+"
+
+PKG_NAMES="
+	dmlc-core
+	libdmlc0
+	libdmlc-devel
+"
+dmlc_core_CONTENTS="
+	usr/share
+"
+libdmlc0_CONTENTS="
+	usr/bin
+"
+libdmlc_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+dmlc_core_SUMMARY="${SUMMARY} (licensing & readmes)"
+libdmlc0_SUMMARY="${SUMMARY} (runtime)"
+libdmlc_devel_SUMMARY="${SUMMARY} (development)"
