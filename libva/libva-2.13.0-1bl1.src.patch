@@ -1,5 +1,5 @@
---- origsrc/libva-2.12.0/configure.ac	2021-06-18 06:41:13.000000000 +0900
-+++ src/libva-2.12.0/configure.ac	2021-09-07 18:18:43.298641000 +0900
+--- origsrc/libva-2.13.0/configure.ac	2021-09-17 06:57:25.000000000 +0900
++++ src/libva-2.13.0/configure.ac	2021-10-04 12:41:01.538679400 +0900
 @@ -120,7 +120,7 @@ LIBVA_LT_CURRENT=libva_lt_current
  LIBVA_LT_REV=libva_lt_revision
  LIBVA_LT_AGE=libva_lt_age
@@ -9,41 +9,42 @@
  AC_SUBST(LIBVA_LT_VERSION)
  AC_SUBST(LIBVA_LT_LDFLAGS)
  
---- origsrc/libva-2.12.0/va/sysdeps.h	2021-06-18 06:41:13.000000000 +0900
-+++ src/libva-2.12.0/va/sysdeps.h	2021-09-07 18:18:43.317624900 +0900
+--- origsrc/libva-2.13.0/va/sysdeps.h	2021-09-17 06:57:25.000000000 +0900
++++ src/libva-2.13.0/va/sysdeps.h	2021-10-04 12:48:42.604665100 +0900
 @@ -52,8 +52,12 @@
  # define DLL_HIDDEN __attribute__((visibility("hidden")))
  # define DLL_EXPORT __attribute__((visibility("default")))
  #else
-+#if !defined(DLL_HIDDEN)
++# if !defined(DLL_HIDDEN)
  # define DLL_HIDDEN
-+#endif
-+#if !defined(DLL_EXPORT)
++# endif
++# if !defined(DLL_EXPORT)
  # define DLL_EXPORT
++# endif
  #endif
-+#endif
  
  #endif /* SYSDEPS_H */
---- origsrc/libva-2.12.0/va/va.c	2021-06-18 06:41:13.000000000 +0900
-+++ src/libva-2.12.0/va/va.c	2021-09-07 18:18:43.327637400 +0900
+--- origsrc/libva-2.13.0/va/va.c	2021-09-17 06:57:25.000000000 +0900
++++ src/libva-2.13.0/va/va.c	2021-10-04 12:42:06.635450900 +0900
 @@ -50,7 +50,11 @@
  #endif
  #endif
  
+-#define DRIVER_EXTENSION    "_drv_video.so"
 +#if defined(__CYGWIN__)
 +#define DRIVER_EXTENSION	"_drv_video.dll"
 +#else
- #define DRIVER_EXTENSION	"_drv_video.so"
++#define DRIVER_EXTENSION	"_drv_video.so"
 +#endif
  
- #define ASSERT		assert
+ #define ASSERT      assert
  #define CHECK_VTABLE(s, ctx, func) if (!va_checkVtable(dpy, ctx->vtable->va##func, #func)) s = VA_STATUS_ERROR_UNIMPLEMENTED;
---- origsrc/libva-2.12.0/va/va_compat.c	2021-06-18 06:41:13.000000000 +0900
-+++ src/libva-2.12.0/va/va_compat.c	2021-09-07 18:18:43.331637500 +0900
+--- origsrc/libva-2.13.0/va/va_compat.c	2021-09-17 06:57:25.000000000 +0900
++++ src/libva-2.13.0/va/va_compat.c	2021-10-04 12:42:36.877248300 +0900
 @@ -40,4 +40,6 @@ vaCreateSurfaces_0_32_0(
      return vaCreateSurfaces(dpy, format, width, height, surfaces, num_surfaces,
                              NULL, 0);
  }
 +#if defined(__ELF__)
- VA_CPP_HELPER_ALIAS(vaCreateSurfaces, 0,32,0);
+ VA_CPP_HELPER_ALIAS(vaCreateSurfaces, 0, 32, 0);
 +#endif
