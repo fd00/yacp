@@ -1,0 +1,56 @@
+--- origsrc/libphonenumber-8.12.34/cpp/CMakeLists.txt	2021-10-06 16:26:25.000000000 +0900
++++ src/libphonenumber-8.12.34/cpp/CMakeLists.txt	2021-10-09 08:55:50.210411500 +0900
+@@ -351,7 +351,7 @@ add_metadata_gen_target (
+   ${TEST_METADATA_TARGET}
+   "${RESOURCES_DIR}/PhoneNumberMetadataForTesting.xml"
+   "test_metadata"
+-  "metadata"
++  "test_metadata"
+ )
+ list (APPEND TESTING_LIBRARY_SOURCES "src/phonenumbers/test_metadata.cc")
+ 
+@@ -487,8 +487,10 @@ if (${BUILD_GEOCODER} STREQUAL "ON")
+   list (APPEND GEOCODER_DEPS ${COMMON_DEPS})
+   # Note that the subset of base/ on which the geocoder relies is implemented
+   # on top of Boost header-only libraries (e.g. scoped_ptr.hpp).
+-  target_link_libraries (geocoding ${LIBRARY_DEPS})
+-  target_link_libraries (geocoding-shared ${LIBRARY_DEPS})
++  if (${BUILD_STATIC_LIB} STREQUAL "ON")
++    target_link_libraries (geocoding ${LIBRARY_DEPS})
++  endif()
++  target_link_libraries (geocoding-shared ${LIBRARY_DEPS} phonenumber-shared)
+ endif ()
+ 
+ # Build a specific library for testing purposes.
+@@ -649,13 +651,15 @@ if (${BUILD_STATIC_LIB} STREQUAL "ON")
+ endif ()
+ 
+ if (BUILD_SHARED_LIB)
+-  install (TARGETS phonenumber-shared LIBRARY DESTINATION ${LIBDIR} ARCHIVE
++  install (TARGETS phonenumber-shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE
+            DESTINATION ${LIBDIR})
+ endif ()
+ 
+ if (${BUILD_GEOCODER} STREQUAL "ON")
+-  install (TARGETS geocoding LIBRARY DESTINATION ${LIBDIR} ARCHIVE DESTINATION ${LIBDIR})
+-  install (TARGETS geocoding-shared LIBRARY DESTINATION ${LIBDIR} ARCHIVE
++  if (${BUILD_STATIC_LIB} STREQUAL "ON")
++    install (TARGETS geocoding LIBRARY DESTINATION ${LIBDIR} ARCHIVE DESTINATION ${LIBDIR})
++  endif()
++  install (TARGETS geocoding-shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE
+            DESTINATION ${LIBDIR})
+ endif ()
+ 
+@@ -666,7 +670,11 @@ if (${BUILD_GEOCODER} STREQUAL "ON")
+     geocoding_test_program
+     "test/phonenumbers/geocoding/geocoding_test_program.cc"
+   )
+-  target_link_libraries (geocoding_test_program geocoding phonenumber)
++  if (${BUILD_STATIC_LIB} STREQUAL "ON")
++    target_link_libraries (geocoding_test_program geocoding phonenumber)
++  else()
++    target_link_libraries (geocoding_test_program geocoding-shared phonenumber-shared)
++  endif()
+ endif ()
+ 
+ # Build an RPM

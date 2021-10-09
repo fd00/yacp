@@ -1,0 +1,59 @@
+HOMEPAGE="https://github.com/google/${PN}"
+SRC_URI="https://github.com/google/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Google's common Java, C++ and JavaScript library for parsing, formatting, and validating international phone numbers"
+DESCRIPTION="Google's common Java, C++ and JavaScript library for parsing, formatting,
+and validating international phone numbers. The Java version is optimized for
+running on smartphones, and is used by the Android framework since 4.0 (Ice
+Cream Sandwich)."
+
+BUILD_REQUIRES="libboost-devel libicu-devel libprotobuf-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_STATIC_LIB:STRING=OFF
+	-DREGENERATE_METADATA:STRING=OFF
+"
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	CYGCMAKE_SOURCE=${S}/cpp
+	cygcmake
+	cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	./${PN}_test.exe
+	./geocoding_test_program.exe
+}
+
+DIFF_EXCLUDES="
+	geocoding_data.cc
+	geocoding_test_data.cc
+	*.pb.*
+"
+
+PKG_NAMES="
+	libphonenumber
+	libphonenumber8
+	libphonenumber-devel
+"
+libphonenumber_CONTENTS="
+	usr/share
+"
+libphonenumber8_CONTENTS="
+	usr/bin/*.dll
+"
+libphonenumber_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+libphonenumber_SUMMARY="${SUMMARY} (licensing & readmes)"
+libphonenumber8_SUMMARY="${SUMMARY} (runtime)"
+libphonenumber_devel_SUMMARY="${SUMMARY} (development)"
