@@ -1,0 +1,122 @@
+--- origsrc/crc32c-1.1.2/CMakeLists.txt	2021-10-06 04:47:30.000000000 +0900
++++ src/crc32c-1.1.2/CMakeLists.txt	2021-10-09 21:36:03.323430500 +0900
+@@ -3,7 +3,7 @@
+ # found in the LICENSE file. See the AUTHORS file for names of contributors.
+ 
+ cmake_minimum_required(VERSION 3.1)
+-project(Crc32c VERSION 1.1.0 LANGUAGES C CXX)
++project(Crc32c VERSION 1.1.2 LANGUAGES C CXX)
+ 
+ # C standard can be overridden when this is used as a sub-project.
+ if(NOT CMAKE_C_STANDARD)
+@@ -187,25 +187,29 @@ if(CRC32C_USE_GLOG)
+   # CPU cycles on the CI.
+   set(BUILD_TESTING_SAVED "${BUILD_TESTING}")
+   set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+-  add_subdirectory("third_party/glog" EXCLUDE_FROM_ALL)
++  if (EXISTS "third_party/glog/.git")
++    add_subdirectory("third_party/glog" EXCLUDE_FROM_ALL)
++  endif()
+   set(BUILD_TESTING "${BUILD_TESTING_SAVED}" CACHE BOOL "" FORCE)
+ 
+-  # glog triggers deprecation warnings on OSX.
+-  # https://github.com/google/glog/issues/185
+-  if(CRC32C_HAVE_NO_DEPRECATED)
+-    set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
+-  endif(CRC32C_HAVE_NO_DEPRECATED)
+-
+-  # glog triggers sign comparison warnings on gcc.
+-  if(CRC32C_HAVE_NO_SIGN_COMPARE)
+-    set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
+-  endif(CRC32C_HAVE_NO_SIGN_COMPARE)
+-
+-  # glog triggers unused parameter warnings on clang.
+-  if(CRC32C_HAVE_NO_UNUSED_PARAMETER)
+-    set_property(TARGET glog
+-                 APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
+-  endif(CRC32C_HAVE_NO_UNUSED_PARAMETER)
++  if (EXISTS "third_party/glog/.git")
++    # glog triggers deprecation warnings on OSX.
++    # https://github.com/google/glog/issues/185
++    if(CRC32C_HAVE_NO_DEPRECATED)
++      set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated)
++    endif(CRC32C_HAVE_NO_DEPRECATED)
++
++    # glog triggers sign comparison warnings on gcc.
++    if(CRC32C_HAVE_NO_SIGN_COMPARE)
++      set_property(TARGET glog APPEND PROPERTY COMPILE_OPTIONS -Wno-sign-compare)
++    endif(CRC32C_HAVE_NO_SIGN_COMPARE)
++
++    # glog triggers unused parameter warnings on clang.
++    if(CRC32C_HAVE_NO_UNUSED_PARAMETER)
++      set_property(TARGET glog
++                  APPEND PROPERTY COMPILE_OPTIONS -Wno-unused-parameter)
++    endif(CRC32C_HAVE_NO_UNUSED_PARAMETER)
++  endif()
+ 
+   set(CRC32C_TESTS_BUILT_WITH_GLOG 1)
+ endif(CRC32C_USE_GLOG)
+@@ -314,16 +318,18 @@ if(CRC32C_BUILD_TESTS)
+   set(install_gtest OFF)
+   set(install_gmock OFF)
+ 
+-  # This project is tested using GoogleTest.
+-  add_subdirectory("third_party/googletest")
+-
+-  # GoogleTest triggers a missing field initializers warning.
+-  if(CRC32C_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+-    set_property(TARGET gtest
+-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+-    set_property(TARGET gmock
+-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+-  endif(CRC32C_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++  if (EXISTS "third_party/googletest/.git")
++    # This project is tested using GoogleTest.
++    add_subdirectory("third_party/googletest")
++
++    # GoogleTest triggers a missing field initializers warning.
++    if(CRC32C_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++      set_property(TARGET gtest
++          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
++      set_property(TARGET gmock
++          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
++    endif(CRC32C_HAVE_NO_MISSING_FIELD_INITIALIZERS)
++  endif()
+ 
+   add_executable(crc32c_tests "")
+   target_sources(crc32c_tests
+@@ -385,7 +391,9 @@ if(CRC32C_BUILD_BENCHMARKS)
+   # This project uses Google benchmark for benchmarking.
+   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+   set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+-  add_subdirectory("third_party/benchmark")
++  if (EXISTS "third_party/benchmark/.git")
++    add_subdirectory("third_party/benchmark")
++  endif()
+   target_link_libraries(crc32c_bench benchmark)
+ 
+   if(CRC32C_USE_GLOG)
+@@ -433,3 +441,10 @@ if(CRC32C_INSTALL)
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+   )
+ endif(CRC32C_INSTALL)
++
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/crc32c.pc.in ${CMAKE_BINARY_DIR}/crc32c.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/crc32c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/crc32c-1.1.2/crc32c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/crc32c-1.1.2/crc32c.pc.in	2021-10-09 21:04:59.910055200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: crc32c
++Description: CRC32C implementation with support for CPU-specific acceleration instructions
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcrc32c
++Cflags: -I${includedir}
