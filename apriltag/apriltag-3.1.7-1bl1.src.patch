@@ -1,0 +1,57 @@
+--- origsrc/apriltag-3.1.7/CMakeLists.txt	2021-09-19 00:48:09.000000000 +0900
++++ src/apriltag-3.1.7/CMakeLists.txt	2021-10-09 15:15:23.602831600 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.1)
+-project(apriltag VERSION 3.1.0 LANGUAGES C CXX)
++project(apriltag VERSION 3.1.7 LANGUAGES C CXX)
+ 
+ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+ 
+@@ -55,7 +55,11 @@ set(generated_dir "${CMAKE_CURRENT_BINAR
+ set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+ set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
+ set(targets_export_name "${PROJECT_NAME}Targets")
+-set(config_install_dir "share/${PROJECT_NAME}/cmake")
++if (CYGWIN)
++    set(config_install_dir "lib/cmake/${PROJECT_NAME}")
++else()
++    set(config_install_dir "share/${PROJECT_NAME}/cmake")
++endif()
+ 
+ # Include module with fuction 'write_basic_package_version_file'
+ include(CMakePackageConfigHelpers)
+@@ -77,7 +81,7 @@ write_basic_package_version_file("${vers
+ 
+ # install library
+ install(TARGETS ${PROJECT_NAME} EXPORT ${targets_export_name}
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         )
+ 
+@@ -93,9 +97,7 @@ export(TARGETS apriltag
+ 
+ 
+ # install pkgconfig related files
+-FILE(READ apriltag.pc.in PKGC)
+-STRING(REGEX REPLACE "^prefix=" "prefix=${CMAKE_INSTALL_PREFIX}" PKGC_CONF "${PKGC}" )
+-FILE(WRITE ${PROJECT_BINARY_DIR}/apriltag.pc ${PKGC_CONF})
++configure_file(${PROJECT_SOURCE_DIR}/apriltag.pc.in ${PROJECT_BINARY_DIR}/apriltag.pc @ONLY)
+ install(FILES "${PROJECT_BINARY_DIR}/apriltag.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig/")
+ 
+ 
+--- origsrc/apriltag-3.1.7/apriltag.pc.in	2021-09-19 00:48:09.000000000 +0900
++++ src/apriltag-3.1.7/apriltag.pc.in	2021-10-09 15:14:13.113623400 +0900
+@@ -1,10 +1,10 @@
+-prefix=
++prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=${prefix}
+ includedir=${prefix}/include
+ libdir=${exec_prefix}/lib
+ 
+ Name: apriltag
+ Description: AprilTag detector library
+-Version: 0.10.0
++Version: @PROJECT_VERSION@
+ Cflags: -I${includedir}
+ Libs: -L${libdir} -lapriltag
