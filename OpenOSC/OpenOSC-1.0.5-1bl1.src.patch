@@ -1,0 +1,100 @@
+--- origsrc/OpenOSC-1.0.5/Makefile.am	2020-12-18 11:35:59.000000000 +0900
++++ src/OpenOSC-1.0.5/Makefile.am	2021-10-13 00:35:21.019075400 +0900
+@@ -30,3 +30,6 @@ deb:
+ 	sed -i 's/PACKAGE_VERSION/$(PACKAGE_VERSION)/g' debian/changelog ;
+ 	dpkg-buildpackage -b -uc -us
+ 	@echo "Done creating debian package."
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/OpenOSC-1.0.5/configure.ac	2020-12-18 11:35:59.000000000 +0900
++++ src/OpenOSC-1.0.5/configure.ac	2021-10-13 00:35:15.339943100 +0900
+@@ -30,7 +30,7 @@ AC_SUBST(LT_VERSION_NUMBER)
+ #AC_SUBST(OPENOSC_CFLAGS, [-fsanitize=address])
+ AC_SUBST(OPENOSC_CFLAGS, ["-Wsign-compare -U_FORTIFY_SOURCE -fno-stack-protector"])
+ AC_CONFIG_HEADERS([config.h])
+-AC_CONFIG_FILES([
++AC_CONFIG_FILES([openosc.pc 
+  Makefile
+  src/Makefile
+  test/Makefile
+--- origsrc/OpenOSC-1.0.5/openosc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/OpenOSC-1.0.5/openosc.pc.in	2021-10-13 00:35:51.928083600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: OpenOSC
++Description: Library to detect buffer overflows in C/C++ code
++Version: @VERSION@
++Libs: -L${libdir} -lopenosc
++Cflags: -I${includedir}
+--- origsrc/OpenOSC-1.0.5/src/Makefile.am	2020-12-18 11:35:59.000000000 +0900
++++ src/OpenOSC-1.0.5/src/Makefile.am	2021-10-13 00:17:17.033597900 +0900
+@@ -5,7 +5,7 @@ else
+ libopenosc_la_SOURCES = openosc_map.c openosc_support.c openosc_package_info.c openosc_support_priv.h openosc_common.h openosc_fortify_map.c
+ endif
+ libopenosc_la_CFLAGS = $(OPENOSC_CFLAGS)
+-libopenosc_la_LDFLAGS = -version-info $(LT_VERSION_NUMBER) --allow-shlib-undefined
++libopenosc_la_LDFLAGS = -no-undefined -version-info $(LT_VERSION_NUMBER) --allow-shlib-undefined
+ include_HEADERS = $(top_srcdir)/include/*.h
+ 
+ install-exec-hook:
+--- origsrc/OpenOSC-1.0.5/src/openosc_fortify_map.c	2020-12-18 11:35:59.000000000 +0900
++++ src/OpenOSC-1.0.5/src/openosc_fortify_map.c	2021-10-13 00:16:52.166422100 +0900
+@@ -78,10 +78,12 @@ typedef struct
+ static_assert( sizeof(struct pollfd) == (sizeof(int) + sizeof(short) + sizeof(short)),
+                "poll() overflow detection relies on struct pollfd size being equal to "
+                "int+short+short, please check struct pollfd definition of your system." );
++#if !defined(__CYGWIN__)
+ static_assert( sizeof(_openosc__sigset_t) == sizeof(__sigset_t),
+                "OpenOSC must provide the exact sigset_t definition as your system.");
+ static_assert( sizeof(_openosc__mbstate_t) == sizeof(__mbstate_t),
+                "OpenOSC must provide the exact mbstate_t definition as your system.");
++#endif
+ #else
+ 
+ /* The below is copied from http://www.pixelbeat.org/programming/gcc/static_assert.html */
+@@ -600,8 +602,9 @@ __openosc_mbstowcs_to_buf (size_t dest_l
+ 
+ 
+ /* Mapping for mempcpy */
+-
++#if !defined(__CYGWIN__)
+ extern void *mempcpy(void *dest, const void *src, size_t n);
++#endif
+ 
+ void *
+ __openosc_mempcpy_to_buf (size_t dest_len, void *dest, const void *src, size_t n)
+--- origsrc/OpenOSC-1.0.5/src/openosc_support.c	2020-12-18 11:35:59.000000000 +0900
++++ src/OpenOSC-1.0.5/src/openosc_support.c	2021-10-13 00:10:55.374263000 +0900
+@@ -17,7 +17,9 @@
+ #include <stdio.h>
+ #include <stdarg.h>
+ #include <string.h>
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
++#endif
+ #include <stdlib.h>
+ #include <dlfcn.h>
+ #include <unistd.h>
+@@ -221,6 +223,9 @@ static int openosc_get_backtrace (char *
+     if (!backtrace_str)
+ 	return FALSE;
+ 
++#if defined(__CYGWIN__)
++    return FALSE;
++#else
+     /* Allocate buffer to hold the backtrace string */
+     *backtrace_str = malloc(OSC_BT_STR_MAX);
+     if (NULL == *backtrace_str)
+@@ -251,6 +256,7 @@ static int openosc_get_backtrace (char *
+     }
+ 
+     return status;
++#endif
+ }
+ 
+ /*
