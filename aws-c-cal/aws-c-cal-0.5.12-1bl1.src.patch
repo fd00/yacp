@@ -1,0 +1,131 @@
+--- origsrc/aws-c-cal-0.5.12/CMakeLists.txt	2021-09-08 02:35:32.000000000 +0900
++++ src/aws-c-cal-0.5.12/CMakeLists.txt	2021-10-12 15:05:41.841454000 +0900
+@@ -32,6 +32,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
+ list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
+ 
++if (CYGWIN)
++    list(APPEND CMAKE_MODULE_PATH "/usr/lib/cmake/aws-c-common")
++endif()
++
+ include(AwsCFlags)
+ include(AwsCheckHeaders)
+ include(AwsSharedLibSetup)
+@@ -133,6 +137,9 @@ endif()
+ 
+ # Our ABI is not yet stable
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ target_include_directories(${PROJECT_NAME} PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+@@ -157,22 +164,39 @@ else()
+    set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
+-    NAMESPACE AWS::
+-    COMPONENT Development)
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
+-    COMPONENT Development)
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
++        COMPONENT Development)
++endif()
+ 
+ list(APPEND EXPORT_MODULES
+     "cmake/modules/FindLibCrypto.cmake"
+     )
+ 
+-install(FILES ${EXPORT_MODULES}
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/modules"
+-        COMPONENT Development)
++if (CYGWIN)
++    install(FILES ${EXPORT_MODULES}
++            DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++            COMPONENT Development)
++else()
++    install(FILES ${EXPORT_MODULES}
++            DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/modules"
++            COMPONENT Development)
++endif()
+ 
+ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO_CRYPTO)
+     include(CTest)
+@@ -181,3 +205,12 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
+         add_subdirectory(tests)
+     endif()
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/aws-c-cal.pc.in ${CMAKE_BINARY_DIR}/aws-c-cal.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/aws-c-cal.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/aws-c-cal-0.5.12/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-cal-0.5.12/aws-c-cal.pc.in	2021-10-12 17:16:31.850912900 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-cal
++Description: Aws Crypto Abstraction Layer
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-cal
++Cflags: -I${includedir}
++Requires: aws-c-common libcrypto
+--- origsrc/aws-c-cal-0.5.12/cmake/aws-c-cal-config.cmake	2021-09-08 02:35:32.000000000 +0900
++++ src/aws-c-cal-0.5.12/cmake/aws-c-cal-config.cmake	2021-10-12 14:48:42.856277500 +0900
+@@ -7,9 +7,12 @@ if (NOT BYO_CRYPTO AND NOT WIN32 AND NOT
+     find_dependency(LibCrypto)
+ endif()
+ 
+-if (BUILD_SHARED_LIBS)
+-    include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++if (CYGWIN)
++    include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
+ else()
+-    include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    if (BUILD_SHARED_LIBS)
++        include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
++    else()
++        include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
++    endif()
+ endif()
+-
+--- origsrc/aws-c-cal-0.5.12/cmake/modules/FindLibCrypto.cmake	2021-09-08 02:35:32.000000000 +0900
++++ src/aws-c-cal-0.5.12/cmake/modules/FindLibCrypto.cmake	2021-10-12 14:49:04.891425700 +0900
+@@ -33,7 +33,7 @@ else()
+             ${CMAKE_INSTALL_PREFIX}/include
+         )
+     find_library(LibCrypto_SHARED_LIBRARY
+-        NAMES libcrypto.so libcrypto.dylib
++        NAMES libcrypto.dll.a libcrypto.so libcrypto.dylib
+         HINTS
+         ${CMAKE_PREFIX_PATH}/build/crypto
+         ${CMAKE_PREFIX_PATH}/build
