@@ -1,0 +1,131 @@
+--- origsrc/libjuice-0.9.2/CMakeLists.txt	2021-10-24 04:17:01.000000000 +0900
++++ src/libjuice-0.9.2/CMakeLists.txt	2021-10-29 10:18:40.167940800 +0900
+@@ -76,15 +76,21 @@ target_include_directories(juice PRIVATE
+ target_compile_definitions(juice PRIVATE $<$<CONFIG:Release>:RELEASE=1>)
+ target_link_libraries(juice PRIVATE Threads::Threads)
+ 
+-add_library(juice-static STATIC EXCLUDE_FROM_ALL ${LIBJUICE_SOURCES})
+-set_target_properties(juice-static PROPERTIES VERSION ${PROJECT_VERSION})
+-target_include_directories(juice-static PUBLIC
+-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+-    $<INSTALL_INTERFACE:include>)
+-target_include_directories(juice-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/juice)
+-target_include_directories(juice-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+-target_compile_definitions(juice-static PRIVATE $<$<CONFIG:Release>:RELEASE=1>)
+-target_link_libraries(juice-static PRIVATE Threads::Threads)
++if (CYGWIN)
++	set_target_properties(juice PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++endif()
++
++if (NOT CYGWIN)
++	add_library(juice-static STATIC EXCLUDE_FROM_ALL ${LIBJUICE_SOURCES})
++	set_target_properties(juice-static PROPERTIES VERSION ${PROJECT_VERSION})
++	target_include_directories(juice-static PUBLIC
++		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
++		$<INSTALL_INTERFACE:include>)
++	target_include_directories(juice-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/juice)
++	target_include_directories(juice-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
++	target_compile_definitions(juice-static PRIVATE $<$<CONFIG:Release>:RELEASE=1>)
++	target_link_libraries(juice-static PRIVATE Threads::Threads)
++endif()
+ 
+ if(WIN32)
+ 	target_link_libraries(juice PRIVATE
+@@ -99,29 +105,39 @@ if (USE_NETTLE)
+ 	find_package(Nettle REQUIRED)
+     target_compile_definitions(juice PRIVATE USE_NETTLE=1)
+     target_link_libraries(juice PRIVATE Nettle::Nettle)
+-    target_compile_definitions(juice-static PRIVATE USE_NETTLE=1)
+-    target_link_libraries(juice-static PRIVATE Nettle::Nettle)
++	if (NOT CYGWIN)
++		target_compile_definitions(juice-static PRIVATE USE_NETTLE=1)
++		target_link_libraries(juice-static PRIVATE Nettle::Nettle)
++	endif()
+ else()
+     target_compile_definitions(juice PRIVATE USE_NETTLE=0)
+-    target_compile_definitions(juice-static PRIVATE USE_NETTLE=0)
++	if (NOT CYGWIN)
++	    target_compile_definitions(juice-static PRIVATE USE_NETTLE=0)
++	endif()
+ endif()
+ 
+ if (NO_SERVER)
+ 	target_compile_definitions(juice PRIVATE NO_SERVER)
+-	target_compile_definitions(juice-static PRIVATE NO_SERVER)
++	if (NOT CYGWIN)
++		target_compile_definitions(juice-static PRIVATE NO_SERVER)
++	endif()
+ endif()
+ 
+ if(APPLE)
+ 	# This seems to be necessary on MacOS
+ 	target_include_directories(juice PRIVATE /usr/local/include)
+-	target_include_directories(juice-static PRIVATE /usr/local/include)
++	if (NOT CYGWIN)
++		target_include_directories(juice-static PRIVATE /usr/local/include)
++	endif()
+ endif()
+ 
+ set_target_properties(juice PROPERTIES EXPORT_NAME LibJuice)
+ add_library(LibJuice::LibJuice ALIAS juice)
+ 
+-set_target_properties(juice-static PROPERTIES EXPORT_NAME LibJuiceStatic)
+-add_library(LibJuice::LibJuiceStatic ALIAS juice-static)
++if (NOT CYGWIN)
++	set_target_properties(juice-static PROPERTIES EXPORT_NAME LibJuiceStatic)
++	add_library(LibJuice::LibJuiceStatic ALIAS juice-static)
++endif()
+ 
+ install(TARGETS juice EXPORT LibJuiceTargets
+ 	RUNTIME DESTINATION bin
+@@ -164,16 +180,22 @@ endif()
+ 
+ if(NOT MSVC)
+ 	target_compile_options(juice PRIVATE -Wall -Wextra)
+-	target_compile_options(juice-static PRIVATE -Wall -Wextra)
++	if (NOT CYGWIN)
++		target_compile_options(juice-static PRIVATE -Wall -Wextra)
++	endif()
+ endif()
+ 
+ if(WARNINGS_AS_ERRORS)
+ 	if(MSVC)
+ 		target_compile_options(juice PRIVATE /WX)
+-		target_compile_options(juice-static PRIVATE /WX)
++		if (NOT CYGWIN)
++			target_compile_options(juice-static PRIVATE /WX)
++		endif()
+ 	else()
+ 		target_compile_options(juice PRIVATE -Werror)
+-		target_compile_options(juice-static PRIVATE -Werror)
++		if (NOT CYGWIN)
++			target_compile_options(juice-static PRIVATE -Werror)
++		endif()
+ 	endif()
+ endif()
+ 
+@@ -201,3 +223,11 @@ if(NOT NO_TESTS)
+ 	target_link_libraries(juice-tests juice Threads::Threads)
+ endif()
+ 
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/libjuice.pc.in ${CMAKE_BINARY_DIR}/libjuice.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/libjuice.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/libjuice-0.9.2/libjuice.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libjuice-0.9.2/libjuice.pc.in	2021-10-29 12:16:24.612474500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libjuice
++Description: UDP Interactive Connectivity Establishment
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ljuice
++Cflags: -I${includedir}
