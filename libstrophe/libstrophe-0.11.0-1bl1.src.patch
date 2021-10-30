@@ -1,28 +1,14 @@
---- origsrc/libstrophe-0.10.1/Makefile.am	2020-12-24 23:04:21.000000000 +0900
-+++ src/libstrophe-0.10.1/Makefile.am	2021-04-24 09:43:49.640883400 +0900
-@@ -135,7 +135,6 @@ examples_register_LDADD = $(STROPHE_LIBS
+--- origsrc/libstrophe-0.11.0/Makefile.am	2021-10-29 03:49:50.000000000 +0900
++++ src/libstrophe-0.11.0/Makefile.am	2021-10-30 22:13:42.182228100 +0900
+@@ -178,39 +178,39 @@ tests_test_fuzz_SOURCES = tests/test_fuz
+ tests_test_fuzz_CFLAGS = -fsanitize=fuzzer,address  $(PARSER_CFLAGS) $(STROPHE_FLAGS) \
+ 	-I$(top_srcdir)/src
+ tests_test_fuzz_LDADD = $(STROPHE_LIBS)
+-tests_test_fuzz_LDFLAGS = -static
++tests_test_fuzz_LDFLAGS = 
+ endif
  
- ## Tests
- TESTS = \
--	tests/check_parser \
- 	tests/test_sha1 \
- 	tests/test_sha256 \
- 	tests/test_sha512 \
-@@ -144,12 +143,10 @@ TESTS = \
- 	tests/test_scram \
- 	tests/test_ctx \
- 	tests/test_base64 \
--	tests/test_hash \
- 	tests/test_jid \
- 	tests/test_snprintf \
- 	tests/test_string \
--	tests/test_stanza \
--	tests/test_resolver
-+	tests/test_stanza
- 
- check_PROGRAMS = $(TESTS)
- 
-@@ -157,32 +154,32 @@ tests_check_parser_SOURCES = tests/check
+ tests_check_parser_SOURCES = tests/check_parser.c tests/test.h
  tests_check_parser_CFLAGS = $(PARSER_CFLAGS) $(STROPHE_FLAGS) \
  	-I$(top_srcdir)/src
  tests_check_parser_LDADD = $(STROPHE_LIBS)
@@ -61,31 +47,24 @@
  
  tests_test_rand_SOURCES = tests/test_rand.c tests/test.c src/sha1.c
  tests_test_rand_CFLAGS = $(STROPHE_FLAGS) -I$(top_srcdir)/src
-@@ -209,12 +206,12 @@ tests_test_snprintf_CFLAGS = -I$(top_src
+@@ -237,17 +237,17 @@ tests_test_snprintf_CFLAGS = -I$(top_src
  tests_test_string_SOURCES = tests/test_string.c tests/test.h
  tests_test_string_CFLAGS = $(STROPHE_FLAGS) -I$(top_srcdir)/src
  tests_test_string_LDADD = $(STROPHE_LIBS)
 -tests_test_string_LDFLAGS = -static
 +tests_test_string_LDFLAGS = 
  
- tests_test_stanza_SOURCES = tests/test_stanza.c
- tests_test_stanza_CFLAGS = $(STROPHE_FLAGS)
+ tests_test_stanza_SOURCES = tests/test_stanza.c tests/test.h
+ tests_test_stanza_CFLAGS = $(STROPHE_FLAGS) -I$(top_srcdir)/src
  tests_test_stanza_LDADD = $(STROPHE_LIBS)
 -tests_test_stanza_LDFLAGS = -static
 +tests_test_stanza_LDFLAGS = 
  
+ tests_test_xmppaddr_SOURCES = tests/test_xmppaddr.c
+ tests_test_xmppaddr_CFLAGS = $(STROPHE_FLAGS) -I$(top_srcdir)/src
+ tests_test_xmppaddr_LDADD = $(STROPHE_LIBS)
+-tests_test_xmppaddr_LDFLAGS = -static
++tests_test_xmppaddr_LDFLAGS = 
+ 
  format:
  	@echo "   * run clang-format on all sources"
---- origsrc/libstrophe-0.10.1/configure.ac	2020-12-24 23:04:21.000000000 +0900
-+++ src/libstrophe-0.10.1/configure.ac	2021-04-24 09:33:45.553414700 +0900
-@@ -32,7 +32,9 @@ AC_ARG_ENABLE([cares],
-     [AS_HELP_STRING([--enable-cares], [use c-ares for DNS resolution])])
- 
- AC_SEARCH_LIBS([socket], [network socket])
--AC_CHECK_FUNCS([snprintf vsnprintf])
-+if test "$host_os" != "cygwin"; then
-+    AC_CHECK_FUNCS([snprintf vsnprintf])
-+fi
- AC_CHECK_DECLS([va_copy], [], [], [#include <stdarg.h>])
- 
- if test "x$enable_tls" != xno; then
