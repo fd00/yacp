@@ -1,0 +1,74 @@
+--- origsrc/juise-0.9.0/configure.ac	2019-10-11 04:57:16.000000000 +0900
++++ src/juise-0.9.0/configure.ac	2021-10-30 21:21:24.623141200 +0900
+@@ -550,7 +550,7 @@ case $host_os in
+ 	;;
+      cygwin*|CYGWIN*)
+ 	LDFLAGS=-no-undefined
+-	SLAX_LIBEXT=ddl
++	SLAX_LIBEXT=dll
+ 	;;
+ esac
+ 
+--- origsrc/juise-0.9.0/juise-config.in	2019-10-11 04:57:16.000000000 +0900
++++ src/juise-0.9.0/juise-config.in	2021-10-30 21:21:24.627157900 +0900
+@@ -85,7 +85,7 @@ while test $# -gt 0; do
+ 	;;
+ 
+     --cflags)
+-       	echo @JUISE_INCLUDEDIR@ @JUISE_CFLAGS@
++       	echo @JUISE_INCLUDEDIR@
+        	;;
+ 
+     --libtool-libs)
+@@ -96,7 +96,7 @@ while test $# -gt 0; do
+         ;;
+ 
+     --modules)
+-       	echo @WITH_MODULES@
++       	echo
+        	;;
+ 
+     --libs)
+@@ -109,7 +109,7 @@ while test $# -gt 0; do
+ 		echo @JUISE_LIBDIR@ @JUISE_LIBS@ 
+ 	    fi
+ 	else
+-	    echo @JUISE_LIBDIR@ @JUISE_LIBS@ @WIN32_EXTRA_LIBADD@
++	    echo @JUISE_LIBDIR@ @JUISE_LIBS@
+ 	fi
+        	;;
+ 
+--- origsrc/juise-0.9.0/libjuise/Makefile.am	2019-10-11 04:57:16.000000000 +0900
++++ src/juise-0.9.0/libjuise/Makefile.am	2021-10-30 21:21:24.630155000 +0900
+@@ -113,5 +113,5 @@ install-exec-hook:
+ 		&& prefix=`echo ${UGLY_NAME} | awk -F: '{ print $$1 }'` \
+ 		&& url=`echo ${UGLY_NAME} | awk -F: '{ print $$2 }'` \
+ 		&& rm -f $$prefix $$url \
+-		&& ${LN_S} ${JUISE_LIBDIR}/$$DLNAME $$url \
++		&& ${LN_S} /usr/bin/$$DLNAME $$url \
+ 		&& ${LN_S} $$url $$prefix
+--- origsrc/juise-0.9.0/mixer/mtypes.c	2019-10-11 04:57:16.000000000 +0900
++++ src/juise-0.9.0/mixer/mtypes.c	2021-10-30 21:28:03.898977900 +0900
+@@ -13,6 +13,9 @@
+ 
+ mx_type_info_t mx_type_info[MST_MAX + 1];
+ 
++mx_sock_list_t mx_sock_list;	/* List of all sockets */
++int mx_sock_count;		/* Number of mx_sock_t in mx_sock_list */
++
+ void
+ mx_type_info_register (int version UNUSED, mx_type_info_t *mtip)
+ {
+--- origsrc/juise-0.9.0/mixer/mtypes.h	2019-10-11 04:57:16.000000000 +0900
++++ src/juise-0.9.0/mixer/mtypes.h	2021-10-30 21:28:06.323096000 +0900
+@@ -193,8 +193,8 @@ typedef struct mx_password_s {
+     time_t mp_laststamp;	   /* Last time this password was used */
+ } mx_password_t;
+ 
+-mx_sock_list_t mx_sock_list;	/* List of all sockets */
+-int mx_sock_count;		/* Number of mx_sock_t in mx_sock_list */
++extern mx_sock_list_t mx_sock_list;	/* List of all sockets */
++extern int mx_sock_count;		/* Number of mx_sock_t in mx_sock_list */
+ 
+ #define MX_TYPE_PRINT_ARGS \
+     mx_sock_t *msp UNUSED, int indent UNUSED, const char *prefix UNUSED
