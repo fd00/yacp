@@ -1,0 +1,49 @@
+--- origsrc/miniupnp-miniupnpc_2_2_3/miniupnpc/CMakeLists.txt	2021-09-29 06:47:00.000000000 +0900
++++ src/miniupnp-miniupnpc_2_2_3/miniupnpc/CMakeLists.txt	2021-11-02 21:21:54.035884300 +0900
+@@ -220,23 +220,19 @@ if (UPNPC_BUILD_TESTS)
+ endif ()
+ 
+ if (NOT UPNPC_NO_INSTALL)
+-  install (FILES
+-    miniupnpc.h
+-    miniwget.h
+-    upnpcommands.h
+-    igd_desc_parse.h
+-    upnpreplyparse.h
+-    upnperrors.h
+-    upnpdev.h
+-    miniupnpctypes.h
+-    portlistingparse.h
+-    miniupnpc_declspec.h
+-    DESTINATION include/miniupnpc
+-  )
++  file(GLOB INCFILES "include/*.h")
++  install(FILES ${INCFILES} DESTINATION include/miniupnpc)
+ 
+   install(FILES miniupnpc-config.cmake
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/miniupnpc
+   )
+ endif()
+ 
+-# vim: ts=2:sw=2:expandtab
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/miniupnpc.pc.in ${CMAKE_BINARY_DIR}/miniupnpc.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/miniupnpc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/miniupnp-miniupnpc_2_2_3/miniupnpc/miniupnpc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/miniupnp-miniupnpc_2_2_3/miniupnpc/miniupnpc.pc.in	2021-11-02 21:11:15.662935800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: miniupnpc
++Description: UPnP IGD control point
++Version: @MINIUPNPC_VERSION@
++Libs: -L${libdir} -lminiupnpc
++Cflags: -I${includedir}
