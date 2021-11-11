@@ -1,0 +1,54 @@
+--- origsrc/libfive/libfive/src/CMakeLists.txt	2021-11-11 08:59:12.000000000 +0900
++++ src/libfive/libfive/src/CMakeLists.txt	2021-11-11 20:54:12.165449400 +0900
+@@ -128,7 +128,12 @@ set_property(
+ 
+ ################################################################################
+ # Produce a library named 'libfive' on all platforms
+-set_target_properties(libfive PROPERTIES PREFIX "")
++if (CYGWIN)
++    set_target_properties(libfive PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(libfive PROPERTIES OUTPUT_NAME "five")
++else()
++    set_target_properties(libfive PROPERTIES PREFIX "")
++endif()
+ 
+ target_include_directories(libfive SYSTEM PUBLIC
+     ${Boost_INCLUDE_DIRS}
+@@ -146,7 +151,7 @@ if(UNIX AND NOT(APPLE))
+ endif(UNIX AND NOT(APPLE))
+ 
+ if (UNIX)
+-    install(TARGETS libfive DESTINATION lib)
++    install(TARGETS libfive RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+     install(FILES ../include/libfive.h DESTINATION include)
+     install(DIRECTORY ../include/libfive DESTINATION include
+             FILES_MATCHING PATTERN "*.hpp")
+--- origsrc/libfive/libfive/src/tree/tree.cpp	2021-11-11 08:59:12.000000000 +0900
++++ src/libfive/libfive/src/tree/tree.cpp	2021-11-11 18:02:08.992194900 +0900
+@@ -11,6 +11,7 @@ You can obtain one at http://mozilla.org
+ #include <iostream>
+ #include <map>
+ #include <numeric>
++#include <optional>
+ #include <stack>
+ #include <unordered_set>
+ 
+--- origsrc/libfive/libfive/stdlib/CMakeLists.txt	2021-11-11 08:59:12.000000000 +0900
++++ src/libfive/libfive/stdlib/CMakeLists.txt	2021-11-11 21:04:42.491073500 +0900
+@@ -1,9 +1,14 @@
+ add_library(libfive-stdlib SHARED stdlib.cpp stdlib_impl.cpp)
+ 
+ # Produce a library named 'libfive-stdlib' on all platforms
+-set_target_properties(libfive-stdlib PROPERTIES PREFIX "")
++if (CYGWIN)
++    set_target_properties(libfive-stdlib PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(libfive-stdlib PROPERTIES OUTPUT_NAME "five-stdlib")
++else()
++    set_target_properties(libfive-stdlib PROPERTIES PREFIX "")
++endif()
+ target_link_libraries(libfive-stdlib libfive)
+ 
+ if (UNIX)
+-    install(TARGETS libfive-stdlib DESTINATION lib)
++    install(TARGETS libfive-stdlib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ endif(UNIX)
