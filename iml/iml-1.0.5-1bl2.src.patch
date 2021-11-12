@@ -1,0 +1,57 @@
+--- origsrc/iml-1.0.5/Makefile.am	2014-07-23 19:00:43.000000000 +0900
++++ src/iml-1.0.5/Makefile.am	2021-11-12 07:51:17.938411000 +0900
+@@ -3,3 +3,6 @@ ACLOCAL_AMFLAGS = -I config
+ EXTRA_DIST = bootstrap
+ 
+ SUBDIRS = config src doc tests examples
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = iml.pc
+--- origsrc/iml-1.0.5/configure.ac	2014-07-25 00:11:38.000000000 +0900
++++ src/iml-1.0.5/configure.ac	2021-11-12 07:51:17.953406500 +0900
+@@ -1,7 +1,7 @@
+ dnl Autoconf
+ 
+ AC_PREREQ(2.59)
+-AC_INIT(IML, 1.0.4)
++AC_INIT(IML, 1.0.5)
+ AC_CONFIG_MACRO_DIR([config])
+ AC_CONFIG_HEADERS(config.h:config-h.in)
+ AC_CONFIG_SRCDIR([src/RNSop.c])
+@@ -76,21 +76,14 @@ location with the options --with-gmp-inc
+ respectively when running configure.
+ )])
+ 
+-IML_CHECK_CBLAS(,,[AC_MSG_WARN(
+-CBLAS not found!
+-Please make sure that --with-cblas=<linker flags> and optional --with-cblas-include=<path> and --with-cblas-lib=<path> are correctly set.
+-Trying legacy ATLAS configuration.)
+-IML_CHECK_ATLAS(,,[AC_MSG_ERROR(
+-ATLAS not found! 
+-ATLAS version 3.0 or greater is required for this library to compile. Please make sure ATLAS is installed and specify the header and libraries location with the options --with-atlas-include=<path> and --with-atlas-lib=<path> respectively when running configure.)
+-])
+-])
++PKG_CHECK_MODULES([ATLAS], [blas])
+ 
+ AC_SUBST(LIBIML_LDFLAGS)
+ AC_SUBST(LDFLAGS)
+ AC_SUBST(ac_aux_dir)
+ 	
+ AC_OUTPUT([
++    iml.pc
+ 	Makefile
+ 	config/Makefile
+ 	src/Makefile
+--- origsrc/iml-1.0.5/iml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/iml-1.0.5/iml.pc.in	2021-11-12 07:51:17.959394700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: iml
++Description: Integer Matrix Library
++Version: @VERSION@
++Libs: -L${libdir} -liml
++Cflags: -I${includedir}
