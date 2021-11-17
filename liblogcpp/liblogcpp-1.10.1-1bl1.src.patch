@@ -1,0 +1,50 @@
+--- origsrc/liblogcpp-1.10.1/CMakeLists.txt	2021-07-20 02:08:46.000000000 +0900
++++ src/liblogcpp-1.10.1/CMakeLists.txt	2021-11-17 22:53:32.056660500 +0900
+@@ -44,6 +44,9 @@ else()
+ 	set( LOGCPP_PKGCONFIG_LIBNAME "liblogcpp.a" )
+ endif()
+ 
++if (CYGWIN)
++	set_target_properties(logcpp PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ if( BUILD_LOGCPP_TEST )
+     # Instruct CMake not to run moc automatically when needed.
+@@ -66,7 +69,7 @@ else()
+ endif()
+ 
+ if( LOGCPP_INSTALL_LIBS )
+-	install(TARGETS logcpp DESTINATION ${LOGCPP_LIB_INSTALL_DIR} )
++	install(TARGETS logcpp RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LOGCPP_LIB_INSTALL_DIR} )
+ 	install(FILES ${LIBLOGCPP_HEADERS} DESTINATION ${LOGCPP_HEADER_INSTALL_DIR} )
+ 	install(FILES ${PROJECT_SOURCE_DIR}/lib/LibLogCPPConfig.cmake DESTINATION "${LOGCPP_LIB_INSTALL_DIR}/cmake/LibLogCPP" )
+ 	configure_file(${PROJECT_SOURCE_DIR}/lib/liblogcpp.pc.in ${CMAKE_CURRENT_BINARY_DIR}/liblogcpp.pc @ONLY)
+--- origsrc/liblogcpp-1.10.1/lib/liblogcpp.pc.in	2021-07-20 02:08:46.000000000 +0900
++++ src/liblogcpp-1.10.1/lib/liblogcpp.pc.in	2021-11-17 22:52:16.499967700 +0900
+@@ -4,6 +4,6 @@ includedir=@LOGCPP_HEADER_INSTALL_DIR@
+ Name: LibLogC++
+ Description: An intuitive and highly customizable LGPL library for logging with C++
+ Version: @LIBLOGCPP_VERSION@
+-Libs: ${libdir}/@LOGCPP_PKGCONFIG_LIBNAME@
++Libs: -L${libdir} -llogcpp
+ Cflags: -I${includedir}
+ 
+--- origsrc/liblogcpp-1.10.1/src/main.cpp	2021-07-20 02:08:46.000000000 +0900
++++ src/liblogcpp-1.10.1/src/main.cpp	2021-11-17 23:11:20.825697600 +0900
+@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
+ 
+     stdlog << logcpp::critical << "That's it for now (aborted with critical log function)." << logcpp::endrec;
+ 
+-
++#if 0
+     lg << logcpp::normal << "In this example we will show how to handle user input." << logcpp::endrec;
+ 
+     logcpp::basic_log_input lg_in( lg );
+@@ -169,6 +169,6 @@ int main(int argc, char** argv) {
+     lg << logcpp::endrec;
+ 
+     lg << logcpp::endl << "Finished." << logcpp::endrec;
+-
++#endif
+     return 0;
+ }
