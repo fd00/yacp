@@ -1,0 +1,55 @@
+--- origsrc/webdav-client-cpp-1.1.5/CMakeLists.txt	2019-01-05 04:31:57.000000000 +0900
++++ src/webdav-client-cpp-1.1.5/CMakeLists.txt	2021-11-22 13:59:11.529962800 +0900
+@@ -48,16 +48,21 @@ hunter_add_package(OpenSSL)
+ hunter_add_package(CURL)
+ hunter_add_package(pugixml)
+ 
+-find_package(Boost CONFIG REQUIRED)
++find_package(Boost REQUIRED)
+ find_package(OpenSSL REQUIRED)
+-find_package(CURL CONFIG REQUIRED)
+-find_package(pugixml CONFIG REQUIRED)
++find_package(CURL REQUIRED)
++find_package(pugixml REQUIRED)
+ 
+ file(GLOB WDC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/sources/*.cpp")
+ 
+ add_library(libwdc ${${PROJECT_NAME}_SOURCES})
+-set_target_properties(libwdc PROPERTIES PREFIX "")
+-set_target_properties(libwdc PROPERTIES IMPORT_PREFIX "")
++if (CYGWIN)
++  set_target_properties(libwdc PROPERTIES OUTPUT_NAME "wdc")
++  set_target_properties(libwdc PROPERTIES SOVERSION ${SOVERSION})
++else()
++  set_target_properties(libwdc PROPERTIES PREFIX "")
++  set_target_properties(libwdc PROPERTIES IMPORT_PREFIX "")
++endif()
+ if(WDC_VERBOSE)
+   target_compile_definitions(libwdc PUBLIC WDC_VERBOSE=1)
+ endif()
+@@ -157,3 +162,12 @@ if(BUILD_EXAMPLES)
+ endif()
+ 
+ include(CPackConfig.cmake)
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/webdav-client-cpp.pc.in ${CMAKE_BINARY_DIR}/webdav-client-cpp.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/webdav-client-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/webdav-client-cpp-1.1.5/webdav-client-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/webdav-client-cpp-1.1.5/webdav-client-cpp.pc.in	2021-11-22 13:59:02.045962100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: webdav-client-cpp
++Description: C++ WebDAV Client provides easy and convenient to work with WebDAV-servers
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lwdc
++Cflags: -I${includedir}
