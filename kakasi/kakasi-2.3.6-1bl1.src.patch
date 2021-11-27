@@ -1,0 +1,90 @@
+--- origsrc/kakasi-2.3.6/Makefile.am	2004-03-02 15:01:31.000000000 +0900
++++ src/kakasi-2.3.6/Makefile.am	2021-11-27 11:06:48.438122600 +0900
+@@ -16,8 +16,8 @@ SUBDIRS = src lib man tests
+ CLEANFILES = kanwadict
+ 
+ kanwadict:
+-	if test -f kakasidict; then \
+-	    ITAIJIDICT="itaijidict" src/mkkanwa$(EXEEXT) $@ kakasidict; \
++	if test -f $(top_srcdir)/kakasidict; then \
++	    ITAIJIDICT="itaijidict" src/mkkanwa$(EXEEXT) $@ $(top_srcdir)/kakasidict; \
+ 	fi
+ 
+ dist-hook:
+@@ -30,3 +30,6 @@ dist-hook:
+ 
+ ##Bug in automake: Can't use `if MAINTAINER_MODE'
+ @MAINTAINER_MODE_TRUE@include $(srcdir)/maintMakefile
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/kakasi-2.3.6/configure.in	2014-03-18 15:53:13.000000000 +0900
++++ src/kakasi-2.3.6/configure.in	2021-11-27 11:06:48.438122600 +0900
+@@ -100,7 +100,7 @@ KAKASI_CHECK_CFLAGS([-pedantic])
+ KAKASI_CHECK_CFLAGS([-Wno-unused-result])
+ 
+ AM_CONFIG_HEADER(config.h)
+-AC_CONFIG_FILES([src/Makefile
++AC_CONFIG_FILES([kakasi.pc src/Makefile
+ 	   lib/Makefile
+ 	   lib/makefile.msc
+ 	   man/Makefile
+--- origsrc/kakasi-2.3.6/kakasi.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/kakasi-2.3.6/kakasi.pc.in	2021-11-27 11:06:48.341153400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: kakasi
++Description: Kanji Kana Simple Inverter
++Version: @VERSION@
++Libs: -L${libdir} -lkakasi
++Cflags: -I${includedir}
+--- origsrc/kakasi-2.3.6/lib/Makefile.am	2010-12-17 11:58:52.000000000 +0900
++++ src/kakasi-2.3.6/lib/Makefile.am	2021-11-27 10:21:55.319162000 +0900
+@@ -6,13 +6,13 @@ dictdir = $(pkgdatadir)
+ DEFS = -DLIBRARY -DHAVE_CONFIG_H \
+        -DKANWADICT=\"$(dictdir)/kanwadict\" \
+        -DITAIJIDICT=\"$(dictdir)/itaijidict\"
+-INCLUDES = -I.. -I../src
++INCLUDES = -I.. -I../src -I$(top_srcdir) -I$(top_srcdir)/src
+ 
+ lib_LTLIBRARIES = libkakasi.la
+ libkakasi_la_SOURCES = libdict.c libkakasi.c libkanjiio.c \
+ 	liba2.c libg2.c libj2.c libk2.c libee2.c libhh2.c libjj2.c libkk2.c \
+ 	libitaiji.c lib78_83.c liblevel.c
+-libkakasi_la_LDFLAGS = \
++libkakasi_la_LDFLAGS = -no-undefined \
+ 	-version-info 3:0:1  -export-dynamic
+ 
+ include_HEADERS = libkakasi.h
+--- origsrc/kakasi-2.3.6/tests/kakasi-8	2014-01-28 16:03:35.000000000 +0900
++++ src/kakasi-2.3.6/tests/kakasi-8	2021-11-27 10:59:04.318167000 +0900
+@@ -7,11 +7,11 @@
+ LOG=`pwd`/test-log
+ echo '  *** starting ' $0 >> $LOG
+ 
+-if [ ! -e "$CC" ]
+-then
+-    echo "can't find CC: $CC"  >> $LOG
+-    exit 77
+-fi
++# if [ ! -e "$CC" ]
++# then
++#     echo "can't find CC: $CC"  >> $LOG
++#     exit 77
++# fi
+ 
+ TMPSRC=main.c
+ TMPEXE=main
+@@ -32,7 +32,7 @@ main()
+ }
+ _EOF
+ 
+-$CC $TMPSRC -o $TMPEXE -I../lib ../lib/.libs/libkakasi.so
++$CC $TMPSRC -o $TMPEXE -I../lib -I${top_srcdir}/lib -L../lib/.libs -lkakasi
+ STATUS=$?
+ if [ "$STATUS" != 0 ]
+ then

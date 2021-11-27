@@ -1,0 +1,59 @@
+HOMEPAGE="http://kakasi.namazu.org/index.html.ja"
+SRC_URI="http://kakasi.namazu.org/stable/${P}.tar.xz"
+
+CATEGORY="Text"
+SUMMARY="Kanji Kana Simple Inverter"
+DESCRIPTION="KAKASI is the language processing filter to convert Kanji characters to
+Hiragana, Katakana or Romaji(1) and may be helpful to read Japanese documents."
+
+BUILD_REQUIRES="libiconv-devel"
+
+CYGCONF_ARGS="
+	--enable-maintainer-mode
+"
+
+src_test()
+{
+	cd ${B}
+	rm -f kanwadict tests/test-log
+	ln -sf ${S}/itaijidict .
+	cygmake kanwadict
+	pushd tests
+		ln -sf ${S}/tests/env.sh .
+		pushd data
+			ln -sf ${S}/tests/data/hira-first-in.txt .
+			ln -sf ${S}/tests/data/hira-first-out.txt .
+		popd
+	popd
+	cygtest
+	rm -f itaijidict tests/env.sh tests/data/hira-first-in.txt tests/data/hira-first-out.txt
+}
+
+DOCS="
+	ONEWS
+	README-ja
+"
+
+PKG_NAMES="
+	kakasi
+	libkakasi2
+	libkakasi-devel
+"
+kakasi_CONTENTS="
+	usr/bin/*.exe
+	usr/share/doc
+	usr/share/${PN}
+	usr/share/man/man1/${PN}.1*
+"
+libkakasi2_CONTENTS="
+	usr/bin/*.dll
+"
+libkakasi_devel_CONTENTS="
+	usr/bin/*-config
+	usr/include
+	usr/lib
+	usr/share/man/man1/${PN}-config.1*
+"
+kakasi_SUMMARY="${SUMMARY} (utilities)"
+libkakasi2_SUMMARY="${SUMMARY} (runtime)"
+libkakasi_devel_SUMMARY="${SUMMARY} (development)"
