@@ -1,0 +1,104 @@
+--- origsrc/c-rrb/Makefile.am	2021-11-27 14:19:52.000000000 +0900
++++ src/c-rrb/Makefile.am	2021-11-27 14:19:55.365219400 +0900
+@@ -5,3 +5,6 @@ EXTRA_DIST = COPYING \
+ 						 DOCUMENTATION.md
+ 
+ ACLOCAL_AMFLAGS = -I m4
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = c-rrb.pc
+--- origsrc/c-rrb/c-rrb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/c-rrb/c-rrb.pc.in	2021-11-27 14:19:55.369315400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: c-rrb
++Description: RRB-tree implemented as a library in C
++Version: @VERSION@
++Libs: -L${libdir} -lrrb
++Cflags: -I${includedir}
+--- origsrc/c-rrb/configure.ac	2021-11-27 14:19:52.000000000 +0900
++++ src/c-rrb/configure.ac	2021-11-27 14:34:03.979999500 +0900
+@@ -1,4 +1,4 @@
+-AC_INIT([rrb], [0.1.0-SNAPSHOT], [jeannikl@hypirion.com])
++AC_INIT([rrb], [0.1.0], [jeannikl@hypirion.com])
+ AC_CONFIG_AUX_DIR([build-aux])
+ AC_CONFIG_MACRO_DIR([m4])
+ AM_INIT_AUTOMAKE([foreign -Wall])
+@@ -18,7 +18,7 @@ AC_SUBST(top_srcdir_absolute)
+ dnl ----------------------------------------------------------------------------
+ dnl Config scripts
+ 
+-AC_DEFUN([RRB_CONFIG_SCRIPT],[AC_CONFIG_FILES([$1],[chmod +x $1])])
++AC_DEFUN([RRB_CONFIG_SCRIPT],[AC_CONFIG_FILES([c-rrb.pc $1],[chmod +x $1])])
+ 
+ dnl ----------------------------------------------------------------------------
+ dnl Setup debug variables for c
+@@ -64,9 +64,9 @@ esac],[rrb_debug=true])
+ 
+ if test x$rrb_debug = xtrue; then
+    AC_DEFINE([RRB_DEBUG])
+-   AC_SUBST([RRB_DEBUG], true)
++   AC_SUBST([RRB_DEBUG], 1)
+ else
+-   AC_SUBST([RRB_DEBUG], false)
++   AC_SUBST([RRB_DEBUG], 0)
+ fi
+ 
+ dnl Number of bits in the rrb tree
+@@ -81,9 +81,7 @@ AC_SUBST([RRB_MAX_HEIGHT], [$RRB_MAX_HEI
+ dnl ----------------------------------------------------------------------------
+ dnl Check that libraries exist
+ 
+-AC_CHECK_LIB([gc], [GC_malloc], [GCLIB=-lgc],
+-             AC_MSG_ERROR([Please install libgc in order to compile librrb.]))
+-AC_SUBST([GCLIB])
++PKG_CHECK_MODULES([GC], [bdw-gc], [], AC_MSG_ERROR([Please install libgc in order to compile librrb.]))
+ 
+ dnl ----------------------------------------------------------------------------
+ dnl Check for header files here.
+@@ -94,7 +92,7 @@ AC_CHECK_HEADERS([stdlib.h])
+ AC_CHECK_HEADERS([string.h])
+ AC_CHECK_HEADERS([time.h])
+ 
+-AC_CONFIG_FILES([Makefile benchmark-suite/Makefile
++AC_CONFIG_FILES([c-rrb.pc Makefile benchmark-suite/Makefile
+                  test-suite/Makefile src/Makefile
+                  src/rrb.h])
+ 
+--- origsrc/c-rrb/src/Makefile.am	2021-11-27 14:19:52.000000000 +0900
++++ src/c-rrb/src/Makefile.am	2021-11-27 14:19:55.375725100 +0900
+@@ -1,9 +1,10 @@
+ lib_LTLIBRARIES = librrb.la
+ include_HEADERS = rrb.h
+ 
+-librrb_la_LIBADD = $(THREADLIB)
++librrb_la_LIBADD = $(THREADLIB) $(GC_LIBS)
+ librrb_la_SOURCES = rrb.c rrb_alloc.h rrb_transients.h rrb_thread.h rrb_debug.h
+ librrb_la_CFLAGS = $(DEBUG_VARS)
++librrb_la_LDFLAGS = -no-undefined
+ 
+ rrb.c: rrb_transients.h rrb.h rrb_alloc.h rrb_thread.h rrb_debug.h
+ rrb_alloc.h:
+--- origsrc/c-rrb/src/rrb.h.in	2021-11-27 14:19:52.000000000 +0900
++++ src/c-rrb/src/rrb.h.in	2021-11-27 14:27:38.621024400 +0900
+@@ -65,7 +65,7 @@ TransientRRB* transient_rrb_update(Trans
+ TransientRRB* transient_rrb_slice(TransientRRB *trrb, uint32_t from, uint32_t to);
+ 
+ #define RRB_DEBUG @RRB_DEBUG@
+-#ifdef RRB_DEBUG
++#if RRB_DEBUG
+ 
+ #include <stdio.h>
+ 
+--- origsrc/c-rrb/test-suite/Makefile.am	2021-11-27 14:19:52.000000000 +0900
++++ src/c-rrb/test-suite/Makefile.am	2021-11-27 14:19:55.380219300 +0900
+@@ -1,4 +1,4 @@
+-AM_CPPFLAGS = -I$(srcdir)/../src
++AM_CPPFLAGS = -I$(top_builddir)/src -I$(srcdir)/../src
+ AM_CFLAGS = $(DEBUG_VARS)
+ LDADD = $(GCLIB) ../src/librrb.la
+ check_PROGRAMS =
