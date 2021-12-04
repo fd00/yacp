@@ -1,0 +1,51 @@
+--- origsrc/libnbcompat-1.0.1/Makefile.am	2020-08-30 02:05:29.000000000 +0900
++++ src/libnbcompat-1.0.1/Makefile.am	2021-12-04 18:57:51.923575100 +0900
+@@ -8,7 +8,7 @@ EXTRA_DIST=			README
+ 
+ lib_LTLIBRARIES=		libnbcompat.la
+ 
+-libnbcompat_la_LDFLAGS=		-version-info $(LIBNBCOMPAT_LT_CURRENT):$(LIBNBCOMPAT_LT_REVISION):$(LIBNBCOMPAT_LT_AGE)
++libnbcompat_la_LDFLAGS=		-no-undefined -version-info $(LIBNBCOMPAT_LT_CURRENT):$(LIBNBCOMPAT_LT_REVISION):$(LIBNBCOMPAT_LT_AGE)
+ 
+ AM_CFLAGS=			-Wall
+ ACLOCAL_AMFLAGS=		-I m4
+@@ -115,3 +115,6 @@ nobase_include_HEADERS+=	nbcompat/db.h
+ AM_CFLAGS+=			-D__DBINTERFACE_PRIVATE
+ 
+ endif
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libnbcompat-1.0.1/configure.ac	2020-08-30 02:05:29.000000000 +0900
++++ src/libnbcompat-1.0.1/configure.ac	2021-12-04 18:57:51.869715700 +0900
+@@ -610,5 +610,5 @@ AH_BOTTOM([
+ #endif /* <nbcompat/nbconfig.h> included */
+ ])
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libnbcompat.pc Makefile])
+ AC_OUTPUT
+--- origsrc/libnbcompat-1.0.1/lchflags.c	2020-08-30 02:05:29.000000000 +0900
++++ src/libnbcompat-1.0.1/lchflags.c	2021-12-04 18:49:12.234857500 +0900
+@@ -37,7 +37,7 @@
+ #include <nbcompat/unistd.h>
+ 
+ /* Linux glibc does not have the cflags(2) system call */
+-#ifdef __linux__
++#if defined(__linux__) || defined(__CYGWIN__)
+ 
+ #include <sys/ioctl.h>
+ #include <fcntl.h>
+--- origsrc/libnbcompat-1.0.1/libnbcompat.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnbcompat-1.0.1/libnbcompat.pc.in	2021-12-04 19:06:17.390812200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnbcompat
++Description: Portable NetBSD-compatibility library
++Version: @VERSION@
++Libs: -L${libdir} -lnbcompat
++Cflags: -I${includedir}
