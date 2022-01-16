@@ -1,0 +1,58 @@
+--- origsrc/mimalloc-2.0.3/CMakeLists.txt	2021-11-15 09:52:10.000000000 +0900
++++ src/mimalloc-2.0.3/CMakeLists.txt	2022-01-16 20:05:00.651481800 +0900
+@@ -284,6 +284,9 @@ message(STATUS "")
+ if(MI_BUILD_SHARED)
+   add_library(mimalloc SHARED ${mi_sources})
+   set_target_properties(mimalloc PROPERTIES VERSION ${mi_version} OUTPUT_NAME ${mi_basename} )
++  if (CYGWIN)
++    set_target_properties(mimalloc PROPERTIES SOVERSION ${mi_version})
++  endif()
+   target_compile_definitions(mimalloc PRIVATE ${mi_defines} MI_SHARED_LIB MI_SHARED_LIB_EXPORT)
+   target_compile_options(mimalloc PRIVATE ${mi_cflags})
+   target_link_libraries(mimalloc PUBLIC ${mi_libraries})
+@@ -305,7 +308,7 @@ if(MI_BUILD_SHARED)
+       COMMENT "Copy mimalloc-redirect${MIMALLOC_REDIRECT_SUFFIX}.dll to output directory")
+   endif()
+ 
+-  install(TARGETS mimalloc EXPORT mimalloc DESTINATION ${mi_install_libdir} LIBRARY)  
++  install(TARGETS mimalloc EXPORT mimalloc RUNTIME DESTINATION bin ARCHIVE DESTINATION ${mi_install_libdir})  
+   install(EXPORT mimalloc DESTINATION ${mi_install_cmakedir})
+ endif()
+ 
+@@ -410,3 +413,12 @@ if (MI_OVERRIDE)
+     endif()
+   endif()
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/mimalloc.pc.in ${CMAKE_BINARY_DIR}/mimalloc.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/mimalloc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/mimalloc-2.0.3/mimalloc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mimalloc-2.0.3/mimalloc.pc.in	2022-01-16 20:03:08.094054000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mimalloc
++Description: Compact general purpose allocator with excellent performance
++Version: @VERSION@
++Libs: -L${libdir} -lmimalloc
++Cflags: -I${includedir}
+--- origsrc/mimalloc-2.0.3/src/os.c	2021-11-15 09:52:10.000000000 +0900
++++ src/mimalloc-2.0.3/src/os.c	2022-01-16 19:59:37.820448500 +0900
+@@ -1095,7 +1095,7 @@ static void* mi_os_alloc_huge_os_pagesx(
+   return VirtualAlloc(addr, size, flags, PAGE_READWRITE);
+ }
+ 
+-#elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__)
++#elif defined(MI_OS_USE_MMAP) && (MI_INTPTR_SIZE >= 8) && !defined(__HAIKU__) && !defined(__CYGWIN__)
+ #include <sys/syscall.h>
+ #ifndef MPOL_PREFERRED
+ #define MPOL_PREFERRED 1
