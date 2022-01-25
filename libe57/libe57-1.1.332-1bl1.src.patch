@@ -1,0 +1,85 @@
+--- origsrc/E57RefImpl_src-1.1.332/CMakeLists.txt	2022-01-25 16:59:15.042260000 +0900
++++ src/E57RefImpl_src-1.1.332/CMakeLists.txt	2022-01-25 17:56:06.592187300 +0900
+@@ -149,9 +149,13 @@ add_library( E57RefImpl SHARED
+     src/refimpl/E57FoundationImpl.h
+     include/E57Foundation.h
+ )
++target_link_libraries(E57RefImpl ${Xerces_LIBRARY} )
+ set_target_properties( E57RefImpl
+     PROPERTIES DEBUG_POSTFIX "-d"
+ )
++if (CYGWIN)
++    set_target_properties(E57RefImpl PROPERTIES SOVERSION ${${PROJECT_NAME}_MAJOR_VERSION})
++endif()
+ 
+ #
+ # Files for LAS format support
+@@ -280,13 +284,15 @@ install(
+     DESTINATION include/e57/time_conversion
+ )
+ 
+-install(
+-    FILES
+-        CHANGES.TXT
+-        README.TXT
+-        src/refimpl/E57RefImplConfig.cmake
+-    DESTINATION share/e57refimpl
+-)
++if (NOT CYGWIN)
++    install(
++        FILES
++            CHANGES.TXT
++            README.TXT
++            src/refimpl/E57RefImplConfig.cmake
++        DESTINATION share/e57refimpl
++    )
++endif()
+ 
+ #include (InstallRequiredSystemLibraries)
+ 
+@@ -299,3 +305,12 @@ set (CPACK_GENERATOR "ZIP")
+ set (CPACK_STRIP_FILES "TRUE")
+ 
+ include (CPack)
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/libe57.pc.in ${CMAKE_BINARY_DIR}/libe57.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/libe57.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/E57RefImpl_src-1.1.332/libe57.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/E57RefImpl_src-1.1.332/libe57.pc.in	2022-01-25 21:09:53.721359300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libe57
++Description: Software Tools for Managing E57 Files
++Version: @VERSION@
++Libs: -L${libdir} -lE57RefImpl
++Cflags: -I${includedir}
+--- origsrc/E57RefImpl_src-1.1.332/src/refimpl/E57FoundationImpl.cpp	2012-04-12 22:44:42.000000000 +0900
++++ src/E57RefImpl_src-1.1.332/src/refimpl/E57FoundationImpl.cpp	2022-01-25 17:44:07.250639600 +0900
+@@ -48,7 +48,7 @@
+ #  else
+ #    error "no supported compiler defined"
+ #  endif
+-#elif defined(LINUX)
++#elif defined(LINUX) || defined(__CYGWIN__)
+ #  define _LARGEFILE64_SOURCE
+ #  define __LARGE64_FILES
+ #  include <sys/types.h>
+@@ -4750,7 +4750,7 @@ void CheckedFile::seek(uint64_t offset,
+ 
+ uint64_t CheckedFile::lseek64(int64_t offset, int whence)
+ {
+-#if defined(WIN32)
++#if defined(WIN32) || defined(__CYGWIN__)
+ #  if defined(_MSC_VER) || defined(__MINGW32__) //<rs 2010-06-16> mingw _is_ WIN32!
+     __int64 result = _lseeki64(fd_, offset, whence);
+ #  elif defined(__GNUC__) //<rs 2010-06-16> this most likely will not get triggered (cygwin != WIN32)?
