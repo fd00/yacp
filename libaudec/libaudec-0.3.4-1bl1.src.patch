@@ -1,0 +1,53 @@
+--- origsrc/libaudec-v0.3.4/meson.build	2021-02-28 13:13:47.000000000 +0900
++++ src/libaudec-v0.3.4/meson.build	2022-01-26 14:55:41.982581500 +0900
+@@ -195,7 +195,7 @@ mapfile = configure_file(
+ )
+ vflag = '-Wl,--version-script,@0@'.format (mapfile)
+ 
+-audec = both_libraries (
++audec = shared_library (
+   'audec',
+   sources: srcs,
+   dependencies: [
+@@ -205,6 +205,7 @@ audec = both_libraries (
+   link_args: is_ld_bfd ? vflag : [],
+   link_depends: is_ld_bfd ? mapfile : [],
+   install: not meson.is_subproject(),
++  soversion: 0,
+ )
+ 
+ # this is so that it can be used as a meson
+@@ -212,7 +213,7 @@ audec = both_libraries (
+ libaudec_dep = declare_dependency (
+   include_directories: inc,
+   dependencies: audec_deps,
+-  link_with: audec.get_static_lib ())
++  link_with: audec)
+ 
+ if not meson.is_subproject()
+   pkg_mod = import('pkgconfig')
+--- origsrc/libaudec-v0.3.4/tests/log.c	2021-02-28 13:13:47.000000000 +0900
++++ src/libaudec-v0.3.4/tests/log.c	2022-01-26 15:15:25.123624900 +0900
+@@ -56,9 +56,11 @@ int main (
+   /* test log function */
+   audec_set_log_func (log_fn);
+ 
++#if !defined(__CYGWIN__)
+   ad_log (
+     __func__, AUDEC_LOG_LEVEL_DEBUG,
+     "abc %s %s\n", "abc2", "abc3");
++#endif
+ 
+   audec_close (handle);
+ 
+--- origsrc/libaudec-v0.3.4/tests/meson.build	2021-02-28 13:13:47.000000000 +0900
++++ src/libaudec-v0.3.4/tests/meson.build	2022-01-26 14:56:13.577576400 +0900
+@@ -39,7 +39,7 @@ if get_option ('tests')
+   log_test = executable (
+     'log_test_exe', 'log.c',
+     include_directories: inc,
+-    link_with: audec.get_static_lib (),
++    link_with: audec,
+     c_args: audec_cflags,
+     )
+   test (
