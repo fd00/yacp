@@ -1,0 +1,33 @@
+--- origsrc/DLib-1.1-free/CMakeLists.txt	2017-07-18 18:25:43.000000000 +0900
++++ src/DLib-1.1-free/CMakeLists.txt	2022-02-24 23:44:57.849644700 +0900
+@@ -82,11 +82,14 @@ endif(WIN32)
+ include_directories(include/DUtils include/DUtilsCV include/DVision ${OpenCV_INCLUDE_DIRS})
+ add_library(${PROJECT_NAME} ${LIB_SHARED} ${SRCS})
+ target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
++if (CYGWIN)
++  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ configure_file(src/DLib.cmake.in
+   "${PROJECT_BINARY_DIR}/DLibConfig.cmake" @ONLY)
+ 
+-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
++install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ if(BUILD_DUtils)
+   install(DIRECTORY include/DUtils DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+ endif()
+@@ -96,7 +99,12 @@ endif()
+ if(BUILD_DVision)
+   install(DIRECTORY include/DVision DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+ endif()
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLibConfig.cmake"
+-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
++if (CYGWIN)
++  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLibConfig.cmake"
++    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/${PROJECT_NAME})
++else()
++  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DLibConfig.cmake"
++    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
++endif()
+ install(FILES "${PROJECT_BINARY_DIR}/DLibConfig.cmake" 
+   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/DLib/)
