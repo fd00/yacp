@@ -1,0 +1,33 @@
+--- origsrc/libzim-7.2.0/src/debug.h	2022-01-19 20:33:51.000000000 +0900
++++ src/libzim-7.2.0/src/debug.h	2022-03-01 22:46:30.791198600 +0900
+@@ -29,7 +29,7 @@
+ # define ASSERT(left, operator, right) (void(0))
+ #else
+ 
+-#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
++#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ 
+--- origsrc/libzim-7.2.0/src/file_reader.cpp	2022-01-19 20:33:51.000000000 +0900
++++ src/libzim-7.2.0/src/file_reader.cpp	2022-03-01 22:48:30.708274800 +0900
+@@ -134,7 +134,7 @@ class MMapException : std::exception {};
+ char*
+ mmapReadOnly(int fd, offset_type offset, size_type size)
+ {
+-#if defined(__APPLE__) || defined(__OpenBSD__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__CYGWIN__)
+   const auto MAP_FLAGS = MAP_PRIVATE;
+ #elif defined(__FreeBSD__)
+   const auto MAP_FLAGS = MAP_PRIVATE|MAP_PREFAULT_READ;
+--- origsrc/libzim-7.2.0/src/fs_unix.cpp	2022-01-19 20:33:51.000000000 +0900
++++ src/libzim-7.2.0/src/fs_unix.cpp	2022-03-01 22:53:04.444742900 +0900
+@@ -36,7 +36,7 @@ namespace unix {
+ 
+ zsize_t FD::readAt(char* dest, zsize_t size, offset_t offset) const
+ {
+-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ # define PREAD pread
+ #else
+ # define PREAD pread64
