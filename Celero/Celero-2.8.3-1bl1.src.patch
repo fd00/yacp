@@ -1,0 +1,50 @@
+--- origsrc/Celero-2.8.3/CMakeLists.txt	2022-01-26 09:10:33.000000000 +0900
++++ src/Celero-2.8.3/CMakeLists.txt	2022-04-23 21:05:19.067344600 +0900
+@@ -137,6 +137,10 @@ endif()
+ 
+ add_library(${PROJECT_NAME} ${CELERO_USER_DEFINED_SHARED_OR_STATIC})
+ 
++if (CYGWIN)
++	set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_sources(${PROJECT_NAME} PRIVATE
+ 	include/celero/Archive.h
+ 	include/celero/Benchmark.h
+@@ -221,8 +225,9 @@ install(
+ )
+ install(
+ 	TARGETS     celero
+-	DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	EXPORT      celero-targets
++	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ install(
+ 	EXPORT      celero-targets
+@@ -339,3 +344,12 @@ if(CELERODEVOPS_ENABLE_TSAN)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/Celero.pc.in ${CMAKE_BINARY_DIR}/Celero.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/Celero.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/Celero-2.8.3/Celero.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Celero-2.8.3/Celero.pc.in	2022-04-23 21:05:31.091427800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Celero
++Description: C++ Benchmark Authoring Library/Framework
++Version: @VERSION@
++Libs: -L${libdir} -lcelero
++Cflags: -I${includedir}
