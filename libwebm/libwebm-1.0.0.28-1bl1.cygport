@@ -10,23 +10,46 @@ inherit cmake
 inherit git
 
 CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DENABLE_TESTS:BOOL=ON
+	-DENABLE_WEBM_PARSER:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
 	-DVERSION:STRING=${PV}
 "
 
+src_test()
+{
+	cd ${B}
+	for t in `ls *_tests.exe`
+	do
+		./${t} || :
+	done
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	dobin dumpvtt.exe mkvmuxer_sample.exe mkvparser_sample.exe vttdemux.exe webm2pes.exe webm2ts.exe webm_info.exe webm_parser_demo.exe
+}
+
 DOCS="
-	PATENTS.txt
+	CONTRIBUTING.md
+	PATENTS.TXT
+	README.${PN}
 "
 
 PKG_NAMES="
 	libwebm
-	libwebm0
+	libwebm1
 	libwebm-devel
 "
 libwebm_CONTENTS="
 	usr/bin/*.exe
 	usr/share
 "
-libwebm0_CONTENTS="
+libwebm1_CONTENTS="
 	usr/bin/*.dll
 "
 libwebm_devel_CONTENTS="
@@ -34,5 +57,5 @@ libwebm_devel_CONTENTS="
 	usr/lib
 "
 libwebm_SUMMARY="${SUMMARY} (utilities)"
-libwebm0_SUMMARY="${SUMMARY} (runtime)"
+libwebm1_SUMMARY="${SUMMARY} (runtime)"
 libwebm_devel_SUMMARY="${SUMMARY} (development)"
