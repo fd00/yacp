@@ -1,0 +1,63 @@
+--- origsrc/arb-2.22.1/CMakeLists.txt	2022-01-25 21:07:17.000000000 +0900
++++ src/arb-2.22.1/CMakeLists.txt	2022-04-27 16:19:01.753486500 +0900
+@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.1)
+ 
+ project(arb C)
+ 
+-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/configure" CONFIGURE_CONTENTS)
+-string(REGEX MATCH "ARB_MAJOR=([0-9]*)" _ ${CONFIGURE_CONTENTS})
+-set(ARB_MAJOR ${CMAKE_MATCH_1})
+-string(REGEX MATCH "ARB_MINOR=([0-9]*)" _ ${CONFIGURE_CONTENTS})
+-set(ARB_MINOR ${CMAKE_MATCH_1})
+-string(REGEX MATCH "ARB_PATCH=([0-9]*)" _ ${CONFIGURE_CONTENTS})
+-set(ARB_PATCH ${CMAKE_MATCH_1})
++if (NOT ARB_MAJOR)
++    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/configure" CONFIGURE_CONTENTS)
++    string(REGEX MATCH "ARB_MAJOR=([0-9]*)" _ ${CONFIGURE_CONTENTS})
++    set(ARB_MAJOR ${CMAKE_MATCH_1})
++    string(REGEX MATCH "ARB_MINOR=([0-9]*)" _ ${CONFIGURE_CONTENTS})
++    set(ARB_MINOR ${CMAKE_MATCH_1})
++    string(REGEX MATCH "ARB_PATCH=([0-9]*)" _ ${CONFIGURE_CONTENTS})
++    set(ARB_PATCH ${CMAKE_MATCH_1})
++endif()
+ 
+ set(ARB_VERSION "${ARB_MAJOR}.${ARB_MINOR}.${ARB_PATCH}")
+ 
+@@ -148,7 +150,11 @@ foreach (FOLDER ${FOLDERS})
+     set(HEADERS ${HEADERS} ${FOLDER}.h)
+ endforeach ()
+ 
+-install(FILES ${HEADERS} DESTINATION include)
++if (CYGWIN)
++    install(FILES ${HEADERS} DESTINATION include/arb)
++else()
++    install(FILES ${HEADERS} DESTINATION include)
++endif()
+ 
+ if (BUILD_TESTING)
+     enable_testing()
+@@ -163,3 +169,11 @@ if (BUILD_TESTING)
+     endforeach ()
+ endif ()
+ 
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/arb.pc.in ${CMAKE_BINARY_DIR}/arb.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/arb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/arb-2.22.1/arb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arb-2.22.1/arb.pc.in	2022-04-27 16:23:20.757394800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arb
++Description: C library for arbitrary-precision interval arithmetic
++Version: @ARB_VERSION@
++Libs: -L${libdir} -larb -lflint -lgmp -lmpfr
++Cflags: -I${includedir}
