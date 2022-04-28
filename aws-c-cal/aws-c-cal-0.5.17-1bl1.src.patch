@@ -1,6 +1,6 @@
---- origsrc/aws-c-cal-0.5.12/CMakeLists.txt	2021-09-08 02:35:32.000000000 +0900
-+++ src/aws-c-cal-0.5.12/CMakeLists.txt	2021-10-12 15:05:41.841454000 +0900
-@@ -32,6 +32,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
+--- origsrc/aws-c-cal-0.5.17/CMakeLists.txt	2022-04-12 03:56:38.000000000 +0900
++++ src/aws-c-cal-0.5.17/CMakeLists.txt	2022-04-28 10:48:59.421759900 +0900
+@@ -34,6 +34,10 @@ string(REPLACE ";" "${AWS_MODULE_DIR};"
  list(APPEND CMAKE_MODULE_PATH ${AWS_MODULE_PATH})
  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
  
@@ -35,12 +35,12 @@
 -    COMPONENT Development)
 +if (CYGWIN)
 +    install(EXPORT "${PROJECT_NAME}-targets"
-+        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
 +        NAMESPACE AWS::
 +        COMPONENT Development)
 +
 +    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-+        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
 +        COMPONENT Development)
 +else()
 +    install(EXPORT "${PROJECT_NAME}-targets"
@@ -54,7 +54,7 @@
 +endif()
  
  list(APPEND EXPORT_MODULES
-     "cmake/modules/FindLibCrypto.cmake"
+     "cmake/modules/Findcrypto.cmake"
      )
  
 -install(FILES ${EXPORT_MODULES}
@@ -62,7 +62,7 @@
 -        COMPONENT Development)
 +if (CYGWIN)
 +    install(FILES ${EXPORT_MODULES}
-+            DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
 +            COMPONENT Development)
 +else()
 +    install(FILES ${EXPORT_MODULES}
@@ -72,7 +72,7 @@
  
  if (NOT CMAKE_CROSSCOMPILING AND NOT BYO_CRYPTO)
      include(CTest)
-@@ -181,3 +205,12 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
+@@ -183,3 +207,12 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
          add_subdirectory(tests)
      endif()
  endif()
@@ -85,8 +85,8 @@
 +  configure_file(${CMAKE_SOURCE_DIR}/aws-c-cal.pc.in ${CMAKE_BINARY_DIR}/aws-c-cal.pc @ONLY)
 +  install(FILES ${CMAKE_BINARY_DIR}/aws-c-cal.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 +endif()
---- origsrc/aws-c-cal-0.5.12/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-cal-0.5.12/aws-c-cal.pc.in	2021-10-12 17:16:31.850912900 +0900
+--- origsrc/aws-c-cal-0.5.17/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-cal-0.5.17/aws-c-cal.pc.in	2022-04-28 10:49:29.041792000 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -99,11 +99,11 @@
 +Libs: -L${libdir} -laws-c-cal
 +Cflags: -I${includedir}
 +Requires: aws-c-common libcrypto
---- origsrc/aws-c-cal-0.5.12/cmake/aws-c-cal-config.cmake	2021-09-08 02:35:32.000000000 +0900
-+++ src/aws-c-cal-0.5.12/cmake/aws-c-cal-config.cmake	2021-10-12 14:48:42.856277500 +0900
-@@ -7,9 +7,12 @@ if (NOT BYO_CRYPTO AND NOT WIN32 AND NOT
-     find_dependency(LibCrypto)
- endif()
+--- origsrc/aws-c-cal-0.5.17/cmake/aws-c-cal-config.cmake	2022-04-12 03:56:38.000000000 +0900
++++ src/aws-c-cal-0.5.17/cmake/aws-c-cal-config.cmake	2022-04-28 10:42:29.789112400 +0900
+@@ -2,10 +2,14 @@ include(CMakeFindDependencyMacro)
+ 
+ find_dependency(aws-c-common)
  
 -if (BUILD_SHARED_LIBS)
 -    include(${CMAKE_CURRENT_LIST_DIR}/shared/@PROJECT_NAME@-targets.cmake)
@@ -117,13 +117,14 @@
 +        include(${CMAKE_CURRENT_LIST_DIR}/static/@PROJECT_NAME@-targets.cmake)
 +    endif()
  endif()
--
---- origsrc/aws-c-cal-0.5.12/cmake/modules/FindLibCrypto.cmake	2021-09-08 02:35:32.000000000 +0900
-+++ src/aws-c-cal-0.5.12/cmake/modules/FindLibCrypto.cmake	2021-10-12 14:49:04.891425700 +0900
-@@ -33,7 +33,7 @@ else()
-             ${CMAKE_INSTALL_PREFIX}/include
+ 
+ if (NOT BYO_CRYPTO AND NOT WIN32 AND NOT APPLE)
+--- origsrc/aws-c-cal-0.5.17/cmake/modules/Findcrypto.cmake	2022-04-12 03:56:38.000000000 +0900
++++ src/aws-c-cal-0.5.17/cmake/modules/Findcrypto.cmake	2022-04-28 10:42:58.360843200 +0900
+@@ -41,7 +41,7 @@ else()
          )
-     find_library(LibCrypto_SHARED_LIBRARY
+ 
+     find_library(crypto_SHARED_LIBRARY
 -        NAMES libcrypto.so libcrypto.dylib
 +        NAMES libcrypto.dll.a libcrypto.so libcrypto.dylib
          HINTS
