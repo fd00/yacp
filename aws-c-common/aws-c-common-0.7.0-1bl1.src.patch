@@ -1,6 +1,15 @@
---- origsrc/aws-c-common-0.6.18/CMakeLists.txt	2021-12-03 08:08:56.000000000 +0900
-+++ src/aws-c-common-0.6.18/CMakeLists.txt	2021-12-04 12:35:10.666347600 +0900
-@@ -238,14 +238,25 @@ else()
+--- origsrc/aws-c-common-0.7.0/CMakeLists.txt	2022-04-21 00:08:15.000000000 +0900
++++ src/aws-c-common-0.7.0/CMakeLists.txt	2022-04-28 08:15:08.970822900 +0900
+@@ -104,7 +104,7 @@ else ()
+     # OS specific includes
+     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+         list (APPEND AWS_COMMON_OS_SRC "source/linux/*.c")
+-    elseif (APPLE)
++    elseif (APPLE OR CYGWIN)
+         list (APPEND AWS_COMMON_OS_SRC "source/darwin/*.c")
+     endif()
+ 
+@@ -263,14 +263,25 @@ else()
     set (TARGET_DIR "static")
  endif()
  
@@ -34,7 +43,7 @@
  
  list(APPEND EXPORT_MODULES
      "cmake/AwsCFlags.cmake"
-@@ -259,9 +270,15 @@ list(APPEND EXPORT_MODULES
+@@ -284,9 +295,15 @@ list(APPEND EXPORT_MODULES
      "cmake/AwsFeatureTests.cmake"
      )
  
@@ -53,19 +62,21 @@
  
  # This should come last, to ensure all variables defined by cmake will be available for export
  configure_file(${CONFIG_HEADER_TEMPLATE}
-@@ -275,3 +292,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
+@@ -300,3 +317,12 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
  endif()
  
  include(CPackConfig)
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-common-0.6.18/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-common-0.6.18/aws-c-common.pc.in	2021-12-04 12:35:10.671442600 +0900
++if (CYGWIN)
++    set(prefix ${CMAKE_INSTALL_PREFIX})
++    set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++    set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++    set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++    configure_file(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
++    install(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/aws-c-common-0.7.0/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.7.0/aws-c-common.pc.in	2022-04-28 08:13:43.802922500 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -77,8 +88,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-c-common
 +Cflags: -I${includedir}
---- origsrc/aws-c-common-0.6.18/cmake/aws-c-common-config.cmake	2021-12-03 08:08:56.000000000 +0900
-+++ src/aws-c-common-0.6.18/cmake/aws-c-common-config.cmake	2021-12-04 12:35:10.671442600 +0900
+--- origsrc/aws-c-common-0.7.0/cmake/aws-c-common-config.cmake	2022-04-21 00:08:15.000000000 +0900
++++ src/aws-c-common-0.7.0/cmake/aws-c-common-config.cmake	2022-04-28 08:13:43.814819100 +0900
 @@ -4,9 +4,12 @@ if(WIN32 OR UNIX OR APPLE)
      find_package(Threads REQUIRED)
  endif()
