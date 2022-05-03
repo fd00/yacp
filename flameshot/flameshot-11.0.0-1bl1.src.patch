@@ -1,0 +1,46 @@
+--- origsrc/flameshot-11.0.0/CMakeLists.txt	2022-01-15 08:17:24.000000000 +0900
++++ src/flameshot-11.0.0/CMakeLists.txt	2022-05-03 09:42:02.919493300 +0900
+@@ -106,7 +106,13 @@ endif()
+ 
+ option(BUILD_STATIC_LIBS ON)
+ option(BUILD_SHARED_LIBS OFF)
+-add_subdirectory(external/Qt-Color-Widgets EXCLUDE_FROM_ALL) 
++
++find_package(pkgconfig)
++pkg_check_modules(QTCOLORWIDGETS QtColorWidgets-Qt52)
++if (NOT QTCOLORWIDGETS_FOUND)
++  add_subdirectory(external/Qt-Color-Widgets EXCLUDE_FROM_ALL)
++  set(QTCOLORWIDGETS_LIBRARIES QtColorWidgets)
++endif()
+ 
+ if (APPLE)
+   add_subdirectory(external/QHotkey)
+--- origsrc/flameshot-11.0.0/src/CMakeLists.txt	2022-01-15 08:17:24.000000000 +0900
++++ src/flameshot-11.0.0/src/CMakeLists.txt	2022-05-03 09:42:17.101302400 +0900
+@@ -120,10 +120,16 @@ target_sources(
+         # ${CMAKE_CURRENT_SOURCE_DIR}/../external/Qt-Color-Widgets/src/QtColorWidgets/color_wheel.cpp
+         # ${CMAKE_CURRENT_SOURCE_DIR}/../external/Qt-Color-Widgets/include/QtColorWidgets/color_wheel.hpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/../data/graphics.qrc
+-        ${CMAKE_CURRENT_SOURCE_DIR}/../data/flameshot.rc # windows binary icon resource file
+         ${QM_FILES}
+         main.cpp)
+ 
++if (WIN32)
++  target_sources(
++    flameshot
++    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../data/flameshot.rc # windows binary icon resource file
++  )
++endif()
++
+ target_include_directories(
+   flameshot
+   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+@@ -181,7 +187,7 @@ target_link_libraries(
+         Qt5::Network
+         Qt5::Widgets
+         ${QTSINGLEAPPLICATION_LIBRARY}
+-        QtColorWidgets
++        ${QTCOLORWIDGETS_LIBRARIES}
+ )
+ 
+ if (APPLE)
