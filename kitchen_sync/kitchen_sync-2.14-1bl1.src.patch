@@ -1,0 +1,170 @@
+--- origsrc/kitchen_sync-2.14/CMakeLists.txt	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/CMakeLists.txt	2022-05-04 21:50:12.912770900 +0900
+@@ -50,9 +50,14 @@ set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL
+ set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "disable yaml tools")
+ set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "disable yaml contrib")
+ set(YAML_CPP_INSTALL OFF CACHE BOOL "disable yaml install target")
+-add_subdirectory(src/yaml-cpp EXCLUDE_FROM_ALL)
+-include_directories(src/yaml-cpp/include)
+-set(YamlCPP_LIBRARIES yaml-cpp)
++
++find_package(pkgconfig)
++pkg_check_modules(YamlCPP yaml-cpp)
++if (NOT YamlCPP_FOUND)
++	add_subdirectory(src/yaml-cpp EXCLUDE_FROM_ALL)
++	include_directories(src/yaml-cpp/include)
++	set(YamlCPP_LIBRARIES yaml-cpp)
++endif()
+ 
+ # the main program knows nothing but how to hook up the endpoints
+ set(ks_SRCS src/ks.cpp src/db_url.cpp src/process.cpp src/unidirectional_pipe.cpp)
+@@ -122,10 +127,13 @@ endif()
+ set(BLAKE3_OBJECTS $<TARGET_OBJECTS:blake3>)
+ 
+ # build xxhash support
+-add_library(xxhash OBJECT src/xxHash/xxhash.c)
+-set_property(TARGET xxhash APPEND PROPERTY COMPILE_FLAGS "-O3")
+-set_property(TARGET xxhash PROPERTY C_STANDARD 11)
+-set(XXHASH_OBJECTS $<TARGET_OBJECTS:xxhash>)
++pkg_check_modules(XXHASH libxxhash)
++if (NOT XXHASH_FOUND)
++	add_library(xxhash OBJECT src/xxHash/xxhash.c)
++	set_property(TARGET xxhash APPEND PROPERTY COMPILE_FLAGS "-O3")
++	set_property(TARGET xxhash PROPERTY C_STANDARD 11)
++	set(XXHASH_OBJECTS $<TARGET_OBJECTS:xxhash>)
++endif()
+ 
+ # the endpoints do the actual work
+ set(ks_endpoint_SRCS src/schema.cpp src/subdivision.cpp src/filters.cpp src/abortable_barrier.cpp src/md5/md5.c ${XXHASH_OBJECTS} ${BLAKE3_OBJECTS})
+@@ -145,6 +153,9 @@ if(MySQL_FOUND)
+ 	if(Backtrace_FOUND)
+ 		target_link_libraries(ks_mysql ${Backtrace_LIBRARIES})
+ 	endif()
++	if (XXHASH_FOUND)
++		target_link_libraries(ks_mysql ${XXHASH_LIBRARIES})
++	endif()
+ 	install(TARGETS ks_mysql RUNTIME DESTINATION bin)
+ endif()
+ 
+@@ -163,6 +174,9 @@ if(PostgreSQL_FOUND)
+ 	if(Backtrace_FOUND)
+ 		target_link_libraries(ks_postgresql ${Backtrace_LIBRARIES})
+ 	endif()
++	if (XXHASH_FOUND)
++		target_link_libraries(ks_postgresql ${XXHASH_LIBRARIES})
++	endif()
+ 	install(TARGETS ks_postgresql RUNTIME DESTINATION bin)
+ endif()
+ 
+--- origsrc/kitchen_sync-2.14/src/catch2/catch.hpp	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/src/catch2/catch.hpp	2022-05-04 21:17:01.517894100 +0900
+@@ -10751,8 +10751,8 @@ namespace Catch {
+ 
+     // If neither SEH nor signal handling is required, the handler impls
+     // do not have to do anything, and can be empty.
+-    FatalConditionHandler::engage_platform() {}
+-    FatalConditionHandler::disengage_platform() {}
++    void FatalConditionHandler::engage_platform() {}
++    void FatalConditionHandler::disengage_platform() {}
+     FatalConditionHandler::FatalConditionHandler() = default;
+     FatalConditionHandler::~FatalConditionHandler() = default;
+ 
+--- origsrc/kitchen_sync-2.14/src/message_pack/pack.h	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/src/message_pack/pack.h	2022-05-04 20:52:46.686954800 +0900
+@@ -1,6 +1,7 @@
+ #ifndef PACK_H
+ #define PACK_H
+ 
++#include <endian.h>
+ #include "unistd.h"
+ #include <cstdint>
+ #include <cerrno>
+--- origsrc/kitchen_sync-2.14/src/message_pack/unpack.h	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/src/message_pack/unpack.h	2022-05-04 21:00:49.202843700 +0900
+@@ -1,6 +1,7 @@
+ #ifndef UNPACK_H
+ #define UNPACK_H
+ 
++#include <endian.h>
+ #include "unistd.h"
+ #include <cstdint>
+ #include <cerrno>
+--- origsrc/kitchen_sync-2.14/test/CMakeLists.txt	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/test/CMakeLists.txt	2022-05-04 22:00:37.763490700 +0900
+@@ -4,22 +4,22 @@ add_test(unit_tests          ks_unit_tes
+ 
+ # the main tests require ruby (and various extra gems).  to run the suite, run
+ #   cmake .. && CTEST_OUTPUT_ON_FAILURE=1 make test
+-add_test(prepare_for_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle install --quiet)
+-add_test(protocol_version_test   env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/protocol_version_test.rb)
+-add_test(idle_from_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/idle_from_test.rb)
+-add_test(snapshot_from_test      env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/snapshot_from_test.rb)
+-add_test(schema_from_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/schema_from_test.rb)
+-add_test(schema_to_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/schema_to_test.rb)
+-add_test(range_from_test         env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/range_from_test.rb)
+-add_test(hash_from_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/hash_from_test.rb)
+-add_test(rows_from_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/rows_from_test.rb)
+-add_test(filter_from_test        env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/filter_from_test.rb)
+-add_test(filter_to_test          env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/filter_to_test.rb)
+-add_test(column_types_to_test    env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_to_test.rb)
+-add_test(column_types_from_test  env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/column_types_from_test.rb)
+-add_test(sync_to_test            env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/sync_to_test.rb)
+-add_test(spatial_from_test       env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/spatial_from_test.rb)
+-add_test(spatial_to_test         env BUNDLE_GEMFILE=../../test/Gemfile bundle exec ruby ../../test/spatial_to_test.rb)
++add_test(prepare_for_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle install --quiet)
++add_test(protocol_version_test   env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/protocol_version_test.rb)
++add_test(idle_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/idle_from_test.rb)
++add_test(snapshot_from_test      env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/snapshot_from_test.rb)
++add_test(schema_from_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_from_test.rb)
++add_test(schema_to_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/schema_to_test.rb)
++add_test(range_from_test         env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/range_from_test.rb)
++add_test(hash_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/hash_from_test.rb)
++add_test(rows_from_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/rows_from_test.rb)
++add_test(filter_from_test        env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/filter_from_test.rb)
++add_test(filter_to_test          env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/filter_to_test.rb)
++add_test(column_types_to_test    env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_to_test.rb)
++add_test(column_types_from_test  env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/column_types_from_test.rb)
++add_test(sync_to_test            env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/sync_to_test.rb)
++add_test(spatial_from_test       env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/spatial_from_test.rb)
++add_test(spatial_to_test         env BUNDLE_GEMFILE=${CMAKE_SOURCE_DIR}/test/Gemfile bundle exec ruby ${CMAKE_SOURCE_DIR}/test/spatial_to_test.rb)
+ 
+ if(DEFINED ENV{SKIP_POSTGIS})
+ 	# this only works on later versions of ctest
+@@ -29,4 +29,7 @@ endif()
+ 
+ # we also have a performance test utility that is not run as part of the test suite because there's no particular pass/fail criteria
+ add_executable(ks_bench ks_bench.cpp ../src/md5/md5.c ${XXHASH_OBJECTS} ${BLAKE3_OBJECTS})
++if (XXHASH_FOUND)
++	target_link_libraries(ks_bench ${XXHASH_LIBRARIES})
++endif()
+ set_property(TARGET ks_bench APPEND PROPERTY COMPILE_FLAGS "-O3")
+--- origsrc/kitchen_sync-2.14/test/basic_uint128_t_test.cpp	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/test/basic_uint128_t_test.cpp	2022-05-04 21:49:40.094622600 +0900
+@@ -1,4 +1,4 @@
+-#include "../../catch2/catch.hpp"
++#include "../src/catch2/catch.hpp"
+ 
+ #include "../src/basic_uint128_t.h"
+ 
+--- origsrc/kitchen_sync-2.14/test/db_url_test.cpp	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/test/db_url_test.cpp	2022-05-04 21:48:34.797620700 +0900
+@@ -1,4 +1,4 @@
+-#include "../../catch2/catch.hpp"
++#include "../src/catch2/catch.hpp"
+ 
+ #include "../src/db_url.h"
+ 
+--- origsrc/kitchen_sync-2.14/test/ks_unit_tests.cpp	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/test/ks_unit_tests.cpp	2022-05-04 21:48:08.986418000 +0900
+@@ -1,2 +1,2 @@
+ #define CATCH_CONFIG_MAIN
+-#include "../../catch2/catch.hpp"
++#include "../src/catch2/catch.hpp"
+--- origsrc/kitchen_sync-2.14/test/sql_functions_test.cpp	2022-01-04 05:16:05.000000000 +0900
++++ src/kitchen_sync-2.14/test/sql_functions_test.cpp	2022-05-04 21:50:58.851002300 +0900
+@@ -1,4 +1,4 @@
+-#include "../../catch2/catch.hpp"
++#include "../src/catch2/catch.hpp"
+ 
+ #include "../src/sql_functions.h"
+ 
