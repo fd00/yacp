@@ -1,0 +1,58 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Numerical Markup Language"
+DESCRIPTION="The Numerical Markup Language (NuML) aims to standardize the exchange and
+archiving of numerical results. NuML originates from the numerical aspects of
+the Systems Biology Results Markup Language (SBRML) with the aim of re-using
+it in multiple other standardization efforts."
+
+BUILD_REQUIRES="libsbml-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DLIBNUML_SKIP_STATIC_LIBRARY:BOOL=ON
+	-DPACKAGE_CONFIG_DIR:STRING=/usr/lib/cmake/${PN}
+"
+
+src_compile()
+{
+    CYGCMAKE_SOURCE=${S}/libnuml
+    cd ${B}
+    : ${CYGCMAKE_GENERATOR=Ninja}
+    cygcmake
+    cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+DOCS="
+	numl-spec-*
+	libnuml/LICENSE.txt
+	libnuml/VERSION.txt
+"
+
+PKG_NAMES="
+	NuML
+	libnuml1
+	libnuml-devel
+"
+NuML_CONTENTS="
+	usr/share
+"
+libnuml1_CONTENTS="
+	usr/bin
+"
+libnuml_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+NuML_SUMMARY="${SUMMARY} (licensing & readmes)"
+libnuml1_SUMMARY="${SUMMARY} (runtime)"
+libnuml_devel_SUMMARY="${SUMMARY} (development)"
