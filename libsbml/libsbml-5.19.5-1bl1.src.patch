@@ -1,0 +1,67 @@
+--- origsrc/libsbml-5.19.5/CMakeLists.txt	2022-05-02 18:08:23.000000000 +0900
++++ src/libsbml-5.19.5/CMakeLists.txt	2022-05-07 06:40:17.662198800 +0900
+@@ -611,7 +611,9 @@ valid. It should contain the file zlib.h
+ endif(WITH_ZLIB)
+ 
+ # install find scripts only for used dependencies
+-install(FILES ${LIBSBML_FIND_MODULES} DESTINATION share/cmake/Modules)
++if (NOT CYGWIN)
++    install(FILES ${LIBSBML_FIND_MODULES} DESTINATION share/cmake/Modules)
++endif()
+ 
+ ###############################################################################
+ #
+@@ -994,7 +996,9 @@ set(DOCUMENTATION_FILES
+         VERSION.txt
+ )
+ 
+-install(FILES ${DOCUMENTATION_FILES} DESTINATION ${MISC_PREFIX})
++if (NOT CYGWIN)
++    install(FILES ${DOCUMENTATION_FILES} DESTINATION ${MISC_PREFIX})
++endif()
+ 
+ ###############################################################################
+ #
+--- origsrc/libsbml-5.19.5/examples/c/CMakeLists.txt	2022-05-02 18:08:23.000000000 +0900
++++ src/libsbml-5.19.5/examples/c/CMakeLists.txt	2022-05-06 11:24:16.946595900 +0900
+@@ -69,8 +69,11 @@ foreach(example
+ )
+ 	add_executable(example_c_${example} ${example}.c util.c)
+ 	set_target_properties(example_c_${example} PROPERTIES  OUTPUT_NAME ${example})
+-	target_link_libraries(example_c_${example} ${LIBSBML_LIBRARY}-static)	
+-
++    if (LIBSBML_SKIP_STATIC_LIBRARY)
++        target_link_libraries(example_c_${example} ${LIBSBML_LIBRARY})	
++    else()
++    	target_link_libraries(example_c_${example} ${LIBSBML_LIBRARY}-static)	
++    endif()
+ endforeach()
+ 
+ # run examples as test 
+--- origsrc/libsbml-5.19.5/examples/c++/CMakeLists.txt	2022-05-02 18:08:23.000000000 +0900
++++ src/libsbml-5.19.5/examples/c++/CMakeLists.txt	2022-05-06 11:27:02.608243200 +0900
+@@ -78,14 +78,21 @@ foreach(example
+ )
+     add_executable(example_cpp_${example} ${example}.cpp util.c)
+     set_target_properties(example_cpp_${example} PROPERTIES  OUTPUT_NAME ${example})
+-    target_link_libraries(example_cpp_${example} ${LIBSBML_LIBRARY}-static)
+-
++    if (LIBSBML_SKIP_STATIC_LIBRARY)
++      target_link_libraries(example_cpp_${example} ${LIBSBML_LIBRARY})
++    else()
++      target_link_libraries(example_cpp_${example} ${LIBSBML_LIBRARY}-static)
++    endif()
+ endforeach()
+ 
+ if (WITH_LIBXML)
+   add_executable(example_cpp_rngvalidator rngvalidator.cpp util.c)
+   set_target_properties(example_cpp_rngvalidator PROPERTIES  OUTPUT_NAME rngvalidator)
+-  target_link_libraries(example_cpp_rngvalidator ${LIBSBML_LIBRARY}-static)
++  if (LIBSBML_SKIP_STATIC_LIBRARY)
++    target_link_libraries(example_cpp_rngvalidator ${LIBSBML_LIBRARY})
++  else()
++    target_link_libraries(example_cpp_rngvalidator ${LIBSBML_LIBRARY}-static)
++  endif()
+   target_link_libraries(example_cpp_rngvalidator LIBXML::LIBXML ${EXTRA_LIBS})
+ endif()
+ 
