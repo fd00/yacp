@@ -1,0 +1,87 @@
+--- origsrc/libmdbx-0.11.7/CMakeLists.txt	2022-04-24 20:02:27.000000000 +0900
++++ src/libmdbx-0.11.7/CMakeLists.txt	2022-05-11 12:39:21.551703200 +0900
+@@ -652,6 +652,9 @@ target_include_directories(mdbx-static I
+ if(MDBX_BUILD_SHARED_LIBRARY)
+   add_library(mdbx SHARED ${LIBMDBX_SOURCES})
+   set_target_properties(mdbx PROPERTIES PUBLIC_HEADER "${LIBMDBX_PUBLIC_HEADERS}")
++  if (CYGWIN)
++    set_target_properties(mdbx PROPERTIES SOVERSION "${MDBX_VERSION_MAJOR}")
++  endif()
+   target_compile_definitions(mdbx PRIVATE LIBMDBX_EXPORTS MDBX_BUILD_SHARED_LIBRARY=1 INTERFACE LIBMDBX_IMPORTS)
+   target_setup_options(mdbx)
+   libmdbx_setup_libs(mdbx PRIVATE)
+@@ -722,7 +725,7 @@ endif()
+ 
+ # mdbx-shared-lib installation
+ if(NOT DEFINED MDBX_DLL_INSTALL_DESTINATION)
+-  if(WIN32)
++  if(WIN32 OR CYGWIN)
+     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_BINDIR})
+   else()
+     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
+@@ -738,6 +741,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel)
+   else()
+     install(TARGETS mdbx EXPORT libmdbx
++      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
+       LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
+       NAMELINK_COMPONENT devel
+       OBJECTS DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+@@ -941,3 +945,12 @@ set(PACKAGE_VERSION "${CPACK_PACKAGE_VER
+ message(STATUS "libmdbx package version is ${PACKAGE_VERSION}")
+ 
+ cmake_policy(POP)
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/libmdbx.pc.in ${CMAKE_BINARY_DIR}/libmdbx.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/libmdbx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/libmdbx-0.11.7/libmdbx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmdbx-0.11.7/libmdbx.pc.in	2022-05-11 12:45:18.394459400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmdbx
++Description: One of the fastest embeddable key-value ACID database
++Version: @MDBX_VERSION_MAJOR@.@MDBX_VERSION_MINOR@.@MDBX_VERSION_RELEASE@
++Libs: -L${libdir} -lmdbx
++Cflags: -I${includedir}
+--- origsrc/libmdbx-0.11.7/mdbx.c	2022-04-24 20:04:53.000000000 +0900
++++ src/libmdbx-0.11.7/mdbx.c	2022-05-11 11:57:32.390898500 +0900
+@@ -676,6 +676,10 @@ extern "C" {
+ #include <sys/statfs.h>
+ #endif /* Linux */
+ 
++#if defined(__CYGWIN__)
++#include <sys/vfs.h>
++#endif
++
+ #ifndef _XOPEN_SOURCE
+ #define _XOPEN_SOURCE 0
+ #endif
+@@ -26712,6 +26716,9 @@ __extern_C void __assert(const char *fun
+ #define __assert_fail(assertion, file, line, function)                         \
+   __assert(function, file, line, assertion)
+ 
++#elif defined(__CYGWIN__)
++#define __assert_fail(assertion, file, line, function)                         \
++  __assert_func(file, line, function, assertion)
+ #endif /* __assert_fail */
+ 
+ #if !defined(__ANDROID_API__) || MDBX_DEBUG
+@@ -27371,7 +27378,7 @@ MDBX_INTERNAL_FUNC int mdbx_write(mdbx_f
+ int mdbx_pwritev(mdbx_filehandle_t fd, struct iovec *iov, int iovcnt,
+                  uint64_t offset, size_t expected_written) {
+ #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) ||                \
+-    (defined(__ANDROID_API__) && __ANDROID_API__ < 24)
++    (defined(__ANDROID_API__) && __ANDROID_API__ < 24) || defined(__CYGWIN__)
+   size_t written = 0;
+   for (int i = 0; i < iovcnt; ++i) {
+     int rc = mdbx_pwrite(fd, iov[i].iov_base, iov[i].iov_len, offset);
