@@ -1,0 +1,64 @@
+--- origsrc/CRoaring-0.5.0/tests/CMakeLists.txt	2022-04-13 21:56:15.000000000 +0900
++++ src/CRoaring-0.5.0/tests/CMakeLists.txt	2022-05-12 06:40:26.901929900 +0900
+@@ -3,6 +3,12 @@
+ #configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/config.h.in"
+ #                "${CMAKE_CURRENT_SOURCE_DIR}/config.h")
+ 
++find_package(pkgconfig)
++pkg_check_modules(CMOCKA cmocka)
++if (NOT CMOCKA_FOUND)
++  set(CMOCKA_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/vendor/cmocka)
++  set(CMOCKA_LIBRARIES cmocka-static)
++endif()
+ 
+ add_cpp_test(cpp_unit)
+ add_cpp_test(cpp_random_unit)
+@@ -40,7 +46,8 @@ endif()
+ 
+ configure_file(${CMAKE_SOURCE_DIR}/tools/cmake/CTestCustom.cmake ${CMAKE_BINARY_DIR})
+ 
+-set(BUILD_STATIC_LIB ON)
+-import_dependency(vendor/cmocka https://cmocka.org/files/1.1/cmocka-1.1.5.tar.xz)
+-add_subdirectory(vendor/cmocka)
+-
++if (NOT CMOCKA_FOUND)
++  set(BUILD_STATIC_LIB ON)
++  import_dependency(vendor/cmocka https://cmocka.org/files/1.1/cmocka-1.1.5.tar.xz)
++  add_subdirectory(vendor/cmocka)
++endif()
+--- origsrc/CRoaring-0.5.0/tests/realdata_unit.c	2022-04-13 21:56:15.000000000 +0900
++++ src/CRoaring-0.5.0/tests/realdata_unit.c	2022-05-12 06:44:28.069893600 +0900
+@@ -1,7 +1,9 @@
+ /*
+  * realdata_unit.c
+  */
++#if !defined(_GNU_SOURCE)
+ #define _GNU_SOURCE
++#endif
+ 
+ #include <assert.h>
+ 
+--- origsrc/CRoaring-0.5.0/tools/cmake/FindCTargets.cmake	2022-04-13 21:56:15.000000000 +0900
++++ src/CRoaring-0.5.0/tools/cmake/FindCTargets.cmake	2022-05-12 06:40:46.838341800 +0900
+@@ -9,8 +9,8 @@ function(add_c_test TEST_NAME)
+ 
+   add_executable(${TEST_NAME} ${TEST_NAME}.c)
+ 
+-  include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/vendor/cmocka)
+-  target_link_libraries(${TEST_NAME} ${ROARING_LIB_NAME} cmocka-static)
++  include_directories(${TEST_NAME} PRIVATE ${CMOCKA_INCLUDE_DIR})
++  target_link_libraries(${TEST_NAME} ${ROARING_LIB_NAME} ${CMOCKA_LIBRARIES})
+ 
+   add_test(${TEST_NAME} ${TEST_NAME})
+ endfunction(add_c_test)
+@@ -26,8 +26,8 @@ if (CMAKE_VERSION VERSION_GREATER 2.8.10
+     endif()
+     target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/cpp)
+ 
+-    include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/vendor/cmocka)
+-    target_link_libraries(${TEST_NAME} ${ROARING_LIB_NAME} cmocka-static)
++    include_directories(${TEST_NAME} PRIVATE ${CMOCKA_INCLUDE_DIR})
++    target_link_libraries(${TEST_NAME} ${ROARING_LIB_NAME} ${CMOCKA_LIBRARIES})
+ 
+     add_test(${TEST_NAME} ${TEST_NAME})
+   endfunction(add_cpp_test)
