@@ -1,16 +1,27 @@
 HOMEPAGE="https://github.com/grimme-lab/${PN}"
-SRC_URI="https://github.com/grimme-lab/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/grimme-lab/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Modular computation tool chain library"
 DESCRIPTION="${SUMMARY}"
 
-BUILD_REQUIRES="gcc-fortran"
+export FCFLAGS="${FCFLAGS} -fallow-argument-mismatch"
 
-inherit meson
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
 
 PKG_IGNORE="
-	usr/lib/libmctc-lib.a
+	usr/lib/cmake/${PN}/Findjsonfortran.cmake
+	usr/share/licenses/${PN}/LICENSE
 "
 
 PKG_NAMES="
@@ -20,13 +31,14 @@ PKG_NAMES="
 "
 mctc_lib_CONTENTS="
 	usr/bin/*.exe
-	usr/share
+	usr/share/doc
 "
 libmctc_lib0_CONTENTS="
 	usr/bin/*.dll
 "
 libmctc_lib_devel_CONTENTS="
 	usr/include
+	usr/lib/cmake/${PN}/${PN}*.cmake
 	usr/lib/lib*.dll.a
 	usr/lib/pkgconfig
 "
