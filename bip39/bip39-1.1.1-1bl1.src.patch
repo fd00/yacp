@@ -1,0 +1,96 @@
+--- origsrc/bip39-1.1.1/CMakeLists.txt	2019-02-16 03:00:34.000000000 +0900
++++ src/bip39-1.1.1/CMakeLists.txt	2022-05-15 15:32:41.873182100 +0900
+@@ -4,8 +4,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ 
+-set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
+-
+ if (MSVC)
+ 	add_definitions(
+ 		-D_CRT_SECURE_NO_WARNINGS
+@@ -17,11 +15,14 @@ if (MSVC)
+ 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+ endif()
+ 
+-# clone submodules
+-execute_process(
+-	COMMAND git submodule update --init --recursive
+-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+-)
++find_package(gtest)
++if (NOT GTEST_FOUND)
++    # clone submodules
++    execute_process(
++        COMMAND git submodule update --init --recursive
++        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++    )
++endif()
+ 
+ # ------------------------------------------------------------------------------
+ # Clang Tidy
+@@ -59,3 +60,11 @@ add_subdirectory(test)
+ add_subdirectory(examples)
+ add_subdirectory(make_dictionary)
+ 
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/bip39.pc.in ${CMAKE_BINARY_DIR}/bip39.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/bip39.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/bip39-1.1.1/bip39.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bip39-1.1.1/bip39.pc.in	2022-05-15 15:32:41.805159100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bip39
++Description: Portable C++ implementation of BIP39
++Version: @VERSION@
++Libs: -L${libdir} -lbip39
++Cflags: -I${includedir}
+--- origsrc/bip39-1.1.1/src/CMakeLists.txt	2019-02-16 03:00:34.000000000 +0900
++++ src/bip39-1.1.1/src/CMakeLists.txt	2022-05-15 15:27:46.105207100 +0900
+@@ -8,7 +8,11 @@ set(SOURCE_FILES
+ 	util.cpp
+ )
+ 
+-add_library(${PROJECT_NAME} SHARED STATIC ${SOURCE_FILES})
++add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
++
++if (CYGWIN)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ set(bip39_build_include_dirs
+     ${PROJECT_SOURCE_DIR}
+@@ -19,3 +23,8 @@ include_directories(${bip39_build_includ
+ target_include_directories( ${PROJECT_NAME}
+     PUBLIC ${bip39_build_include_dirs}
+ )
++
++file(GLOB HEADERS include/bip39/*.h)
++install(FILES ${HEADERS} DESTINATION include/bip39)
++
++install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/bip39-1.1.1/test/CMakeLists.txt	2019-02-16 03:00:34.000000000 +0900
++++ src/bip39-1.1.1/test/CMakeLists.txt	2022-05-15 15:22:01.313072800 +0900
+@@ -1,9 +1,11 @@
+ cmake_minimum_required(VERSION 3.2)
+ project(bip39_tests C CXX)
+ 
+-set(BUILD_GMOCK OFF FORCE)
++if (NOT GTEST_FOUND)
++    set(BUILD_GMOCK OFF FORCE)
+ 
+-add_subdirectory(lib/googletest)
++    add_subdirectory(lib/googletest)
++endif()
+ 
+ find_library(bip39 PUBLIC)
+ 
