@@ -1,8 +1,22 @@
---- origsrc/dynare-4.6.4/Makefile.am	2021-03-18 02:17:10.053542900 +0900
-+++ src/dynare-4.6.4/Makefile.am	2021-05-31 09:27:43.129250400 +0900
-@@ -47,11 +47,11 @@ dist-hook:
+--- origsrc/dynare-5.1/Makefile.am	2021-10-02 01:39:33.006212400 +0900
++++ src/dynare-5.1/Makefile.am	2022-05-15 14:06:53.410905400 +0900
+@@ -32,8 +32,8 @@ all-local:
+ # from the locally-built copy)
+ 	$(LN_S) -f $(abs_builddir)/preprocessor/src/dynare-preprocessor$(EXEEXT) $(abs_builddir)/preprocessor/dynare-preprocessor$(EXEEXT)
+ # Create backward-compatibility symlink for old location of preprocessor
+-	$(MKDIR_P) matlab/preprocessor64/
+-	$(LN_S) -f $(abs_builddir)/preprocessor/src/dynare-preprocessor$(EXEEXT) $(abs_srcdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
++#	$(MKDIR_P) matlab/preprocessor64/
++#	$(LN_S) -f $(abs_builddir)/preprocessor/src/dynare-preprocessor$(EXEEXT) $(abs_srcdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
  
+ clean-local:
+ 	rm -f preprocessor/dynare-preprocessor$(EXEEXT)
+@@ -49,17 +49,17 @@ dist-hook:
  install-exec-local:
+ 	$(MKDIR_P) $(DESTDIR)$(pkglibdir)/preprocessor
+ # The following will break under Windows, but we don’t use the install rule there
+-	$(LN_S) -f $(bindir)/dynare-preprocessor$(EXEEXT) $(DESTDIR)$(pkglibdir)/preprocessor/dynare-preprocessor$(EXEEXT)
++#	$(LN_S) -f $(bindir)/dynare-preprocessor$(EXEEXT) $(DESTDIR)$(pkglibdir)/preprocessor/dynare-preprocessor$(EXEEXT)
  	$(MKDIR_P) $(DESTDIR)$(pkglibdir)/contrib/ms-sbvar/TZcode
 -	cp -r contrib/ms-sbvar/TZcode/MatlabFiles $(DESTDIR)$(pkglibdir)/contrib/ms-sbvar/TZcode
 +	cp -r $(srcdir)/contrib/ms-sbvar/TZcode/MatlabFiles $(DESTDIR)$(pkglibdir)/contrib/ms-sbvar/TZcode
@@ -14,19 +28,16 @@
 +	cp -r $(srcdir)/examples $(DESTDIR)$(pkglibdir)
 +	cp -r $(srcdir)/matlab $(DESTDIR)$(pkglibdir)
  	find $(DESTDIR)$(pkglibdir) -name LICENSE.md -delete
- 	rm -rf $(DESTDIR)$(pkglibdir)/matlab/preprocessor*
- 	if file preprocessor/src/dynare_m | grep -q x86.64; then \
-@@ -60,7 +60,7 @@ install-exec-local:
- 	  ARCH="32"; \
- 	fi; \
- 	mkdir -p $(DESTDIR)$(pkglibdir)/matlab/preprocessor$$ARCH && \
--	cp preprocessor/src/dynare_m $(DESTDIR)$(pkglibdir)/matlab/preprocessor$$ARCH
-+	cp preprocessor/src/dynare_m$(EXEEXT) $(DESTDIR)$(pkglibdir)/matlab/preprocessor$$ARCH
- 
- uninstall-local:
- 	rm -f  $(DESTDIR)$(bindir)/dynare++
---- origsrc/dynare-4.6.4/dynare++/Makefile.am	2020-02-27 00:23:56.987449500 +0900
-+++ src/dynare-4.6.4/dynare++/Makefile.am	2021-05-31 09:27:43.154243700 +0900
+ # Recreate backward-compatibility symlink
+-	rm -f $(DESTDIR)$(pkglibdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
+-	$(LN_S) -f $(bindir)/dynare-preprocessor$(EXEEXT) $(DESTDIR)$(pkglibdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
++#	rm -f $(DESTDIR)$(pkglibdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
++#	$(LN_S) -f $(bindir)/dynare-preprocessor$(EXEEXT) $(DESTDIR)$(pkglibdir)/matlab/preprocessor64/dynare_m$(EXEEXT)
+ # We don’t fail over doc install rules, since the user may deliberately not have compiled them
+ # (e.g. with the “nodoc” option under Debian)
+ 	$(MKDIR_P) $(DESTDIR)$(docdir)
+--- origsrc/dynare-5.1/dynare++/Makefile.am	2020-02-27 00:23:53.467389000 +0900
++++ src/dynare-5.1/dynare++/Makefile.am	2022-05-15 14:00:35.616029500 +0900
 @@ -4,7 +4,7 @@ EXTRA_DIST = dynare_simul
  
  install-exec-local:
@@ -36,8 +47,8 @@
  
  uninstall-local:
  	rm -rf $(DESTDIR)$(pkglibdir)/dynare++
---- origsrc/dynare-4.6.4/dynare++/integ/cc/Makefile.am	2020-02-27 00:23:56.987449500 +0900
-+++ src/dynare-4.6.4/dynare++/integ/cc/Makefile.am	2021-05-31 09:27:43.171248500 +0900
+--- origsrc/dynare-5.1/dynare++/integ/cc/Makefile.am	2020-02-27 00:23:53.467389000 +0900
++++ src/dynare-5.1/dynare++/integ/cc/Makefile.am	2022-05-15 04:35:04.211458800 +0900
 @@ -12,5 +12,5 @@ libinteg_a_SOURCES = \
  	vector_function.cc \
  	vector_function.hh \
@@ -45,8 +56,8 @@
 -libinteg_a_CPPFLAGS = -I../../sylv/cc -I../../utils/cc -I../../tl/cc -I$(top_srcdir)/mex/sources
 +libinteg_a_CPPFLAGS = -I../../sylv/cc -I../../utils/cc -I../../tl/cc -I$(top_srcdir)/mex/sources -I$(top_srcdir)/dynare++/sylv/cc -I$(top_srcdir)/dynare++/tl/cc -I$(top_srcdir)/dynare++/utils/cc -I$(top_srcdir)/dynare++/sylv/cc
  libinteg_a_CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
---- origsrc/dynare-4.6.4/dynare++/integ/src/Makefile.am	2020-02-27 00:23:56.991449600 +0900
-+++ src/dynare-4.6.4/dynare++/integ/src/Makefile.am	2021-05-31 09:27:43.175244200 +0900
+--- origsrc/dynare-5.1/dynare++/integ/src/Makefile.am	2020-02-27 00:23:53.471389200 +0900
++++ src/dynare-5.1/dynare++/integ/src/Makefile.am	2022-05-15 04:37:13.451658600 +0900
 @@ -1,6 +1,6 @@
  noinst_PROGRAMS = quadrature-points
  
@@ -55,8 +66,8 @@
 +quadrature_points_CPPFLAGS = -I../.. -I../../sylv/cc -I../../integ/cc -I../../tl/cc -I../../utils/cc -I$(top_srcdir)/dynare++ -I$(top_srcdir)/dynare++/sylv/cc -I$(top_srcdir)/dynare++/tl/cc -I$(top_srcdir)/dynare++/utils/cc
  quadrature_points_CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
  quadrature_points_LDADD = ../cc/libinteg.a ../../tl/cc/libtl.a ../../parser/cc/libparser.a ../../sylv/cc/libsylv.a ../../utils/cc/libutils.a $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
---- origsrc/dynare-4.6.4/dynare++/integ/testing/Makefile.am	2020-02-27 00:23:56.991449600 +0900
-+++ src/dynare-4.6.4/dynare++/integ/testing/Makefile.am	2021-05-31 13:39:31.307027300 +0900
+--- origsrc/dynare-5.1/dynare++/integ/testing/Makefile.am	2020-02-27 00:23:53.471389200 +0900
++++ src/dynare-5.1/dynare++/integ/testing/Makefile.am	2022-05-15 04:54:41.982544200 +0900
 @@ -1,7 +1,7 @@
  check_PROGRAMS = tests
  
@@ -66,8 +77,8 @@
  tests_CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
  tests_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS_MATIO)
  tests_LDADD = ../../sylv/cc/libsylv.a ../cc/libinteg.a ../../tl/cc/libtl.a ../../utils/cc/libutils.a $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBADD_MATIO)
---- origsrc/dynare-4.6.4/dynare++/kord/Makefile.am	2020-02-27 00:23:56.991449600 +0900
-+++ src/dynare-4.6.4/dynare++/kord/Makefile.am	2021-05-31 10:31:10.438782700 +0900
+--- origsrc/dynare-5.1/dynare++/kord/Makefile.am	2020-02-27 00:23:53.471389200 +0900
++++ src/dynare-5.1/dynare++/kord/Makefile.am	2022-05-15 04:39:27.321598000 +0900
 @@ -25,13 +25,13 @@ libkord_a_SOURCES = \
  	seed_generator.cc \
  	seed_generator.hh
@@ -84,8 +95,8 @@
  tests_CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
  tests_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS_MATIO)
  tests_LDADD = libkord.a ../tl/cc/libtl.a ../sylv/cc/libsylv.a ../utils/cc/libutils.a $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS) $(LIBADD_MATIO)
---- origsrc/dynare-4.6.4/dynare++/parser/cc/Makefile.am	2020-02-27 00:23:56.995449700 +0900
-+++ src/dynare-4.6.4/dynare++/parser/cc/Makefile.am	2021-05-31 09:27:43.194247000 +0900
+--- origsrc/dynare-5.1/dynare++/parser/cc/Makefile.am	2020-02-27 00:23:53.475389400 +0900
++++ src/dynare-5.1/dynare++/parser/cc/Makefile.am	2022-05-15 04:22:20.398400600 +0900
 @@ -26,7 +26,7 @@ libparser_a_SOURCES = \
  	tree.hh \
  	$(GENERATED_FILES)
@@ -95,8 +106,8 @@
  
  BUILT_SOURCES = $(GENERATED_FILES)
  
---- origsrc/dynare-4.6.4/dynare++/src/Makefile.am	2020-02-27 00:23:56.999449800 +0900
-+++ src/dynare-4.6.4/dynare++/src/Makefile.am	2021-05-31 09:27:43.198250500 +0900
+--- origsrc/dynare-5.1/dynare++/src/Makefile.am	2020-02-27 00:23:53.479389500 +0900
++++ src/dynare-5.1/dynare++/src/Makefile.am	2022-05-15 04:43:45.104905900 +0900
 @@ -21,7 +21,7 @@ dynare___SOURCES = \
  	nlsolve.hh \
  	$(GENERATED_FILES)
@@ -106,20 +117,20 @@
  dynare___LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS_MATIO) $(BOOST_LDFLAGS)
  dynare___LDADD = ../kord/libkord.a ../integ/cc/libinteg.a ../tl/cc/libtl.a ../parser/cc/libparser.a ../utils/cc/libutils.a ../sylv/cc/libsylv.a $(LIBADD_MATIO) $(noinst_LIBRARIES) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
  dynare___CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
---- origsrc/dynare-4.6.4/dynare++/sylv/cc/Makefile.am	2020-02-27 00:23:57.003449900 +0900
-+++ src/dynare-4.6.4/dynare++/sylv/cc/Makefile.am	2021-05-31 09:27:43.201259400 +0900
+--- origsrc/dynare-5.1/dynare++/sylv/cc/Makefile.am	2020-02-27 00:23:53.483389700 +0900
++++ src/dynare-5.1/dynare++/sylv/cc/Makefile.am	2022-05-15 04:14:04.687211200 +0900
 @@ -1,7 +1,7 @@
  noinst_LIBRARIES = libsylv.a
  
  # For dynblas.h and dynlapack.h
 -libsylv_a_CPPFLAGS = -I$(top_srcdir)/mex/sources -I../../utils/cc
-+libsylv_a_CPPFLAGS = -I$(top_srcdir)/mex/sources -I../../utils/cc -I$(top_srcdir)/dynare++/utils/cc
++libsylv_a_CPPFLAGS = -I$(top_srcdir)/mex/sources -I../../utils/cc  -I$(top_srcdir)/dynare++/utils/cc
  
  libsylv_a_SOURCES = \
  	BlockDiagonal.cc \
---- origsrc/dynare-4.6.4/dynare++/sylv/testing/Makefile.am	2020-02-27 00:23:57.003449900 +0900
-+++ src/dynare-4.6.4/dynare++/sylv/testing/Makefile.am	2021-05-31 09:27:43.257240300 +0900
-@@ -2,7 +2,7 @@ check_PROGRAMS = tests
+--- origsrc/dynare-5.1/dynare++/sylv/testing/Makefile.am	2020-02-27 00:23:53.483389700 +0900
++++ src/dynare-5.1/dynare++/sylv/testing/Makefile.am	2022-05-15 13:28:10.636869700 +0900
+@@ -2,9 +2,9 @@ check_PROGRAMS = tests
  
  tests_SOURCES = MMMatrix.cc MMMatrix.hh tests.cc
  tests_LDADD = ../cc/libsylv.a ../../utils/cc/libutils.a $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
@@ -128,8 +139,11 @@
  
  EXTRA_DIST = *.mm
  
---- origsrc/dynare-4.6.4/dynare++/tl/cc/Makefile.am	2020-02-27 00:23:57.179454000 +0900
-+++ src/dynare-4.6.4/dynare++/tl/cc/Makefile.am	2021-05-31 09:27:43.261422200 +0900
+ check-local:
+-	./tests
++	(cd $(abs_srcdir) && $(abs_builddir)/tests)
+--- origsrc/dynare-5.1/dynare++/tl/cc/Makefile.am	2020-02-27 00:23:53.639395900 +0900
++++ src/dynare-5.1/dynare++/tl/cc/Makefile.am	2022-05-15 04:27:32.057056200 +0900
 @@ -42,5 +42,5 @@ libtl_a_SOURCES = \
  	tl_static.hh \
  	twod_matrix.cc \
@@ -137,8 +151,8 @@
 -libtl_a_CPPFLAGS = -I../../sylv/cc -I../../utils/cc $(CPPFLAGS_MATIO)
 +libtl_a_CPPFLAGS = -I../../sylv/cc -I../../utils/cc $(CPPFLAGS_MATIO) -I$(top_srcdir)/dynare++/sylv/cc -I$(top_srcdir)/dynare++/utils/cc
  libtl_a_CXXFLAGS = $(AM_CXXFLAGS) $(THREAD_CXXFLAGS)
---- origsrc/dynare-4.6.4/dynare++/tl/testing/Makefile.am	2020-02-27 00:23:57.187454200 +0900
-+++ src/dynare-4.6.4/dynare++/tl/testing/Makefile.am	2021-05-31 13:54:31.066483500 +0900
+--- origsrc/dynare-5.1/dynare++/tl/testing/Makefile.am	2020-02-27 00:23:53.647396200 +0900
++++ src/dynare-5.1/dynare++/tl/testing/Makefile.am	2022-05-15 10:13:24.313929300 +0900
 @@ -1,7 +1,7 @@
  check_PROGRAMS = tests
  
