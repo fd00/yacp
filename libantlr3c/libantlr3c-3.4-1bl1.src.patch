@@ -1,0 +1,53 @@
+--- origsrc/libantlr3c-3.4/Makefile.am	2011-06-23 07:32:14.000000000 +0900
++++ src/libantlr3c-3.4/Makefile.am	2022-05-20 10:38:12.378164200 +0900
+@@ -62,9 +62,9 @@ include_HEADERS =	include/antlr3.h
+ 					include/antlr3treeparser.h				\
+ 					antlr3config.h
+ 
+-libantlr3c_la_LDFLAGS = -avoid-version
++libantlr3c_la_LDFLAGS = -no-undefined
+ 
+-INCLUDES = -Iinclude
++INCLUDES = -I $(top_srcdir)/include
+ 
+ EXTRA_DIST = 	\
+ 				vsrulefiles/antlr3lexerandparser.rules		\
+@@ -76,3 +76,5 @@ EXTRA_DIST = 	\
+ 
+ export OBJECT_MODE
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libantlr3c-3.4/configure.ac	2011-07-20 03:14:04.000000000 +0900
++++ src/libantlr3c-3.4/configure.ac	2022-05-20 10:37:40.131427100 +0900
+@@ -213,5 +213,5 @@ AC_CHECK_FUNCS([memmove memset strdup ac
+ AC_CONFIG_MACRO_DIR([m4])
+ 
+ AC_CONFIG_HEADERS(antlr3config.h)
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libantlr3c.pc Makefile])
+ AC_OUTPUT
+--- origsrc/libantlr3c-3.4/libantlr3c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libantlr3c-3.4/libantlr3c.pc.in	2022-05-20 10:37:40.071348700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libantlr3c
++Description: ANother Tool for Language Recognition (C runtime distribution)
++Version: @VERSION@
++Libs: -L${libdir} -lantlr3c
++Cflags: -I${includedir}
+--- origsrc/libantlr3c-3.4/src/antlr3debughandlers.c	2011-06-23 07:32:16.000000000 +0900
++++ src/libantlr3c-3.4/src/antlr3debughandlers.c	2022-05-20 10:12:10.564797800 +0900
+@@ -35,6 +35,8 @@
+ 
+ #include    <antlr3.h>
+ 
++#include <netinet/tcp.h>
++
+ // Not everyone wishes to include the debugger stuff in their final deployment because
+ // it will then rely on being linked with the socket libraries. Hence if the programmer turns
+ // off the debugging, we do some dummy stuff that satifies compilers etc but means there is
