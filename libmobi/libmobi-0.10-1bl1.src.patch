@@ -1,0 +1,137 @@
+--- origsrc/libmobi-0.10/configure.ac	2022-03-22 02:16:34.000000000 +0900
++++ src/libmobi-0.10/configure.ac	2022-05-23 13:48:14.667423000 +0900
+@@ -113,6 +113,12 @@ case "$host" in
+         ISO99_SOURCE="-D_ISOC99_SOURCE=1"
+         WIN32=yes
+         ;;
++    *-*-cygwin*)
++        NO_UNDEFINED="-no-undefined"
++        AVOID_VERSION=
++        ISO99_SOURCE=
++        WIN32=no
++        ;;
+     *)
+         NO_UNDEFINED=
+         AVOID_VERSION=
+--- origsrc/libmobi-0.10/src/Makefile.am	2022-03-22 02:16:34.000000000 +0900
++++ src/libmobi-0.10/src/Makefile.am	2022-05-23 13:48:14.673126200 +0900
+@@ -13,14 +13,8 @@ endif
+ if USE_ENCRYPTION
+ libmobi_la_SOURCES += encryption.c encryption.h randombytes.c randombytes.h sha1.c sha1.h
+ endif
+-EXTRA_LTLIBRARIES = libminiz.la
+-libminiz_la_SOURCES = miniz.c miniz.h
+-libminiz_la_CFLAGS = $(VISIBILITY_HIDDEN) $(MINIZ_CFLAGS) \
+--DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES \
+--DMINIZ_NO_TIME -DMINIZ_NO_ARCHIVE_APIS -DMINIZ_NO_ARCHIVE_WRITING_APIS
+-libminiz_la_LDFLAGS =
+ if USE_MINIZ
+-libmobi_la_LIBADD = libminiz.la
++libmobi_la_LIBADD = -lminiz
+ endif
+ include_HEADERS = mobi.h
+ libmobi_la_LDFLAGS = $(AVOID_VERSION) $(NO_UNDEFINED) $(DARWIN_LDFLAGS) $(LIBZ_LDFLAGS) $(LIBXML2_LDFLAGS)
+--- origsrc/libmobi-0.10/src/randombytes.c	2022-03-22 02:16:34.000000000 +0900
++++ src/libmobi-0.10/src/randombytes.c	2022-05-23 13:58:56.372004400 +0900
+@@ -90,7 +90,7 @@
+ #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+ /* Dragonfly, FreeBSD, NetBSD, OpenBSD (has arc4random) */
+ # include <sys/param.h>
+-# if defined(BSD)
++# if defined(BSD) || defined(__CYGWIN__)
+ #  include <stdlib.h>
+ # endif
+ #endif
+@@ -299,13 +299,13 @@ static int randombytes_linux_randombytes
+ #endif /* defined(__linux__) && !defined(SYS_getrandom) */
+ 
+ 
+-#if defined(BSD)
++#if defined(BSD) || defined(__CYGWIN__)
+ static int randombytes_bsd_randombytes(void *buf, size_t n)
+ {
+     arc4random_buf(buf, n);
+     return 0;
+ }
+-#endif /* defined(BSD) */
++#endif /* defined(BSD) || defined(__CYGWIN__) */
+ 
+ 
+ #if defined(__EMSCRIPTEN__)
+@@ -358,7 +358,7 @@ RANDOMBYTES_INFO("Using /dev/urandom dev
+     /* When we have enough entropy, we can read from /dev/urandom */
+     return randombytes_linux_randombytes_urandom(buf, n);
+ # endif
+-#elif defined(BSD)
++#elif defined(BSD) || defined(__CYGWIN__)
+ RANDOMBYTES_INFO("Using arc4random system call")
+     /* Use arc4random system call */
+     return randombytes_bsd_randombytes(buf, n);
+--- origsrc/libmobi-0.10/tests/test.sh.in	2022-03-22 02:16:34.000000000 +0900
++++ src/libmobi-0.10/tests/test.sh.in	2022-05-23 15:54:57.153272200 +0900
+@@ -94,7 +94,7 @@ if [[ "${do_md5}" -eq "1" ]]; then
+             cd "${tmp_dir}${separator}${markup_dir}" || die "Could not change directory to ${tmp_dir}${separator}${markup_dir}" $?
+             rm -f "..${separator}${testfile_md5}.md5"
+             ${md5prog} * > "..${separator}${testfile_md5}.md5"
+-            diff -w "..${separator}${testfile_md5}.md5" "..${separator}..${separator}${md5file_markup}" || die "Wrong md5 checksum in ${markup_dir}" $?
++            diff -w "..${separator}${testfile_md5}.md5" "${md5file_markup}" || die "Wrong md5 checksum in ${markup_dir}" $?
+             rm -f "..${separator}${testfile_md5}.md5"
+         ) || exit $?
+         log "Checksum correct"
+--- origsrc/libmobi-0.10/tools/Makefile.am	2022-03-22 02:16:34.000000000 +0900
++++ src/libmobi-0.10/tools/Makefile.am	2022-05-23 14:00:28.429711400 +0900
+@@ -7,26 +7,22 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(to
+ bin_PROGRAMS = mobitool mobimeta
+ man_MANS = mobitool.1 mobimeta.1
+ 
+-noinst_LIBRARIES = libcommon.a
+-libcommon_a_SOURCES = common.c common.h
++noinst_LTLIBRARIES = libcommon.la
++libcommon_la_SOURCES = common.c common.h
+ 
+ if USE_INTERNAL_GETOPT
+-libcommon_a_SOURCES += win32/getopt.c win32/getopt.h
++libcommon_la_SOURCES += win32/getopt.c win32/getopt.h
+ endif
+ 
+ mobitool_SOURCES = mobitool.c
+-mobitool_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.a
+-mobitool_LDADD = libcommon.a $(top_builddir)/src/libmobi.la
++mobitool_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.la
++mobitool_LDADD = libcommon.la $(top_builddir)/src/libmobi.la
+ mobitool_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
+ mobitool_LDFLAGS = $(TOOLS_STATIC)
+ 
+ if USE_XMLWRITER
+ # miniz.c zip functions are needed for epub creation
+-noinst_LIBRARIES += libminiz.a
+-libminiz_a_SOURCES = ../src/miniz.c ../src/miniz.h
+-libminiz_a_CFLAGS = $(MINIZ_CFLAGS) -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES
+-mobitool_DEPENDENCIES += libminiz.a
+-mobitool_LDADD += libminiz.a
++mobitool_LDADD += -lminiz
+ if USE_STATIC
+ if USE_MINIZ
+ mobitool_LDFLAGS += $(MOBI_ALLOW_MULTIPLE)
+@@ -35,8 +31,8 @@ endif
+ endif
+ 
+ mobimeta_SOURCES = mobimeta.c
+-mobimeta_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.a
+-mobimeta_LDADD = libcommon.a $(top_builddir)/src/libmobi.la
++mobimeta_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.la
++mobimeta_LDADD = libcommon.la $(top_builddir)/src/libmobi.la
+ mobimeta_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
+ mobimeta_LDFLAGS = $(TOOLS_STATIC)
+ 
+@@ -44,8 +40,8 @@ if USE_ENCRYPTION
+ bin_PROGRAMS += mobidrm
+ man_MANS += mobidrm.1
+ mobidrm_SOURCES = mobidrm.c
+-mobidrm_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.a
+-mobidrm_LDADD = libcommon.a $(top_builddir)/src/libmobi.la
++mobidrm_DEPENDENCIES = $(top_builddir)/src/libmobi.la libcommon.la
++mobidrm_LDADD = libcommon.la $(top_builddir)/src/libmobi.la
+ mobidrm_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
+ mobidrm_LDFLAGS = $(TOOLS_STATIC)
+ endif
