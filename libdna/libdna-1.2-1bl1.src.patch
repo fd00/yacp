@@ -1,0 +1,40 @@
+--- origsrc/libdna-1.2/src/dna4_fill_random_x86.c	2022-05-23 03:34:35.000000000 +0900
++++ src/libdna-1.2/src/dna4_fill_random_x86.c	2022-05-23 10:57:09.154649000 +0900
+@@ -31,7 +31,7 @@ dna4_fill_random_select(void)
+ 
+ DNA_PUBLIC
+ void
+-dna4_fill_random(char *dest, char *end, uint32_t seed)
++dna4_fill_random(char *begin, char *end, uint32_t seed)
+ 	__attribute__((ifunc("dna4_fill_random_select")));
+ 
+ #elif defined(__APPLE__)
+@@ -54,23 +54,23 @@ dna4_fill_random_macho(void)
+ // boolean variable.
+ 
+ void
+-dna4_fill_random_callonce(char *dest, char *end, uint32_t seed);
++dna4_fill_random_callonce(char *begin, char *end, uint32_t seed);
+ 
+ static dna4_fill_random_fn *dna4_fill_random_fnptr = dna4_fill_random_callonce;
+ 
+ DNA_LOCAL
+ void
+-dna4_fill_random_callonce(char *dest, char *end, uint32_t seed)
++dna4_fill_random_callonce(char *begin, char *end, uint32_t seed)
+ {
+ 	dna4_fill_random_fnptr = dna4_fill_random_select();
+-	return dna4_fill_random_fnptr(begin, end, dest);
++	dna4_fill_random_fnptr(begin, end, seed);
+ }
+ 
+ DNA_PUBLIC
+ void
+-dna4_fill_random(char *dest, char *end, uint32_t seed)
++dna4_fill_random(char *begin, char *end, uint32_t seed)
+ {
+-	return dna4_fill_random_fnptr(begin, end, dest);
++	dna4_fill_random_fnptr(begin, end, seed);
+ }
+ 
+ DNA_LOCAL
