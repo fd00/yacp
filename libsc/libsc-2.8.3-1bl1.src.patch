@@ -1,0 +1,80 @@
+--- origsrc/libsc-2.8.3/Makefile.am	2021-09-16 04:32:24.000000000 +0900
++++ src/libsc-2.8.3/Makefile.am	2022-05-25 11:26:09.019153000 +0900
+@@ -33,17 +33,8 @@ config/Makefile.sc.mk : config/Makefile.
+         sed -e 's,{\(.*prefix\)},{sc_\1},g' \
+             -e 's,^\(.*prefix *=\),sc_\1,g' > $@
+ 
+-# install libsc m4 macros in a dedicated directory
+-scaclocaldir = $(datadir)/aclocal
+-dist_scaclocal_DATA = \
+-        config/sc_builtin.m4 config/sc_memalign.m4 config/sc_include.m4 \
+-        config/ax_prefix_config_h.m4 config/ax_split_version.m4 \
+-        config/sc_package.m4 config/sc_mpi.m4 \
+-        config/sc_pthread.m4 config/sc_openmp.m4 config/sc_v4l2.m4 \
+-        config/sc_qsort.m4
+-
+ # install example .ini files in a dedicated directory
+-scinidir = $(datadir)/ini
++scinidir = $(datadir)/libsc/ini
+ dist_scini_DATA =
+ 
+ # handle toplevel directory
+@@ -64,8 +55,6 @@ endif
+ 
+ # non-recursive build
+ include src/Makefile.am
+-include iniparser/Makefile.am
+-include libb64/Makefile.am
+ include test/Makefile.am
+ ## include example/bspline/Makefile.am
+ ## include example/cuda/Makefile.am
+@@ -114,10 +103,10 @@ dist-hook:
+ 
+ install-data-hook:
+ 	cd $(DESTDIR)$(pkgconfigdir) && \
+-              mv -f sc_autotools.pc "libsc-$(VERSION).pc"
++              mv -f sc_autotools.pc libsc.pc
+ 
+ uninstall-hook:
+-	cd $(DESTDIR)$(pkgconfigdir) && rm -f "libsc-$(VERSION).pc"
++	cd $(DESTDIR)$(pkgconfigdir) && rm -f libsc.pc
+ 
+ clean-local:
+ 	rm -f ChangeLog
+--- origsrc/libsc-2.8.3/configure.ac	2021-09-16 04:32:24.000000000 +0900
++++ src/libsc-2.8.3/configure.ac	2022-05-25 10:40:05.088832800 +0900
+@@ -96,6 +96,9 @@ echo "o---------------------------------
+ 
+ SC_CHECK_LIBRARIES([SC])
+ 
++PKG_CHECK_MODULES([INIPARSER], [iniparser])
++PKG_CHECK_MODULES([LIBB64], [libb64])
++
+ # Print summary.
+ 
+ m4_ifset([SC_CHECK_MPI_F77], [
+--- origsrc/libsc-2.8.3/src/Makefile.am	2021-09-16 04:32:24.000000000 +0900
++++ src/libsc-2.8.3/src/Makefile.am	2022-05-25 10:40:58.966007400 +0900
+@@ -40,8 +40,10 @@ lib_LTLIBRARIES += src/libsc.la
+ src_libsc_la_SOURCES = \
+         $(libsc_internal_headers) \
+         $(libsc_compiled_sources)
+-src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS)
++src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS) $(INIPARSER_CFLAGS) $(LIBB64_CFLAGS)
+ ## src_libsc_la_LDFLAGS = -release $(VERSION)
++src_libsc_la_LDFLAGS = -no-undefined
++src_libsc_la_LIBADD = $(INIPARSER_LIBS) $(LIBB64_LIBS)
+ LDADD += @top_builddir@/src/libsc.la
+ 
+ nodist_include_HEADERS += $(libsc_generated_headers)
+--- origsrc/libsc-2.8.3/src/sc_io.c	2021-09-16 04:32:24.000000000 +0900
++++ src/libsc-2.8.3/src/sc_io.c	2022-05-25 10:41:28.724951900 +0900
+@@ -22,7 +22,7 @@
+ */
+ 
+ #include <sc_io.h>
+-#include <libb64.h>
++#include <b64/cencode.h>
+ #ifdef SC_HAVE_ZLIB
+ #include <zlib.h>
+ #endif
