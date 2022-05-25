@@ -1,0 +1,58 @@
+--- origsrc/librist-v0.2.7/contrib/endian-shim.h	2022-03-20 16:15:44.000000000 +0900
++++ src/librist-v0.2.7/contrib/endian-shim.h	2022-05-25 09:46:06.233449100 +0900
+@@ -45,7 +45,7 @@
+ #define be64toh(x) OSSwapBigToHostInt64(x)
+ #define le64toh(x) OSSwapLittleToHostInt64(x)
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ # include <endian.h>
+ # if !defined(htobe64)
+ #  if __BYTE_ORDER == __LITTLE_ENDIAN
+--- origsrc/librist-v0.2.7/contrib/fastpbkdf2.c	2022-03-20 16:15:44.000000000 +0900
++++ src/librist-v0.2.7/contrib/fastpbkdf2.c	2022-05-25 09:51:29.621765600 +0900
+@@ -25,7 +25,7 @@
+ #include <assert.h>
+ #include <string.h>
+ 
+-#if defined(__linux__) || defined(__GLIBC__)
++#if defined(__linux__) || defined(__GLIBC__) || defined(__CYGWIN__)
+ #include <endian.h>
+ #elif defined(__APPLE__) || defined(__GLIBC__)
+ #include <machine/endian.h>
+--- origsrc/librist-v0.2.7/src/rist-common.c	2022-03-20 16:15:44.000000000 +0900
++++ src/librist-v0.2.7/src/rist-common.c	2022-05-25 09:46:06.255529600 +0900
+@@ -24,7 +24,7 @@
+ #include <stdbool.h>
+ #include "stdio-shim.h"
+ #include <assert.h>
+-
++#include <unistd.h>
+ 
+ static void rist_peer_recv(struct evsocket_ctx *evctx, int fd, short revents, void *arg);
+ static void rist_peer_sockerr(struct evsocket_ctx *evctx, int fd, short revents, void *arg);
+--- origsrc/librist-v0.2.7/src/udpsocket.c	2022-03-20 16:15:44.000000000 +0900
++++ src/librist-v0.2.7/src/udpsocket.c	2022-05-25 09:46:06.296535900 +0900
+@@ -178,8 +178,12 @@ int udpsocket_set_mcast_iface(int sd, co
+ 	if (family == AF_INET6) {
+ 		return setsockopt(sd, SOL_IPV6, IPV6_MULTICAST_IF, &scope, sizeof(scope));
+ 	} else {
++#if defined(__linux__)
+ 		struct ip_mreqn req = { .imr_ifindex = scope };
+ 		return setsockopt(sd, SOL_IP, IP_MULTICAST_IF, &req, sizeof(req));
++#else
++		return -1;
++#endif
+ 	}
+ 	return -1;
+ #endif
+--- origsrc/librist-v0.2.7/test/rist/test_send_receive.c	2022-03-20 16:15:44.000000000 +0900
++++ src/librist-v0.2.7/test/rist/test_send_receive.c	2022-05-25 09:46:06.302372800 +0900
+@@ -8,6 +8,7 @@
+ #include "librist/librist.h"
+ #include "rist-private.h"
+ #include <stdatomic.h>
++#include <unistd.h>
+ 
+ #ifdef _WIN32
+ #include <windows.h>
