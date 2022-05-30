@@ -1,0 +1,49 @@
+--- origsrc/bzip3-1.1.3/Makefile.am	2022-05-16 18:16:00.000000000 +0900
++++ src/bzip3-1.1.3/Makefile.am	2022-05-30 09:27:19.417434200 +0900
+@@ -1,7 +1,7 @@
+ ACLOCAL_AMFLAGS = -I build-aux
+ 
+ AM_CFLAGS = -I$(top_srcdir)/include
+-AM_LDFLAGS = -avoid-version
++AM_LDFLAGS = -no-undefined
+ 
+ EXTRA_DIST = LICENSE PORTING.md README.md build-aux/git-version-gen
+ 
+@@ -70,7 +70,10 @@ CLEANFILES += LICENSE2
+ BZIP3 := bzip3$(EXEEXT)
+ 
+ roundtrip: $(BZIP3)
+-	rm -f LICENSE2
+-	./$(BZIP3) -e -b 6 LICENSE
+-	./$(BZIP3) -d LICENSE.bz3 LICENSE2
+-	cmp LICENSE LICENSE2
++	rm -f $(builddir)/LICENSE2
++	./$(BZIP3) -e -b 6 $(srcdir)/LICENSE $(builddir)/LICENSE.bz3
++	./$(BZIP3) -d $(builddir)/LICENSE.bz3 $(builddir)/LICENSE2
++	cmp $(srcdir)/LICENSE $(builddir)/LICENSE2
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/bzip3-1.1.3/bzip3.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bzip3-1.1.3/bzip3.pc.in	2022-05-30 09:27:19.420430000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bzip3
++Description: Better and stronger spiritual successor to BZip2
++Version: @VERSION@
++Libs: -L${libdir} -lbzip3
++Cflags: -I${includedir}
+--- origsrc/bzip3-1.1.3/configure.ac	2022-05-16 18:16:00.000000000 +0900
++++ src/bzip3-1.1.3/configure.ac	2022-05-30 09:27:19.423526000 +0900
+@@ -51,6 +51,6 @@ AM_COND_IF([PASSED_CFLAGS], [
+ 	])
+ ])
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([bzip3.pc Makefile])
+ AC_ARG_PROGRAM
+ AC_OUTPUT
