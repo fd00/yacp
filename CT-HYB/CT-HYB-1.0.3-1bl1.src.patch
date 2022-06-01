@@ -1,0 +1,83 @@
+--- origsrc/CT-HYB-1.0.3/CMakeLists.txt	2018-03-22 13:57:27.000000000 +0900
++++ src/CT-HYB-1.0.3/CMakeLists.txt	2022-06-01 10:29:55.093116800 +0900
+@@ -36,11 +36,10 @@ if(APPLE)
+     set(CMAKE_MACOSX_RPATH ON)
+ endif()
+ 
+-
+-# The project relies on the ALPSCore package. If ALPSCore is not found
+-# automatically, specify its location using:
+-# export ALPSCore_DIR=/location/to/ALPSCORE/
+-find_package(ALPSCore REQUIRED)
++find_package(pkgconfig)
++pkg_check_modules(ALPSCORE alps-accumulators alps-alea alps-gf alps-hdf5 alps-mc alps-params alps-utilities REQUIRED)
++set(ALPSCore_LIBRARIES ${ALPSCORE_LIBRARIES})
++set(ALPSCore_HAS_MPI ON)
+ 
+ #Find MPI
+ include(EnableMPI)
+@@ -79,6 +78,10 @@ set(LIB_FILES ./src/solver_real.cpp ./sr
+ add_library(alpscore_cthyb SHARED ${LIB_FILES})
+ set_target_properties(alpscore_cthyb PROPERTIES PUBLIC_HEADER src/solver.hpp)
+ 
++if (CYGWIN)
++    set_target_properties(alpscore_cthyb PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ #Compiler dependent libraries
+ set(EXTRA_LIBS "")
+ if (USE_QUAD_PRECISION)
+@@ -130,7 +133,7 @@ install (TARGETS alpscore_cthyb
+ 
+ install(EXPORT ALPSCoreCTHYB-export
+         FILE alpscorecthyb-config.cmake
+-        DESTINATION share/cmake/ALPSCoreCTHYB/
++        DESTINATION lib/cmake/ALPSCoreCTHYB/
+         EXPORT_LINK_INTERFACE_LIBRARIES)
+ 
+ #install (TARGETS hybmat alpscore_cthyb
+@@ -139,3 +142,12 @@ install(EXPORT ALPSCoreCTHYB-export
+ #)
+ #install (FILES "./src/solver.hpp" DESTINATION "include/alps/cthyb")
+ #install (FILES "${CMAKE_BINARY_DIR}/ALPSCoreCTHYBConfig.cmake" DESTINATION "./share/ALPSCoreCTHYB/")
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/CT-HYB.pc.in ${CMAKE_BINARY_DIR}/CT-HYB.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/CT-HYB.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/CT-HYB-1.0.3/CT-HYB.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/CT-HYB-1.0.3/CT-HYB.pc.in	2022-06-01 10:30:15.070850400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: CT-HYB
++Description: ALPS Hybridization Expansion Matrix Code
++Version: @VERSION@
++Libs: -L${libdir} -lalpscore_cthyb
++Cflags: -I${includedir}
+--- origsrc/CT-HYB-1.0.3/test/gtest-all.cc	2018-03-22 13:57:27.000000000 +0900
++++ src/CT-HYB-1.0.3/test/gtest-all.cc	2022-06-01 08:54:14.090181100 +0900
+@@ -6514,6 +6514,7 @@ void InitGoogleTest(int* argc, wchar_t**
+ # endif  // GTEST_OS_MAC
+ 
+ # include <fcntl.h>
++#include <climits>
+ 
+ # if GTEST_OS_LINUX
+ #  include <signal.h>
+@@ -7234,6 +7235,8 @@ DeathTest::TestRole WindowsDeathTest::As
+ }
+ # else  // We are not on Windows.
+ 
++#include <sys/wait.h>
++
+ // ForkingDeathTest provides implementations for most of the abstract
+ // methods of the DeathTest interface.  Only the AssumeRole method is
+ // left undefined.
