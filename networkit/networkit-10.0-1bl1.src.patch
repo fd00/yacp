@@ -1,0 +1,79 @@
+--- origsrc/networkit/CMakeLists.txt	2022-06-02 20:35:20.000000000 +0900
++++ src/networkit/CMakeLists.txt	2022-06-02 21:50:05.497036800 +0900
+@@ -224,10 +224,12 @@ if(NOT NETWORKIT_EXT_TLX)
+ 				"Please run `git submodule update --init` to fetch the submodule.")
+ 	endif()
+ else()
++	if (NOT CYGWIN)
+ 	add_library(tlx STATIC IMPORTED)
+ 	set_target_properties(tlx PROPERTIES
+ 			IMPORTED_LOCATION "${NETWORKIT_EXT_TLX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}tlx${CMAKE_STATIC_LIBRARY_SUFFIX}"
+ 			INTERFACE_INCLUDE_DIRECTORIES "${NETWORKIT_EXT_TLX}/include/")
++	endif()
+ endif()
+ 
+ ################################################################################
+@@ -270,10 +272,14 @@ if(NETWORKIT_BUILD_CORE AND NETWORKIT_MO
+ 			COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+ 			LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
+ 	
++	if (CYGWIN)
++		set_target_properties(networkit PROPERTIES SOVERSION "${SOVERSION}")
++	endif()
++	
+ 	install(TARGETS networkit
+ 			LIBRARY DESTINATION ${NETWORKIT_LIB_DEST}
+ 			ARCHIVE DESTINATION ${NETWORKIT_LIB_DEST}
+-			RUNTIME DESTINATION ${NETWORKIT_LIB_DEST})
++			RUNTIME DESTINATION bin)
+ 
+ 	target_include_directories(networkit BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
+ 	target_include_directories(networkit PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
+@@ -453,20 +459,23 @@ endfunction()
+ if (NETWORKIT_BUILD_TESTS)
+ 	enable_testing()
+ 
+-	if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/googletest/CMakeLists.txt")
+-		if (MSVC)
+-			# While by default MSVC projects link against the shared runtime library
+-			# (and hence also NetworKit), GTest defaults to the static runtime lib.
+-			# Both must not be mix, so we request GTest here to also use the shared CRT.
+-			set( gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)
+-		endif()
+-		option(BUILD_GTEST "Builds the googletest subproject" ON)
+-		option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
+-		add_subdirectory(extlibs/googletest)
+-	else()
+-		message(FATAL_ERROR
+-			"Missing GoogleTest and GoogleMock in extlibs/googletest. "
+-			"Please run `git submodule update --init` to fetch the submodule.")
++	find_package(gtest)
++	if (NOT GTEST_FOUND)
++		if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/googletest/CMakeLists.txt")
++			if (MSVC)
++				# While by default MSVC projects link against the shared runtime library
++				# (and hence also NetworKit), GTest defaults to the static runtime lib.
++				# Both must not be mix, so we request GTest here to also use the shared CRT.
++				set( gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)
++			endif()
++			option(BUILD_GTEST "Builds the googletest subproject" ON)
++			option(BUILD_GMOCK "Builds the googlemock subproject" OFF)
++			add_subdirectory(extlibs/googletest)
++		else()
++			message(FATAL_ERROR
++				"Missing GoogleTest and GoogleMock in extlibs/googletest. "
++				"Please run `git submodule update --init` to fetch the submodule.")
++		endif()
+ 	endif()
+ 
+ 	if (NETWORKIT_MONOLITH)
+--- origsrc/networkit/networkit.pc	2022-06-02 20:35:21.000000000 +0900
++++ src/networkit/networkit.pc	2022-06-02 23:59:56.669944600 +0900
+@@ -6,6 +6,6 @@ libdir=${exec_prefix}/@NETWORKIT_INSTALL
+ Name: networkit
+ Description: networkit
+ URL: http://networkit.github.io
+-Version: @NETWORKIT_VERSION@
++Version: @VERSION@
+ Cflags: -I${includedir} @NETWORKIT_CXX_FLAGS@
+ Libs: -L${libdir} -l@NETWORKIT_LIBNAME@
