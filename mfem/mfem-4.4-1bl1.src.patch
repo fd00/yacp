@@ -1,6 +1,6 @@
---- origsrc/mfem-4.3/CMakeLists.txt	2021-07-30 07:31:59.000000000 +0900
-+++ src/mfem-4.3/CMakeLists.txt	2021-09-05 11:43:24.391037900 +0900
-@@ -456,6 +456,9 @@ if (OPENMP_FOUND)
+--- origsrc/mfem-4.4/CMakeLists.txt	2022-03-22 08:19:37.000000000 +0900
++++ src/mfem-4.4/CMakeLists.txt	2022-06-02 09:13:36.583686400 +0900
+@@ -484,6 +484,9 @@ if (OPENMP_FOUND)
    endif()
  endif()
  
@@ -10,9 +10,9 @@
  message(STATUS "MFEM build type: CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
  message(STATUS "MFEM version: v${MFEM_VERSION_STRING}")
  message(STATUS "MFEM git string: ${MFEM_GIT_STRING}")
-@@ -504,6 +507,9 @@ endif()
+@@ -526,6 +529,9 @@ target_link_libraries(mfem PUBLIC ${TPL_
  if (MINGW)
-   target_link_libraries(mfem ws2_32)
+   target_link_libraries(mfem PRIVATE ws2_32)
  endif()
 +if (TINYXML2_FOUND)
 +  target_link_libraries(mfem PUBLIC ${TINYXML2_LIBRARIES})
@@ -20,7 +20,7 @@
  set_target_properties(mfem PROPERTIES VERSION "${mfem_VERSION}")
  set_target_properties(mfem PROPERTIES SOVERSION "${mfem_VERSION}")
  
-@@ -629,7 +635,8 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME
+@@ -662,7 +668,8 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME
  # Install the library
  install(TARGETS ${PROJECT_NAME}
    EXPORT ${PROJECT_NAME_UC}Targets
@@ -30,19 +30,21 @@
  
  # Install the master headers
  foreach(Header mfem.hpp mfem-performance.hpp)
-@@ -729,3 +736,10 @@ install(EXPORT ${PROJECT_NAME_UC}Targets
+@@ -762,3 +769,12 @@ install(EXPORT ${PROJECT_NAME_UC}Targets
  #-------------------------------------------------------------------------------
  
  mfem_export_mk_files()
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/mfem.pc.in ${CMAKE_BINARY_DIR}/mfem.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/mfem.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/mfem-4.3/fem/coefficient.hpp	2021-07-30 07:31:59.000000000 +0900
-+++ src/mfem-4.3/fem/coefficient.hpp	2021-09-05 09:13:28.525259700 +0900
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/mfem.pc.in ${CMAKE_BINARY_DIR}/mfem.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/mfem.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/mfem-4.4/fem/coefficient.hpp	2022-03-22 08:19:37.000000000 +0900
++++ src/mfem-4.4/fem/coefficient.hpp	2022-06-02 09:12:04.612069700 +0900
 @@ -19,6 +19,10 @@
  #include "intrules.hpp"
  #include "eltrans.hpp"
@@ -54,8 +56,8 @@
  namespace mfem
  {
  
---- origsrc/mfem-4.3/general/CMakeLists.txt	2021-07-30 07:31:59.000000000 +0900
-+++ src/mfem-4.3/general/CMakeLists.txt	2021-09-05 09:27:29.591665800 +0900
+--- origsrc/mfem-4.4/general/CMakeLists.txt	2022-03-22 08:19:37.000000000 +0900
++++ src/mfem-4.4/general/CMakeLists.txt	2022-06-02 09:12:04.616131500 +0900
 @@ -28,7 +28,6 @@ list(APPEND SRCS
    stable3d.cpp
    table.cpp
@@ -82,8 +84,8 @@
  if (MFEM_USE_MPI)
    list(APPEND SRCS communication.cpp)
    # If this list (HDRS -> HEADERS) is used for install, we probably want the
---- origsrc/mfem-4.3/linalg/hypre.hpp	2021-07-30 07:31:59.000000000 +0900
-+++ src/mfem-4.3/linalg/hypre.hpp	2021-09-06 16:53:16.821363200 +0900
+--- origsrc/mfem-4.4/linalg/hypre.hpp	2022-03-22 08:19:37.000000000 +0900
++++ src/mfem-4.4/linalg/hypre.hpp	2022-06-02 09:12:04.621125600 +0900
 @@ -28,9 +28,11 @@
  #include "temp_multivector.h"
  #include "../general/globals.hpp"
@@ -94,10 +96,10 @@
  #endif
 +#endif
  
- #if defined(HYPRE_USING_CUDA) && !defined(MFEM_USE_CUDA)
- #error "MFEM_USE_CUDA=YES is required when HYPRE is built with CUDA!"
---- origsrc/mfem-4.3/mfem.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/mfem-4.3/mfem.pc.in	2021-09-05 09:13:28.530273000 +0900
+ #if defined(HYPRE_USING_GPU) && \
+     !(defined(HYPRE_USING_CUDA) || defined(HYPRE_USING_HIP))
+--- origsrc/mfem-4.4/mfem.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mfem-4.4/mfem.pc.in	2022-06-02 09:12:04.623133800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
