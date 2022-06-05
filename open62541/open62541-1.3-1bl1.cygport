@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/${PN}/${PN}"
-SRC_URI="https://github.com/${PN}/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Open source implementation of OPC UA (OPC Unified Architecture) aka IEC 62541"
@@ -12,12 +12,35 @@ library is platform independent. All platform-specific functionality is
 implemented via exchangeable plugins. Plugin implementations are provided for
 the major operating systems."
 
+BUILD_REQUIRES="libssl-devel"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
 	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DUA_BUILD_EXAMPLES:BOOL=ON
+	-DUA_BUILD_TOOLS:BOOL=ON
+	-DUA_BUILD_UNIT_TESTS:BOOL=ON
+	-DUA_ENABLE_ENCRYPTION:STRING=OPENSSL
+	-DUA_ENABLE_JSON_ENCODING:BOOL=ON
 	-DOPEN62541_VERSION:STRING=v${PV}
+	-DVERSION:STRING=${PV}
 "
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	mv usr/include/*.h  usr/include/${PN}/
+}
 
 DOCS="
 	CHANGELOG
@@ -31,15 +54,16 @@ PKG_NAMES="
 	libopen62541-devel
 "
 open62541_CONTENTS="
+	usr/bin/*.exe
 	usr/share
 "
 libopen62541_1_CONTENTS="
-	usr/bin
+	usr/bin/*.dll
 "
 libopen62541_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-open62541_SUMMARY="${SUMMARY} (licensing & readmes)"
+open62541_SUMMARY="${SUMMARY} (utilities)"
 libopen62541_1_SUMMARY="${SUMMARY} (runtime)"
 libopen62541_devel_SUMMARY="${SUMMARY} (development)"
