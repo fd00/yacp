@@ -1,0 +1,66 @@
+--- origsrc/olm-3.2.12/CMakeLists.txt	2022-05-31 02:55:34.000000000 +0900
++++ src/olm-3.2.12/CMakeLists.txt	2022-06-05 22:40:40.415478100 +0900
+@@ -25,7 +25,10 @@ set(CMAKE_C_VISIBILITY_PRESET hidden)
+ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+ set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+ 
+-add_library(olm
++find_package(pkgconfig)
++pkg_check_modules(CURVE25519_DONNA curve25519-donna)
++
++set(OLM_SRC
+     src/account.cpp
+     src/base64.cpp
+     src/cipher.cpp
+@@ -49,7 +52,14 @@ add_library(olm
+ 
+     lib/crypto-algorithms/aes.c
+     lib/crypto-algorithms/sha256.c
+-    lib/curve25519-donna/curve25519-donna.c)
++    lib/crypto-algorithms/sha256.c)
++if (NOT CURVE25519_DONNA_FOUND)
++    set(OLM_SRC ${OLM_SRC} lib/curve25519-donna/curve25519-donna.c)
++endif()
++add_library(olm ${OLM_SRC})
++if (CURVE25519_DONNA_FOUND)
++    target_link_libraries(olm ${CURVE25519_DONNA_LIBRARIES})
++endif()
+ add_library(Olm::Olm ALIAS olm)
+ 
+ # restrict the exported symbols
+@@ -84,6 +94,7 @@ configure_file(${PROJECT_NAME}.pc.in ${P
+ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/Olm)
+ install(TARGETS olm
+     EXPORT olm-targets
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+@@ -138,5 +149,6 @@ export(EXPORT olm-targets
+ export(PACKAGE Olm)
+ 
+ if (OLM_TESTS)
++    enable_testing()
+    add_subdirectory(tests)
+ endif()
+--- origsrc/olm-3.2.12/include/olm/olm_export.h	2022-05-31 02:55:34.000000000 +0900
++++ src/olm-3.2.12/include/olm/olm_export.h	2022-06-05 22:19:17.477398900 +0900
+@@ -9,15 +9,15 @@
+ #  ifndef OLM_EXPORT
+ #    ifdef olm_EXPORTS
+         /* We are building this library */
+-#      define OLM_EXPORT __attribute__((visibility("default")))
++#      define OLM_EXPORT __declspec(dllexport)
+ #    else
+         /* We are using this library */
+-#      define OLM_EXPORT __attribute__((visibility("default")))
++#      define OLM_EXPORT __declspec(dllimport)
+ #    endif
+ #  endif
+ 
+ #  ifndef OLM_NO_EXPORT
+-#    define OLM_NO_EXPORT __attribute__((visibility("hidden")))
++#    define OLM_NO_EXPORT 
+ #  endif
+ #endif
+ 
