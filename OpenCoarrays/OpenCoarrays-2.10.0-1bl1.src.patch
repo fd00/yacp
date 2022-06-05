@@ -1,0 +1,262 @@
+--- origsrc/OpenCoarrays-2.10.0/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/CMakeLists.txt	2022-06-06 03:04:30.582279000 +0900
+@@ -540,7 +540,11 @@ endif()
+ # Use standardized GNU install directory conventions
+ #---------------------------------------------------
+ include(GNUInstallDirs)
+-set(mod_dir_tail "${OpenCoarrays_dist_string}_${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}")
++if (CYGWIN)
++  set(mod_dir_tail "")
++else()
++  set(mod_dir_tail "${OpenCoarrays_dist_string}_${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}")
++endif()
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/${OpenCoarrays_dist_string}-tests")
+ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+@@ -581,10 +585,11 @@ function(caf_compile_executable target m
+             ${includes} ${localDefs} ${config_Fortran_flags}
+             -o "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${target}"
+             "${CMAKE_CURRENT_SOURCE_DIR}/${main_depend}"
+-            $<TARGET_FILE:opencoarrays_test_utilities>
+-            $<TARGET_FILE:opencoarrays_mod>
++            $<TARGET_LINKER_FILE:opencoarrays_test_utilities>
++            $<TARGET_LINKER_FILE:opencoarrays_mod>
++            $<TARGET_LINKER_FILE:caf_mpi>
+             ${ARGN}
+-    DEPENDS "${main_depend}" ${ARGN} caf_mpi_static opencoarrays_test_utilities opencoarrays_mod
++    DEPENDS "${main_depend}" ${ARGN} caf_mpi opencoarrays_test_utilities opencoarrays_mod
+     VERBATIM
+     )
+   add_custom_target("build_${target}" ALL
+--- origsrc/OpenCoarrays-2.10.0/src/iso-fortran-binding/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/src/iso-fortran-binding/CMakeLists.txt	2022-06-06 00:25:26.128635400 +0900
+@@ -1,7 +1,4 @@
+ add_library(ISO_Fortran_binding SHARED ISO_Fortran_binding.c)
+-add_library(ISO_Fortran_binding_static STATIC ISO_Fortran_binding.c)
+-
+-set_target_properties(ISO_Fortran_binding_static  PROPERTIES OUTPUT_NAME ISO_Fortran_binding)
+ 
+ set(CFI_SO_VERSION 0)
+ if(gfortran_compiler)
+@@ -19,16 +16,9 @@ set_target_properties( ISO_Fortran_bindi
+     PUBLIC_HEADER ISO_Fortran_binding.h
+ )
+ 
+-set_target_properties( ISO_Fortran_binding_static
+-    PROPERTIES
+-    VERSION ${PROJECT_VERSION}
+-    SOVERSION ${CFI_SO_VERSION}
+-    PUBLIC_HEADER ISO_Fortran_binding.h
+-)
+-
+ install(DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" FILES_MATCHING PATTERN "*.h")
+ 
+-install( TARGETS ISO_Fortran_binding ISO_Fortran_binding_static
++install( TARGETS ISO_Fortran_binding
+   EXPORT OpenCoarraysTargets
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+--- origsrc/OpenCoarrays-2.10.0/src/mpi/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/src/mpi/CMakeLists.txt	2022-06-06 04:19:34.822804400 +0900
+@@ -19,11 +19,14 @@ endif()
+ #-----------------------------------------------------------
+ # Add the actual library targets, then adjust them as needed
+ #-----------------------------------------------------------
+-add_library(opencoarrays_mod STATIC ../extensions/opencoarrays.F90)
++add_library(opencoarrays_mod SHARED ../extensions/opencoarrays.F90)
+ set_target_properties(opencoarrays_mod
+   PROPERTIES
+   Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/${mod_dir_tail}"
+   POSITION_INDEPENDENT_CODE TRUE)
++if (CYGWIN AND DEFINED OC_SO_VERSION)
++  set_target_properties(opencoarrays_mod PROPERTIES SOVERSION "${OC_SO_VERSION}")
++endif()
+ target_compile_options(opencoarrays_mod
+   PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${MPI_Fortran_COMPILE_OPTIONS}>)
+ target_compile_definitions(opencoarrays_mod
+@@ -32,23 +35,16 @@ target_link_libraries(opencoarrays_mod
+   PUBLIC ${MPI_Fortran_LINK_FLAGS}
+   PUBLIC ${MPI_Fortran_LIBRARIES})
+ target_link_libraries(opencoarrays_mod
+-  PUBLIC caf_mpi_static)
++  PUBLIC caf_mpi)
+ target_include_directories(opencoarrays_mod PUBLIC
+   $<$<COMPILE_LANGUAGE:Fortran>:${MPI_Fortran_INCLUDE_DIRS}>
+   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/${mod_dir_tail}>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${mod_dir_tail}>)
+ 
+ add_library(caf_mpi SHARED mpi_caf.c ../common/caf_auxiliary.c)
+-add_library(caf_mpi_static STATIC  mpi_caf.c ../common/caf_auxiliary.c)
+ target_link_libraries(caf_mpi
+   PUBLIC ${MPI_C_LINK_FLAGS}
+   PUBLIC ${MPI_C_LIBRARIES})
+-target_link_libraries(caf_mpi_static
+-  PUBLIC ${MPI_C_LINK_FLAGS}
+-  PUBLIC ${MPI_C_LIBRARIES})
+-set_target_properties(caf_mpi_static
+-  PROPERTIES
+-  POSITION_INDEPENDENT_CODE TRUE)
+ 
+ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+ find_package(Threads REQUIRED)
+@@ -61,27 +57,15 @@ target_link_libraries(caf_mpi
+   PUBLIC Threads::Threads)
+ set_target_properties(caf_mpi
+   PROPERTIES LINKER_LANGUAGE Fortran)
+-target_link_libraries(caf_mpi_static
+-  PUBLIC Threads::Threads)
+-target_link_libraries(caf_mpi_static
+-  PRIVATE gfortran)
+ 
+ target_include_directories(caf_mpi PUBLIC
+   $<$<COMPILE_LANGUAGE:C>:${MPI_C_INCLUDE_DIRS}>
+   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+-target_include_directories(caf_mpi_static PUBLIC
+-  $<$<COMPILE_LANGUAGE:C>:${MPI_C_INCLUDE_DIRS}>
+-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+ target_compile_options(caf_mpi
+   PUBLIC $<$<COMPILE_LANGUAGE:C>:${MPI_C_COMPILE_OPTIONS}>)
+ target_compile_definitions(caf_mpi
+   PUBLIC $<$<COMPILE_LANGUAGE:C>:${MPI_C_COMPILE_DEFINITIONS}>)
+-target_compile_options(caf_mpi_static
+-  PUBLIC $<$<COMPILE_LANGUAGE:C>:${MPI_C_COMPILE_OPTIONS}>)
+-target_compile_definitions(caf_mpi_static
+-  PUBLIC $<$<COMPILE_LANGUAGE:C>:${MPI_C_COMPILE_DEFINITIONS}>)
+ 
+ set(CAF_SO_VERSION 0)
+ if(gfortran_compiler)
+@@ -109,7 +93,7 @@ if(APPLE)
+ endif()
+ 
+ # Create a symlink in the include dir
+-if(UNIX)
++if(UNIX AND NOT CYGWIN)
+   add_custom_command(TARGET caf_mpi
+     POST_BUILD
+     COMMAND ${CMAKE_COMMAND} -E create_symlink "./${mod_dir_tail}/opencoarrays.mod" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/opencoarrays.mod"
+@@ -119,19 +103,13 @@ endif()
+ install(DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+   FILES_MATCHING PATTERN "opencoarrays.mod")
+ 
+-set_target_properties( caf_mpi_static
+-  PROPERTIES
+-  SOVERSION ${CAF_SO_VERSION}
+-#  VERSION ${PROJECT_VERSION}
+-)
+-
+ if (gfortran_compiler)
+   target_compile_options(caf_mpi INTERFACE $<$<COMPILE_LANGUAGE:Fortran>:-fcoarray=lib>)
+-  target_compile_options(caf_mpi_static INTERFACE $<$<COMPILE_LANGUAGE:Fortran>:-fcoarray=lib>)
+ endif()
+ 
+-install(TARGETS opencoarrays_mod caf_mpi caf_mpi_static EXPORT OpenCoarraysTargets
++install(TARGETS opencoarrays_mod caf_mpi EXPORT OpenCoarraysTargets
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ )
+@@ -180,8 +158,6 @@ CHECK_INCLUDE_FILE("alloca.h" HAVE_ALLOC
+ if(NOT HAVE_ALLOCA)
+   target_compile_definitions(caf_mpi
+     PRIVATE -DALLOCA_MISSING)
+-  target_compile_definitions(caf_mpi_static
+-    PRIVATE -DALLOCA_MISSING)
+   message(WARNING "Could not find <alloca.h>. Assuming functionality is provided elsewhere.")
+ endif()
+ 
+@@ -204,10 +180,7 @@ if(NOT HAVE_SIGKILL) # try -D_POSIX, nee
+   CHECK_SYMBOL_EXISTS(SIGKILL "signal.h" HAVE_SIGKILL2)
+   if(HAVE_SIGKILL2)
+     set(HAVE_SIGKILL ${HAVE_SIGKILL2})
+-    foreach(lib caf_mpi caf_mpi_static)
+-      target_compile_definitions(${lib}
+-    	PUBLIC -D_POSIX)
+-    endforeach()
++    target_compile_definitions(caf_mpi PUBLIC -D_POSIX)
+   endif()
+ endif()
+ 
+@@ -241,10 +214,7 @@ set(MPI_HEADERS mpi.h)
+ include(CheckIncludeFiles)
+ CHECK_INCLUDE_FILES("mpi.h;mpi-ext.h" HAVE_MPI_EXT)
+ if(HAVE_MPI_EXT)
+-    foreach(lib caf_mpi caf_mpi_static)
+-      target_compile_definitions(${lib}
+-    	PRIVATE -DHAVE_MPI_EXT_H)
+-    endforeach()
++  target_compile_definitions(caf_mpi PRIVATE -DHAVE_MPI_EXT_H)
+   set(MPI_HEADERS ${MPI_HEADERS};mpi-ext.h)
+ endif()
+ 
+@@ -279,10 +249,7 @@ else()
+ endif()
+ 
+ if(CAF_ENABLE_FAILED_IMAGES)
+-  foreach(lib caf_mpi caf_mpi_static)
+-    target_compile_definitions(${lib}
+-      PUBLIC -DUSE_FAILED_IMAGES)
+-  endforeach()
++  target_compile_definitions(caf_mpi PUBLIC -DUSE_FAILED_IMAGES)
+ endif()
+ 
+ #---------------------------------------------------
+@@ -297,10 +264,7 @@ endif()
+ CHECK_INCLUDE_FILES("mpi.h" HAVE_MPI_H)
+ CHECK_SYMBOL_EXISTS(I_MPI_VERSION "mpi.h" HAVE_Intel_MPI)
+ if(HAVE_Intel_MPI AND WIN32)
+-  foreach(lib caf_mpi caf_mpi_static)
+-    target_compile_definitions(${lib}
+-      PUBLIC -DUSE_GCC)
+-  endforeach()
++  target_compile_definitions(caf_mpi PUBLIC -DUSE_GCC)
+ endif()
+ set(CMAKE_REQUIRED_INCLUDES ${old_cmake_required_includes})
+ 
+@@ -334,11 +298,8 @@ foreach( fcflag IN LISTS MPI_Fortran_COM
+   set(CAF_MPI_Fortran_COMPILE_FLAGS "${CAF_MPI_Fortran_COMPILE_FLAGS} ${fcflag}" )
+ endforeach()
+ string(STRIP "${CAF_MPI_Fortran_COMPILE_FLAGS}" CAF_MPI_Fortran_COMPILE_FLAGS)
+-set_target_properties(caf_mpi_static
+-  PROPERTIES OUTPUT_NAME caf_mpi)
+-get_target_property(libcaf_static caf_mpi_static OUTPUT_NAME)
+ set(CAF_LIBS
+-  "${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${libcaf_static}${CMAKE_STATIC_LIBRARY_SUFFIX}")
++  "${CMAKE_INSTALL_LIBDIR}/${CMAKE_IMPORT_LIBRARY_PREFIX}caf_mpi${CMAKE_IMPORT_LIBRARY_SUFFIX}")
+ 
+ configure_file("${CMAKE_SOURCE_DIR}/src/extensions/caf.in" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/caf"
+   @ONLY)
+--- origsrc/OpenCoarrays-2.10.0/src/tests/integration/pde_solvers/coarrayBurgers/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/src/tests/integration/pde_solvers/coarrayBurgers/CMakeLists.txt	2022-06-06 03:29:05.860988200 +0900
+@@ -27,5 +27,5 @@ add_executable(coarray_burgers_pde
+   ${library_directory}/object_interface.F90
+   ${library_directory}/co_object_interface.F90
+ )
+-add_dependencies(coarray_burgers_pde caf_mpi_static)
++add_dependencies(coarray_burgers_pde caf_mpi)
+ target_include_directories(coarray_burgers_pde PRIVATE ${config_directory})
+--- origsrc/OpenCoarrays-2.10.0/src/tests/integration/pde_solvers/coarrayHeatSimplified/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/src/tests/integration/pde_solvers/coarrayHeatSimplified/CMakeLists.txt	2022-06-06 00:16:55.011113200 +0900
+@@ -1,11 +1,11 @@
+ set(CMAKE_Fortran_COMPILER "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/caf")
+ add_library(local_field OBJECT local_field.f90)
+ add_library(global_field OBJECT global_field.f90)
+-add_dependencies(local_field caf_mpi_static)
+-add_dependencies(global_field local_field caf_mpi_static)
++add_dependencies(local_field caf_mpi)
++add_dependencies(global_field local_field caf_mpi)
+ add_executable(co_heat
+   main.f90
+   $<TARGET_OBJECTS:local_field>
+   $<TARGET_OBJECTS:global_field>
+ )
+-add_dependencies(co_heat caf_mpi_static)
++add_dependencies(co_heat caf_mpi)
+--- origsrc/OpenCoarrays-2.10.0/src/tests/unit/iso-fortran-binding/CMakeLists.txt	2022-05-09 12:53:57.000000000 +0900
++++ src/OpenCoarrays-2.10.0/src/tests/unit/iso-fortran-binding/CMakeLists.txt	2022-06-06 00:35:29.013620300 +0900
+@@ -1,2 +1,2 @@
+ add_executable( ISO_Fortran_binding_tests ISO_Fortran_binding_tests.c )
+-target_link_libraries( ISO_Fortran_binding_tests ISO_Fortran_binding_static )
++target_link_libraries( ISO_Fortran_binding_tests ISO_Fortran_binding )
