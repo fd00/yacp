@@ -1,0 +1,78 @@
+HOMEPAGE="https://github.com/RemiArnaud/${PN}/"
+SRC_URI="https://github.com/RemiArnaud/${PN}/archive/refs/tags/v${PV}-maya.tar.gz"
+SRC_DIR="${P}-maya"
+PATCH_URI="
+	https://src.fedoraproject.org/rpms/openCOLLADA/raw/rawhide/f/OpenCOLLADA-cmake.patch
+	https://src.fedoraproject.org/rpms/openCOLLADA/raw/rawhide/f/OpenCOLLADA-pcre.patch
+	https://src.fedoraproject.org/rpms/openCOLLADA/raw/rawhide/f/openCOLLADA-daevalidator.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="Collada 3D import and export libraries"
+DESCRIPTION="COLLADAMax and COLLADAMaya are new implementation of a 3ds Max or Maya
+plug-ins to export scene or parts of it to a COLLADA file, released under an
+MIT-license."
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -rf Externals/{Cg,expat,lib3ds,LibXML,MayaDataModel,pcre,zlib,zziplib}
+	find ./ -name .project -delete
+	cp -a COLLADAStreamWriter/README README.COLLADAStreamWriter
+}
+
+BUILD_REQUIRES="libpcre-devel libxml2-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+# soversion: https://src.fedoraproject.org/rpms/openCOLLADA/blob/rawhide/f/openCOLLADA.spec
+SOVERSION=0.4
+CYGCMAKE_ARGS="
+	-DCMAKECONFIG_INSTALL_DIR:STRING=/usr/lib/cmake/${PN}
+	-DINCLUDE_INSTALL_DIR:STRING=/usr/include/${PN}
+	-DLIB_INSTALL_DIR:STRING=/usr/lib
+	-Dsoversion:STRING=${SOVERSION}
+	-DUSE_SHARED:BOOL=ON
+	-DUSE_STATIC:BOOL=OFF
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	dobin bin/*.exe
+
+	cd ${D}
+	mkdir -p usr/include/${PN}/MathMLSolver
+	cp -a ${S}/Externals/MathMLSolver/include/* ${D}/usr/include/${PN}/MathMLSolver/
+}
+
+DOCS="
+	COLLADAStreamWriter/AUTHORS
+	COLLADAStreamWriter/LICENSE
+	README.COLLADAStreamWriter
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}${SOVERSION}
+	lib${PN}-devel
+"
+OpenCOLLADA_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libOpenCOLLADA0_4_CONTENTS="
+	usr/bin/*.dll
+"
+libOpenCOLLADA_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+OpenCOLLADA_SUMMARY="${SUMMARY} (licensing & readmes)"
+libOpenCOLLADA0_4_SUMMARY="${SUMMARY} (runtime)"
+libOpenCOLLADA_devel_SUMMARY="${SUMMARY} (development)"
