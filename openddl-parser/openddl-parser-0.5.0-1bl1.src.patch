@@ -1,0 +1,49 @@
+--- origsrc/openddl-parser-0.5.0/CMakeLists.txt	2022-05-19 19:08:46.000000000 +0900
++++ src/openddl-parser-0.5.0/CMakeLists.txt	2022-06-06 13:25:59.286969000 +0900
+@@ -106,6 +106,9 @@ if(BUILD_SHARED_LIBS)
+         CXX_VISIBILITY_PRESET hidden
+         VISIBILITY_INLINES_HIDDEN TRUE
+     )
++    if (CYGWIN AND DEFINED SOVERSION)
++        set_target_properties(openddlparser PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+ else()
+     target_compile_definitions(openddlparser PUBLIC OPENDDL_STATIC_LIBARY)
+ endif()
+@@ -209,3 +212,12 @@ write_basic_package_version_file(
+ install(
+     FILES "${CMAKE_BINARY_DIR}/openddlparser-config-version.cmake"
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/openddlparser")
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/openddl-parser.pc.in ${CMAKE_BINARY_DIR}/openddl-parser.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/openddl-parser.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/openddl-parser-0.5.0/code/OpenDDLParser.cpp	2022-05-19 19:08:46.000000000 +0900
++++ src/openddl-parser-0.5.0/code/OpenDDLParser.cpp	2022-06-06 11:24:54.656677000 +0900
+@@ -35,7 +35,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE
+ 
+ BEGIN_ODDLPARSER_NS
+ 
+-static const char *Version = "0.4.0";
++static const char *Version = "0.5.0";
+ 
+ namespace Grammar {
+ 
+--- origsrc/openddl-parser-0.5.0/openddl-parser.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/openddl-parser-0.5.0/openddl-parser.pc.in	2022-06-06 13:26:33.555036500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: openddl-parser
++Description: Simple and fast OpenDDL Parser
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lopenddlparser
++Cflags: -I${includedir}
