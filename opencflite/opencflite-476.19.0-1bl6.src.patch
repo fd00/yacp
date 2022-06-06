@@ -1,0 +1,80 @@
+--- origsrc/opencflite-476.19.0/CFBase.c	2011-09-08 02:44:49.000000000 +0900
++++ src/opencflite-476.19.0/CFBase.c	2022-06-06 15:32:01.280490900 +0900
+@@ -44,7 +44,9 @@
+ #include <mach/mach.h>
+ #include <dlfcn.h>
+ #elif DEPLOYMENT_TARGET_LINUX
++#if !defined(__CYGWIN__)
+ #include <mcheck.h>
++#endif
+ #include <pthread.h>
+ #elif DEPLOYMENT_TARGET_WINDOWS
+ #include <windows.h>
+--- origsrc/opencflite-476.19.0/CFTimeZone.c	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CFTimeZone.c	2022-06-06 15:55:41.330392700 +0900
+@@ -290,6 +290,11 @@ CF_INLINE void __CFEntzcode(int32_t valu
+ }
+ 
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_LINUX
++#if defined(__CYGWIN__)
++static Boolean __CFParseTimeZoneData(CFAllocatorRef allocator, CFDataRef data, CFTZPeriod **tzpp, CFIndex *cntp) {
++    return false;
++}
++#else
+ static Boolean __CFParseTimeZoneData(CFAllocatorRef allocator, CFDataRef data, CFTZPeriod **tzpp, CFIndex *cntp) {
+     int32_t len, timecnt, typecnt, charcnt, idx, cnt;
+     const uint8_t *p, *timep, *typep, *ttisp, *charp;
+@@ -406,6 +411,7 @@ static Boolean __CFParseTimeZoneData(CFA
+     }
+     return result;
+ }
++#endif
+ #elif DEPLOYMENT_TARGET_WINDOWS || 0
+ static Boolean __CFParseTimeZoneData(CFAllocatorRef allocator, CFDataRef data, CFTZPeriod **tzpp, CFIndex *cntp) {
+ /* We use Win32 function to find TimeZone
+--- origsrc/opencflite-476.19.0/CoreFoundation.pc.in	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/CoreFoundation.pc.in	2022-06-06 17:31:21.358765700 +0900
+@@ -9,7 +9,7 @@ Name: @PACKAGE_NAME@
+ Version: @PACKAGE_VERSION@
+ Description: A portable version of Apple's Mac OS X CoreFoundation library.
+ URL: http://opencflite.sourceforge.net/
+-Requires: icu >= 3.6, uuid
++Requires: icu-i18n >= 3.6, icu-uc >= 3.6, uuid
+ Cflags: -I${includedir}
+ Libs: -L${libdir} -lCoreFoundation
+ Libs.private: @LIBS@
+--- origsrc/opencflite-476.19.0/Makefile.am	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/Makefile.am	2022-06-06 15:57:52.351399000 +0900
+@@ -49,7 +49,7 @@ CF_COMMON_CPPFLAGS		= $(AM_CPPFLAGS)			\
+ CF_COMMON_CFLAGS		= $(AM_CFLAGS)
+ 
+ CF_COMMON_LDFLAGS		= $(AM_LDFLAGS)				\
+-				  -version-info $(CF_VERSION_INFO)
++				  -no-undefined -version-info $(CF_VERSION_INFO)
+ 
+ CF_COMMON_LIBADD		= $(AM_LDADD) compat/libcompat.la 
+ 
+--- origsrc/opencflite-476.19.0/configure.ac	2011-09-08 01:25:59.000000000 +0900
++++ src/opencflite-476.19.0/configure.ac	2022-06-06 15:26:04.499213700 +0900
+@@ -82,7 +82,7 @@ case ${host_os} in
+ 		deployment_target="FreeBSD"
+ 		;;
+ 
+-	*linux*)
++	*linux*|*cygwin*)
+ 		CPPFLAGS="-DDEPLOYMENT_TARGET_LINUX=1 ${CPPFLAGS}"
+ 		deployment_target="Linux"
+ 		;;
+--- origsrc/opencflite-476.19.0/examples/CFLocalServer/Makefile.am	2011-09-08 01:25:42.000000000 +0900
++++ src/opencflite-476.19.0/examples/CFLocalServer/Makefile.am	2022-06-06 16:16:21.641080100 +0900
+@@ -5,8 +5,8 @@ check_PROGRAMS		= Client Server
+ check_LTLIBRARIES	= libCommon.la
+ endif
+ 
+-Client_LDADD		= ${top_builddir}/libCoreFoundation.la libCommon.la
+-Server_LDADD		= ${top_builddir}/libCoreFoundation.la libCommon.la
++Client_LDADD		= libCommon.la ${top_builddir}/libCoreFoundation.la
++Server_LDADD		= libCommon.la ${top_builddir}/libCoreFoundation.la
+ 
+ Client_SOURCES		= Client.c
+ Server_SOURCES		= Server.c
