@@ -1,0 +1,70 @@
+--- origsrc/gn-0.1943/build/gen.py	2022-06-08 09:20:54.386948600 +0900
++++ src/gn-0.1943/build/gen.py	2022-06-08 10:16:15.341593600 +0900
+@@ -59,7 +59,7 @@ class Platform(object):
+ 
+   @staticmethod
+   def known_platforms():
+-    return ['linux', 'darwin', 'mingw', 'msys', 'msvc', 'aix', 'fuchsia', 'freebsd', 'netbsd', 'openbsd', 'haiku', 'solaris', 'zos']
++    return ['linux', 'darwin', 'mingw', 'msys', 'msvc', 'aix', 'fuchsia', 'freebsd', 'netbsd', 'openbsd', 'haiku', 'solaris', 'zos', 'cygwin']
+ 
+   def platform(self):
+     return self._platform
+@@ -92,7 +92,7 @@ class Platform(object):
+     return self._platform == 'solaris'
+ 
+   def is_posix(self):
+-    return self._platform in ['linux', 'freebsd', 'darwin', 'aix', 'openbsd', 'haiku', 'solaris', 'msys', 'netbsd']
++    return self._platform in ['linux', 'freebsd', 'darwin', 'aix', 'openbsd', 'haiku', 'solaris', 'msys', 'netbsd', 'cygwin']
+ 
+   def is_zos(self):
+     return self._platform == 'zos'
+@@ -233,6 +233,7 @@ def WriteGenericNinja(path, static_libra
+       'solaris': 'build_linux.ninja.template',
+       'netbsd': 'build_linux.ninja.template',
+       'zos': 'build_zos.ninja.template',
++      'cygwin': 'build_linux.ninja.template'
+   }[platform.platform()])
+ 
+   with open(template_filename) as f:
+--- origsrc/gn-0.1943/src/gn/args.cc	2021-11-04 06:10:18.000000000 +0900
++++ src/gn-0.1943/src/gn/args.cc	2022-06-08 09:27:36.791463200 +0900
+@@ -322,6 +322,8 @@ void Args::SetSystemVarsLocked(Scope* de
+   os = "netbsd";
+ #elif defined(OS_ZOS)
+   os = "zos";
++#elif defined(OS_CYGWIN)
++  os = "cygwin";
+ #else
+ #error Unknown OS type.
+ #endif
+--- origsrc/gn-0.1943/src/gn/function_write_file_unittest.cc	2021-11-04 06:10:18.000000000 +0900
++++ src/gn-0.1943/src/gn/function_write_file_unittest.cc	2022-06-08 10:24:57.832697400 +0900
+@@ -13,7 +13,7 @@
+ #include "gn/test_with_scope.h"
+ #include "util/test/test.h"
+ 
+-#if defined(OS_LINUX) || defined(OS_MACOSX) || defined(OS_HAIKU) || defined(OS_MSYS)
++#if defined(OS_LINUX) || defined(OS_MACOSX) || defined(OS_HAIKU) || defined(OS_MSYS) || defined(OS_CYGWIN)
+ #include <sys/time.h>
+ #elif defined(OS_ZOS)
+ #include <utime.h>
+--- origsrc/gn-0.1943/src/util/build_config.h	2021-11-04 06:10:18.000000000 +0900
++++ src/gn-0.1943/src/util/build_config.h	2022-06-08 09:24:21.719619000 +0900
+@@ -59,6 +59,8 @@
+ #elif defined(__MVS__)
+ #include "zos-base.h"
+ #define OS_ZOS 1
++#elif defined(__CYGWIN__)
++#define OS_CYGWIN 1
+ #else
+ #error Please add support for your platform in build_config.h
+ #endif
+@@ -77,7 +79,7 @@
+     defined(OS_FREEBSD) || defined(OS_LINUX) || defined(OS_MACOSX) || \
+     defined(OS_NACL) || defined(OS_NETBSD) || defined(OS_OPENBSD) ||  \
+     defined(OS_QNX) || defined(OS_SOLARIS) || defined(OS_HAIKU) || \
+-    defined(OS_MSYS) || defined(OS_ZOS)
++    defined(OS_MSYS) || defined(OS_ZOS) || defined(OS_CYGWIN)
+ #define OS_POSIX 1
+ #endif
+ 
