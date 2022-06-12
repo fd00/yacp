@@ -1,0 +1,121 @@
+--- origsrc/hexl-1.2.4/CMakeLists.txt	2022-03-19 02:13:21.000000000 +0900
++++ src/hexl-1.2.4/CMakeLists.txt	2022-06-12 14:08:51.266758200 +0900
+@@ -160,11 +160,17 @@ if (HEXL_TESTING OR HEXL_BENCHMARK OR HE
+ endif()
+ 
+ if (HEXL_TESTING)
+-  add_subdirectory(cmake/third-party/gtest)
++  find_package(gtest)
++  if (NOT GTEST_FOUND)
++    add_subdirectory(cmake/third-party/gtest)
++  endif()
+ endif()
+ 
+ if (HEXL_BENCHMARK)
+-  add_subdirectory(cmake/third-party/gbenchmark)
++  find_package(benchmark)
++  if (NOT BENCHMARK_FOUND)
++    add_subdirectory(cmake/third-party/gbenchmark)
++  endif()
+ endif()
+ 
+ if (HEXL_DEBUG)
+--- origsrc/hexl-1.2.4/cmake/hexl/Findbenchmark.cmake	1970-01-01 09:00:00.000000000 +0900
++++ src/hexl-1.2.4/cmake/hexl/Findbenchmark.cmake	2022-06-12 14:14:17.053479700 +0900
+@@ -0,0 +1,54 @@
++# Copyright Codeplay Software Ltd.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use these files except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#     http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++
++# Try to find the Google Benchmark library and headers.
++#
++# If the library is found then the `benchmark::benchmark` target will be
++# exported with the required include directories.
++#
++# Sets the following variables:
++#   BENCHMARK_FOUND        - system has benchmark lib
++#   BENCHMARK_INCLUDE_DIRS - the benchmark include directory
++#   BENCHMARK_LIBRARIES    - libraries needed to use benchmark
++#
++find_path(BENCHMARK_INCLUDE_DIR
++  NAMES benchmark/benchmark.h
++  DOC "The google benchmark include directory"
++)
++find_library(BENCHMARK_LIBRARY
++  NAMES benchmark
++  DOC "The google benchmark library"
++)
++mark_as_advanced(BENCHMARK_FOUND BENCHMARK_INCLUDE_DIRS BENCHMARK_LIBRARIES)
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(benchmark
++  FOUND_VAR BENCHMARK_FOUND
++  REQUIRED_VARS BENCHMARK_INCLUDE_DIR BENCHMARK_LIBRARY
++)
++if(BENCHMARK_FOUND)
++  set(BENCHMARK_INCLUDE_DIRS ${BENCHMARK_INCLUDE_DIR})
++  set(BENCHMARK_LIBRARIES    ${BENCHMARK_LIBRARY})
++endif()
++
++if(BENCHMARK_FOUND AND NOT TARGET benchmark::benchmark)
++  add_library(benchmark::benchmark IMPORTED UNKNOWN)
++  set_target_properties(benchmark::benchmark PROPERTIES
++    IMPORTED_LOCATION ${BENCHMARK_LIBRARY}
++  )
++  set_target_properties(benchmark::benchmark PROPERTIES
++    INTERFACE_INCLUDE_DIRECTORIES "${BENCHMARK_INCLUDE_DIRS}"
++  )
++endif()
+--- origsrc/hexl-1.2.4/hexl/CMakeLists.txt	2022-03-19 02:13:21.000000000 +0900
++++ src/hexl-1.2.4/hexl/CMakeLists.txt	2022-06-12 14:46:00.248822900 +0900
+@@ -61,6 +61,9 @@ configure_file(${HEXL_DEFINES_IN_FILENAM
+ 
+ set_target_properties(hexl PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ set_target_properties(hexl PROPERTIES VERSION ${HEXL_VERSION})
++if (CYGWIN)
++    set_target_properties(hexl PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++endif()
+ if (HEXL_DEBUG)
+     set_target_properties(hexl PROPERTIES OUTPUT_NAME "hexl_debug")
+ else()
+@@ -152,8 +155,6 @@ else ()
+       PRIVATE $<TARGET_PROPERTY:cpu_features,INTERFACE_INCLUDE_DIRECTORIES>)
+ endif()
+ 
+-install(TARGETS hexl DESTINATION ${CMAKE_INSTALL_LIBDIR})
+-
+ #------------------------------------------------------------------------------
+ # Config export...
+ #------------------------------------------------------------------------------
+@@ -163,7 +164,11 @@ set(HEXL_TARGET_FILENAME ${CMAKE_CURRENT
+ set(HEXL_CONFIG_IN_FILENAME ${HEXL_CMAKE_PATH}/HEXLConfig.cmake.in)
+ set(HEXL_CONFIG_FILENAME ${HEXL_ROOT_DIR}/cmake/hexl-${HEXL_VERSION}/HEXLConfig.cmake)
+ set(HEXL_CONFIG_VERSION_FILENAME ${CMAKE_CURRENT_BINARY_DIR}/cmake/hexl-${HEXL_VERSION}/HEXLConfigVersion.cmake)
+-set(HEXL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hexl-${HEXL_VERSION}/)
++if (CYGWIN)
++    set(HEXL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hexl/)
++else()
++    set(HEXL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hexl-${HEXL_VERSION}/)
++endif()
+ 
+ # Create and install the CMake config and target file
+ install(
+@@ -188,7 +193,6 @@ install(
+     TARGETS hexl
+     EXPORT HEXLTargets
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     )
+ 

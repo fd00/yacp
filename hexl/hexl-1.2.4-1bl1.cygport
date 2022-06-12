@@ -1,0 +1,57 @@
+HOMEPAGE="https://github.com/intel/${PN}"
+SRC_URI="https://github.com/intel/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Intel Homomorphic Encryption (HE) Acceleration Library"
+DESCRIPTION="Intel HE Acceleration Library is an open-source library which provides
+efficient implementations of integer arithmetic on Galois fields. Such
+arithmetic is prevalent in cryptography, particularly in homomorphic
+encryption (HE) schemes. Intel HE Acceleration Library targets integer
+arithmetic with word-sized primes, typically 30-60 bits. Intel HE Acceleration
+Library provides an API for 64-bit unsigned integers and targets Intel CPUs."
+
+BUILD_REQUIRES="libcpu_features-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DHEXL_SHARED_LIB:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/hexl:${PATH} cygninja unittest
+	PATH=${B}/hexl:${PATH} cygninja bench
+}
+
+DOCS="
+	CONTRIBUTING.md
+"
+
+DIFF_EXCLUDES="
+	HEXLConfig.cmake
+	defines.hpp
+	hexl.pc
+"
+
+PKG_NAMES="
+	hexl
+	libhexl1
+	libhexl-devel
+"
+hexl_CONTENTS="
+	usr/share
+"
+libhexl1_CONTENTS="
+	usr/bin
+"
+libhexl_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+hexl_SUMMARY="${SUMMARY} (licensing & readmes)"
+libhexl1_SUMMARY="${SUMMARY} (runtime)"
+libhexl_devel_SUMMARY="${SUMMARY} (development)"
