@@ -1,0 +1,63 @@
+--- origsrc/re2c-3.0/CMakeLists.txt	2022-01-27 17:41:08.000000000 +0900
++++ src/re2c-3.0/CMakeLists.txt	2022-06-13 08:24:45.354412300 +0900
+@@ -534,8 +534,11 @@ if (RE2C_BUILD_LIBS)
+     if ((NOT DEFINED BUILD_SHARED_LIBS) OR BUILD_SHARED_LIBS)
+         add_library(libre2c_shared SHARED ${libre2c_sources})
+         set_target_properties(libre2c_shared PROPERTIES OUTPUT_NAME "re2c")
++        if (CYGWIN)
++            set_target_properties(libre2c_shared PROPERTIES SOVERSION "${PROJECT_VERSION_MAJOR}")
++        endif()
+         if (UNIX)
+-            install(TARGETS libre2c_shared LIBRARY DESTINATION lib)
++            install(TARGETS libre2c_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+         endif()
+     endif()
+ 
+@@ -573,3 +576,12 @@ if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SO
+     add_custom_target(check)
+     add_dependencies(check check_re2c check_libre2c)
+ endif()
++
++if (CYGWIN)
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++  configure_file(${CMAKE_SOURCE_DIR}/re2c.pc.in ${CMAKE_BINARY_DIR}/re2c.pc @ONLY)
++  install(FILES ${CMAKE_BINARY_DIR}/re2c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++endif()
+--- origsrc/re2c-3.0/Makefile.lib.am	2022-01-27 17:41:08.000000000 +0900
++++ src/re2c-3.0/Makefile.lib.am	2022-06-12 18:10:31.870715000 +0900
+@@ -3,7 +3,7 @@
+ lib_LTLIBRARIES += libre2c.la
+ 
+ libre2c_la_CXXFLAGS = $(AM_CXXFLAGS)
+-libre2c_la_LDFLAGS = -module -no-undefined
++libre2c_la_LDFLAGS = -no-undefined
+ 
+ libre2c_la_HDR = \
+ 	lib/lex.h \
+--- origsrc/re2c-3.0/benchmarks/submatch_dfa_aot/Makefile.am	2022-01-27 17:41:08.000000000 +0900
++++ src/re2c-3.0/benchmarks/submatch_dfa_aot/Makefile.am	2022-06-12 18:10:31.875706900 +0900
+@@ -178,7 +178,7 @@ $(BIN_CLANG): $(BIN_DIR)/%-clang: $(GEN_
+ 
+ $(DAT): $(DAT_DIR)/%/big: $(DAT_DIR)/%/small
+ 	$(AM_V_at)mkdir -p $(@D) && cp $(srcdir)/$(@D)/small $(@D)
+-	$(AM_V_GEN)( cd $(@D) && ../../$(srcdir)/data/gen.py )
++	$(AM_V_GEN)( cd $(@D) && $(srcdir)/data/gen.py )
+ 
+ $(KLEENEX):
+ 	$(AM_V_at)mkdir -p $(@D) && cp $(srcdir)/engines/kleenex/getkleenex.sh $(@D)
+--- origsrc/re2c-3.0/re2c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/re2c-3.0/re2c.pc.in	2022-06-13 08:22:07.387154800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: re2c
++Description: Experimental libre2c library that provides POSIX regcomp/regexec/regfree interface to re2c
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lre2c
++Cflags: -I${includedir}
