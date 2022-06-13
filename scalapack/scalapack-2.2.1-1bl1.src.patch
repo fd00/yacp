@@ -1,18 +1,18 @@
---- origsrc/scalapack-2.2.0/CMakeLists.txt	2022-02-03 10:42:46.000000000 +0900
-+++ src/scalapack-2.2.0/CMakeLists.txt	2022-05-01 20:17:40.077248400 +0900
-@@ -74,6 +74,11 @@ else()
-    message(FATAL_ERROR "--> MPI Library NOT FOUND -- please set MPI_BASE_DIR accordingly --")
- endif()
+--- origsrc/scalapack-2.2.1/CMakeLists.txt	2022-03-02 07:01:06.000000000 +0900
++++ src/scalapack-2.2.1/CMakeLists.txt	2022-06-13 23:20:44.830746500 +0900
+@@ -62,6 +62,11 @@ if (MPI_FOUND)
+       message(STATUS "--> Fortran Compiler : ${CMAKE_Fortran_COMPILER}")
+    endif()
  
-+if (CYGWIN)
-+   set(PC_REQUIRES_MPI "ompi")
-+else()
-+   set(PC_REQUIRES_MPI "mpi")
-+endif()
- 
- if (UNIX)
-    if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Intel")
-@@ -82,11 +87,18 @@ if (UNIX)
++   if (CYGWIN)
++      set(PC_REQUIRES_MPI "ompi")
++   else()
++      set(PC_REQUIRES_MPI "mpi")
++   endif()
+ else()
+    message(STATUS "Found MPI_LIBRARY : ${MPI_FOUND} ")
+    set(MPI_BASE_DIR ${MPI_BASE_DIR} CACHE PATH "MPI Path")
+@@ -84,11 +89,18 @@ if (UNIX)
  endif ()
  
  macro(SCALAPACK_install_library lib)
@@ -36,31 +36,16 @@
  endmacro()
  
  # --------------------------------------------------
-@@ -232,7 +244,10 @@ append_subdir_files(src-C "SRC")
- 
- if (UNIX)
-    add_library(scalapack ${blacs} ${tools} ${tools-C} ${extra_lapack} ${pblas} ${pblas-F} ${ptzblas} ${ptools} ${pbblas} ${redist} ${src} ${src-C})
+@@ -237,7 +249,7 @@ if (UNIX)
+    set_target_properties(scalapack PROPERTIES
+     VERSION ${SCALAPACK_VERSION}
+     SOVERSION ${SCALAPACK_VERSION_MAJOR}.${SCALAPACK_VERSION_MINOR})
 -   target_link_libraries( scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 +   target_link_libraries( scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${MPI_LIBRARIES})
-+   if (CYGWIN)
-+      set_target_properties(scalapack PROPERTIES SOVERSION "${SOVERSION}")
-+   endif()
     scalapack_install_library(scalapack)
  else (UNIX) # Need to separate Fortran and C Code
     OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON )
-@@ -255,9 +270,9 @@ endif()
- SET(CPACK_PACKAGE_NAME "ScaLAPACK")
- SET(CPACK_PACKAGE_VENDOR "University of Tennessee, Univ. of California Berkeley, Univ. of Colorado Denver and NAG Ltd")
- SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ScaLAPACK- Linear Algebra Package")
--set(SCALAPACK_VERSION 2.1.0)
-+set(SCALAPACK_VERSION 2.2.0)
- set(CPACK_PACKAGE_VERSION_MAJOR 2)
--set(CPACK_PACKAGE_VERSION_MINOR 1)
-+set(CPACK_PACKAGE_VERSION_MINOR 2)
- set(CPACK_PACKAGE_VERSION_PATCH 0)
- set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
- SET(CPACK_PACKAGE_INSTALL_DIRECTORY "SCALAPACK")
-@@ -307,8 +322,8 @@ configure_file(${SCALAPACK_SOURCE_DIR}/C
+@@ -317,8 +329,8 @@ configure_file(${SCALAPACK_SOURCE_DIR}/C
  install(FILES
    ${SCALAPACK_BINARY_DIR}/CMakeFiles/scalapack-config.cmake
    ${SCALAPACK_BINARY_DIR}/scalapack-config-version.cmake
@@ -71,8 +56,8 @@
  install(EXPORT scalapack-targets
 -  DESTINATION lib/cmake/scalapack-${SCALAPACK_VERSION})
 +  DESTINATION lib/cmake/scalapack)
---- origsrc/scalapack-2.2.0/TESTING/EIG/CMakeLists.txt	2022-02-03 10:42:46.000000000 +0900
-+++ src/scalapack-2.2.0/TESTING/EIG/CMakeLists.txt	2022-05-01 20:04:00.158709000 +0900
+--- origsrc/scalapack-2.2.1/TESTING/EIG/CMakeLists.txt	2022-03-02 07:01:06.000000000 +0900
++++ src/scalapack-2.2.1/TESTING/EIG/CMakeLists.txt	2022-06-13 23:02:53.321692600 +0900
 @@ -94,8 +94,8 @@ target_link_libraries(xdsyevr scalapack
  target_link_libraries(xcheevr scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
  target_link_libraries(xzheevr scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
@@ -84,8 +69,8 @@
  
  if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
      set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -std=legacy" )  # local to this directory
---- origsrc/scalapack-2.2.0/scalapack.pc.in	2022-02-03 10:42:46.000000000 +0900
-+++ src/scalapack-2.2.0/scalapack.pc.in	2022-05-01 14:33:44.868732800 +0900
+--- origsrc/scalapack-2.2.1/scalapack.pc.in	2022-03-02 07:01:06.000000000 +0900
++++ src/scalapack-2.2.1/scalapack.pc.in	2022-06-13 21:09:37.848762400 +0900
 @@ -6,4 +6,4 @@ Description: SCALAPACK reference impleme
  Version: @SCALAPACK_VERSION@
  URL: http://www.netlib.org/scalapack/
