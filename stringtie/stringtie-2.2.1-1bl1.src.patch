@@ -1,0 +1,39 @@
+--- origsrc/stringtie-2.2.1/Makefile	2022-01-27 05:29:54.000000000 +0900
++++ src/stringtie-2.2.1/Makefile	2022-06-16 22:50:18.642335400 +0900
+@@ -1,14 +1,14 @@
+ #-- for now these MUST point to the included "samtools-0.x.x" and "gclib" sub-directories
+ HTSLIB  := ./htslib
+ #-- 
+-LIBDEFLATE := ${HTSLIB}/xlibs/lib/libdeflate.a
+-LIBBZ2 := ${HTSLIB}/xlibs/lib/libbz2.a
+-LIBLZMA := ${HTSLIB}/xlibs/lib/liblzma.a
++LIBDEFLATE := -ldeflate
++LIBBZ2 := -lbz2
++LIBLZMA := -llzma
+ 
+ GDIR := ./gclib
+ #--
+ 
+-INCDIRS := -I. -I${GDIR} -I${HTSLIB}
++INCDIRS := -I. -I${GDIR}
+ 
+ CXX   := $(if $(CXX),$(CXX),g++)
+ 
+@@ -31,7 +31,7 @@ LDFLAGS := $(if $(LDFLAGS),$(LDFLAGS),-g
+ 
+ # LDFLAGS += -L${BAM}
+ 
+-LIBS    := ${HTSLIB}/libhts.a ${LIBBZ2} ${LIBLZMA} ${LIBDEFLATE} -lz -lm
++LIBS    := -lhts ${LIBBZ2} ${LIBLZMA} ${LIBDEFLATE} -lz -lm
+ 
+ ifneq (,$(filter %nothreads %prof %profile, $(MAKECMDGOALS)))
+  NOTHREADS=1
+@@ -175,7 +175,7 @@ tablemaker.o : tablemaker.h rlink.h
+ ${HTSLIB}/libhts.a:
+ 	cd ${HTSLIB} && ./build_lib.sh
+ 
+-stringtie${EXE}: ${HTSLIB}/libhts.a $(OBJS) stringtie.o
++stringtie${EXE}: $(OBJS) stringtie.o
+ 	${LINKER} ${LDFLAGS} -o $@ ${filter-out %.a %.so, $^} ${LIBS}
+ 	@echo
+ 	${DBG_WARN}
