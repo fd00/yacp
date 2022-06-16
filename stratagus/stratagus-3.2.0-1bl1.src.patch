@@ -1,0 +1,37 @@
+--- origsrc/stratagus-3.2.0/CMakeLists.txt	2021-12-25 05:26:54.000000000 +0900
++++ src/stratagus-3.2.0/CMakeLists.txt	2022-06-16 21:48:45.683488800 +0900
+@@ -1007,6 +1007,8 @@ elseif(HAIKU)
+ 	message("Platform: Haiku")
+ elseif(LINUX)
+ 	message("Platform: Linux")
++elseif(CYGWIN)
++	message("Platform: Cygwin")
+ else()
+ 	message("Platform: Other/No platform code")
+ endif()
+@@ -1061,7 +1063,7 @@ message("===============================
+ 
+ # Compile Stratagus
+ 
+-if(NOT CMAKE_CROSSCOMPILING)
++if(NOT CMAKE_CROSSCOMPILING AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+ 	# Generate header file version-generated.h with git revision
+ 	# Run tool genversion at compile time which (re)generate file version-generated.h when needed
+ 	set(genversion_SRCS tools/genversion.cpp)
+--- origsrc/stratagus-3.2.0/src/network/online_service.cpp	2021-12-25 05:26:54.000000000 +0900
++++ src/stratagus-3.2.0/src/network/online_service.cpp	2022-06-16 21:47:45.915480800 +0900
+@@ -1969,10 +1969,14 @@ class S2C_SID_AUTH_INFO : public OnlineS
+             std::string exeInfo("");
+             exeInfo += gameName();
+             exeInfo += " ";
++#if defined(StratagusLastModifiedDate)
+             exeInfo += StratagusLastModifiedDate;
+             exeInfo += " ";
++#endif
++#if defined(StratagusLastModifiedTime)
+             exeInfo += StratagusLastModifiedTime;
+             exeInfo += " ";
++#endif
+             exeInfo += std::to_string(StratagusVersion);
+             check.serialize(exeInfo.c_str());
+             // Key owner name
