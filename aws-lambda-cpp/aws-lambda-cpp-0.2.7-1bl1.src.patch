@@ -1,0 +1,51 @@
+--- origsrc/aws-lambda-cpp-0.2.7/CMakeLists.txt	2020-10-24 07:36:56.000000000 +0900
++++ src/aws-lambda-cpp-0.2.7/CMakeLists.txt	2022-06-17 10:22:56.819938700 +0900
+@@ -120,13 +120,19 @@ configure_file("${CMAKE_CURRENT_SOURCE_D
+ export(EXPORT "${PROJECT_NAME}-targets" NAMESPACE AWS::)
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/"
++    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/"
+     NAMESPACE AWS::)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/")
++    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/")
+ 
+ install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/packaging/packager"
+-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake/")
++    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/")
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-lambda-cpp.pc.in ${CMAKE_BINARY_DIR}/aws-lambda-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-lambda-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-lambda-cpp-0.2.7/aws-lambda-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-lambda-cpp-0.2.7/aws-lambda-cpp.pc.in	2022-06-17 10:24:45.544929500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-lambda-cpp
++Description: C++ implementation of the AWS Lambda runtime
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -laws-lambda-cpp
++Cflags: -I${includedir}
+--- origsrc/aws-lambda-cpp-0.2.7/tests/CMakeLists.txt	2020-10-24 07:36:56.000000000 +0900
++++ src/aws-lambda-cpp-0.2.7/tests/CMakeLists.txt	2022-06-17 10:19:18.220703000 +0900
+@@ -9,8 +9,8 @@ add_executable(${PROJECT_NAME}
+ 
+ target_link_libraries(${PROJECT_NAME} PRIVATE ${AWSSDK_LINK_LIBRARIES} aws-lambda-runtime)
+ 
+-include(GoogleTest)
+-gtest_discover_tests(${PROJECT_NAME} EXTRA_ARGS "--aws_prefix=${TEST_RESOURCE_PREFIX}") # requires CMake 3.10 or later
++# include(GoogleTest)
++# gtest_discover_tests(${PROJECT_NAME} EXTRA_ARGS "--aws_prefix=${TEST_RESOURCE_PREFIX}") # requires CMake 3.10 or later
+ 
+ add_subdirectory(resources)
+ 
