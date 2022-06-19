@@ -1,0 +1,113 @@
+--- origsrc/c-toxcore-0.2.18/auto_tests/conference_invite_merge_test.c	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/auto_tests/conference_invite_merge_test.c	2022-06-18 20:41:39.214108700 +0900
+@@ -11,6 +11,8 @@ typedef struct State {
+ 
+ #include "auto_test_support.h"
+ 
++#define kill kill_
++
+ static void handle_conference_invite(
+     Tox *tox, uint32_t friend_number, Tox_Conference_Type type,
+     const uint8_t *cookie, size_t length, void *user_data)
+--- origsrc/c-toxcore-0.2.18/auto_tests/network_test.c	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/auto_tests/network_test.c	2022-06-18 20:41:39.227053300 +0900
+@@ -1,6 +1,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#if defined(__CYGWIN__)
++#include <errno.h>
++#endif
++
+ #include "../testing/misc_tools.h"
+ #include "../toxcore/network.h"
+ #include "check_compat.h"
+@@ -16,7 +20,8 @@ static void test_addr_resolv_localhost(v
+      * normally this should happen automatically
+      * cygwin doesn't do it for every network related function though
+      * e.g. not for getaddrinfo... */
+-    net_socket(0, 0, 0);
++    Family family = {0};
++    net_socket(family, 0, 0);
+     errno = 0;
+ #endif
+ 
+--- origsrc/c-toxcore-0.2.18/configure.ac	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/configure.ac	2022-06-19 08:30:35.355764800 +0900
+@@ -267,6 +267,9 @@ case $host_os in
+         WIN32="yes"
+         EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
+     ;;
++    *cygwin*)
++        EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
++    ;;
+     *solaris*)
+         LIBS="$LIBS -lssp -lsocket -lnsl"
+     ;;
+@@ -540,6 +543,15 @@ if test "x$WIN32" = "xyes"; then
+     )
+ fi
+ 
++PKG_CHECK_MODULES([CMP], [cmp],
++    [
++        CMP_FOUND="yes"
++    ],
++    [
++        CMP_FOUND="no"
++    ])
++AM_CONDITIONAL(CMP_FOUND, test "x$CMP_FOUND" = "xyes")
++
+ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
+ AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP, test "x$BUILD_DHT_BOOTSTRAP" = "xyes")
+ AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
+--- origsrc/c-toxcore-0.2.18/toxcore/Makefile.inc	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/toxcore/Makefile.inc	2022-06-19 09:15:26.426701600 +0900
+@@ -5,9 +5,7 @@ libtoxcore_la_include_HEADERS = \
+ 
+ libtoxcore_la_includedir = $(includedir)/tox
+ 
+-libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
+-                        ../third_party/cmp/cmp.h \
+-                        ../toxcore/attributes.h \
++libtoxcore_la_SOURCES = ../toxcore/attributes.h \
+                         ../toxcore/bin_pack.c \
+                         ../toxcore/bin_pack.h \
+                         ../toxcore/bin_unpack.c \
+@@ -125,6 +123,15 @@ libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS
+                         $(MSGPACK_LIBS) \
+                         $(PTHREAD_LIBS)
+ 
++if CMP_FOUND
++libtoxcore_la_CFLAGS += $(CMP_CFLAGS)
++libtoxcore_la_LIBADD += $(CMP_LIBS)
++else
++libtoxcore_la_CFLAGS += -I$(top_srcdir)/third_party/cmp
++libtoxcore_la_SOURCES += ../third_party/cmp/cmp.c \
++                         ../third_party/cmp/cmp.h
++endif
++
+ if SET_SO_VERSION
+ 
+ EXTRA_libtoxcore_la_DEPENDENCIES = ../so.version
+--- origsrc/c-toxcore-0.2.18/toxcore/bin_pack.c	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/toxcore/bin_pack.c	2022-06-19 09:14:16.706719100 +0900
+@@ -8,7 +8,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "../third_party/cmp/cmp.h"
++#include "cmp.h"
+ #include "ccompat.h"
+ 
+ struct Bin_Pack {
+--- origsrc/c-toxcore-0.2.18/toxcore/bin_unpack.c	2022-04-19 03:12:07.000000000 +0900
++++ src/c-toxcore-0.2.18/toxcore/bin_unpack.c	2022-06-19 09:14:39.135425600 +0900
+@@ -8,7 +8,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "../third_party/cmp/cmp.h"
++#include "cmp.h"
+ #include "ccompat.h"
+ 
+ struct Bin_Unpack {
