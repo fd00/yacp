@@ -1,0 +1,52 @@
+HOMEPAGE="https://github.com/WebAssembly/${PN}"
+GIT_URI="https://github.com/WebAssembly/${PN}.git"
+GIT_TAG="${PV}"
+
+CATEGORY="Libs"
+SUMMARY="WebAssembly Binary Toolkit"
+DESCRIPTION="WABT (we pronounce it wabbit) is a suite of tools for WebAssembly"
+
+BUILD_REQUIRES="libuvwasi-devel"
+
+inherit cmake
+inherit git
+
+CYGCMAKE_ARGS="
+    -DUSE_SYSTEM_GTEST:BOOL=ON
+    -DSOVERSION:STRING=${PV[1]}
+    -DWITH_WASI:BOOL=ON
+"
+
+src_test()
+{
+    cd ${B}
+    cygninja check
+
+    gcc ${S}/wasm2c/examples/fac/fac.c ${S}/wasm2c/examples/fac/main.c -I${S}/wasm2c -L. -lwasm-rt-impl -o fac.exe
+    ./fac.exe 10
+}
+
+DIFF_EXCLUDES="
+    bin
+    out
+"
+
+PKG_NAMES="
+    wabt
+    libwasm-rt-impl1
+    libwasm-rt-impl-devel
+"
+wabt_CONTENTS="
+    usr/bin/*.exe
+    usr/share
+"
+libwasm_rt_impl1_CONTENTS="
+    usr/bin/*.dll
+"
+libwasm_rt_impl_devel_CONTENTS="
+    usr/include
+    usr/lib
+"
+wabt_SUMMARY="${SUMMARY} (utilities)"
+libwasm_rt_impl1_SUMMARY="${SUMMARY} (runtime)"
+libwasm_rt_impl_devel_SUMMARY="${SUMMARY} (development)"

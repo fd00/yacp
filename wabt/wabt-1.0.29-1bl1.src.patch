@@ -1,0 +1,80 @@
+--- origsrc/wabt/CMakeLists.txt	2022-06-20 10:09:26.000000000 +0900
++++ src/wabt/CMakeLists.txt	2022-06-20 13:56:26.999164100 +0900
+@@ -362,8 +362,11 @@ set(WABT_LIBRARY_SRC
+ add_library(wabt STATIC ${WABT_LIBRARY_SRC})
+ 
+ IF (NOT WIN32)
+-  add_library(wasm-rt-impl STATIC wasm2c/wasm-rt-impl.c wasm2c/wasm-rt-impl.h)
+-  install(TARGETS wasm-rt-impl DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  add_library(wasm-rt-impl SHARED wasm2c/wasm-rt-impl.c wasm2c/wasm-rt-impl.h)
++  if (DEFINED SOVERSION)
++    set_target_properties(wasm-rt-impl PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
++  install(TARGETS wasm-rt-impl RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+   install(FILES wasm2c/wasm-rt.h wasm2c/wasm-rt-impl.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ endif ()
+ 
+@@ -445,6 +448,8 @@ function(wabt_executable)
+   endif ()
+ endfunction()
+ 
++find_package(pkgconfig)
++
+ if (BUILD_TOOLS)
+   # wat2wasm
+   wabt_executable(
+@@ -489,10 +494,16 @@ if (BUILD_TOOLS)
+   )
+ 
+   if(WITH_WASI)
+-    add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
+-    include_directories(third_party/uvwasi/include)
++    pkg_check_modules(UVWASI uvwasi)
+     add_definitions(-DWITH_WASI)
+-    set(INTERP_LIBS uvwasi_a)
++    if (UVWASI_FOUND)
++      include_directories(${UVWASI_INCLUDE_DIRS})
++      set(INTERP_LIBS ${UVWASI_LIBRARIES})
++    else()
++      add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
++      include_directories(third_party/uvwasi/include)
++      set(INTERP_LIBS uvwasi_a)
++    endif()
+     set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
+   endif()
+ 
+@@ -733,3 +744,10 @@ if (EMSCRIPTEN)
+     LINK_DEPENDS "${WABT_POST_JS};${EMSCRIPTEN_EXPORTED_JSON}"
+   )
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/wasm-rt-impl.pc.in ${CMAKE_BINARY_DIR}/wasm-rt-impl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/wasm-rt-impl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/wabt/wasm-rt-impl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/wabt/wasm-rt-impl.pc.in	2022-06-20 13:56:03.902013900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: wasm-rt-impl
++Description: wasm runtime implementation
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lwasm-rt-impl
++Cflags: -I${includedir}
+--- origsrc/wabt/wasm2c/wasm-rt.h	2022-06-20 10:09:29.000000000 +0900
++++ src/wabt/wasm2c/wasm-rt.h	2022-06-20 13:44:57.734543700 +0900
+@@ -53,7 +53,7 @@ extern "C" {
+ 
+ /** Check whether the signal handler is supported at all. */
+ #if (defined(__linux__) || defined(__unix__) || defined(__APPLE__)) && \
+-    defined(__WORDSIZE) && __WORDSIZE == 64
++    defined(__WORDSIZE) && __WORDSIZE == 64 && !defined(__CYGWIN__)
+ 
+ /* If the signal handler is supported, then use it by default. */
+ #ifndef WASM_RT_MEMCHECK_SIGNAL_HANDLER
