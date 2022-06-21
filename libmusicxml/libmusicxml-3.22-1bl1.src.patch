@@ -1,0 +1,97 @@
+--- origsrc/libmusicxml-v.3.22/build/CMakeLists.txt	2022-06-20 15:33:21.000000000 +0900
++++ src/libmusicxml-v.3.22/build/CMakeLists.txt	2022-06-21 22:42:32.990239800 +0900
+@@ -19,8 +19,8 @@ macro (get_major_minor_patch version)
+ endmacro()
+ get_major_minor_patch( ${VERSION} )
+ set (SOVERS ${VERSION_MAJOR})
+-set (STRVERS "v.3.21")
+-set (SSTRVERS "3.21")
++set (STRVERS "v.3.22")
++set (SSTRVERS "3.22")
+ message (STATUS "Configuring version ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+ 
+ get_filename_component(ROOT ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+@@ -31,11 +31,6 @@ option ( FMWK   "Generates a framework o
+ option ( GENTOOLS   "Generates tools"	 on )
+ option ( GENSTATIC  "Generates the static library"   on )
+ 
+-if (GENTOOLS)
+-	message (STATUS "Generate tools (forces static library generation)")
+-	set (GENSTATIC on)
+-endif()
+-
+ #######################################
+ get_filename_component(ROOT ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+ set (DOCDIR ${ROOT}/doc)
+@@ -131,7 +126,11 @@ if(WIN32 OR MSYS)
+   endif()
+ else()
+   set(LIBCONTENT ${CORESRC} ${COREH})
+-  set(target libmusicxml)
++  if (CYGWIN)
++	set(target musicxml)
++  else()
++	set(target libmusicxml)
++  endif()
+ endif()
+ 
+ set(staticlib musicxml2static)
+@@ -180,7 +179,7 @@ elseif(IOS)
+ 		)
+ endif()
+ 
+-if (NOT WIN32) #AND NOT IOS
++if (NOT WIN32 AND NOT CYGWIN) #AND NOT IOS
+ add_library(${staticlib} STATIC ${LIBCONTENT})
+ set_target_properties (${staticlib} PROPERTIES
+ 			VERSION ${VERSION}
+@@ -302,15 +301,17 @@ install (
+     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+ )
+ 
+-install (
+-    FILES ${ROOT}/packages/README.html DESTINATION .
+-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+-)
++if (NOT CYGWIN)
++	install (
++		FILES ${ROOT}/packages/README.html DESTINATION .
++		PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
++	)
+ 
+-install (
+-    FILES ${ROOT}/CHANGELOG.txt  DESTINATION .
+-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+-)
++	install (
++		FILES ${ROOT}/CHANGELOG.txt  DESTINATION .
++		PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
++	)
++endif()
+ 
+ ####################################
+ # install VS redistributables
+@@ -344,3 +345,10 @@ include (CPack)
+ 
+ 
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libmusicxml.pc.in ${CMAKE_BINARY_DIR}/libmusicxml.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libmusicxml.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libmusicxml-v.3.22/build/libmusicxml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmusicxml-v.3.22/build/libmusicxml.pc.in	2022-06-21 22:42:51.156842700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmusicxml
++Description: C/C++ library to support the MusicXML format
++Version: @SSTRVERS@
++Libs: -L${libdir} -lmusicxml
++Cflags: -I${includedir}
