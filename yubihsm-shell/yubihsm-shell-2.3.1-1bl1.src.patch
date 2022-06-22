@@ -1,0 +1,64 @@
+--- origsrc/yubihsm-shell-2.3.1/CMakeLists.txt	2022-01-21 21:41:30.000000000 +0900
++++ src/yubihsm-shell-2.3.1/CMakeLists.txt	2022-06-22 15:11:42.732785900 +0900
+@@ -193,7 +193,7 @@ add_subdirectory (lib)
+ if(NOT BUILD_ONLY_LIB)
+   add_subdirectory (pkcs11)
+ 
+-  if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
++  if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR CYGWIN)
+     pkg_search_module (LIBPCSC REQUIRED libpcsclite)
+   elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+     set (LIBPCSC_LDFLAGS "winscard.lib")
+--- origsrc/yubihsm-shell-2.3.1/cmake/SecurityFlags.cmake	2022-01-21 21:41:30.000000000 +0900
++++ src/yubihsm-shell-2.3.1/cmake/SecurityFlags.cmake	2022-06-22 15:16:02.357526200 +0900
+@@ -4,7 +4,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
+     CMAKE_C_COMPILER_ID STREQUAL "AppleClang" OR
+     CMAKE_C_COMPILER_ID STREQUAL "GNU")
+ 
+-    add_compile_options (-Wall -Wextra -Werror)
++    add_compile_options (-Wall -Wextra)
++    if (NOT CYGWIN)
++        add_compile_options (-Werror)
++    endif()
+     add_compile_options (-Wformat -Wformat-nonliteral -Wformat-security)
+     add_compile_options (-Wshadow)
+     add_compile_options (-Wcast-qual)
+@@ -39,8 +42,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
+     if (NOT CMAKE_C_COMPILER_ID STREQUAL AppleClang)
+         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pie")
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
+-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro,-z,now")
+-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro,-z,now")
++        if (NOT CYGWIN)
++            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro,-z,now")
++            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro,-z,now")
++        endif()
+     endif()
+ elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+     add_compile_options (/GS)
+--- origsrc/yubihsm-shell-2.3.1/pkcs11/CMakeLists.txt	2022-01-21 21:41:30.000000000 +0900
++++ src/yubihsm-shell-2.3.1/pkcs11/CMakeLists.txt	2022-06-22 15:25:02.251642100 +0900
+@@ -89,11 +89,18 @@ if(WIN32)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
+ endif(WIN32)
+ 
+-install(
+-  TARGETS yubihsm_pkcs11
+-  ARCHIVE DESTINATION "${YUBIHSM_INSTALL_LIB_DIR}/pkcs11"
+-  LIBRARY DESTINATION "${YUBIHSM_INSTALL_LIB_DIR}/pkcs11"
+-  RUNTIME DESTINATION "${YUBIHSM_INSTALL_BIN_DIR}/pkcs11")
++if (CYGWIN)
++  install(
++    TARGETS yubihsm_pkcs11
++    RUNTIME DESTINATION "${YUBIHSM_INSTALL_LIB_DIR}/pkcs11"
++  )
++else()
++  install(
++    TARGETS yubihsm_pkcs11
++    ARCHIVE DESTINATION "${YUBIHSM_INSTALL_LIB_DIR}/pkcs11"
++    LIBRARY DESTINATION "${YUBIHSM_INSTALL_LIB_DIR}/pkcs11"
++    RUNTIME DESTINATION "${YUBIHSM_INSTALL_BIN_DIR}/pkcs11")
++endif()
+ install(FILES pkcs11.h DESTINATION "${YUBIHSM_INSTALL_INC_DIR}/pkcs11")
+ install(FILES pkcs11y.h DESTINATION "${YUBIHSM_INSTALL_INC_DIR}/pkcs11")
+ 
