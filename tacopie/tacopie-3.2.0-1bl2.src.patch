@@ -1,0 +1,48 @@
+--- origsrc/tacopie-3.2.0/CMakeLists.txt	2017-11-14 16:45:16.000000000 +0900
++++ src/tacopie-3.2.0/CMakeLists.txt	2022-06-24 16:58:19.249075700 +0900
+@@ -121,6 +121,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+ ###
+ add_library(${PROJECT} ${SOURCES})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(${PROJECT} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ IF (WIN32)
+    set_target_properties(${PROJECT}
+                          PROPERTIES COMPILE_PDB_NAME ${PROJECT}
+@@ -179,7 +183,18 @@ ENDIF(BUILD_EXAMPLES)
+ ###
+ IF (BUILD_TESTS)
+   add_subdirectory(tests)
+-  ExternalProject_Add("googletest"
+-                      GIT_REPOSITORY "https://github.com/google/googletest.git"
+-                      CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${PROJECT_SOURCE_DIR}/deps")
++  find_package(gtest)
++  if (NOT GTEST_FOUND)
++    ExternalProject_Add("googletest"
++                        GIT_REPOSITORY "https://github.com/google/googletest.git"
++                        CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${PROJECT_SOURCE_DIR}/deps")
++  endif()
+ ENDIF(BUILD_TESTS)
++
++include(GNUInstallDirs)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/tacopie.pc.in ${CMAKE_BINARY_DIR}/tacopie.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/tacopie.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tacopie-3.2.0/tacopie.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tacopie-3.2.0/tacopie.pc.in	2022-06-24 16:55:10.547961800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tacopie
++Description: C++ TCP Library
++Version: @VERSION@
++Libs: -L${libdir} -ltacopie
++Cflags: -I${includedir}
