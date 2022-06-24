@@ -1,0 +1,69 @@
+--- origsrc/libestk/CMakeLists.txt	2022-06-24 16:26:53.000000000 +0900
++++ src/libestk/CMakeLists.txt	2022-06-24 16:42:11.359862300 +0900
+@@ -24,11 +24,15 @@ set(ESTK estk${MAJOR})
+ # Configuration
+ # =============
+ 
++find_package(pkgconfig)
++
+ if(NOT ES_OPT_EMSCRIPTEN)
+-	find_package(GLEW REQUIRED)
++	find_package(GLEW)
++	if (NOT GLEW_FOUND)
++		pkg_check_modules(GLEW glew REQUIRED)
++	endif()
+ endif(NOT ES_OPT_EMSCRIPTEN)
+ 
+-include(FindPkgConfig)
+ pkg_search_module(SDL2 REQUIRED sdl2)
+ 
+ configure_file (
+@@ -58,7 +62,7 @@ if(ES_OPT_AUDIO)
+ 	set(LIB_SOURCE ${LIB_SOURCE} src/sound.c)
+ endif(ES_OPT_AUDIO)
+ 
+-add_library(${ESTK} STATIC ${LIB_SOURCE})
++add_library(${ESTK} ${LIB_SOURCE})
+ set_property(TARGET ${ESTK} PROPERTY C_STANDARD 11) # Use GNU C11
+ 
+ set_target_properties(${ESTK}
+@@ -66,7 +70,7 @@ set_target_properties(${ESTK}
+ 	SOVERSION ${MAJOR})
+ 
+ if(NOT ES_OPT_EMSCRIPTEN)
+-	target_link_libraries(${ESTK} m GLEW SDL2)
++	target_link_libraries(${ESTK} m ${GLEW_LIBRARIES} SDL2)
+ endif(NOT ES_OPT_EMSCRIPTEN)
+ 
+ if(ES_OPT_AUDIO AND NOT ES_OPT_EMSCRIPTEN)
+@@ -115,9 +119,16 @@ endif(NOT ES_OPT_EMSCRIPTEN)
+ install(TARGETS ${ESTK}
+ 	LIBRARY DESTINATION "lib"
+ 	ARCHIVE DESTINATION "lib"
+-	#RUNTIME DESTINATION "bin" # Don't install sample programs
++	RUNTIME DESTINATION "bin"
+ 	COMPONENT library)
+ install(FILES
+ 	"${PROJECT_BINARY_DIR}/estk.h"
+ 	DESTINATION include)
+ 
++include(GNUInstallDirs)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libestk.pc.in ${CMAKE_BINARY_DIR}/libestk.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libestk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libestk/libestk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libestk/libestk.pc.in	2022-06-24 16:43:00.041598700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libestk
++Description: OpenGL ES Toolkit
++Version: @MAJOR@.@MINOR@.@PATCH@
++Libs: -L${libdir} -lestk6
++Cflags: -I${includedir}
