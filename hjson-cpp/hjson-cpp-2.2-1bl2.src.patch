@@ -1,0 +1,59 @@
+--- origsrc/hjson-cpp-2.2/CMakeLists.txt	2021-04-15 01:17:16.000000000 +0900
++++ src/hjson-cpp-2.2/CMakeLists.txt	2022-06-24 15:32:27.377303000 +0900
+@@ -28,13 +28,20 @@ set_property(CACHE HJSON_NUMBER_PARSER P
+ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+ option(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS "Needed for shared libs on Windows" ON)
+ 
++include(GNUInstallDirs)
++
+ if(HJSON_VERSIONED_INSTALL)
+   set(include_dest "include/hjson-${PROJECT_VERSION}")
+   set(cmake_dest "lib/hjson-${PROJECT_VERSION}")
+   set(lib_dest "lib/hjson-${PROJECT_VERSION}")
+ else()
+-  set(include_dest "include/hjson")
+-  set(cmake_dest "lib/hjson")
++  if (CYGWIN)
++    set(include_dest ${CMAKE_INSTALL_INCLUDEDIR})
++    set(cmake_dest ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
++  else()
++    set(include_dest "include/hjson")
++    set(cmake_dest "lib/hjson")
++  endif()
+   set(lib_dest "lib")
+ endif()
+ 
+@@ -60,3 +67,10 @@ if(HJSON_ENABLE_INSTALL)
+ 
+   install(EXPORT hjson DESTINATION ${cmake_dest})
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/hjson-cpp.pc.in ${CMAKE_BINARY_DIR}/hjson-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/hjson-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/hjson-cpp-2.2/hjson-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/hjson-cpp-2.2/hjson-cpp.pc.in	2022-06-24 15:24:37.847848200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: hjson-cpp
++Description: Hjson for C++
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lhjson
++Cflags: -I${includedir}
+--- origsrc/hjson-cpp-2.2/src/CMakeLists.txt	2021-04-15 01:17:16.000000000 +0900
++++ src/hjson-cpp-2.2/src/CMakeLists.txt	2022-06-24 15:30:41.434234500 +0900
+@@ -33,6 +33,6 @@ set_target_properties(hjson PROPERTIES
+ )
+ 
+ if(HJSON_ENABLE_INSTALL)
+-  install(TARGETS hjson EXPORT hjson DESTINATION ${lib_dest})
++  install(TARGETS hjson EXPORT hjson RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${lib_dest})
+   install(FILES ${header} DESTINATION ${include_dest})
+ endif()
