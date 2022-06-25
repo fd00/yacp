@@ -1,0 +1,187 @@
+--- origsrc/libSEDML-2.0.32/CMakeLists.txt	2022-06-07 20:34:09.000000000 +0900
++++ src/libSEDML-2.0.32/CMakeLists.txt	2022-06-25 21:23:21.706081800 +0900
+@@ -252,7 +252,7 @@ endif()
+ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+ # install libsedml find module so it can be found easily later
+ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/FindLIBSEDML.cmake" 
+-        DESTINATION share/cmake/Modules)
++        DESTINATION lib/cmake/libSEDML)
+ 
+ 
+ ###############################################################################
+@@ -898,3 +898,10 @@ add_subdirectory(tests)
+ #
+ #endif()
+ #
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libsedml.pc.in ${CMAKE_BINARY_DIR}/libsedml.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libsedml.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libSEDML-2.0.32/libsedml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libSEDML-2.0.32/libsedml.pc.in	2022-06-25 21:27:34.461351500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libSEDML
++Description: SED-ML library based on libSBML
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lsedml
++Cflags: -I${includedir}
+--- origsrc/libSEDML-2.0.32/src/CMakeLists.txt	2022-06-07 20:34:09.000000000 +0900
++++ src/libSEDML-2.0.32/src/CMakeLists.txt	2022-06-25 20:31:37.868947100 +0900
+@@ -240,20 +240,22 @@ INSTALL(TARGETS ${LIBSEDML_LIBRARY}
+ 
+ endif()
+ 
+-add_library (${LIBSEDML_LIBRARY}-static STATIC ${LIBSEDML_SOURCES} )
++if (ENABLE_STATIC_LIBS)
++  add_library (${LIBSEDML_LIBRARY}-static STATIC ${LIBSEDML_SOURCES} )
+ 
+-if (WIN32 AND NOT CYGWIN)
+-    # don't decorate static library 
+-    set_target_properties(${LIBSEDML_LIBRARY}-static PROPERTIES COMPILE_DEFINITIONS "LIBLAX_STATIC=1;LIBSEDML_STATIC=1")
+-endif(WIN32 AND NOT CYGWIN)
+-
+-target_link_libraries(${LIBSEDML_LIBRARY}-static ${LIBSEDML_LIBS} ${EXTRA_LIBS})
+-
+-INSTALL(TARGETS ${LIBSEDML_LIBRARY}-static
+-        RUNTIME DESTINATION bin
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-)
++  if (WIN32 AND NOT CYGWIN)
++      # don't decorate static library 
++      set_target_properties(${LIBSEDML_LIBRARY}-static PROPERTIES COMPILE_DEFINITIONS "LIBLAX_STATIC=1;LIBSEDML_STATIC=1")
++  endif(WIN32 AND NOT CYGWIN)
++
++  target_link_libraries(${LIBSEDML_LIBRARY}-static ${LIBSEDML_LIBS} ${EXTRA_LIBS})
++
++  INSTALL(TARGETS ${LIBSEDML_LIBRARY}-static
++          RUNTIME DESTINATION bin
++          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  )
++endif()
+ 
+ ##############################################################################
+ #
+--- origsrc/libSEDML-2.0.32/src/sedml/CMakeLists.txt	2022-06-07 20:34:09.000000000 +0900
++++ src/libSEDML-2.0.32/src/sedml/CMakeLists.txt	2022-06-25 21:05:38.205881700 +0900
+@@ -119,7 +119,7 @@ INSTALL(TARGETS ${LIBSEDML_LIBRARY}
+   )
+ 
+ install(EXPORT ${LIBSEDML_LIBRARY}-targets
+-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libsedml
+ )
+ 
+ CONFIGURE_PACKAGE_CONFIG_FILE(
+@@ -136,50 +136,52 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(
+ install(FILES
+           ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-config.cmake
+           ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-config-version.cmake
+-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libsedml
+ )
+ 
+ endif()
+ 
+-add_library (${LIBSEDML_LIBRARY}-static STATIC ${LIBSEDML_SOURCES} )
+-if (WIN32 AND NOT CYGWIN)
+-  # don't decorate static library
+-  set_target_properties(${LIBSEDML_LIBRARY}-static PROPERTIES COMPILE_DEFINITIONS "LIBSEDML_STATIC=1")
+-endif(WIN32 AND NOT CYGWIN)
+-
+-target_link_libraries(${LIBSEDML_LIBRARY}-static
+-        ${LIBNUML_LIBRARY_NAME}
+-        ${LIBSBML_LIBRARY_NAME}
+-        ${EXTRA_LIBS})
+-
+-install(TARGETS ${LIBSEDML_LIBRARY}-static
+-  EXPORT ${LIBSEDML_LIBRARY}-static-targets
+-  RUNTIME DESTINATION bin
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  INCLUDES DESTINATION include
++if (ENABLE_STATIC_LIBS)
++  add_library (${LIBSEDML_LIBRARY}-static STATIC ${LIBSEDML_SOURCES} )
++  if (WIN32 AND NOT CYGWIN)
++    # don't decorate static library
++    set_target_properties(${LIBSEDML_LIBRARY}-static PROPERTIES COMPILE_DEFINITIONS "LIBSEDML_STATIC=1")
++  endif(WIN32 AND NOT CYGWIN)
++
++  target_link_libraries(${LIBSEDML_LIBRARY}-static
++          ${LIBNUML_LIBRARY_NAME}
++          ${LIBSBML_LIBRARY_NAME}
++          ${EXTRA_LIBS})
++
++  install(TARGETS ${LIBSEDML_LIBRARY}-static
++    EXPORT ${LIBSEDML_LIBRARY}-static-targets
++    RUNTIME DESTINATION bin
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    INCLUDES DESTINATION include
++    )
++
++  # and install the exported target configuration
++  install(EXPORT ${LIBSEDML_LIBRARY}-static-targets
++          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
+   )
+ 
+-# and install the exported target configuration
+-install(EXPORT ${LIBSEDML_LIBRARY}-static-targets
+-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
+-)
+-
+-CONFIGURE_PACKAGE_CONFIG_FILE(
+-  ${CMAKE_CURRENT_LIST_DIR}/libsedml-static-config.cmake.in
+-  ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config.cmake
+-  INSTALL_DESTINATION ${PACKAGE_CONFIG_DIR}
+-)
+-
+-WRITE_BASIC_PACKAGE_VERSION_FILE(
+-  ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config-version.cmake
+-  VERSION ${PROJECT_VERSION}
+-  COMPATIBILITY AnyNewerVersion
+-)
+-
+-install(
+-  FILES
++  CONFIGURE_PACKAGE_CONFIG_FILE(
++    ${CMAKE_CURRENT_LIST_DIR}/libsedml-static-config.cmake.in
+     ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config.cmake
++    INSTALL_DESTINATION ${PACKAGE_CONFIG_DIR}
++  )
++
++  WRITE_BASIC_PACKAGE_VERSION_FILE(
+     ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config-version.cmake
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
+-)
++    VERSION ${PROJECT_VERSION}
++    COMPATIBILITY AnyNewerVersion
++  )
++
++  install(
++    FILES
++      ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config.cmake
++      ${CMAKE_CURRENT_BINARY_DIR}/${LIBSEDML_LIBRARY}-static-config-version.cmake
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
++  )
++endif()
+--- origsrc/libSEDML-2.0.32/tests/CMakeLists.txt	2022-06-07 20:34:09.000000000 +0900
++++ src/libSEDML-2.0.32/tests/CMakeLists.txt	2022-06-25 20:58:30.925543500 +0900
+@@ -55,7 +55,7 @@ set_target_properties(test_sedml PROPERT
+     CXX_STANDARD_REQUIRED YES
+     CXX_EXTENSIONS NO
+ )
+-target_link_libraries(test_sedml ${LIBSEDML_LIBRARY}-static ${EXTRA_LIBS})
++target_link_libraries(test_sedml ${LIBSEDML_LIBRARY} ${EXTRA_LIBS})
+ 	if (WIN32 AND NOT CYGWIN)
+ 	set_target_properties(test_sedml PROPERTIES COMPILE_DEFINITIONS "LIBSEDML_STATIC=1")
+ 	endif()
