@@ -1,0 +1,51 @@
+--- origsrc/rtosc-0.3.1/CMakeLists.txt	2022-01-23 03:45:16.000000000 +0900
++++ src/rtosc-0.3.1/CMakeLists.txt	2022-06-25 22:32:14.942204800 +0900
+@@ -83,6 +83,10 @@ add_library(rtosc-cpp src/cpp/ports.cpp
+     src/cpp/undo-history.cpp
+     src/cpp/subtree-serialize.cpp)
+ target_link_libraries(rtosc-cpp rtosc)
++if (DEFINED SOVERSION)
++    set_target_properties(rtosc PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(rtosc-cpp PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ if(IWYU_ERR)
+     message (STATUS "Include what you use: ${IWYU_ERR}")
+@@ -254,7 +258,8 @@ endif()
+ 
+ 
+ #Installation
+-if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND NOT DEFINED RTOSC_NO_INSTALL)
++include(GNUInstallDirs)
++if(NOT DEFINED RTOSC_NO_INSTALL)
+     if(PKG_CONFIG_FOUND)
+         configure_file(librtosc.pc.cmake
+             ${CMAKE_BINARY_DIR}/librtosc.pc @ONLY)
+@@ -286,7 +291,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND
+         include/rtosc/undo-history.h
+         DESTINATION include/rtosc)
+     install(TARGETS rtosc rtosc-cpp
+-        DESTINATION ${CMAKE_INSTALL_LIBDIR})
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ 
+--- origsrc/rtosc-0.3.1/src/pretty-format.c	2022-01-23 03:45:16.000000000 +0900
++++ src/rtosc-0.3.1/src/pretty-format.c	2022-06-25 22:55:26.965714700 +0900
+@@ -29,6 +29,7 @@
+ static const rtosc_print_options* default_print_options
+  = &((rtosc_print_options) { true, 2, " ", 80, true});
+ 
++#if !defined(__CYGWIN__)
+ /** Call snprintf and assert() that it did fit into the buffer */
+ static int asnprintf(char* str, size_t size, const char* format, ...)
+ {
+@@ -42,6 +43,7 @@ static int asnprintf(char* str, size_t s
+     va_end(args);
+     return written;
+ }
++#endif
+ 
+ //! return the offset of the next arg from cur, arrays seen as one arg and
+ //! delta args (from ranges) seen as @p additional_for_delta args
