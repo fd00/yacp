@@ -1,0 +1,58 @@
+--- origsrc/libnegf-1.1.2/CMakeLists.txt	2022-05-18 18:58:23.000000000 +0900
++++ src/libnegf-1.1.2/CMakeLists.txt	2022-06-26 21:40:24.616928000 +0900
+@@ -25,8 +25,8 @@ if(LAPACK_LIBRARIES AND LAPACK_LIBRARY_D
+   message(STATUS "libNEGF LAPACK: " ${LAPACK_LIBRARIES})
+ else()
+   message(STATUS "libNEGF MKLROOT: " $ENV{MKLROOT})
+-  find_package(CustomBlas REQUIRED)
+-  find_package(CustomLapack REQUIRED)
++  find_package(BLAS REQUIRED)
++  find_package(LAPACK REQUIRED)
+   #message(STATUS "libNEGF BLAS found: " ${BLAS_LIBRARIES})
+   #message(STATUS "libNEGF LAPACK found: " ${LAPACK_LIBRARIES})
+   #message(STATUS "libNEGF LAPACK DIR: " ${LAPACK_LIBRARY_DIRS})
+@@ -84,3 +84,10 @@ install(
+   FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/negf-config.cmake
+   ${CMAKE_CURRENT_BINARY_DIR}/cmake/negf-config-version.cmake
+   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/negf)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnegf.pc.in ${CMAKE_BINARY_DIR}/libnegf.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnegf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libnegf-1.1.2/libnegf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnegf-1.1.2/libnegf.pc.in	2022-06-26 21:40:55.570612300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnegf
++Description: General library for Non Equilibrium Green's Functions
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lnegf
++Cflags: -I${includedir}
+--- origsrc/libnegf-1.1.2/src/CMakeLists.txt	2022-05-18 18:58:23.000000000 +0900
++++ src/libnegf-1.1.2/src/CMakeLists.txt	2022-06-26 21:30:34.592761300 +0900
+@@ -75,6 +75,10 @@ set(BUILD_MOD_DIR ${CMAKE_CURRENT_BINARY
+ 
+ set_target_properties(negf PROPERTIES Fortran_MODULE_DIRECTORY ${BUILD_MOD_DIR})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(negf PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if(WITH_MPI)
+   find_package(MPI REQUIRED)
+   target_link_libraries(negf PUBLIC MpiFx::MpiFx MPI::MPI_Fortran)
+@@ -87,6 +91,7 @@ target_include_directories(negf PUBLIC
+ 
+ install(TARGETS negf
+   EXPORT negf-targets
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
