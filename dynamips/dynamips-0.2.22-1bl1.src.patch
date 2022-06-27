@@ -1,0 +1,40 @@
+--- origsrc/dynamips-0.2.22/cmake/dependencies.cmake	2022-05-24 12:56:03.000000000 +0900
++++ src/dynamips-0.2.22/cmake/dependencies.cmake	2022-06-27 11:08:35.273396200 +0900
+@@ -39,9 +39,6 @@ set ( DYNAMIPS_FLAGS -Wall -O2 -fomit-fr
+ set ( DYNAMIPS_DEFINITIONS )
+ set ( DYNAMIPS_INCLUDES )
+ set ( DYNAMIPS_LIBRARIES ${CMAKE_DL_LIBS} )
+-if ( CYGWIN )
+-   list ( APPEND DYNAMIPS_FLAGS -static -static-libgcc )
+-endif ( CYGWIN )
+ macro ( set_cmake_required )
+    set ( CMAKE_REQUIRED_FLAGS       ${DYNAMIPS_FLAGS} )
+    set ( CMAKE_REQUIRED_DEFINITIONS ${DYNAMIPS_DEFINITIONS} )
+@@ -108,6 +105,18 @@ foreach ( _flag
+    endif ()
+ endforeach ()
+ 
++# libintl
++find_package(Intl)
++if (Intl_FOUND)
++   list(APPEND DYNAMIPS_LIBRARIES ${Intl_LIBRARY})
++endif()
++
++# libiconv
++find_package(Iconv)
++if (Iconv_FOUND)
++   list(APPEND DYNAMIPS_LIBRARIES ${Iconv_LIBRARIES})
++endif()
++
+ # librt (clock_gettime)
+ set_cmake_required ()
+ check_library_exists ( rt clock_gettime "time.h" USE_LIBRT )
+@@ -127,7 +136,7 @@ endif ()
+ # libnsl (gethostbyname)
+ set_cmake_required ()
+ check_library_exists ( nsl gethostbyname "netdb.h" USE_LIBNSL )
+-if ( USE_LIBNSL )
++if ( USE_LIBNSL AND NOT CYGWIN) # Cygwin does not contains libnsl
+    list ( APPEND DYNAMIPS_LIBRARIES nsl )
+    print_variables ( USE_LIBNSL )
+ endif ()
