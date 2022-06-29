@@ -1,0 +1,39 @@
+--- origsrc/gperftools-gperftools-2.10/Makefile.am	2022-05-31 13:21:21.000000000 +0900
++++ src/gperftools-gperftools-2.10/Makefile.am	2022-06-29 12:28:22.459342500 +0900
+@@ -964,7 +964,7 @@ libtcmalloc_la_SOURCES = $(TCMALLOC_CC)
+                          $(HEAP_CHECKER_SOURCES)
+ libtcmalloc_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG $(AM_CXXFLAGS) \
+                           $(MAYBE_NO_HEAP_CHECK) $(EMERGENCY_MALLOC_DEFINE)
+-libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @TCMALLOC_SO_VERSION@
++libtcmalloc_la_LDFLAGS = $(PTHREAD_CFLAGS) -no-undefined -version-info @TCMALLOC_SO_VERSION@
+ libtcmalloc_la_LIBADD = libtcmalloc_internal.la libmaybe_threads.la $(PTHREAD_LIBS)
+ 
+ # same as above with without -DNDEBUG
+@@ -1452,9 +1452,13 @@ deb: dist-gzip packages/deb.sh packages/
+ 
+ # http://linux.die.net/man/1/pkg-config, http://pkg-config.freedesktop.org/wiki
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = libtcmalloc.pc libtcmalloc_minimal.pc \
+-                 libtcmalloc_debug.pc libtcmalloc_minimal_debug.pc \
+-                 libprofiler.pc
++pkgconfig_DATA = libtcmalloc.pc libtcmalloc_minimal.pc
++if WITH_DEBUGALLOC
++pkgconfig_DATA += libtcmalloc_debug.pc libtcmalloc_minimal_debug.pc
++endif
++if WITH_CPU_PROFILER
++pkgconfig_DATA += libprofiler.pc
++endif
+ CLEANFILES = $(pkgconfig_DATA)
+ 
+ # I get the description and URL lines from the rpm spec. I use sed to
+--- origsrc/gperftools-gperftools-2.10/src/base/basictypes.h	2022-05-31 13:21:21.000000000 +0900
++++ src/gperftools-gperftools-2.10/src/base/basictypes.h	2022-06-29 11:14:15.206217000 +0900
+@@ -247,7 +247,7 @@ inline void bit_store(Dest *dest, const
+   memcpy(dest, source, sizeof(Dest));
+ }
+ 
+-#ifdef HAVE___ATTRIBUTE__
++#if defined(HAVE___ATTRIBUTE__) && !defined(__CYGWIN__)
+ # define ATTRIBUTE_WEAK      __attribute__((weak))
+ # define ATTRIBUTE_NOINLINE  __attribute__((noinline))
+ #else
