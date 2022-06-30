@@ -1,0 +1,130 @@
+--- origsrc/saffire/include/saffire/CMakeLists.txt	2022-06-30 09:28:54.000000000 +0900
++++ src/saffire/include/saffire/CMakeLists.txt	2022-06-30 10:15:51.212351600 +0900
+@@ -6,10 +6,14 @@
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
+ 
+ # Generate gitversion.h
+-execute_process(
+-    COMMAND           git rev-parse HEAD
+-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+-    OUTPUT_VARIABLE   GITREV_SHA1
+-    OUTPUT_STRIP_TRAILING_WHITESPACE)
++if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
++    execute_process(
++        COMMAND           git rev-parse HEAD
++        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
++        OUTPUT_VARIABLE   GITREV_SHA1
++        OUTPUT_STRIP_TRAILING_WHITESPACE)
++else()
++    set(GITREV1_SHA1 "")
++endif()
+ 
+ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gitversion.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/gitversion.h" @ONLY)
+--- origsrc/saffire/src/components/modules/CMakeLists.txt	2022-06-30 09:28:55.000000000 +0900
++++ src/saffire/src/components/modules/CMakeLists.txt	2022-06-30 09:29:15.467815800 +0900
+@@ -23,7 +23,11 @@ add_library(modules STATIC ${sources})
+ 
+ add_dependencies(modules generate_interfaces generate_exceptions)
+ 
+-include(${CMAKE_SOURCE_DIR}/lib/CPUID.cmake)
++include(FindPkgConfig)
++pkg_check_modules(LIBCPUID libcpuid)
++if (NOT LIBCPUID_FOUND)
++    include(${CMAKE_SOURCE_DIR}/lib/CPUID.cmake)
++endif()
+ 
+ target_link_libraries(
+     modules
+--- origsrc/saffire/src/components/objects/CMakeLists.txt	2022-06-30 09:28:55.000000000 +0900
++++ src/saffire/src/components/objects/CMakeLists.txt	2022-06-30 10:12:57.114703500 +0900
+@@ -1,7 +1,7 @@
+ 
+ add_custom_target(
+     generate_interfaces
+-    COMMAND python
++    COMMAND python2
+         ${CMAKE_SOURCE_DIR}/support/generators/generate_interfaces.py
+         ${CMAKE_SOURCE_DIR}/src/components/objects/interfaces.dat
+         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_interfaces.inc
+@@ -10,7 +10,7 @@ add_custom_target(
+ 
+ add_custom_target(
+     generate_exceptions
+-    COMMAND python
++    COMMAND python2
+         ${CMAKE_SOURCE_DIR}/support/generators/generate_exceptions.py
+         ${CMAKE_SOURCE_DIR}/src/components/objects/exceptions.dat
+         ${CMAKE_SOURCE_DIR}/src/components/objects/_generated_exceptions.inc
+--- origsrc/saffire/src/components/objects/numerical.c	2022-06-30 09:28:55.000000000 +0900
++++ src/saffire/src/components/objects/numerical.c	2022-06-30 09:29:15.471760700 +0900
+@@ -25,9 +25,8 @@
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ #include <stdio.h>
+-#include <string.h>
+-#include <stdlib.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <saffire/debug.h>
+ #include <saffire/objects/object.h>
+ #include <saffire/objects/objects.h>
+@@ -45,8 +44,7 @@ t_numerical_object **numerical_cache;
+ 
+ 
+ 
+-
+-static char *itoa(long value, char *result, int radix) {
++static char *itoa_(long value, char *result, int radix) {
+     if (radix < 2 || radix > 36) {
+         *result = '\0';
+         return result;
+@@ -75,7 +73,6 @@ static char *itoa(long value, char *resu
+ 
+ 
+ 
+-
+ /* ======================================================================
+  *   Object methods
+  * ======================================================================
+@@ -133,7 +130,7 @@ SAFFIRE_METHOD(numerical, bin) {
+     // Make sure we have room for all binary digits
+     char tmp[8 * sizeof(self->data.value) + 1];
+ 
+-    itoa(self->data.value, tmp, 2);
++    itoa_(self->data.value, tmp, 2);
+     RETURN_STRING_FROM_CHAR(tmp);
+ }
+ 
+--- origsrc/saffire/src/components/vm/CMakeLists.txt	2022-06-30 09:28:55.000000000 +0900
++++ src/saffire/src/components/vm/CMakeLists.txt	2022-06-30 10:17:45.617666700 +0900
+@@ -1,17 +1,19 @@
+ 
+ add_custom_target(
+     generate_vm_opcodes
+-    COMMAND python
++    COMMAND python2
+         ${CMAKE_SOURCE_DIR}/support/generators/generate_vm_opcodes.py
+         ${CMAKE_SOURCE_DIR}/src/components/vm/vm_opcodes.dat
+         ${CMAKE_SOURCE_DIR}/src/components/vm/_generated_vm_opcodes.c
+         ${CMAKE_SOURCE_DIR}/include/saffire/vm/_generated_vm_opcodes.h
+     COMMENT "Generating vm opcodes source files")
+ 
+-add_custom_command(
++if (NOT CYGWIN)
++    add_custom_command(
+     OUTPUT
+         ${CMAKE_CURRENT_SOURCE_DIR}/_generated_vm_opcodes.c
+     COMMAND generate_vm_opcodes)
++endif()
+ 
+ set_source_files_properties(_generated_vm_opcodes.c PROPERTIES GENERATED TRUE)
+ 
+@@ -23,7 +25,7 @@ set(sources
+     context.c
+     thread.c
+     import.c
+-    _generated_vm_opcodes.c)
++    ${CMAKE_CURRENT_SOURCE_DIR}/_generated_vm_opcodes.c)
+ 
+ add_library(vm STATIC ${sources})
+ 
