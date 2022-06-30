@@ -1,0 +1,162 @@
+--- origsrc/template-ferite-module-1.0.0/template/template_Template.c	2005-05-27 00:39:13.000000000 +0900
++++ src/template-ferite-module-1.0.0/template/template_Template.c	2022-06-30 15:28:51.036005600 +0900
+@@ -40,7 +40,7 @@ FE_NATIVE_FUNCTION( ferite_template_Temp
+     
+ 	struct tag_ctx *ctx = self->odata;
+ 	if( ctx->tree )
+-	    tag_free( ctx->tree );
++	    tag_free( script, ctx->tree );
+ 	if( ctx->filedata )
+ 	    ffree( ctx->filedata);
+ 
+@@ -64,11 +64,11 @@ FE_NATIVE_FUNCTION( ferite_template_Temp
+ 
+     
+ 	struct tag_ctx *ctx = self->odata;
+-	FeriteBuffer *buf = ferite_buffer_new( 0 );
++	FeriteBuffer *buf = ferite_buffer_new( script, 0 );
+ 	FeriteVariable *v;
+-	tag_dump( buf, ctx->tree, 0 );
+-	v = ferite_buffer_to_var( buf );
+-	ferite_buffer_delete( buf );
++	tag_dump( script, buf, ctx->tree, 0 );
++	v = ferite_buffer_to_var( script, buf );
++	ferite_buffer_delete( script, buf );
+ 	FE_RETURN_VAR( v );
+     
+    }
+@@ -89,7 +89,7 @@ FE_NATIVE_FUNCTION( ferite_template_Temp
+ 	struct tag_ctx *ctx = self->odata;
+ 
+ 	if( ctx->tree )
+-	    tag_free( ctx->tree );
++	    tag_free( script, ctx->tree );
+ 	if( ctx->filedata )
+ 	    ffree( ctx->filedata);
+ 	ferite_variable_destroy( script, ctx->parts );
+@@ -139,10 +139,10 @@ FE_NATIVE_FUNCTION( ferite_template_Temp
+ 	ctx->current = ctx->mother;
+ 	v = ferite_object_get_var(script,self,"path");
+ 	ctx->path = FE_STR2PTR(v);
+-	ctx->buf = ferite_buffer_new(0);
++	ctx->buf = ferite_buffer_new( script, 0);
+ 	tag_run( script, ctx, ctx->tree, ctx->mother, 0 );
+-	v = ferite_buffer_to_var( ctx->buf );
+-	ferite_buffer_delete( ctx->buf );
++	v = ferite_buffer_to_var( script, ctx->buf );
++	ferite_buffer_delete( script, ctx->buf );
+ 
+ 	FE_RETURN_VAR( v );
+     
+@@ -170,7 +170,7 @@ FE_NATIVE_FUNCTION( ferite_template_Temp
+ 	struct tag_ctx *ctx = self->odata;
+ 
+ 	if( ctx->tree )
+-	    tag_free( ctx->tree );
++	    tag_free( script, ctx->tree );
+ 	if( ctx->filedata )
+ 	    ffree( ctx->filedata);
+ 
+--- origsrc/template-ferite-module-1.0.0/template/utility.c	2005-02-13 00:31:10.000000000 +0900
++++ src/template-ferite-module-1.0.0/template/utility.c	2022-06-30 15:30:37.244284800 +0900
+@@ -58,7 +58,7 @@ void tag_run( FeriteScript * script, str
+ 	}
+ 	
+         if( tree->type == TAG_START ) {
+-            ferite_buffer_add( ctx->buf, tree->start, tree->length );
++            ferite_buffer_add( script, ctx->buf, tree->start, tree->length );
+         }
+ 
+         if( tree->type & TAG_SUBSTITUTE ) {
+@@ -81,8 +81,8 @@ void tag_run( FeriteScript * script, str
+                 } else {
+                     str = ferite_variable_to_str( script, v, 0 );
+                 }
+-                ferite_buffer_add( ctx->buf, str->data, str->length );
+-                ferite_str_destroy( str );
++                ferite_buffer_add( script, ctx->buf, str->data, str->length );
++                ferite_str_destroy( script, str );
+             }
+         }
+         tree = tree->next;
+@@ -128,19 +128,19 @@ FeriteVariable *tag_expand( FeriteScript
+     return v;
+ }
+ 
+-void tag_free( struct node *tree )
++void tag_free( FeriteScript * script, struct node *tree )
+ {
+     struct node *node = tree, *tmp;
+ 	
+     while (node) {
+ 	if (node->child)
+-	    tag_free(node->child);
++	    tag_free(script, node->child);
+ 	tmp = node;
+ 	node = node->next;
+ 	ffree(tmp);
+     }
+ }
+-void tag_dump( FeriteBuffer *buf, struct node *tree, int level )
++void tag_dump( FeriteScript * script, FeriteBuffer *buf, struct node *tree, int level )
+ {
+     char *sep = "                                                    ";
+     struct node *node = tree;
+@@ -148,27 +148,27 @@ void tag_dump( FeriteBuffer *buf, struct
+     {
+ 	ferite_buffer_printf(buf, "%.*s", level, sep );
+     	if( node->type & TAG_NOMOREDATA )
+-	    ferite_buffer_add_str( buf, "[TAG_NOMOREDATA]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_NOMOREDATA]" );
+ 	if( node->type & TAG_SUBSTITUTE )
+-	    ferite_buffer_add_str( buf, "[TAG_SUBSTITUTE]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_SUBSTITUTE]" );
+ 	if( node->type & TAG_LOOP )
+-	    ferite_buffer_add_str( buf, "[TAG_LOOP]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_LOOP]" );
+ 	if( node->type & TAG_CONDITION )
+-	    ferite_buffer_add_str( buf, "[TAG_CONDITION]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_CONDITION]" );
+ 	if( node->type & TAG_START )
+-	    ferite_buffer_add_str( buf, "[TAG_START]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_START]" );
+ 	if( node->type & TAG_END )
+-	    ferite_buffer_add_str( buf, "[TAG_END]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_END]" );
+ 	if( node->type & TAG_ROOT )
+-	    ferite_buffer_add_str( buf, "[TAG_ROOT]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_ROOT]" );
+ 	if( node->type & TAG_INCLUDE )
+-	    ferite_buffer_add_str( buf, "[TAG_INCLUDE]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_INCLUDE]" );
+ 	if( node->type & TAG_INVERSED )
+-	    ferite_buffer_add_str( buf, "[TAG_INVERSED]" );
++	    ferite_buffer_add_str( script, buf, "[TAG_INVERSED]" );
+ 
+-	ferite_buffer_printf( buf, "%.*s\n", node->name_length, node->name );
++	ferite_buffer_printf( script, buf, "%.*s\n", node->name_length, node->name );
+ 	if( node->child )
+-	    tag_dump( buf, node->child, level + 1 );
++	    tag_dump( script, buf, node->child, level + 1 );
+ 
+ 	node = node->next;
+     }
+@@ -189,7 +189,7 @@ struct node *tag_parse( FeriteScript * s
+         ret = tag_get_piece( ctx, node, &str );
+         if ( ret == TAG_ERROR ) {
+ 	    ferite_set_error(script, 0, "Error while parsing: %.*s",20, node->name);
+-	    tag_free(root);
++	    tag_free(script, root);
+ 	    ffree(node);
+             return NULL;
+         }
+--- origsrc/template-ferite-module-1.0.0/template/utility.h	2002-12-03 22:14:09.000000000 +0900
++++ src/template-ferite-module-1.0.0/template/utility.h	2022-06-30 15:27:09.369445900 +0900
+@@ -42,5 +42,5 @@ struct tag_ctx {
+ FeriteVariable *tag_expand( FeriteScript *script, struct node *node, FeriteVariable *o );
+ struct node *tag_parse( FeriteScript *script, struct tag_ctx *ctx, char * );
+ int tag_get_piece( struct tag_ctx *ctx, struct node *, char ** );
+-void tag_free(struct node *tree);
+-void tag_dump( FeriteBuffer *buf, struct node *tree, int level );
++void tag_free( FeriteScript * script, struct node *tree );
++void tag_dump( FeriteScript * script, FeriteBuffer *buf, struct node *tree, int level );
