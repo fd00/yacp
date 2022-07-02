@@ -1,0 +1,48 @@
+--- origsrc/libcaer-3.3.14/CMakeLists.txt	2022-05-25 05:19:15.000000000 +0900
++++ src/libcaer-3.3.14/CMakeLists.txt	2022-07-02 17:25:15.287245900 +0900
+@@ -10,7 +10,11 @@ SET(ENABLE_ALL_WARNINGS ON CACHE BOOL "T
+ INCLUDE(inivation-setup)
+ 
+ # Legacy cmake support.
+-INSTALL(FILES cmakemod/caer-base.cmake DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/caer)
++if (CYGWIN)
++	INSTALL(FILES cmakemod/caer-base.cmake DESTINATION lib/cmake/${PROJECT_NAME})
++else()
++	INSTALL(FILES cmakemod/caer-base.cmake DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/caer)
++endif()
+ 
+ # Override default settings
+ SET(CMAKE_CXX_STANDARD 11)
+--- origsrc/libcaer-3.3.14/src/CMakeLists.txt	2022-05-25 05:19:15.000000000 +0900
++++ src/libcaer-3.3.14/src/CMakeLists.txt	2022-07-02 17:25:15.303828900 +0900
+@@ -75,7 +75,7 @@ TARGET_INCLUDE_DIRECTORIES(caer INTERFAC
+ 
+ SET_TARGET_PROPERTIES(caer PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR} VERSION ${PROJECT_VERSION})
+ 
+-IF(OS_WINDOWS)
++IF(OS_WINDOWS OR CYGWIN)
+ 	INSTALL(
+ 		TARGETS caer
+ 		EXPORT libcaer-exports
+--- origsrc/libcaer-3.3.14/src/c11threads_posix.h	2022-05-25 05:19:15.000000000 +0900
++++ src/libcaer-3.3.14/src/c11threads_posix.h	2022-07-02 17:41:47.063742600 +0900
+@@ -26,7 +26,7 @@ typedef pthread_t thrd_t;
+ typedef pthread_mutex_t mtx_t;
+ #endif
+ 
+-#if !defined(__WINDOWS__) && !defined(__APPLE__)
++#if !defined(__WINDOWS__) && !defined(__APPLE__) && !defined(__CYGWIN__)
+ #	include <sys/prctl.h>
+ #	include <unistd.h>
+ #endif
+--- origsrc/libcaer-3.3.14/src/edvs.c	2022-05-25 05:19:15.000000000 +0900
++++ src/libcaer-3.3.14/src/edvs.c	2022-07-02 17:25:15.307311400 +0900
+@@ -243,7 +243,7 @@ caerDeviceHandle edvsOpen(uint16_t devic
+ 		return (NULL);
+ 	}
+ 
+-#if defined(OS_UNIX)
++#if defined(OS_UNIX) && defined(TIOCEXCL)
+ 	// Set exclusive access to serial port. Only needed on Unix (TIOCEXCL flag).
+ 	int serialFd = -1;
+ 
