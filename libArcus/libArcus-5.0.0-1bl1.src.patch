@@ -1,0 +1,50 @@
+--- origsrc/libArcus-5.0.0/CMakeLists.txt	2022-04-15 02:08:46.000000000 +0900
++++ src/libArcus-5.0.0/CMakeLists.txt	2022-07-03 14:24:36.660587500 +0900
+@@ -153,4 +153,11 @@ if(BUILD_PYTHON)
+     else()
+         install_sip_module(pyArcus)
+     endif ()
+-endif()
+\ No newline at end of file
++endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libArcus.pc.in ${CMAKE_BINARY_DIR}/libArcus.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libArcus.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libArcus-5.0.0/libArcus.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libArcus-5.0.0/libArcus.pc.in	2022-07-03 14:25:01.155316400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libArcus
++Description: Communication library between internal components for Ultimaker software
++Version: @ARCUS_VERSION@
++Libs: -L${libdir} -lArcus
++Cflags: -I${includedir}
+--- origsrc/libArcus-5.0.0/src/Socket_p.h	2022-04-15 02:08:46.000000000 +0900
++++ src/libArcus-5.0.0/src/Socket_p.h	2022-07-03 05:50:33.265486200 +0900
+@@ -128,9 +128,6 @@ namespace Arcus
+ 
+         static const int keep_alive_rate = 500; //Number of milliseconds between sending keepalive packets
+ 
+-        // This value determines when protobuf should warn about very large messages.
+-        static const int message_size_warning = 400 * 1048576;
+-
+         // This value determines when protobuf should error out because the message is too large.
+         // Due to the way Protobuf is implemented, messages large than 512MiB will cause issues.
+         static const int message_size_maximum = 500 * 1048576;
+@@ -548,7 +545,7 @@ namespace Arcus
+ 
+         google::protobuf::io::ArrayInputStream array(wire_message->data, wire_message->size);
+         google::protobuf::io::CodedInputStream stream(&array);
+-        stream.SetTotalBytesLimit(message_size_maximum, message_size_warning);
++        stream.SetTotalBytesLimit(message_size_maximum);
+         if(!message->ParseFromCodedStream(&stream))
+         {
+             error(ErrorCode::ParseFailedError, "Failed to parse message:" + std::string(wire_message->data));
