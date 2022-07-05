@@ -1,0 +1,38 @@
+--- origsrc/libsigrokdecode-0.5.3/configure.ac	2019-12-12 06:37:42.000000000 +0900
++++ src/libsigrokdecode-0.5.3/configure.ac	2022-07-05 09:02:05.300929000 +0900
+@@ -43,12 +43,6 @@ AC_PROG_LN_S
+ # Required for per-target flags or subdir-objects with C sources.
+ AM_PROG_CC_C_O
+ 
+-# Set the standard the C library headers should conform to.
+-AH_VERBATIM([_POSIX_C_SOURCE], [/* The targeted POSIX standard. */
+-#ifndef _POSIX_C_SOURCE
+-# define _POSIX_C_SOURCE 200112L
+-#endif])
+-
+ # Get compiler versions.
+ SR_PROG_VERSION([$CC], [srd_cc_version])
+ 
+@@ -65,7 +59,7 @@ SR_PKG_VERSION_SET([SRD_PACKAGE_VERSION]
+ # Format: current:revision:age.
+ SR_LIB_VERSION_SET([SRD_LIB_VERSION], [6:1:2])
+ 
+-AM_CONDITIONAL([WIN32], [test -z "${host_os##mingw*}" || test -z "${host_os##cygwin*}"])
++AM_CONDITIONAL([WIN32], [test -z "${host_os##mingw*}"])
+ 
+ # Initialize pkg-config.
+ # We require at least 0.22, as "Requires.private" behaviour changed there.
+--- origsrc/libsigrokdecode-0.5.3/libsigrokdecode.h	2019-12-12 06:37:42.000000000 +0900
++++ src/libsigrokdecode-0.5.3/libsigrokdecode.h	2022-07-05 09:07:55.850650700 +0900
+@@ -107,7 +107,11 @@ enum srd_loglevel {
+ 
+ /* Marks public libsigrokdecode API symbols. */
+ #ifndef _WIN32
++#if defined(__CYGWIN__)
++#define SRD_API __declspec(dllexport)
++#else
+ #define SRD_API __attribute__((visibility("default")))
++#endif
+ #else
+ #define SRD_API
+ #endif
