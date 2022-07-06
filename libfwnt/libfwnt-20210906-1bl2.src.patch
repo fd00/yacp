@@ -1,0 +1,346 @@
+--- origsrc/libfwnt-20210906/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/Makefile.am	2022-07-06 14:21:54.237716300 +0900
+@@ -3,15 +3,10 @@ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = \
+ 	include \
+ 	common \
+-	libcerror \
+-	libcthreads \
+-	libcdata \
+-	libcnotify \
+ 	libfwnt \
+ 	pyfwnt \
+ 	pyfwnt-python2 \
+ 	pyfwnt-python3 \
+-	po \
+ 	manuals \
+ 	tests \
+ 	ossfuzz \
+--- origsrc/libfwnt-20210906/configure.ac	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/configure.ac	2022-07-06 14:21:54.241757600 +0900
+@@ -124,10 +124,6 @@ dnl Generate Makefiles
+ AC_CONFIG_FILES([Makefile])
+ AC_CONFIG_FILES([include/Makefile])
+ AC_CONFIG_FILES([common/Makefile])
+-AC_CONFIG_FILES([libcerror/Makefile])
+-AC_CONFIG_FILES([libcthreads/Makefile])
+-AC_CONFIG_FILES([libcdata/Makefile])
+-AC_CONFIG_FILES([libcnotify/Makefile])
+ AC_CONFIG_FILES([libfwnt/Makefile])
+ AC_CONFIG_FILES([pyfwnt/Makefile])
+ AC_CONFIG_FILES([pyfwnt-python2/Makefile])
+--- origsrc/libfwnt-20210906/libfwnt/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/libfwnt/Makefile.am	2022-07-06 14:21:54.246710500 +0900
+@@ -1,4 +1,5 @@
+ AM_CPPFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+--- origsrc/libfwnt-20210906/libfwnt/libfwnt_locale_identifier.h	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/libfwnt/libfwnt_locale_identifier.h	2022-07-06 14:21:54.250682400 +0900
+@@ -25,6 +25,8 @@
+ #include <common.h>
+ #include <types.h>
+ 
++#include "libfwnt_extern.h"
++
+ #if defined( __cplusplus )
+ extern "C" {
+ #endif
+@@ -46,6 +48,7 @@ struct libfwnt_locale_identifier_languag
+ 	const char *description;
+ };
+ 
++LIBFWNT_EXTERN \
+ const char *libfwnt_locale_identifier_language_tag_get_identifier(
+              uint16_t lcid_language_tag );
+ 
+--- origsrc/libfwnt-20210906/libfwnt/libfwnt_lzx.c	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/libfwnt/libfwnt_lzx.c	2022-07-06 14:21:54.256756900 +0900
+@@ -103,6 +103,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 
+ 			goto on_error;
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -111,13 +112,16 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 			 pre_code_index,
+ 			 value_32bit) ;
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		pre_code_size_array[ pre_code_index ] = (uint8_t) value_32bit;
+ 	}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 	if( libcnotify_verbose != 0 )
+ 	{
+ 		libcnotify_printf(
+ 		 "\n" );
+ 	}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 	if( libfwnt_huffman_tree_initialize(
+ 	     &pre_codes_huffman_tree,
+ 	     20,
+@@ -167,6 +171,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 
+ 			goto on_error;
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -175,6 +180,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 			 code_size_index,
+ 			 symbol );
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		if( symbol < 17 )
+ 		{
+ 			code_size = code_size_array[ code_size_index ] - symbol;
+@@ -183,6 +189,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 			{
+ 				code_size += 17;
+ 			}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 			if( libcnotify_verbose != 0 )
+ 			{
+ 				libcnotify_printf(
+@@ -191,6 +198,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 				 code_size_index,
+ 				 code_size );
+ 			}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 			code_size_array[ code_size_index++ ] = (uint8_t) code_size;
+ 
+ 			continue;
+@@ -298,6 +306,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 
+ 			goto on_error;
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -305,18 +314,22 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 			 function,
+ 			 times_to_repeat );
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		if( times_to_repeat > (uint32_t) ( number_of_code_sizes - code_size_index ) )
+ 		{
++#if defined( HAVE_DEBUG_OUTPUT )
+ 			if( libcnotify_verbose != 0 )
+ 			{
+ 				libcnotify_printf(
+ 				 "%s: times to repeat value out of bounds.\n",
+ 				 function );
+ 			}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 			times_to_repeat = (uint32_t) ( number_of_code_sizes - code_size_index );
+ 		}
+ 		while( times_to_repeat > 0 )
+ 		{
++#if defined( HAVE_DEBUG_OUTPUT )
+ 			if( libcnotify_verbose != 0 )
+ 			{
+ 				libcnotify_printf(
+@@ -325,6 +338,7 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 				 code_size_index,
+ 				 code_size );
+ 			}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 			code_size_array[ code_size_index++ ] = (uint8_t) code_size;
+ 
+ 			times_to_repeat--;
+@@ -343,11 +357,13 @@ int libfwnt_lzx_read_huffman_code_sizes(
+ 
+ 		goto on_error;
+ 	}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 	if( libcnotify_verbose != 0 )
+ 	{
+ 		libcnotify_printf(
+ 		 "\n" );
+ 	}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 	return( 1 );
+ 
+ on_error:
+@@ -495,6 +511,7 @@ int libfwnt_lzx_build_aligned_offsets_hu
+ 
+ 			return( -1 );
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -503,6 +520,7 @@ int libfwnt_lzx_build_aligned_offsets_hu
+ 			 code_size_index,
+ 			 code_size );
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		code_size_array[ code_size_index ] = (uint8_t) code_size;
+ 	}
+ 	if( libfwnt_huffman_tree_build(
+@@ -612,6 +630,7 @@ int libfwnt_lzx_decode_huffman(
+ 
+ 			return( -1 );
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -619,6 +638,7 @@ int libfwnt_lzx_decode_huffman(
+ 			 function,
+ 			 symbol );
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		if( symbol < 256 )
+ 		{
+ 			if( data_offset >= uncompressed_data_size )
+@@ -675,6 +695,7 @@ int libfwnt_lzx_decode_huffman(
+ 				{
+ 					number_of_bits -= 3;
+ 				}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 				if( libcnotify_verbose != 0 )
+ 				{
+ 					libcnotify_printf(
+@@ -682,6 +703,7 @@ int libfwnt_lzx_decode_huffman(
+ 					 function,
+ 					 number_of_bits );
+ 				}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 				if( libfwnt_bit_stream_get_value(
+ 				     bit_stream,
+ 				     number_of_bits,
+@@ -715,6 +737,7 @@ int libfwnt_lzx_decode_huffman(
+ 
+ 						return( -1 );
+ 					}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 					if( libcnotify_verbose != 0 )
+ 					{
+ 						libcnotify_printf(
+@@ -722,6 +745,7 @@ int libfwnt_lzx_decode_huffman(
+ 						 function,
+ 						 aligned_offset );
+ 					}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 					compression_offset <<= 3;
+ 					compression_offset  |= aligned_offset;
+ 				}
+@@ -732,6 +756,7 @@ int libfwnt_lzx_decode_huffman(
+ 			}
+ 			recent_compression_offsets[ 0 ] = compression_offset;
+ 
++#if defined( HAVE_DEBUG_OUTPUT )
+ 			if( libcnotify_verbose != 0 )
+ 			{
+ 				libcnotify_printf(
+@@ -749,6 +774,7 @@ int libfwnt_lzx_decode_huffman(
+ 				 function,
+ 				 compression_offset );
+ 			}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 			if( compression_offset > data_offset )
+ 			{
+ 				libcerror_error_set(
+@@ -1019,6 +1045,7 @@ int libfwnt_lzx_decompress(
+ 			}
+ /* TODO add extended block size support ? */
+ 		}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 		if( libcnotify_verbose != 0 )
+ 		{
+ 			libcnotify_printf(
+@@ -1059,6 +1086,7 @@ int libfwnt_lzx_decompress(
+ 			libcnotify_printf(
+ 			 "\n" );
+ 		}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 		switch( block_type )
+ 		{
+ 			case LIBFWNT_LZX_BLOCK_TYPE_ALIGNED:
+@@ -1334,6 +1362,7 @@ int libfwnt_lzx_decompress(
+ 
+ 					goto on_error;
+ 				}
++#if defined( HAVE_DEBUG_OUTPUT )
+ 				if( libcnotify_verbose != 0 )
+ 				{
+ 					libcnotify_printf(
+@@ -1354,6 +1383,7 @@ int libfwnt_lzx_decompress(
+ 					libcnotify_printf(
+ 					 "\n" );
+ 				}
++#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+ 				if( (size_t) block_size > ( bit_stream->byte_stream_size - bit_stream->byte_stream_offset ) )
+ 				{
+ 					block_size = (uint32_t) ( bit_stream->byte_stream_size - bit_stream->byte_stream_offset );
+--- origsrc/libfwnt-20210906/pyfwnt/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/pyfwnt/Makefile.am	2022-07-06 14:21:54.263060300 +0900
+@@ -1,5 +1,6 @@
+ if HAVE_PYTHON
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -29,7 +30,7 @@ pyfwnt_la_LIBADD = \
+ 	@LIBCDATA_LIBADD@
+ 
+ pyfwnt_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
+-pyfwnt_la_LDFLAGS  = -module -avoid-version $(PYTHON_LDFLAGS)
++pyfwnt_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON_LDFLAGS)
+ 
+ endif
+ 
+--- origsrc/libfwnt-20210906/pyfwnt-python2/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/pyfwnt-python2/Makefile.am	2022-07-06 14:21:54.281997000 +0900
+@@ -6,6 +6,7 @@ pyexecdir = $(pyexecdir2)
+ 
+ if HAVE_PYTHON2
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -39,7 +40,7 @@ pyfwnt_la_LIBADD = \
+ 	@LIBCDATA_LIBADD@
+ 
+ pyfwnt_la_CPPFLAGS = $(PYTHON2_CPPFLAGS)
+-pyfwnt_la_LDFLAGS  = -module -avoid-version $(PYTHON2_LDFLAGS)
++pyfwnt_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON2_LDFLAGS)
+ 
+ $(BUILT_SOURCES):
+ 	/bin/cp -f $(top_srcdir)/pyfwnt/$@ $@
+--- origsrc/libfwnt-20210906/pyfwnt-python3/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/pyfwnt-python3/Makefile.am	2022-07-06 14:21:54.287775100 +0900
+@@ -6,6 +6,7 @@ pyexecdir = $(pyexecdir3)
+ 
+ if HAVE_PYTHON3
+ AM_CFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
+@@ -39,7 +40,7 @@ pyfwnt_la_LIBADD = \
+ 	@LIBCDATA_LIBADD@
+ 
+ pyfwnt_la_CPPFLAGS = $(PYTHON3_CPPFLAGS)
+-pyfwnt_la_LDFLAGS  = -module -avoid-version $(PYTHON3_LDFLAGS)
++pyfwnt_la_LDFLAGS  = -no-undefined -module -avoid-version $(PYTHON3_LDFLAGS)
+ 
+ $(BUILT_SOURCES):
+ 	/bin/cp -f $(top_srcdir)/pyfwnt/$@ $@
+--- origsrc/libfwnt-20210906/tests/Makefile.am	2021-09-06 15:09:27.000000000 +0900
++++ src/libfwnt-20210906/tests/Makefile.am	2022-07-06 14:21:54.294749900 +0900
+@@ -1,4 +1,5 @@
+ AM_CPPFLAGS = \
++	-I$(top_builddir)/include \
+ 	-I$(top_srcdir)/include \
+ 	-I$(top_srcdir)/common \
+ 	@LIBCERROR_CPPFLAGS@ \
