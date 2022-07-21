@@ -1,0 +1,113 @@
+--- origsrc/antic-0.2.5/CMakeLists.txt	2022-06-24 22:00:42.000000000 +0900
++++ src/antic-0.2.5/CMakeLists.txt	2022-07-22 08:19:08.126133400 +0900
+@@ -149,3 +149,10 @@ if (BUILD_TESTING)
+         endforeach ()
+     endforeach ()
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/antic.pc.in ${CMAKE_BINARY_DIR}/antic.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/antic.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/antic-0.2.5/antic.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/antic-0.2.5/antic.pc.in	2022-07-22 08:18:12.816836300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: antic
++Description: Algebraic Number Theory In C
++Version: @ANTIC_VERSION@
++Libs: -L${libdir} -lantic
++Cflags: -I${includedir}
+--- origsrc/antic-0.2.5/nf.h	2022-06-24 22:00:42.000000000 +0900
++++ src/antic-0.2.5/nf.h	2022-07-22 08:34:04.492467600 +0900
+@@ -47,7 +47,7 @@
+ #define ANTIC_DLL
+ #endif
+ 
+-long int antic_test_multiplier(void);
++ANTIC_DLL long int antic_test_multiplier(void);
+ 
+ typedef struct {
+    fmpq_poly_t pol;  /* defining polynomial */
+--- origsrc/antic-0.2.5/qfb.h	2022-06-24 22:00:42.000000000 +0900
++++ src/antic-0.2.5/qfb.h	2022-07-22 08:41:08.515385300 +0900
+@@ -21,6 +21,8 @@
+ #include "flint/flint.h"
+ #include "flint/fmpz.h"
+ 
++#include "nf.h"
++
+ #ifdef __cplusplus
+  extern "C" {
+ #endif
+@@ -110,32 +112,32 @@ void qfb_array_clear(qfb ** forms, slong
+    flint_free(*forms);
+ }
+ 
+-qfb_hash_t * qfb_hash_init(slong depth);
++ANTIC_DLL qfb_hash_t * qfb_hash_init(slong depth);
+ 
+-void qfb_hash_clear(qfb_hash_t * qhash, slong depth);
++ANTIC_DLL void qfb_hash_clear(qfb_hash_t * qhash, slong depth);
+ 
+-void qfb_hash_insert(qfb_hash_t * qhash, qfb_t q, 
++ANTIC_DLL void qfb_hash_insert(qfb_hash_t * qhash, qfb_t q, 
+                      qfb_t q2, slong iter, slong depth);
+ 
+-slong qfb_hash_find(qfb_hash_t * qhash, qfb_t q, slong depth);
++ANTIC_DLL slong qfb_hash_find(qfb_hash_t * qhash, qfb_t q, slong depth);
+ 
+-void qfb_reduce(qfb_t r, qfb_t f, fmpz_t D);
++ANTIC_DLL void qfb_reduce(qfb_t r, qfb_t f, fmpz_t D);
+ 
+-int qfb_is_reduced(qfb_t r);
++ANTIC_DLL int qfb_is_reduced(qfb_t r);
+ 
+-slong qfb_reduced_forms(qfb ** forms, slong d);
++ANTIC_DLL slong qfb_reduced_forms(qfb ** forms, slong d);
+ 
+-slong qfb_reduced_forms_large(qfb ** forms, slong d);
++ANTIC_DLL slong qfb_reduced_forms_large(qfb ** forms, slong d);
+ 
+-void qfb_nucomp(qfb_t r, const qfb_t f, const qfb_t g, fmpz_t D, fmpz_t L);
++ANTIC_DLL void qfb_nucomp(qfb_t r, const qfb_t f, const qfb_t g, fmpz_t D, fmpz_t L);
+ 
+-void qfb_nudupl(qfb_t r, const qfb_t f, fmpz_t D, fmpz_t L);
++ANTIC_DLL void qfb_nudupl(qfb_t r, const qfb_t f, fmpz_t D, fmpz_t L);
+ 
+-void qfb_pow_ui(qfb_t r, qfb_t f, fmpz_t D, ulong exp);
++ANTIC_DLL void qfb_pow_ui(qfb_t r, qfb_t f, fmpz_t D, ulong exp);
+ 
+-void qfb_pow(qfb_t r, qfb_t f, fmpz_t D, fmpz_t exp);
++ANTIC_DLL void qfb_pow(qfb_t r, qfb_t f, fmpz_t D, fmpz_t exp);
+ 
+-void qfb_pow_with_root(qfb_t r, qfb_t f, fmpz_t D, fmpz_t e, fmpz_t L);
++ANTIC_DLL void qfb_pow_with_root(qfb_t r, qfb_t f, fmpz_t D, fmpz_t e, fmpz_t L);
+ 
+ static __inline__
+ void qfb_inverse(qfb_t r, qfb_t f)
+@@ -199,14 +201,14 @@ int qfb_is_primitive(qfb_t f)
+    return res;
+ }
+ 
+-void qfb_prime_form(qfb_t r, fmpz_t D, fmpz_t p);
++ANTIC_DLL void qfb_prime_form(qfb_t r, fmpz_t D, fmpz_t p);
+ 
+-int qfb_exponent_element(fmpz_t exponent, qfb_t f, 
++ANTIC_DLL int qfb_exponent_element(fmpz_t exponent, qfb_t f, 
+                                           fmpz_t n, ulong B1, ulong B2_sqrt);
+ 
+-int qfb_exponent(fmpz_t exponent, fmpz_t n, ulong B1, ulong B2_sqrt, slong c);
++ANTIC_DLL int qfb_exponent(fmpz_t exponent, fmpz_t n, ulong B1, ulong B2_sqrt, slong c);
+ 
+-int qfb_exponent_grh(fmpz_t exponent, fmpz_t n, ulong B1, ulong B2_sqrt);
++ANTIC_DLL int qfb_exponent_grh(fmpz_t exponent, fmpz_t n, ulong B1, ulong B2_sqrt);
+ 
+ #ifdef __cplusplus
+ }
