@@ -1,0 +1,62 @@
+HOMEPAGE="https://zenodo.org/record/5798035#.YvDBSOzP3zc"
+SRC_URI="https://zenodo.org/record/5798035/files/${P}.zip?download=1"
+
+CATEGORY="Libs"
+SUMMARY="High-performance library for evaluation of molecular integrals"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-3.0-only"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-only"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="liblapack-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_DOC:BOOL=OFF
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+	-DVERSION:STRIN=${PV}
+	-DWITH_MPI:BOOL=OFF
+"
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	pushd usr/bin
+		for exe in *.exe
+		do
+			mv ${exe} GBTO_${exe}
+		done
+	popd
+}
+
+PKG_NAMES="
+	GBTOLib
+	libGBTO${PV[1]}
+	libGBTO-devel
+"
+GBTOLib_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libGBTO3_CONTENTS="
+	usr/bin/*.dll
+"
+libGBTO_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+GBTOLib_SUMMARY="${SUMMARY} (utilities)"
+libGBTO3_SUMMARY="${SUMMARY} (runtime)"
+libGBTO_devel_SUMMARY="${SUMMARY} (development)"
