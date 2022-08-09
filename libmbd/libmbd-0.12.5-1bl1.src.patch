@@ -1,0 +1,47 @@
+--- origsrc/libmbd-0.12.5/CMakeLists.txt	2022-01-18 19:52:30.000000000 +0900
++++ src/libmbd-0.12.5/CMakeLists.txt	2022-08-09 08:50:02.583647000 +0900
+@@ -110,3 +110,10 @@ add_subdirectory(src)
+ if(BUILD_TESTING)
+     add_subdirectory(tests)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libmbd.pc.in ${CMAKE_BINARY_DIR}/libmbd.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libmbd.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libmbd-0.12.5/libmbd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmbd-0.12.5/libmbd.pc.in	2022-08-09 08:50:21.590869700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmbd
++Description: Many-body dispersion library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmbd
++Cflags: -I${includedir}/mbd
+--- origsrc/libmbd-0.12.5/src/CMakeLists.txt	2022-01-18 19:52:30.000000000 +0900
++++ src/libmbd-0.12.5/src/CMakeLists.txt	2022-08-09 08:41:32.785959300 +0900
+@@ -23,6 +23,10 @@ add_library(mbd
+     mbd_vdw_param.f90
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(mbd PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(ENABLE_SCALAPACK_MPI)
+     target_sources(mbd PRIVATE mbd_mpi.F90 mbd_blacs.f90 mbd_scalapack.f90)
+     if(NOT MPI_Fortran_HAVE_F08_MODULE)
+@@ -84,6 +88,7 @@ if(CMAKE_INSTALL_LIBDIR)
+     add_library(Mbd INTERFACE)
+     target_link_libraries(Mbd INTERFACE mbd)
+     install(TARGETS mbd Mbd EXPORT MbdConfig
++        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+         PUBLIC_HEADER DESTINATION "${includedir}"
