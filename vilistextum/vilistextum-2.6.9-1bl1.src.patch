@@ -1,0 +1,190 @@
+--- origsrc/vilistextum-2.6.9/src/Makefile.am	2006-10-24 03:48:54.000000000 +0900
++++ src/vilistextum-2.6.9/src/Makefile.am	2022-08-11 23:48:33.916580400 +0900
+@@ -5,7 +5,7 @@ vilistextum_SOURCES = debug.h charset.c
+ 											text.c text.h fileio.c fileio.h \
+ 											main.c main.h util.c util.h \
+ 											multibyte.h unicode_entities.c unicode_entities.h
+-
++vilistextum_LDADD = -liconv
+ AM_CFLAGS = -Wall -O2 -ansi
+ AM_LDFLAGS = $(STATIC)
+ 
+--- origsrc/vilistextum-2.6.9/src/html.c	2006-05-01 06:50:33.000000000 +0900
++++ src/vilistextum-2.6.9/src/html.c	2022-08-11 23:59:13.443103100 +0900
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998-2006 Patric Müller
++ * Copyright (c) 1998-2006 Patric Mï¿½ller
+  * bhaak@gmx.net
+  * http://bhaak.dyndns.org/vilistextum/
+  *
+@@ -39,8 +39,10 @@ CHAR attr_name[DEF_STR_LEN], /* Attribut
+ 	attr_ctnt[DEF_STR_LEN], /* Attribut content of a HTML-Tag */
+ 	link_inline[DEF_STR_LEN]; /* Link of a HTML-Tag */
+ 
++CHAR ch;
++
+ /* ------------------------------------------------ */
+-#if defined(MULTIBYTE) && ! defined(__GNU_LIBRARY__)
++#if defined(MULTIBYTE) && ! defined(__GNU_LIBRARY__) && !defined(__CYGWIN__)
+ #include <wchar.h>
+ static int wcscasecmp(const wchar_t *s1, const wchar_t *s2)
+ {
+@@ -335,7 +337,7 @@ void end_div()
+ 
+   if (paragraph!=0) { paragraphen_ende(); }
+   else { print_zeile(); }
+-  pop_align(); /* einer für start_div */
++  pop_align(); /* einer fï¿½r start_div */
+   div_test = 0;
+ #ifdef proc_debug
+   printf("end_div() ende\n");
+--- origsrc/vilistextum-2.6.9/src/html.h	2006-04-22 21:17:34.000000000 +0900
++++ src/vilistextum-2.6.9/src/html.h	2022-08-11 23:52:53.926483900 +0900
+@@ -4,13 +4,13 @@
+ #include "text.h"
+ #include "multibyte.h"
+ 
+-int pre;
++extern int pre;
+ 
+ int get_attr();
+ int get_new_attr(CHAR *name, CHAR *content);
+ 
+-CHAR attr_name[DEF_STR_LEN];
+-CHAR attr_ctnt[DEF_STR_LEN];
++extern CHAR attr_name[DEF_STR_LEN];
++extern CHAR attr_ctnt[DEF_STR_LEN];
+ 
+ void html();
+ void check_for_center();
+--- origsrc/vilistextum-2.6.9/src/main.c	2006-05-01 14:37:43.000000000 +0900
++++ src/vilistextum-2.6.9/src/main.c	2022-08-12 00:00:14.653020300 +0900
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1998-2006 Patric Müller
++ * Copyright (c) 1998-2006 Patric Mï¿½ller
+  * bhaak@gmx.net
+  * http://bhaak.dyndns.org/vilistextum/
+  *
+@@ -29,9 +29,9 @@
+  *      18.09.98   : added CODE
+  *                   added all &xxx;
+  *                   added "&#38;"  '&', "&#62;"  '<', "&#60;"  '>'
+- *      02.02.99   : added "&#160;" ' ', "&#169;" '©', "&#180;" '`',
+- *                         "&#228;" 'ä', "&#252;" 'ü', "&#246;" 'ö',
+- *                         "&#196;" 'Ä', "&#220;" 'Ü', "&#214;" 'Ö',
++ *      02.02.99   : added "&#160;" ' ', "&#169;" 'ï¿½', "&#180;" '`',
++ *                         "&#228;" 'ï¿½', "&#252;" 'ï¿½', "&#246;" 'ï¿½',
++ *                         "&#196;" 'ï¿½', "&#220;" 'ï¿½', "&#214;" 'ï¿½',
+  *                         "&#223;" 'ss',
+  *                   added RIGHT, /RIGHT,
+  *                   added all "&#xxx;",
+@@ -98,7 +98,9 @@
+ #include <string.h>
+ 
+ #ifdef HAVE_GETOPT_H
+- #define _GNU_SOURCE
++ #if !defined(_GNU_SOURCE)
++  #define _GNU_SOURCE
++ #endif
+  #include <getopt.h>
+ #endif
+ 
+@@ -165,7 +167,7 @@ char help_text[] =
+ 
+ void help()
+ {
+-	printf(help_text);
++	printf("%s", help_text);
+ 
+ 	exit(0);
+ } /* end help */
+--- origsrc/vilistextum-2.6.9/src/main.h	2005-07-24 01:47:44.000000000 +0900
++++ src/vilistextum-2.6.9/src/main.h	2022-08-11 23:50:50.216492300 +0900
+@@ -3,22 +3,22 @@
+ 
+ #include "multibyte.h"
+ 
+-int palm;
+-int	convert_tags;
+-int errorlevel;
+-int convert_characters;
+-int shrink_lines;
+-int remove_empty_alt;
+-int option_links;
+-int option_links_inline;
+-int option_title;
+-int sevenbit;
+-int transliteration;
++extern int palm;
++extern int	convert_tags;
++extern int errorlevel;
++extern int convert_characters;
++extern int shrink_lines;
++extern int remove_empty_alt;
++extern int option_links;
++extern int option_links_inline;
++extern int option_title;
++extern int sevenbit;
++extern int transliteration;
+ 
+-int option_no_image;
+-int option_no_alt;
+-int option_output_utf8;
++extern int option_no_image;
++extern int option_no_alt;
++extern int option_output_utf8;
+ 
+-CHAR *default_image;
++extern CHAR *default_image;
+ 
+ #endif
+--- origsrc/vilistextum-2.6.9/src/text.h	2005-07-23 23:07:09.000000000 +0900
++++ src/vilistextum-2.6.9/src/text.h	2022-08-11 23:52:08.620972700 +0900
+@@ -9,23 +9,23 @@
+ 
+ #include "multibyte.h"
+ 
+-int LEFT;  
+-int CENTER;
+-int RIGHT;
+-
+-CHAR ch;
+-
+-int paragraph;
+-int div_test;
+-int nooutput;
++extern int LEFT;  
++extern int CENTER;
++extern int RIGHT;
++
++extern CHAR ch;
++
++extern int paragraph;
++extern int div_test;
++extern int nooutput;
+ 
+-int breite;
+-int hr_breite;
++extern int breite;
++extern int hr_breite;
+ 
+ void status();
+ 
+-int tab;
+-int spaces;  
++extern int tab;
++extern int spaces;  
+ 
+ void print_zeile();
+ int is_zeile_empty();
+--- origsrc/vilistextum-2.6.9/tests/Makefile.am	2004-07-06 21:06:20.000000000 +0900
++++ src/vilistextum-2.6.9/tests/Makefile.am	2022-08-12 00:02:19.417278300 +0900
+@@ -16,5 +16,5 @@ DISTCLEANFILES = \
+ 
+ test: check
+ 
+-all: check
++# all: check
+ 
