@@ -1,0 +1,118 @@
+--- origsrc/lib2geom-1.2/CMakeLists.txt	2022-03-26 09:38:45.000000000 +0900
++++ src/lib2geom-1.2/CMakeLists.txt	2022-08-15 04:23:36.269366400 +0900
+@@ -3,7 +3,7 @@ cmake_policy(SET CMP0054 NEW)
+ 
+ 
+ set(2GEOM_MAJOR_VERSION 1)
+-set(2GEOM_MINOR_VERSION 1)
++set(2GEOM_MINOR_VERSION 2)
+ set(2GEOM_PATCH_VERSION 0)
+ set(2GEOM_VERSION ${2GEOM_MAJOR_VERSION}.${2GEOM_MINOR_VERSION}.${2GEOM_PATCH_VERSION})
+ set(2GEOM_ABI_VERSION ${2GEOM_MAJOR_VERSION}.${2GEOM_MINOR_VERSION}.0)
+--- origsrc/lib2geom-1.2/src/cython/CMakeLists.txt	2022-03-26 09:38:45.000000000 +0900
++++ src/lib2geom-1.2/src/cython/CMakeLists.txt	2022-08-15 09:50:07.297618400 +0900
+@@ -108,12 +108,14 @@ IF(2GEOM_CYTHON_BINDINGS)
+ 
+         cython_add_module( cy2geom cy2geom.pyx)
+ 
+-        add_test(cython-primitives python2 test-primitives.py)
+-        add_test(cython-rectangle python2 test-rectangle.py)
+-        add_test(cython-affine python2 test-affine.py)
+-        add_test(cython-curves python2 test-curves.py)
+-        add_test(cython-path python2 test-path.py)
+-        add_test(cython-conicsection python2 test-conicsection.py)
++        find_package(Python3 COMPONENTS Interpreter)
++
++        add_test(NAME cython-primitives COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-primitives.py)
++        add_test(NAME cython-rectangle COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-rectangle.py)
++        add_test(NAME cython-affine COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-affine.py)
++        add_test(NAME cython-curves COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-curves.py)
++        add_test(NAME cython-path COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-path.py)
++        add_test(NAME cython-conicsection COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test-conicsection.py)
+ 
+         # stuff to install the cy2geom package in the Python site-packages directory
+         FIND_PACKAGE(PythonLibs)
+@@ -121,7 +123,11 @@ IF(2GEOM_CYTHON_BINDINGS)
+             GET_FILENAME_COMPONENT(PYTHON_LIB_INSTALL "${PYTHON_LIBRARY}" PATH)
+             GET_FILENAME_COMPONENT(SITEPACKAGE "${PYTHON_LIB_INSTALL}/../Lib/site-packages" ABSOLUTE)
+         ELSE (WIN32)
+-            SET(PYTHON_LIB_INSTALL "/usr/local/lib/python2.7/dist-packages" CACHE STRING "Where to install the cy2geom module?")
++            if (CYGWIN)
++                set(PYTHIN_LIB_INSTALL "/usr/lib/python${Python_SOABI}/site-packages" CACHE STRING "Where to install the cy2geom module?")
++            else()
++                SET(PYTHON_LIB_INSTALL "/usr/local/lib/python2.7/dist-packages" CACHE STRING "Where to install the cy2geom module?")
++            endif()
+             SET(SITEPACKAGE ${PYTHON_LIB_INSTALL})
+         ENDIF(WIN32)
+ 
+--- origsrc/lib2geom-1.2/src/py2geom/CMakeLists.txt	2022-03-26 09:38:45.000000000 +0900
++++ src/lib2geom-1.2/src/py2geom/CMakeLists.txt	2022-08-15 04:04:14.676050100 +0900
+@@ -85,7 +85,10 @@ IF(2GEOM_BOOST_PYTHON)
+ 	SET(Boost_DEBUG TRUE)
+         SET(Boost_REALPATH FALSE)
+         FIND_PACKAGE(Boost 1.42.0 REQUIRED)
+-	FIND_PACKAGE(Boost REQUIRED COMPONENTS python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
++	FIND_PACKAGE(Boost COMPONENTS python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
++  if (NOT Boost_python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}_FOUND)
++    find_package(Boost REQUIRED COMPONENTS python${Python3_VERSION_MAJOR})
++  endif()
+ 
+         IF (WIN32)
+             SET_TARGET_PROPERTIES(py2geom PROPERTIES SUFFIX ".pyd")
+--- origsrc/lib2geom-1.2/src/toys/conic-section-toy.cpp	2022-03-26 09:38:45.000000000 +0900
++++ src/lib2geom-1.2/src/toys/conic-section-toy.cpp	2022-08-15 03:46:52.221490400 +0900
+@@ -120,7 +120,7 @@ class ConicSectionToy : public Toy
+ 
+         if (!parabola_toggle.on )
+         {
+-            if (focus2.pos == Point(infinity(),infinity()))
++            if (focus2.pos == Point(Geom::infinity(),Geom::infinity()))
+                 focus2.pos = Point(m_width/2, m_height/2);
+             double df1f2 = distance (focus1.pos, focus2.pos);
+             if (df1f2 > 20 )
+@@ -141,7 +141,7 @@ class ConicSectionToy : public Toy
+         }
+         else
+         {
+-            focus2.pos = Point(infinity(),infinity());
++            focus2.pos = Point(Geom::infinity(),Geom::infinity());
+         }
+ 
+         cs.set (vertex.pos, focus1.pos, focus2.pos);
+--- origsrc/lib2geom-1.2/src/toys/sweeper.cpp	2022-03-26 09:38:45.000000000 +0900
++++ src/lib2geom-1.2/src/toys/sweeper.cpp	2022-08-15 03:46:52.229303400 +0900
+@@ -3,6 +3,7 @@
+ #include <2geom/basic-intersection.h>
+ #include <2geom/pathvector.h>
+ #include <2geom/exception.h>
++#include <2geom/coord.h>
+ 
+ #include <cstdlib>
+ #include <cstdio>
+@@ -841,7 +842,7 @@ public:
+     //returns an (infinite) rect around "a" separating it from "b". Nota: 3 sides are infinite!
+     //TODO: place the cut where there is most space...
+     OptRect separate(Rect const &a, Rect const &b){
+-        Rect ret ( Interval( -infinity(), infinity() ) , Interval(-infinity(), infinity() ) );
++        Rect ret ( Interval( -Geom::infinity(), Geom::infinity() ) , Interval(-Geom::infinity(), Geom::infinity() ) );
+         double gap = 0;
+         unsigned dir = 4;
+         if (b[X].min() - a[X].max() > gap){
+@@ -872,7 +873,7 @@ public:
+ 
+     //Find 4 lines (returned as a Rect sides) that cut all the rays (=edges). *!* some side might be infinite.
+     OptRect isolateVertex(Rect const &box){
+-        OptRect sep ( Interval( -infinity(), infinity() ) , Interval(-infinity(), infinity() ) );
++        OptRect sep ( Interval( -Geom::infinity(), Geom::infinity() ) , Interval(-Geom::infinity(), Geom::infinity() ) );
+         //separate this vertex from the others. Find a better way.
+         for (auto & vtxboxe : vtxboxes){
+             if ( Point::LexLessRt(dim)( sep->max(), vtxboxe.min() ) ){
+@@ -950,7 +951,7 @@ public:
+ 
+             for (unsigned side=0; side<4; side++){//scan X or Y direction, on level min or max...
+                 double level = sep->corner( side )[1-side%2];
+-                if (level != infinity() && level != -infinity() ){
++                if (level != ::infinity() && level != -::infinity() ){
+                     std::vector<double> times = roots(c[1-side%2]-level);
+                     if ( times.size() > 0 ) {
+                         double t;
