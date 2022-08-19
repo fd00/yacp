@@ -1,0 +1,122 @@
+--- origsrc/ethash-0.9.0/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/CMakeLists.txt	2022-08-19 14:49:36.190110100 +0900
+@@ -16,7 +16,7 @@ include(HunterGate)
+ cable_configure_toolchain(DEFAULT cxx14)
+ cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo Debug)
+ 
+-include(cmake/Hunter/init.cmake)
++# include(cmake/Hunter/init.cmake)
+ 
+ project(ethash)
+ set(PROJECT_VERSION 0.9.0)
+--- origsrc/ethash-0.9.0/lib/ethash/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/lib/ethash/CMakeLists.txt	2022-08-19 17:05:14.927940500 +0900
+@@ -21,6 +21,9 @@ target_sources(ethash PRIVATE
+     primes.c
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(ethash PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ if(CABLE_COMPILER_GNULIKE AND NOT MSVC AND NOT SANITIZE MATCHES undefined)
+     target_compile_options(ethash PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+@@ -29,6 +32,7 @@ endif()
+ install(
+     TARGETS ethash
+     EXPORT ethashTargets
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+--- origsrc/ethash-0.9.0/lib/global_context/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/lib/global_context/CMakeLists.txt	2022-08-19 17:05:42.306838600 +0900
+@@ -4,7 +4,7 @@
+ 
+ include(GNUInstallDirs)
+ 
+-add_library(global-context STATIC)
++add_library(global-context)
+ add_library(ethash::global-context ALIAS global-context)
+ target_link_libraries(global-context PUBLIC ethash::ethash)
+ target_include_directories(global-context PUBLIC $<BUILD_INTERFACE:${include_dir}>$<INSTALL_INTERFACE:include>)
+@@ -15,6 +15,10 @@ target_sources(global-context PRIVATE
+     global_context.cpp
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(global-context PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(CABLE_COMPILER_GNULIKE AND NOT MSVC AND NOT SANITIZE MATCHES undefined)
+     target_compile_options(global-context PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+ endif()
+@@ -22,6 +26,7 @@ endif()
+ install(
+     TARGETS global-context
+     EXPORT ethashTargets
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+--- origsrc/ethash-0.9.0/lib/keccak/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/lib/keccak/CMakeLists.txt	2022-08-19 16:22:26.068699800 +0900
+@@ -15,6 +15,13 @@ target_sources(keccak PRIVATE
+     keccak.c
+ )
+ 
++if (CYGWIN)
++    set_target_properties(keccak PROPERTIES OUTPUT_NAME ethash-keccak)
++endif()
++if (DEFINED SOVERSION)
++    set_target_properties(keccak PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(
+     TARGETS keccak
+     EXPORT ethashTargets
+--- origsrc/ethash-0.9.0/test/benchmarks/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/test/benchmarks/CMakeLists.txt	2022-08-19 16:10:40.475524700 +0900
+@@ -2,7 +2,7 @@
+ # Copyright 2018-2019 Pawel Bylica.
+ # Licensed under the Apache License, Version 2.0.
+ 
+-hunter_add_package(benchmark)
++# hunter_add_package(benchmark)
+ find_package(benchmark CONFIG REQUIRED)
+ 
+ add_executable(ethash-bench
+@@ -14,6 +14,6 @@ add_executable(ethash-bench
+     threadsync_benchmarks.cpp
+     threadsync_utils.hpp
+     threadsync_utils.cpp)
+-target_link_libraries(ethash-bench PRIVATE ethash::global-context benchmark::benchmark)
++target_link_libraries(ethash-bench PRIVATE ethash::global-context ethash::keccak benchmark::benchmark)
+ target_include_directories(ethash-bench PRIVATE ${ETHASH_PRIVATE_INCLUDE_DIR})
+ set_target_properties(ethash-bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..)
+--- origsrc/ethash-0.9.0/test/unittests/CMakeLists.txt	2022-04-05 20:40:54.000000000 +0900
++++ src/ethash-0.9.0/test/unittests/CMakeLists.txt	2022-08-19 16:49:55.325990400 +0900
+@@ -4,7 +4,7 @@
+ 
+ include(GoogleTest)
+ 
+-hunter_add_package(GTest)
++# hunter_add_package(GTest)
+ find_package(GTest CONFIG REQUIRED)
+ 
+ add_executable(
+@@ -21,7 +21,7 @@ add_executable(
+ 
+ set_source_files_properties(test_version.cpp PROPERTIES COMPILE_DEFINITIONS TEST_PROJECT_VERSION="${PROJECT_VERSION}")
+ 
+-target_link_libraries(ethash-test PRIVATE ethash::global-context ethash::experimental GTest::gtest_main)
++target_link_libraries(ethash-test PRIVATE ethash::global-context ethash::experimental ethash::keccak GTest::gtest_main)
+ target_include_directories(ethash-test PRIVATE ${ETHASH_PRIVATE_INCLUDE_DIR})
+ set_target_properties(ethash-test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..)
+ 
+@@ -30,4 +30,4 @@ if(SANITIZE AND CMAKE_SYSTEM_NAME STREQU
+     target_link_libraries(ethash-test PRIVATE pthread)
+ endif()
+ 
+-gtest_discover_tests(ethash-test TEST_PREFIX ${PROJECT_NAME}/unittests/)
++# gtest_discover_tests(ethash-test TEST_PREFIX ${PROJECT_NAME}/unittests/)
