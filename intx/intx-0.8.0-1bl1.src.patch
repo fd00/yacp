@@ -1,0 +1,54 @@
+--- origsrc/intx-0.8.0/CMakeLists.txt	2022-03-16 02:32:17.000000000 +0900
++++ src/intx-0.8.0/CMakeLists.txt	2022-08-19 07:31:06.836236300 +0900
+@@ -23,7 +23,7 @@ cmake_dependent_option(INTX_BENCHMARKING
+ cmake_dependent_option(INTX_FUZZING "Build intx fuzzers" OFF "INTX_TESTING" OFF)
+ 
+ if(INTX_TESTING)
+-    include(Hunter/init)
++#    include(Hunter/init)
+ endif()
+ 
+ project(intx LANGUAGES CXX)
+--- origsrc/intx-0.8.0/cmake/CableCompilerSettings.cmake	2022-03-16 02:32:17.000000000 +0900
++++ src/intx-0.8.0/cmake/CableCompilerSettings.cmake	2022-08-19 07:31:06.841251400 +0900
+@@ -90,7 +90,10 @@ macro(cable_configure_compiler)
+             endif()
+ 
+             # Enable basing warnings set and treat them as errors.
+-            add_compile_options(-Werror -Wall -Wextra -Wshadow)
++            add_compile_options(-Wall -Wextra -Wshadow)
++            if (NOT CYGWIN)
++                add_compile_options(-Werror)
++            endif()
+ 
+             if(NOT cable_NO_CONVERSION_WARNINGS)
+                 # Enable conversion warnings if not explicitly disabled.
+--- origsrc/intx-0.8.0/test/benchmarks/CMakeLists.txt	2022-03-16 02:32:17.000000000 +0900
++++ src/intx-0.8.0/test/benchmarks/CMakeLists.txt	2022-08-19 07:34:21.676967000 +0900
+@@ -2,7 +2,7 @@
+ # Copyright 2019 Pawel Bylica.
+ # Licensed under the Apache License, Version 2.0.
+ 
+-hunter_add_package(benchmark)
++# hunter_add_package(benchmark)
+ find_package(benchmark CONFIG REQUIRED)
+ 
+ find_package(GMP REQUIRED)
+@@ -16,5 +16,5 @@ add_executable(intx-bench
+     noinline.cpp
+     utils.cpp
+ )
+-target_link_libraries(intx-bench PRIVATE intx intx::experimental intx::testutils benchmark::benchmark GMP::gmp)
++target_link_libraries(intx-bench PRIVATE intx intx::experimental intx::testutils benchmark::benchmark ${GMP_LIBRARY})
+ set_target_properties(intx-bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ..)
+--- origsrc/intx-0.8.0/test/unittests/CMakeLists.txt	2022-03-16 02:32:17.000000000 +0900
++++ src/intx-0.8.0/test/unittests/CMakeLists.txt	2022-08-19 07:31:06.849253400 +0900
+@@ -4,7 +4,7 @@
+ 
+ include(GoogleTest)
+ 
+-hunter_add_package(GTest)
++# hunter_add_package(GTest)
+ find_package(GTest CONFIG REQUIRED)
+ 
+ add_executable(intx-unittests
