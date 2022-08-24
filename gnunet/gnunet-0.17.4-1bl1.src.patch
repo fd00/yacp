@@ -1,0 +1,49 @@
+--- origsrc/gnunet-0.17.4/pkgconfig/Makefile.am	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.17.4/pkgconfig/Makefile.am	2022-08-23 16:36:14.109213100 +0900
+@@ -10,7 +10,6 @@ pcfiles = \
+        gnunetdatastore.pc \
+        gnunetdht.pc \
+        gnunetdns.pc \
+-       gnunetenv.pc \
+        gnunetfragmentation.pc \
+        gnunetfs.pc \
+        gnunetgns.pc \
+--- origsrc/gnunet-0.17.4/pkgconfig/gnunetnat.pc.in	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.17.4/pkgconfig/gnunetnat.pc.in	2022-08-23 15:33:19.558842100 +0900
+@@ -8,5 +8,5 @@ Description: library for NAT traversal
+ URL: https://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunetnat
++Libs: -L${libdir} -lgnunetnatnew
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.17.4/src/dhtu/plugin_dhtu_ip.c	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.17.4/src/dhtu/plugin_dhtu_ip.c	2022-08-22 14:28:34.655023100 +0900
+@@ -1062,7 +1062,7 @@ libgnunet_plugin_dhtu_ip_init (void *cls
+   case AF_INET6:
+     {
+       int on = 1;
+-
++#if defined(IPV6_RECVPKTINFO)
+       if (0 !=
+           setsockopt (sock,
+                       IPPROTO_IPV6,
+@@ -1073,6 +1073,7 @@ libgnunet_plugin_dhtu_ip_init (void *cls
+         GNUNET_log_strerror (GNUNET_ERROR_TYPE_ERROR,
+                              "setsockopt");
+       }
++#endif
+     }
+     {
+       struct sockaddr_in6 sa = {
+--- origsrc/gnunet-0.17.4/src/util/gnunet-qr.c	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.17.4/src/util/gnunet-qr.c	2022-08-22 13:43:36.660834800 +0900
+@@ -473,7 +473,7 @@ run_png_reader (void)
+   zbar_image_scanner_set_config (scanner,0, ZBAR_CFG_ENABLE, 1);
+ 
+   zbar_image_t *zimage = zbar_image_create ();
+-  zbar_image_set_format (zimage, zbar_fourcc ('Y', '8', '0', '0'));
++  zbar_image_set_format (zimage, ((unsigned long)('Y') | ((unsigned long)('8') << 8) | ((unsigned long)('0') << 16) | ((unsigned long)('0') << 24)));
+   zbar_image_set_size (zimage, width, height);
+   zbar_image_set_data (zimage, buffer, width * height, &zbar_image_free_data);
+ 
