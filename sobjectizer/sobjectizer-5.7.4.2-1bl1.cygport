@@ -1,0 +1,57 @@
+HOMEPAGE="https://github.com/Stiffstream/${PN}"
+SRC_URI="https://github.com/Stiffstream/${PN}/archive/refs/tags/v.${PV}.tar.gz"
+SRC_DIR="${PN}-v.${PV}"
+
+CATEGORY="Libs"
+SUMMARY="Framework for building solid multithreaded applications"
+DESCRIPTION="SObjectizer is a framework for building solid multithreaded applications. It
+is based on async message exchange and uses a mixture high-level
+abstractions: Actor-Model, Publish-Subscribe and Communicating Sequential
+Processes."
+
+LICENSE="BSD-3-CLAUSE"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-CLAUSE"
+LICENSE_URI="LICENSE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_ALL:BOOL=ON
+	-DSOBJECTIZER_BUILD_STATIC:BOOL=OFF
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_compile()
+{
+	CYGCMAKE_SOURCE=${S}/dev
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+PKG_NAMES="
+	sobjectizer
+	libso5
+	libso-devel
+"
+sobjectizer_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libso5_CONTENTS="
+	usr/bin/*.dll
+"
+libso_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+sobjectizer_SUMMARY="${SUMMARY} (licensing & readmes)"
+libso5_SUMMARY="${SUMMARY} (runtime)"
+libso_devel_SUMMARY="${SUMMARY} (development)"
