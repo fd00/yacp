@@ -1,0 +1,125 @@
+--- origsrc/libkdumpfile-0.5.0/python/Makefile.am	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/python/Makefile.am	2022-08-30 12:02:45.775757700 +0900
+@@ -21,7 +21,7 @@
+ 
+ AM_CPPFLAGS = -I$(top_builddir)/include
+ AM_CFLAGS = $(PYTHON_CFLAGS)
+-AM_LDFLAGS = -module -avoid-version
++AM_LDFLAGS = -no-undefined -module -avoid-version
+ 
+ installed_list = installed.list
+ 
+--- origsrc/libkdumpfile-0.5.0/python/setup.py	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/python/setup.py	2022-08-30 12:11:06.528123400 +0900
+@@ -38,10 +38,12 @@ setup(name='libkdumpfile',
+       ext_modules=[
+           Extension('_addrxlat', [os.path.join(srcdir, 'addrxlat.c')],
+                     include_dirs=[include_dir],
+-                    extra_objects=[addrxlat_la]),
++                    extra_objects=[addrxlat_la],
++                    extra_link_args=['-no-undefined']),
+           Extension('_kdumpfile', [os.path.join(srcdir, 'kdumpfile.c')],
+                     include_dirs=[include_dir],
+-                    extra_objects=[kdumpfile_la]),
++                    extra_objects=[kdumpfile_la],
++                    extra_link_args=['-no-undefined']),
+       ],
+       cmdclass={
+           'build_ext': libtoolize.build_ext,
+--- origsrc/libkdumpfile-0.5.0/src/addrxlat/Makefile.am	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/addrxlat/Makefile.am	2022-08-30 11:19:01.939900400 +0900
+@@ -34,7 +34,7 @@ libaddrxlat_la_SOURCES = \
+ 	s390x.c \
+ 	x86_64.c
+ 
+-libaddrxlat_la_LDFLAGS = -version-info 3:0:0
++libaddrxlat_la_LDFLAGS = -no-undefined -version-info 3:0:0
+ 
+ if HAVE_LD_VERSION_SCRIPT
+ libaddrxlat_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libaddrxlat.map
+--- origsrc/libkdumpfile-0.5.0/src/addrxlat/aarch64.c	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/addrxlat/aarch64.c	2022-08-30 11:43:58.917181700 +0900
+@@ -32,7 +32,9 @@
+ #include <string.h>
+ 
+ #include "addrxlat-priv.h"
++#if defined(__linux__)
+ #include <linux/version.h>
++#endif
+ 
+ /* Maximum virtual address bits (architectural limit) */
+ #define VA_MAX_BITS	52
+@@ -222,6 +224,7 @@ linux_page_offset(struct os_init_data *c
+ 			? top
+ 			: half;
+ 	} else if (status == ADDRXLAT_ERR_NODATA) {
++#if defined(__linux__)
+ 		/* Fall back to checking kernel version number. */
+ 		clear_error(ctl->ctx);
+ 		if (opt_isset(ctl->popt, version_code)) {
+@@ -230,6 +233,7 @@ linux_page_offset(struct os_init_data *c
+ 				: half;
+ 			status = ADDRXLAT_OK;
+ 		}
++#endif
+ 	}
+ 
+ 	return status;
+--- origsrc/libkdumpfile-0.5.0/src/kdumpfile/Makefile.am	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/kdumpfile/Makefile.am	2022-08-30 11:19:23.351932100 +0900
+@@ -61,7 +61,7 @@ libkdumpfile_la_LIBADD = \
+ 	$(SNAPPY_LIBS)	\
+ 	$(ZSTD_LIBS)
+ 
+-libkdumpfile_la_LDFLAGS = -version-info 10:0:0
++libkdumpfile_la_LDFLAGS = -no-undefined -version-info 10:0:0
+ 
+ if HAVE_LD_VERSION_SCRIPT
+ libkdumpfile_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libkdumpfile.map
+--- origsrc/libkdumpfile-0.5.0/src/kdumpfile/ia32.c	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/kdumpfile/ia32.c	2022-08-30 11:55:35.247403700 +0900
+@@ -36,7 +36,9 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdio.h>
++#if defined(__linux__)
+ #include <linux/version.h>
++#endif
+ 
+ #define ELF_NGREG 17
+ 
+--- origsrc/libkdumpfile-0.5.0/src/kdumpfile/util.c	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/kdumpfile/util.c	2022-08-30 11:58:06.734589900 +0900
+@@ -32,7 +32,9 @@
+ 
+ #include "kdumpfile-priv.h"
+ 
++#if defined(__linux__)
+ #include <linux/version.h>
++#endif
+ #include <string.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+@@ -458,8 +460,10 @@ linux_ver_revalidate(kdump_ctx_t *ctx, s
+ 		}
+ 	}
+ 
++#if defined(__linux__)
+ 	val.number = KERNEL_VERSION(a, b, c);
+ 	return set_attr(ctx, attr, ATTR_DEFAULT, &val);
++#endif
+  err:
+ 	return set_error(ctx, KDUMP_ERR_CORRUPT, "Invalid kernel version: %s",
+ 			 attr_value(rel)->string);
+--- origsrc/libkdumpfile-0.5.0/src/kdumpfile/x86_64.c	2022-08-13 03:47:26.000000000 +0900
++++ src/libkdumpfile-0.5.0/src/kdumpfile/x86_64.c	2022-08-30 12:00:52.226268100 +0900
+@@ -36,7 +36,9 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdio.h>
++#if defined(__linux__)
+ #include <linux/version.h>
++#endif
+ 
+ #define ELF_NGREG 27
+ 
