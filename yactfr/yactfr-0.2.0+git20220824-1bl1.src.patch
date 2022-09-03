@@ -1,0 +1,91 @@
+--- origsrc/yactfr/CMakeLists.txt	2022-09-03 19:12:40.000000000 +0900
++++ src/yactfr/CMakeLists.txt	2022-09-03 20:16:01.245265300 +0900
+@@ -50,3 +50,10 @@ option (
+ if (OPT_BUILD_DOC)
+     add_subdirectory (doc)
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/yactfr.pc.in ${CMAKE_BINARY_DIR}/yactfr.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/yactfr.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yactfr/include/yactfr/elem.hpp	2022-09-03 19:12:40.000000000 +0900
++++ src/yactfr/include/yactfr/elem.hpp	2022-09-03 19:17:43.803607200 +0900
+@@ -99,6 +99,10 @@ private:
+         _KIND_OPT                               = 1 << 31,
+     };
+ 
++#if defined(_U)
++#undef _U
++#endif
++
+     using _U = unsigned long long;
+ 
+ public:
+--- origsrc/yactfr/yactfr/CMakeLists.txt	2022-09-03 19:12:43.000000000 +0900
++++ src/yactfr/yactfr/CMakeLists.txt	2022-09-03 20:02:12.269040200 +0900
+@@ -120,6 +120,7 @@ endif ()
+ # library installation rules
+ install (
+     TARGETS yactfr
++    RUNTIME DESTINATION bin
+     ARCHIVE DESTINATION lib
+     LIBRARY DESTINATION lib
+ )
+--- origsrc/yactfr/yactfr/internal/metadata/pseudo-types.cpp	2022-09-03 19:12:43.000000000 +0900
++++ src/yactfr/yactfr/internal/metadata/pseudo-types.cpp	2022-09-03 19:34:38.616734400 +0900
+@@ -618,7 +618,7 @@ static auto validateNoMappedClkTypeName(
+             return false;
+         }
+ 
+-        return static_cast<const PseudoFlUIntType&>(pseudoIntType).mappedClkTypeName().has_value();
++        return static_cast<const PseudoFlUIntType&>(pseudoIntType).mappedClkTypeName().is_initialized();
+     });
+ 
+     if (!pseudoDts.empty()) {
+--- origsrc/yactfr/yactfr/internal/metadata/tsdl/tsdl-parser.cpp	2022-09-03 19:12:43.000000000 +0900
++++ src/yactfr/yactfr/internal/metadata/tsdl/tsdl-parser.cpp	2022-09-03 19:42:55.836948500 +0900
+@@ -430,7 +430,7 @@ bool TsdlParser::_isPseudoVarTypeWithout
+ 
+     auto& pseudoVarType = static_cast<const PseudoVarType&>(pseudoDt);
+ 
+-    return !pseudoVarType.pseudoSelLoc().has_value();
++    return !pseudoVarType.pseudoSelLoc().is_initialized();
+ }
+ 
+ void TsdlParser::_checkDupAttr(const _Attrs& attrs)
+--- origsrc/yactfr/yactfr/logging/zf_log.c	2022-09-03 19:12:43.000000000 +0900
++++ src/yactfr/yactfr/logging/zf_log.c	2022-09-03 19:56:26.451283400 +0900
+@@ -166,6 +166,8 @@
+ 	#include <sys/time.h>
+ 	#if defined(__linux__)
+ 		#include <linux/limits.h>
++	#elif defined(__CYGWIN__)
++		#include <limits.h>
+ 	#else
+ 		#include <sys/syslimits.h>
+ 	#endif
+@@ -246,7 +248,7 @@ static void buffer_callback(zf_log_messa
+ STATIC_ASSERT(eol_fits_eol_sz, sizeof(ZF_LOG_EOL) <= ZF_LOG_EOL_SZ);
+ STATIC_ASSERT(eol_sz_greater_than_zero, 0 < ZF_LOG_EOL_SZ);
+ STATIC_ASSERT(eol_sz_less_than_buf_sz, ZF_LOG_EOL_SZ < ZF_LOG_BUF_SZ);
+-#if !defined(_WIN32) && !defined(_WIN64)
++#if !defined(PIPE_BUF)
+ 	STATIC_ASSERT(buf_sz_less_than_pipe_buf, ZF_LOG_BUF_SZ <= PIPE_BUF);
+ #endif
+ static const char c_hex[] = "0123456789abcdef";
+--- origsrc/yactfr/yactfr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yactfr/yactfr.pc.in	2022-09-03 20:16:25.981484800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yactfr
++Description: Yet another CTF reader
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lyactfr
++Cflags: -I${includedir}
