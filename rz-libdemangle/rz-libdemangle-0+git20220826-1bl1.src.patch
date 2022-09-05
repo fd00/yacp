@@ -1,0 +1,39 @@
+--- origsrc/rz-libdemangle/meson.build	2022-09-05 13:13:19.000000000 +0900
++++ src/rz-libdemangle/meson.build	2022-09-05 14:51:14.878467900 +0900
+@@ -12,6 +12,9 @@ libdemangle_src = [
+   'src/msvc.c',
+   'src/objc.c',
+ ]
++libdemangle_hdr = [
++  'include/rz_libdemangle.h'
++]
+ 
+ tests = [
+   'java',
+@@ -50,6 +53,8 @@ endif
+ 
+ libdemangle = library('demangle', libdemangle_src,
+     c_args : common_c_args + libdemangle_c_args,
++    soversion: 0,
++    install: true,
+     dependencies: [],
+     implicit_include_directories: false,
+     include_directories: include_directories(['include', 'src']))
+@@ -60,6 +65,17 @@ libdemangle_dep = declare_dependency(
+     include_directories: include_directories('include'),
+ )
+ 
++install_headers(libdemangle_hdr)
++
++pkgconfig = import('pkgconfig')
++pkgconfig.generate(
++    description: 'Rizin Library to demangle symbols',
++    filebase: 'libdemangle',
++    libraries: libdemangle,
++    name: 'libdemangle',
++    version: '0'
++)
++
+ if get_option('enable_tests') and not meson.is_subproject()
+   test_dependencies = [libdemangle_dep]
+   if get_option('b_sanitize').contains('address')
