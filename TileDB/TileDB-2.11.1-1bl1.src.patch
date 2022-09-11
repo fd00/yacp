@@ -1,0 +1,87 @@
+--- origsrc/TileDB-2.11.1/cmake/Modules/FindAzureSDK_EP.cmake	2022-08-25 10:25:52.000000000 +0900
++++ src/TileDB-2.11.1/cmake/Modules/FindAzureSDK_EP.cmake	2022-09-07 10:36:38.971796500 +0900
+@@ -69,7 +69,7 @@ elseif(NOT TILEDB_FORCE_ALL_DEPS)
+   )
+   find_path(AZURESDK_INCLUDE_DIR
+     NAMES get_blob_request_base.h
+-    PATH_SUFFIXES include
++    PATH_SUFFIXES include include/azure-storage-cpplite
+     ${TILEDB_DEPS_NO_DEFAULT_PATH}
+   )
+ endif()
+--- origsrc/TileDB-2.11.1/cmake/Modules/FindMagic_EP.cmake	2022-08-25 10:25:52.000000000 +0900
++++ src/TileDB-2.11.1/cmake/Modules/FindMagic_EP.cmake	2022-09-07 10:53:47.681506500 +0900
+@@ -60,9 +60,9 @@ if (TILEDB_LIBMAGIC_EP_BUILT)
+ 
+   # Link statically if installed with the EP.
+   find_library(libmagic_LIBRARIES
+-    libmagic
++    magic
+     PATHS ${LIBMAGIC_PATHS}
+-    PATH_SUFFIXES lib a
++    PATH_SUFFIXES lib a dll.a
+     #${TILEDB_DEPS_NO_DEFAULT_PATH}
+     ${NO_DEFAULT_PATH}
+   )
+@@ -117,7 +117,7 @@ endif()
+ 
+ find_file(libmagic_DICTIONARY magic.mgc
+   PATHS ${LIBMAGIC_PATHS}
+-  PATH_SUFFIXES bin share
++  PATH_SUFFIXES bin share share/misc
+   ${NO_DEFAULT_PATH}
+ )
+ 
+--- origsrc/TileDB-2.11.1/cmake/TileDB-Superbuild.cmake	2022-08-25 10:25:52.000000000 +0900
++++ src/TileDB-2.11.1/cmake/TileDB-Superbuild.cmake	2022-09-07 11:19:57.401520800 +0900
+@@ -20,6 +20,7 @@ set(TILEDB_EXTERNAL_PROJECTS)
+ 
+ # Forward any additional CMake args to the non-superbuild.
+ set(INHERITED_CMAKE_ARGS
++  -Wno-dev
+   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+   -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}
+   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+@@ -47,6 +48,7 @@ set(INHERITED_CMAKE_ARGS
+   -DTILEDB_INSTALL_LIBDIR=${TILEDB_INSTALL_LIBDIR}
+   -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+   -DTILEDB_EXPERIMENTAL_FEATURES=${TILEDB_EXPERIMENTAL_FEATURES}
++  -DTILEDB_LIBMAGIC_EP_BUILT=${TILEDB_LIBMAGIC_EP_BUILT}
+ )
+ 
+ if (TILEDB_TESTS)
+--- origsrc/TileDB-2.11.1/cmake/inputs/tiledb.pc.in	2022-08-25 10:25:52.000000000 +0900
++++ src/TileDB-2.11.1/cmake/inputs/tiledb.pc.in	2022-09-11 16:44:14.478356300 +0900
+@@ -1,7 +1,7 @@
+-prefix="@CMAKE_INSTALL_PREFIX@"
+-exec_prefix="${prefix}"
+-libdir="${prefix}/@CMAKE_INSTALL_LIBDIR@"
+-includedir="${prefix}/include/tiledb"
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/include/tiledb
+ 
+ Name: TileDB
+ Description: The Storage Engine for Data Science
+@@ -9,6 +9,6 @@ URL: https://github.com/TileDB-Inc/TileD
+ Version: @VERSION@
+ Requires: @PKGCONF_REQ_PUB@
+ Requires.private: @PKGCONF_REQ_PRIV@
+-Cflags: -I"${includedir}"
+-Libs: -L"${libdir}" -ltiledb
++Cflags: -I${includedir}
++Libs: -L${libdir} -ltiledb
+ Libs.private: -L"${libdir}" -ltiledb @PKGCONF_LIBS_PRIV@
+\ No newline at end of file
+--- origsrc/TileDB-2.11.1/tiledb/CMakeLists.txt	2022-08-25 10:25:52.000000000 +0900
++++ src/TileDB-2.11.1/tiledb/CMakeLists.txt	2022-09-11 06:16:04.349107900 +0900
+@@ -893,7 +893,7 @@ set_target_properties(tiledb_shared
+     OUTPUT_NAME "tiledb"
+ )
+ 
+-if (TILEDB_VERSION AND CMAKE_SYSTEM_NAME MATCHES "Linux")
++if (TILEDB_VERSION)
+   set_target_properties(tiledb_shared
+     PROPERTIES
+       SOVERSION "${TILEDB_VERSION_MAJOR}.${TILEDB_VERSION_MINOR}")

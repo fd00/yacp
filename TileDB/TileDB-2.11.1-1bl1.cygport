@@ -1,0 +1,63 @@
+HOMEPAGE="https://github.com/TileDB-Inc/${PN}"
+SRC_URI="https://github.com/TileDB-Inc/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Database"
+SUMMARY="Universal Storage Engine"
+DESCRIPTION="TileDB is a powerful engine for storing and accessing dense and sparse
+multi-dimensional arrays, which can help you model any complex data
+efficiently. It is an embeddable C++ library that works on Linux, macOS, and
+Windows. It is open-sourced under the permissive MIT License, developed and
+maintained by TileDB, Inc. To distinguish this project from other TileDB
+offerings, we often refer to it as TileDB Embedded."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="file-devel libaws-cpp-sdk-devel libazure-storage-lite-devel libbz2-devel libcurl-devel libfmt-devel liblz4-devel libspdlog-devel libssl-devel libzstd-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+export CYGCMAKE_GENERATOR="Unix Makefiles"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DTILEDB_AZURE:BOOL=ON
+	-DTILEDB_LIBMAGIC_EP_BUILT:BOOL=ON
+	-DTILEDB_S3:BOOL=ON
+	-DTILEDB_TOOLS:BOOL=ON
+	-DTILEDB_WERROR:BOOL=OFF
+"
+
+src_install()
+{
+	cd ${B}
+	cygmake install-tiledb DESTDIR=${D}
+}
+
+DOCS="
+	*.md
+"
+
+DIFF_EXCLUDES="
+	test
+"
+
+PKG_NAMES="
+	TileDB
+	libtiledb${PV[1]}.${PV[2]}
+	libtiledb-devel
+"
+TileDB_CONTENTS="
+	usr/share
+"
+libtiledb2_11_CONTENTS="
+	usr/bin/*.dll
+"
+libtiledb_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+TileDB_SUMMARY="${SUMMARY} (licensing & readmes)"
+libtiledb2_11_SUMMARY="${SUMMARY} (runtime)"
+libtiledb_devel_SUMMARY="${SUMMARY} (development)"
