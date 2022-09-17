@@ -1,0 +1,41 @@
+--- origsrc/cmark-gfm-0.29.0.gfm.6/extensions/CMakeLists.txt	2022-09-15 05:56:39.000000000 +0900
++++ src/cmark-gfm-0.29.0.gfm.6/extensions/CMakeLists.txt	2022-09-17 21:53:38.805075600 +0900
+@@ -90,7 +90,7 @@ if (CMARK_SHARED OR CMARK_STATIC)
+   DESTINATION include
+   )
+ 
+-  install(EXPORT cmark-gfm-extensions DESTINATION lib${LIB_SUFFIX}/cmake-gfm-extensions)
++  install(EXPORT cmark-gfm-extensions DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cmake-gfm-extensions)
+ endif()
+ 
+ # Feature tests
+--- origsrc/cmark-gfm-0.29.0.gfm.6/src/CMakeLists.txt	2022-09-15 05:56:39.000000000 +0900
++++ src/cmark-gfm-0.29.0.gfm.6/src/CMakeLists.txt	2022-09-17 21:51:54.022199600 +0900
+@@ -175,7 +175,7 @@ if(CMARK_SHARED OR CMARK_STATIC)
+     DESTINATION include
+     )
+ 
+-  install(EXPORT cmark-gfm DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
++  install(EXPORT cmark-gfm DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cmake-gfm)
+ endif()
+ 
+ # Feature tests
+--- origsrc/cmark-gfm-0.29.0.gfm.6/test/cmark.py	2022-09-15 05:56:39.000000000 +0900
++++ src/cmark-gfm-0.29.0.gfm.6/test/cmark.py	2022-09-17 21:43:02.900712500 +0900
+@@ -5,6 +5,7 @@ from ctypes import CDLL, c_char_p, c_siz
+ from subprocess import *
+ import platform
+ import os
++import re
+ 
+ def pipe_through_prog(prog, text):
+     p1 = Popen(prog.split(), stdout=PIPE, stdin=PIPE, stderr=PIPE)
+@@ -88,6 +89,8 @@ class CMark:
+                 libnames = [ ["lib", ".dylib" ] ]
+             elif sysname == 'Windows':
+                 libnames = [ ["", ".dll"], ["lib", ".dll"] ]
++            elif re.match("^CYGWIN_NT-", sysname) :
++                libnames = [ ["cyg", ".dll"] ]
+             else:
+                 libnames = [ ["lib", ".so"] ]
+             if not library_dir:
