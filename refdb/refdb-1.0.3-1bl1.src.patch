@@ -1,0 +1,217 @@
+--- origsrc/refdb-1.0.3/dsssl/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/dsssl/Makefile.am	2022-09-18 22:29:02.762333500 +0900
+@@ -9,7 +9,7 @@ catalogs=refdb.cat
+ all: refdb.cat
+ 
+ refdb.cat:
+-	sed 's%<pkgdatadir>%$(pkgdatadir)%' < refdb.cat.in > refdb.cat
++	sed 's%<pkgdatadir>%$(pkgdatadir)%' < $(srcdir)/refdb.cat.in > refdb.cat
+ 
+ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)
+--- origsrc/refdb-1.0.3/dtd/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/dtd/Makefile.am	2022-09-18 23:57:52.770916200 +0900
+@@ -3,7 +3,7 @@
+ objects = citestylex.dtd citationlistx.dtd risx.dtd xnote.dtd
+ schemas = citestylex.rnc citationlistx.rnc risx.rnc xnote.rnc
+ xschemas = citestylex.rng citationlistx.rng risx.rng xnote.rng
+-install_objects = catalog $(objects) $(schemas) $(xschemas)
++install_objects = $(objects) $(schemas) $(xschemas)
+ EXTRA_DIST = $(objects) $(schemas) $(xschemas) catalog.in
+ noinst_DATA = catalog $(schemas) $(xschemas)
+ MOSTLYCLEANFILES = catalog
+@@ -17,7 +17,7 @@ CITATIONLISTXVERSION = $(shell grep DOCT
+ all: catalog $(schemas)
+ 
+ catalog: catalog.in
+-	sed 's%<risxversion>%$(RISXVERSION)%' < catalog.in | \
++	sed 's%<risxversion>%$(RISXVERSION)%' < $(srcdir)/catalog.in | \
+ 	sed 's%<xnoteversion>%$(XNOTEVERSION)%' | \
+ 	sed 's%<citestylexversion>%$(CITESTYLEXVERSION)%' | \
+ 	sed 's%<citationlistxversion>%$(CITATIONLISTXVERSION)%'	> catalog
+@@ -33,4 +33,4 @@ install-data-local:
+ 	@for f in $(install_objects); do \
+ 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/dtd/$$f; \
+ 	done
+-
++	$(INSTALL_DATA) catalog $(DESTDIR)$(pkgdatadir)/dtd/catalog
+--- origsrc/refdb-1.0.3/etc/Makefile.am	2022-02-06 19:56:04.000000000 +0900
++++ src/refdb-1.0.3/etc/Makefile.am	2022-09-18 23:08:49.884216000 +0900
+@@ -11,14 +11,14 @@ MOSTLYCLEANFILES=$(objects)
+ all: $(objects)
+ 
+ $(objects): %.example: %
+-	sed 's%/var/log%$(log_dir)%' < $< | \
++	sed 's%/var/log%$(log_dir)%' $< | \
+ 	sed 's%/var/run%$(var_dir)%' | \
+ 	sed 's%<pkgdatadir>%$(pkgdatadir)%' | \
+ 	sed 's%<db_path>%$(db_dir)%' | \
+ 	sed 's%<classpath_root>%$(classpath_root)%' > $@
+ 
+ refdbdrc.mysql: refdbdrc
+-	sed 's%<dbs_port>%3306%' < refdbdrc | \
++	sed 's%<dbs_port>%3306%' < $(srcdir)/refdbdrc | \
+ 	sed 's%<pkgdatadir>%$(pkgdatadir)%' | \
+ 	sed 's%<main_db>%$(main_db)%g' | \
+ 	sed 's%<db_path>%$(db_dir)%' | \
+@@ -26,7 +26,7 @@ refdbdrc.mysql: refdbdrc
+ 	sed 's%<db_server>%mysql%' > $@
+ 
+ refdbdrc.pgsql: refdbdrc
+-	sed 's%<dbs_port>%5432%' < refdbdrc | \
++	sed 's%<dbs_port>%5432%' < $(srcdir)/refdbdrc | \
+ 	sed 's%<pkgdatadir>%$(pkgdatadir)%' | \
+ 	sed 's%<main_db>%$(main_db)%g' | \
+ 	sed 's%<db_path>%$(db_dir)%' | \
+@@ -34,7 +34,7 @@ refdbdrc.pgsql: refdbdrc
+ 	sed 's%<db_server>%pgsql%' > $@
+ 
+ refdbdrc.sqlite: refdbdrc
+-	sed 's%<dbs_port>%%' < refdbdrc | \
++	sed 's%<dbs_port>%%' < $(srcdir)/refdbdrc | \
+ 	sed 's%<pkgdatadir>%$(pkgdatadir)%' | \
+ 	sed 's%<main_db>%$(main_db)%g' | \
+ 	sed 's%<db_path>%$(db_dir)%' | \
+@@ -42,7 +42,7 @@ refdbdrc.sqlite: refdbdrc
+ 	sed 's%<db_server>%sqlite%' > $@
+ 
+ refdbdrc.sqlite3: refdbdrc
+-	sed 's%<dbs_port>%%' < refdbdrc | \
++	sed 's%<dbs_port>%%' < $(srcdir)/refdbdrc | \
+ 	sed 's%<pkgdatadir>%$(pkgdatadir)%' | \
+ 	sed 's%<main_db>%$(main_db)%g' | \
+ 	sed 's%<db_path>%$(db_dir)%' | \
+--- origsrc/refdb-1.0.3/examples/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/examples/Makefile.am	2022-09-18 23:54:14.082694700 +0900
+@@ -7,5 +7,5 @@ EXTRA_DIST = $(objects)
+ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/examples
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/examples/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/examples/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/phpweb/css/Makefile.am	2017-03-02 07:44:28.000000000 +0900
++++ src/refdb-1.0.3/phpweb/css/Makefile.am	2022-09-19 00:00:59.448734500 +0900
+@@ -8,5 +8,5 @@ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/www/css
+ 	chmod 1777 $(DESTDIR)$(pkgdatadir)/www/css
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/www/css/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/www/css/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/phpweb/images/Makefile.am	2017-03-02 07:44:28.000000000 +0900
++++ src/refdb-1.0.3/phpweb/images/Makefile.am	2022-09-19 00:02:25.286323300 +0900
+@@ -8,5 +8,5 @@ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/www/images
+ 	chmod 1777 $(DESTDIR)$(pkgdatadir)/www/images
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/www/images/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/www/images/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/phpweb/includes/Makefile.am	2017-03-02 07:44:28.000000000 +0900
++++ src/refdb-1.0.3/phpweb/includes/Makefile.am	2022-09-19 04:37:12.682072700 +0900
+@@ -8,5 +8,5 @@ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/www/includes
+ 	chmod 1777 $(DESTDIR)$(pkgdatadir)/www/includes
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/www/includes/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/www/includes/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/phpweb/xsl/Makefile.am	2017-03-02 07:44:28.000000000 +0900
++++ src/refdb-1.0.3/phpweb/xsl/Makefile.am	2022-09-19 04:39:59.728324600 +0900
+@@ -8,5 +8,5 @@ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/www/xsl
+ 	chmod 1777 $(DESTDIR)$(pkgdatadir)/www/xsl
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/www/xsl/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/www/xsl/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/src/Makefile.am	2017-03-02 07:44:28.000000000 +0900
++++ src/refdb-1.0.3/src/Makefile.am	2022-09-18 22:58:06.502792300 +0900
+@@ -48,7 +48,11 @@ refstat.h: $(top_srcdir)/scripts/statgen
+ 
+ svn_version.c: FORCE
+ 	echo -n 'const char* svn_version(void) { const char* SVN_Version = "' > svn_version.c
++if HAVESVNWC
+ 	@mysvnversion@                    >> svn_version.c
++else
++	echo -n "${VERSION}"              >> svn_version.c
++endif
+ 	echo '"; return SVN_Version; }'   >> svn_version.c
+ 
+ if HAVESVNWC
+--- origsrc/refdb-1.0.3/sru/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/sru/Makefile.am	2022-09-19 04:41:41.722455000 +0900
+@@ -7,5 +7,5 @@ EXTRA_DIST = $(objects)
+ install-data-local:
+ 	$(mkinstalldirs) $(DESTDIR)$(pkgdatadir)/sru
+ 	@for f in $(objects); do \
+-		$(INSTALL_DATA) $$f $(DESTDIR)$(pkgdatadir)/sru/$$f; \
++		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/sru/$$f; \
+ 	done
+--- origsrc/refdb-1.0.3/styles/Makefile.am	2017-03-02 07:44:26.000000000 +0900
++++ src/refdb-1.0.3/styles/Makefile.am	2022-09-18 23:57:14.849969500 +0900
+@@ -2,7 +2,7 @@
+ 
+ styles = AMA.xml Anesth.Analg.xml Ann.Biomed.Eng.xml Ann.Thorac.Surg.xml APA.xml Artif.Organs.xml authoryear-de.xml Biochem.Biophys.Res.Commun.xml Biochem.Pharmacol.xml Biomaterials.xml Br.J.Pharmacol.xml CHA-MC.xml Chicago.xml Eur.J.Cardiothorac.Surg.xml Eur.J.Pharmacol.xml Harvard.xml ifmbe_proceedings.xml J.Biol.Chem.xml J.Pharmacol.Exp.Ther.xml J.Tissue_Eng.Regen.Med.xml J.Vasc.Res.xml MLA.xml Murdoch.Law.xml Tissue_Eng.xml Thromb.Haemost.xml Turabian.xml Z.Geburtsh.Neonatol.xml citekey.xml bibtex-abbrev.xml bibtex-full.xml
+ 
+-installobjects = $(styles) schemas.xml
++installobjects = $(styles)
+ 
+ objects = $(styles) schemas.xml.in
+ 
+@@ -12,7 +12,7 @@ EXTRA_DIST = $(objects)
+ 
+ MOSTLYCLEANFILES=schemas.xml
+ 
+-all: $(installobjects)
++all: $(installobjects) schemas.xml
+ 
+ schemas.xml: schemas.xml.in
+ 	sed 's%<refdblib>%$(pkgdatadir)%' < $(srcdir)/schemas.xml.in > schemas.xml
+@@ -22,4 +22,4 @@ install-data-local:
+ 	@for f in $(installobjects); do \
+ 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(pkgdatadir)/styles/$$f; \
+ 	done
+-
++	$(INSTALL_DATA) schemas.xml $(DESTDIR)$(pkgdatadir)/styles/schemas.xml
+--- origsrc/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-fo/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-fo/Makefile.am	2022-09-18 22:31:40.333187400 +0900
+@@ -21,4 +21,4 @@ docbk-refdb-fo.xsl: docbk-refdb-fo.xsl.i
+ 	sed 's%<refdblib>%$(pkgdatadir)%' > docbk-refdb-fo.xsl
+ 
+ docbk-refdb-fo-ns.xsl: docbk-refdb-fo.xsl $(top_srcdir)/scripts/xslns.pl
+-	$(top_srcdir)/scripts/xslns.pl -d < $(srcdir)/docbk-refdb-fo.xsl > docbk-refdb-fo-ns.xsl
++	$(top_srcdir)/scripts/xslns.pl -d < docbk-refdb-fo.xsl > docbk-refdb-fo-ns.xsl
+--- origsrc/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-html/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-html/Makefile.am	2022-09-18 22:34:08.085078200 +0900
+@@ -20,4 +20,4 @@ docbk-refdb-html.xsl: docbk-refdb-html.x
+ 	sed 's%<refdblib>%$(pkgdatadir)%' > docbk-refdb-html.xsl
+ 
+ docbk-refdb-html-ns.xsl: docbk-refdb-html.xsl $(top_srcdir)/scripts/xslns.pl
+-	$(top_srcdir)/scripts/xslns.pl -d  < $(srcdir)/docbk-refdb-html.xsl > docbk-refdb-html-ns.xsl
++	$(top_srcdir)/scripts/xslns.pl -d  < docbk-refdb-html.xsl > docbk-refdb-html-ns.xsl
+--- origsrc/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-xhtml/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/xsl/refdb/docbk-refdb-xsl/docbk-xhtml/Makefile.am	2022-09-18 22:35:50.028088800 +0900
+@@ -20,4 +20,4 @@ docbk-refdb-xhtml.xsl: docbk-refdb-xhtml
+ 	sed 's%<refdblib>%$(pkgdatadir)%'> docbk-refdb-xhtml.xsl
+ 
+ docbk-refdb-xhtml-ns.xsl: docbk-refdb-xhtml.xsl $(top_srcdir)/scripts/xslns.pl
+-	$(top_srcdir)/scripts/xslns.pl -d  < $(srcdir)/docbk-refdb-xhtml.xsl > docbk-refdb-xhtml-ns.xsl
++	$(top_srcdir)/scripts/xslns.pl -d  < docbk-refdb-xhtml.xsl > docbk-refdb-xhtml-ns.xsl
+--- origsrc/refdb-1.0.3/xsl/refdb/tei-refdb-xsl/tei-fo/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/xsl/refdb/tei-refdb-xsl/tei-fo/Makefile.am	2022-09-18 22:37:45.811804700 +0900
+@@ -20,4 +20,4 @@ tei-refdb-fo.xsl: tei-refdb-fo.xsl.in
+ 	sed 's%<refdblib>%$(pkgdatadir)%'> tei-refdb-fo.xsl
+ 
+ tei-refdb-fo-ns.xsl: tei-refdb-fo.xsl $(top_srcdir)/scripts/xslns.pl
+-	$(top_srcdir)/scripts/xslns.pl -t < $(srcdir)/tei-refdb-fo.xsl > tei-refdb-fo-ns.xsl
++	$(top_srcdir)/scripts/xslns.pl -t < tei-refdb-fo.xsl > tei-refdb-fo-ns.xsl
+--- origsrc/refdb-1.0.3/xsl/refdb/tei-refdb-xsl/tei-html/Makefile.am	2017-03-02 07:44:31.000000000 +0900
++++ src/refdb-1.0.3/xsl/refdb/tei-refdb-xsl/tei-html/Makefile.am	2022-09-18 22:39:50.785598200 +0900
+@@ -20,4 +20,4 @@ tei-refdb-html.xsl: tei-refdb-html.xsl.i
+ 	sed 's%<refdblib>%$(pkgdatadir)%'> tei-refdb-html.xsl
+ 
+ tei-refdb-html-ns.xsl: tei-refdb-html.xsl $(top_srcdir)/scripts/xslns.pl
+-	$(top_srcdir)/scripts/xslns.pl -t < $(srcdir)/tei-refdb-html.xsl > tei-refdb-html-ns.xsl
++	$(top_srcdir)/scripts/xslns.pl -t < tei-refdb-html.xsl > tei-refdb-html-ns.xsl
