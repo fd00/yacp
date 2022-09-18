@@ -1,0 +1,96 @@
+--- origsrc/davix-R_0_8_3/CMakeLists.txt	2022-09-13 18:44:45.000000000 +0900
++++ src/davix-R_0_8_3/CMakeLists.txt	2022-09-18 18:19:10.587382300 +0900
+@@ -13,21 +13,37 @@ find_package(Python COMPONENTS Interpret
+ # Regenerate include/davix/features.hpp and version.cmake at _build_ time
+ #-------------------------------------------------------------------------------
+ add_custom_target(GenerateVersionInfo ALL DEPENDS Version)
+-add_custom_command(
+-  OUTPUT Version
+-  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template include/davix/features.hpp.in --out include/davix/features.hpp
+-  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-)
++if (DEFINED CUSTOM_VERSION)
++  add_custom_command(
++    OUTPUT Version
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template include/davix/features.hpp.in --out include/davix/features.hpp --custom-version ${CUSTOM_VERSION}
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake --custom-version ${CUSTOM_VERSION}
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++  )
++else()
++  add_custom_command(
++    OUTPUT Version
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template include/davix/features.hpp.in --out include/davix/features.hpp
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++  )
++endif()
+ 
+ #-------------------------------------------------------------------------------
+ # Regenerate version.cmake at _configure_ time. Important since the above
+ # only regenerates it at compile time.
+ #-------------------------------------------------------------------------------
+-execute_process(
+-  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake
+-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-)
++if (DEFINED CUSTOM_VERSION)
++  execute_process(
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake --custom-version ${CUSTOM_VERSION}
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++  )
++else()
++  execute_process(
++    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genversion.py --template version.cmake.in --out version.cmake
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++  )
++endif()
+ 
+ #-------------------------------------------------------------------------------
+ # Include version.cmake. Whenever the version changes, ie you commit or tag,
+--- origsrc/davix-R_0_8_3/src/CMakeLists.txt	2022-09-13 18:44:45.000000000 +0900
++++ src/davix-R_0_8_3/src/CMakeLists.txt	2022-09-18 18:42:50.783198700 +0900
+@@ -125,7 +125,7 @@ set_target_properties(libdavix PROPERTIE
+                             CLEAN_DIRECT_OUTPUT 1
+                             OUTPUT_NAME ${OUTPUT_NAME_DAVIX})
+ 
+-install(TARGETS libdavix DESTINATION ${LIB_INSTALL_DIR} )
++install(TARGETS libdavix RUNTIME DESTINATION ${BIN_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} )
+ 
+ add_PkgConfigFile_for_Library("davix.pc" libdavix
+                                HEADER_DIRS "davix"
+--- origsrc/davix-R_0_8_3/test/functional/CMakeLists.txt	2022-09-13 18:44:45.000000000 +0900
++++ src/davix-R_0_8_3/test/functional/CMakeLists.txt	2022-09-18 17:24:58.912171500 +0900
+@@ -78,7 +78,7 @@ add_library(test_davix_functional_lib ST
+ #target_link_libraries(test_mv libdavix test_davix_functional_lib)
+ 
+ add_executable(davix-tester ../TestcaseHandler.cpp davix-tester.cpp)
+-target_link_libraries(davix-tester libdavix test_davix_functional_lib)
++target_link_libraries(davix-tester test_davix_functional_lib libdavix)
+ 
+ install(TARGETS davix-tester
+   DESTINATION ${BIN_INSTALL_DIR}/)
+--- origsrc/davix-R_0_8_3/test/unit/CMakeLists.txt	2022-09-13 18:44:45.000000000 +0900
++++ src/davix-R_0_8_3/test/unit/CMakeLists.txt	2022-09-18 17:04:13.840193100 +0900
+@@ -1,13 +1,16 @@
+ #-------------------------------------------------------------------------------
+ # Make gtest / gmock available for all targets that need it
+ #-------------------------------------------------------------------------------
+-set(BUILD_SHARED_LIBS OFF)
++find_package(gtest)
++if (NOT GTEST_FOUND)
++  set(BUILD_SHARED_LIBS OFF)
+ 
+-set(GTEST "${CMAKE_SOURCE_DIR}/deps/googletest/googletest/")
+-set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/deps/googletest/googletest/")
+-add_subdirectory("${GTEST}" "${GTEST_BINARY_DIR}")
++  set(GTEST "${CMAKE_SOURCE_DIR}/deps/googletest/googletest/")
++  set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/deps/googletest/googletest/")
++  add_subdirectory("${GTEST}" "${GTEST_BINARY_DIR}")
+ 
+-add_definitions( -DTEST_VALID_CERT="${TEST_CRED_PATH}" -DTEST_VALID_CERT_PASS="${TEST_CRED_PASS}")
++  add_definitions( -DTEST_VALID_CERT="${TEST_CRED_PATH}" -DTEST_VALID_CERT_PASS="${TEST_CRED_PASS}")
++endif()
+ 
+ add_executable(davix-unit-tests
+   ../drunk-server/DrunkServer.cpp

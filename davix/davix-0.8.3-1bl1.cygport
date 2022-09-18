@@ -1,0 +1,62 @@
+HOMEPAGE="https://github.com/cern-fts/${PN}"
+SRC_URI="https://github.com/cern-fts/${PN}/archive/refs/tags/R_${PV//./_}.tar.gz"
+SRC_DIR="${PN}-R_${PV//./_}"
+
+CATEGORY="Libs"
+SUMMARY="High-performance file management over WebDAV / HTTP"
+DESCRIPTION="Davix aims to make the task of managing files over HTTP-based protocols
+simple. It is being developed by IT-ST at CERN, and while the project's
+purpose is its use on the CERN grid, the functionality offered is generic."
+
+LICENSE="LGPL-2.1-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.1-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libcurl-devel libgtest-devel libssl-devel libuuid-devel libxml2-devel"
+
+export CXXFLAGS="${CXXFLAGS} -fpermissive"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBENCH_TESTS:BOOL=ON
+	-DCUSTOM_VERSION:STRING=${PV}
+	-DEMBEDDED_LIBCURL:BOOL=OFF
+"
+
+src_test()
+{
+	cd ${B}/test
+	export PATH=${B}/src:${PATH}
+#	./bench/davix-bench.exe
+#	./functional/davix-tester.exe
+#	./slow-unit/davix-slow-unit-tests.exe
+	./unit/davix-unit-tests.exe
+}
+
+DIFF_EXCLUDES="
+	features.hpp
+	version.cmake
+"
+
+PKG_NAMES="
+	davix
+	libdavix0
+	libdavix-devel
+"
+davix_CONTENTS="
+	usr/bin/*.exe
+	usr/share/doc
+	usr/share/man/man1
+"
+libdavix0_CONTENTS="
+	usr/bin/*.dll
+"
+libdavix_devel_CONTENTS="
+	usr/include
+	usr/lib
+	usr/share/man/man3
+"
+davix_SUMMARY="${SUMMARY} (utilities)"
+libdavix0_SUMMARY="${SUMMARY} (runtime)"
+libdavix_devel_SUMMARY="${SUMMARY} (development)"
