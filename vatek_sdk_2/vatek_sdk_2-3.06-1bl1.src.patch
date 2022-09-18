@@ -1,0 +1,63 @@
+--- origsrc/vatek_sdk_2-3.06/api/core/CMakeLists.txt	2022-08-24 14:39:26.000000000 +0900
++++ src/vatek_sdk_2-3.06/api/core/CMakeLists.txt	2022-09-19 05:16:46.008724400 +0900
+@@ -315,24 +315,31 @@ elseif(UNIX AND NOT APPLE)
+ 		          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+ 		          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")                	
+ 
+-	set(ORIGINAL_STATIC_LIB_NAME vatek_core_static)
+-	add_library(${ORIGINAL_STATIC_LIB_NAME} STATIC ${sdk2_SOURCES} ${sdk2_HEADERS})
+-	set_target_properties(${ORIGINAL_STATIC_LIB_NAME} PROPERTIES OUTPUT_NAME vatek_core)
++    if (DEFINED SOVERSION)
++        set_target_properties(vatek_core PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+ 
+-	target_link_libraries(${ORIGINAL_STATIC_LIB_NAME} PRIVATE usb-1.0)
+-	target_link_libraries(${ORIGINAL_STATIC_LIB_NAME} PRIVATE ${CMAKE_DL_LIBS})
++    if (BUILD_STATIC_LIBS)
++        set(ORIGINAL_STATIC_LIB_NAME vatek_core_static)
++        add_library(${ORIGINAL_STATIC_LIB_NAME} STATIC ${sdk2_SOURCES} ${sdk2_HEADERS})
++        set_target_properties(${ORIGINAL_STATIC_LIB_NAME} PROPERTIES OUTPUT_NAME vatek_core)
+ 
+-	set_target_properties(${ORIGINAL_STATIC_LIB_NAME} PROPERTIES
+-			  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+-		          LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+-		          RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin") 
++        target_link_libraries(${ORIGINAL_STATIC_LIB_NAME} PRIVATE usb-1.0)
++        target_link_libraries(${ORIGINAL_STATIC_LIB_NAME} PRIVATE ${CMAKE_DL_LIBS})
++
++        set_target_properties(${ORIGINAL_STATIC_LIB_NAME} PROPERTIES
++                ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
++                    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
++                    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin") 
++    endif()
+     
+-    	INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/inc/." DESTINATION "${CMAKE_INSTALL_PREFIX}/include/vatek")
++    INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/inc/." DESTINATION "${CMAKE_INSTALL_PREFIX}/include/vatek")
+     			                        
+ 	INSTALL(TARGETS vatek_core LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")         
+-		
+-	INSTALL(TARGETS ${ORIGINAL_STATIC_LIB_NAME} ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")     
+-    
++	
++    if (BUILD_STATIC_LIBS)
++    	INSTALL(TARGETS ${ORIGINAL_STATIC_LIB_NAME} ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")     
++    endif()
+     
+ elseif(APPLE)    
+     add_library(vatek_core SHARED ${sdk2_SOURCES} ${sdk2_HEADERS})
+--- origsrc/vatek_sdk_2-3.06/api/core/src/cross/os/linux/linux_core.c	2022-08-24 14:39:26.000000000 +0900
++++ src/vatek_sdk_2-3.06/api/core/src/cross/os/linux/linux_core.c	2022-09-19 05:14:11.771890400 +0900
+@@ -10,6 +10,13 @@
+ #include <termios.h> 
+ #include <sys/ioctl.h>
+ 
++#if !defined(FIONREAD) && defined(TIOCINQ)
++#define FIONREAD TIOCINQ
++#endif
++#if !defined(ECHOPRT)
++#define ECHOPRT (0)
++#endif
++
+ typedef struct _linux_ffdir
+ {
+     struct dirent **files;
