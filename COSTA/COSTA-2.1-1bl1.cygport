@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/eth-cscs/${PN}"
+SRC_URI="https://github.com/eth-cscs/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Distributed Communication-Optimal Shuffle and Transpose Algorithm"
+DESCRIPTION="COSTA is a communication-optimal, highly-optimised algorithm for data
+redistribution accross multiple processors, using MPI and OpenMP and offering
+the possibility to transpose and scale some or all data. It implements
+scalapack routines for matrix scale & transpose operations
+(sub(C) = alpha * sub(A)^T + beta * C, provided by pxtran(u)) and data
+redistribution (sub(C) = sub(A), provided by pxgemr2d) and outperforms other
+scalapack implementations by orders of magnitude in some cases. Unlike
+previous redistribution algorithms, COSTA will also propose the relabelling of
+MPI ranks that minimizes the data reshuffling cost, leaving to users to decide
+if they want to use it. This way, if the initial and the target data
+distributions differ up to a rank permutation, COSTA will perform no
+communication, whereas other algorithms will reshuffle all the data. Thanks to
+its optimizations, significant speedups will be achieved even if the proposed
+rank relabelling is not used."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libopenmpi-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/src/costa:${PATH} ninja_test
+}
+
+DOCS="
+	docs/*
+"
+
+PKG_NAMES="
+	COSTA
+	libcosta${PV[1]}
+	libcosta-devel
+"
+COSTA_CONTENTS="
+	usr/share
+"
+libcosta2_CONTENTS="
+	usr/bin
+"
+libcosta_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+COSTA_SUMMARY="${SUMMARY} (licensing & readmes)"
+libcosta2_SUMMARY="${SUMMARY} (runtime)"
+libcosta_devel_SUMMARY="${SUMMARY} (development)"
