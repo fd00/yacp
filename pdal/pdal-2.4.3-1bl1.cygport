@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/PDAL/PDAL"
+SRC_URI="https://github.com/PDAL/PDAL/releases/download/${PV}/PDAL-${PV}-src.tar.gz"
+SRC_DIR="PDAL-${PV}-src"
+
+CATEGORY="Libs"
+SUMMARY="Point Data Abstraction Library"
+DESCRIPTION="PDAL is Point Data Abstraction Library. It is a C/C++ open source library and
+applications for translating and processing point cloud data. It is not
+limited to LiDAR data, although the focus and impetus for many of the tools in
+the library have their origins in LiDAR."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="libcurl-devel libgdal-devel libgeotiff-devel libhdf5-devel libpq-devel libssl-devel libxml2-devel libzstd-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_PLUGIN_GREYHOUND:BOOL=ON
+	-DBUILD_PLUGIN_ICEBRIDGE:BOOL=ON
+	-DBUILD_PLUGIN_PGPOINTCLOUD:BOOL=ON
+	-DBUILD_PLUGIN_PYTHON:BOOL=ON
+	-DBUILD_PLUGIN_SQLITE:BOOL=ON
+	-DWITH_LASZIP:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+DIFF_EXCLUDES="
+	data
+	temp
+"
+
+PKG_NAMES="
+	pdal
+	libpdal14
+	libpdal-devel
+"
+pdal_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libpdal14_CONTENTS="
+	usr/bin/*.dll
+"
+libpdal_devel_CONTENTS="
+	usr/bin/*-config
+	usr/include
+	usr/lib
+"
+pdal_SUMMARY="${SUMMARY} (utilities)"
+libpdal14_SUMMARY="${SUMMARY} (runtime)"
+libpdal_devel_SUMMARY="${SUMMARY} (development)"

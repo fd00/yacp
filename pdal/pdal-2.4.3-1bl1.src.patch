@@ -1,0 +1,53 @@
+--- origsrc/PDAL-2.4.3-src/CMakeLists.txt	2022-08-06 03:35:15.000000000 +0900
++++ src/PDAL-2.4.3-src/CMakeLists.txt	2022-10-01 00:27:47.393040600 +0900
+@@ -173,7 +173,10 @@ endif()
+ add_subdirectory(plugins)
+ 
+ if (WITH_TESTS)
+-    include (${PDAL_CMAKE_DIR}/gtest.cmake)
++    find_package(gtest)
++    if (NOT GTEST_FOUND)
++        include (${PDAL_CMAKE_DIR}/gtest.cmake)
++    endif()
+     add_subdirectory(test)
+ endif()
+ add_subdirectory(dimbuilder)
+@@ -294,7 +297,7 @@ endif()
+ # specifies linking in libpdal_base.so and libpdal_util.so.  This allows
+ # users to link a single library, libpdalcpp
+ #
+-if (UNIX AND NOT APPLE)
++if (UNIX AND NOT APPLE AND NOT CYGWIN)
+     set(LIBNAME ${CMAKE_SHARED_LIBRARY_PREFIX}${PDAL_LIB_NAME})
+     install(FILES ${LIBNAME} DESTINATION ${PDAL_LIB_INSTALL_DIR}
+         RENAME ${LIBNAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+--- origsrc/PDAL-2.4.3-src/apps/pdal-config.in	2022-08-06 03:35:13.000000000 +0900
++++ src/PDAL-2.4.3-src/apps/pdal-config.in	2022-10-01 07:20:29.497665800 +0900
+@@ -25,7 +25,7 @@ fi
+ 
+ case $1 in
+   --libs)
+-    echo -L@CMAKE_INSTALL_PREFIX@/lib -lpdalcpp
++    echo -L@CMAKE_INSTALL_PREFIX@/lib -l@PDAL_BASE_LIB_NAME@
+     ;;
+ 
+   --plugin-dir)
+--- origsrc/PDAL-2.4.3-src/apps/pdal.pc.in	2022-08-06 03:35:13.000000000 +0900
++++ src/PDAL-2.4.3-src/apps/pdal.pc.in	2022-10-01 00:27:57.408275500 +0900
+@@ -7,6 +7,6 @@ Name: PDAL
+ Description: Point Data Abstraction Library
+ Requires:  @PKGCONFIG_LIBRARY_DEFINITIONS@
+ Version: @PDAL_VERSION@
+-Libs: -L${libdir} -l@PDAL_LIB_NAME@
++Libs: -L${libdir} -l@PDAL_BASE_LIB_NAME@
+ Cflags: -I${includedir}/pdal  @PDAL_CONFIG_DEFINITIONS@
+ 
+--- origsrc/PDAL-2.4.3-src/cmake/test.cmake	2022-08-06 03:35:13.000000000 +0900
++++ src/PDAL-2.4.3-src/cmake/test.cmake	2022-09-30 20:08:31.684342600 +0900
+@@ -12,6 +12,4 @@ if (WITH_TESTS)
+     add_definitions(/D _VARIADIC_MAX=10)
+   endif()
+ 
+-  include_directories(${ROOT_DIR}/vendor/gtest/include
+-      ${ROOT_DIR}/vendor/gtest)
+ endif()
