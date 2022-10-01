@@ -1,0 +1,20 @@
+--- origsrc/liblxi-1.17/src/meson.build	2022-09-28 21:55:35.000000000 +0900
++++ src/liblxi-1.17/src/meson.build	2022-10-01 22:18:34.262747400 +0900
+@@ -19,7 +19,7 @@ if meson.get_compiler('c').has_header('a
+ endif
+ 
+ tirpc_dep = dependency('libtirpc', required: true)
+-tirpc_incpath = join_paths(tirpc_dep.get_variable(pkgconfig: 'includedir'), 'tirpc')
++tirpc_incpath = host_machine.system() != 'cygwin' ? join_paths(tirpc_dep.get_variable(pkgconfig: 'includedir'), 'tirpc') : join_paths(tirpc_dep.get_variable(pkgconfig: 'includedir'), 'rpc')
+ tirpc_incdir = include_directories(tirpc_incpath)
+ 
+ liblxi_c_args = [
+@@ -33,7 +33,7 @@ liblxi_c_args = [
+ liblxi = shared_library(
+   'lxi',
+   liblxi_sources,
+-  dependencies: liblxi_deps,
++  dependencies: [liblxi_deps, tirpc_dep],
+   install: true,
+   c_args: liblxi_c_args,
+   include_directories: tirpc_incdir,
