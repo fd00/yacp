@@ -1,0 +1,32 @@
+--- origsrc/liblpm/src/Makefile	2022-10-01 15:10:10.000000000 +0900
++++ src/liblpm/src/Makefile	2022-10-01 15:29:27.111063300 +0900
+@@ -33,9 +33,11 @@ endif
+ ifeq ($(DEBUG),1)
+ CFLAGS+=	-Og -DDEBUG -fno-omit-frame-pointer
+ ifeq ($(SYSARCH),x86_64)
++ifeq ($(SYSNAME),Linux)
+ CFLAGS+=	-fsanitize=address -fsanitize=undefined
+ LDFLAGS+=	-fsanitize=address -fsanitize=undefined
+ endif
++endif
+ else
+ CFLAGS+=	-DNDEBUG
+ endif
+@@ -45,7 +47,7 @@ INCS=		lpm.h
+ OBJS=		lpm.o
+ LIB=		liblpm
+ 
+-$(LIB).la:	LDFLAGS+=	-rpath $(LIBDIR) -version-info 1:0:0
++$(LIB).la:	LDFLAGS+=	-rpath $(LIBDIR) -version-info 1:0:0 -no-undefined
+ install/%.la:	ILIBDIR=	$(DESTDIR)/$(LIBDIR)
+ install:	IINCDIR=	$(DESTDIR)/$(INCDIR)/
+ #install:	IMANDIR=	$(DESTDIR)/$(MANDIR)/man3/
+@@ -68,7 +70,7 @@ install/%.la: %.la
+ 	libtool --mode=install install -c $(notdir $@) $(ILIBDIR)/$(notdir $@)
+ 
+ install: $(addprefix install/,$(LIB).la)
+-	libtool --mode=finish $(LIBDIR)
++	#libtool --mode=finish $(LIBDIR)
+ 	mkdir -p $(IINCDIR) && install -c $(INCS) $(IINCDIR)
+ 	#mkdir -p $(IMANDIR) && install -c $(MANS) $(IMANDIR)
+ 
