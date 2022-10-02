@@ -1,0 +1,60 @@
+HOMEPAGE="https://github.com/VectorCamp/${PN}"
+SRC_URI="https://github.com/VectorCamp/${PN}/archive/refs/tags/${PN}/${PV}.tar.gz"
+SRC_DIR="${PN}-${P}"
+
+CATEGORY="Libs"
+SUMMARY="High-performance regular expression matching library"
+DESCRIPTION="A fork of Intel's Hyperscan, modified to run on more platforms. Currently ARM
+NEON/ASIMD is 100% functional, and Power VSX are in development. ARM SVE2 will
+be implemented when harwdare becomes accessible to the developers. More
+platforms will follow in the future, on demand/request."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+src_test()
+{
+	cd ${B}
+	cygninja unit
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	mkdir usr/share/${PN}
+	mv usr/share/doc/${PN}/examples usr/share/${PN}
+}
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+	-DFAT_RUNTIME:BOOL=OFF
+"
+
+PKG_NAMES="
+	vectorscan
+	libhs5
+	libhs-devel
+"
+vectorscan_CONTENTS="
+	usr/share/doc
+"
+libhs5_CONTENTS="
+	usr/bin
+"
+libhs_devel_CONTENTS="
+	usr/include
+	usr/lib
+	usr/share/${PN}
+"
+vectorscan_SUMMARY="${SUMMARY} (licensing & readmes)"
+libhs5_SUMMARY="${SUMMARY} (runtime)"
+libhs_devel_SUMMARY="${SUMMARY} (development)"
