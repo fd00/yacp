@@ -1,0 +1,101 @@
+--- origsrc/slate-2022.06.00/CMakeLists.txt	2022-06-15 02:46:38.000000000 +0900
++++ src/slate-2022.06.00/CMakeLists.txt	2022-10-07 10:58:45.634391100 +0900
+@@ -281,6 +281,11 @@ set_target_properties(
+     CXX_EXTENSIONS false        # prohibit gnu++17
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(slate PROPERTIES SOVERSION "${SOVERSION}")
++    set_target_properties(slate_lapack_api PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.15)
+     # Conditionally add -Wall. See CMake tutorial.
+     set( gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU>" )
+@@ -624,12 +629,17 @@ if (slate_is_project)
+ endif()
+ 
+ #-------------------------------------------------------------------------------
+-set( install_configdir "${CMAKE_INSTALL_LIBDIR}/slate" )
++if (CYGWIN)
++    set( install_configdir "${CMAKE_INSTALL_LIBDIR}/cmake/slate" )
++else()
++    set( install_configdir "${CMAKE_INSTALL_LIBDIR}/slate" )
++endif()
+ 
+ # Install library and add to <package>Targets.cmake
+ install(
+     TARGETS slate slate_lapack_api
+     EXPORT slateTargets
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ )
+--- origsrc/slate-2022.06.00/unit_test/test_internal_blas.cc	2022-06-12 08:51:11.000000000 +0900
++++ src/slate-2022.06.00/unit_test/test_internal_blas.cc	2022-10-07 11:44:42.292111300 +0900
+@@ -48,7 +48,7 @@ const char* target_name(slate::Target ta
+         case slate::Target::HostNest:  return "HostNest";
+         case slate::Target::HostBatch: return "HostBatch";
+         case slate::Target::Devices:   return "Devices";
+-        default: assert(false);
++        default: assert(false); return NULL;
+     }
+ }
+ 
+--- origsrc/slate-2022.06.00/unit_test/unit_test.cc	2022-06-12 08:51:11.000000000 +0900
++++ src/slate-2022.06.00/unit_test/unit_test.cc	2022-10-07 09:22:21.624602700 +0900
+@@ -131,10 +131,10 @@ void printf_gather(int root, MPI_Comm co
+                 // todo: guard against buffer overflow
+                 assert(bufsize < int(sizeof(buf)));
+                 MPI_Recv(buf, bufsize, MPI_CHAR, rank, 0, comm, &status);
+-                printf(buf);
++                printf("%s", buf);
+             }
+             else {
+-                printf(str.c_str());
++                printf("%s", str.c_str());
+             }
+         }
+     }
+@@ -163,35 +163,35 @@ void printf_gather(int root, MPI_Comm co
+ /// Catches and reports all exceptions.
+ void run_test(test_function* func, const char* name)
+ {
+-    printf(output_test(name).c_str());
++    printf("%s", output_test(name).c_str());
+     fflush(stdout);
+     ++g_total;
+ 
+     try {
+         // run function
+         func();
+-        printf(output_pass().c_str());
++        printf("%s", output_pass().c_str());
+         ++g_pass;
+     }
+     catch (SkipException& e) {
+-        printf(output_skip(e).c_str());
++        printf("%s", output_skip(e).c_str());
+         --g_total;
+         ++g_skip;
+     }
+     catch (AssertError& e) {
+-        printf(output_fail(e).c_str());
++        printf("%s", output_fail(e).c_str());
+         ++g_fail;
+     }
+     catch (std::exception& e) {
+         AssertError err("unexpected exception: " + std::string(e.what()),
+                         __FILE__, __LINE__);
+-        printf(output_fail(err).c_str());
++        printf("%s", output_fail(err).c_str());
+         ++g_fail;
+     }
+     catch (...) {
+         AssertError err("unexpected exception: (unknown type)",
+                         __FILE__, __LINE__);
+-        printf(output_fail(err).c_str());
++        printf("%s", output_fail(err).c_str());
+         ++g_fail;
+     }
+ }

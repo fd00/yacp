@@ -1,0 +1,52 @@
+HOMEPAGE="https://bitbucket.org/icl/${PN}/src/master/"
+SRC_URI="https://bitbucket.org/icl/${PN}/downloads/${P}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Software for Linear Algebra Targeting Exascale"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libblaspp-devel liblapack-devel liblapackpp-devel libopenmpi-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=0
+	-DVERSION:STRING=${PV}
+	-Dc_api:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}:${PATH} cygninja unit_check
+}
+
+DIFF_EXCLUDES="
+	include
+	src
+"
+
+PKG_NAMES="
+	slate
+	libslate0
+	libslate-devel
+"
+slate_CONTENTS="
+	usr/share
+"
+libslate0_CONTENTS="
+	usr/bin
+"
+libslate_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+slate_SUMMARY="${SUMMARY} (licensing & readmes)"
+libslate0_SUMMARY="${SUMMARY} (runtime)"
+libslate_devel_SUMMARY="${SUMMARY} (development)"
