@@ -1,5 +1,5 @@
---- origsrc/openvr-1.16.8/CMakeLists.txt	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/CMakeLists.txt	2021-09-10 15:58:38.632869700 +0900
+--- origsrc/openvr-1.23.7/CMakeLists.txt	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/CMakeLists.txt	2022-10-11 12:58:01.831228700 +0900
 @@ -46,7 +46,7 @@ if(WIN32)
      add_definitions(-DOPENVR_BUILD_STATIC)
    endif()
@@ -22,19 +22,8 @@
  
  	# Set custom libc++ usage here
  	if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND USE_LIBCXX)
-@@ -94,3 +98,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_CO
- endif()
- 
- add_subdirectory(src)
-+
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/openvr.pc.in ${CMAKE_BINARY_DIR}/openvr.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/openvr.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/openvr-1.16.8/headers/openvr_capi.h	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/headers/openvr_capi.h	2021-09-10 15:58:38.641867100 +0900
+--- origsrc/openvr-1.23.7/headers/openvr_capi.h	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/headers/openvr_capi.h	2022-10-11 12:56:36.435482900 +0900
 @@ -24,8 +24,8 @@
  #endif
  
@@ -46,21 +35,8 @@
  	#define S_API EXTERN_C __declspec( dllexport )
  	#elif defined( OPENVR_API_NODLL )
  	#define S_API EXTERN_C
---- origsrc/openvr-1.16.8/openvr.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/openvr-1.16.8/openvr.pc.in	2021-09-10 15:58:38.644858200 +0900
-@@ -0,0 +1,10 @@
-+prefix=@prefix@
-+exec_prefix=@exec_prefix@
-+libdir=@libdir@
-+includedir=@includedir@
-+
-+Name: openvr
-+Description: OpenVR SDK
-+Version: @OPENVR_VERSION@
-+Libs: -L${libdir} -lopenvr_api
-+Cflags: -I${includedir}
---- origsrc/openvr-1.16.8/src/CMakeLists.txt	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/CMakeLists.txt	2021-09-10 15:58:38.649898400 +0900
+--- origsrc/openvr-1.23.7/src/CMakeLists.txt	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/CMakeLists.txt	2022-10-11 13:10:54.185548600 +0900
 @@ -68,6 +68,9 @@ source_group("VRCommon" FILES
  # Build the library.
  if(BUILD_SHARED)
@@ -71,7 +47,7 @@
  elseif(BUILD_FRAMEWORK)
  	set( LIBNAME "OpenVR" )
  	add_library( ${LIBNAME} 
-@@ -101,7 +104,7 @@ endif()
+@@ -101,16 +104,15 @@ endif()
  target_link_libraries(${LIBNAME} ${EXTRA_LIBS} ${CMAKE_DL_LIBS})
  target_include_directories(${LIBNAME} PUBLIC ${OPENVR_HEADER_DIR})
  
@@ -80,8 +56,19 @@
  install(FILES ${PUBLIC_HEADER_FILES} DESTINATION include/openvr)
  
  # Generate a .pc file for linux environments
---- origsrc/openvr-1.16.8/src/openvr_api_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/openvr_api_public.cpp	2021-09-10 16:02:26.971674200 +0900
+-if(PLATFORM_NAME MATCHES "linux")
+-    set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
++if(PLATFORM_NAME MATCHES "linux" OR CYGWIN)
+     CONFIGURE_FILE("openvr.pc.in" "openvr.pc" @ONLY)
+ 
+     set(OPENVR_PC ${CMAKE_CURRENT_BINARY_DIR}/openvr.pc)
+     if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
+-        install(FILES ${OPENVR_PC} DESTINATION "${INSTALL_PKGCONFIG_DIR}")
++        install(FILES ${OPENVR_PC} DESTINATION lib/pkgconfig)
+     endif()
+ endif()
+--- origsrc/openvr-1.23.7/src/openvr_api_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/openvr_api_public.cpp	2022-10-11 12:56:36.449417400 +0900
 @@ -2,12 +2,12 @@
  #define VR_API_EXPORT 1
  #include "openvr.h"
@@ -100,8 +87,8 @@
  #include <mutex>
  
  using vr::EVRInitError;
---- origsrc/openvr-1.16.8/src/vrcommon/dirtools_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/dirtools_public.cpp	2021-09-10 16:03:54.009026600 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/dirtools_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/dirtools_public.cpp	2022-10-11 12:56:36.466423100 +0900
 @@ -1,7 +1,7 @@
  //========= Copyright Valve Corporation ============//
 -#include <vrcore/dirtools_public.h>
@@ -113,8 +100,8 @@
  
  #include <errno.h>
  #include <string.h>
---- origsrc/openvr-1.16.8/src/vrcommon/envvartools_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/envvartools_public.cpp	2021-09-10 16:04:23.492972500 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/envvartools_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/envvartools_public.cpp	2022-10-11 12:56:36.472438400 +0900
 @@ -1,6 +1,6 @@
  //========= Copyright Valve Corporation ============//
 -#include <vrcore/envvartools_public.h>
@@ -124,8 +111,19 @@
  #include <stdlib.h>
  #include <string>
  #include <cctype>
---- origsrc/openvr-1.16.8/src/vrcommon/pathtools_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/pathtools_public.cpp	2021-09-10 16:04:37.240476900 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/hmderrors_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/hmderrors_public.cpp	2022-10-11 13:07:46.871290900 +0900
+@@ -180,7 +180,7 @@ const char *GetIDForVRInitError( vr::EVR
+ 		RETURN_ENUM_AS_STRING( VRInitError_Init_PrismNeedsNewDrivers );
+ 		RETURN_ENUM_AS_STRING( VRInitError_Init_PrismStartupTimedOut );
+ 		RETURN_ENUM_AS_STRING( VRInitError_Init_CouldNotStartPrism );
+-		RETURN_ENUM_AS_STRING( VRInitError_Init_CreateDriverDirectDeviceFailed );
++		//RETURN_ENUM_AS_STRING( VRInitError_Init_CreateDriverDirectDeviceFailed );
+ 		RETURN_ENUM_AS_STRING( VRInitError_Init_PrismExitedUnexpectedly );
+ 
+ 		RETURN_ENUM_AS_STRING( VRInitError_Driver_Failed );
+--- origsrc/openvr-1.23.7/src/vrcommon/pathtools_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/pathtools_public.cpp	2022-10-11 12:56:36.479422500 +0900
 @@ -1,6 +1,6 @@
  //========= Copyright Valve Corporation ============//
 -#include <vrcore/strtools_public.h>
@@ -135,8 +133,8 @@
  
  #if defined( _WIN32)
  #include <windows.h>
---- origsrc/openvr-1.16.8/src/vrcommon/pathtools_public.h	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/pathtools_public.h	2021-09-10 15:58:38.657868000 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/pathtools_public.h	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/pathtools_public.h	2022-10-11 12:56:36.484417300 +0900
 @@ -123,10 +123,12 @@ std::string Path_SanitizeFilename( const
  #endif
  
@@ -152,8 +150,8 @@
  #define PLATSUBDIR	"win64"
  #else
  #define PLATSUBDIR	"win32"
---- origsrc/openvr-1.16.8/src/vrcommon/sharedlibtools_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/sharedlibtools_public.cpp	2021-09-10 16:04:51.014745100 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/sharedlibtools_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/sharedlibtools_public.cpp	2022-10-11 12:56:36.494437800 +0900
 @@ -1,5 +1,5 @@
  //========= Copyright Valve Corporation ============//
 -#include <vrcore/sharedlibtools_public.h>
@@ -161,8 +159,8 @@
  #include <string.h>
  
  #if defined(_WIN32)
---- origsrc/openvr-1.16.8/src/vrcommon/strtools_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/strtools_public.cpp	2021-09-10 16:09:01.454924100 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/strtools_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/strtools_public.cpp	2022-10-11 12:56:36.555432400 +0900
 @@ -1,5 +1,5 @@
  //========= Copyright Valve Corporation ============//
 -#include <vrcore/strtools_public.h>
@@ -197,8 +195,8 @@
  		return "";
  	}
  
---- origsrc/openvr-1.16.8/src/vrcommon/vrpathregistry_public.cpp	2021-02-25 09:57:03.000000000 +0900
-+++ src/openvr-1.16.8/src/vrcommon/vrpathregistry_public.cpp	2021-09-10 16:05:19.137520300 +0900
+--- origsrc/openvr-1.23.7/src/vrcommon/vrpathregistry_public.cpp	2022-08-20 05:12:52.000000000 +0900
++++ src/openvr-1.23.7/src/vrcommon/vrpathregistry_public.cpp	2022-10-11 12:56:36.562416600 +0900
 @@ -1,11 +1,11 @@
  //========= Copyright Valve Corporation ============//
  
