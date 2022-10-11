@@ -1,0 +1,72 @@
+--- origsrc/MQTT-C-1.1.6/CMakeLists.txt	2022-05-25 02:23:33.000000000 +0900
++++ src/MQTT-C-1.1.6/CMakeLists.txt	2022-10-11 14:49:53.866083900 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.5)
+-project(MQTT-C VERSION 1.1.2 LANGUAGES C)
++project(MQTT-C VERSION 1.1.6 LANGUAGES C)
+ 
+ # MQTT-C build options
+ option(MQTT_C_OpenSSL_SUPPORT "Build MQTT-C with OpenSSL support?" OFF)
+@@ -13,10 +13,13 @@ list (APPEND CMAKE_MODULE_PATH ${CMAKE_C
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+ # MQTT-C library
+-add_library(mqttc STATIC
++add_library(mqttc SHARED
+     src/mqtt_pal.c
+     src/mqtt.c
+ )
++if (DEFINED SOVERSION)
++    set_target_properties(mqttc PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ target_include_directories(mqttc PUBLIC include)
+ target_link_libraries(mqttc PUBLIC 
+     $<$<C_COMPILER_ID:MSVC>:ws2_32>
+@@ -50,7 +53,7 @@ endif()
+ # Configure with OpenSSL support
+ if(MQTT_C_OpenSSL_SUPPORT)
+     find_package(OpenSSL REQUIRED)
+-    target_link_libraries(mqttc INTERFACE OpenSSL::SSL)
++    target_link_libraries(mqttc PUBLIC ${OPENSSL_LIBRARIES})
+     target_include_directories(mqttc PUBLIC ${OPENSSL_INCLUDE_DIR})
+     target_compile_definitions(mqttc PUBLIC MQTT_USE_BIO)
+ endif()
+@@ -59,7 +62,7 @@ endif()
+ if(MQTT_C_MbedTLS_SUPPORT)
+     find_package(MbedTLS REQUIRED)
+     target_include_directories(mqttc PUBLIC ${MBEDTLS_INCLUDE_DIRS})
+-    target_link_libraries(mqttc INTERFACE ${MBEDTLS_LIBRARY})
++    target_link_libraries(mqttc PUBLIC ${MBEDTLS_LIBRARY})
+     target_compile_definitions(mqttc PUBLIC MQTT_USE_MBEDTLS)
+ endif()
+ 
+@@ -139,7 +142,15 @@ endif()
+ 
+ # Install includes and library
+ install(TARGETS mqttc 
+-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ install(DIRECTORY include/
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/MQTT-C.pc.in ${CMAKE_BINARY_DIR}/MQTT-C.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/MQTT-C.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/MQTT-C-1.1.6/MQTT-C.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/MQTT-C-1.1.6/MQTT-C.pc.in	2022-10-11 14:49:59.332034100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: MQTT-C
++Description: Portable MQTT C client
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmqttc
++Cflags: -I${includedir}
