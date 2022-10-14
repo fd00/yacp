@@ -1,0 +1,100 @@
+--- origsrc/qpid-dispatch-1.19.0/CMakeLists.txt	2022-03-17 09:25:44.000000000 +0900
++++ src/qpid-dispatch-1.19.0/CMakeLists.txt	2022-10-13 18:51:13.283156100 +0900
+@@ -58,9 +58,13 @@ if (NOT HAVE_STDATOMIC_H)
+ endif()
+ 
+ # Set warning compile flags
+-set(C_WARNING_GNU -Wall -Wextra -Werror -Wpedantic -pedantic-errors -Wno-empty-body -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-ignored-qualifiers -Wno-missing-field-initializers -Wno-sign-compare -Wno-type-limits)
+-set(C_WARNING_Clang -Wall -Wextra -Werror -Wpedantic -Wno-unused-parameter -Wno-ignored-qualifiers -Wno-missing-field-initializers -Wno-sign-compare -Wno-gnu-statement-expression)
++set(C_WARNING_GNU -Wall -Wextra -Wpedantic -pedantic-errors -Wno-empty-body -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-ignored-qualifiers -Wno-missing-field-initializers -Wno-sign-compare -Wno-type-limits)
++set(C_WARNING_Clang -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-ignored-qualifiers -Wno-missing-field-initializers -Wno-sign-compare -Wno-gnu-statement-expression)
+ set(C_WARNING_SunPro -errwarn=%all)
++if (ENABLE_WERROR)
++    set(C_WARNING_GNU ${C_WARNING_GNU} -Werror)
++    set(C_WARNING_Clang ${C_WARNING_Clang} -Werror)
++endif()
+ 
+ set(C_WARNING_FLAGS ${C_WARNING_${CMAKE_C_COMPILER_ID}})
+ add_compile_options(${C_WARNING_FLAGS})
+@@ -281,3 +285,10 @@ add_subdirectory(console)
+ # That will force automatic re-configure and everybody will be happy.
+ #
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/reconfigure.in ${CMAKE_CURRENT_BINARY_DIR}/reconfigure)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/qpid-dispatch.pc.in ${CMAKE_BINARY_DIR}/qpid-dispatch.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/qpid-dispatch.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/qpid-dispatch-1.19.0/qpid-dispatch.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/qpid-dispatch-1.19.0/qpid-dispatch.pc.in	2022-10-13 18:51:39.219966000 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: qpid-dispatch
++Description: High-performance, lightweight AMQP 1.0 message router
++Version: @QPID_DISPATCH_VERSION@
++Libs: -L${libdir} -lqpid-dispatch
++Cflags: -I${includedir}
++Requires: libqpid-proton-core libqpid-proton-proactor libwebsockets python-3.9
+--- origsrc/qpid-dispatch-1.19.0/src/CMakeLists.txt	2022-03-17 09:25:44.000000000 +0900
++++ src/qpid-dispatch-1.19.0/src/CMakeLists.txt	2022-10-13 18:46:56.370797300 +0900
+@@ -169,9 +169,12 @@ target_include_directories(qpid-dispatch
+ 
+ # Workaround. CMake < 3.12 does not allow using object libraries in target_link_libraries;
+ #  `ar` on macOS refuses to produce a static library consisting of /dev/null as the only source file.
+-add_library(qpid-dispatch-libraries STATIC empty.c)
++add_library(qpid-dispatch-libraries SHARED empty.c)
+ target_link_libraries(qpid-dispatch-libraries ${qpid_dispatch_LIBRARIES})
+ 
++install(TARGETS qpid-dispatch-libraries RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++set_target_properties(qpid-dispatch-libraries PROPERTIES OUTPUT_NAME qpid-dispatch SOVERSION ${SO_VERSION})
++
+ # check for various function availability
+ check_symbol_exists(getrlimit sys/resource.h QD_HAVE_GETRLIMIT)
+ 
+@@ -179,3 +182,4 @@ check_symbol_exists(getrlimit sys/resour
+ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in" CONFIG_H_IN)
+ string(CONFIGURE "${CONFIG_H_IN}" CONFIG_H_TMP)
+ file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.h" CONTENT "${CONFIG_H_TMP}")
++
+--- origsrc/qpid-dispatch-1.19.0/src/amqp.c	2022-03-17 09:25:44.000000000 +0900
++++ src/qpid-dispatch-1.19.0/src/amqp.c	2022-10-13 17:21:15.502000800 +0900
+@@ -105,7 +105,7 @@ const char * const QD_AMQP_DFLT_PROTO =
+ /// Needed because getservbyname is thread safe on macOS, and getservbyname_r is not defined there.
+ static inline int qd_getservbyname(const char *name, const char *proto);
+ 
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ static inline int qd_getservbyname(const char *name, const char *proto) {
+     struct servent *serv_info = getservbyname(name, proto);
+     if (serv_info) {
+--- origsrc/qpid-dispatch-1.19.0/src/server.c	2022-03-17 09:25:44.000000000 +0900
++++ src/qpid-dispatch-1.19.0/src/server.c	2022-10-13 18:03:33.906117000 +0900
+@@ -1795,7 +1795,9 @@ void qd_connector_decref(qd_connector_t*
+     }
+ }
+ 
++#if !defined(__CYGWIN__)
+ __attribute__((weak)) // permit replacement by dummy implementation in unit_tests
++#endif
+ void qd_server_timeout(qd_server_t *server, qd_duration_t duration) {
+     pn_proactor_set_timeout(server->proactor, duration);
+ }
+--- origsrc/qpid-dispatch-1.19.0/src/timer.c	2022-03-17 09:25:44.000000000 +0900
++++ src/qpid-dispatch-1.19.0/src/timer.c	2022-10-13 18:01:43.061284300 +0900
+@@ -202,8 +202,9 @@ void qd_timer_free(qd_timer_t *timer)
+     sys_mutex_unlock(lock);
+ }
+ 
+-
++#if !defined(__CYGWIN__)
+ __attribute__((weak)) // permit replacement by dummy implementation in unit_tests
++#endif
+ qd_timestamp_t qd_timer_now()
+ {
+     return pn_proactor_now_64();
