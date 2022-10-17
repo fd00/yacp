@@ -1,0 +1,50 @@
+--- origsrc/getdns-1.7.2/CMakeLists.txt	2022-08-20 03:00:36.000000000 +0900
++++ src/getdns-1.7.2/CMakeLists.txt	2022-10-17 16:49:06.980136400 +0900
+@@ -93,7 +93,7 @@ include(TargetSharedLibraryExports)
+ include(TargetSharedLibraryVersion)
+ 
+ # Target Platform
+-if (WIN32 OR MINGW OR MSYS OR CYGWIN)
++if (WIN32 OR MINGW OR MSYS)
+   set(HOSTOS "windows")
+   set(GETDNS_ON_WINDOWS 1)
+   set(USE_WINSOCK 1)
+@@ -289,10 +289,12 @@ check_include_file(sys/sysctl.h HAVE_SYS
+ check_include_file(sys/time.h HAVE_SYS_TIME_H)
+ check_include_file(sys/wait.h HAVE_SYS_WAIT_H)
+ 
+-check_include_file(windows.h HAVE_WINDOWS_H)
+-check_include_file(winsock.h HAVE_WINSOCK_H)
+-check_include_file(winsock2.h HAVE_WINSOCK2_H)
+-check_include_file(ws2tcpip.h HAVE_WS2TCPIP_H)
++if (NOT CYGWIN)
++  check_include_file(windows.h HAVE_WINDOWS_H)
++  check_include_file(winsock.h HAVE_WINSOCK_H)
++  check_include_file(winsock2.h HAVE_WINSOCK2_H)
++  check_include_file(ws2tcpip.h HAVE_WS2TCPIP_H)
++endif()
+ 
+ # Check for include declarations
+ check_symbol_exists(getentropy unistd.h HAVE_DECL_GETENTROPY)
+--- origsrc/getdns-1.7.2/src/server.c	2022-08-20 03:00:36.000000000 +0900
++++ src/getdns-1.7.2/src/server.c	2022-10-17 16:59:44.840646200 +0900
+@@ -38,6 +38,8 @@
+ #include <fcntl.h>
+ #endif
+ 
++#include <netinet/tcp.h>
++
+ #include "getdns/getdns_extra.h"
+ #include "context.h"
+ #include "types-internal.h"
+--- origsrc/getdns-1.7.2/src/stub.c	2022-08-20 03:00:36.000000000 +0900
++++ src/getdns-1.7.2/src/stub.c	2022-10-17 16:59:59.191119600 +0900
+@@ -37,6 +37,8 @@
+ #include <netdb.h>
+ #endif
+ 
++#include <netinet/tcp.h>
++
+ /* Intercept and do not sent out COM DS queries with TLS
+  * For debugging purposes only. Never commit with this turned on.
+  */
