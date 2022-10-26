@@ -1,0 +1,54 @@
+--- origsrc/cppkafka-0.3.1/CMakeLists.txt	2019-05-20 01:34:15.000000000 +0900
++++ src/cppkafka-0.3.1/CMakeLists.txt	2022-10-19 17:26:15.097227900 +0900
+@@ -85,7 +85,7 @@ endif()
+ 
+ # Add a target to generate API documentation using Doxygen
+ find_package(Doxygen ${FIND_PACKAGE_QUIET})
+-if(DOXYGEN_FOUND)
++if(DOXYGEN_FOUND AND BUILD_DOC)
+     configure_file(
+         ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in 
+         ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile 
+@@ -97,7 +97,7 @@ if(DOXYGEN_FOUND)
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+         COMMENT "Generating API documentation with Doxygen" VERBATIM
+     )
+-endif(DOXYGEN_FOUND)
++endif(DOXYGEN_FOUND AND BUILD_DOC)
+ 
+ if(NOT CPPKAFKA_DISABLE_TESTS)
+     set(CATCH_ROOT ${CMAKE_SOURCE_DIR}/third_party/Catch2)
+@@ -124,3 +124,10 @@ if(NOT TARGET uninstall)
+     add_custom_target(uninstall
+         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cppkafka.pc.in ${CMAKE_BINARY_DIR}/cppkafka.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cppkafka.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cppkafka-0.3.1/cppkafka.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cppkafka-0.3.1/cppkafka.pc.in	2022-10-19 19:09:57.581354100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cppkafka
++Description: Modern C++ Apache Kafka client library
++Version: @CPPKAFKA_VERSION@
++Libs: -L${libdir} -lrdkafka -lcppkafka
++Cflags: -I${includedir}
+--- origsrc/cppkafka-0.3.1/src/CMakeLists.txt	2019-05-20 01:34:15.000000000 +0900
++++ src/cppkafka-0.3.1/src/CMakeLists.txt	2022-10-19 16:53:09.190042700 +0900
+@@ -43,6 +43,7 @@ target_include_directories(cppkafka PUBL
+ 
+ install( 
+     TARGETS cppkafka
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+     COMPONENT dev
