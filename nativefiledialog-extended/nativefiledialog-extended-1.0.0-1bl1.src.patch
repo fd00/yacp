@@ -1,0 +1,49 @@
+--- origsrc/nativefiledialog-extended-1.0.0/CMakeLists.txt	2022-08-14 22:49:35.000000000 +0900
++++ src/nativefiledialog-extended-1.0.0/CMakeLists.txt	2022-10-26 16:57:20.270202600 +0900
+@@ -43,3 +43,10 @@ option(NFD_BUILD_TESTS "Build tests for
+ if(${NFD_BUILD_TESTS})
+   add_subdirectory(test)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/nativefiledialog-extended.pc.in ${CMAKE_BINARY_DIR}/nativefiledialog-extended.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/nativefiledialog-extended.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/nativefiledialog-extended-1.0.0/nativefiledialog-extended.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/nativefiledialog-extended-1.0.0/nativefiledialog-extended.pc.in	2022-10-26 16:57:40.570727800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: nativefiledialog-extended
++Description: Cross platform (Windows, Mac, Linux) native file dialog library
++Version: @VERSION@
++Libs: -L${libdir} -lnfd
++Cflags: -I${includedir}
+--- origsrc/nativefiledialog-extended-1.0.0/src/CMakeLists.txt	2022-08-14 22:49:35.000000000 +0900
++++ src/nativefiledialog-extended-1.0.0/src/CMakeLists.txt	2022-10-26 16:38:35.264004300 +0900
+@@ -57,9 +57,13 @@ if(nfd_PLATFORM STREQUAL PLATFORM_MACOS)
+ endif()
+ 
+ # Define the library
+-add_library(${TARGET_NAME} STATIC
++add_library(${TARGET_NAME}
+   ${SOURCE_FILES})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(${TARGET_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # Allow includes from include/
+ target_include_directories(${TARGET_NAME}
+   PUBLIC include/)
+@@ -112,4 +116,4 @@ endif()
+ 
+ set_target_properties(${TARGET_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADER_FILES}")
+ 
+-install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include)
++install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include)
