@@ -1,0 +1,82 @@
+--- origsrc/htd-1.2/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/CMakeLists.txt	2022-10-28 06:03:07.174648100 +0900
+@@ -18,7 +18,7 @@ include(CheckIncludeFileCXX)
+ include(WriteCompilerDetectionHeader)
+ 
+ find_package(Git)
+-if(GIT_FOUND)
++if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+     execute_process(COMMAND ${GIT_EXECUTABLE} update-index --refresh WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --always WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" RESULT_VARIABLE HTD_GIT_RETURN_VALUE OUTPUT_VARIABLE HTD_GIT_CURRENT_COMMIT_ID)
+     if(NOT ${HTD_GIT_RETURN_VALUE} EQUAL 0)
+--- origsrc/htd-1.2/src/htd/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/src/htd/CMakeLists.txt	2022-10-28 09:33:49.924320700 +0900
+@@ -77,5 +77,5 @@ if(UNIX)
+     )
+ endif(UNIX)
+ 
+-install(TARGETS htd DESTINATION lib)
++install(TARGETS htd RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/htd" DESTINATION include)
+--- origsrc/htd-1.2/src/htd_cli/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/src/htd_cli/CMakeLists.txt	2022-10-28 09:34:54.032014100 +0900
+@@ -51,5 +51,5 @@ if(UNIX)
+     )
+ endif(UNIX)
+ 
+-install(TARGETS htd_cli DESTINATION lib)
++install(TARGETS htd_cli RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/htd_cli" DESTINATION include)
+--- origsrc/htd-1.2/src/htd_io/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/src/htd_io/CMakeLists.txt	2022-10-28 09:34:05.111653300 +0900
+@@ -51,9 +51,7 @@ if(UNIX)
+     )
+ endif(UNIX)
+ 
+-if(MSVC)
+-    target_link_libraries(htd_io htd)
+-endif(MSVC)
++target_link_libraries(htd_io htd)
+ 
+-install(TARGETS htd_io DESTINATION lib)
++install(TARGETS htd_io RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/htd_io" DESTINATION include)
+--- origsrc/htd-1.2/test/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/test/CMakeLists.txt	2022-10-28 08:43:31.896475300 +0900
+@@ -1,13 +1,18 @@
+ if(BUILD_TESTING)
+     enable_testing()
+ 
+-    set(GTEST_ROOT "${PROJECT_SOURCE_DIR}/test/googletest/googletest-release-1.8.0")
++    find_package(GTEST)
++    if (GTEST_FOUND)
++        add_subdirectory(htd)
++    else()
++        set(GTEST_ROOT "${PROJECT_SOURCE_DIR}/test/googletest/googletest-release-1.8.0")
+ 
+-    set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/googletest/include")
++        set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/googletest/include")
+ 
+-    add_subdirectory("${GTEST_ROOT}")
++        add_subdirectory("${GTEST_ROOT}")
+ 
+-    add_subdirectory("${PROJECT_SOURCE_DIR}/test/htd")
++        add_subdirectory("${PROJECT_SOURCE_DIR}/test/htd")
+ 
+-    add_dependencies(gtest htd)
++        add_dependencies(gtest htd)
++    endif()
+ endif()
+--- origsrc/htd-1.2/test/htd/CMakeLists.txt	2017-07-03 19:24:04.000000000 +0900
++++ src/htd-1.2/test/htd/CMakeLists.txt	2022-10-28 08:48:32.137856000 +0900
+@@ -2,7 +2,9 @@ enable_testing()
+ 
+ include_directories("${PROJECT_SOURCE_DIR}/include")
+ 
+-include_directories("${GTEST_INCLUDE_DIR}")
++if (NOT GTEST_FOUND)
++    include_directories("${GTEST_INCLUDE_DIR}")
++endif()
+ 
+ if(UNIX)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wextra")
