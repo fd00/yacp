@@ -1,5 +1,5 @@
---- origsrc/YODA-1.9.5/configure.ac	2022-05-13 22:05:12.000000000 +0900
-+++ src/YODA-1.9.5/configure.ac	2022-06-22 16:28:44.639052300 +0900
+--- origsrc/YODA-1.9.7/configure.ac	2022-09-28 21:16:30.000000000 +0900
++++ src/YODA-1.9.7/configure.ac	2022-10-30 08:26:40.355782200 +0900
 @@ -47,7 +47,7 @@ AC_SUBST([LIB_SUFFIX])
  
  ## Set default build flags
@@ -9,38 +9,28 @@
  dnl AC_CEDAR_CHECKCXXFLAG([-std=c++98], [AM_CXXFLAGS="$AM_CXXFLAGS -std=c++98"])
  dnl AC_CEDAR_CHECKCXXFLAG([-Wno-unused-variable], [AM_CXXFLAGS="$AM_CXXFLAGS -Wno-unused-variable"])
  
-@@ -173,15 +173,14 @@ AC_SUBST(YODA_SETUP_PY_PATH)
- AC_PATH_PROG(DOXYGEN, doxygen)
- AM_CONDITIONAL(WITH_DOXYGEN, test "$DOXYGEN")
+@@ -57,6 +57,8 @@ if test x$enable_debug = xyes; then
+   [AM_CXXFLAGS="$AM_CXXFLAGS -g"]
+ fi
  
 +PKG_CHECK_MODULES([TINYXML], [tinyxml])
 +PKG_CHECK_MODULES([YAML_CPP], [yaml-cpp])
  
- ## Build file output
+ ## Optional zlib support for gzip-compressed data streams/files
+ AX_CHECK_ZLIB
+@@ -175,9 +177,7 @@ AM_CONDITIONAL(WITH_DOXYGEN, test "$DOXY
  AC_EMPTY_SUBST
  AC_CONFIG_FILES([Makefile Doxyfile])
  AC_CONFIG_FILES([include/Makefile include/YODA/Makefile])
 -AC_CONFIG_FILES([src/Makefile
 -                 src/tinyxml/Makefile
--                 src/yamlcpp/Makefile
--])
+-                 src/yamlcpp/Makefile])
 +AC_CONFIG_FILES([src/Makefile])
  AC_CONFIG_FILES([tests/Makefile])
  AC_CONFIG_FILES([pyext/Makefile
-                  pyext/setup.py
---- origsrc/YODA-1.9.5/include/YODA/Config/BuildConfig.h	2021-04-01 01:54:39.000000000 +0900
-+++ src/YODA-1.9.5/include/YODA/Config/BuildConfig.h	2022-06-22 16:32:30.817481900 +0900
-@@ -9,7 +9,7 @@
- #define HAVE_INTTYPES_H 1
- 
- /* Define to 1 if you have the <memory.h> header file. */
--#define HAVE_MEMORY_H 1
-+/* #undef HAVE_MEMORY_H */
- 
- /* Define to 1 if you have the <stdint.h> header file. */
- #define HAVE_STDINT_H 1
---- origsrc/YODA-1.9.5/include/YODA/Utils/BinSearcher.h	2021-04-01 01:54:03.000000000 +0900
-+++ src/YODA-1.9.5/include/YODA/Utils/BinSearcher.h	2022-06-22 16:28:44.647468000 +0900
+                  pyext/build.py
+--- origsrc/YODA-1.9.7/include/YODA/Utils/BinSearcher.h	2022-01-08 01:24:18.000000000 +0900
++++ src/YODA-1.9.7/include/YODA/Utils/BinSearcher.h	2022-10-30 08:17:26.433844800 +0900
 @@ -14,6 +14,10 @@
  #include <limits>
  #include <memory>
@@ -52,15 +42,14 @@
  namespace YODA {
    namespace Utils {
  
---- origsrc/YODA-1.9.5/src/Makefile.am	2021-04-01 01:54:03.000000000 +0900
-+++ src/YODA-1.9.5/src/Makefile.am	2022-06-22 16:28:44.654087500 +0900
-@@ -1,4 +1,4 @@
+--- origsrc/YODA-1.9.7/src/Makefile.am	2022-01-08 01:24:18.000000000 +0900
++++ src/YODA-1.9.7/src/Makefile.am	2022-10-30 08:18:25.777342300 +0900
+@@ -1,4 +1,3 @@
 -SUBDIRS = tinyxml yamlcpp .
-+# SUBDIRS = tinyxml yamlcpp .
  
  lib_LTLIBRARIES = libYODA.la
  
-@@ -26,8 +26,8 @@ libYODA_la_SOURCES = \
+@@ -26,8 +25,8 @@ libYODA_la_SOURCES = \
      Point2D.cc \
      Point3D.cc
  
@@ -72,8 +61,8 @@
 +libYODA_la_CPPFLAGS = $(AM_CPPFLAGS) $(TINYXML_CFLAGS) $(YAML_CPP_CFLAGS) -I$(srcdir) -DYAML_NAMESPACE=YODA_YAML
  
  EXTRA_DIST = zstr
---- origsrc/YODA-1.9.5/src/ReaderYODA.cc	2021-11-02 06:36:09.000000000 +0900
-+++ src/YODA-1.9.5/src/ReaderYODA.cc	2022-06-22 16:28:44.660858900 +0900
+--- origsrc/YODA-1.9.7/src/ReaderYODA.cc	2022-01-08 01:24:18.000000000 +0900
++++ src/YODA-1.9.7/src/ReaderYODA.cc	2022-10-30 08:18:56.337687600 +0900
 @@ -20,10 +20,7 @@
  #include "YODA/Scatter2D.h"
  #include "YODA/Scatter3D.h"
@@ -86,8 +75,8 @@
  
  #ifdef HAVE_LIBZ
  #define _XOPEN_SOURCE 700
---- origsrc/YODA-1.9.5/src/Scatter1D.cc	2022-05-13 21:55:09.000000000 +0900
-+++ src/YODA-1.9.5/src/Scatter1D.cc	2022-06-22 16:28:44.703682000 +0900
+--- origsrc/YODA-1.9.7/src/Scatter1D.cc	2022-05-12 20:31:38.000000000 +0900
++++ src/YODA-1.9.7/src/Scatter1D.cc	2022-10-30 08:19:16.059597400 +0900
 @@ -1,10 +1,7 @@
  #include "YODA/Scatter1D.h"
  #include "YODA/Counter.h"
@@ -100,8 +89,8 @@
  
  namespace YODA {
  
---- origsrc/YODA-1.9.5/src/Scatter2D.cc	2022-05-13 21:55:09.000000000 +0900
-+++ src/YODA-1.9.5/src/Scatter2D.cc	2022-06-22 16:28:44.749197100 +0900
+--- origsrc/YODA-1.9.7/src/Scatter2D.cc	2022-09-22 19:11:45.000000000 +0900
++++ src/YODA-1.9.7/src/Scatter2D.cc	2022-10-30 08:19:37.094409300 +0900
 @@ -2,10 +2,7 @@
  #include "YODA/Histo1D.h"
  #include "YODA/Profile1D.h"
@@ -114,8 +103,8 @@
  
  namespace YODA {
  
---- origsrc/YODA-1.9.5/src/Scatter3D.cc	2022-05-13 21:55:09.000000000 +0900
-+++ src/YODA-1.9.5/src/Scatter3D.cc	2022-06-22 16:28:44.877041500 +0900
+--- origsrc/YODA-1.9.7/src/Scatter3D.cc	2022-05-12 20:31:38.000000000 +0900
++++ src/YODA-1.9.7/src/Scatter3D.cc	2022-10-30 08:19:50.106887100 +0900
 @@ -3,10 +3,7 @@
  #include "YODA/Profile2D.h"
  #include "YODA/Exceptions.h"
@@ -128,8 +117,8 @@
  
  namespace YODA {
  
---- origsrc/YODA-1.9.5/src/WriterYODA.cc	2022-05-13 21:55:09.000000000 +0900
-+++ src/YODA-1.9.5/src/WriterYODA.cc	2022-06-22 16:28:44.905120600 +0900
+--- origsrc/YODA-1.9.7/src/WriterYODA.cc	2022-05-12 20:31:38.000000000 +0900
++++ src/YODA-1.9.7/src/WriterYODA.cc	2022-10-30 08:20:04.959040300 +0900
 @@ -5,10 +5,7 @@
  //
  #include "YODA/WriterYODA.h"
@@ -142,3 +131,10 @@
  
  #include <iostream>
  #include <iomanip>
+--- origsrc/YODA-1.9.7/yoda.pc.in	2022-05-12 20:31:38.000000000 +0900
++++ src/YODA-1.9.7/yoda.pc.in	2022-10-30 10:00:10.399207800 +0900
+@@ -10,3 +10,4 @@ URL: https://yoda.hepforge.org
+ Version: @VERSION@
+ Libs: -L@libdir@ -lYODA
+ Cflags: -I@includedir@
++Requires: tinyxml yaml-cpp
