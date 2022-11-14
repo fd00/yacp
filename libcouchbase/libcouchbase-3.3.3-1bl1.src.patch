@@ -1,0 +1,170 @@
+--- origsrc/libcouchbase-3.3.3/CMakeLists.txt	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/CMakeLists.txt	2022-11-14 11:25:25.388985400 +0900
+@@ -107,28 +107,35 @@ INCLUDE(cmake/Modules/DownloadLcbDep.cma
+ INCLUDE(CheckIncludeFiles)
+ INCLUDE(cmake/source_files.cmake)
+ 
++find_package(pkgconfig)
++
+ IF(LCB_USE_PROFILER)
+     INCLUDE(cmake/Modules/FindProfiler.cmake)
+ ENDIF()
+ IF(LCB_USE_HDR_HISTOGRAM)
+-    # Allow for building libcouchbase inside a larger CMake project that
+-    # already includes HdrHistogram_c
+-    IF (NOT TARGET hdr_histogram_static)
+-        ADD_SUBDIRECTORY(contrib/HdrHistogram_c)
+-        MESSAGE(STATUS "Using embedded HdrHistogram_c")
+-    ELSE ()
+-        MESSAGE(STATUS "Using HdrHistogram_c from larger project (building inside Server)")
+-    ENDIF ()
+-
+-    # Use #include files from wherever the hdr_histogram project was loaded
+-    INCLUDE_DIRECTORIES(BEFORE SYSTEM "${hdr_histogram_SOURCE_DIR}/src")
+-
+-    # Given we are linking hdr_histogram_static into libcouchbase.so, need
+-    # -fPIC set also on hdr_histogram_static.
+-    SET_TARGET_PROPERTIES(hdr_histogram_static
+-            PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
++    pkg_check_modules(HDR_HISTOGRAM hdr_histogram)
++    if (HDR_HISTOGRAM_FOUND)
++        set(LCB_HDR_HISTOGRAM_LINK "${HDR_HISTOGRAM_LIBRARIES}")
++    else()
++        # Allow for building libcouchbase inside a larger CMake project that
++        # already includes HdrHistogram_c
++        IF (NOT TARGET hdr_histogram_static)
++            ADD_SUBDIRECTORY(contrib/HdrHistogram_c)
++            MESSAGE(STATUS "Using embedded HdrHistogram_c")
++        ELSE ()
++            MESSAGE(STATUS "Using HdrHistogram_c from larger project (building inside Server)")
++        ENDIF ()
++
++        # Use #include files from wherever the hdr_histogram project was loaded
++        INCLUDE_DIRECTORIES(BEFORE SYSTEM "${hdr_histogram_SOURCE_DIR}/src")
++
++        # Given we are linking hdr_histogram_static into libcouchbase.so, need
++        # -fPIC set also on hdr_histogram_static.
++        SET_TARGET_PROPERTIES(hdr_histogram_static
++                PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+ 
+-    SET(LCB_HDR_HISTOGRAM_LINK hdr_histogram_static)
++        SET(LCB_HDR_HISTOGRAM_LINK hdr_histogram_static)
++    endif()
+     LIST(APPEND LCB_CORE_SRC "src/hdr_timings.c")
+ ELSE()
+     MESSAGE(STATUS "HdrHistogram_c is not enabled")
+@@ -410,8 +417,10 @@ ELSE()
+     ENDIF()
+ ENDIF()
+ 
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
+-SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES PREFIX "lib")
++    SET_TARGET_PROPERTIES(couchbase PROPERTIES IMPORT_PREFIX "lib")
++endif()
+ SET(LCB_LINK_DEPS ${lcb_plat_libs} ${lcb_ssl_libs} ${LCB_HDR_HISTOGRAM_LINK})
+ IF(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     SET(LCB_LINK_DEPS ${LCB_LINK_DEPS} rt)
+--- origsrc/libcouchbase-3.3.3/example/subdoc/subdoc-tombstone.cc	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/example/subdoc/subdoc-tombstone.cc	2022-11-14 07:57:44.462904100 +0900
+@@ -17,6 +17,7 @@
+ 
+ #include <libcouchbase/couchbase.h>
+ #include <string>
++#include <cassert>
+ 
+ static void get_callback(lcb_INSTANCE *, int, const lcb_RESPGET *resp)
+ {
+--- origsrc/libcouchbase-3.3.3/plugins/io/libev/CMakeLists.txt	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/plugins/io/libev/CMakeLists.txt	2022-11-14 07:57:44.500836300 +0900
+@@ -14,9 +14,13 @@ ENDIF()
+ ADD_LIBRARY(couchbase_libev SHARED plugin-libev.c)
+ SET_TARGET_PROPERTIES(couchbase_libev
+     PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+     COMPILE_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CORE_CFLAGS} -std=gnu99")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libev
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib")
++endif()
+ TARGET_LINK_LIBRARIES(couchbase_libev ${LIBEV_LIBRARIES})
+ INCLUDE_DIRECTORIES(AFTER ${LIBEV_INCLUDE_DIR})
+ 
+@@ -28,4 +32,4 @@ ENDIF()
+ 
+ INSTALL(TARGETS
+     couchbase_libev
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
++    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
+--- origsrc/libcouchbase-3.3.3/plugins/io/libevent/CMakeLists.txt	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/plugins/io/libevent/CMakeLists.txt	2022-11-14 07:57:44.504915100 +0900
+@@ -24,7 +24,7 @@ IF(LCB_EMBED_PLUGIN_LIBEVENT)
+     SET(LCB_LINK_SPEC "${LCB_LINKS_SPEC} ${LIBEVENT_LIBRARIES}")
+ ELSE()
+     ADD_LIBRARY(couchbase_libevent SHARED plugin-libevent.c)
+-    INSTALL(TARGETS couchbase_libevent LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
++    INSTALL(TARGETS couchbase_libevent RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}")
+     TARGET_LINK_LIBRARIES(couchbase_libevent ${LIBEVENT_LIBRARIES})
+ ENDIF()
+ 
+--- origsrc/libcouchbase-3.3.3/plugins/io/libuv/CMakeLists.txt	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/plugins/io/libuv/CMakeLists.txt	2022-11-14 07:57:44.511898200 +0900
+@@ -31,14 +31,17 @@ ADD_LIBRARY(couchbase_libuv SHARED plugi
+ #ENDIF()
+ SET_TARGET_PROPERTIES(couchbase_libuv
+     PROPERTIES
+-    PREFIX "lib"
+-    IMPORT_PREFIX "lib"
+     COMPILE_FLAGS "${CMAKE_C_FLAGS} ${LCB_CORE_FLAGS} ${_lcbuv_cflags}")
++if (NOT CYGWIN)
++    SET_TARGET_PROPERTIES(couchbase_libuv
++        PROPERTIES
++        PREFIX "lib"
++        IMPORT_PREFIX "lib")
++endif()
+ 
+ TARGET_LINK_LIBRARIES(couchbase_libuv ${LIBUV_LIBRARIES} couchbase)
+ INCLUDE_DIRECTORIES(AFTER ${LIBUV_INCLUDE_DIR})
+ ADD_DEFINITIONS(-DLIBCOUCHBASE_INTERNAL=1)
+ INSTALL(TARGETS
+     couchbase_libuv
+-    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/${LCB_PLUGINS_DIR}"
+-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/libcouchbase")
+--- origsrc/libcouchbase-3.3.3/src/dns-srv.cc	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/src/dns-srv.cc	2022-11-14 07:57:44.515893300 +0900
+@@ -14,7 +14,7 @@
+ #endif /* __NAMESER < NNN */
+ #endif /* HAVE_ARPA_NAMESER_H */
+ 
+-#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH)
++#if defined(HAVE_ARPA_NAMESER_H) && defined(HAVE_RES_SEARCH) && !defined(__CYGWIN__)
+ #define CAN_SRV_LOOKUP
+ #include <sys/types.h>
+ #include <netinet/in.h>
+--- origsrc/libcouchbase-3.3.3/src/hdr_timings.c	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/src/hdr_timings.c	2022-11-14 12:34:05.566003900 +0900
+@@ -25,7 +25,7 @@
+ 
+ #include "internal.h"
+ 
+-#include "hdr_histogram.h"
++#include <hdr/hdr_histogram.h>
+ 
+ struct lcb_histogram_st {
+     struct hdr_histogram *hdr_histogram;
+--- origsrc/libcouchbase-3.3.3/src/iofactory.c	2022-11-10 06:07:26.000000000 +0900
++++ src/libcouchbase-3.3.3/src/iofactory.c	2022-11-14 07:57:44.521905300 +0900
+@@ -65,6 +65,8 @@ typedef struct {
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_" NAME ".dll."
+ #endif /* _DEBUG */
++#elif defined(__CYGWIN__)
++#define PLUGIN_SO(NAME) "cygcouchbase_" NAME ".dll"
+ #else
+ #define PLUGIN_SO(NAME) "libcouchbase_" NAME ".so"
+ #endif
