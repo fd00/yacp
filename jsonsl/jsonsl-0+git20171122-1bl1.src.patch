@@ -1,0 +1,47 @@
+--- origsrc/jsonsl/CMakeLists.txt	2022-11-15 08:49:39.000000000 +0900
++++ src/jsonsl/CMakeLists.txt	2022-11-15 08:59:23.053357800 +0900
+@@ -18,16 +18,29 @@ EXECUTE_PROCESS(
+     WORKING_DIRECTORY
+         ${CMAKE_CURRENT_BINARY_DIR})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(jsonsl PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++install(TARGETS jsonsl RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES jsonsl.h DESTINATION include)
+ 
+ ENABLE_TESTING()
+ ADD_SUBDIRECTORY(tests)
+ 
+ # Add the benchmarks:
+-ADD_EXECUTABLE(bench-simple EXCLUDE_FROM_ALL perf/bench.c jsonsl.c)
+-ADD_EXECUTABLE(yajl-perftest EXCLUDE_FROM_ALL perf/documents.c perf/perftest.c jsonsl.c)
++ADD_EXECUTABLE(bench-simple EXCLUDE_FROM_ALL perf/bench.c)
++target_link_libraries(bench-simple jsonsl)
++ADD_EXECUTABLE(yajl-perftest EXCLUDE_FROM_ALL perf/documents.c perf/perftest.c)
++target_link_libraries(yajl-perftest jsonsl)
+ IF(CMAKE_MAJOR_VERSION GREATER 2 OR CMAKE_MINOR_VERSION GREATER 8)
+     ADD_CUSTOM_TARGET(bench
+         COMMAND $<TARGET_FILE:bench-simple> ${CMAKE_CURRENT_BINARY_DIR}/share/auction 100
+         COMMAND $<TARGET_FILE:yajl-perftest>
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+ ENDIF()
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/jsonsl.pc.in ${CMAKE_BINARY_DIR}/jsonsl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/jsonsl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/jsonsl/jsonsl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/jsonsl/jsonsl.pc.in	2022-11-15 08:59:22.833454600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: jsonsl
++Description: JSON Stateful Lexer
++Version: @VERSION@
++Libs: -L${libdir} -ljsonsl
++Cflags: -I${includedir}
