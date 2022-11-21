@@ -1,6 +1,14 @@
---- origsrc/libjuice-1.0.2/CMakeLists.txt	2022-06-16 16:58:32.000000000 +0900
-+++ src/libjuice-1.0.2/CMakeLists.txt	2022-07-13 17:32:56.822995700 +0900
-@@ -85,15 +85,21 @@ target_include_directories(juice PRIVATE
+--- origsrc/libjuice-1.0.6/CMakeLists.txt	2022-10-12 07:45:59.000000000 +0900
++++ src/libjuice-1.0.6/CMakeLists.txt	2022-11-21 12:48:03.816402400 +0900
+@@ -1,6 +1,6 @@
+ cmake_minimum_required (VERSION 3.7)
+ project (libjuice
+-	VERSION 1.0.5
++	VERSION 1.0.6
+ 	LANGUAGES C)
+ set(PROJECT_DESCRIPTION "UDP Interactive Connectivity Establishment (ICE) library")
+ 
+@@ -96,52 +96,70 @@ target_include_directories(juice PRIVATE
  target_compile_definitions(juice PRIVATE $<$<CONFIG:Release>:RELEASE=1>)
  target_link_libraries(juice PRIVATE Threads::Threads)
  
@@ -13,11 +21,11 @@
 -target_include_directories(juice-static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 -target_compile_definitions(juice-static PRIVATE $<$<CONFIG:Release>:RELEASE=1>)
 -target_link_libraries(juice-static PRIVATE Threads::Threads)
-+if (CYGWIN)
-+	set_target_properties(juice PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++if (DEFINED SOVERSION)
++	set_target_properties(juice PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
 +
-+if (NOT CYGWIN)
++if (BUILD_STATIC_LIBS)
 +	add_library(juice-static STATIC EXCLUDE_FROM_ALL ${LIBJUICE_SOURCES})
 +	set_target_properties(juice-static PROPERTIES VERSION ${PROJECT_VERSION})
 +	target_include_directories(juice-static PUBLIC
@@ -31,20 +39,32 @@
  
  if(WIN32)
  	target_link_libraries(juice PRIVATE
-@@ -108,29 +114,39 @@ if (USE_NETTLE)
+ 		ws2_32 # winsock2
+ 		bcrypt)
+-	target_link_libraries(juice-static PRIVATE
+-		ws2_32 # winsock2
+-		bcrypt)
++	if (BUILS_STATIC_LIBS)
++		target_link_libraries(juice-static PRIVATE
++			ws2_32 # winsock2
++			bcrypt)
++	endif()
+ endif()
+ 
+ if (USE_NETTLE)
  	find_package(Nettle REQUIRED)
      target_compile_definitions(juice PRIVATE USE_NETTLE=1)
      target_link_libraries(juice PRIVATE Nettle::Nettle)
 -    target_compile_definitions(juice-static PRIVATE USE_NETTLE=1)
 -    target_link_libraries(juice-static PRIVATE Nettle::Nettle)
-+	if (NOT CYGWIN)
++	if (BUILD_STATIC_LIBS)
 +		target_compile_definitions(juice-static PRIVATE USE_NETTLE=1)
 +		target_link_libraries(juice-static PRIVATE Nettle::Nettle)
 +	endif()
  else()
      target_compile_definitions(juice PRIVATE USE_NETTLE=0)
 -    target_compile_definitions(juice-static PRIVATE USE_NETTLE=0)
-+	if (NOT CYGWIN)
++	if (BUILD_STATIC_LIBS)
 +	    target_compile_definitions(juice-static PRIVATE USE_NETTLE=0)
 +	endif()
  endif()
@@ -52,7 +72,7 @@
  if (NO_SERVER)
  	target_compile_definitions(juice PRIVATE NO_SERVER)
 -	target_compile_definitions(juice-static PRIVATE NO_SERVER)
-+	if (NOT CYGWIN)
++	if (BUILD_STATIC_LIBS)
 +		target_compile_definitions(juice-static PRIVATE NO_SERVER)
 +	endif()
  endif()
@@ -61,7 +81,7 @@
  	# This seems to be necessary on MacOS
  	target_include_directories(juice PRIVATE /usr/local/include)
 -	target_include_directories(juice-static PRIVATE /usr/local/include)
-+	if (NOT CYGWIN)
++	if (BUILD_STATIC_LIBS)
 +		target_include_directories(juice-static PRIVATE /usr/local/include)
 +	endif()
  endif()
@@ -71,19 +91,19 @@
  
 -set_target_properties(juice-static PROPERTIES EXPORT_NAME LibJuiceStatic)
 -add_library(LibJuice::LibJuiceStatic ALIAS juice-static)
-+if (NOT CYGWIN)
++if (BUILD_STATIC_LIBS)
 +	set_target_properties(juice-static PROPERTIES EXPORT_NAME LibJuiceStatic)
 +	add_library(LibJuice::LibJuiceStatic ALIAS juice-static)
 +endif()
  
  install(TARGETS juice EXPORT LibJuiceTargets
  	RUNTIME DESTINATION bin
-@@ -173,16 +189,22 @@ endif()
+@@ -184,16 +202,22 @@ endif()
  
  if(NOT MSVC)
  	target_compile_options(juice PRIVATE -Wall -Wextra)
 -	target_compile_options(juice-static PRIVATE -Wall -Wextra)
-+	if (NOT CYGWIN)
++	if (BUILD_STATIC_LIBS)
 +		target_compile_options(juice-static PRIVATE -Wall -Wextra)
 +	endif()
  endif()
@@ -92,32 +112,34 @@
  	if(MSVC)
  		target_compile_options(juice PRIVATE /WX)
 -		target_compile_options(juice-static PRIVATE /WX)
-+		if (NOT CYGWIN)
++		if (BUILD_STATIC_LIBS)
 +			target_compile_options(juice-static PRIVATE /WX)
 +		endif()
  	else()
  		target_compile_options(juice PRIVATE -Werror)
 -		target_compile_options(juice-static PRIVATE -Werror)
-+		if (NOT CYGWIN)
++		if (BUILD_STATIC_LIBS)
 +			target_compile_options(juice-static PRIVATE -Werror)
 +		endif()
  	endif()
  endif()
  
-@@ -210,3 +232,11 @@ if(NOT NO_TESTS)
- 	target_link_libraries(juice-tests juice Threads::Threads)
- endif()
+@@ -228,5 +252,12 @@ if(FUZZER)
+ 	target_include_directories(stun-fuzzer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/juice)
  
-+if (CYGWIN)
-+  set(prefix ${CMAKE_INSTALL_PREFIX})
-+  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+  configure_file(${CMAKE_SOURCE_DIR}/libjuice.pc.in ${CMAKE_BINARY_DIR}/libjuice.pc @ONLY)
-+  install(FILES ${CMAKE_BINARY_DIR}/libjuice.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-+endif()
---- origsrc/libjuice-1.0.2/libjuice.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libjuice-1.0.2/libjuice.pc.in	2022-07-13 17:32:56.888932300 +0900
+ 	set_target_properties(stun-fuzzer PROPERTIES OUTPUT_NAME fuzzer)
+-	target_link_libraries(stun-fuzzer juice-static ${LIB_FUZZING_ENGINE})
++	target_link_libraries(stun-fuzzer juice ${LIB_FUZZING_ENGINE})
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libjuice.pc.in ${CMAKE_BINARY_DIR}/libjuice.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libjuice.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libjuice-1.0.6/libjuice.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libjuice-1.0.6/libjuice.pc.in	2022-11-21 11:39:09.849428900 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
