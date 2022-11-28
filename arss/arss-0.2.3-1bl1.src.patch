@@ -1,0 +1,83 @@
+--- origsrc/arss-0.2.3-src/src/dsp.c	2008-05-30 06:35:42.000000000 +0900
++++ src/arss-0.2.3-src/src/dsp.c	2022-11-28 18:16:29.072815100 +0900
+@@ -1,5 +1,11 @@
+ #include "dsp.h"
+ 
++double pi;
++double LOGBASE;
++double LOOP_SIZE_SEC;
++int32_t BMSQ_LUT_SIZE;
++int32_t clocka;
++
+ void fft(double *in, double *out, int32_t N, uint8_t method)
+ {
+ 	/* method :
+@@ -330,9 +336,9 @@ double **anal(double *s, int32_t samplec
+ 		}
+ 		//--------Filtering--------
+ 
+-		//********90° rotation********
++		//********90ï¿½ rotation********
+ 
+-		h = calloc(Mc, sizeof(double));			// allocate the 90° rotated version of the band
++		h = calloc(Mc, sizeof(double));			// allocate the 90ï¿½ rotated version of the band
+ 		// Rotation : Re' = Im; Im' = -Re
+ 
+ 		for (i=0; i<Fd-Fa; i++)
+@@ -340,12 +346,12 @@ double **anal(double *s, int32_t samplec
+ 			h[i+1] = out[bands-ib-1][Mc-1-i];	// Re' = Im
+ 			h[Mc-1-i] = -out[bands-ib-1][i+1];	// Im' = -Re
+ 		}
+-		//--------90° rotation--------
++		//--------90ï¿½ rotation--------
+ 
+ 		//********Envelope detection********
+ 
+ 		fft(out[bands-ib-1], out[bands-ib-1], Mc, 1);		// In-place IFFT of the filtered band signal
+-		fft(h, h, Mc, 1);					// In-place IFFT of the filtered band signal rotated by 90°
++		fft(h, h, Mc, 1);					// In-place IFFT of the filtered band signal rotated by 90ï¿½
+ 
+ 		for (i=0; i<Mc; i++)
+ 			out[bands-ib-1][i] = sqrt(out[bands-ib-1][i]*out[bands-ib-1][i] + h[i]*h[i]);	// Magnitude of the analytic signal
+--- origsrc/arss-0.2.3-src/src/dsp.h	2008-05-10 05:36:25.000000000 +0900
++++ src/arss-0.2.3-src/src/dsp.h	2022-11-28 18:13:27.633590400 +0900
+@@ -17,13 +17,13 @@
+ #define LOOP_SIZE_SEC_D	10.0
+ #define BMSQ_LUT_SIZE_D	16000
+ 
+-double pi;
+-double LOGBASE;			// Base for log() operations. Anything other than 2 isn't really supported
++extern double pi;
++extern double LOGBASE;			// Base for log() operations. Anything other than 2 isn't really supported
+ #define TRANSITION_BW_SYNT 16.0		// defines the transition bandwidth for the low-pass filter on the envelopes during synthesisation
+-double LOOP_SIZE_SEC;		// size of the noise loops in seconds
+-int32_t BMSQ_LUT_SIZE;		// defines the number of elements in the Blackman Square look-up table. It's best to make it small enough to be entirely cached
++extern double LOOP_SIZE_SEC;		// size of the noise loops in seconds
++extern int32_t BMSQ_LUT_SIZE;		// defines the number of elements in the Blackman Square look-up table. It's best to make it small enough to be entirely cached
+ 
+-int32_t clocka;
++extern int32_t clocka;
+ 
+ extern void fft(double *in, double *out, int32_t N, uint8_t method);
+ extern void normi(double **s, int32_t xs, int32_t ys, double ratio);
+--- origsrc/arss-0.2.3-src/src/util.c	2008-05-11 10:26:52.000000000 +0900
++++ src/arss-0.2.3-src/src/util.c	2022-11-28 18:14:28.434497800 +0900
+@@ -1,5 +1,7 @@
+ #include "util.h"
+ 
++int32_t quiet;
++
+ void win_return()
+ {
+ 	#ifdef WIN32
+--- origsrc/arss-0.2.3-src/src/util.h	2008-05-06 04:19:18.000000000 +0900
++++ src/arss-0.2.3-src/src/util.h	2022-11-28 18:14:17.720149200 +0900
+@@ -11,7 +11,7 @@
+ 
+ #include "dsp.h"
+ 
+-int32_t quiet;
++extern int32_t quiet;
+ 
+ extern void win_return();
+ extern int32_t gettime();
