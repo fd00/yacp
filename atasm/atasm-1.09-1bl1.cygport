@@ -1,0 +1,46 @@
+HOMEPAGE="https://atari.miribilist.com/${PN}/"
+SRC_URI="https://atari.miribilist.com/${PN}/${PN}${PV//./}.zip"
+SRC_DIR="${PN}${PV//./}"
+
+CATEGORY="Devel"
+SUMMARY="Atari MAC/65 compatible assembler for Unix"
+DESCRIPTION="ATasm is a 6502 command-line cross-assembler that is compatible with the
+original Mac/65 macroassembler released by OSS software."
+
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="zlib-devel"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	pushd src
+		cygmake
+		cat ${PN}.1.in | sed -e 's:%%DOCDIR%%:/usr/share/doc/atasm:' > ${PN}.1
+	popd
+}
+
+src_test()
+{
+	cd ${B}
+	pushd src
+		./${PN}.exe -v ../examples/test.m65 -o/tmp/$$.bin
+		rm /tmp/$$.bin
+	popd
+}
+
+src_install()
+{
+	cd ${B}
+	pushd src
+		dobin ${PN}.exe
+		doman ${PN}.1
+	popd
+}
+
+DOCS="
+	docs/*
+"
