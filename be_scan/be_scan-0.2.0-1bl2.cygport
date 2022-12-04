@@ -1,20 +1,33 @@
 HOMEPAGE="https://github.com/NPS-DEEP/${PN}"
-SRC_URI="https://github.com/NPS-DEEP/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/NPS-DEEP/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Scanner library for scanning for digital forensic artifacts"
 DESCRIPTION="${SUMMARY}"
 
+# LICENSE=""
+# LICENSE_SPDX="SPDX-License-Identifier: "
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="liblightgrep_wrapper-devel python39-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -I/usr/lib/openssl-1.0/include -Dpread64=pread"
+export LDFLAGS="${LDFLAGS} -L/usr/lib/openssl-1.0/lib"
 export PYTHON=python3
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/src/.libs:${PATH} cygmake check
+}
 
 PKG_NAMES="
 	be_scan
 	libbe_scan0
 	libbe_scan-devel
-	python3-be_scan
+	python39-be_scan
 "
 be_scan_CONTENTS="
-	usr/bin/*.py
 	usr/share
 "
 libbe_scan0_CONTENTS="
@@ -25,10 +38,11 @@ libbe_scan_devel_CONTENTS="
 	usr/lib/lib${PN}.dll.a
 	usr/lib/pkgconfig
 "
-python3_be_scan_CONTENTS="
+python39_be_scan_CONTENTS="
+	usr/bin/*.py
 	usr/lib/python3*
 "
 be_scan_SUMMARY="${SUMMARY} (licensing & readmes)"
 libbe_scan0_SUMMARY="${SUMMARY} (runtime)"
 libbe_scan_devel_SUMMARY="${SUMMARY} (development)"
-python3_be_scan_SUMMARY="${SUMMARY} (python3 bindings)"
+python39_be_scan_SUMMARY="${SUMMARY} (python39 bindings)"
