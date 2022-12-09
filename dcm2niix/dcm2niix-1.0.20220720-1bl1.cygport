@@ -1,0 +1,37 @@
+HOMEPAGE="https://github.com/rordenlab/${PN}"
+SRC_URI="
+	https://github.com/rordenlab/${PN}/archive/refs/tags/v${PV}.tar.gz
+	https://raw.githubusercontent.com/dangom/sample-dicom/master/MR000000.dcm
+"
+
+CATEGORY="Science"
+SUMMARY="DICOM to NIfTI converter"
+DESCRIPTION="dcm2niix is designed to convert neuroimaging data from the DICOM format to the
+NIfTI format. This web page hosts the developmental source code - a compiled
+version for Linux, MacOS, and Windows of the most recent stable release is
+included with MRIcroGL. A full manual for this software is available in the
+form of a NITRC wiki."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="license.txt"
+
+BUILD_REQUIRES="libjasper-devel libturbojpeg-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DUSE_JASPER:BOOL=ON
+	-DUSE_JPEGLS:BOOL=ON
+	-DUSE_STATIC_RUNTIME:BOOL=OFF
+	-DUSE_TURBOJPEG:BOOL=ON
+	-DZLIB_IMPLEMENTATION:STRING=System
+"
+
+src_test()
+{
+	cd ${B}
+	./bin/${PN}.exe -f %d_%e -z n -b y ${S}/MR000000.dcm
+}
