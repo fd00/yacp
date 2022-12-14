@@ -1,0 +1,127 @@
+--- origsrc/draco-1.5.5/cmake/draco_install.cmake	2022-10-29 09:55:03.000000000 +0900
++++ src/draco-1.5.5/cmake/draco_install.cmake	2022-12-14 20:49:36.182211500 +0900
+@@ -24,7 +24,11 @@ include(GNUInstallDirs)
+ # target is created.
+ macro(draco_setup_install_target)
+   set(bin_path "${CMAKE_INSTALL_FULL_BINDIR}")
+-  set(data_path "${CMAKE_INSTALL_FULL_DATAROOTDIR}")
++  if (CYGWIN)
++    set(data_path "${CMAKE_INSTALL_FULL_LIBDIR}")
++  else()
++    set(data_path "${CMAKE_INSTALL_FULL_DATAROOTDIR}")
++  endif()
+   set(includes_path "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+   set(libs_path "${CMAKE_INSTALL_FULL_LIBDIR}")
+ 
+@@ -65,10 +69,6 @@ macro(draco_setup_install_target)
+       ARCHIVE DESTINATION "${libs_path}"
+       LIBRARY DESTINATION "${libs_path}")
+   else()
+-    install(
+-      TARGETS draco_static
+-      EXPORT dracoExport
+-      DESTINATION "${libs_path}")
+ 
+     if(BUILD_SHARED_LIBS)
+       install(
+@@ -77,6 +77,11 @@ macro(draco_setup_install_target)
+         RUNTIME DESTINATION "${bin_path}"
+         ARCHIVE DESTINATION "${libs_path}"
+         LIBRARY DESTINATION "${libs_path}")
++    else()
++      install(
++        TARGETS draco_static
++        EXPORT dracoExport
++        DESTINATION "${libs_path}")
+     endif()
+   endif()
+ 
+--- origsrc/draco-1.5.5/cmake/draco_tests.cmake	2022-10-29 09:55:03.000000000 +0900
++++ src/draco-1.5.5/cmake/draco_tests.cmake	2022-12-14 20:21:19.831885400 +0900
+@@ -102,30 +102,36 @@ endif()
+ 
+ macro(draco_setup_test_targets)
+   if(DRACO_TESTS)
+-    draco_setup_googletest()
+-
+-    if(NOT (EXISTS ${draco_gtest_all} AND EXISTS ${draco_gtest_main}))
+-      message(FATAL_ERROR "googletest missing, run git submodule update --init")
++    find_package(gtest)
++    if (GTEST_FOUND)
++      add_library(draco_gtest ALIAS GTest::gtest)
++      add_library(draco_gtest_main ALIAS GTest::gtest_main)
++    else()
++      draco_setup_googletest()
++
++      if(NOT (EXISTS ${draco_gtest_all} AND EXISTS ${draco_gtest_main}))
++        message(FATAL_ERROR "googletest missing, run git submodule update --init")
++      endif()
++
++      list(APPEND draco_test_defines GTEST_HAS_PTHREAD=0)
++
++      draco_add_library(
++        TEST
++        NAME draco_gtest
++        TYPE STATIC
++        SOURCES ${draco_gtest_all}
++        DEFINES ${draco_defines} ${draco_test_defines}
++        INCLUDES ${draco_test_include_paths})
++
++      draco_add_library(
++        TEST
++        NAME draco_gtest_main
++        TYPE STATIC
++        SOURCES ${draco_gtest_main}
++        DEFINES ${draco_defines} ${draco_test_defines}
++        INCLUDES ${draco_test_include_paths})
+     endif()
+ 
+-    list(APPEND draco_test_defines GTEST_HAS_PTHREAD=0)
+-
+-    draco_add_library(
+-      TEST
+-      NAME draco_gtest
+-      TYPE STATIC
+-      SOURCES ${draco_gtest_all}
+-      DEFINES ${draco_defines} ${draco_test_defines}
+-      INCLUDES ${draco_test_include_paths})
+-
+-    draco_add_library(
+-      TEST
+-      NAME draco_gtest_main
+-      TYPE STATIC
+-      SOURCES ${draco_gtest_main}
+-      DEFINES ${draco_defines} ${draco_test_defines}
+-      INCLUDES ${draco_test_include_paths})
+-
+     set(DRACO_TEST_DATA_DIR "${draco_root}/testdata")
+     set(DRACO_TEST_TEMP_DIR "${draco_build}/draco_test_temp")
+     file(MAKE_DIRECTORY "${DRACO_TEST_TEMP_DIR}")
+@@ -139,14 +145,14 @@ macro(draco_setup_test_targets)
+       NAME draco_tests
+       SOURCES ${draco_test_sources}
+       DEFINES ${draco_defines} ${draco_test_defines}
+-      INCLUDES ${draco_test_include_paths}
++      INCLUDES ${draco_include_paths} ${draco_test_include_paths}
+       LIB_DEPS ${draco_dependency} draco_gtest draco_gtest_main)
+ 
+     draco_add_executable(
+       NAME draco_factory_tests
+       SOURCES ${draco_factory_test_sources}
+       DEFINES ${draco_defines} ${draco_test_defines}
+-      INCLUDES ${draco_test_include_paths}
++      INCLUDES ${draco_include_paths} ${draco_test_include_paths}
+       LIB_DEPS ${draco_dependency} draco_gtest draco_gtest_main)
+   endif()
+ endmacro()
+--- origsrc/draco-1.5.5/src/draco/core/status.cc	2022-10-29 09:55:03.000000000 +0900
++++ src/draco-1.5.5/src/draco/core/status.cc	2022-12-14 20:38:23.776852100 +0900
+@@ -33,6 +33,8 @@ std::string Status::code_string() const
+       return "UNKNOWN_VERSION";
+     case Code::UNSUPPORTED_FEATURE:
+       return "UNSUPPORTED_FEATURE";
++    default:
++      return NULL;
+   }
+ }
+ 
