@@ -1,0 +1,38 @@
+--- origsrc/smd-1.0/CMakeLists.txt	2020-06-03 19:42:29.000000000 +0900
++++ src/smd-1.0/CMakeLists.txt	2022-12-24 08:24:03.199524800 +0900
+@@ -97,3 +97,10 @@ install(FILES "./include/smd-datatype.h"
+ install(FILES "./include/smd.h" DESTINATION include)
+ 
+ feature_summary(WHAT ALL)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/smd.pc.in ${CMAKE_BINARY_DIR}/smd.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/smd.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/smd-1.0/smd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/smd-1.0/smd.pc.in	2022-12-24 08:24:28.590588500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: smd
++Description: Smarter datatype handling
++Version: 1.0
++Libs: -L${libdir} -lsmd
++Cflags: -I${includedir}
+--- origsrc/smd-1.0/src/CMakeLists.txt	2020-06-03 19:42:29.000000000 +0900
++++ src/smd-1.0/src/CMakeLists.txt	2022-12-24 08:13:38.711211100 +0900
+@@ -8,4 +8,8 @@ include_directories(${CMAKE_CURRENT_SOUR
+ 
+ add_library(smd SHARED smd-core.c smd-datatype.c)
+ target_link_libraries(smd m)
+-install(TARGETS smd LIBRARY DESTINATION lib)
++install(TARGETS smd RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++if (DEFINED SOVERSION)
++    set_target_properties(smd PROPERTIES SOVERSION "${SOVERSION}")
++endif()
