@@ -1,0 +1,50 @@
+--- origsrc/nylon-1.21/configure.in	2022-12-28 11:03:48.466530100 +0900
++++ src/nylon-1.21/configure.in	2022-12-28 11:03:50.350588100 +0900
+@@ -84,7 +84,6 @@ AC_CHECK_TYPE(u_int32_t, unsigned int)
+ AC_CHECK_TYPE(u_int16_t, unsigned short)
+ AC_CHECK_TYPE(u_int8_t, unsigned char)
+ AC_CHECK_TYPE(in_addr_t, unsigned long)
+-AC_CHECK_TYPE(socklen_t, unsigned int)
+ 
+ dnl Checks for library functions.
+ AC_PROG_GCC_TRADITIONAL
+--- origsrc/nylon-1.21/src/Makefile.am	2022-12-28 11:03:48.475458800 +0900
++++ src/nylon-1.21/src/Makefile.am	2022-12-28 11:03:50.355526800 +0900
+@@ -1,5 +1,7 @@
+ include $(top_srcdir)/Makefile.am.inc
+ 
++AM_CPPFLAGS = -I$(top_srcdir)/include
++
+ bin_PROGRAMS = nylon
+ 
+ nylon_SOURCES = nylon.c print.c cfg.c expanda.c net.c access.c atomicio.c \
+--- origsrc/nylon-1.21/src/socks4.c	2022-04-16 07:37:41.000000000 +0900
++++ src/nylon-1.21/src/socks4.c	2022-12-28 11:12:52.072053900 +0900
+@@ -140,10 +140,12 @@ _socks4_tryconnect(int clisock, struct s
+ 
+ 	if ((ai = conn->bind_ai) != NULL) {
+         if (conn->bind_if_name != NULL) {
++#if defined(SO_BINDTODEVICE)
+             if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, conn->bind_if_name, IFNAMSIZ-1) == -1) {
+                 warnv(0, "bind device()");
+                 return (-1);
+             }
++#endif
+         }
+ 
+ 		if (bind(sock, ai->ai_addr, ai->ai_addrlen) == -1) {
+--- origsrc/nylon-1.21/src/socks5.c	2022-04-16 07:37:41.000000000 +0900
++++ src/nylon-1.21/src/socks5.c	2022-12-28 11:13:22.753736100 +0900
+@@ -186,10 +186,12 @@ socks5_connect(int clisock, struct socka
+ 
+ 	if ((ai = conn->bind_ai) != NULL)
+         if (conn->bind_if_name != NULL) {
++#if defined(SO_BINDTODEVICE)
+             if (setsockopt(remsock, SOL_SOCKET, SO_BINDTODEVICE, conn->bind_if_name, IFNAMSIZ-1) == -1) {
+                 warnv(0, "bind device()");
+                 return (-1);
+             }
++#endif
+         }
+ 
+ 		if (bind(remsock, ai->ai_addr, ai->ai_addrlen) == -1) {
