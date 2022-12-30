@@ -1,0 +1,57 @@
+HOMEPAGE="https://wiki.openstreetmap.org/wiki/PBF_Format"
+SRC_URI="https://github.com/openstreetmap/OSM-binary/archive/refs/tags/v${PV}.tar.gz"
+SRC_DIR="OSM-binary-${PV}"
+
+CATEGORY="Libs"
+SUMMARY="Tools related to PBF (an alternative to XML format)"
+DESCRIPTION="Osmpbf is a Java/C library to read and write OpenStreetMap PBF files. PBF
+(Protocol buffer Binary Format) is a binary file format for OpenStreetMap data
+that uses Google Protocol Buffers as low-level storage."
+
+LICENSE="LGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-3.0-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libprotobuf-devel zlib-devel"
+
+inherit cmake
+
+DOCS="
+	CHANGELOG.md
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/${PN}:${PATH} ./tools/osmpbf-outline.exe ${S}/resources/sample.pbf
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${S}
+	insinto /usr/share/${PN}
+	doins resources/*.pbf
+}
+
+PKG_NAMES="
+	osmpbf
+	libosmpbf1
+	libosmpbf-devel
+"
+osmpbf_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libosmpbf1_CONTENTS="
+	usr/bin/*.dll
+"
+libosmpbf_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+osmpbf_SUMMARY="${SUMMARY} (utilities)"
+libosmpbf1_SUMMARY="${SUMMARY} (runtime)"
+libosmpbf_devel_SUMMARY="${SUMMARY} (development)"
