@@ -1,0 +1,104 @@
+--- origsrc/onnx-1.13.0/CMakeLists.txt	2022-12-10 03:56:29.000000000 +0900
++++ src/onnx-1.13.0/CMakeLists.txt	2022-12-31 20:18:16.059752900 +0900
+@@ -126,8 +126,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
+ endif()
+ 
+ if(ONNX_BUILD_TESTS)
+-  list(APPEND CMAKE_MODULE_PATH ${ONNX_ROOT}/cmake/external)
+-  include(googletest)
++  find_package(gtest)
++  if (NOT GTEST_FOUND)
++    list(APPEND CMAKE_MODULE_PATH ${ONNX_ROOT}/cmake/external)
++    include(googletest)
++  endif()
+ endif()
+ 
+ if((ONNX_USE_LITE_PROTO AND TARGET protobuf::libprotobuf-lite) OR ((NOT ONNX_USE_LITE_PROTO) AND TARGET protobuf::libprotobuf))
+@@ -403,6 +406,10 @@ else()
+ endif()
+ target_compile_definitions(onnx_proto PRIVATE ${ONNX_API_DEFINE})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(onnx_proto PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(ONNX_USE_LITE_PROTO)
+   if(TARGET protobuf::libprotobuf-lite)
+     target_link_libraries(onnx_proto PUBLIC protobuf::libprotobuf-lite)
+@@ -519,14 +526,18 @@ endif()
+ 
+ if(ONNX_BUILD_BENCHMARKS)
+   if(NOT TARGET benchmark)
+-    # We will not need to test benchmark lib itself.
+-    set(BENCHMARK_ENABLE_TESTING OFF
+-        CACHE BOOL "Disable benchmark testing as we don't need it.")
+-    # We will not need to install benchmark since we link it statically.
+-    set(BENCHMARK_ENABLE_INSTALL OFF
+-        CACHE BOOL
+-              "Disable benchmark install to avoid overwriting vendor install.")
+-    add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/benchmark)
++    find_package(pkgconfig)
++    pkg_check_modules(BENCHMARK benchmark)
++    if (NOT BENCHMARK_FOUND)
++      # We will not need to test benchmark lib itself.
++      set(BENCHMARK_ENABLE_TESTING OFF
++          CACHE BOOL "Disable benchmark testing as we don't need it.")
++      # We will not need to install benchmark since we link it statically.
++      set(BENCHMARK_ENABLE_INSTALL OFF
++          CACHE BOOL
++                "Disable benchmark install to avoid overwriting vendor install.")
++      add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/benchmark)
++    endif()
+   endif()
+ 
+   add_executable(protobuf-bench tools/protobuf-bench.cc)
+@@ -595,6 +606,10 @@ if(APPLE)
+   set_target_properties(onnx PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+ endif()
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(onnx PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(DIRECTORY ${ONNX_ROOT}/onnx
+         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+         FILES_MATCHING
+@@ -622,7 +637,9 @@ install(FILES
+ install(EXPORT ONNXTargets DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ONNX")
+ install(TARGETS
+   onnx onnx_proto
+-  EXPORT ONNXTargets DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  EXPORT ONNXTargets
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ if(ONNX_BUILD_TESTS)
+   include(${ONNX_ROOT}/cmake/unittest.cmake)
+--- origsrc/onnx-1.13.0/cmake/unittest.cmake	2022-12-10 03:56:29.000000000 +0900
++++ src/onnx-1.13.0/cmake/unittest.cmake	2022-12-31 19:24:12.304244500 +0900
+@@ -7,7 +7,11 @@ include(${ONNX_ROOT}/cmake/Utils.cmake)
+ 
+ find_package(Threads)
+ 
+-set(${UT_NAME}_libs ${googletest_STATIC_LIBRARIES})
++if (GTEST_FOUND)
++  set(${UT_NAME}_libs gtest)
++else()
++  set(${UT_NAME}_libs ${googletest_STATIC_LIBRARIES})
++endif()
+ 
+ list(APPEND ${UT_NAME}_libs onnx)
+ list(APPEND ${UT_NAME}_libs onnx_proto)
+@@ -22,7 +26,11 @@ function(AddTest)
+   list(REMOVE_DUPLICATES _UT_SOURCES)
+ 
+   add_executable(${_UT_TARGET} ${_UT_SOURCES})
+-  add_dependencies(${_UT_TARGET} onnx onnx_proto googletest)
++  if (GTEST_FOUND)
++    add_dependencies(${_UT_TARGET} onnx onnx_proto)
++  else()
++    add_dependencies(${_UT_TARGET} onnx onnx_proto googletest)
++  endif()
+ 
+   target_include_directories(${_UT_TARGET}
+                              PUBLIC ${googletest_INCLUDE_DIRS}
