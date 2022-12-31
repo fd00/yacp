@@ -1,0 +1,54 @@
+--- origsrc/libprotobuf-mutator-1.1/CMakeLists.txt	2022-09-30 10:18:52.000000000 +0900
++++ src/libprotobuf-mutator-1.1/CMakeLists.txt	2022-12-31 07:31:47.108357100 +0900
+@@ -134,7 +134,12 @@ set(LIB_DIR "lib${LIB_SUFFIX}")
+ if (LIB_PROTO_MUTATOR_TESTING)
+   enable_testing()
+ 
+-  include(googletest)
++  find_package(gtest)
++  if (GTEST_FOUND)
++    set(GTEST_BOTH_LIBRARIES gtest gmock gtest_main)
++  else()
++    include(googletest)
++  endif()
+ 
+   if (NOT LIB_PROTO_MUTATOR_CTEST_JOBS)
+     ProcessorCount(LIB_PROTO_MUTATOR_CTEST_JOBS)
+--- origsrc/libprotobuf-mutator-1.1/libprotobuf-mutator.pc.in	2022-09-30 10:18:52.000000000 +0900
++++ src/libprotobuf-mutator-1.1/libprotobuf-mutator.pc.in	2022-12-31 07:50:42.108495900 +0900
+@@ -4,6 +4,6 @@ includedir=${prefix}/include/libprotobuf
+ 
+ Name: libprotobuf-mutator
+ Description: randomly mutate protobuffers for fuzzing
+-Version: 0
++Version: @VERSION@
+ Cflags: -I${includedir} -I${includedir}/src
+ Libs: -L${libdir} -lprotobuf-mutator-libfuzzer -lprotobuf-mutator
+--- origsrc/libprotobuf-mutator-1.1/src/CMakeLists.txt	2022-09-30 10:18:52.000000000 +0900
++++ src/libprotobuf-mutator-1.1/src/CMakeLists.txt	2022-12-31 07:32:37.260176600 +0900
+@@ -32,6 +32,7 @@ if (LIB_PROTO_MUTATOR_TESTING)
+ 
+   add_library(mutator-test-proto
+               ${PROTO_SRCS})
++  target_link_libraries(mutator-test-proto ${Protobuf_LIBRARIES})
+ 
+   add_executable(mutator_test
+                  mutator_test.cc
+@@ -61,6 +62,7 @@ endif()
+ 
+ install(TARGETS protobuf-mutator
+         EXPORT libprotobuf-mutatorTargets
++        RUNTIME DESTINATION bin
+         ARCHIVE DESTINATION ${LIB_DIR}
+         LIBRARY DESTINATION ${LIB_DIR}
+         INCLUDES DESTINATION include/libprotobuf-mutator include/libprotobuf-mutator/src)
+--- origsrc/libprotobuf-mutator-1.1/src/libfuzzer/CMakeLists.txt	2022-09-30 10:18:52.000000000 +0900
++++ src/libprotobuf-mutator-1.1/src/libfuzzer/CMakeLists.txt	2022-12-31 07:43:51.997880900 +0900
+@@ -24,6 +24,7 @@ set_target_properties(protobuf-mutator-l
+ 
+ install(TARGETS protobuf-mutator-libfuzzer
+         EXPORT libprotobuf-mutatorTargets
++        RUNTIME DESTINATION bin
+         ARCHIVE DESTINATION ${LIB_DIR}
+         LIBRARY DESTINATION ${LIB_DIR}
+         INCLUDES DESTINATION include/libprotobuf-mutator include/libprotobuf-mutator/src)
