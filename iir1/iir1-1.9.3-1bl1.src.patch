@@ -1,0 +1,107 @@
+--- origsrc/iir1-1.9.3/CMakeLists.txt	2022-06-10 07:33:04.000000000 +0900
++++ src/iir1-1.9.3/CMakeLists.txt	2022-12-31 23:53:51.726568400 +0900
+@@ -82,29 +82,31 @@ configure_file(iir.pc.in iir.pc @ONLY)
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/iir.pc"
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig/")
+ 
+-add_library(iir_static STATIC ${LIBSRC})
+-add_library(iir::iir_static ALIAS iir_static)
++if (BUILD_STATIC_LIBS)
++  add_library(iir_static STATIC ${LIBSRC})
++  add_library(iir::iir_static ALIAS iir_static)
+ 
+-target_include_directories(iir_static
+-  PUBLIC
+-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>      # for Iir.h
+-  PRIVATE
+-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/iir>  # everything else
+-)
++  target_include_directories(iir_static
++    PUBLIC
++      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>      # for Iir.h
++    PRIVATE
++      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/iir>  # everything else
++  )
+ 
+-set_target_properties(iir_static PROPERTIES
+-  POSITION_INDEPENDENT_CODE TRUE
+-  VERSION ${PROJECT_VERSION}
+-  PUBLIC_HEADER Iir.h
+-  PRIVATE_HEADER "${LIBINCLUDE}")
++  set_target_properties(iir_static PROPERTIES
++    POSITION_INDEPENDENT_CODE TRUE
++    VERSION ${PROJECT_VERSION}
++    PUBLIC_HEADER Iir.h
++    PRIVATE_HEADER "${LIBINCLUDE}")
+ 
+-install(TARGETS iir_static EXPORT iir-targets
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-  PRIVATE_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iir)
++  install(TARGETS iir_static EXPORT iir-targets
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++    PRIVATE_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/iir)
++endif()
+ 
+ install(EXPORT iir-targets
+   DESTINATION lib/cmake/iir
+--- origsrc/iir1-1.9.3/demo/CMakeLists.txt	2022-06-10 07:33:04.000000000 +0900
++++ src/iir1-1.9.3/demo/CMakeLists.txt	2022-12-31 23:56:35.163973700 +0900
+@@ -11,9 +11,9 @@ if (MSVC)
+ endif()
+ 
+ add_executable (iirdemo iirdemo.cpp)
+-target_link_libraries(iirdemo iir_static)
++target_link_libraries(iirdemo iir)
+ target_include_directories(iirdemo PRIVATE ..)
+ 
+ add_executable (ecg50hzfilt ecg50hzfilt.cpp)
+-target_link_libraries(ecg50hzfilt iir_static)
++target_link_libraries(ecg50hzfilt iir)
+ target_include_directories(ecg50hzfilt PRIVATE ..)
+--- origsrc/iir1-1.9.3/test/CMakeLists.txt	2022-06-10 07:33:04.000000000 +0900
++++ src/iir1-1.9.3/test/CMakeLists.txt	2022-12-31 23:55:14.580551500 +0900
+@@ -15,29 +15,29 @@ include_directories(
+   )
+ 
+ add_executable (test_butterworth butterworth.cpp)
+-target_link_libraries(test_butterworth iir_static)
++target_link_libraries(test_butterworth iir)
+ add_test(TestButterworth test_butterworth)
+ 
+ add_executable (test_chebyshev1 chebyshev1.cpp)
+-target_link_libraries(test_chebyshev1 iir_static)
++target_link_libraries(test_chebyshev1 iir)
+ add_test(TestChebyshev1 test_chebyshev1)
+ 
+ add_executable (test_chebyshev2 chebyshev2.cpp)
+-target_link_libraries(test_chebyshev2 iir_static)
++target_link_libraries(test_chebyshev2 iir)
+ add_test(TestChebyshev2 test_chebyshev2)
+ 
+ add_executable (test_rbj rbj.cpp)
+-target_link_libraries(test_rbj iir_static)
++target_link_libraries(test_rbj iir)
+ add_test(TestRBJ test_rbj)
+ 
+ add_executable (test_custom custom.cpp)
+-target_link_libraries(test_custom iir_static)
++target_link_libraries(test_custom iir)
+ add_test(TestCUSTOM test_custom)
+ 
+ add_executable (test_badparam badparam.cpp)
+-target_link_libraries(test_badparam iir_static)
++target_link_libraries(test_badparam iir)
+ add_test(TestBadParam test_badparam)
+ 
+ add_executable (test_state state.cpp)
+-target_link_libraries(test_state iir_static)
++target_link_libraries(test_state iir)
+ add_test(TestState test_state)
