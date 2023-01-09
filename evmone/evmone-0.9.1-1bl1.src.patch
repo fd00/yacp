@@ -1,8 +1,8 @@
---- origsrc/evmone-0.8.2/CMakeLists.txt	2021-08-26 18:44:53.000000000 +0900
-+++ src/evmone-0.8.2/CMakeLists.txt	2022-08-20 04:35:35.743618700 +0900
+--- origsrc/evmone-0.9.1/CMakeLists.txt	2022-09-07 19:56:12.000000000 +0900
++++ src/evmone-0.9.1/CMakeLists.txt	2023-01-09 09:43:45.288967600 +0900
 @@ -4,7 +4,7 @@
  
- cmake_minimum_required(VERSION 3.13)
+ cmake_minimum_required(VERSION 3.16...3.23)
  
 -if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmc/.git)
 +if(USE_BUNDLED_EVMC AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/evmc/.git)
@@ -17,7 +17,7 @@
 +# include(Hunter/init)
  
  project(evmone LANGUAGES CXX C)
- set(PROJECT_VERSION 0.8.2)
+ set(PROJECT_VERSION 0.9.1)
 @@ -36,12 +36,16 @@ if(PROJECT_VERSION_MAJOR EQUAL 0)
      set(PROJECT_SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
  endif()
@@ -37,19 +37,18 @@
  
  cable_configure_compiler(NO_STACK_PROTECTION)
  if(CABLE_COMPILER_GNULIKE)
-@@ -133,3 +137,10 @@ install(DIRECTORY ${include_dir}/
+@@ -134,3 +138,9 @@ install(DIRECTORY ${include_dir}/
      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
  
  cable_add_archive_package()
-+
 +set(prefix ${CMAKE_INSTALL_PREFIX})
 +set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 +set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/evmone.pc.in ${CMAKE_BINARY_DIR}/evmone.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/evmone.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/evmone-0.8.2/evmone.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/evmone-0.8.2/evmone.pc.in	2022-08-20 04:36:17.174717100 +0900
+--- origsrc/evmone-0.9.1/evmone.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/evmone-0.9.1/evmone.pc.in	2023-01-09 11:24:07.644523200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -61,8 +60,8 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -levmone
 +Cflags: -I${includedir}
---- origsrc/evmone-0.8.2/lib/evmone/CMakeLists.txt	2021-08-26 18:44:53.000000000 +0900
-+++ src/evmone-0.8.2/lib/evmone/CMakeLists.txt	2022-08-19 17:18:50.496310900 +0900
+--- origsrc/evmone-0.9.1/lib/evmone/CMakeLists.txt	2022-09-07 19:56:12.000000000 +0900
++++ src/evmone-0.9.1/lib/evmone/CMakeLists.txt	2023-01-09 08:52:42.639185400 +0900
 @@ -4,7 +4,7 @@
  
  include(LibraryTools)
@@ -72,9 +71,9 @@
  find_package(intx CONFIG REQUIRED)
  
  add_library(evmone
---- origsrc/evmone-0.8.2/test/CMakeLists.txt	2021-08-26 18:44:53.000000000 +0900
-+++ src/evmone-0.8.2/test/CMakeLists.txt	2022-08-19 17:30:47.026167100 +0900
-@@ -3,11 +3,11 @@
+--- origsrc/evmone-0.9.1/test/CMakeLists.txt	2022-09-07 19:56:12.000000000 +0900
++++ src/evmone-0.9.1/test/CMakeLists.txt	2023-01-09 08:53:42.407629500 +0900
+@@ -3,14 +3,14 @@
  # SPDX-License-Identifier: Apache-2.0
  
  include(GoogleTest)
@@ -83,12 +82,16 @@
  
  set(evmone_private_include_dir ${PROJECT_SOURCE_DIR}/lib)
  
+-hunter_add_package(GTest)
++# hunter_add_package(GTest)
+ find_package(GTest CONFIG REQUIRED)
+ 
 -hunter_add_package(benchmark)
 +# hunter_add_package(benchmark)
  find_package(benchmark CONFIG REQUIRED)
  
  add_subdirectory(utils)
-@@ -31,7 +31,7 @@ set_target_properties(
+@@ -36,7 +36,7 @@ set_target_properties(
  )
  
  get_target_property(type evmone TYPE)
@@ -97,8 +100,8 @@
      evmc_add_vm_test(NAME ${PROJECT_NAME}/evmc-vmtester TARGET evmone)
  
      if(TARGET evm-test)
---- origsrc/evmone-0.8.2/test/integration/CMakeLists.txt	2021-08-26 18:44:53.000000000 +0900
-+++ src/evmone-0.8.2/test/integration/CMakeLists.txt	2022-08-19 17:31:37.204454800 +0900
+--- origsrc/evmone-0.9.1/test/integration/CMakeLists.txt	2022-09-07 19:56:12.000000000 +0900
++++ src/evmone-0.9.1/test/integration/CMakeLists.txt	2023-01-09 08:54:17.103862400 +0900
 @@ -5,7 +5,7 @@
  set(PREFIX ${PROJECT_NAME}/integration)
  
@@ -106,16 +109,16 @@
 -if(EVMONE_LIB_TYPE STREQUAL SHARED_LIBRARY)
 +if(EVMONE_LIB_TYPE STREQUAL SHARED_LIBRARY AND USE_BUNDLED_EVMC)
  
-     add_test(NAME ${PREFIX}/histogram COMMAND $<TARGET_FILE:evmc::tool> --vm $<TARGET_FILE:evmone>,O=0,histogram run 6000808080800101010200)
+     add_test(NAME ${PREFIX}/histogram COMMAND $<TARGET_FILE:evmc::tool> --vm $<TARGET_FILE:evmone>,histogram run 6000808080800101010200)
      set_tests_properties(
---- origsrc/evmone-0.8.2/test/unittests/CMakeLists.txt	2021-08-26 18:44:53.000000000 +0900
-+++ src/evmone-0.8.2/test/unittests/CMakeLists.txt	2022-08-19 17:20:15.334446700 +0900
+--- origsrc/evmone-0.9.1/test/statetest/CMakeLists.txt	2022-09-07 19:56:12.000000000 +0900
++++ src/evmone-0.9.1/test/statetest/CMakeLists.txt	2023-01-09 08:57:02.290049500 +0900
 @@ -2,7 +2,7 @@
- # Copyright 2018-2020 The evmone Authors.
+ # Copyright 2022 The evmone Authors.
  # SPDX-License-Identifier: Apache-2.0
  
--hunter_add_package(GTest)
-+# hunter_add_package(GTest)
- find_package(GTest CONFIG REQUIRED)
+-hunter_add_package(nlohmann_json)
++# hunter_add_package(nlohmann_json)
+ find_package(nlohmann_json CONFIG REQUIRED)
  
- # The internal evmone unit tests. The generic EVM ones are also built in.
+ add_executable(evmone-statetest)
