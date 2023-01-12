@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/lavv17/${PN}"
-SRC_URI="https://github.com/lavv17/${PN}/releases/download/v${PV}/${P}.tar.gz"
+SRC_URI="https://github.com/lavv17/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Editors"
 SUMMARY="LE text editor"
@@ -11,8 +11,39 @@ highlighting, tunable color scheme (can use default colors), tunable key map,
 tunable menu. It is slightly similar to Norton Editor for DOS, but has more
 features."
 
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libncurses-devel"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	echo ${PV} > .tarball-version
+}
+
+src_compile()
+{
+	cd ${S}
+	./bootstrap
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
 src_test()
 {
 	cd ${B}
 	./src/${PN}.exe --version
 }
+
+DIFF_EXCLUDES="
+	.version
+	build-aux
+	gnulib
+	lib
+	m4
+"
