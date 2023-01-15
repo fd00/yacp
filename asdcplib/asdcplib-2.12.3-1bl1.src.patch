@@ -1,6 +1,6 @@
---- origsrc/asdcplib-rel_2_10_38/configure.ac	2020-10-22 02:50:37.000000000 +0900
-+++ src/asdcplib-rel_2_10_38/configure.ac	2020-12-09 18:27:16.499213600 +0900
-@@ -58,16 +58,13 @@ AC_PROG_CC
+--- origsrc/asdcplib-rel_2_12_3/configure.ac	2022-10-18 08:19:03.000000000 +0900
++++ src/asdcplib-rel_2_12_3/configure.ac	2023-01-15 11:23:52.256399300 +0900
+@@ -58,16 +58,14 @@ AC_PROG_CC
  AC_PROG_CXX
  AC_PROG_LIBTOOL
  AC_PROG_INSTALL
@@ -14,12 +14,13 @@
 -AX_LIB_OPENSSL([0.9.7])
 -AX_LIB_EXPAT
 -AX_LIB_XERCES
-+PKG_CHECK_MODULES([ASDCPLIB], [openssl expat xerces-c])
++PKG_CHECK_MODULES([ASDCPLIB], [openssl expat])
++AM_CONDITIONAL([HAVE_OPENSSL], [true])
  
  AC_ARG_ENABLE([freedist],
       [  --enable-freedist    ensure source distribution is of BSD-licensed code],
---- origsrc/asdcplib-rel_2_10_38/src/KM_fileio.cpp	2020-10-22 02:50:37.000000000 +0900
-+++ src/asdcplib-rel_2_10_38/src/KM_fileio.cpp	2020-12-09 18:27:16.502212700 +0900
+--- origsrc/asdcplib-rel_2_12_3/src/KM_fileio.cpp	2022-10-18 08:19:03.000000000 +0900
++++ src/asdcplib-rel_2_12_3/src/KM_fileio.cpp	2023-01-15 09:54:34.374967300 +0900
 @@ -67,7 +67,7 @@ struct iovec {
    int   iov_len;
  };
@@ -38,8 +39,8 @@
    size_t size = X_BUFSIZE;
    ssize_t rc = readlink("/proc/self/exe", path, size);
    success = ( rc != -1 );
---- origsrc/asdcplib-rel_2_10_38/src/Makefile.am	2020-10-22 02:50:37.000000000 +0900
-+++ src/asdcplib-rel_2_10_38/src/Makefile.am	2020-12-09 18:27:16.507211700 +0900
+--- origsrc/asdcplib-rel_2_12_3/src/Makefile.am	2022-10-18 08:19:03.000000000 +0900
++++ src/asdcplib-rel_2_12_3/src/Makefile.am	2023-01-15 09:54:34.379978100 +0900
 @@ -27,7 +27,7 @@
  # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
@@ -49,8 +50,8 @@
  AM_LDFLAGS =
  
  if OPENBSD_HOST
-@@ -105,8 +105,8 @@ libkumu_la_SOURCES = KM_error.h KM_filei
- 		KM_util.h KM_xml.cpp KM_xml.h KM_tai.h KM_tai.cpp
+@@ -113,8 +113,8 @@ libkumu_la_SOURCES = KM_error.h KM_filei
+ 		KM_sha1.cpp KM_sha1.h KM_aes.h KM_aes.cpp
  
  # linker flags (*not* including libraries to link against) for a library
 -libkumu_la_LDFLAGS = -release @VERSION@
@@ -60,16 +61,16 @@
  
  # sources for asdcp library that don't get added to a distribution
  nodist_libasdcp_la_SOURCES = Metadata_h.tt2 Metadata_cpp.tt2 \
-@@ -131,7 +131,7 @@ libasdcp_la_SOURCES = MPEG2_Parser.cpp M
- 	ST2095_PinkNoise.cpp
- 
+@@ -147,7 +147,7 @@ if USE_ASDCP_JXS
+ libasdcp_la_SOURCES += JXS_Codestream_Parser.cpp JXS_Sequence_Parser.cpp JXS.cpp AS_DCP_JXS.cpp
+ endif
  
 -libasdcp_la_LDFLAGS = -release @VERSION@
 +libasdcp_la_LDFLAGS = -no-undefined -release @VERSION@
  # additional libraries to link against for a library
  libasdcp_la_LIBADD = libkumu.la
  libasdcp_la_CPPFLAGS = -DASDCP_PLATFORM=\"@host@\"
-@@ -157,7 +157,7 @@ libas02_la_SOURCES	= \
+@@ -179,7 +179,7 @@ libas02_la_SOURCES	= \
  	ACES_Sequence_Parser.cpp \
  	AS_02_ACES.cpp
  
@@ -78,7 +79,7 @@
  libas02_la_LIBADD = libasdcp.la libkumu.la
  libas02_la_CPPFLAGS = -DASDCP_PLATFORM=\"@host@\"
  endif
-@@ -170,8 +170,8 @@ libphdr_la_SOURCES	= \
+@@ -192,8 +192,8 @@ libphdr_la_SOURCES	= \
  	PHDR_Sequence_Parser.cpp \
  	AS_02_PHDR.cpp
  
