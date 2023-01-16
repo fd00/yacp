@@ -1,30 +1,42 @@
 HOMEPAGE="https://gitlab.linphone.org/BC/public/${PN}"
-GIT_URI="https://gitlab.linphone.org/BC/public/${PN}.git"
+SRC_URI="https://gitlab.linphone.org/BC/public/${PN}/-/archive/${PV}/${P}.tar.bz2"
 
 CATEGORY="Devel"
 SUMMARY="Fork of the defunct project CUnit"
 DESCRIPTION="This is BCUnit, a fork of the defunct project CUnit, with several fixes and
 patches applied."
 
+LICENSE="LGPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.0-or-later"
+LICENSE_URI="COPYING"
+
 BUILD_REQUIRES="libncurses-devel"
 
 inherit cmake
-inherit git
 
 CYGCMAKE_ARGS="
-	-DENABLE_STATIC:BOOL=OFF
+	-DCONFIG_PACKAGE_LOCATION:STRING=/usr/lib/cmake/${PN}
 	-DENABLE_CURSES:BOOL=ON
+	-DENABLE_STATIC:BOOL=OFF
+	-DENABLE_TEST:BOOL=ON
+	-DSOVERSION:STRING=1
 "
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/BCUnit/Sources:${PATH} ./BCUnit/Sources/Test/test_bcunit.exe
+}
 
 PKG_NAMES="
 	bcunit
-	libbcunit0
+	libbcunit1
 	libbcunit-devel
 "
 bcunit_CONTENTS="
 	usr/share
 "
-libbcunit0_CONTENTS="
+libbcunit1_CONTENTS="
 	usr/bin
 "
 libbcunit_devel_CONTENTS="
@@ -32,5 +44,5 @@ libbcunit_devel_CONTENTS="
 	usr/lib
 "
 bcunit_SUMMARY="${SUMMARY} (licensing & readmes)"
-libbcunit0_SUMMARY="${SUMMARY} (runtime)"
+libbcunit1_SUMMARY="${SUMMARY} (runtime)"
 libbcunit_devel_SUMMARY="${SUMMARY} (development)"
