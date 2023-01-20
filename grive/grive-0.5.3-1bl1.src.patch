@@ -1,0 +1,112 @@
+--- origsrc/grive2-0.5.3/CMakeLists.txt	2022-11-09 18:45:14.000000000 +0900
++++ src/grive2-0.5.3/CMakeLists.txt	2023-01-20 10:07:49.709374000 +0900
+@@ -25,3 +25,10 @@ endif( HAVE_SYSTEMD )
+ 
+ add_subdirectory( libgrive )
+ add_subdirectory( grive )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/grive.pc.in ${CMAKE_BINARY_DIR}/grive.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/grive.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/grive2-0.5.3/grive.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/grive2-0.5.3/grive.pc.in	2023-01-20 10:08:19.145138700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: grive
++Description: Open source Linux client for Google Drive
++Version: @GRIVE_VERSION@
++Libs: -L${libdir} -lgrive
++Cflags: -I${includedir}
+--- origsrc/grive2-0.5.3/libgrive/CMakeLists.txt	2022-11-09 18:45:14.000000000 +0900
++++ src/grive2-0.5.3/libgrive/CMakeLists.txt	2023-01-20 10:12:25.217728300 +0900
+@@ -12,6 +12,7 @@ find_package(Iberty)
+ 
+ find_package(PkgConfig)
+ pkg_check_modules(YAJL REQUIRED yajl)
++pkg_check_modules(EXPAT REQUIRED expat)
+ 
+ add_definitions(-Wall)
+ 
+@@ -44,6 +45,10 @@ include_directories(
+ 	${YAJL_INCLUDE_DIRS}
+ )
+ 
++file (GLOB DRIVE_HEADERS
++	${libgrive_SOURCE_DIR}/src/drive2/*.hh
++)
++
+ file (GLOB PROTOCOL_HEADERS
+     ${libgrive_SOURCE_DIR}/src/protocol/*.hh
+ )
+@@ -64,6 +69,7 @@ file (GLOB LIBGRIVE_SRC
+ 	src/json/*.cc
+ 	src/util/*.cc
+ 	src/util/log/*.cc
++	src/xml/*.cc
+ )
+ 
+ add_definitions(
+@@ -71,8 +77,8 @@ add_definitions(
+ 	-DSRC_DIR="${libgrive_SOURCE_DIR}/src"
+ )
+ 
+-#add_library( grive SHARED ${LIBGRIVE_SRC} ${OPT_SRC} )
+-add_library( grive STATIC ${LIBGRIVE_SRC} ${OPT_SRC} )
++add_library( grive SHARED ${LIBGRIVE_SRC} ${OPT_SRC} )
++# add_library( grive STATIC ${LIBGRIVE_SRC} ${OPT_SRC} )
+ 
+ target_link_libraries( grive
+ 	${YAJL_LIBRARIES}
+@@ -83,12 +89,13 @@ target_link_libraries( grive
+ 	${Boost_REGEX_LIBRARY}
+ 	${Boost_SYSTEM_LIBRARY}
+ 	${IBERTY_LIBRARY}
++	${EXPAT_LIBRARIES}
+ 	${OPT_LIBS}
+ )
+ 
+-#set_target_properties(grive PROPERTIES
+-#    SOVERSION 0 VERSION ${GRIVE_VERSION}
+-#)
++set_target_properties(grive PROPERTIES
++    SOVERSION 0 VERSION ${GRIVE_VERSION}
++)
+ 
+ #set_target_properties(grive grive-static PROPERTIES OUTPUT_NAME grive)
+ 
+@@ -98,12 +105,12 @@ else()
+ endif()
+ 
+ # don't install libgrive for now
+-#install(TARGETS grive LIBRARY DESTINATION ${LIB_INSTALL_DIR} )
+-#install(TARGETS grive ARCHIVE DESTINATION ${LIB_INSTALL_DIR} )
+-#install(FILES ${DRIVE_HEADERS} DESTINATION include/grive/drive)
+-#install(FILES ${PROTOCOL_HEADERS} DESTINATION include/grive/protocol)
+-#install(FILES ${UTIL_HEADERS} DESTINATION include/grive/util)
+-#install(FILES ${XML_HEADERS} DESTINATION include/grive/xml)
++install(TARGETS grive RUNTIME DESTINATION bin )
++install(TARGETS grive ARCHIVE DESTINATION ${LIB_INSTALL_DIR} )
++install(FILES ${DRIVE_HEADERS} DESTINATION include/grive/drive2)
++install(FILES ${PROTOCOL_HEADERS} DESTINATION include/grive/protocol)
++install(FILES ${UTIL_HEADERS} DESTINATION include/grive/util)
++install(FILES ${XML_HEADERS} DESTINATION include/grive/xml)
+ 
+ IF ( CPPUNIT_FOUND )
+ 	message("-- Building unitary tests along with the library and the binary")
+--- origsrc/grive2-0.5.3/libgrive/src/xml/TreeBuilder.cc	2022-11-09 18:45:14.000000000 +0900
++++ src/grive2-0.5.3/libgrive/src/xml/TreeBuilder.cc	2023-01-20 09:27:19.709736300 +0900
+@@ -23,6 +23,7 @@
+ #include "Node.hh"
+ #include "util/log/Log.hh"
+ 
++#include <expat.h>
+ 
+ #include <cassert>
+ #include <iostream>
