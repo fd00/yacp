@@ -1,5 +1,5 @@
---- origsrc/libversion-3.0.2/libversion/CMakeLists.txt	2022-10-15 02:50:04.000000000 +0900
-+++ src/libversion-3.0.2/libversion/CMakeLists.txt	2022-10-17 10:55:52.735902900 +0900
+--- origsrc/libversion-3.0.3/libversion/CMakeLists.txt	2023-01-14 04:09:11.000000000 +0900
++++ src/libversion-3.0.3/libversion/CMakeLists.txt	2023-02-04 09:58:44.420472300 +0900
 @@ -41,20 +41,22 @@ if(WIN32)
  endif()
  
@@ -9,7 +9,7 @@
 -target_include_directories(libversion_static PUBLIC
 -	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
 -	$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
--	$<INSTALL_INTERFACE:include>
+-	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 -)
 -target_compile_definitions(libversion_static PUBLIC
 -	LIBVERSION_STATIC_DEFINE
@@ -24,7 +24,7 @@
 +	target_include_directories(libversion_static PUBLIC
 +		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
 +		$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-+		$<INSTALL_INTERFACE:include>
++		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 +	)
 +	target_compile_definitions(libversion_static PUBLIC
 +		LIBVERSION_STATIC_DEFINE
@@ -37,15 +37,16 @@
  
  # object library
  add_library(libversion_object OBJECT EXCLUDE_FROM_ALL ${LIBVERSION_SOURCES} ${LIBVERSION_HEADERS})
-@@ -77,7 +79,10 @@ install(FILES
+@@ -89,7 +91,11 @@ install(FILES
  	${CMAKE_CURRENT_BINARY_DIR}/export.h
  	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libversion
  )
 -install(TARGETS libversion libversion_static EXPORT libversion)
-+install(TARGETS libversion EXPORT libversion RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 +if (BUILD_STATIC_LIBS)
-+	install(TARGETS libversion_static EXPORT libversion)
++	install(TARGETS libversion libversion_static EXPORT libversion)
++else()
++	install(TARGETS libversion EXPORT libversion)
 +endif()
  
- install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libversion.pc DESTINATION ${CMAKE_INSTALL_PKGCONFIGDIR})
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libversion.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
  
