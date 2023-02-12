@@ -1,0 +1,53 @@
+--- origsrc/ptex-2.4.2/CMakeLists.txt	2022-08-05 11:02:51.000000000 +0900
++++ src/ptex-2.4.2/CMakeLists.txt	2023-02-12 09:23:15.498062700 +0900
+@@ -114,5 +114,14 @@ include_directories(src/ptex)
+ add_subdirectory(src/ptex)
+ add_subdirectory(src/utils)
+ add_subdirectory(src/tests)
+-add_subdirectory(src/doc)
++if (BUILD_DOCS)
++    add_subdirectory(src/doc)
++endif()
+ add_subdirectory(src/build)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ptex.pc.in ${CMAKE_BINARY_DIR}/ptex.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ptex.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ptex-2.4.2/ptex.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ptex-2.4.2/ptex.pc.in	2023-02-12 09:24:21.562753100 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ptex
++Description: Per-Face Texture Mapping for Production Rendering
++Version: @PTEX_VER@
++Libs: -L${libdir} -lPtex
++Cflags: -I${includedir}
++Requires: zlib
+--- origsrc/ptex-2.4.2/src/build/CMakeLists.txt	2022-08-05 11:02:51.000000000 +0900
++++ src/ptex-2.4.2/src/build/CMakeLists.txt	2023-02-12 09:14:18.189673400 +0900
+@@ -1,6 +1,6 @@
+ include(CMakePackageConfigHelpers)
+ 
+-set(CMAKE_DIR "share/cmake/Ptex")
++option(CMAKE_DIR "CMake directory" "share/cmake/Ptex")
+ 
+ write_basic_package_version_file("ptex-config-version.cmake"
+     VERSION "${PTEX_MAJOR_VERSION}.${PTEX_MINOR_VERSION}"
+--- origsrc/ptex-2.4.2/src/ptex/CMakeLists.txt	2022-08-05 11:02:51.000000000 +0900
++++ src/ptex-2.4.2/src/ptex/CMakeLists.txt	2023-02-12 09:15:05.729199700 +0900
+@@ -40,7 +40,7 @@ if(PTEX_BUILD_SHARED_LIBS)
+     target_compile_definitions(Ptex_dynamic PRIVATE PTEX_EXPORTS)
+     target_link_libraries(Ptex_dynamic
+         PUBLIC Threads::Threads ZLIB::ZLIB)
+-    install(TARGETS Ptex_dynamic EXPORT Ptex DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS Ptex_dynamic EXPORT Ptex RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ install(FILES
