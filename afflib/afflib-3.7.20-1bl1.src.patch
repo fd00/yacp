@@ -1,0 +1,36 @@
+--- origsrc/AFFLIBv3-3.7.20/lib/Makefile.am	2022-12-28 13:45:13.000000000 +0900
++++ src/AFFLIBv3-3.7.20/lib/Makefile.am	2023-03-02 15:50:55.315635100 +0900
+@@ -8,7 +8,7 @@ AUTOMAKE_OPTIONS = subdir-objects
+ 
+ aftest_SOURCES = aftest.cpp
+ aftest_LDADD = libafflib.la  
+-aftest_LDFLAGS = $(PTHREAD_CFLAGS) -static # easier debugging
++aftest_LDFLAGS = $(PTHREAD_CFLAGS)
+ 
+ AFFLIB_SOURCES = aff_db.cpp aff_db.h aff_toc.cpp \
+ 	afflib.cpp afflib.h afflib_i.h afflib_os.cpp \
+@@ -76,7 +76,7 @@ install-exec-hook:
+              then echo $(libdir) already installed ; \
+              else echo installing $(libdir) in $(DESTDIR)/etc/ld.so.conf ; \
+                   echo $(libdir) >> $(DESTDIR)/etc/ld.so.conf ; \
+-		  PATH=$(PATH):/sbin; \
++		  PATH="$(PATH):/sbin"; \
+ 		  ldconfig; \
+           fi ; \
+ 	  echo "*************************************************" ;\
+@@ -117,3 +117,4 @@ LZMA_SOURCES =  \
+ # Unfortunately, when we specify lib_, things don't build. I can't figure it out.
+ lib_LTLIBRARIES = libafflib.la
+ libafflib_la_SOURCES += $(LZMA_SOURCES)
++libafflib_la_LDFLAGS = -no-undefined
+--- origsrc/AFFLIBv3-3.7.20/tools/affcopy.cpp	2022-12-28 13:45:13.000000000 +0900
++++ src/AFFLIBv3-3.7.20/tools/affcopy.cpp	2023-03-02 16:04:21.422431300 +0900
+@@ -146,7 +146,7 @@ void unlink_outfiles(vector<string> outf
+     if(failure) exit(1);
+ }
+ 
+-#if !defined( __BSD_VISIBLE) && !defined(isnumber)
++#if (!defined( __BSD_VISIBLE) && !defined(isnumber)) || defined(__CYGWIN__)
+ #define isnumber(x) isdigit(x)
+ #endif
+ 
