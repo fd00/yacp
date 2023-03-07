@@ -1,0 +1,58 @@
+--- origsrc/scitokens-cpp/CMakeLists.txt	2023-03-07 06:15:09.000000000 +0900
++++ src/scitokens-cpp/CMakeLists.txt	2023-03-07 09:18:47.868920600 +0900
+@@ -3,7 +3,7 @@ cmake_minimum_required( VERSION 3.10)
+ 
+ project( scitokens-cpp 
+ 	DESCRIPTION "A C++ Library to interface to scitokens"
+-	VERSION 0.7.0
++	VERSION 0.7.3
+ 	LANGUAGES CXX)
+ 
+ option( SCITOKENS_BUILD_UNITTESTS "Build the scitokens-cpp unit tests" OFF )
+@@ -78,7 +78,7 @@ target_compile_options(scitokens-create
+ get_directory_property(TARGETS BUILDSYSTEM_TARGETS)
+ install(
+   TARGETS ${TARGETS} 
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )
+ 
+ install(
+@@ -104,3 +104,10 @@ endif()
+ enable_testing()
+ add_subdirectory(test)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/scitokens-cpp.pc.in ${CMAKE_BINARY_DIR}/scitokens-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/scitokens-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/scitokens-cpp/scitokens-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/scitokens-cpp/scitokens-cpp.pc.in	2023-03-07 09:18:54.238113000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: scitokens-cpp
++Description: C++ implementation of the SciTokens library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lSciTokens
++Cflags: -I${includedir}
+--- origsrc/scitokens-cpp/test/CMakeLists.txt	2023-03-07 06:15:10.000000000 +0900
++++ src/scitokens-cpp/test/CMakeLists.txt	2023-03-07 08:51:11.330910400 +0900
+@@ -1,7 +1,9 @@
+ 
+ add_executable(scitokens-gtest main.cpp)
+-add_dependencies(scitokens-gtest gtest)
+-include_directories("${PROJECT_SOURCE_DIR}/vendor/gtest/googletest/include")
++if (NOT SCITOKENS_EXTERNAL_GTEST)
++  add_dependencies(scitokens-gtest gtest)
++  include_directories("${PROJECT_SOURCE_DIR}/vendor/gtest/googletest/include")
++endif()
+ 
+ if(SCITOKENS_EXTERNAL_GTEST)
+     set(LIBGTEST "gtest")
