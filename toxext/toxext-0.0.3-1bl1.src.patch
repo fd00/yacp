@@ -1,0 +1,64 @@
+--- origsrc/toxext-0.0.3/CMakeLists.txt	2021-10-26 15:05:04.000000000 +0900
++++ src/toxext-0.0.3/CMakeLists.txt	2023-03-07 17:06:44.513946400 +0900
+@@ -6,10 +6,13 @@ set(INSTALL_MOCKS CACHE BOOL OFF)
+ add_compile_options(-Wall -Wextra -Werror -std=gnu11)
+ 
+ find_package(PkgConfig REQUIRED)
+-pkg_search_module(TOXCORE REQUIRED toxcore)
++pkg_search_module(TOXCORE toxcore)
++if (NOT TOXCORE_FOUND)
++    pkg_search_module(TOXCORE REQUIRED libtoxcore)
++endif()
+ 
+ function(toxext_install target)
+-    install(TARGETS ${target} EXPORT ToxExtConfig ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include/toxext)
++    install(TARGETS ${target} EXPORT ToxExtConfig RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include/toxext)
+ endfunction()
+ 
+ add_subdirectory(src)
+@@ -19,3 +22,10 @@ enable_testing()
+ add_subdirectory(test)
+ 
+ install(EXPORT ToxExtConfig DESTINATION lib/cmake/ToxExt NAMESPACE ToxExt::)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/toxext.pc.in ${CMAKE_BINARY_DIR}/toxext.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/toxext.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/toxext-0.0.3/src/CMakeLists.txt	2021-10-26 15:05:04.000000000 +0900
++++ src/toxext-0.0.3/src/CMakeLists.txt	2023-03-07 15:42:15.108128900 +0900
+@@ -13,4 +13,8 @@ target_include_directories(ToxExt PUBLIC
+ set_target_properties(ToxExt PROPERTIES PUBLIC_HEADER "${ToxExtPublicHeaders}")
+ set_target_properties(ToxExt PROPERTIES OUTPUT_NAME "toxext")
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(ToxExt PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ toxext_install(ToxExt)
+--- origsrc/toxext-0.0.3/test/CMakeLists.txt	2021-10-26 15:05:04.000000000 +0900
++++ src/toxext-0.0.3/test/CMakeLists.txt	2023-03-07 15:40:31.258350100 +0900
+@@ -6,7 +6,7 @@ set(REPORT_COVERAGE OFF CACHE BOOL "Gene
+ # I'm sure I could do this better but I don't want to spend my time on cmake really
+ function(toxext_test test_name)
+ 	add_executable(${test_name} ${ARGN})
+-	if (UNIX)
++	if (UNIX AND NOT CYGWIN)
+ 		target_compile_options(${test_name} PRIVATE -fsanitize=address)
+ 		target_link_libraries(${test_name} "-fsanitize=address")
+ 	endif()
+--- origsrc/toxext-0.0.3/toxext.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/toxext-0.0.3/toxext.pc.in	2023-03-07 17:06:25.312539700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: toxext
++Description: Extension library for tox
++Version: @VERSION@
++Libs: -L${libdir} -ltoxext
++Cflags: -I${includedir}
