@@ -1,0 +1,38 @@
+HOMEPAGE="https://git.sr.ht/~rabbits/${PN}"
+GIT_URI="https://git.sr.ht/~rabbits/${PN}"
+GIT_BRANCH="main"
+
+CATEGORY="Devel"
+SUMMARY="Assembler and emulator for the Uxn stack-machine"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libSDL2-devel"
+
+inherit git
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	./build.sh --no-run
+	for f in ./projects/{examples/*,software,utils}/*.tal ; do
+		./bin/uxnasm "${f}" "$(dirname "${f}")"/"$(basename "${f}" .tal)".rom ||
+			die "failed to assemble ${f}"
+	done
+}
+
+src_install()
+{
+	cd ${B}
+	dobin bin/*.exe
+
+	insinto /usr/share/${PN}
+	doins bin/*.rom
+
+	cd ${S}
+	cp -R projects ${D}/usr/share/${PN}
+}
