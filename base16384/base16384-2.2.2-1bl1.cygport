@@ -1,0 +1,51 @@
+HOMEPAGE="https://github.com/fumiama/${PN}"
+SRC_URI="https://github.com/fumiama/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Encode binary files to printable utf16be"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE"
+
+inherit cmake
+
+src_test()
+{
+	cd ${B}
+	echo '12345678' > /tmp/$$.in
+	./${PN}_b.exe -e /tmp/$$.in /tmp/$$.enc
+	./${PN}_b.exe -d /tmp/$$.enc /tmp/$$.dec
+	cmp /tmp/$$.in /tmp/$$.dec
+	rm -f /tmp/$$.in /tmp/$$.enc /tmp/$$.dec
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	mv usr/bin/${PN}_b.exe usr/bin/${PN}.exe
+}
+
+PKG_NAMES="
+	base16384
+	libbase16384_2
+	libbase16384-devel
+"
+base16384_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libbase16384_2_CONTENTS="
+	usr/bin/*.dll
+"
+libbase16384_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+base16384_SUMMARY="${SUMMARY} (utilities)"
+libbase16384_2_SUMMARY="${SUMMARY} (runtime)"
+libbase16384_devel_SUMMARY="${SUMMARY} (development)"
