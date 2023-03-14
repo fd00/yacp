@@ -1,0 +1,62 @@
+--- origsrc/coin/CMakeLists.txt	2023-03-14 10:18:43.000000000 +0900
++++ src/coin/CMakeLists.txt	2023-03-14 11:54:56.767949500 +0900
+@@ -206,6 +206,10 @@ else()
+     else()
+       list(APPEND COIN_TARGET_LINK_LIBRARIES OpenGL::GL OpenGL::GLU)
+     endif()
++    if (CYGWIN)
++      find_package(X11 REQUIRED)
++      list(APPEND COIN_TARGET_LINK_LIBRARIES ${X11_LIBRARIES})
++    endif()
+   endif()
+ endif()
+ 
+@@ -512,7 +516,9 @@ check_include_file(ieeefp.h HAVE_IEEEFP_
+ check_include_file(time.h HAVE_TIME_H)
+ check_include_files("stdlib.h;stdarg.h;string.h;float.h" STDC_HEADERS)
+ 
+-check_include_file(windows.h HAVE_WINDOWS_H)
++if (NOT CYGWIN)
++  check_include_file(windows.h HAVE_WINDOWS_H)
++endif()
+ if(HAVE_WINDOWS_H)
+   check_include_file(direct.h HAVE_DIRECT_H)
+   check_include_files("windows.h;tlhelp32.h" HAVE_TLHELP32_H)
+@@ -815,4 +821,4 @@ endif()
+ 
+ # ############################################################################
+ # New CPACK section, please see the README file inside cpack.d directory.
+-add_subdirectory(cpack.d)
++# add_subdirectory(cpack.d)
+--- origsrc/coin/src/CMakeLists.txt	2023-03-14 10:18:46.000000000 +0900
++++ src/coin/src/CMakeLists.txt	2023-03-14 17:16:45.438893300 +0900
+@@ -390,7 +390,6 @@ else()
+   if(UNIX OR MINGW)
+     configure_file(${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pc.cmake.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
+     install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-    install(FILES ${CMAKE_SOURCE_DIR}/bin/coin-config DESTINATION ${CMAKE_INSTALL_BINDIR})
+   endif()
+ endif()
+ 
+--- origsrc/coin/src/io/SoInput.cpp	2023-03-14 10:18:48.000000000 +0900
++++ src/coin/src/io/SoInput.cpp	2023-03-14 11:27:04.587701600 +0900
+@@ -1416,7 +1416,7 @@ SoInput::read(double & d)
+   return TRUE;
+ }
+ 
+-#ifdef __CYGWIN__
++#if 0
+ #include <boost/static_assert.hpp>
+ 
+ SbBool
+--- origsrc/coin/src/io/SoOutput.cpp	2023-03-14 10:18:48.000000000 +0900
++++ src/coin/src/io/SoOutput.cpp	2023-03-14 11:28:22.195788100 +0900
+@@ -1003,7 +1003,7 @@ SoOutput::write(const double d)
+   }
+ }
+ 
+-#ifdef __CYGWIN__
++#if 0
+ #include <boost/static_assert.hpp>
+ 
+ void
