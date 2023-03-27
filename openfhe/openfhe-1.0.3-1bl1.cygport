@@ -1,0 +1,59 @@
+HOMEPAGE="https://github.com/openfheorg/${PN}-development"
+GIT_URI="https://github.com/openfheorg/${PN}-development.git"
+GIT_TAG="v${PV}"
+
+CATEGORY="Libs"
+SUMMARY="Open-Source Fully Homomorphic Encryption Library"
+DESCRIPTION="Fully Homomorphic Encryption (FHE) is a powerful cryptographic primitive that
+enables performing computations over encrypted data without having access to
+the secret key. OpenFHE is an open-source FHE library that includes efficient
+implementations of all common FHE schemes."
+
+LICENSE="BSD-2-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libntl-devel libtcmalloc-devel"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm -f Preload.cmake
+}
+
+inherit cmake
+inherit git
+
+CYGCMAKE_ARGS="
+	-DBUILD_BENCHMARKS:BOOL=OFF
+	-DBUILD_EXTRAS:BOOL=ON
+	-DWITH_NATIVEOPT:BOOL=ON
+	-DWITH_NTL:BOOL=ON
+	-DWITH_TCM:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/lib:${PATH} cygninja testall
+}
+
+PKG_NAMES="
+	openfhe
+	libopenfhe1
+	libopenfhe-devel
+"
+openfhe_CONTENTS="
+	usr/share
+"
+libopenfhe1_CONTENTS="
+	usr/bin
+"
+libopenfhe_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+openfhe_SUMMARY="${SUMMARY} (licensing & readmes)"
+libopenfhe1_SUMMARY="${SUMMARY} (runtime)"
+libopenfhe_devel_SUMMARY="${SUMMARY} (development)"

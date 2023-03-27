@@ -1,0 +1,105 @@
+--- origsrc/openfhe-development/CMakeLists.txt	2023-03-27 14:39:57.000000000 +0900
++++ src/openfhe-development/CMakeLists.txt	2023-03-27 17:31:07.660166300 +0900
+@@ -222,6 +222,8 @@ set(INSTALL_INCLUDE_DIR include/openfhe
+ 	"Installation directory for headers")
+ if(WIN32 AND NOT CYGWIN)
+   set(DEF_INSTALL_CMAKE_DIR CMake)
++elseif(CYGWIN)
++  set(DEF_INSTALL_CMAKE_DIR lib/cmake/OpenFHE)
+ else()
+   set(DEF_INSTALL_CMAKE_DIR lib/OpenFHE)
+ endif()
+@@ -557,37 +559,44 @@ include_directories( ${CMAKE_BINARY_DIR}
+ 
+ ### Handle third-party gperftools for optional tcmalloc
+ 
+-add_custom_target(
++find_package(pkgconfig)
++pkg_check_modules(TCMALLOC libtcmalloc)
++if (TCMALLOC_FOUND)
++    include_directories( ${TCMALLOC_INCLUDE_DIRS} )
++    list(APPEND THIRDPARTYLIBS ${TCMALLOC_LIBRARIES})
++else()
++    add_custom_target(
+ 	tcm
+ 	COMMAND ./autogen.sh
+ 	COMMAND ./configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/third-party --enable-minimal
+ 	COMMAND make
+ 	COMMAND make install
+ 	WORKING_DIRECTORY ${THIRDPARTYDIR}/gperftools
+-)
++    )
+ 
+-add_custom_target(
++    add_custom_target(
+ 	tcm_clean
+ 	COMMAND rm -rf include/gperftools include/google lib/libtcmalloc_minimal* lib/pkgconfig/libtcmalloc* lib/pkgconfig/libprofiler.pc share/doc/gperftools
+ 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/third-party
+-)
++    )
+ 
+-if(BUILD_STATIC)
+-add_library(tcmalloc_static STATIC IMPORTED GLOBAL)
+-set_target_properties(tcmalloc_static PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/third-party/lib/libtcmalloc_minimal${CMAKE_STATIC_LIBRARY_SUFFIX})
+-endif()
++    if(BUILD_STATIC)
++    add_library(tcmalloc_static STATIC IMPORTED GLOBAL)
++    set_target_properties(tcmalloc_static PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/third-party/lib/libtcmalloc_minimal${CMAKE_STATIC_LIBRARY_SUFFIX})
++    endif()
+ 
+-if(BUILD_SHARED)
+-add_library(tcmalloc SHARED IMPORTED GLOBAL)
+-set_target_properties(tcmalloc PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/third-party/lib/libtcmalloc_minimal${CMAKE_SHARED_LIBRARY_SUFFIX})
+-endif()
++    if(BUILD_SHARED)
++    add_library(tcmalloc SHARED IMPORTED GLOBAL)
++    set_target_properties(tcmalloc PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/third-party/lib/libtcmalloc_minimal${CMAKE_SHARED_LIBRARY_SUFFIX})
++    endif()
+ 
+-if(WITH_TCM)
++    if(WITH_TCM)
+ 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/third-party/lib DESTINATION .
+ 		FILES_MATCHING PATTERN "libtcmalloc_minimal.*")
+     list(APPEND THIRDPARTYLIBS "tcmalloc")
+ 	list(APPEND THIRDPARTYSTATICLIBS "tcmalloc_static")
+     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/third-party/include DESTINATION include/openfhe/third-party/)
++    endif()
+ endif()
+ 
+ if(WITH_NTL)
+--- origsrc/openfhe-development/src/binfhe/CMakeLists.txt	2023-03-27 14:39:57.000000000 +0900
++++ src/openfhe-development/src/binfhe/CMakeLists.txt	2023-03-27 17:38:42.188536800 +0900
+@@ -26,7 +26,8 @@ if ( BUILD_SHARED )
+ 	set_property(TARGET OPENFHEbinfhe PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+ 	install(TARGETS OPENFHEbinfhe
+ 		EXPORT OpenFHETargets
+-		DESTINATION lib)
++		RUNTIME DESTINATION bin
++		ARCHIVE DESTINATION lib)
+ endif()
+ 
+ if( BUILD_STATIC )
+--- origsrc/openfhe-development/src/core/CMakeLists.txt	2023-03-27 14:39:57.000000000 +0900
++++ src/openfhe-development/src/core/CMakeLists.txt	2023-03-27 17:39:25.371659600 +0900
+@@ -31,7 +31,8 @@ if ( BUILD_SHARED )
+ 	set_property(TARGET OPENFHEcore PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+ 	install(TARGETS OPENFHEcore
+ 		EXPORT OpenFHETargets
+-		DESTINATION lib)
++		RUNTIME DESTINATION bin
++		ARCHIVE DESTINATION lib)
+ endif()
+ 
+ 
+--- origsrc/openfhe-development/src/pke/CMakeLists.txt	2023-03-27 14:39:57.000000000 +0900
++++ src/openfhe-development/src/pke/CMakeLists.txt	2023-03-27 17:39:50.186363600 +0900
+@@ -26,7 +26,8 @@ if( BUILD_SHARED )
+ 	set_property(TARGET OPENFHEpke PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+ 	install(TARGETS OPENFHEpke
+ 		EXPORT OpenFHETargets
+-		DESTINATION lib)
++		RUNTIME DESTINATION bin
++		ARCHIVE DESTINATION lib)
+ endif()
+ 
+ if( BUILD_STATIC )
