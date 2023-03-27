@@ -1,0 +1,45 @@
+--- origsrc/ggml/CMakeLists.txt	2023-03-26 19:07:57.000000000 +0900
++++ src/ggml/CMakeLists.txt	2023-03-27 08:45:51.191203700 +0900
+@@ -73,3 +73,10 @@ endif ()
+ if (GGML_BUILD_EXAMPLES)
+     add_subdirectory(examples)
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ggml.pc.in ${CMAKE_BINARY_DIR}/ggml.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ggml.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ggml/ggml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ggml/ggml.pc.in	2023-03-27 08:46:09.877553500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ggml
++Description: Tensor library for machine learning
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lggml
++Cflags: -I${includedir}
+--- origsrc/ggml/src/CMakeLists.txt	2023-03-26 19:07:57.000000000 +0900
++++ src/ggml/src/CMakeLists.txt	2023-03-27 08:41:58.844217700 +0900
+@@ -197,7 +197,14 @@ if (MINGW)
+         )
+ endif()
+ 
++set_target_properties(${TARGET} PROPERTIES PUBLIC_HEADER "../include/ggml/ggml.h")
++
++if (DEFINED SOVERSION)
++    set_target_properties(${TARGET} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(TARGETS ${TARGET}
+-    LIBRARY DESTINATION lib
+-    ARCHIVE DESTINATION lib/static
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
++    PUBLIC_HEADER DESTINATION include
+     )
