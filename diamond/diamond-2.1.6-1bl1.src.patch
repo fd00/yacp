@@ -1,0 +1,60 @@
+--- origsrc/diamond-2.1.6/CMakeLists.txt	2023-03-18 19:19:01.000000000 +0900
++++ src/diamond-2.1.6/CMakeLists.txt	2023-04-02 23:16:13.209834500 +0900
+@@ -465,19 +465,33 @@ if(EIGEN_BLAS)
+   target_link_libraries(diamond "${LAPACKE_LIBRARIES_DEP}")
+ endif()
+ 
++find_package(pkgconfig)
++
+ if(WITH_ZSTD OR BLAST_INCLUDE_DIR)
++  pkg_check_modules(ZSTD libzstd)
++  if (ZSTD_FOUND)
++    target_include_directories(diamond PRIVATE "${ZSTD_INCLUDE_DIRS}")
++    target_link_libraries(diamond "${ZSTD_LIBRARIES}")
++  else()
+   find_path(${ZSTD_INCLUDE_DIR} NAMES zstd.h PATHS ${ZSTD_INCLUDE_DIR})
+   find_library(ZSTD_LIBRARY NAMES libzstd.a libzstd_static)
+   target_include_directories(diamond PRIVATE "${ZSTD_INCLUDE_DIR}")
+   target_link_libraries(diamond ${ZSTD_LIBRARY})
++  endif()
+   add_definitions(-DWITH_ZSTD)
+ endif()
+ 
+ if(WITH_MIMALLOC)
++  pkg_check_modules(MIMALLOC mimalloc)
++  if (MIMALLOC_FOUND)
++    target_include_directories(diamond PRIVATE "${MIMALLOC_INCLUDE_DIRS}")
++    target_link_libraries(diamond "${MIMALLOC_LIBRARIES}")
++  else()
+   find_package(mimalloc 2.0 REQUIRED)
+-  add_definitions(-DWITH_MIMALLOC)
+   target_link_libraries(diamond mimalloc)
+   target_include_directories(diamond PRIVATE ${MIMALLOC_INCLUDE_DIR})
++  endif()
++  add_definitions(-DWITH_MIMALLOC)
+ endif()
+ 
+ target_link_libraries(diamond ${ZLIB_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+--- origsrc/diamond-2.1.6/src/lib/gsl/gsl.h	2023-03-18 19:19:01.000000000 +0900
++++ src/diamond-2.1.6/src/lib/gsl/gsl.h	2023-04-02 15:12:47.307489600 +0900
+@@ -4,7 +4,9 @@
+ 
+ #define GSL_DBL_EPSILON        2.2204460492503131e-16
+ #define GSL_ROOT6_DBL_EPSILON  2.4607833005759251e-03
++#if !defined(M_SQRTPI)
+ #define M_SQRTPI   1.77245385090551602729816748334      /* sqrt(pi) */
++#endif
+ 
+ enum {
+     GSL_SUCCESS = 0,
+--- origsrc/diamond-2.1.6/src/run/main.cpp	2023-03-18 19:19:01.000000000 +0900
++++ src/diamond-2.1.6/src/run/main.cpp	2023-04-02 14:39:05.823101400 +0900
+@@ -22,7 +22,7 @@ along with this program.  If not, see <h
+ 
+ #include <iostream>
+ #ifdef WITH_MIMALLOC
+-#include <mimalloc-2.0/mimalloc-new-delete.h>
++#include <mimalloc-new-delete.h>
+ #endif
+ #include "../basic/config.h"
+ #include "tools.h"
