@@ -1,0 +1,97 @@
+--- origsrc/WFA2-lib-2.3.3/CMakeLists.txt	2023-02-11 05:23:27.000000000 +0900
++++ src/WFA2-lib-2.3.3/CMakeLists.txt	2023-04-02 20:27:36.444580300 +0900
+@@ -139,16 +139,10 @@ set(wfa2lib_SOURCE
+   alignment/score_matrix.c
+ )
+ 
+-add_library(wfa2_static
+-    ${wfa2lib_SOURCE}
+-    )
+ add_library(wfa2 SHARED ${wfa2lib_SOURCE})
+-set_target_properties(wfa2_static PROPERTIES OUTPUT_NAME wfa2)
+ set_target_properties(wfa2 PROPERTIES SOVERSION 0)
+ target_include_directories(wfa2 PUBLIC . wavefront utils)
+-target_include_directories(wfa2_static PUBLIC . wavefront utils)
+ add_library(wfa2::wfa2 ALIAS wfa2)
+-add_library(wfa2::wfa2_static ALIAS wfa2_static)
+ 
+ # ---- C++ binding library
+ 
+@@ -158,18 +152,18 @@ set(wfa2cpp_SOURCE
+ file(GLOB CPP_INCLUDES
+   bindings/cpp/*.h*
+   )
+-add_library(wfa2cpp_static STATIC ${wfa2cpp_SOURCE})
+ add_library(wfa2cpp SHARED ${wfa2cpp_SOURCE})
+ set_target_properties(wfa2cpp PROPERTIES SOVERSION 0)
+-set_target_properties(wfa2cpp_static PROPERTIES OUTPUT_NAME wfa2cpp)
+ target_link_libraries(wfa2cpp PUBLIC wfa2)
+-target_link_libraries(wfa2cpp_static PUBLIC wfa2)
+ add_library(wfa2::wfa2cpp ALIAS wfa2cpp)
+-add_library(wfa2::wfa2cpp_static ALIAS wfa2cpp_static)
+ 
+ # ---- Get version
+ 
+-file (STRINGS "VERSION" BUILD_NUMBER)
++if (DEFINED VERSION)
++  set(BUILD_NUMBER "${VERSION}")
++else()
++  file (STRINGS "VERSION" BUILD_NUMBER)
++endif()
+ add_definitions(-DWFA2LIB_VERSION="${BUILD_NUMBER}")
+ add_definitions(-DVERSION="${BUILD_NUMBER}")
+ 
+@@ -199,15 +193,22 @@ add_wfa_test()
+ 
+ # Do not install anything when used with FetchContent
+ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+-  install(TARGETS wfa2_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+-  install(TARGETS wfa2 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} )
++  install(TARGETS wfa2 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+ 
+   install(FILES ${INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib/wavefront)
+   install(FILES ${UTILS_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib/utils)
+   install(FILES ${ALIGNMENT_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib/alignment)
+   install(FILES ${SYSTEM_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib/system)
+ 
+-  install(TARGETS wfa2cpp ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+-  install(TARGETS wfa2cpp_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  install(TARGETS wfa2cpp RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+   install(FILES ${CPP_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wfa2lib/bindings/cpp)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libwfa2.pc.in ${CMAKE_BINARY_DIR}/libwfa2.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libwfa2.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++configure_file(${CMAKE_SOURCE_DIR}/libwfa2cpp.pc.in ${CMAKE_BINARY_DIR}/libwfa2cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libwfa2cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/WFA2-lib-2.3.3/libwfa2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/WFA2-lib-2.3.3/libwfa2.pc.in	2023-04-02 20:38:42.345063100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: wfa2lib
++Description: Wavefront alignment algorithm library v2
++Version: @BUILD_NUMBER@
++Libs: -L${libdir} -lwfa2
++Cflags: -I${includedir}
+--- origsrc/WFA2-lib-2.3.3/libwfa2cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/WFA2-lib-2.3.3/libwfa2cpp.pc.in	2023-04-02 20:38:35.341860000 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: wfa2lib (cpp)
++Description: Wavefront alignment algorithm library v2 (cpp)
++Version: @BUILD_NUMBER@
++Libs: -L${libdir} -lwfa2cpp
++Cflags: -I${includedir}
++Requires: libwfa2
