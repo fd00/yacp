@@ -1,0 +1,55 @@
+--- origsrc/liblscp-0.9.9/CMakeLists.txt	2023-03-22 03:32:25.183028000 +0900
++++ src/liblscp-0.9.9/CMakeLists.txt	2023-04-05 14:52:40.127024700 +0900
+@@ -6,13 +6,14 @@ project (liblscp
+   LANGUAGES C)
+ 
+ set (CONFIG_VERSION ${PROJECT_VERSION})
+-execute_process (
++if (EXISTS "${CMAME_SOURCE_DIR}/.git")
++  execute_process (
+   COMMAND git describe --tags --dirty --abbrev=6
+   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+   OUTPUT_VARIABLE GIT_DESCRIBE_OUTPUT
+   RESULT_VARIABLE GIT_DESCRIBE_RESULT
+   OUTPUT_STRIP_TRAILING_WHITESPACE)
+-if (GIT_DESCRIBE_RESULT EQUAL 0)
++  if (GIT_DESCRIBE_RESULT EQUAL 0)
+   set (VERSION "${GIT_DESCRIBE_OUTPUT}")
+   string (REGEX REPLACE "^[^0-9]+" "" VERSION "${VERSION}")
+   string (REGEX REPLACE "^1_"      "" VERSION "${VERSION}")
+@@ -28,9 +29,12 @@ if (GIT_DESCRIBE_RESULT EQUAL 0)
+   if (GIT_REVPARSE_RESULT EQUAL 0 AND NOT GIT_REVPARSE_OUTPUT STREQUAL "master")
+     set (VERSION "${VERSION} [${GIT_REVPARSE_OUTPUT}]")
+   endif ()
+-else ()
++  else ()
++    set (VERSION "${PROJECT_VERSION}")
++  endif ()
++else()
+   set (VERSION "${PROJECT_VERSION}")
+-endif ()
++endif()
+ 
+ set (PACKAGE_NAME "liblscp")
+ set (PACKAGE_VERSION "${VERSION}")
+--- origsrc/liblscp-0.9.9/doc/CMakeLists.txt	2023-03-22 03:32:25.183028000 +0900
++++ src/liblscp-0.9.9/doc/CMakeLists.txt	2023-04-05 14:52:40.147001700 +0900
+@@ -2,7 +2,7 @@
+ 
+ find_package (Doxygen)
+ 
+-if (DOXYGEN_FOUND)
++if (BUILD_DOC AND DOXYGEN_FOUND)
+   set (top_srcdir "${CMAKE_CURRENT_SOURCE_DIR}/..")
+   configure_file (liblscp.doxygen.in liblscp.doxygen IMMEDIATE @ONLY)
+   add_custom_target (doxygen ALL
+--- origsrc/liblscp-0.9.9/src/CMakeLists.txt	2023-03-22 03:32:25.185028000 +0900
++++ src/liblscp-0.9.9/src/CMakeLists.txt	2023-04-05 14:52:40.155200500 +0900
+@@ -51,7 +51,6 @@ target_link_libraries (${PROJECT_NAME} P
+ 
+ set_target_properties (${PROJECT_NAME} PROPERTIES
+   PUBLIC_HEADER "${PUBLIC_HEADERS}"
+-  PREFIX "lib"
+   OUTPUT_NAME "lscp"
+   VERSION ${SHARED_VERSION_INFO}
+   SOVERSION ${SHARED_VERSION_CURRENT})
