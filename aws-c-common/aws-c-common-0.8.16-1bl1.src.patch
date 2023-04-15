@@ -1,0 +1,60 @@
+--- origsrc/aws-c-common-0.8.16/CMakeLists.txt	2023-04-01 01:18:32.000000000 +0900
++++ src/aws-c-common-0.8.16/CMakeLists.txt	2023-04-15 15:51:42.332230600 +0900
+@@ -262,14 +262,25 @@ else()
+    set (TARGET_DIR "static")
+ endif()
+ 
+-install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
+-    NAMESPACE AWS::
+-    COMPONENT Development)
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
+-    COMPONENT Development)
++if (CYGWIN)
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}/"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}/"
++        COMPONENT Development)
++else()
++    install(EXPORT "${PROJECT_NAME}-targets"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++        NAMESPACE AWS::
++        COMPONENT Development)
++
++    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
++        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
++        COMPONENT Development)
++endif()
+ 
+ list(APPEND EXPORT_MODULES
+     "cmake/AwsCFlags.cmake"
+@@ -300,3 +311,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
+ endif()
+ 
+ include(CPackConfig)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-common-0.8.16/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.8.16/aws-c-common.pc.in	2023-04-15 14:51:20.720364000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-common
++Description: Core c99 package for AWS SDK for C
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-common
++Cflags: -I${includedir}
