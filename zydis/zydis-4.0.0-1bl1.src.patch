@@ -1,0 +1,47 @@
+--- origsrc/zydis-4.0.0/CMakeLists.txt	2022-11-21 01:54:01.000000000 +0900
++++ src/zydis-4.0.0/CMakeLists.txt	2023-04-23 09:16:56.427996600 +0900
+@@ -483,3 +483,10 @@ if (ZYDIS_BUILD_MAN)
+     endforeach()
+     add_custom_target(man ALL DEPENDS ${MAN_NAMES})
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/zydis.pc.in ${CMAKE_BINARY_DIR}/zydis.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/zydis.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/zydis-4.0.0/examples/ZydisPerfTest.c	2022-11-21 01:54:01.000000000 +0900
++++ src/zydis-4.0.0/examples/ZydisPerfTest.c	2023-04-23 09:13:46.566228900 +0900
+@@ -37,7 +37,7 @@
+ #   include <windows.h>
+ #elif defined(ZYAN_APPLE)
+ #   include <mach/mach_time.h>
+-#elif defined(ZYAN_LINUX) || defined(ZYAN_SOLARIS)
++#elif defined(ZYAN_LINUX) || defined(ZYAN_SOLARIS) || defined(__CYGWIN__)
+ #   include <sys/time.h>
+ #   include <pthread.h>
+ #elif defined(ZYAN_FREEBSD)
+@@ -147,7 +147,7 @@ static double GetCounter(void)
+     return (double)elapsed * timebase_info.numer / timebase_info.denom / 1000000;
+ }
+ 
+-#elif defined(ZYAN_LINUX) || defined(ZYAN_FREEBSD) || defined(ZYAN_SOLARIS)
++#elif defined(ZYAN_LINUX) || defined(ZYAN_FREEBSD) || defined(ZYAN_SOLARIS) || defined(__CYGWIN__)
+ 
+ struct timeval t1;
+ 
+--- origsrc/zydis-4.0.0/zydis.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/zydis-4.0.0/zydis.pc.in	2023-04-23 09:17:26.595037100 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: zydis
++Description: Fast and lightweight x86/x86_64 disassembler library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lZydis
++Cflags: -I${includedir}
++Requires: zycore-c
