@@ -1,14 +1,14 @@
---- origsrc/bcm2835-1.71/Makefile.am	2018-11-29 18:16:01.000000000 +0900
-+++ src/bcm2835-1.71/Makefile.am	2021-12-04 13:41:44.461619400 +0900
-@@ -16,4 +16,5 @@ examples/spiram/spiram.h
+--- origsrc/bcm2835-1.73/Makefile.am	2022-03-21 08:47:44.000000000 +0900
++++ src/bcm2835-1.73/Makefile.am	2023-07-25 05:22:18.458171900 +0900
+@@ -20,4 +20,5 @@ examples/smi/smi.c
  upload:
  	rsync -avz @PACKAGE_TARNAME@-@VERSION@.tar.gz doc/html/ www.airspayce.com:public_html/mikem/@PACKAGE_NAME@
  
 -
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
---- origsrc/bcm2835-1.71/bcm2835.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/bcm2835-1.71/bcm2835.pc.in	2021-12-04 13:41:44.464560700 +0900
+--- origsrc/bcm2835-1.73/bcm2835.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bcm2835-1.73/bcm2835.pc.in	2023-07-25 05:22:18.473799400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -20,11 +20,11 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lbcm2835
 +Cflags: -I${includedir}
---- origsrc/bcm2835-1.71/configure.ac	2021-12-01 16:32:07.000000000 +0900
-+++ src/bcm2835-1.71/configure.ac	2021-12-04 13:41:44.466564500 +0900
-@@ -15,9 +15,9 @@ AC_CHECK_PROGS([DOXYGEN], [doxygen])
- if test -z "$DOXYGEN";
-    then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+--- origsrc/bcm2835-1.73/configure.ac	2023-06-09 10:31:50.000000000 +0900
++++ src/bcm2835-1.73/configure.ac	2023-07-25 05:22:18.473799400 +0900
+@@ -24,9 +24,9 @@ if test "x$with_docs" = "xyes" ; then
+       then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+    fi
  fi
 -AC_PROG_RANLIB
 +LT_INIT
@@ -34,8 +34,8 @@
  AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
 -AC_OUTPUT(Makefile src/Makefile doc/Makefile)
 +AC_OUTPUT(bcm2835.pc Makefile src/Makefile doc/Makefile)
---- origsrc/bcm2835-1.71/src/Makefile.am	2015-03-09 07:09:53.000000000 +0900
-+++ src/bcm2835-1.71/src/Makefile.am	2021-12-04 13:41:44.471597000 +0900
+--- origsrc/bcm2835-1.73/src/Makefile.am	2015-03-09 07:09:53.000000000 +0900
++++ src/bcm2835-1.73/src/Makefile.am	2023-07-25 05:22:18.473799400 +0900
 @@ -1,9 +1,9 @@
 -lib_LIBRARIES = libbcm2835.a
 -libbcm2835_a_SOURCES = bcm2835.c
@@ -50,9 +50,9 @@
  TESTS = $(check_PROGRAMS)
  CLEANFILES = *~
 -
---- origsrc/bcm2835-1.71/src/bcm2835.h	2021-12-01 16:46:46.000000000 +0900
-+++ src/bcm2835-1.71/src/bcm2835.h	2021-12-04 13:41:44.476558100 +0900
-@@ -715,6 +715,7 @@
+--- origsrc/bcm2835-1.73/src/bcm2835.h	2023-06-12 12:25:57.000000000 +0900
++++ src/bcm2835-1.73/src/bcm2835.h	2023-07-25 05:22:18.473799400 +0900
+@@ -726,6 +726,7 @@
  /*! Base address of the SMI registers */
  #define BCM2835_SMI_BASE                0x600000
  
@@ -60,17 +60,3 @@
  #include <stdlib.h>
  
  /*! Physical address and size of the peripherals block
---- origsrc/bcm2835-1.71/src/test.c	2020-01-11 14:07:17.000000000 +0900
-+++ src/bcm2835-1.71/src/test.c	2021-12-04 13:41:44.479561100 +0900
-@@ -15,7 +15,11 @@
- 
- int main(int argc, char **argv)
- {
-+#if defined(__CYGWIN__)
-+    if (1)
-+#else
-     if (geteuid() == 0 && !getenv("FAKEROOTKEY"))
-+#endif
-     {
- 	if (!bcm2835_init())
- 	    return 1;
