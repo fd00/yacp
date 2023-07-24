@@ -1,0 +1,62 @@
+--- origsrc/atompaw-4.2.0.3/Makefile.am	2023-06-03 05:36:58.000000000 +0900
++++ src/atompaw-4.2.0.3/Makefile.am	2023-07-24 16:07:54.286140500 +0900
+@@ -82,3 +82,6 @@ nobase_doc_DATA = $(atp_xmpl_srcs) $(atp
+ EXTRA_DIST += $(atp_xmpl_srcs)
+ EXTRA_DIST += $(atp_doc_srcs)
+ 
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/atompaw-4.2.0.3/VERSION	1970-01-01 09:00:00.000000000 +0900
++++ src/atompaw-4.2.0.3/VERSION	2023-07-24 16:16:41.744619500 +0900
+@@ -0,0 +1 @@
++!--- Version 4.2.0.3 - 6/2023 - MT backward compatibility,JZ Lamb shift, NH libxc_mod, excor
+--- origsrc/atompaw-4.2.0.3/atompaw.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/atompaw-4.2.0.3/atompaw.pc.in	2023-07-24 16:07:54.254792200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: atompaw
++Description: PAW dataset generator for 1st-principle simulations
++Version: @VERSION@
++Libs: -L${libdir} -latompaw
++Cflags: -I${includedir}
+--- origsrc/atompaw-4.2.0.3/configure.ac	2023-06-10 01:32:01.000000000 +0900
++++ src/atompaw-4.2.0.3/configure.ac	2023-07-24 16:07:54.286140500 +0900
+@@ -245,4 +245,5 @@ AC_CONFIG_FILES([
+   src/Makefile
+   src/pkginfo.f90
+ ])
++AC_CONFIG_FILES([atompaw.pc])
+ AC_OUTPUT
+--- origsrc/atompaw-4.2.0.3/src/Makefile.am	2023-06-03 05:37:00.000000000 +0900
++++ src/atompaw-4.2.0.3/src/Makefile.am	2023-07-24 16:32:20.647796500 +0900
+@@ -61,17 +61,17 @@ atp_built_srcs = \
+   pkginfo.f90
+ 
+ # Libraries to install
+-# noinst_LTLIBRARIES = libatompaw.la
+-# libatompaw_la_SOURCES = $(atp_srcs) atompaw_lib.F90
+-# @nodist_libatompaw_la_SOURCES = $(atp_built_srcs)
+-#libatompaw_la_LDFLAGS = -version-info 0:0:0
++lib_LTLIBRARIES = libatompaw.la
++libatompaw_la_SOURCES = $(atp_srcs) $(atp_built_srcs)
++libatompaw_la_LDFLAGS = -no-undefined -version-info 0:0:0
++pkginclude_HEADERS = $(builddir)/*.mod
+ 
+ # Programs to install (deactivated since v4.2.0.2)
+ bin_PROGRAMS = atompaw graphatom
+-atompaw_SOURCES = atompaw_prog.F90 $(atp_srcs) $(atp_built_srcs)
+-graphatom_SOURCES = graphatom.F90 $(atp_srcs) $(atp_built_srcs)
+-#atompaw_LDADD = libatompaw.la
+-#graphatom_LDADD = libatompaw.la
++atompaw_SOURCES = atompaw_prog.F90
++graphatom_SOURCES = graphatom.F90 
++atompaw_LDADD = libatompaw.la
++graphatom_LDADD = libatompaw.la
+ .NOTPARALLEL: bin_PROGRAMS
+ 
+ # Local cleaning
