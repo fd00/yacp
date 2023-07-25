@@ -1,0 +1,74 @@
+--- origsrc/CRoaring-1.3.0/microbenchmarks/CMakeLists.txt	2023-06-12 20:57:04.000000000 +0900
++++ src/CRoaring-1.3.0/microbenchmarks/CMakeLists.txt	2023-07-25 10:05:50.844268500 +0900
+@@ -7,10 +7,15 @@ set_off(BENCHMARK_ENABLE_TESTING)
+ set_off(BENCHMARK_ENABLE_INSTALL)
+ set_off(BENCHMARK_ENABLE_WERROR)
+ 
+-import_dependency(google_benchmarks google/benchmark f91b6b4)
+-add_dependency(google_benchmarks)
++find_package(pkgconfig)
++pkg_check_modules(BENCHMARK benchmark)
++if (NOT BENCHMARK_FOUND)
++  import_dependency(google_benchmarks google/benchmark f91b6b4)
++  add_dependency(google_benchmarks)
++  set(BENCHMARK_LIBRARIES benchmark::benchmark)
++endif()
+ 
+ add_executable(bench bench.cpp)
+ target_link_libraries(bench PRIVATE roaring)
+-target_link_libraries(bench PRIVATE benchmark::benchmark)
++target_link_libraries(bench PRIVATE ${BENCHMARK_LIBRARIES})
+ target_compile_definitions(bench PRIVATE BENCHMARK_DATA_DIR="${BENCHMARK_DATA_DIR}")
+--- origsrc/CRoaring-1.3.0/tests/realdata_unit.c	2023-06-12 20:57:04.000000000 +0900
++++ src/CRoaring-1.3.0/tests/realdata_unit.c	2023-07-25 09:53:40.157939400 +0900
+@@ -1,7 +1,9 @@
+ /*
+  * realdata_unit.c
+  */
++#if !defined(_GNU_SOURCE)
+ #define _GNU_SOURCE
++#endif
+ 
+ #include <assert.h>
+ 
+--- origsrc/CRoaring-1.3.0/tools/cmake/FindCTargets.cmake	2023-06-12 20:57:04.000000000 +0900
++++ src/CRoaring-1.3.0/tools/cmake/FindCTargets.cmake	2023-07-25 10:01:01.297210300 +0900
+@@ -1,10 +1,16 @@
+ if (CMAKE_VERSION VERSION_GREATER 3.0.0)
+   cmake_policy(VERSION 3.0.0)
+ endif ()
+-include(${PROJECT_SOURCE_DIR}/tools/cmake/Import.cmake)
+-set(BUILD_STATIC_LIB ON)
+-import_dependency(cmocka clibs/cmocka  f5e2cd7)
+-add_dependency(cmocka)
++
++find_package(pkgconfig)
++pkg_check_modules(CMOCKA cmocka)
++if (NOT CMOCKA_FOUND)
++  include(${PROJECT_SOURCE_DIR}/tools/cmake/Import.cmake)
++  set(BUILD_STATIC_LIB ON)
++  import_dependency(cmocka clibs/cmocka  f5e2cd7)
++  add_dependency(cmocka)
++  set(CMOCKA_LIBRARIES cmocka-static)
++endif()
+ 
+ function(add_c_test TEST_NAME)
+   if(ROARING_BUILD_C_TESTS_AS_CPP)  # under C++, container_t* != void*
+@@ -13,7 +19,7 @@ function(add_c_test TEST_NAME)
+ 
+   add_executable(${TEST_NAME} ${TEST_NAME}.c)
+ 
+-  target_link_libraries(${TEST_NAME} roaring cmocka-static)
++  target_link_libraries(${TEST_NAME} roaring ${CMOCKA_LIBRARIES})
+ 
+   add_test(${TEST_NAME} ${TEST_NAME})
+ endfunction(add_c_test)
+@@ -29,7 +35,7 @@ if (CMAKE_VERSION VERSION_GREATER 2.8.10
+     endif()
+     target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/cpp)
+ 
+-    target_link_libraries(${TEST_NAME} roaring cmocka-static)
++    target_link_libraries(${TEST_NAME} roaring ${CMOCKA_LIBRARIES})
+ 
+     add_test(${TEST_NAME} ${TEST_NAME})
+   endfunction(add_cpp_test)
