@@ -1,0 +1,92 @@
+--- origsrc/bml-2.3.0/CMakeLists.txt	2023-04-13 02:56:39.000000000 +0900
++++ src/bml-2.3.0/CMakeLists.txt	2023-07-25 14:15:43.786417600 +0900
+@@ -744,6 +744,11 @@ string(REPLACE ";" " " LINKLINE "${LINK_
+ string(STRIP "${LINKLINE}" LINKLINE)
+ message(STATUS "Link flags: '${LINKLINE}'")
+ 
++check_include_file(execinfo.h HAVE_EXECINFO_H)
++if (HAVE_EXECINFO_H)
++  add_definitions(-DHAVE_EXECINFO_H)
++endif()
++
+ add_subdirectory(src)
+ 
+ configure_file(src/bml.pc.in bml.pc)
+--- origsrc/bml-2.3.0/src/C-interface/bml_logger.c	2023-04-13 02:56:39.000000000 +0900
++++ src/bml-2.3.0/src/C-interface/bml_logger.c	2023-07-25 14:15:29.641473200 +0900
+@@ -1,6 +1,8 @@
+ #include "bml_logger.h"
+ 
++#if defined(HAVE_EXECINFO_H)
+ #include <execinfo.h>
++#endif
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <string.h>
+@@ -60,6 +62,7 @@ static void
+ print_backtrace(
+     void)
+ {
++#if defined(HAVE_EXECINFO_H)
+     void *buffer[TRACE_DEPTH];
+     size_t size;
+     char **strings;
+@@ -80,6 +83,7 @@ print_backtrace(
+     }
+ 
+     free(strings);
++#endif
+ }
+ 
+ /** Log a message.
+--- origsrc/bml-2.3.0/src/CMakeLists.txt	2023-04-13 02:56:39.000000000 +0900
++++ src/bml-2.3.0/src/CMakeLists.txt	2023-07-25 14:20:17.766159300 +0900
+@@ -97,6 +97,7 @@ if(OPENMP_FOUND)
+ endif()
+ 
+ install(TARGETS bml bml_fortran EXPORT BML_Targets
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(EXPORT BML_Targets FILE BML_Targets.cmake NAMESPACE BML:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/BML)
+--- origsrc/bml-2.3.0/tests/C-tests/CMakeLists.txt	2023-04-13 02:56:39.000000000 +0900
++++ src/bml-2.3.0/tests/C-tests/CMakeLists.txt	2023-07-25 14:21:57.894749300 +0900
+@@ -63,6 +63,7 @@ else()
+     $<TARGET_OBJECTS:bmltests-single_real>
+     $<TARGET_OBJECTS:bmltests-double_real>)
+ endif()
++target_link_libraries(bmltests bml)
+ set_target_properties(bmltests
+   PROPERTIES
+   POSITION_INDEPENDENT_CODE yes)
+@@ -251,16 +252,18 @@ if(OPENMP_FOUND)
+     COMPILE_FLAGS ${OpenMP_C_FLAGS}
+     LINK_FLAGS ${OpenMP_C_FLAGS})
+ endif()
+-add_test(backtrace test-backtrace)
+-if(ADDR2LINE)
+-  set_tests_properties(backtrace
+-    PROPERTIES
+-    # For some compiler combinations source line resolution is not working. In
+-    # this case the backtrace will print out something like '??:0' which makes
+-    # this test not very useful unfortunately.
+-    PASS_REGULAR_EXPRESSION "test_backtrace.c:6[\\n]*.*test_backtrace.c:12;[?]+:[0?]")
+-else()
+-  set_tests_properties(backtrace
+-    PROPERTIES
+-    PASS_REGULAR_EXPRESSION "test-backtrace[(]foo.*[\\n]*.*test-backtrace[(]main;[?]+:[0?]")
++if (HAVE_EXECINFO_H)
++  add_test(backtrace test-backtrace)
++  if(ADDR2LINE)
++    set_tests_properties(backtrace
++      PROPERTIES
++      # For some compiler combinations source line resolution is not working. In
++      # this case the backtrace will print out something like '??:0' which makes
++      # this test not very useful unfortunately.
++      PASS_REGULAR_EXPRESSION "test_backtrace.c:6[\\n]*.*test_backtrace.c:12;[?]+:[0?]")
++  else()
++    set_tests_properties(backtrace
++      PROPERTIES
++      PASS_REGULAR_EXPRESSION "test-backtrace[(]foo.*[\\n]*.*test-backtrace[(]main;[?]+:[0?]")
++  endif()
+ endif()
