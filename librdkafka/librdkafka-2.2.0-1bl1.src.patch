@@ -1,0 +1,97 @@
+--- origsrc/librdkafka-2.2.0/src/CMakeLists.txt	2023-07-12 18:03:32.000000000 +0900
++++ src/librdkafka-2.2.0/src/CMakeLists.txt	2023-07-27 17:47:08.232960800 +0900
+@@ -66,7 +66,6 @@ set(
+     tinycthread.c
+     tinycthread_extra.c
+     rdxxhash.c
+-    cJSON.c
+ )
+ 
+ if(WITH_SSL)
+@@ -123,6 +122,12 @@ if(NOT HAVE_REGEX)
+   list(APPEND sources regexp.c)
+ endif()
+ 
++find_package(pkgconfig)
++pkg_check_modules(LIBCJSON libcjson)
++if (NOT LIBCJSON_FOUND)
++  list(APPEND sources cJSON.c)
++endif()
++
+ # Define flags with cmake instead of by defining them on win32_config.h
+ if(WITHOUT_WIN32_CONFIG)
+   list(APPEND rdkafka_compile_definitions WITHOUT_WIN32_CONFIG)
+@@ -270,6 +275,11 @@ if(WIN32)
+   endif()
+ endif()
+ 
++if(LIBCJSON_FOUND)
++  target_include_directories(rdkafka PRIVATE ${LIBCJSON_INCLUDE_DIRS})
++  target_link_libraries(rdkafka PUBLIC ${LIBCJSON_LIBRARIES})
++endif()
++
+ # Generate pkg-config file
+ set(PKG_CONFIG_VERSION "${PROJECT_VERSION}")
+ set(PKG_CONFIG_REQUIRES_PRIVATE "")
+@@ -319,6 +329,10 @@ if(NOT RDKAFKA_BUILD_STATIC)
+     string(APPEND PKG_CONFIG_REQUIRES_PRIVATE "liblz4 ")
+   endif()
+ 
++  if (LIBCJSON_FOUND)
++    string(APPEND PKG_CONFIG_REQUIRES_PRIVATE "libcjson ")
++  endif()
++
+   set(PKG_CONFIG_CFLAGS "-I\${includedir}")
+   set(PKG_CONFIG_LIBS "-L\${libdir} -lrdkafka")
+ 
+--- origsrc/librdkafka-2.2.0/src/rd.h	2023-07-12 18:03:32.000000000 +0900
++++ src/librdkafka-2.2.0/src/rd.h	2023-07-27 16:57:06.538400200 +0900
+@@ -209,7 +209,7 @@ static RD_INLINE RD_UNUSED char *rd_strn
+ #ifdef __APPLE__
+ /* Some versions of MacOSX dont have IOV_MAX */
+ #define IOV_MAX 1024
+-#elif defined(_WIN32) || defined(__GNU__)
++#elif defined(_WIN32) || defined(__GNU__) || defined(__CYGWIN__)
+ /* There is no IOV_MAX on MSVC or GNU but it is used internally in librdkafka */
+ #define IOV_MAX 1024
+ #else
+--- origsrc/librdkafka-2.2.0/src/rdtime.h	2023-07-12 18:03:32.000000000 +0900
++++ src/librdkafka-2.2.0/src/rdtime.h	2023-07-27 16:52:04.475362200 +0900
+@@ -83,7 +83,7 @@ BOOL rd_ut_QueryPerformanceCounter(_Out_
+  */
+ static RD_INLINE rd_ts_t rd_clock(void) RD_UNUSED;
+ static RD_INLINE rd_ts_t rd_clock(void) {
+-#if defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
++#if defined(__CYGWIN__) || defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
+         /* No monotonic clock on Darwin */
+         struct timeval tv;
+         gettimeofday(&tv, NULL);
+@@ -197,7 +197,7 @@ static RD_INLINE void rd_timeout_init_ti
+                 tspec->tv_sec  = timeout_us;
+                 tspec->tv_nsec = 0;
+         } else {
+-#if defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
++#if defined(__CYGWIN__) || defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
+                 struct timeval tv;
+                 gettimeofday(&tv, NULL);
+                 TIMEVAL_TO_TIMESPEC(&tv, tspec);
+@@ -227,7 +227,7 @@ static RD_INLINE void rd_timeout_init_ti
+                 tspec->tv_sec  = timeout_ms;
+                 tspec->tv_nsec = 0;
+         } else {
+-#if defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
++#if defined(__CYGWIN__) || defined(__APPLE__) || (defined(__ANDROID__) && __ANDROID_API__ < 29)
+                 struct timeval tv;
+                 gettimeofday(&tv, NULL);
+                 TIMEVAL_TO_TIMESPEC(&tv, tspec);
+--- origsrc/librdkafka-2.2.0/tests/CMakeLists.txt	2023-07-12 18:03:32.000000000 +0900
++++ src/librdkafka-2.2.0/tests/CMakeLists.txt	2023-07-27 17:20:45.528666600 +0900
+@@ -153,7 +153,7 @@ add_test(NAME RdKafkaTestInParallel COMM
+ add_test(NAME RdKafkaTestSequentially COMMAND test-runner -p1)
+ add_test(NAME RdKafkaTestBrokerLess COMMAND test-runner -p5 -l)
+ 
+-if(NOT WIN32 AND NOT APPLE)
++if(NOT WIN32 AND NOT APPLE AND NOT CYGWIN)
+   set(tests_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+   add_subdirectory(interceptor_test)
+ endif()
