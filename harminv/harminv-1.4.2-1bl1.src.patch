@@ -1,0 +1,77 @@
+--- origsrc/harminv-1.4.2/Makefile.am	2023-02-06 10:34:19.000000000 +0900
++++ src/harminv-1.4.2/Makefile.am	2023-08-07 23:45:39.620681800 +0900
+@@ -14,7 +14,7 @@ DOCS = README.md NEWS.md doc/Harminv.gif
+ EXTRA_DIST = $(DOCS) COPYRIGHT harminv.pc.in m4 sines-test.sh
+ 
+ libharminv_la_SOURCES = harminv.c harminv.h harminv-int.h check.h
+-libharminv_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
++libharminv_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@
+ 
+ harminv_SOURCES = harminv-main.c copyright.h
+ harminv_LDADD = libharminv.la
+@@ -29,7 +29,7 @@ TESTS = sines-test.sh
+ if MAINTAINER_MODE
+ 
+ copyright.h: COPYRIGHT
+-	(echo '#define COPYRIGHT \'; sed 's,^/\* *,",;s,^ \* *,",;s,$$,\\n" \\,' COPYRIGHT  |egrep -v '^"/|^[^"]'; echo) > $@
++	(echo '#define COPYRIGHT \'; sed 's,^/\* *,",;s,^ \* *,",;s,$$,\\n" \\,' ${srcdir}/COPYRIGHT  |egrep -v '^"/|^[^"]'; echo) > $@
+ 
+ maintainer-clean-local:
+ 	rm -f $(BUILT_SOURCES)
+--- origsrc/harminv-1.4.2/configure.ac	2023-02-06 10:34:19.000000000 +0900
++++ src/harminv-1.4.2/configure.ac	2023-08-07 23:41:31.874525800 +0900
+@@ -14,7 +14,7 @@ AM_MAINTAINER_MODE
+ # *not* the same as the "human" version number.  CURRENT:REVISION:AGE
+ SHARED_VERSION_INFO="3:1:0"
+ AC_SUBST(SHARED_VERSION_INFO)
+-AC_ENABLE_SHARED([no]) dnl shared libs cause too many headaches to be default
++AC_ENABLE_SHARED([yes]) dnl shared libs cause too many headaches to be default
+ 
+ ##############################################################################
+ 
+@@ -127,8 +127,17 @@ AC_CHECK_LIB(m, sqrt)
+ 
+ # Checks for BLAS/LAPACK libraries:
+ 
+-AX_BLAS([], [AC_MSG_ERROR([BLAS library not found])])
+-AX_LAPACK([], [AC_MSG_ERROR([LAPACK library not found])])
++sinclude(acx_blas.m4)
++ACX_BLAS
++if test x"$BLAS_LIBS" = x ; then
++	AC_MSG_ERROR([BLAS library not found])
++fi
++sinclude(acx_lapack.m4)
++ACX_LAPACK
++if test x"$LAPACK_LIBS" = x ; then
++	AC_MSG_ERROR([LAPACK library not found])
++fi
++ 
+ 
+ LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+ 
+--- origsrc/harminv-1.4.2/harminv-main.c	2023-02-06 10:34:19.000000000 +0900
++++ src/harminv-1.4.2/harminv-main.c	2023-08-07 23:42:18.005749600 +0900
+@@ -239,8 +239,10 @@ static int mode_ok(harminv_data d, int k
+ int main(int argc, char **argv) {
+   int verbose = 0;
+   int c;
++#if !defined(HAVE_GETOPT_H)
+   extern char *optarg;
+   extern int optind;
++#endif
+   int specify_periods = 0;
+   int specify_omega = 0;
+   int negate_omega = 0;
+--- origsrc/harminv-1.4.2/sines.c	2023-02-06 10:34:19.000000000 +0900
++++ src/harminv-1.4.2/sines.c	2023-08-07 23:42:49.520413300 +0900
+@@ -63,8 +63,10 @@ typedef struct {
+ 
+ int main(int argc, char **argv) {
+   int c;
++#if !defined(HAVE_GETOPT_H)
+   extern char *optarg;
+   extern int optind;
++#endif
+   int iarg;
+   int specify_periods = 0;
+   int random_amplitudes = 0;
