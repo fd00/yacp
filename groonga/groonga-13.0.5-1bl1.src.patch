@@ -1,0 +1,121 @@
+--- origsrc/groonga-13.0.5/benchmark/bench-geo-distance.c	2023-08-02 16:12:34.272142800 +0900
++++ src/groonga-13.0.5/benchmark/bench-geo-distance.c	2023-08-07 09:01:03.335488700 +0900
+@@ -56,8 +56,6 @@
+ 
+ #define GET(context, name) (grn_ctx_get(context, name, strlen(name)))
+ 
+-grn_obj *grn_expr_get_value(grn_ctx *ctx, grn_obj *expr, int offset);
+-
+ typedef struct _BenchmarkData
+ {
+   gchar *base_dir;
+--- origsrc/groonga-13.0.5/configure.ac	2023-08-02 16:12:34.280142900 +0900
++++ src/groonga-13.0.5/configure.ac	2023-08-07 10:11:43.489037300 +0900
+@@ -1030,7 +1030,7 @@ AC_ARG_WITH(xxhash,
+ if test "x$with_xxhash" != "xno"; then
+   m4_ifdef([PKG_CHECK_MODULES], [
+     PKG_CHECK_MODULES([LIBXXHASH],
+-                      [libxxhash >= 0.8.0],
++                      [libxxhash],
+                       [GRN_WITH_XXHASH=yes],
+                       [GRN_WITH_XXHASH=no])
+     if test "$GRN_WITH_XXHASH" = "no"; then
+@@ -1656,7 +1656,7 @@ if test "x$with_onigmo" != "xno"; then
+     AC_MSG_ERROR("No Onigmo found")
+   fi
+   if test "x$with_onigmo" = "xbundled" -o "$have_onigmo" = "no"; then
+-    AC_CONFIG_SUBDIRS([vendor/onigmo])
++    # AC_CONFIG_SUBDIRS([vendor/onigmo])
+     ONIGMO_CFLAGS="-I\$(top_srcdir)/vendor/onigmo-source"
+     ONIGMO_LIBS="\$(top_builddir)/vendor/onigmo-source/libonigmo.la"
+   fi
+--- origsrc/groonga-13.0.5/include/groonga/expr.h	2023-08-02 16:12:34.396143200 +0900
++++ src/groonga-13.0.5/include/groonga/expr.h	2023-08-07 09:00:25.975335500 +0900
+@@ -171,6 +171,8 @@ grn_expr_set_condition(grn_ctx *ctx,
+ GRN_API grn_obj *
+ grn_expr_get_condition(grn_ctx *ctx, grn_obj *expr);
+ 
++GRN_API grn_obj *grn_expr_get_value(grn_ctx *ctx, grn_obj *expr, int offset);
++
+ #ifdef __cplusplus
+ }
+ #endif
+--- origsrc/groonga-13.0.5/include/groonga/plugin.h	2023-08-02 16:12:34.396143200 +0900
++++ src/groonga-13.0.5/include/groonga/plugin.h	2023-08-07 07:59:53.923870600 +0900
+@@ -45,7 +45,7 @@ extern "C" {
+ #define GRN_PLUGIN_REGISTER GRN_PLUGIN_IMPL_NAME(register)
+ #define GRN_PLUGIN_FIN      GRN_PLUGIN_IMPL_NAME(fin)
+ 
+-#if defined(_WIN32) || defined(_WIN64)
++#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+ #  define GRN_PLUGIN_EXPORT __declspec(dllexport)
+ #else /* defined(_WIN32) || defined(_WIN64) */
+ #  define GRN_PLUGIN_EXPORT
+--- origsrc/groonga-13.0.5/include/groonga/tokenizer.h	2023-08-02 16:12:34.396143200 +0900
++++ src/groonga-13.0.5/include/groonga/tokenizer.h	2023-08-07 08:34:32.271822800 +0900
+@@ -41,7 +41,7 @@ extern "C" {
+ 
+   Deprecated. Use grn_plugin_charlen() instead.
+  */
+-int grn_tokenizer_charlen(grn_ctx *ctx, const char *str_ptr,
++GRN_PLUGIN_EXPORT int grn_tokenizer_charlen(grn_ctx *ctx, const char *str_ptr,
+                           unsigned int str_length, grn_encoding encoding);
+ 
+ /*
+@@ -51,7 +51,7 @@ int grn_tokenizer_charlen(grn_ctx *ctx,
+ 
+   Deprecated. Use grn_plugin_isspace() instead.
+  */
+-int grn_tokenizer_isspace(grn_ctx *ctx, const char *str_ptr,
++GRN_PLUGIN_EXPORT int grn_tokenizer_isspace(grn_ctx *ctx, const char *str_ptr,
+                           unsigned int str_length, grn_encoding encoding);
+ 
+ /*
+--- origsrc/groonga-13.0.5/lib/grn.h	2023-08-02 16:12:34.408143200 +0900
++++ src/groonga-13.0.5/lib/grn.h	2023-08-07 08:00:54.416166000 +0900
+@@ -72,7 +72,7 @@
+ # define GRN_API
+ # define GRN_VAR extern
+ #else
+-# ifdef WIN32
++# if defined(WIN32) || defined(__CYGWIN__)
+ #  define GRN_API __declspec(dllexport)
+ #  ifdef GROONGA_MAIN
+ #   define GRN_VAR __declspec(dllimport)
+--- origsrc/groonga-13.0.5/lib/grn_cache.h	2023-08-02 16:12:34.408143200 +0900
++++ src/groonga-13.0.5/lib/grn_cache.h	2023-08-07 09:35:54.377970100 +0900
+@@ -34,10 +34,10 @@ typedef struct {
+ } grn_cache_statistics;
+ 
+ void grn_cache_init(void);
+-grn_rc grn_cache_fetch(grn_ctx *ctx, grn_cache *cache,
++GRN_API grn_rc grn_cache_fetch(grn_ctx *ctx, grn_cache *cache,
+                        const char *str, uint32_t str_size,
+                        grn_obj *output);
+-void grn_cache_update(grn_ctx *ctx, grn_cache *cache,
++GRN_API void grn_cache_update(grn_ctx *ctx, grn_cache *cache,
+                       const char *str, uint32_t str_size, grn_obj *value);
+ void grn_cache_expire(grn_cache *cache, uint32_t size);
+ void grn_cache_fin(void);
+--- origsrc/groonga-13.0.5/lib/grn_ctx.h	2023-08-02 16:12:34.408143200 +0900
++++ src/groonga-13.0.5/lib/grn_ctx.h	2023-08-07 08:51:04.114030300 +0900
+@@ -83,7 +83,7 @@ extern int grn_lock_timeout;
+ extern grn_timeval grn_starttime;
+ 
+ void grn_ctx_loader_clear(grn_ctx *ctx);
+-void grn_log_reopen(grn_ctx *ctx);
++GRN_API void grn_log_reopen(grn_ctx *ctx);
+ 
+ GRN_API grn_rc grn_ctx_sendv(grn_ctx *ctx, int argc, char **argv, int flags);
+ void grn_ctx_set_keep_command(grn_ctx *ctx, grn_obj *command);
+--- origsrc/groonga-13.0.5/lib/grn_str.h	2023-08-02 16:12:34.412143200 +0900
++++ src/groonga-13.0.5/lib/grn_str.h	2023-08-07 08:43:06.078991600 +0900
+@@ -75,7 +75,7 @@ grn_rc grn_substring(grn_ctx *ctx, char
+ GRN_API int grn_charlen_(grn_ctx *ctx, const char *str, const char *end, grn_encoding encoding);
+ GRN_API grn_str *grn_str_open_(grn_ctx *ctx, const char *str, unsigned int str_len, int flags, grn_encoding encoding);
+ 
+-grn_rc grn_text_ulltoa(grn_ctx *ctx, grn_obj *buf, unsigned long long int i);
++GRN_API grn_rc grn_text_ulltoa(grn_ctx *ctx, grn_obj *buf, unsigned long long int i);
+ 
+ GRN_API const char *grn_text_cgidec(grn_ctx *ctx, grn_obj *buf,
+                                     const char *p, const char *e,
