@@ -1,6 +1,6 @@
---- origsrc/libgrape-lite/CMakeLists.txt	2023-01-26 15:19:03.000000000 +0900
-+++ src/libgrape-lite/CMakeLists.txt	2023-01-26 15:20:40.382631800 +0900
-@@ -67,7 +67,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
+--- origsrc/libgrape-lite/CMakeLists.txt	2023-08-13 21:12:54.000000000 +0900
++++ src/libgrape-lite/CMakeLists.txt	2023-08-13 21:34:38.298111800 +0900
+@@ -79,7 +79,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}
  if (APPLE)
    set(CMAKE_MACOSX_RPATH ON)
  else ()
@@ -10,9 +10,21 @@
 +    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 +  endif()
  endif ()
- set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fprofile-arcs -ftest-coverage")
- set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -g")
-@@ -206,6 +209,8 @@ if (JEMALLOC_FOUND)
+ if (USE_SIMD)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -march=native")
+@@ -158,7 +161,10 @@ endif ()
+ # ------------------------------------------------------------------------------
+ # find_libraries
+ # ------------------------------------------------------------------------------
+-find_package(MPI REQUIRED)
++find_package(MPI)
++if (NOT MPI_CXX_FOUND)
++  pkg_check_modules(MPI_CXX ompi-cxx)
++endif()
+ include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
+ 
+ # find Threads------------------------------------------------------------------
+@@ -223,6 +229,8 @@ if (JEMALLOC_FOUND)
    target_link_libraries(grape-lite ${JEMALLOC_LIBRARIES})
  endif ()
  
@@ -21,7 +33,7 @@
  if (NOT GFLAGS_FOUND)
    message(WARNING "Disable analytical_apps because gflags not found")
  else ()
-@@ -371,3 +376,9 @@ if(BUILD_LIBGRAPELITE_DOCS)
+@@ -392,3 +400,9 @@ if(BUILD_LIBGRAPELITE_DOCS)
                      VERBATIM)
  endif()
  
@@ -32,7 +44,7 @@
 +configure_file(${CMAKE_SOURCE_DIR}/libgrape-lite.pc.in ${CMAKE_BINARY_DIR}/libgrape-lite.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/libgrape-lite.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/libgrape-lite/libgrape-lite.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libgrape-lite/libgrape-lite.pc.in	2023-01-26 15:20:40.388662000 +0900
++++ src/libgrape-lite/libgrape-lite.pc.in	2023-08-13 21:13:27.943525300 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
