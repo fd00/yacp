@@ -1,5 +1,5 @@
---- origsrc/libsc-2.8.3/Makefile.am	2021-09-16 04:32:24.000000000 +0900
-+++ src/libsc-2.8.3/Makefile.am	2022-05-25 11:26:09.019153000 +0900
+--- origsrc/libsc-2.8.5/Makefile.am	2023-03-30 15:24:48.000000000 +0900
++++ src/libsc-2.8.5/Makefile.am	2023-08-15 08:21:35.984624400 +0900
 @@ -33,17 +33,8 @@ config/Makefile.sc.mk : config/Makefile.
          sed -e 's,{\(.*prefix\)},{sc_\1},g' \
              -e 's,^\(.*prefix *=\),sc_\1,g' > $@
@@ -19,7 +19,7 @@
  dist_scini_DATA =
  
  # handle toplevel directory
-@@ -64,8 +55,6 @@ endif
+@@ -62,8 +53,6 @@ LOG_COMPILER = @SC_MPIRUN@ @SC_MPI_TEST_
  
  # non-recursive build
  include src/Makefile.am
@@ -28,7 +28,7 @@
  include test/Makefile.am
  ## include example/bspline/Makefile.am
  ## include example/cuda/Makefile.am
-@@ -114,10 +103,10 @@ dist-hook:
+@@ -112,10 +101,10 @@ dist-hook:
  
  install-data-hook:
  	cd $(DESTDIR)$(pkgconfigdir) && \
@@ -39,11 +39,11 @@
 -	cd $(DESTDIR)$(pkgconfigdir) && rm -f "libsc-$(VERSION).pc"
 +	cd $(DESTDIR)$(pkgconfigdir) && rm -f libsc.pc
  
- clean-local:
- 	rm -f ChangeLog
---- origsrc/libsc-2.8.3/configure.ac	2021-09-16 04:32:24.000000000 +0900
-+++ src/libsc-2.8.3/configure.ac	2022-05-25 10:40:05.088832800 +0900
-@@ -96,6 +96,9 @@ echo "o---------------------------------
+ ## From the GNU automake documentation "What gets Cleaned"
+ ## -------------------------------------------------------
+--- origsrc/libsc-2.8.5/configure.ac	2023-03-30 15:24:48.000000000 +0900
++++ src/libsc-2.8.5/configure.ac	2023-08-15 08:22:07.751515600 +0900
+@@ -98,6 +98,9 @@ echo "o---------------------------------
  
  SC_CHECK_LIBRARIES([SC])
  
@@ -53,27 +53,30 @@
  # Print summary.
  
  m4_ifset([SC_CHECK_MPI_F77], [
---- origsrc/libsc-2.8.3/src/Makefile.am	2021-09-16 04:32:24.000000000 +0900
-+++ src/libsc-2.8.3/src/Makefile.am	2022-05-25 10:40:58.966007400 +0900
-@@ -40,8 +40,10 @@ lib_LTLIBRARIES += src/libsc.la
+--- origsrc/libsc-2.8.5/src/Makefile.am	2023-03-30 15:24:48.000000000 +0900
++++ src/libsc-2.8.5/src/Makefile.am	2023-08-15 08:23:05.061230100 +0900
+@@ -43,10 +43,11 @@ lib_LTLIBRARIES += src/libsc.la
  src_libsc_la_SOURCES = \
          $(libsc_internal_headers) \
          $(libsc_compiled_sources)
 -src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS)
 +src_libsc_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBSC_CPPFLAGS) $(INIPARSER_CFLAGS) $(LIBB64_CFLAGS)
- ## src_libsc_la_LDFLAGS = -release $(VERSION)
-+src_libsc_la_LDFLAGS = -no-undefined
+ ## This is the official API versioning scheme of libtool.  Please see:
+ ## Read https://www.gnu.org/software/libtool/manual/libtool.html#Versioning
+-src_libsc_la_LDFLAGS = -version-info 2:0:0
++src_libsc_la_LDFLAGS = -no-undefined -version-info 2:0:0
 +src_libsc_la_LIBADD = $(INIPARSER_LIBS) $(LIBB64_LIBS)
- LDADD += @top_builddir@/src/libsc.la
+ LDADD += src/libsc.la
  
  nodist_include_HEADERS += $(libsc_generated_headers)
---- origsrc/libsc-2.8.3/src/sc_io.c	2021-09-16 04:32:24.000000000 +0900
-+++ src/libsc-2.8.3/src/sc_io.c	2022-05-25 10:41:28.724951900 +0900
-@@ -22,7 +22,7 @@
- */
+--- origsrc/libsc-2.8.5/src/sc_io.c	2023-03-30 15:24:48.000000000 +0900
++++ src/libsc-2.8.5/src/sc_io.c	2023-08-15 08:38:16.207517400 +0900
+@@ -23,7 +23,8 @@
  
  #include <sc_io.h>
+ #include <sc_puff.h>
 -#include <libb64.h>
++#include <b64/cdecode.h>
 +#include <b64/cencode.h>
  #ifdef SC_HAVE_ZLIB
  #include <zlib.h>
