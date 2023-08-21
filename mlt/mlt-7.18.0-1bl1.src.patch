@@ -1,0 +1,46 @@
+--- origsrc/mlt-7.18.0/src/modules/gdk/CMakeLists.txt	2023-07-29 03:06:26.000000000 +0900
++++ src/mlt-7.18.0/src/modules/gdk/CMakeLists.txt	2023-08-21 11:07:00.640509500 +0900
+@@ -24,7 +24,7 @@ endif()
+ if(TARGET PkgConfig::pango AND TARGET PkgConfig::fontconfig)
+   target_sources(mltgdk PRIVATE producer_pango.c)
+   target_link_libraries(mltgdk PRIVATE PkgConfig::pango PkgConfig::fontconfig PkgConfig::pangoft2)
+-  if(APPLE OR MINGW)
++  if(APPLE OR MINGW OR CYGWIN)
+     target_link_libraries(mltgdk PRIVATE iconv)
+   endif()
+   target_compile_definitions(mltgdk PRIVATE USE_PANGO)
+--- origsrc/mlt-7.18.0/src/modules/plusgpl/CMakeLists.txt	2023-07-29 03:06:26.000000000 +0900
++++ src/mlt-7.18.0/src/modules/plusgpl/CMakeLists.txt	2023-08-21 11:06:33.249782000 +0900
+@@ -1,5 +1,4 @@
+ add_library(mltplusgpl MODULE
+-  cJSON.c cJSON.h
+   consumer_cbrts.c
+   factory.c
+   filter_burn.c
+@@ -17,7 +16,7 @@ add_custom_target(Other_plsugpl_Files SO
+ 
+ target_compile_options(mltplusgpl PRIVATE ${MLT_COMPILE_OPTIONS})
+ 
+-target_link_libraries(mltplusgpl PRIVATE mlt m Threads::Threads)
++target_link_libraries(mltplusgpl PRIVATE mlt m Threads::Threads cjson)
+ 
+ if(WIN32)
+   target_link_libraries(mltplusgpl PRIVATE ws2_32)
+--- origsrc/mlt-7.18.0/src/modules/plusgpl/consumer_cbrts.c	2023-07-29 03:06:26.000000000 +0900
++++ src/mlt-7.18.0/src/modules/plusgpl/consumer_cbrts.c	2023-08-21 11:14:01.997354600 +0900
+@@ -38,6 +38,7 @@
+ 
+ #include <strings.h>
+ // includes for socket IO
++#if !defined(__CYGWIN__)
+ #if (_POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE) && (_POSIX_TIMERS > 0)
+ #if !(defined(__FreeBSD_kernel__) && defined(__GLIBC__))
+ #define CBRTS_BSD_SOCKETS 1
+@@ -48,6 +49,7 @@
+ #include <sys/types.h>
+ #endif
+ #endif
++#endif
+ #include <sys/time.h>
+ #include <time.h>
+ 
