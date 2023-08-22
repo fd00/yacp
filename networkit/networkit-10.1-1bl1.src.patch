@@ -1,0 +1,61 @@
+--- origsrc/networkit/CMakeLists.txt	2023-08-22 05:58:30.000000000 +0900
++++ src/networkit/CMakeLists.txt	2023-08-22 06:51:27.943033200 +0900
+@@ -224,10 +224,14 @@ if(NOT NETWORKIT_EXT_TLX)
+ 				"Please run `git submodule update --init` to fetch the submodule.")
+ 	endif()
+ else()
++	find_package(pkgconfig)
++	pkg_check_modules(TLX tlx)
++	if (NOT TLX_FOUND)
+ 	add_library(tlx STATIC IMPORTED)
+ 	set_target_properties(tlx PROPERTIES
+ 			IMPORTED_LOCATION "${NETWORKIT_EXT_TLX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}tlx${CMAKE_STATIC_LIBRARY_SUFFIX}"
+ 			INTERFACE_INCLUDE_DIRECTORIES "${NETWORKIT_EXT_TLX}/include/")
++	endif()
+ endif()
+ 
+ ################################################################################
+@@ -269,11 +273,15 @@ if(NETWORKIT_BUILD_CORE AND NETWORKIT_MO
+ 			CXX_STANDARD ${NETWORKIT_CXX_STANDARD}
+ 			COMPILE_FLAGS "${NETWORKIT_CXX_FLAGS}"
+ 			LINK_FLAGS "${NETWORKIT_LINK_FLAGS}")
++
++	if (DEFINED SOVERSION)
++		set_target_properties(networkit PROPERTIES SOVERSION "${SOVERSION}")
++	endif()
+ 	
+ 	install(TARGETS networkit
+ 			LIBRARY DESTINATION ${NETWORKIT_LIB_DEST}
+ 			ARCHIVE DESTINATION ${NETWORKIT_LIB_DEST}
+-			RUNTIME DESTINATION ${NETWORKIT_LIB_DEST})
++			RUNTIME DESTINATION bin)
+ 
+ 	target_include_directories(networkit BEFORE PUBLIC "${PROJECT_SOURCE_DIR}/include")
+ 	target_include_directories(networkit PUBLIC "${PROJECT_SOURCE_DIR}/extlibs/ttmath/")
+@@ -453,6 +461,8 @@ endfunction()
+ if (NETWORKIT_BUILD_TESTS)
+ 	enable_testing()
+ 
++	find_package(gtest)
++	if (NOT GTEST_FOUND)
+ 	if(EXISTS "${PROJECT_SOURCE_DIR}/extlibs/googletest/CMakeLists.txt")
+ 		if (MSVC)
+ 			# While by default MSVC projects link against the shared runtime library
+@@ -468,6 +478,7 @@ if (NETWORKIT_BUILD_TESTS)
+ 			"Missing GoogleTest and GoogleMock in extlibs/googletest. "
+ 			"Please run `git submodule update --init` to fetch the submodule.")
+ 	endif()
++	endif()
+ 
+ 	if (NETWORKIT_MONOLITH)
+ 		add_executable(networkit_tests networkit/cpp/Unittests-X.cpp)
+--- origsrc/networkit/networkit.pc	2023-08-22 05:58:30.000000000 +0900
++++ src/networkit/networkit.pc	2023-08-22 06:53:28.553900700 +0900
+@@ -6,6 +6,6 @@ libdir=${exec_prefix}/@NETWORKIT_INSTALL
+ Name: networkit
+ Description: networkit
+ URL: http://networkit.github.io
+-Version: @NETWORKIT_VERSION@
++Version: @VERSION@
+ Cflags: -I${includedir} @NETWORKIT_CXX_FLAGS@
+ Libs: -L${libdir} -l@NETWORKIT_LIBNAME@
