@@ -1,5 +1,5 @@
-HOMEPAGE="https://sourceforge.net/projects/cmusphinx/"
-SRC_URI="mirror://sourceforge/cmusphinx/${P}.tar.gz"
+HOMEPAGE="https://github.com/cmusphinx/${PN}"
+SRC_URI="https://github.com/cmusphinx/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Recognizer library written in C"
@@ -11,15 +11,26 @@ LICENSE="BSD-2-Clause"
 LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libglib2.0-devel libgstreamer1.0-devel libsphinxbase-devel"
+BUILD_REQUIRES="libglib2.0-devel libgstreamer1.0-devel"
 
-export PYTHON=python3
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_GSTREAMER:BOOL=ON
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DBUILD_TESTING:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
 
 PKG_NAMES="
 	${PN}
-	lib${PN}3
+	lib${PN}5
 	lib${PN}-devel
-	python39-${PN}
 	gstreamer1.0-plugins-${PN}
 "
 pocketsphinx_CONTENTS="
@@ -28,23 +39,18 @@ pocketsphinx_CONTENTS="
 	usr/share/man
 	usr/share/${PN}/model
 "
-libpocketsphinx3_CONTENTS="
-	usr/bin/*.dll
+libpocketsphinx5_CONTENTS="
+	usr/bin/cyg*-5.dll
 "
 libpocketsphinx_devel_CONTENTS="
 	usr/include
 	usr/lib/lib${PN}*
 	usr/lib/pkgconfig
-	usr/share/${PN}/swig
-"
-python39_pocketsphinx_CONTENTS="
-	usr/lib/python*
 "
 gstreamer1_0_plugins_pocketsphinx_CONTENTS="
 	usr/lib/gstreamer*
 "
 pocketsphinx_SUMMARY="${SUMMARY} (utilities)"
-libpocketsphinx3_SUMMARY="${SUMMARY} (runtime)"
+libpocketsphinx5_SUMMARY="${SUMMARY} (runtime)"
 libpocketsphinx_devel_SUMMARY="${SUMMARY} (development)"
-python39_pocketsphinx_SUMMARY="${SUMMARY} (python39 bindings)"
 gstreamer1_0_plugins_pocketsphinx_SUMMARY="GStreamer 1.0 ${PN} plugin"
