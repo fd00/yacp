@@ -1,17 +1,25 @@
 HOMEPAGE="https://github.com/snapcore/${PN}"
-SRC_URI="https://github.com/snapcore/${PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/snapcore/${PN}/archive/refs/tags/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Glib library for communicating with snapd"
 DESCRIPTION="snapd-glib is a library to allow GLib based applications access to snapd, the
 daemon that controls Snaps."
 
-CYGPORT_USE_UNSTABLE_API=1
-src_patch_hook()
-{
-	cd ${origsrcdir}/${SRC_DIR}
-	gtkdocize
-}
+LICENSE="LGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-3.0-or-later"
+LICENSE_URI="COPYING.LGPL3"
+
+inherit meson
+
+CYGMESON_ARGS="
+	-Ddocs=false
+	-Dsoup2=true
+"
+
+PKG_IGNORE="
+	usr/lib/qt5/qml/Snapd/libSnapd.dll.a
+"
 
 PKG_NAMES="
 	snapd-glib
@@ -19,15 +27,17 @@ PKG_NAMES="
 	libsnapd-glib-devel
 	libsnapd-qt1
 	libsnapd-qt-devel
+	snapd-qml
 	girepository-Snapd1
 	vala-snapd-glib
 "
 snapd_glib_CONTENTS="
-	usr/lib/qt5
+	usr/libexec
 	usr/share/doc
+	usr/share/installed-tests
 "
 libsnapd_glib1_CONTENTS="
-	usr/bin/*-glib*.dll
+	usr/bin/cygsnapd-glib-1.dll
 "
 libsnapd_glib_devel_CONTENTS="
 	usr/include/snapd-glib
@@ -36,12 +46,16 @@ libsnapd_glib_devel_CONTENTS="
 	usr/lib/pkgconfig/*-glib.pc
 "
 libsnapd_qt1_CONTENTS="
-	usr/bin/*-qt*.dll
+	usr/bin/cygsnapd-qt-1.dll
 "
 libsnapd_qt_devel_CONTENTS="
 	usr/include/snapd-qt
 	usr/lib/*-qt.dll.a
 	usr/lib/pkgconfig/*-qt.pc
+"
+snapd_qml_CONTENTS="
+	usr/lib/qt5/qml/Snapd/cygSnapd.dll
+	usr/lib/qt5/qml/Snapd/qmldir
 "
 girepository_Snapd1_CONTENTS="
 	usr/lib/girepository*
@@ -55,5 +69,6 @@ libsnapd_glib1_SUMMARY="${SUMMARY} (runtime)"
 libsnapd_glib_devel_SUMMARY="${SUMMARY} (development)"
 libsnapd_qt1_SUMMARY="${SUMMARY} (runtime / Qt)"
 libsnapd_qt_devel_SUMMARY="${SUMMARY} (development / Qt)"
+snapd_qml_SUMMARY="${SUMMARY} (qml bindings)"
 girepository_Snapd1_SUMMARY="${SUMMARY} (GObject Introspection data)"
 vala_snapd_glib_SUMMARY="${SUMMARY} (vala bindings)"
