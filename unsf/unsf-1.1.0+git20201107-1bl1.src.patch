@@ -1,0 +1,64 @@
+--- origsrc/unsf/CMakeLists.txt	2023-08-28 12:50:32.000000000 +0900
++++ src/unsf/CMakeLists.txt	2023-08-28 13:00:52.173721800 +0900
+@@ -154,19 +154,6 @@ ELSE () # everyone else uses .a and .so
+     SET(LIBRARY_STATIC_NAME "unsf")
+ ENDIF ()
+ 
+-# static library
+-ADD_LIBRARY(libunsf_static STATIC
+-    ${unsf_library_SRCS}
+-    ${unsf_library_HDRS}
+-)
+-TARGET_LINK_LIBRARIES(libunsf_static
+-    ${M_LIBRARY}
+-)
+-SET_TARGET_PROPERTIES(libunsf_static PROPERTIES
+-    OUTPUT_NAME ${LIBRARY_STATIC_NAME} CLEAN_DIRECT_OUTPUT 1
+-    COMPILE_DEFINITIONS UNSF_BUILD
+-)
+-
+ # dynamic library
+ ADD_LIBRARY(libunsf_dynamic SHARED
+     ${unsf_library_SRCS}
+@@ -210,6 +197,10 @@ ENDIF ()
+ SET(UNSFLIB "${CMAKE_BINARY_DIR}/lib${LIBRARY_DYN_NAME}.so")
+ SET(UNSFLIBSTATIC "${CMAKE_BINARY_DIR}/lib${LIBRARY_STATIC_NAME}.a")
+ 
++if (CYGWIN)
++    set(UNSFLIB libunsf_dynamic)
++endif()
++
+ # MS Visual Studio
+ IF (MSVC)
+     SET(UNSFLIB "${CMAKE_BINARY_DIR}\\${CMAKE_BUILD_TYPE}\\${LIBRARY_DYN_NAME}.lib")
+@@ -242,19 +233,6 @@ TARGET_LINK_LIBRARIES(unsf
+     ${UNSFLIB}
+ )
+ 
+-# unsf-static.exe
+-ADD_EXECUTABLE(unsf-static
+-    ${unsf_executable_SRCS}
+-)
+-ADD_DEPENDENCIES(unsf-static libunsf_static)
+-SET_TARGET_PROPERTIES(unsf-static PROPERTIES
+-    COMPILE_DEFINITIONS UNSF_STATIC
+-)
+-TARGET_LINK_LIBRARIES(unsf-static
+-    ${UNSFLIBSTATIC}
+-    ${M_LIBRARY}
+-)
+-
+ # convenience variables
+ SET(UNSFLIB_INSTALLDIR "lib${LIB_SUFFIX}")
+ SET(UNSFDLL_INSTALLDIR "bin${LIB_SUFFIX}")
+@@ -272,9 +250,7 @@ CONFIGURE_FILE("unsf.pc.in" "${CMAKE_BIN
+ 
+ # install target (*nix OSes)
+ IF (UNIX AND NOT APPLE)
+-    INSTALL(TARGETS libunsf_static DESTINATION ${UNSFLIB_INSTALLDIR})
+-    INSTALL(TARGETS unsf-static DESTINATION bin)
+-    INSTALL(TARGETS libunsf_dynamic DESTINATION ${UNSFLIB_INSTALLDIR})
++    INSTALL(TARGETS libunsf_dynamic RUNTIME DESTINATION ${UNSFDLL_INSTALLDIR} ARCHIVE DESTINATION ${UNSFLIB_INSTALLDIR})
+     INSTALL(TARGETS unsf DESTINATION bin)
+     INSTALL(FILES ${CMAKE_BINARY_DIR}/unsf.pc DESTINATION "${UNSFLIB_INSTALLDIR}/pkgconfig")
+     INSTALL(FILES ${CMAKE_SOURCE_DIR}/libunsf.h DESTINATION include)
