@@ -1,0 +1,62 @@
+--- origsrc/spglib-2.0.2/CMakeLists.txt	2022-11-06 14:44:10.000000000 +0900
++++ src/spglib-2.0.2/CMakeLists.txt	2023-08-28 09:09:03.553475500 +0900
+@@ -99,14 +99,7 @@ if(NOT MSVC)
+ endif()
+ set_property(TARGET symspg PROPERTY VERSION ${serial})
+ set_property(TARGET symspg PROPERTY SOVERSION ${soserial})
+-install(TARGETS symspg LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+-
+-# Static link library
+-add_library(symspg_static STATIC ${SOURCES})
+-set_property(TARGET symspg_static PROPERTY VERSION ${serial})
+-set_property(TARGET symspg_static PROPERTY SOVERSION ${soserial})
+-set_property(TARGET symspg_static PROPERTY OUTPUT_NAME symspg)
+-install(TARGETS symspg_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS symspg RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ # Header file
+ install(FILES ${PROJECT_SOURCE_DIR}/src/spglib.h
+--- origsrc/spglib-2.0.2/fortran/CMakeLists.txt	2022-11-06 14:44:10.000000000 +0900
++++ src/spglib-2.0.2/fortran/CMakeLists.txt	2023-08-28 09:12:42.546153000 +0900
+@@ -3,19 +3,14 @@ if (USE_OMP)
+ 	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+ endif()
+ 
+-add_library(spglib_f08_static STATIC ${PROJECT_SOURCE_DIR}/fortran/spglib_f08.f90)
+-set_property(TARGET spglib_f08_static PROPERTY VERSION ${serial})
+-set_property(TARGET spglib_f08_static PROPERTY SOVERSION ${soserial})
+-set_property(TARGET spglib_f08_static PROPERTY OUTPUT_NAME spglib_f08)
+-
+ add_library(spglib_f08 SHARED ${PROJECT_SOURCE_DIR}/fortran/spglib_f08.f90)
+ set_property(TARGET spglib_f08 PROPERTY VERSION ${serial})
+ set_property(TARGET spglib_f08 PROPERTY SOVERSION ${soserial})
+-add_dependencies(spglib_f08 spglib_f08_static)
++target_link_libraries(spglib_f08 symspg)
+ 
+ add_executable(spglib_example_fortran.X ${PROJECT_SOURCE_DIR}/fortran/example_f08.f90)
+-target_link_libraries(spglib_example_fortran.X PRIVATE spglib_f08_static symspg_static ${OpenMP_Fortran_LIBRARIES})
+-install(TARGETS spglib_f08_static spglib_f08 spglib_example_fortran.X
++target_link_libraries(spglib_example_fortran.X PRIVATE spglib_f08 symspg ${OpenMP_Fortran_LIBRARIES})
++install(TARGETS spglib_f08 spglib_example_fortran.X
+ 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+--- origsrc/spglib-2.0.2/fortran/spglib_f08.pc.cmake	2022-11-06 14:44:10.000000000 +0900
++++ src/spglib-2.0.2/fortran/spglib_f08.pc.cmake	2023-08-28 09:11:19.618931500 +0900
+@@ -1,6 +1,6 @@
+ Name: ${PROJECT_NAME}
+ Description: The spglib f08 library
+ depends: spglib
+-Version: ${PROJECT_VERSION}
++Version: ${serial}
+ Libs: -L${CMAKE_INSTALL_FULL_LIBDIR} -lspglib_f08
+ Cflags: -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_FULL_LIBDIR}
+--- origsrc/spglib-2.0.2/spglib.pc.cmake	2022-11-06 14:44:10.000000000 +0900
++++ src/spglib-2.0.2/spglib.pc.cmake	2023-08-28 09:11:31.120624600 +0900
+@@ -1,5 +1,5 @@
+ Name: ${PROJECT_NAME}
+ Description: The spglib library
+-Version: ${PROJECT_VERSION}
++Version: ${serial}
+ Libs: -L${CMAKE_INSTALL_FULL_LIBDIR} -lsymspg
+ Cflags: -I${CMAKE_INSTALL_PREFIX}/include
