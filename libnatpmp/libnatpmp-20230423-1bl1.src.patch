@@ -1,0 +1,72 @@
+--- origsrc/libnatpmp-20230423/CMakeLists.txt	2023-04-23 20:03:55.000000000 +0900
++++ src/libnatpmp-20230423/CMakeLists.txt	2023-09-06 17:56:16.840203600 +0900
+@@ -16,20 +16,35 @@ if (WIN32)
+ endif (WIN32)
+ 
+ # Library itself
+-add_library(natpmp STATIC ${NATPMP_SOURCES})
++add_library(natpmp SHARED ${NATPMP_SOURCES})
+ target_include_directories(natpmp PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+ target_compile_definitions(natpmp PRIVATE -DENABLE_STRNATPMPERR)
++set_target_properties(natpmp PROPERTIES SOVERSION 1)
+ 
+ if (WIN32)
+ 	target_link_libraries(natpmp PUBLIC ws2_32 Iphlpapi)
+ 	target_compile_definitions(natpmp PUBLIC -DNATPMP_STATICLIB)
+ endif (WIN32)
+ 
++install(TARGETS natpmp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES natpmp.h DESTINATION include)
++
+ # Executables
+ add_executable(natpmpc natpmpc.c)
+ target_link_libraries(natpmpc natpmp)
++install(TARGETS natpmpc RUNTIME DESTINATION bin)
+ 
+ add_executable(testgetgateway
+ 	testgetgateway.c
+ 	getgateway.c)
+ target_link_libraries(testgetgateway natpmp)
++
++install(FILES natpmpc.1 DESTINATION share/man/man1)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnatpmp.pc.in ${CMAKE_BINARY_DIR}/libnatpmp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnatpmp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++
+--- origsrc/libnatpmp-20230423/getgateway.c	2023-04-23 20:11:27.000000000 +0900
++++ src/libnatpmp-20230423/getgateway.c	2023-09-06 17:25:03.256075800 +0900
+@@ -75,17 +75,6 @@ POSSIBILITY OF SUCH DAMAGE.
+ #define USE_WIN32_CODE_2
+ #endif
+ 
+-#ifdef __CYGWIN__
+-#undef USE_PROC_NET_ROUTE
+-#undef USE_SOCKET_ROUTE
+-#undef USE_SYSCTL_NET_ROUTE
+-#define USE_WIN32_CODE
+-#include <stdarg.h>
+-#include <w32api/windef.h>
+-#include <w32api/winbase.h>
+-#include <w32api/winreg.h>
+-#endif
+-
+ #ifdef __HAIKU__
+ #include <stdlib.h>
+ #include <unistd.h>
+--- origsrc/libnatpmp-20230423/libnatpmp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnatpmp-20230423/libnatpmp.pc.in	2023-09-06 17:25:03.256075800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnatpmp
++Description: Library for NAT Port Mapping Protocol
++Version: @VERSION@
++Libs: -L${libdir} -lnatpmp
++Cflags: -I${includedir}
