@@ -1,0 +1,85 @@
+--- origsrc/libSDL2pp-0.18.1/CMakeLists.txt	2023-04-17 20:54:20.000000000 +0900
++++ src/libSDL2pp-0.18.1/CMakeLists.txt	2023-09-06 03:01:40.085807600 +0900
+@@ -23,8 +23,15 @@ else()
+ endif()
+ 
+ # depends
+-find_package(SDL2 REQUIRED)
+-set(SDL2_ALL_LIBRARIES SDL2::SDL2)
++
++find_package(pkgconfig)
++pkg_check_modules(SDL2 sdl2)
++if (SDL2_FOUND)
++	set(SDL2_ALL_LIBRARIES ${SDL2_LIBRARIES})
++else()
++	find_package(SDL2 REQUIRED)
++	set(SDL2_ALL_LIBRARIES SDL2::SDL2)
++endif()
+ set(SDL2_ALL_PKGCONFIG_MODULES sdl2)
+ 
+ if(TARGET SDL2::SDL2main)
+@@ -38,24 +45,39 @@ if(MINGW)
+ endif()
+ 
+ if(SDL2PP_WITH_IMAGE)
+-	find_package(SDL2_image REQUIRED)
+-	set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_image::SDL2_image)
++	pkg_check_modules(SDL2_IMAGE SDL2_image)
++	if (SDL2_IMAGE_FOUND)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} ${SDL2_IMAGE_LIBRARIES})
++	else()
++		find_package(SDL2_image REQUIRED)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_image::SDL2_image)
++	endif()
+ 	set(SDL2_ALL_PKGCONFIG_MODULES "${SDL2_ALL_PKGCONFIG_MODULES} SDL2_image")
+ else()
+ 	message(STATUS "SDL2_image support disabled")
+ endif()
+ 
+ if(SDL2PP_WITH_TTF)
+-	find_package(SDL2_ttf REQUIRED)
+-	set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_ttf::SDL2_ttf)
++	pkg_check_modules(SDL2_TTF SDL2_ttf)
++	if (SDL2_TTF_FOUND)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} ${SDL2_TTF_LIBRARIES})
++	else()
++		find_package(SDL2_ttf REQUIRED)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_ttf::SDL2_ttf)
++	endif()
+ 	set(SDL2_ALL_PKGCONFIG_MODULES "${SDL2_ALL_PKGCONFIG_MODULES} SDL2_ttf")
+ else()
+ 	message(STATUS "SDL2_ttf support disabled")
+ endif()
+ 
+ if(SDL2PP_WITH_MIXER)
+-	find_package(SDL2_mixer REQUIRED)
+-	set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_mixer::SDL2_mixer)
++	pkg_check_modules(SDL2_MIXER SDL2_mixer)
++	if (SDL2_MIXER_FOUND)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} ${SDL2_MIXER_LIBRARIES}) 
++	else()
++		find_package(SDL2_mixer REQUIRED)
++		set(SDL2_ALL_LIBRARIES ${SDL2_ALL_LIBRARIES} SDL2_mixer::SDL2_mixer)
++	endif()
+ 	set(SDL2_ALL_PKGCONFIG_MODULES "${SDL2_ALL_PKGCONFIG_MODULES} SDL2_mixer")
+ else()
+ 	message(STATUS "SDL2_mixer support disabled")
+@@ -185,6 +207,7 @@ target_include_directories(SDL2pp PUBLIC
+ 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+ 	$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+ 	$<INSTALL_INTERFACE:include>
++	${SDL2_INCLUDE_DIRS}
+ )
+ target_link_libraries(SDL2pp PUBLIC ${SDL2_ALL_LIBRARIES})
+ generate_export_header(SDL2pp EXPORT_FILE_NAME SDL2pp/Export.hh)
+--- origsrc/libSDL2pp-0.18.1/sdl2pp.pc.in	2023-04-17 20:54:20.000000000 +0900
++++ src/libSDL2pp-0.18.1/sdl2pp.pc.in	2023-09-06 03:12:05.038360500 +0900
+@@ -5,7 +5,7 @@ includedir=${prefix}/include
+ 
+ Name: sdl2pp
+ Description: C++ bindings/wrappers for SDL2
+-Version: @SDL2PP_VERSION@
++Version: @PROJECT_VERSION@
+ Requires: @SDL2_ALL_PKGCONFIG_MODULES@
+ Conflicts:
+ Libs: @SDL2PP_EXTRA_PKGCONFIG_LIBRARIES@ -L${libdir} -lSDL2pp
