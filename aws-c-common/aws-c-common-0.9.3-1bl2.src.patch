@@ -1,0 +1,66 @@
+--- origsrc/aws-c-common-0.9.3/CMakeLists.txt	2023-09-02 04:07:29.000000000 +0900
++++ src/aws-c-common-0.9.3/CMakeLists.txt	2023-09-12 09:04:42.710613100 +0900
+@@ -265,12 +265,12 @@ else()
+ endif()
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}/"
+     NAMESPACE AWS::
+     COMPONENT Development)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-    DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake"
++    DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}/"
+     COMPONENT Development)
+ 
+ list(APPEND EXPORT_MODULES
+@@ -302,3 +302,10 @@ if (ALLOW_CROSS_COMPILED_TESTS OR NOT CM
+ endif()
+ 
+ include(CPackConfig)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-common.pc.in ${CMAKE_BINARY_DIR}/aws-c-common.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-common.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-common-0.9.3/aws-c-common.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-common-0.9.3/aws-c-common.pc.in	2023-09-11 13:12:40.313186400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-common
++Description: Core c99 package for AWS SDK for C
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-common
++Cflags: -I${includedir}
+--- origsrc/aws-c-common-0.9.3/cmake/aws-c-common-config.cmake	2023-09-02 04:07:29.000000000 +0900
++++ src/aws-c-common-0.9.3/cmake/aws-c-common-config.cmake	2023-09-12 09:05:51.782465900 +0900
+@@ -4,21 +4,4 @@ if(WIN32 OR UNIX OR APPLE)
+     find_package(Threads REQUIRED)
+ endif()
+ 
+-macro(aws_load_targets type)
+-    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
+-endmacro()
+-
+-# try to load the lib follow BUILD_SHARED_LIBS. Fall back if not exist.
+-if (BUILD_SHARED_LIBS)
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/shared")
+-        aws_load_targets(shared)
+-    else()
+-        aws_load_targets(static)
+-    endif()
+-else()
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/static")
+-        aws_load_targets(static)
+-    else()
+-        aws_load_targets(shared)
+-    endif()
+-endif()
++include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
