@@ -1,0 +1,87 @@
+--- origsrc/aws-c-io-0.13.32/CMakeLists.txt	2023-08-11 06:19:05.000000000 +0900
++++ src/aws-c-io-0.13.32/CMakeLists.txt	2023-09-12 15:25:23.085489800 +0900
+@@ -96,7 +96,7 @@ if (WIN32)
+     #Kernel32 and wsock2 are pulled in automatically. Here we add the lib containing the schannel API.
+     #Also note, you don't get a choice on TLS implementation for Windows.
+     set(PLATFORM_LIBS Secur32 Crypt32)
+-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
++elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Android" OR CYGWIN)
+     option(USE_VSOCK
+ 	    "Build in support for VSOCK sockets"
+ 	    OFF)
+@@ -113,6 +113,11 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linu
+     set(EVENT_LOOP_DEFINE "EPOLL")
+     set(USE_S2N ON)
+ 
++    if (CYGWIN)
++	find_package(pkgconfig)
++        pkg_check_modules(EPOLL epoll)
++        set(PLATFORM_LIBS ${EPOLL_LIBRARIES})
++    endif()
+ elseif (APPLE)
+ 
+     file(GLOB AWS_IO_OS_HEADERS
+@@ -184,6 +189,10 @@ aws_add_sanitizers(${PROJECT_NAME})
+ # We are not ABI stable yet
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_compile_definitions(${PROJECT_NAME} PUBLIC "-DAWS_USE_${EVENT_LOOP_DEFINE}")
+ 
+ if (BYO_CRYPTO)
+@@ -223,7 +232,7 @@ else()
+ endif()
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         NAMESPACE AWS::
+         COMPONENT Development)
+ 
+@@ -232,7 +241,7 @@ configure_file("cmake/${PROJECT_NAME}-co
+         @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         COMPONENT Development)
+ 
+ if (NOT CMAKE_CROSSCOMPILING)
+@@ -240,3 +249,10 @@ if (NOT CMAKE_CROSSCOMPILING)
+        add_subdirectory(tests)
+     endif()
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-io.pc.in ${CMAKE_BINARY_DIR}/aws-c-io.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-io.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-io-0.13.32/aws-c-io.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-io-0.13.32/aws-c-io.pc.in	2023-09-12 15:24:51.685605200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-io
++Description: AWS SDK for C module for IO and TLS
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-io
++Cflags: -I${includedir}
+--- origsrc/aws-c-io-0.13.32/tests/shared_library_test.c	2023-08-11 06:19:05.000000000 +0900
++++ src/aws-c-io-0.13.32/tests/shared_library_test.c	2023-09-12 15:14:41.167846400 +0900
+@@ -12,6 +12,8 @@
+  * We may need to monkey with paths (or copy .dlls) a bit when we create shared library builds
+  */
+ static const char *s_self_path = ".\\aws-c-io.dll";
++#elif defined(__CYGWIN__)
++static const char *s_self_path = "../cygaws-c-io-0.dll";
+ #else
+ static const char *s_self_path = "../libaws-c-io.so";
+ #endif
