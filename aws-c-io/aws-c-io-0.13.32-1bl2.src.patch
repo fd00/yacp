@@ -1,5 +1,5 @@
 --- origsrc/aws-c-io-0.13.32/CMakeLists.txt	2023-08-11 06:19:05.000000000 +0900
-+++ src/aws-c-io-0.13.32/CMakeLists.txt	2023-09-12 15:25:23.085489800 +0900
++++ src/aws-c-io-0.13.32/CMakeLists.txt	2023-09-14 08:14:04.506967500 +0900
 @@ -96,7 +96,7 @@ if (WIN32)
      #Kernel32 and wsock2 are pulled in automatically. Here we add the lib containing the schannel API.
      #Also note, you don't get a choice on TLS implementation for Windows.
@@ -62,7 +62,7 @@
 +configure_file(${CMAKE_SOURCE_DIR}/aws-c-io.pc.in ${CMAKE_BINARY_DIR}/aws-c-io.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/aws-c-io.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/aws-c-io-0.13.32/aws-c-io.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-io-0.13.32/aws-c-io.pc.in	2023-09-12 15:24:51.685605200 +0900
++++ src/aws-c-io-0.13.32/aws-c-io.pc.in	2023-09-14 08:14:04.506967500 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -74,8 +74,33 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-c-io
 +Cflags: -I${includedir}
+--- origsrc/aws-c-io-0.13.32/cmake/aws-c-io-config.cmake	2023-08-11 06:19:05.000000000 +0900
++++ src/aws-c-io-0.13.32/cmake/aws-c-io-config.cmake	2023-09-14 08:18:13.080468800 +0900
+@@ -7,21 +7,4 @@ endif()
+ find_dependency(aws-c-common)
+ find_dependency(aws-c-cal)
+ 
+-macro(aws_load_targets type)
+-    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
+-endmacro()
+-
+-# try to load the lib follow BUILD_SHARED_LIBS. Fall back if not exist.
+-if (BUILD_SHARED_LIBS)
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/shared")
+-        aws_load_targets(shared)
+-    else()
+-        aws_load_targets(static)
+-    endif()
+-else()
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/static")
+-        aws_load_targets(static)
+-    else()
+-        aws_load_targets(shared)
+-    endif()
+-endif()
++include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
 --- origsrc/aws-c-io-0.13.32/tests/shared_library_test.c	2023-08-11 06:19:05.000000000 +0900
-+++ src/aws-c-io-0.13.32/tests/shared_library_test.c	2023-09-12 15:14:41.167846400 +0900
++++ src/aws-c-io-0.13.32/tests/shared_library_test.c	2023-09-14 08:14:04.506967500 +0900
 @@ -12,6 +12,8 @@
   * We may need to monkey with paths (or copy .dlls) a bit when we create shared library builds
   */
