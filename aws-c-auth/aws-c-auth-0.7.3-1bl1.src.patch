@@ -1,0 +1,79 @@
+--- origsrc/aws-c-auth-0.7.3/CMakeLists.txt	2023-08-08 02:51:02.000000000 +0900
++++ src/aws-c-auth-0.7.3/CMakeLists.txt	2023-09-14 15:34:02.837667800 +0900
+@@ -82,6 +82,10 @@ aws_add_sanitizers(${PROJECT_NAME})
+ # We are not ABI stable yet
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
+ 
+ if (BUILD_RELOCATABLE_BINARIES)
+@@ -109,7 +113,7 @@ else()
+ endif()
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         NAMESPACE AWS::
+         COMPONENT Development)
+ 
+@@ -118,10 +122,17 @@ configure_file("cmake/${PROJECT_NAME}-co
+         @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         COMPONENT Development)
+ 
+ include(CTest)
+ if (BUILD_TESTING)
+     add_subdirectory(tests)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-auth.pc.in ${CMAKE_BINARY_DIR}/aws-c-auth.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-auth.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-auth-0.7.3/aws-c-auth.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-auth-0.7.3/aws-c-auth.pc.in	2023-09-14 15:33:03.903481500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-auth
++Description: C99 library implementation of AWS client-side authentication
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-auth
++Cflags: -I${includedir}
+--- origsrc/aws-c-auth-0.7.3/cmake/aws-c-auth-config.cmake	2023-08-08 02:51:02.000000000 +0900
++++ src/aws-c-auth-0.7.3/cmake/aws-c-auth-config.cmake	2023-09-14 15:25:02.003741800 +0900
+@@ -6,21 +6,4 @@ find_dependency(aws-c-io)
+ find_dependency(aws-c-http)
+ find_dependency(aws-c-sdkutils)
+ 
+-macro(aws_load_targets type)
+-    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
+-endmacro()
+-
+-# try to load the lib follow BUILD_SHARED_LIBS. Fall back if not exist.
+-if (BUILD_SHARED_LIBS)
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/shared")
+-        aws_load_targets(shared)
+-    else()
+-        aws_load_targets(static)
+-    endif()
+-else()
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/static")
+-        aws_load_targets(static)
+-    else()
+-        aws_load_targets(shared)
+-    endif()
+-endif()
++include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
