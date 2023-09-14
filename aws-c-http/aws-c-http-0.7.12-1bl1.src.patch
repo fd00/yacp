@@ -1,0 +1,80 @@
+--- origsrc/aws-c-http-0.7.12/CMakeLists.txt	2023-08-24 07:54:30.000000000 +0900
++++ src/aws-c-http-0.7.12/CMakeLists.txt	2023-09-14 09:14:05.541467800 +0900
+@@ -64,6 +64,10 @@ aws_add_sanitizers(${PROJECT_NAME})
+ # We are not ABI stable yet
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_include_directories(${PROJECT_NAME} PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:include>)
+@@ -84,7 +88,7 @@ else()
+ endif()
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         NAMESPACE AWS::
+         COMPONENT Development)
+ 
+@@ -93,7 +97,7 @@ configure_file("cmake/${PROJECT_NAME}-co
+         @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         COMPONENT Development)
+ 
+ include(CTest)
+@@ -103,3 +107,10 @@ if (NOT BYO_CRYPTO AND BUILD_TESTING)
+         add_subdirectory(bin/elasticurl)
+     endif()
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-http.pc.in ${CMAKE_BINARY_DIR}/aws-c-http.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-http.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-http-0.7.12/aws-c-http.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-http-0.7.12/aws-c-http.pc.in	2023-09-14 09:07:47.608053000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-http
++Description: C99 implementation of the HTTP/1.1 and HTTP/2 specifications
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-http
++Cflags: -I${includedir}
+--- origsrc/aws-c-http-0.7.12/cmake/aws-c-http-config.cmake	2023-08-24 07:54:30.000000000 +0900
++++ src/aws-c-http-0.7.12/cmake/aws-c-http-config.cmake	2023-09-14 08:43:11.094065700 +0900
+@@ -3,21 +3,4 @@ include(CMakeFindDependencyMacro)
+ find_dependency(aws-c-io)
+ find_dependency(aws-c-compression)
+ 
+-macro(aws_load_targets type)
+-    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
+-endmacro()
+-
+-# try to load the lib follow BUILD_SHARED_LIBS. Fall back if not exist.
+-if (BUILD_SHARED_LIBS)
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/shared")
+-        aws_load_targets(shared)
+-    else()
+-        aws_load_targets(static)
+-    endif()
+-else()
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/static")
+-        aws_load_targets(static)
+-    else()
+-        aws_load_targets(shared)
+-    endif()
+-endif()
++include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
