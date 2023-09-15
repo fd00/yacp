@@ -1,0 +1,160 @@
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/CMakeLists.txt	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/CMakeLists.txt	2023-09-15 14:42:17.716950100 +0900
+@@ -141,42 +141,8 @@ if(UNIX AND NOT APPLE)
+   target_link_libraries(kvspic rt)
+ endif()
+ 
+-configure_file(
+-  "${CMAKE_CURRENT_SOURCE_DIR}/libkvspicClient.pc.cmake"
+-  "${CMAKE_CURRENT_BINARY_DIR}/libkvspicClient.pc" @ONLY)
+-
+-add_library(kvspicClient ${LIBTYPE} ${PIC_CLIENT_SOURCE_FILES})
+-if(BUILD_SHARED_LIBS)
+-  set_target_properties(kvspicClient PROPERTIES VERSION 0.0.0 SOVERSION 0)
+-endif()
+-target_link_libraries(kvspicClient)
+-
+-configure_file(
+-  "${CMAKE_CURRENT_SOURCE_DIR}/libkvspicState.pc.cmake"
+-  "${CMAKE_CURRENT_BINARY_DIR}/libkvspicState.pc" @ONLY)
+-
+-add_library(kvspicState ${LIBTYPE} ${PIC_STATE_SOURCE_FILES})
+-if(BUILD_SHARED_LIBS)
+-  set_target_properties(kvspicState PROPERTIES VERSION 0.0.0 SOVERSION 0)
+-endif()
+-target_link_libraries(kvspicState)
+-
+-configure_file(
+-  "${CMAKE_CURRENT_SOURCE_DIR}/libkvspicUtils.pc.cmake"
+-  "${CMAKE_CURRENT_BINARY_DIR}/libkvspicUtils.pc" @ONLY)
+-
+-add_library(kvspicUtils ${LIBTYPE} ${PIC_UTILS_SOURCE_FILES})
+-if(BUILD_SHARED_LIBS)
+-  set_target_properties(kvspicUtils PROPERTIES VERSION 0.0.0 SOVERSION 0)
+-endif()
+-target_link_libraries(kvspicUtils ${CMAKE_DL_LIBS} Threads::Threads)
+-if(UNIX AND NOT APPLE)
+-  # rt needed for clock_gettime
+-  target_link_libraries(kvspicUtils rt)
+-endif()
+-
+ install(
+-  TARGETS kvspic kvspicClient kvspicState kvspicUtils
++  TARGETS kvspic
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+@@ -188,9 +154,6 @@ install(
+ install(
+   FILES
+     ${CMAKE_CURRENT_BINARY_DIR}/libkvspic.pc
+-    ${CMAKE_CURRENT_BINARY_DIR}/libkvspicClient.pc
+-    ${CMAKE_CURRENT_BINARY_DIR}/libkvspicState.pc
+-    ${CMAKE_CURRENT_BINARY_DIR}/libkvspicUtils.pc
+   DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ 
+ if(BUILD_TEST)
+@@ -208,14 +171,14 @@ if(BUILD_TEST)
+   endif()
+ 
+   add_executable(kvspic_test ${PIC_TEST_SOURCE_FILES}
+-          ${PIC_CLIENT_SOURCE_FILES}
+-          ${PIC_DURATION_SOURCE_FILES}
+-          ${PIC_HEAP_SOURCE_FILES}
+-          ${PIC_MKVGEN_SOURCE_FILES}
+-          ${PIC_STATE_SOURCE_FILES}
+-          ${PIC_TRACE_SOURCE_FILES}
+-          ${PIC_UTILS_SOURCE_FILES}
+-          ${PIC_VIEW_SOURCE_FILES})
++  ${PIC_CLIENT_SOURCE_FILES}
++  ${PIC_DURATION_SOURCE_FILES}
++  ${PIC_HEAP_SOURCE_FILES}
++  ${PIC_MKVGEN_SOURCE_FILES}
++  ${PIC_STATE_SOURCE_FILES}
++  ${PIC_TRACE_SOURCE_FILES}
++  ${PIC_UTILS_SOURCE_FILES}
++  ${PIC_VIEW_SOURCE_FILES})
+   target_compile_definitions(kvspic_test PRIVATE ALIGNED_MEMORY_MODEL=TRUE FIXUP_ANNEX_B_TRAILING_NALU_ZERO=TRUE)
+   target_link_libraries(kvspic_test ${GTEST_LIBNAME} ${CMAKE_DL_LIBS} Threads::Threads)
+   if(UNIX AND NOT APPLE)
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/common/include/com/amazonaws/kinesis/video/common/CommonDefs.h	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/common/include/com/amazonaws/kinesis/video/common/CommonDefs.h	2023-09-15 14:18:06.193985700 +0900
+@@ -565,7 +565,7 @@ typedef struct _stat STAT_STRUCT;
+ 
+ #include <dlfcn.h>
+ 
+-#if !defined(__MACH__)
++#if !defined(__MACH__) && !defined(__CYGWIN__)
+ #include <sys/prctl.h>
+ #endif
+ 
+@@ -942,7 +942,7 @@ extern PUBLIC_API atomicXor globalAtomic
+ #define FSCANF fscanf
+ #endif
+ 
+-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
++#if defined _WIN32 || defined _WIN64
+ #define FPATHSEPARATOR     '\\'
+ #define FPATHSEPARATOR_STR "\\"
+ #else
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/DynamicLibrary.c	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/DynamicLibrary.c	2023-09-15 14:18:34.491516200 +0900
+@@ -1,6 +1,6 @@
+ #include "Include_i.h"
+ 
+-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
++#if defined _WIN32 || defined _WIN64
+ 
+ //
+ // Stub dynamic library loading functions
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Mutex.c	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Mutex.c	2023-09-15 14:18:52.773613200 +0900
+@@ -1,6 +1,6 @@
+ #include "Include_i.h"
+ 
+-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
++#if defined _WIN32 || defined _WIN64
+ 
+ //
+ // Stub Mutex library functions
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Thread.c	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Thread.c	2023-09-15 14:21:23.948570300 +0900
+@@ -1,6 +1,6 @@
+ #include "Include_i.h"
+ 
+-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
++#if defined _WIN32 || defined _WIN64
+ 
+ //
+ // Thread library functions
+@@ -132,7 +132,7 @@ PUBLIC_API STATUS defaultGetThreadName(T
+         return STATUS_INVALID_ARG;
+     }
+ 
+-#if defined __APPLE__ && __MACH__ || __GLIBC__ && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 12
++#if defined __APPLE__ && __MACH__ || __GLIBC__ && __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 12 || defined(__CYGWIN__)
+     retValue = pthread_getname_np((pthread_t) thread, name, len);
+ #elif defined ANDROID_BUILD
+     // This will return the current thread name on Android
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Version.c	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/utils/src/Version.c	2023-09-15 14:19:39.696516500 +0900
+@@ -3,7 +3,7 @@
+ //
+ // Version functions
+ //
+-#if defined _WIN32 || defined _WIN64 || defined __CYGWIN__
++#if defined _WIN32 || defined _WIN64
+ 
+ STATUS defaultGetPlatformName(PCHAR pResult, UINT32 len)
+ {
+--- origsrc/amazon-kinesis-video-streams-pic-1.0.1/src/utils/tst/Thread.cpp	2023-09-05 23:54:14.000000000 +0900
++++ src/amazon-kinesis-video-streams-pic-1.0.1/src/utils/tst/Thread.cpp	2023-09-15 14:19:59.386425300 +0900
+@@ -77,7 +77,7 @@ TEST_F(ThreadFunctionalityTest, ThreadCr
+         // Long sleep
+         gThreadSleepTimes[index] = 20 * HUNDREDS_OF_NANOS_IN_A_SECOND;
+         EXPECT_EQ(STATUS_SUCCESS, THREAD_CREATE(&threads[index], testThreadRoutine, (PVOID)index));
+-#if !(defined _WIN32 || defined _WIN64 || defined __CYGWIN__)
++#if !(defined _WIN32 || defined _WIN64)
+         // We should detach thread for non-windows platforms only
+         // Windows implementation would cancel the handle and the
+         // consequent thread cancel would fail
