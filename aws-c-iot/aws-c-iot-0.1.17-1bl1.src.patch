@@ -1,0 +1,77 @@
+--- origsrc/aws-c-iot-0.1.17/CMakeLists.txt	2023-08-25 16:57:05.000000000 +0900
++++ src/aws-c-iot-0.1.17/CMakeLists.txt	2023-09-15 11:34:58.499361600 +0900
+@@ -85,7 +85,7 @@ aws_add_sanitizers(${PROJECT_NAME})
+ 
+ # We are not ABI stable yet
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
+-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0unstable)
++set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
+ 
+ target_compile_definitions(${PROJECT_NAME} PRIVATE -DCJSON_HIDE_SYMBOLS)
+ 
+@@ -108,7 +108,7 @@ else()
+ endif()
+ 
+ install(EXPORT "${PROJECT_NAME}-targets"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         NAMESPACE AWS::
+         COMPONENT Development)
+ 
+@@ -117,10 +117,16 @@ configure_file("cmake/${PROJECT_NAME}-co
+         @ONLY)
+ 
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
++        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+         COMPONENT Development)
+ 
+ include(CTest)
+ if (BUILD_TESTING)
+     add_subdirectory(tests)
+ endif ()
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/aws-c-iot.pc.in ${CMAKE_BINARY_DIR}/aws-c-iot.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/aws-c-iot.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/aws-c-iot-0.1.17/aws-c-iot.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-iot-0.1.17/aws-c-iot.pc.in	2023-09-15 11:34:58.468112500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: aws-c-iot
++Description: C99 implementation of AWS IoT cloud services integration with devices
++Version: @VERSION@
++Libs: -L${libdir} -laws-c-iot
++Cflags: -I${includedir}
+--- origsrc/aws-c-iot-0.1.17/cmake/aws-c-iot-config.cmake	2023-08-25 16:57:05.000000000 +0900
++++ src/aws-c-iot-0.1.17/cmake/aws-c-iot-config.cmake	2023-09-15 11:30:44.439339600 +0900
+@@ -4,21 +4,4 @@ find_dependency(aws-c-io)
+ find_dependency(aws-c-mqtt)
+ find_dependency(aws-c-common)
+ 
+-macro(aws_load_targets type)
+-    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
+-endmacro()
+-
+-# try to load the lib follow BUILD_SHARED_LIBS. Fall back if not exist.
+-if (BUILD_SHARED_LIBS)
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/shared")
+-        aws_load_targets(shared)
+-    else()
+-        aws_load_targets(static)
+-    endif()
+-else()
+-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/static")
+-        aws_load_targets(static)
+-    else()
+-        aws_load_targets(shared)
+-    endif()
+-endif()
+\ No newline at end of file
++include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
