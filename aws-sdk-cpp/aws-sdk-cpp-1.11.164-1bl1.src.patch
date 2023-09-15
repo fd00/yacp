@@ -1,0 +1,47 @@
+--- origsrc/aws-sdk-cpp-1.11.164/CMakeLists.txt	2023-09-15 04:14:05.000000000 +0900
++++ src/aws-sdk-cpp-1.11.164/CMakeLists.txt	2023-09-15 06:35:10.445484400 +0900
+@@ -294,7 +294,7 @@ if (LEGACY_BUILD)
+         set(INCLUDE_DIRECTORY "${CMAKE_INSTALL_INCLUDEDIR}")
+     endif ()
+ 
+-    if (BUILD_SHARED_LIBS)
++    if (BUILD_SHARED_LIBS AND NOT CYGWIN)
+         set(ARCHIVE_DIRECTORY "${BINARY_DIRECTORY}")
+     else ()
+         set(ARCHIVE_DIRECTORY "${LIBRARY_DIRECTORY}")
+--- origsrc/aws-sdk-cpp-1.11.164/cmake/Findcrypto.cmake	2023-09-15 04:14:05.000000000 +0900
++++ src/aws-sdk-cpp-1.11.164/cmake/Findcrypto.cmake	2023-09-15 06:35:10.445484400 +0900
+@@ -40,7 +40,7 @@ else()
+     )
+ 
+     find_library(crypto_SHARED_LIBRARY
+-        NAMES libcrypto.so libcrypto.dylib
++        NAMES libcrypto.dll.a libcrypto.so libcrypto.dylib
+         HINTS
+         "${CMAKE_PREFIX_PATH}"
+         "${CMAKE_INSTALL_PREFIX}"
+--- origsrc/aws-sdk-cpp-1.11.164/cmake/utilities.cmake	2023-09-15 04:14:05.000000000 +0900
++++ src/aws-sdk-cpp-1.11.164/cmake/utilities.cmake	2023-09-15 06:35:10.445484400 +0900
+@@ -81,6 +81,9 @@ function(enable_unity_build UNITY_SUFFIX
+ endfunction(enable_unity_build)
+ 
+ macro(setup_install)
++    if (DEFINED SOVERSION)
++        set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+     if(SIMPLE_INSTALL)
+         configure_file("${AWS_NATIVE_SDK_ROOT}/toolchains/pkg-config.pc.in" "${PROJECT_NAME}.pc" @ONLY)
+ 
+--- origsrc/aws-sdk-cpp-1.11.164/src/aws-cpp-sdk-core/CMakeLists.txt	2023-09-15 04:14:05.000000000 +0900
++++ src/aws-sdk-cpp-1.11.164/src/aws-cpp-sdk-core/CMakeLists.txt	2023-09-15 06:35:10.445484400 +0900
+@@ -611,6 +611,10 @@ endif()
+ set_compiler_flags(${PROJECT_NAME})
+ set_compiler_warnings(${PROJECT_NAME})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(SIMPLE_INSTALL)
+     install (
+         TARGETS ${PROJECT_NAME}
