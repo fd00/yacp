@@ -7,28 +7,41 @@ DESCRIPTION="The ALPSCore project, based on the ALPS (Algorithms and Libraries f
 Simulations) project, provides generic algorithms and utilities for physics
 problems. It strives to increase software reuse in the physics community."
 
-BUILD_REQUIRES="libhdf5-devel libopenmpi-devel"
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="LICENSE.TXT"
+
+BUILD_REQUIRES="libhdf5-devel"
 
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -DALPS_UTILITY_NO_STACKTRACE"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
+	-DALPS_BUILD_TYPE:STRING=dynamic
 	-DDocumentation:BOOL=OFF
 	-DENABLE_MPI:BOOL=ON
 	-DSOVERSION:STRING=${PV[1]}
 	-DTesting:BOOL=ON
+	-Dgtest_root:PATH=/usr
 "
 
 src_test()
 {
 	cd ${B}
-	ninja_test
+	_PATH=
+	for p in accumulators alea gf hdf5 mc params utilities
+	do
+		_PATH=${_PATH}:${B}/${p}
+	done
+	PATH=${_PATH}:${PATH} ninja_test
 }
 
 DOCS="
 	ACKNOWLEDGE.TXT
 	CONTRIBUTING.md
+	COPYRIGHT.TXT
+	LICENSE.TXT
 "
 
 PKG_NAMES="
