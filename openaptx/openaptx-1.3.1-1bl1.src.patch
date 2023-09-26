@@ -1,0 +1,55 @@
+--- origsrc/openaptx-1.3.1/CMakeLists.txt	2021-01-20 08:49:30.000000000 +0900
++++ src/openaptx-1.3.1/CMakeLists.txt	2023-09-26 10:47:46.991118800 +0900
+@@ -3,7 +3,7 @@
+ 
+ cmake_minimum_required(VERSION 3.2)
+ project(openaptx
+-	VERSION 1.3.0
++	VERSION 1.3.1
+ 	DESCRIPTION "Reverse-engineered apt-X audio codec"
+ 	HOMEPAGE_URL "https://github.com/Arkq/openaptx"
+ 	LANGUAGES C)
+@@ -18,6 +18,7 @@ if(WITH_FFMPEG)
+ 
+ 	find_package(PkgConfig REQUIRED)
+ 	pkg_check_modules(FFLibAVCodec REQUIRED IMPORTED_TARGET libavcodec>=58.18.100)
++	pkg_check_modules(FFLibAVUtil REQUIRED IMPORTED_TARGET libavutil)
+ 
+ 	message(WARNING
+ 		"Building apt-X / apt-X HD with FFmpeg: "
+--- origsrc/openaptx-1.3.1/src/CMakeLists.txt	2021-01-20 08:49:30.000000000 +0900
++++ src/openaptx-1.3.1/src/CMakeLists.txt	2023-09-26 10:37:42.003848900 +0900
+@@ -10,6 +10,11 @@ set_target_properties(aptxHD PROPERTIES
+ 	PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/../include/openaptx.h)
+ target_compile_definitions(aptxHD PRIVATE -DAPTXHD=1)
+ 
++if(DEFINED SOVERSION)
++	set_target_properties(aptx PROPERTIES SOVERSION "${SOVERSION}")
++	set_target_properties(aptxHD PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(ENABLE_APTX422)
+ 	add_library(aptx-4.2.2 SHARED
+ 		${CMAKE_CURRENT_SOURCE_DIR}/aptx422/encode.c
+@@ -40,11 +45,11 @@ if(WITH_FFMPEG)
+ 
+ 	target_sources(aptx
+ 		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/aptx-ffmpeg.c)
+-	target_link_libraries(aptx PkgConfig::FFLibAVCodec)
++	target_link_libraries(aptx PkgConfig::FFLibAVCodec PkgConfig::FFLibAVUtil)
+ 
+ 	target_sources(aptxHD
+ 		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/aptx-ffmpeg.c)
+-	target_link_libraries(aptxHD PkgConfig::FFLibAVCodec)
++	target_link_libraries(aptxHD PkgConfig::FFLibAVCodec PkgConfig::FFLibAVUtil)
+ 
+ else()
+ 
+@@ -85,5 +90,6 @@ else()
+ endif()
+ 
+ install(TARGETS aptx aptxHD
+-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
