@@ -1,0 +1,56 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Fuzzy logic control library in C++"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="COPYING"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DFL_BACKTRACE:BOOL=OFF
+	-DFL_BUILD_STATIC:BOOL=OFF
+	-DFL_VERSION:STRING=${PV}
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_compile()
+{
+	CYGCMAKE_SOURCE=${S}/${PN}
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	ninja_test
+}
+
+PKG_NAMES="
+	fuzzylite
+	libfuzzylite6
+	libfuzzylite-devel
+"
+fuzzylite_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libfuzzylite6_CONTENTS="
+	usr/bin/cyg*-6.dll
+"
+libfuzzylite_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+fuzzylite_SUMMARY="${SUMMARY} (licensing & readmes)"
+libfuzzylite6_SUMMARY="${SUMMARY} (runtime)"
+libfuzzylite_devel_SUMMARY="${SUMMARY} (development)"
