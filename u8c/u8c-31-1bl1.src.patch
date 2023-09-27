@@ -1,0 +1,72 @@
+--- origsrc/u8c/CMakeLists.txt	2023-09-28 00:55:39.000000000 +0900
++++ src/u8c/CMakeLists.txt	2023-09-28 01:13:24.950644000 +0900
+@@ -25,7 +25,7 @@ cmake_minimum_required(VERSION 3.21)
+ 
+ project(
+ 	u8c
+-	VERSION 29
++	VERSION 31
+ 	DESCRIPTION "Unicode for C."
+ 	HOMEPAGE_URL "https://mandelbrot.dk/u8c"
+ 	LANGUAGES C CXX
+@@ -33,3 +33,10 @@ project(
+ 
+ add_subdirectory(u8c)
+ add_subdirectory(u8c-check)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/u8c.pc.in ${CMAKE_BINARY_DIR}/u8c.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/u8c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/u8c/u8c/CMakeLists.txt	2023-09-28 00:55:39.000000000 +0900
++++ src/u8c/u8c/CMakeLists.txt	2023-09-28 01:10:08.644249700 +0900
+@@ -51,12 +51,19 @@ add_library(
+ 	"source/format/encode_utf8.c"
+ )
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(u8c PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_include_directories(
+ 	u8c PUBLIC
+ 
+ 	"include"
+ )
+ 
++file(GLOB HEADERS "include/u8c/*.h")
++set_target_properties(u8c PROPERTIES PUBLIC_HEADER "${HEADERS}")
++
+ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
+ 	target_compile_options(
+ 		u8c PRIVATE
+@@ -64,7 +71,7 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "C
+ 		$<IF:$<STREQUAL:"${CMAKE_BUILD_TYPE}","Debug">,-Og,-Ofast>
+ 		-Wall
+ 		-Wextra
+-		-Winvalid-utf8
++#		-Winvalid-utf8
+ 		-Wmissing-declarations
+ 		-Wmissing-include-dirs
+ 		-Wnull-dereference
+@@ -84,3 +91,5 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQU
+ 		$<IF:$<STREQUAL:"${CMAKE_BUILD_TYPE}","Debug">,/Zo,>
+ 	)
+ endif()
++
++install(TARGETS u8c RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include/u8c)
+--- origsrc/u8c/u8c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/u8c/u8c.pc.in	2023-09-28 01:13:50.030952400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: u8c
++Description: Unicode support for C
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lu8c
++Cflags: -I${includedir}
