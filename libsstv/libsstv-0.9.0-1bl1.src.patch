@@ -1,0 +1,62 @@
+--- origsrc/libsstv-0.9.0/CMakeLists.txt	2023-08-27 18:57:00.000000000 +0900
++++ src/libsstv-0.9.0/CMakeLists.txt	2023-09-28 09:28:21.992850400 +0900
+@@ -21,9 +21,6 @@ option (BUILD_TOOLS "build sstv-encode a
+ # Directory setup
+ set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+ set(INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+ 
+ # Configuration file
+ configure_file (
+@@ -44,18 +41,16 @@ set (ENCODE_TOOL_SOURCES
+ 
+ # Library (C compiler)
+ add_library (${PROJECT_NAME}_shared SHARED ${LIB_SOURCES})
+-add_library (${PROJECT_NAME}_static STATIC ${LIB_SOURCES})
+ 
+ set_target_properties (${PROJECT_NAME}_shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PUBLIC_HEADER ${INCLUDE_DIR}/libsstv.h LINKER_LANGUAGE C)
+-set_target_properties (${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PUBLIC_HEADER ${INCLUDE_DIR}/libsstv.h LINKER_LANGUAGE C)
+ 
+-target_compile_options (${PROJECT_NAME}_static PRIVATE -nostdlib)
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME}_shared PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ target_include_directories (${PROJECT_NAME}_shared PUBLIC "${SRC_DIR}" PUBLIC "${INCLUDE_DIR}")
+-target_include_directories (${PROJECT_NAME}_static PUBLIC "${SRC_DIR}" PUBLIC "${INCLUDE_DIR}")
+ 
+-install (TARGETS ${PROJECT_NAME}_shared)
+-install (TARGETS ${PROJECT_NAME}_static)
++install (TARGETS ${PROJECT_NAME}_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib PUBLIC_HEADER DESTINATION include)
+ 
+ # Tools (C++ compiler)
+ if (BUILD_TOOLS)
+@@ -69,5 +64,12 @@ if (BUILD_TOOLS)
+     set_property (TARGET ${PROJECT_NAME}-encode PROPERTY CXX_STANDARD 17)
+     target_include_directories(${PROJECT_NAME}-encode PUBLIC "${SRC_DIR}/tools" PUBLIC "${INCLUDE_DIR}" PUBLIC "${ImageMagick_INCLUDE_DIRS}")
+     target_link_libraries (${PROJECT_NAME}-encode ${PROJECT_NAME}_shared ${SNDFILE} ${ImageMagick_LIBRARIES})
+-    install (TARGETS ${PROJECT_NAME}-encode)
++    install (TARGETS ${PROJECT_NAME}-encode RUNTIME DESTINATION bin)
+ endif (BUILD_TOOLS)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libsstv.pc.in ${CMAKE_BINARY_DIR}/libsstv.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libsstv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsstv-0.9.0/libsstv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsstv-0.9.0/libsstv.pc.in	2023-09-28 09:29:01.680538000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsstv
++Description: SSTV encoder/decoder C library
++Version: @VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@
++Libs: -L${libdir} -lsstv
++Cflags: -I${includedir}
