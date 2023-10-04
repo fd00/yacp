@@ -1,0 +1,33 @@
+--- origsrc/libmodman-2.0.1/libmodman/CMakeLists.txt	2010-09-02 05:19:38.000000000 +0900
++++ src/libmodman-2.0.1/libmodman/CMakeLists.txt	2023-10-04 14:59:48.201622600 +0900
+@@ -38,7 +38,7 @@ if (NOT WIN32 AND NOT APPLE)
+   configure_file(Findlibmodman.cmake.in
+                  ${CMAKE_CURRENT_BINARY_DIR}/Findlibmodman.cmake @ONLY)
+   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Findlibmodman.cmake
+-          DESTINATION ${SHARE_INSTALL_DIR}/cmake/Modules)
++          DESTINATION ${LIB_INSTALL_DIR}/cmake/libmodman/Modules)
+ endif()
+ 
+ # Define the library itself
+@@ -49,8 +49,8 @@ add_library(modman SHARED
+ if(NOT WIN32)
+   target_link_libraries(modman dl)
+ endif()
+-set_target_properties(modman PROPERTIES PREFIX "lib" VERSION 1.0.0 SOVERSION 1)
+-install(TARGETS modman DESTINATION ${LIB_INSTALL_DIR})
++set_target_properties(modman PROPERTIES VERSION 1.0.0 SOVERSION 1)
++install(TARGETS modman RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+ install(FILES   module_manager.hpp module.hpp DESTINATION ${INCLUDE_INSTALL_DIR}/${PROJECT_NAME})
+ 
+ ### Tests
+--- origsrc/libmodman-2.0.1/libmodman/module_manager.cpp	2010-09-02 05:19:38.000000000 +0900
++++ src/libmodman-2.0.1/libmodman/module_manager.cpp	2023-10-04 14:54:45.305860400 +0900
+@@ -111,7 +111,7 @@ bool pdlsymlinked(const char* modn, cons
+ #define __str(s) _str(s)
+ 
+ #ifndef _MOD_SUFFIX
+-#ifdef WIN32
++#if defined(WIN32) || defined(__CYGWIN__)
+ #define _MOD_SUFFIX "dll"
+ #define CR ""
+ #else
