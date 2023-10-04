@@ -1,7 +1,20 @@
---- origsrc/hieroglyph/configure.ac	2014-08-03 18:52:46.000000000 +0900
-+++ src/hieroglyph/configure.ac	2014-08-03 18:52:52.329086100 +0900
-@@ -1,7 +1,7 @@
- dnl Process this file with autoconf to produce a configure script.
+--- origsrc/hieroglyph/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/Makefile.am	2023-10-04 16:15:43.725760500 +0900
+@@ -9,9 +9,7 @@ endif
+ # to ensure "tests" is last entry.
+ SUBDIRS += tests
+ 
+-ACLOCAL_AMFLAGS =		\
+-	-I m4macros		\
+-	$(NULL)
++ACLOCAL_AMFLAGS = -I m4macro
+ 
+ CONFIGURE_DEPENDENCIES =	\
+ 	requires		\
+--- origsrc/hieroglyph/configure.ac	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/configure.ac	2023-10-04 16:23:35.613653200 +0900
+@@ -2,7 +2,7 @@ dnl Process this file with autoconf to p
+ 
  AC_INIT([hieroglyph], 0.0.1, [https://bugs.freedesktop.org/enter_bug.cgi?product=Hieroglyph])
  
 -. ./requires
@@ -9,17 +22,36 @@
  
  # Support silent build rules, requires at least automake-1.11. Enable
  # by either passing --enable-silent-rules to configure or passing V=0
---- origsrc/hieroglyph/devices/cairo/Makefile.am	2014-08-03 18:52:46.000000000 +0900
-+++ src/hieroglyph/devices/cairo/Makefile.am	2014-08-03 18:52:52.352523600 +0900
-@@ -6,6 +6,7 @@ INCLUDES =						\
+@@ -351,6 +351,7 @@ if test "x$with_cairo" = xyes; then
+ 	AC_SUBST(CAIRO_CFLAGS)
+ 	AC_SUBST(CAIRO_LIBS)
+ 	devices="${devices}cairo "
++	PKG_CHECK_MODULES([X11], [x11])
+ fi
+ AM_CONDITIONAL(ENABLE_CAIRO, test x$with_cairo != xno)
+ 
+--- origsrc/hieroglyph/devices/cairo/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/devices/cairo/Makefile.am	2023-10-04 16:29:13.737865000 +0900
+@@ -4,8 +4,10 @@ NULL =
+ INCLUDES =						\
+ 	$(GLIB_CFLAGS)					\
  	$(CAIRO_CFLAGS)					\
++	$(X11_LIBS)					\
  	-I$(top_srcdir)					\
  	-I$(top_srcdir)/hieroglyph			\
 +	-I$(top_builddir)/hieroglyph			\
  	-DHG_COMPILATION				\
  	$(NULL)
  LIBS =							\
-@@ -41,7 +42,7 @@ libhgdev_cairo_la_CFLAGS =				\
+@@ -13,6 +15,7 @@ LIBS =							\
+ 	-export-dynamic					\
+ 	$(GLIB_LIBS)					\
+ 	$(CAIRO_LIBS)					\
++	$(X11_LIBS)					\
+ 	$(NULL)
+ LDADDS =						\
+ 	$(top_builddir)/hieroglyph/libhieroglyph.la	\
+@@ -41,7 +44,7 @@ libhgdev_cairo_la_CFLAGS =				\
  	$(CFLAGS)					\
  	$(NULL)
  libhgdev_cairo_la_LDFLAGS =				\
@@ -28,8 +60,8 @@
  	-module						\
  	$(LDFLAGS)					\
  	$(NULL)
---- origsrc/hieroglyph/hieroglyph/Makefile.am	2014-08-03 18:52:46.000000000 +0900
-+++ src/hieroglyph/hieroglyph/Makefile.am	2014-08-03 18:52:52.352523600 +0900
+--- origsrc/hieroglyph/hieroglyph/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/hieroglyph/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -128,7 +128,7 @@ hg_proto_files =						\
  stamp_files =							\
  	$(NULL)
@@ -47,8 +79,8 @@
 +	$(LDFLAGS) -no-undefined				\
  	-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)	\
  	$(NULL)
---- origsrc/hieroglyph/hieroglyph/hgallocator.c	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/hieroglyph/hgallocator.c	2014-08-03 18:52:52.352523600 +0900
+--- origsrc/hieroglyph/hieroglyph/hgallocator.c	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgallocator.c	2023-10-04 16:14:24.299392000 +0900
 @@ -29,6 +29,7 @@
  #include <string.h>
  /* GLib is still needed for the mutex lock */
@@ -57,8 +89,8 @@
  #include "hgerror.h"
  #include "hgmessages.h"
  #include "hgquark.h"
---- origsrc/hieroglyph/hieroglyph/hgmessages.c	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/hieroglyph/hgmessages.c	2014-08-03 18:52:52.375961100 +0900
+--- origsrc/hieroglyph/hieroglyph/hgmessages.c	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgmessages.c	2023-10-04 16:14:24.299392000 +0900
 @@ -25,7 +25,9 @@
  #include "config.h"
  #endif
@@ -85,8 +117,8 @@
  }
  
  static void
---- origsrc/hieroglyph/hieroglyph/hgoperator.c	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/hieroglyph/hgoperator.c	2014-08-03 18:52:52.399398600 +0900
+--- origsrc/hieroglyph/hieroglyph/hgoperator.c	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgoperator.c	2023-10-04 16:14:24.299392000 +0900
 @@ -5306,7 +5306,7 @@ DEFUNC_OPER (pop)
  DEFUNC_OPER (print)
  {
@@ -112,8 +144,8 @@
  		      sizeof (hg_char_t),
  		      hg_vm_string_length(vm, arg0));
  	if (HG_ERROR_IS_SUCCESS0 ()) {
---- origsrc/hieroglyph/hieroglyph/hgplugin.c	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/hieroglyph/hgplugin.c	2014-08-03 18:52:52.399398600 +0900
+--- origsrc/hieroglyph/hieroglyph/hgplugin.c	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/hieroglyph/hgplugin.c	2023-10-04 16:14:24.299392000 +0900
 @@ -98,10 +98,18 @@ hg_plugin_open(hg_mem_t         *mem,
  	realname = g_path_get_basename(name);
  	switch (type) {
@@ -133,8 +165,8 @@
  		    break;
  	    default:
  		    hg_warning("Unknown plugin type: %d", type);
---- origsrc/hieroglyph/plugins/libedit/Makefile.am	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/plugins/libedit/Makefile.am	2014-08-03 18:52:52.422836100 +0900
+--- origsrc/hieroglyph/plugins/libedit/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/plugins/libedit/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -6,6 +6,7 @@ INCLUDES =							\
  	$(LIBEDIT_CFLAGS)					\
  	-I$(top_srcdir)						\
@@ -152,8 +184,8 @@
  	-module							\
  	$(LDFLAGS)						\
  	$(NULL)
---- origsrc/hieroglyph/plugins/unittest/Makefile.am	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/plugins/unittest/Makefile.am	2014-08-03 18:52:52.422836100 +0900
+--- origsrc/hieroglyph/plugins/unittest/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/plugins/unittest/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -5,6 +5,7 @@ INCLUDES =							\
  	$(GLIB_CFLAGS)						\
  	-I$(top_srcdir)						\
@@ -171,8 +203,8 @@
  	-module							\
  	$(LDFLAGS)						\
  	$(NULL)
---- origsrc/hieroglyph/src/hgs/Makefile.am	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/src/hgs/Makefile.am	2014-08-03 18:52:52.422836100 +0900
+--- origsrc/hieroglyph/src/hgs/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/src/hgs/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -5,6 +5,7 @@ INCLUDES =							\
  	$(GLIB_CFLAGS)						\
  	-I$(top_srcdir)						\
@@ -181,8 +213,8 @@
  	-DHG_COMPILATION					\
  	$(NULL)
  LIBS =								\
---- origsrc/hieroglyph/tests/Makefile.am	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/tests/Makefile.am	2014-08-03 18:52:52.446273600 +0900
+--- origsrc/hieroglyph/tests/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/tests/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -8,6 +8,7 @@ INCLUDES =						\
  	$(CHECK_CFLAGS)					\
  	-I$(top_srcdir)					\
@@ -191,8 +223,8 @@
  	-DHG_COMPILATION				\
  	$(NULL)
  DEPS =							\
---- origsrc/hieroglyph/tests/ps/Makefile.am	2014-08-03 18:52:47.000000000 +0900
-+++ src/hieroglyph/tests/ps/Makefile.am	2014-08-03 18:52:52.446273600 +0900
+--- origsrc/hieroglyph/tests/ps/Makefile.am	2023-10-04 16:14:22.000000000 +0900
++++ src/hieroglyph/tests/ps/Makefile.am	2023-10-04 16:14:24.299392000 +0900
 @@ -15,7 +15,7 @@ EXTRA_DIST =						\
  ##
  # Local Rules
