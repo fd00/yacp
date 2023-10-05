@@ -1,0 +1,59 @@
+--- origsrc/libicuid-1.4.1/CMakeLists.txt	2016-04-29 21:52:31.000000000 +0900
++++ src/libicuid-1.4.1/CMakeLists.txt	2023-10-05 15:37:55.987160900 +0900
+@@ -5,8 +5,10 @@ include(CTest)
+ include(cmake/ConfigureChecks.cmake)
+ 
+ if (CMAKE_COMPILER_IS_GNUCC OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -g")
+-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
++    if (NOT CYGWIN)
++        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wextra -g")
++        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
++    endif()
+ elseif(MSVC)
+     set(CMAKE_C_FLAGS "/W3 /WX")
+     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} /MT /Ox /O2 /Ob2")
+@@ -20,3 +22,10 @@ install(DIRECTORY include/icuid DESTINAT
+ add_subdirectory(src)
+ add_subdirectory(tool)
+ add_subdirectory(tests)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libicuid.pc.in ${CMAKE_BINARY_DIR}/libicuid.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libicuid.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libicuid-1.4.1/libicuid.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libicuid-1.4.1/libicuid.pc.in	2023-10-05 15:35:38.103520300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libicuid
++Description: Modern library that provides a C interface for the CPUID opcode
++Version: @VERSION@
++Libs: -L${libdir} -licuid
++Cflags: -I${includedir}
+--- origsrc/libicuid-1.4.1/src/CMakeLists.txt	2016-04-29 21:52:31.000000000 +0900
++++ src/libicuid-1.4.1/src/CMakeLists.txt	2023-10-05 15:25:34.517267200 +0900
+@@ -17,13 +17,13 @@ add_library(
+     match.c
+ 
+     $<TARGET_OBJECTS:cc>
+-    $<TARGET_OBJECTS:compat>
+ )
+-set_target_properties(icuid PROPERTIES PREFIX "lib")
++if (DEFINED SOVERSION)
++    set_target_properties(icuid PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ install(TARGETS icuid
+-        LIBRARY DESTINATION lib
++        RUNTIME DESTINATION bin
+         ARCHIVE DESTINATION lib)
+ 
+ add_subdirectory(cc)
+-add_subdirectory(compat)
