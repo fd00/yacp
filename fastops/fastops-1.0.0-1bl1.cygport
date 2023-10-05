@@ -1,0 +1,53 @@
+HOMEPAGE="https://github.com/yandex/${PN}"
+SRC_URI="https://github.com/yandex/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Vector operations library"
+DESCRIPTION=""
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=${PV[1]}
+	-DVERSION:STRING=${PV}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/fastops:${PATH} ./fastops/ut/fastops_test.exe
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}/usr/bin
+	mv benchmark.exe ${PN}_benchmark.exe
+	mv eval.exe ${PN}_eval.exe
+}
+
+PKG_NAMES="
+	fastops
+	libfastops1
+	libfastops-devel
+"
+fastops_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libfastops1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+libfastops_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+fastops_SUMMARY="${SUMMARY} (utilities)"
+libfastops1_SUMMARY="${SUMMARY} (runtime)"
+libfastops_devel_SUMMARY="${SUMMARY} (development)"

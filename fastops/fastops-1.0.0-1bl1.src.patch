@@ -1,0 +1,87 @@
+--- origsrc/fastops-1.0.0/CMakeLists.txt	2020-05-06 16:23:43.000000000 +0900
++++ src/fastops-1.0.0/CMakeLists.txt	2023-10-05 11:42:01.123929400 +0900
+@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
+ project(fastops)
+ 
+ include_directories("${PROJECT_SOURCE_DIR}")
+-set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
+ 
+ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3")
+ 
+@@ -14,4 +13,11 @@ if (MSVC)
+ endif()
+ 
+ add_subdirectory(fastops)
+-add_subdirectory(tools)
+\ No newline at end of file
++add_subdirectory(tools)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/fastops.pc.in ${CMAKE_BINARY_DIR}/fastops.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/fastops.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/fastops-1.0.0/fastops/CMakeLists.txt	2020-05-06 16:23:43.000000000 +0900
++++ src/fastops-1.0.0/fastops/CMakeLists.txt	2023-10-05 10:58:42.387577200 +0900
+@@ -2,14 +2,18 @@ add_subdirectory(avx)
+ add_subdirectory(avx2)
+ add_subdirectory(plain)
+ 
+-add_library(fastops fastops.cpp core/avx_id.cpp)
++add_library(fastops SHARED fastops.cpp core/avx_id.cpp)
+ target_link_libraries(fastops avx avx2 plain)
+ 
+-install(TARGETS fastops DESTINATION lib)
+-install(FILES fastops.h DESTINATION include)
+-install(FILES avx/ops_avx.h DESTINATION include/avx)
+-install(FILES avx2/ops_avx2.h DESTINATION include/avx2)
+-install(FILES core/FastIntrinsics.h core/SIMDFunctions.h core/avx_id.h DESTINATION include/core)
+-install(FILES plain/ops_plain.h DESTINATION include/plain)
++if (DEFINED SOVERSION)
++    set_target_properties(fastops PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
++install(TARGETS fastops RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES fastops.h DESTINATION include/fastops)
++install(FILES avx/ops_avx.h DESTINATION include/fastops/avx)
++install(FILES avx2/ops_avx2.h DESTINATION include/fastops/avx2)
++install(FILES core/FastIntrinsics.h core/SIMDFunctions.h core/avx_id.h DESTINATION include/fastops/core)
++install(FILES plain/ops_plain.h DESTINATION include/fastops/plain)
+ 
+ add_subdirectory(ut)
+--- origsrc/fastops-1.0.0/fastops/core/SIMDFunctions.h	2020-05-06 16:23:43.000000000 +0900
++++ src/fastops-1.0.0/fastops/core/SIMDFunctions.h	2023-10-05 10:40:39.701997000 +0900
+@@ -14,7 +14,7 @@
+ #   define Y_HAVE_NEW_INTRINSICS
+ #endif
+ 
+-#if !defined(Y_HAVE_NEW_INTRINSICS)
++#if !defined(Y_HAVE_NEW_INTRINSICS) && !defined(__CYGWIN__)
+ static __inline__ __m128i
+ _mm_loadu_si32(void const* __a) {
+     struct __loadu_si32 {
+@@ -73,6 +73,10 @@ _mm_storeu_si16(void const* __p, __m128i
+ #include <stdint.h>
+ #endif
+ 
++#if defined(__CYGWIN__)
++#include <cstdint>
++#endif
++
+ namespace NFastOps {
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     // Function returns a ymm register with all floats set to 1.f
+--- origsrc/fastops-1.0.0/fastops.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/fastops-1.0.0/fastops.pc.in	2023-10-05 11:42:13.699647400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: fastops
++Description: Vector operations library
++Version: @VERSION@
++Libs: -L${libdir} -lfastops
++Cflags: -I${includedir}/fastops
