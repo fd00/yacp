@@ -1,0 +1,101 @@
+--- origsrc/libcmmk/CMakeLists.txt	2023-10-07 08:42:25.000000000 +0900
++++ src/libcmmk/CMakeLists.txt	2023-10-07 08:55:07.387509600 +0900
+@@ -10,7 +10,8 @@ add_library(cmmk_obj OBJECT
+ 
+ configure_file(config.h.in include/libcmmk/libcmmk-config.h)
+ 
+-find_package(HIDAPI QUIET COMPONENTS libusb)
++find_package(pkgconfig)
++pkg_check_modules(HIDAPI hidapi)
+ 
+ target_include_directories(cmmk_obj
+ 	PUBLIC
+@@ -30,16 +31,19 @@ IF(NOT WIN32)
+ ENDIF()
+ 
+ add_library(cmmk_shared SHARED $<TARGET_OBJECTS:cmmk_obj>)
+-add_library(cmmk_static STATIC $<TARGET_OBJECTS:cmmk_obj>)
++
++target_link_libraries(cmmk_shared ${HIDAPI_LIBRARIES})
+ 
+ IF(WIN32)
+ 	set_target_properties(cmmk_shared PROPERTIES OUTPUT_NAME libcmmk)
+-	set_target_properties(cmmk_static PROPERTIES OUTPUT_NAME libcmmk)
+ ELSE()
+ 	set_target_properties(cmmk_shared PROPERTIES OUTPUT_NAME cmmk)
+-	set_target_properties(cmmk_static PROPERTIES OUTPUT_NAME cmmk)
+ ENDIF()
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(cmmk_shared PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ #
+ # Samples and debug
+ #
+@@ -53,11 +57,18 @@ IF(NOT WIN32)
+ 
+ 	include(GNUInstallDirs)
+ 
+-	install(TARGETS cmmk_shared cmmk_static cmmk_obj EXPORT cmmk-targets
+-		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++	install(TARGETS cmmk_shared EXPORT cmmk-targets
++		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+ 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ 		PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ 	install(FILES ${CMAKE_BINARY_DIR}/include/libcmmk/libcmmk-config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ ENDIF()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libcmmk.pc.in ${CMAKE_BINARY_DIR}/libcmmk.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libcmmk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcmmk/libcmmk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcmmk/libcmmk.pc.in	2023-10-07 08:55:36.885558400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcmmk
++Description: Unofficial LED control API for Coolermaster Masterkey keyboards
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcmmk
++Cflags: -I${includedir}
+--- origsrc/libcmmk/test/CMakeLists.txt	2023-10-07 08:42:25.000000000 +0900
++++ src/libcmmk/test/CMakeLists.txt	2023-10-07 08:50:26.190177300 +0900
+@@ -1,16 +1,10 @@
+ add_executable(cmmk-test test.c)
+ add_executable(cmmk-debug debug.c)
+ 
+-find_package(HIDAPI QUIET COMPONENTS libusb)
+ add_definitions(-DCMMK_TRACE)
+ 
+-IF (WIN32)
+-	target_link_libraries(cmmk-test cmmk_shared)
+-	target_link_libraries(cmmk-debug cmmk_shared)
+-ELSE()
+-	target_link_libraries(cmmk-test cmmk_shared hidapi-hidraw)
+-	target_link_libraries(cmmk-debug cmmk_shared hidapi-hidraw)
+-ENDIF()
++target_link_libraries(cmmk-test cmmk_shared)
++target_link_libraries(cmmk-debug cmmk_shared)
+ 
+ target_include_directories(cmmk-test PRIVATE
+ 	${libcmmk_SOURCE_DIR}/include
+@@ -23,8 +17,8 @@ target_include_directories(cmmk-debug PR
+ IF (NOT WIN32)
+ 	install(TARGETS cmmk-test cmmk-debug
+ 		CONFIGURATIONS Debug
+-		RUNTIME DESTINATION bin/debug)
++		RUNTIME DESTINATION bin)
+ 	install(TARGETS cmmk-test cmmk-debug
+ 		CONFIGURATIONS Release
+-		RUNTIME DESTINATION bin/release)
++		RUNTIME DESTINATION bin)
+ ENDIF()
