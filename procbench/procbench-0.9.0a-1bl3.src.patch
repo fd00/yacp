@@ -1,16 +1,16 @@
 --- origsrc/procbench_0.9.0aubuntu3~intrepid/src/bench/Makefile.am	2008-12-30 22:02:57.000000000 +0900
-+++ src/procbench_0.9.0aubuntu3~intrepid/src/bench/Makefile.am	2012-03-31 16:56:58.097680400 +0900
++++ src/procbench_0.9.0aubuntu3~intrepid/src/bench/Makefile.am	2023-10-08 13:36:34.927236400 +0900
 @@ -1,7 +1,6 @@
  lib_LTLIBRARIES= libpbbench.la
  libpbbench_la_SOURCES = ctbench.c  ctest1.c  ctest2.c  ctfibo.c  ctheapsort.c  ctmatrix.c  ctrandom.c
-+libpbbench_la_LDFLAGS = -no-undefined
++libpbbench_la_LDFLAGS = -no-undefined -version-info 1
  
  AM_CFLAGS = -O2 -fPIC -c
  
 -AM_LDFLAGS = -shared -Wl,-soname,libpbbench.so.1 
 -
 --- origsrc/procbench_0.9.0aubuntu3~intrepid/src/idriver-i386.cpp	2008-12-30 22:02:57.000000000 +0900
-+++ src/procbench_0.9.0aubuntu3~intrepid/src/idriver-i386.cpp	2012-03-31 17:03:02.426782000 +0900
++++ src/procbench_0.9.0aubuntu3~intrepid/src/idriver-i386.cpp	2023-10-08 13:36:34.927236400 +0900
 @@ -29,6 +29,8 @@
  #include <stdarg.h>
  #include "cross.h"
@@ -21,9 +21,13 @@
  const char *host_detect_local_cpu_old ();
  
 --- origsrc/procbench_0.9.0aubuntu3~intrepid/src/multi_cpu.cpp	2008-12-30 22:02:57.000000000 +0900
-+++ src/procbench_0.9.0aubuntu3~intrepid/src/multi_cpu.cpp	2012-03-31 17:03:26.801782000 +0900
-@@ -26,6 +26,8 @@
++++ src/procbench_0.9.0aubuntu3~intrepid/src/multi_cpu.cpp	2023-10-08 13:36:34.927236400 +0900
+@@ -24,8 +24,12 @@
+ #include "cross.h"
+ #ifdef __WIN32__
  #include <windows.h>
++#elif defined(__CYGWIN__)
++#include <sys/sysinfo.h>
  #endif
  
 +#include <cstdio>
@@ -31,15 +35,25 @@
  #define bit_HTT (1 << 28)
  unsigned int HTTSupported(void)
  {
+@@ -82,6 +86,9 @@ void host_detect_multi_cpu ()
+     	SYSTEM_INFO info;
+ 	GetSystemInfo (&info);			//how to detect?!?
+ 	procs_online = num_procs = (unsigned char) info.dwNumberOfProcessors;	  
++	#elif defined(__CYGWIN__)
++	num_procs = get_nprocs_conf();
++	procs_online = get_nprocs();
+ 	#else	
+ 	num_procs = sysconf (_SC_NPROCESSORS_CONF);
+ 	procs_online = sysconf (_SC_NPROCESSORS_ONLN);
 --- origsrc/procbench_0.9.0aubuntu3~intrepid/src/pbbench.cpp	2008-12-30 22:02:57.000000000 +0900
-+++ src/procbench_0.9.0aubuntu3~intrepid/src/pbbench.cpp	2012-03-31 16:56:21.114282000 +0900
++++ src/procbench_0.9.0aubuntu3~intrepid/src/pbbench.cpp	2023-10-08 13:36:34.927236400 +0900
 @@ -61,11 +61,16 @@ int *PBBench(int arg)
  	int x;
  	char *error;
  	printf("\n------=[CPU Benchmarks]=----------------------------------------------\n");
 -	lib_handle = dlopen("libpbbench.so", RTLD_LAZY);
 +#if defined(__CYGWIN__)
-+#define SO_NAME "cygpbbench-0.dll"
++#define SO_NAME "cygpbbench-1.dll"
 +#else
 +#define SO_NAME "libpbbench.so"
 +#endif
