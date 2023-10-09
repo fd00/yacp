@@ -1,0 +1,60 @@
+HOMEPAGE="https://github.com/petdance/tidyp"
+GIT_URI="https://github.com/petdance/tidyp.git"
+GIT_TAG="${PV}"
+
+CATEGORY="Libs"
+SUMMARY="Fork of the original tidy"
+DESCRIPTION="tidyp is a fork of tidy on SourceForge at http://tidy.sf.net. The library name
+is 'tidyp', and the command-line tool is also 'tidyp' but all internal API
+stays the same."
+
+# LICENSE=""
+# LICENSE_SPDX="SPDX-License-Identifier: "
+# LICENSE_URI=""
+
+export CFLAGS="${CFLAGS//-Werror=format-security/}"
+
+inherit git
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+	ln -fs ${S}/tests/testall.sh .
+	ln -fs ${S}/tests/testone.sh .
+	ln -fs ${S}/tests/testcases.txt .
+	ln -fs ${S}/tests/input .
+	popd
+	cygtest
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	./bin/${PN}.exe -xml-help > ${PN}1.xml
+	./bin/${PN}.exe -xml-config > ${PN}-config.xml
+	/usr/bin/xsltproc ${S}/htmldoc/${PN}1.xsl ${PN}1.xml > ${PN}.1
+	doman ${PN}.1
+}
+
+PKG_NAMES="
+	${PN}
+	lib${PN}${PV}_0
+	lib${PN}-devel
+"
+tidyp_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libtidyp1_04_0_CONTENTS="
+	usr/bin/cyg*-1-04-0.dll
+"
+libtidyp_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+tidyp_SUMMARY="${SUMMARY} (utilities)"
+libtidyp1_04_0_SUMMARY="${SUMMARY} (runtime)"
+libtidyp_devel_SUMMARY="${SUMMARY} (development)"
