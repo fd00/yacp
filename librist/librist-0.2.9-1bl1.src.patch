@@ -1,0 +1,83 @@
+--- origsrc/librist-v0.2.9/contrib/mbedtls/meson.build	2023-10-07 21:45:29.000000000 +0900
++++ src/librist-v0.2.9/contrib/mbedtls/meson.build	2023-10-27 16:37:00.390315300 +0900
+@@ -16,7 +16,7 @@ if not builtin_mbedtls
+ #include <mbedtls/bignum.h>
+ void test_has_func() { mbedtls_mpi_random(NULL, 0, NULL, NULL, NULL); }
+ '''
+-		cdata.set10('MBEDTLS_HAS_MPI_RANDOM', cc.compiles(mpi_random_test, name: 'MbedTLS has mbedtls_mpi_random()', dependencies: mbedcrypto_lib))
++		cdata.set10('MBEDTLS_HAS_MPI_RANDOM', cc.links(mpi_random_test, args: '-lmbedcrypto', name: 'MbedTLS has mbedtls_mpi_random()', dependencies: mbedcrypto_lib))
+     endif
+ endif
+ if builtin_mbedtls and not mbedcrypto_lib_found
+--- origsrc/librist-v0.2.9/meson.build	2023-10-07 21:45:29.000000000 +0900
++++ src/librist-v0.2.9/meson.build	2023-10-27 17:21:26.515455100 +0900
+@@ -4,7 +4,7 @@
+ # SPDX-License-Identifier: BSD-2-Clause
+ 
+ project('libRIST', 'c',
+-	version: '0.2.8',
++	version: '0.2.9',
+ 	default_options: ['c_std=c99', 'warning_level=3', 'libdir=lib'],
+         meson_version: '>= 0.51.0')
+ 
+@@ -279,7 +279,7 @@ cdata.set10('HAVE_NETTLE', use_nettle an
+ # Generate config.h
+ config_file = configure_file(output: 'config.h', configuration: cdata)
+ 
+-librist = library('librist',
++librist = library('rist',
+ 	'src/crypto/crypto.c',
+ 	'src/crypto/psk.c',
+ 	'src/proto/gre.c',
+@@ -310,7 +310,6 @@ librist = library('librist',
+ 		stdatomic_dependency,
+ 		cjson_lib,
+ 	],
+-	name_prefix : '',
+ 	version: librist_version,
+ 	soversion: librist_soversion,
+ 	prelink: filter_obj,
+--- origsrc/librist-v0.2.9/src/network.c	2023-10-07 21:45:29.000000000 +0900
++++ src/librist-v0.2.9/src/network.c	2023-10-27 16:01:35.492193200 +0900
+@@ -7,7 +7,7 @@
+ #include <ifaddrs.h>
+ #ifdef __linux__
+ #include <netpacket/packet.h>
+-#elif defined(__GNU__)
++#elif defined(__GNU__) || defined(__CYGWIN__)
+ #include <sys/ioctl.h>
+ #include <net/if.h>
+ #else
+@@ -20,7 +20,7 @@
+ int _librist_network_get_macaddr(uint8_t mac[]) {
+   char mac_null[6] = {0};
+ #ifndef _WIN32
+-#if defined(__GNU__)
++#if defined(__GNU__) || defined(__CYGWIN__)
+   int sock = socket(PF_INET, SOCK_DGRAM, 0);
+ #endif
+   struct ifaddrs *ifaddr = NULL;
+@@ -38,7 +38,7 @@ int _librist_network_get_macaddr(uint8_t
+           break;
+         }
+       }
+-#elif defined(__GNU__)
++#elif defined(__GNU__) || defined(__CYGWIN__)
+       struct ifreq ifr;
+       strcpy(ifr.ifr_name, ifa->ifa_name);
+       if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
+--- origsrc/librist-v0.2.9/src/udpsocket.c	2023-10-07 21:45:29.000000000 +0900
++++ src/librist-v0.2.9/src/udpsocket.c	2023-10-27 15:58:54.169074300 +0900
+@@ -178,8 +178,12 @@ int udpsocket_set_mcast_iface(int sd, co
+ 	if (family == AF_INET6) {
+ 		return setsockopt(sd, SOL_IPV6, IPV6_MULTICAST_IF, &scope, sizeof(scope));
+ 	} else {
++#if defined(__linux__)
+ 		struct ip_mreqn req = { .imr_ifindex = scope };
+ 		return setsockopt(sd, SOL_IP, IP_MULTICAST_IF, &req, sizeof(req));
++#else
++		return -1;
++#endif
+ 	}
+ 	return -1;
+ #endif
