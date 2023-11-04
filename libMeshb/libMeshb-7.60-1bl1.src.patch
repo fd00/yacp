@@ -1,0 +1,116 @@
+--- origsrc/libMeshb-7.60/CMakeLists.txt	2021-04-16 00:41:41.000000000 +0900
++++ src/libMeshb-7.60/CMakeLists.txt	2023-11-04 15:15:04.756301300 +0900
+@@ -58,7 +58,6 @@ add_subdirectory (sources)
+ add_subdirectory (examples)
+ add_subdirectory (utilities)
+ 
+-install (FILES LICENSE.txt copyright.txt DESTINATION share/libMeshb)
+ install (DIRECTORY sample_meshes DESTINATION share/libMeshb)
+ 
+ 
+--- origsrc/libMeshb-7.60/examples/CMakeLists.txt	2021-04-16 00:41:41.000000000 +0900
++++ src/libMeshb-7.60/examples/CMakeLists.txt	2023-11-04 15:12:08.098837300 +0900
+@@ -4,27 +4,27 @@
+ ##################
+ 
+ add_executable(test_libmeshb test_libmeshb.c)
+-target_link_libraries(test_libmeshb Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_libmeshb Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_libmeshb DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ add_executable(test_libmeshb_block test_libmeshb_block.c)
+-target_link_libraries(test_libmeshb_block Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_libmeshb_block Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_libmeshb_block DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ add_executable(test_libmeshb_sol test_libmeshb_sol.c)
+-target_link_libraries(test_libmeshb_sol Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_libmeshb_sol Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_libmeshb_sol DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ add_executable(test_libmeshb_HO test_libmeshb_HO.c)
+-target_link_libraries(test_libmeshb_HO Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_libmeshb_HO Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_libmeshb_HO DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ add_executable(test_libmeshb_p2_sol test_libmeshb_p2_sol.c)
+-target_link_libraries(test_libmeshb_p2_sol Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_libmeshb_p2_sol Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_libmeshb_p2_sol DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ add_executable(test_polyhedra test_polyhedra.c ${PROJECT_SOURCE_DIR}/utilities/libmeshb7_helpers.c)
+-target_link_libraries(test_polyhedra Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries(test_polyhedra Meshb ${AIO_LIBRARIES})
+ install (TARGETS test_polyhedra DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+ 
+@@ -35,14 +35,14 @@ install (TARGETS test_polyhedra DESTINAT
+ 
+ if (CMAKE_Fortran_COMPILER)
+    add_executable(test_libmeshb_f77 test_libmeshb.f)
+-   target_link_libraries(test_libmeshb_f77 Meshbf.7 ${AIO_LIBRARIES})
++   target_link_libraries(test_libmeshb_f77 Meshbf ${AIO_LIBRARIES})
+    install (TARGETS test_libmeshb_f77 DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+    add_executable(test_libmeshb_block_f77 test_libmeshb_block.f)
+-   target_link_libraries(test_libmeshb_block_f77 Meshbf.7 ${AIO_LIBRARIES})
++   target_link_libraries(test_libmeshb_block_f77 Meshbf ${AIO_LIBRARIES})
+    install (TARGETS test_libmeshb_block_f77 DESTINATION share/libMeshb/examples COMPONENT examples)
+ 
+    add_executable(test_libmeshb_block_pipeline test_libmeshb_block_pipeline.f)
+-   target_link_libraries(test_libmeshb_block_pipeline Meshbf.7 ${AIO_LIBRARIES})
++   target_link_libraries(test_libmeshb_block_pipeline Meshbf ${AIO_LIBRARIES})
+    install (TARGETS test_libmeshb_block_pipeline DESTINATION share/libMeshb/examples COMPONENT examples)
+ endif ()
+--- origsrc/libMeshb-7.60/sources/CMakeLists.txt	2021-04-16 00:41:41.000000000 +0900
++++ src/libMeshb-7.60/sources/CMakeLists.txt	2023-11-04 15:21:03.657265100 +0900
+@@ -3,13 +3,11 @@
+ # BUILD THE STATIC LIBRARY
+ ##########################
+ 
+-add_library(Meshb.7 libmeshb7.c)
++add_library(Meshb libmeshb7.c)
++set_target_properties(Meshb PROPERTIES SOVERSION 7)
+ install (FILES libmeshb7.h DESTINATION include COMPONENT headers)
+-target_include_directories(Meshb.7 PUBLIC $<INSTALL_INTERFACE:include>)
+-install (TARGETS Meshb.7 EXPORT meshb-target DESTINATION lib COMPONENT libraries)
+-install (EXPORT meshb-target NAMESPACE ${PROJECT_NAME}::
+-         DESTINATION lib/cmake/${PROJECT_NAME})
+-install (TARGETS Meshb.7 EXPORT libMeshb-target DESTINATION lib COMPONENT libraries)
++target_include_directories(Meshb PUBLIC $<INSTALL_INTERFACE:include>)
++install (TARGETS Meshb EXPORT libMeshb-target RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT libraries)
+ install (EXPORT libMeshb-target DESTINATION lib/cmake/${PROJECT_NAME})
+ export  (PACKAGE libMeshb)
+ 
+@@ -20,9 +18,10 @@ export  (PACKAGE libMeshb)
+ 
+ if (CMAKE_Fortran_COMPILER)
+    file(GLOB_RECURSE SOURCES *.[chfF] *.[fF]90)
+-   add_library(Meshbf.7 STATIC ${SOURCES})
+-   set_target_properties(Meshbf.7 PROPERTIES COMPILE_FLAGS "-DF77API")
+-   target_include_directories(Meshbf.7
++   add_library(Meshbf ${SOURCES})
++   set_target_properties(Meshbf PROPERTIES SOVERSION 7)
++   set_target_properties(Meshbf PROPERTIES COMPILE_FLAGS "-DF77API")
++   target_include_directories(Meshbf
+                               INTERFACE ${CMAKE_CURRENT_BINARY_DIR}
+                               PRIVATE   ${CMAKE_CURRENT_BINARY_DIR}
+                               PRIVATE   ${CMAKE_BINARY_DIR}
+@@ -30,7 +29,7 @@ if (CMAKE_Fortran_COMPILER)
+    
+    install(FILES libmeshb7.ins DESTINATION include)
+    
+-   install(TARGETS Meshbf.7
++   install(TARGETS Meshbf
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            PUBLIC_HEADER DESTINATION include
+--- origsrc/libMeshb-7.60/utilities/CMakeLists.txt	2021-04-16 00:41:41.000000000 +0900
++++ src/libMeshb-7.60/utilities/CMakeLists.txt	2023-11-04 15:13:12.441353500 +0900
+@@ -5,5 +5,5 @@
+ 
+ add_executable(transmesh transmesh.c ../sources/libmeshb7.c)
+ target_compile_options (transmesh PRIVATE -DTRANSMESH)
+-target_link_libraries (transmesh Meshb.7 ${AIO_LIBRARIES})
++target_link_libraries (transmesh Meshb ${AIO_LIBRARIES})
+ install (TARGETS transmesh DESTINATION bin COMPONENT applications)
