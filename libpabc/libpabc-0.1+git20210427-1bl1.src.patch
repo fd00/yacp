@@ -1,0 +1,91 @@
+--- origsrc/libpabc/CMakeLists.txt	2023-11-04 11:34:43.000000000 +0900
++++ src/libpabc/CMakeLists.txt	2023-11-04 13:10:37.234261300 +0900
+@@ -14,6 +14,9 @@ add_custom_target(check COMMAND ${CMAKE_
+ 
+ include(CheckCCompilerFlag OPTIONAL)
+ 
++find_package(pkgconfig)
++pkg_check_modules(RELIC relic-toolkit)
++if (NOT RELIC_FOUND)
+ set(RELIC_CFLAGS "-O3 -fomit-frame-pointer -fPIC -march=native -mtune=native" CACHE INTERNAL "")
+ 
+ check_c_compiler_flag("-finline-small-functions" INLINE_SMALL_FUNCS_SUPPORTED)
+@@ -37,6 +40,7 @@ ExternalProject_Add(relic
+ 
+ ExternalProject_Get_Property(relic BINARY_DIR)
+ ExternalProject_Get_Property(relic SOURCE_DIR)
++endif()
+ 
+ install(DIRECTORY "${CMAKE_SOURCE_DIR}/include" DESTINATION ${CMAKE_INSTALL_PREFIX})
+ 
+@@ -49,8 +53,15 @@ endif()
+ add_subdirectory(src)
+ 
+ find_package(Doxygen)
+-if(Doxygen_FOUND)
++if(ENABLE_DOC AND Doxygen_FOUND)
+   add_subdirectory(docs)
+ else()
+   message(STATUS "Doxygen not found, not building docs")
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libpabc.pc.in ${CMAKE_BINARY_DIR}/libpabc.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libpabc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libpabc/libpabc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpabc/libpabc.pc.in	2023-11-04 13:10:54.178868000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpabc
++Description: C implementation of BBS+ blind signatures using BLS12-381
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lpabc
++Cflags: -I${includedir}
+--- origsrc/libpabc/src/CMakeLists.txt	2023-11-04 11:34:43.000000000 +0900
++++ src/libpabc/src/CMakeLists.txt	2023-11-04 11:41:08.622208100 +0900
+@@ -12,6 +12,9 @@ add_library(pabc
+   verifier.c
+ )
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(pabc PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ #set_property(TARGET pabc PROPERTY POSITION_INDEPENDENT_CODE ON)
+ target_include_directories(pabc PUBLIC ${SOURCE_DIR}/include)
+ target_include_directories(pabc PUBLIC ${BINARY_DIR}/include)
+@@ -22,12 +25,19 @@ find_path(GMP_PATH gmp.h REQUIRED)
+ target_include_directories(pabc PUBLIC ../include)
+ target_include_directories(pabc PUBLIC ${GMP_PATH})
+ target_link_libraries(pabc PUBLIC ${GMP_LIB})
++if (RELIC_FOUND)
++target_include_directories(pabc PUBLIC ${RELIC_INCLUDE_DIRS})
++target_link_libraries(pabc PRIVATE ${RELIC_LIBRARIES})
++else()
+ target_link_libraries(pabc PRIVATE
+   ${BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}relic_s${CMAKE_STATIC_LIBRARY_SUFFIX})
++endif()
+ target_link_libraries(pabc PUBLIC ${JANSSON_LIB})
+ target_link_libraries(pabc PUBLIC ${B64_LIB})
+ 
++if (NOT RELIC_FOUND)
+ add_dependencies(pabc relic)
++endif()
+ 
+ add_executable(pabc-issuer
+   pabc-issuer.c
+@@ -49,6 +59,7 @@ target_link_libraries(pabc-verifier PRIV
+ 
+ include(GNUInstallDirs)
+ install(TARGETS pabc
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(TARGETS pabc-user pabc-issuer pabc-verifier
+         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
