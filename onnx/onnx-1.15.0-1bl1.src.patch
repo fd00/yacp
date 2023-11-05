@@ -1,17 +1,6 @@
---- origsrc/onnx-1.14.0/CMakeLists.txt	2023-05-04 09:14:24.000000000 +0900
-+++ src/onnx-1.14.0/CMakeLists.txt	2023-08-23 06:34:15.560008000 +0900
-@@ -57,9 +57,7 @@ endif()
- 
- # Required to use /std:c++17 or higher on Windows
- # For other platforms, set C++11 as standard for the whole project
--if(NOT MSVC)
--  set(CMAKE_CXX_STANDARD 11)
--else()
-+if(MSVC)
-   string(APPEND CMAKE_CXX_FLAGS " /std:c++17")
- endif()
- 
-@@ -126,8 +124,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
+--- origsrc/onnx-1.15.0/CMakeLists.txt	2023-10-26 07:10:41.000000000 +0900
++++ src/onnx-1.15.0/CMakeLists.txt	2023-11-06 06:28:45.681814300 +0900
+@@ -124,8 +124,11 @@ if(NOT DEFINED CMAKE_POSITION_INDEPENDEN
  endif()
  
  if(ONNX_BUILD_TESTS)
@@ -25,18 +14,29 @@
  endif()
  
  if((ONNX_USE_LITE_PROTO AND TARGET protobuf::libprotobuf-lite) OR ((NOT ONNX_USE_LITE_PROTO) AND TARGET protobuf::libprotobuf))
-@@ -403,6 +404,10 @@ else()
- endif()
- target_compile_definitions(onnx_proto PRIVATE ${ONNX_API_DEFINE})
+@@ -472,6 +475,10 @@ target_include_directories(onnx_proto PU
+   $<INSTALL_INTERFACE:include>
+   $<BUILD_INTERFACE:${PROTOBUF_INCLUDE_DIRS}>)
  
 +if (DEFINED SOVERSION)
 +  set_target_properties(onnx_proto PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
 +
- if(ONNX_USE_LITE_PROTO)
-   if(TARGET protobuf::libprotobuf-lite)
-     target_link_libraries(onnx_proto PUBLIC protobuf::libprotobuf-lite)
-@@ -519,14 +524,18 @@ endif()
+ if (MSVC)
+   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+     set(EXTRA_FLAGS
+@@ -531,6 +538,10 @@ target_include_directories(onnx PUBLIC
+ target_link_libraries(onnx PUBLIC onnx_proto)
+ add_onnx_global_defines(onnx)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(onnx PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(BUILD_ONNX_PYTHON)
+   if("${PY_EXT_SUFFIX}" STREQUAL "")
+     if(MSVC)
+@@ -617,14 +628,18 @@ endif()
  
  if(ONNX_BUILD_BENCHMARKS)
    if(NOT TARGET benchmark)
@@ -63,18 +63,7 @@
    endif()
  
    add_executable(protobuf-bench tools/protobuf-bench.cc)
-@@ -595,6 +604,10 @@ if(APPLE)
-   set_target_properties(onnx PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
- endif()
- 
-+if (DEFINED SOVERSION)
-+  set_target_properties(onnx PROPERTIES SOVERSION "${SOVERSION}")
-+endif()
-+
- install(DIRECTORY ${ONNX_ROOT}/onnx
-         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-         FILES_MATCHING
-@@ -622,7 +635,9 @@ install(FILES
+@@ -720,7 +735,9 @@ install(FILES
  install(EXPORT ONNXTargets DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ONNX")
  install(TARGETS
    onnx onnx_proto
@@ -85,8 +74,8 @@
  
  if(ONNX_BUILD_TESTS)
    include(${ONNX_ROOT}/cmake/unittest.cmake)
---- origsrc/onnx-1.14.0/cmake/unittest.cmake	2023-05-04 09:14:24.000000000 +0900
-+++ src/onnx-1.14.0/cmake/unittest.cmake	2023-08-23 06:22:39.903379500 +0900
+--- origsrc/onnx-1.15.0/cmake/unittest.cmake	2023-10-26 07:10:41.000000000 +0900
++++ src/onnx-1.15.0/cmake/unittest.cmake	2023-11-06 06:31:41.605431300 +0900
 @@ -7,7 +7,11 @@ include(${ONNX_ROOT}/cmake/Utils.cmake)
  
  find_package(Threads)
@@ -100,16 +89,26 @@
  
  list(APPEND ${UT_NAME}_libs onnx)
  list(APPEND ${UT_NAME}_libs onnx_proto)
-@@ -22,7 +26,11 @@ function(AddTest)
+@@ -22,14 +26,20 @@ function(AddTest)
    list(REMOVE_DUPLICATES _UT_SOURCES)
  
    add_executable(${_UT_TARGET} ${_UT_SOURCES})
 -  add_dependencies(${_UT_TARGET} onnx onnx_proto googletest)
-+  if (GTEST_FOUND)
-+    add_dependencies(${_UT_TARGET} onnx onnx_proto)
-+  else()
-+    add_dependencies(${_UT_TARGET} onnx onnx_proto googletest)
++  add_dependencies(${_UT_TARGET} onnx onnx_proto)
++  if (NOT GTEST_FOUND)
++    add_dependencies(${_UT_TARGET} googletest)
 +  endif()
  
    target_include_directories(${_UT_TARGET}
-                              PUBLIC ${googletest_INCLUDE_DIRS}
+-                             PUBLIC ${googletest_INCLUDE_DIRS}
++                             PUBLIC 
+                                     ${ONNX_INCLUDE_DIRS}
+                                     ${PROTOBUF_INCLUDE_DIRS}
+                                     ${ONNX_ROOT}
+                                     ${CMAKE_CURRENT_BINARY_DIR})
++  if (NOT GTEST_FOUND)
++    target_include_directories(${_UT_TARGET} PUBLIC  ${googletest_INCLUDE_DIRS})
++  endif()
+   target_link_libraries(${_UT_TARGET} ${_UT_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+   if(TARGET protobuf::libprotobuf)
+     target_link_libraries(${_UT_TARGET} protobuf::libprotobuf)
