@@ -1,0 +1,57 @@
+--- origsrc/openddl-parser-0.5.1/CMakeLists.txt	2023-08-12 15:25:18.000000000 +0900
++++ src/openddl-parser-0.5.1/CMakeLists.txt	2023-11-06 13:15:54.265191600 +0900
+@@ -27,6 +27,8 @@ option( DDL_DOCUMENTATION       "Set to
+ option( DDL_BUILD_TESTS         "Set to OFF to not build tests by default"                                    ON )
+ option( DDL_BUILD_PARSER_DEMO   "Set to OFF to opt out building parser demo"                                  ON )
+ 
++set(BUILD_SHARED_LIBS ${DDL_BUILD_SHARED_LIBS})
++
+ if (MSVC)
+     add_definitions(
+         -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
+@@ -117,6 +119,10 @@ endif()
+ 
+ set_target_properties( openddlparser PROPERTIES PUBLIC_HEADER "${openddlparser_headers}")
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(openddlparser PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if (DDL_BUILD_TESTS)
+     find_package(Threads REQUIRED)
+ 
+@@ -214,3 +220,10 @@ write_basic_package_version_file(
+ install(
+     FILES "${CMAKE_BINARY_DIR}/openddlparser-config-version.cmake"
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/openddlparser")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/openddl-parser.pc.in ${CMAKE_BINARY_DIR}/openddl-parser.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/openddl-parser.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/openddl-parser-0.5.1/code/OpenDDLParser.cpp	2023-08-12 15:25:18.000000000 +0900
++++ src/openddl-parser-0.5.1/code/OpenDDLParser.cpp	2023-11-06 13:27:59.315818700 +0900
+@@ -36,7 +36,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE
+ 
+ BEGIN_ODDLPARSER_NS
+ 
+-static const char *Version = "0.4.0";
++static const char *Version = "0.5.1";
+ 
+ namespace Grammar {
+ 
+--- origsrc/openddl-parser-0.5.1/openddl-parser.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/openddl-parser-0.5.1/openddl-parser.pc.in	2023-11-06 13:16:16.674612500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: openddl-parser
++Description: Simple and fast OpenDDL Parser
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lopenddlparser
++Cflags: -I${includedir}
