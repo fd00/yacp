@@ -1,0 +1,41 @@
+--- origsrc/RandomX-1.2.1/CMakeLists.txt	2023-10-21 03:42:55.000000000 +0900
++++ src/RandomX-1.2.1/CMakeLists.txt	2023-11-08 12:42:23.748590600 +0900
+@@ -222,9 +222,13 @@ set_property(TARGET randomx PROPERTY CXX
+ set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
+ set_property(TARGET randomx PROPERTY PUBLIC_HEADER src/randomx.h)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(randomx PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ include(GNUInstallDirs)
+ install(TARGETS randomx
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+@@ -270,3 +274,10 @@ if(NOT HAVE_CXX_ATOMICS)
+ endif()
+ set_property(TARGET randomx-benchmark PROPERTY POSITION_INDEPENDENT_CODE ON)
+ set_property(TARGET randomx-benchmark PROPERTY CXX_STANDARD 11)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/RandomX.pc.in ${CMAKE_BINARY_DIR}/RandomX.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/RandomX.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/RandomX-1.2.1/RandomX.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/RandomX-1.2.1/RandomX.pc.in	2023-11-08 12:41:21.417405500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: RandomX
++Description: Proof of work algorithm based on random code execution
++Version: @VERSION@
++Libs: -L${libdir} -lrandomx
++Cflags: -I${includedir}
