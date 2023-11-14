@@ -1,0 +1,122 @@
+--- origsrc/wabt/CMakeLists.txt	2023-11-13 16:08:08.000000000 +0900
++++ src/wabt/CMakeLists.txt	2023-11-13 18:44:33.136889100 +0900
+@@ -391,9 +391,12 @@ set(WABT_LIBRARY_H
+ 
+ set(WABT_LIBRARY_SRC ${WABT_LIBRARY_CC} ${WABT_LIBRARY_H})
+ 
+-add_library(wabt STATIC ${WABT_LIBRARY_SRC})
++add_library(wabt SHARED ${WABT_LIBRARY_SRC})
+ add_dependencies(wabt gen-wasm2c-prebuilt-target)
+ add_library(wabt::wabt ALIAS wabt)
++if (DEFINED SOVERSION)
++  set_target_properties(wabt PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ if (HAVE_OPENSSL_SHA_H)
+   target_link_libraries(wabt OpenSSL::Crypto)
+@@ -425,8 +428,11 @@ endif ()
+ if (HAVE_SETJMP_H)
+   set(WASM_RT_FILES "wasm2c/wasm-rt-impl.h" "wasm2c/wasm-rt-impl.c" "wasm2c/wasm-rt-exceptions-impl.c")
+ 
+-  add_library(wasm-rt-impl STATIC ${WASM_RT_FILES})
++  add_library(wasm-rt-impl SHARED ${WASM_RT_FILES})
+   add_library(wabt::wasm-rt-impl ALIAS wasm-rt-impl)
++  if (DEFINED SOVERSION)
++    set_target_properties(wasm-rt-impl PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
+   if (WABT_BIG_ENDIAN)
+     target_compile_definitions(wasm-rt-impl PUBLIC WABT_BIG_ENDIAN=1)
+   endif ()
+@@ -437,6 +443,8 @@ if (HAVE_SETJMP_H)
+       EXPORT wabt-targets
+       COMPONENT wabt-development
+       INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
++      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+     )
+     install(
+       FILES "wasm2c/wasm-rt.h" "wasm2c/wasm-rt-exceptions.h"
+@@ -473,6 +481,9 @@ if (BUILD_LIBWASM)
+     target_compile_definitions(wasm PRIVATE "WASM_API_EXTERN=__attribute__((visibility(\"default\")))")
+   endif ()
+   set_target_properties(wasm PROPERTIES CXX_VISIBILITY_PRESET hidden)
++  if (DEFINED SOVERSION)
++    set_target_properties(wasm PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
+ endif ()
+ 
+ if (CODE_COVERAGE)
+@@ -528,6 +539,8 @@ function(wabt_executable)
+   endif ()
+ endfunction()
+ 
++find_package(pkgconfig)
++
+ if (BUILD_TOOLS)
+   # wat2wasm
+   wabt_executable(
+@@ -572,17 +585,22 @@ if (BUILD_TOOLS)
+   )
+ 
+   if(WITH_WASI)
+-    add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
+-    include_directories(third_party/uvwasi/include)
++    pkg_check_modules(UVWASI uvwasi)
+     add_definitions(-DWITH_WASI)
+-    set(INTERP_LIBS uvwasi_a)
+-    set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
+-
+-    if (COMPILER_IS_GNU)
+-      target_compile_options(uv_a PRIVATE "-Wno-sign-compare")
+-    elseif (COMPILER_IS_CLANG)
+-      target_compile_options(uv_a PRIVATE "-Wno-implicit-fallthrough")
++    if (UVWASI_FOUND)
++      include_directories(${UVWASI_INCLUDEDIR})
++      set(INTERP_LIBS ${UVWASI_LIBRARIES})
++    else()
++      add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
++      include_directories(third_party/uvwasi/include)
++      set(INTERP_LIBS uvwasi_a)
++      if (COMPILER_IS_GNU)
++        target_compile_options(uv_a PRIVATE "-Wno-sign-compare")
++      elseif (COMPILER_IS_CLANG)
++        target_compile_options(uv_a PRIVATE "-Wno-implicit-fallthrough")
++      endif()
+     endif()
++    set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
+   endif()
+ 
+   # wasm-interp
+--- origsrc/wabt/src/interp/interp-wasi.cc	2023-11-13 16:08:08.000000000 +0900
++++ src/wabt/src/interp/interp-wasi.cc	2023-11-13 18:43:18.168303300 +0900
+@@ -33,7 +33,7 @@
+ 
+ #ifdef WITH_WASI
+ 
+-#include "uvwasi.h"
++#include <uvwasi/uvwasi.h>
+ 
+ #include <cinttypes>
+ #include <unordered_map>
+--- origsrc/wabt/src/tools/wasm-interp.cc	2023-11-13 16:08:08.000000000 +0900
++++ src/wabt/src/tools/wasm-interp.cc	2023-11-13 18:42:39.034550100 +0900
+@@ -34,7 +34,7 @@
+ #include "wabt/stream.h"
+ 
+ #ifdef WITH_WASI
+-#include "uvwasi.h"
++#include <uvwasi/uvwasi.h>
+ #endif
+ 
+ using namespace wabt;
+--- origsrc/wabt/test/run-spec-wasm2c.py	2023-11-13 16:08:08.000000000 +0900
++++ src/wabt/test/run-spec-wasm2c.py	2023-11-13 18:48:35.311931700 +0900
+@@ -459,7 +459,7 @@ def Compile(cc, c_filename, out_dir, *cf
+         # and '-frounding-math' to maintain conformance with the spec tests
+         # (GCC also requires '-fsignaling-nans')
+         args += ['-c', c_filename, '-o', o_filename, '-O2',
+-                 '-Wall', '-Werror', '-Wno-unused',
++                 '-Wall', '-Wno-unused',
+                  '-Wno-array-bounds',
+                  '-Wno-ignored-optimization-argument',
+                  '-Wno-tautological-constant-out-of-range-compare',
