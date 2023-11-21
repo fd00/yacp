@@ -1,0 +1,90 @@
+--- origsrc/libecbor-1.0.3/CMakeLists.txt	2023-08-26 17:02:51.000000000 +0900
++++ src/libecbor-1.0.3/CMakeLists.txt	2023-11-21 01:31:36.493353500 +0900
+@@ -29,26 +29,21 @@ add_compile_options (
+     $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
+     $<$<COMPILE_LANGUAGE:C>:-Wold-style-definition>)
+ 
+-# Output directory setup
+-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
+-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib")
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin")
+-
+ # Directory setup
+ set (SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+ set (INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
+ 
+-include_directories (${INCLUDE_DIR} ${SOURCE_DIR})
++include_directories ("${PROJECT_BINARY_DIR}/include" ${SOURCE_DIR})
+ 
+ # Configurations
+ configure_file (
+   "${INCLUDE_DIR}/ecbor.h.in"
+-  "${INCLUDE_DIR}/ecbor.h"
++  "${PROJECT_BINARY_DIR}/include/ecbor.h"
+ )
+ 
+ # Source setup
+ set (LIB_INCLUDES
+-  "${INCLUDE_DIR}/ecbor.h"
++  "${PROJECT_BINARY_DIR}/include/ecbor.h"
+ )
+ 
+ set (LIB_SOURCES
+@@ -62,21 +57,21 @@ set (DESCRIBE_TOOL_SOURCES
+ )
+ 
+ # Targets
+-add_library (${PROJECT_NAME}_shared SHARED ${LIB_SOURCES})
+-add_library (${PROJECT_NAME}_static STATIC ${LIB_SOURCES})
++add_library (${PROJECT_NAME} SHARED ${LIB_SOURCES})
+ 
+-set_target_properties (${PROJECT_NAME}_shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PUBLIC_HEADER ${LIB_INCLUDES} LINKER_LANGUAGE C)
+-set_target_properties (${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PUBLIC_HEADER ${LIB_INCLUDES} LINKER_LANGUAGE C)
++set_target_properties (${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME} PUBLIC_HEADER ${LIB_INCLUDES} LINKER_LANGUAGE C)
+ 
+-target_compile_options (${PROJECT_NAME}_static PRIVATE -nostdlib)
++if (DEFINED SOVERSION)
++  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+-install (TARGETS ${PROJECT_NAME}_shared)
+-install (TARGETS ${PROJECT_NAME}_static)
++install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++install (FILES "${LIB_INCLUDES}" DESTINATION include)
+ 
+ # Tool Targets
+ if (BUILD_DESCRIBE_TOOL)
+   add_executable (${PROJECT_NAME}-describe ${DESCRIBE_TOOL_SOURCES})
+-  target_link_libraries (${PROJECT_NAME}-describe ${PROJECT_NAME}_shared)
++  target_link_libraries (${PROJECT_NAME}-describe ${PROJECT_NAME})
+   install (TARGETS ${PROJECT_NAME}-describe)
+ endif (BUILD_DESCRIBE_TOOL)
+ 
+@@ -90,6 +85,13 @@ if (TESTING)
+     # Unit tests
+     enable_testing ()
+     add_executable(unittest ${UNIT_TEST_SOURCES})
+-    target_link_libraries (unittest GTest::GTest ${PROJECT_NAME}_static)
++    target_link_libraries (unittest GTest::GTest ${PROJECT_NAME})
+     gtest_discover_tests (unittest)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libecbor.pc.in ${CMAKE_BINARY_DIR}/libecbor.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libecbor.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libecbor-1.0.3/libecbor.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libecbor-1.0.3/libecbor.pc.in	2023-11-21 01:32:59.533772600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libecbor
++Description: CBOR library
++Version: @VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@
++Libs: -L${libdir} -lecbor
++Cflags: -I${includedir}
