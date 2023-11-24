@@ -1,0 +1,80 @@
+--- origsrc/gcli-2.0.0/Makefile.am	2023-09-22 04:19:13.000000000 +0900
++++ src/gcli-2.0.0/Makefile.am	2023-11-24 20:08:05.100946600 +0900
+@@ -20,13 +20,13 @@ pgen_SOURCES = \
+ 	src/pgen/lexer.l
+ 
+ lib_LTLIBRARIES = libgcli.la
+-noinst_LTLIBRARIES = libsn.la libpdjson.la
++noinst_LTLIBRARIES = libsn.la
+ 
+ # For testing puproses I'll reenable parallel builds. If it breaks again, uncomment.
+ # .NOTPARALLEL: pgen$(EXEEXT) $(builddir)/src/pgen/parser.c $(builddir)/src/pgen/parser.h $(builddir)/src/pgen/lexer.c
+ src/pgen/lexer.c: src/pgen/parser.h
+ 
+-libgcli_la_DEPENDENCIES = pgen$(EXEEXT) libpdjson.la libsn.la
++libgcli_la_DEPENDENCIES = pgen$(EXEEXT) libsn.la
+ 
+ $(BUILT_SOURCES): pgen$(EXEEXT)
+ 
+@@ -40,7 +40,8 @@ SUFFIXES = .t
+ bin_PROGRAMS = gcli$(EXEEXT)
+ gcli_LDADD = libgcli.la
+ 
+-libgcli_la_LIBADD = libpdjson.la libsn.la
++libgcli_la_LIBADD = $(PDJSON_LIBS) libsn.la
++libgcli_la_LDFLAGS = -no-undefined
+ 
+ dist_man_MANS = \
+ 	docs/gcli-api.1 \
+@@ -87,10 +88,6 @@ libsn_la_SOURCES = \
+ 	thirdparty/sn/sn.c \
+ 	thirdparty/sn/sn.h
+ 
+-libpdjson_la_SOURCES = \
+-	thirdparty/pdjson/pdjson.c \
+-	thirdparty/pdjson/pdjson.h
+-
+ TEMPLATES = \
+ 	templates/github/api.t \
+ 	templates/github/checks.t \
+@@ -231,25 +228,25 @@ do_test: $(check_PROGRAMS) tests/Kyuafil
+ tests_json_escape_SOURCES = \
+ 	tests/json-escape.c
+ tests_json_escape_LDADD = \
+-	libgcli.la libpdjson.la libsn.la \
++	libgcli.la libsn.la \
+ 	$(LIBATFC_LDFLAGS)
+ 
+ tests_github_parse_tests_SOURCES = \
+ 	tests/github-parse-tests.c
+ tests_github_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la libsn.la \
++	libgcli.la libsn.la \
+ 	$(LIBATFC_LDFLAGS)
+ 
+ tests_gitlab_parse_tests_SOURCES = \
+ 	tests/gitlab-parse-tests.c
+ tests_gitlab_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la libsn.la \
++	libgcli.la libsn.la \
+ 	$(LIBATFC_LDFLAGS)
+ 
+ tests_url_encode_SOURCES = \
+ 	tests/url-encode.c
+ tests_url_encode_LDADD = \
+-	libgcli.la libpdjson.la libsn.la \
++	libgcli.la libsn.la \
+ 	$(LIBATFC_LDFLAGS)
+ 
+ tests_pretty_print_test_SOURCES = \
+--- origsrc/gcli-2.0.0/configure.ac	2023-09-22 04:19:13.000000000 +0900
++++ src/gcli-2.0.0/configure.ac	2023-11-24 20:05:26.555256100 +0900
+@@ -83,6 +83,8 @@ AS_IF([test -z "$KYUA" || test "x$HAVE_A
+ AC_SUBST([HAVE_TESTS])
+ AM_CONDITIONAL([HAVE_TESTS], [test "x$HAVE_TESTS" = xyes])
+ 
++PKG_CHECK_MODULES([PDJSON], [pdjson])
++
+ dnl Go looking for headers that may define getopt_long
+ AC_CHECK_HEADERS([getopt.h unistd.h])
+ dnl Other headers that we require
