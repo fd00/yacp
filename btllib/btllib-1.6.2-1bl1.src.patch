@@ -1,0 +1,73 @@
+--- origsrc/btllib/meson.build	2023-11-26 11:53:46.000000000 +0900
++++ src/btllib/meson.build	2023-11-26 15:28:38.319344100 +0900
+@@ -56,14 +56,15 @@ cpptomp_dep = cpptoml_subproject.depende
+ 
+ run_command(meson.project_source_root() + '/scripts/prepare-sdsl')
+ 
+-sdsl_subproject = cmake.subproject('sdsl-lite', options : cmake_options)
+-sdsl_dep = sdsl_subproject.dependency('sdsl', include_type: 'system')
++# sdsl_subproject = cmake.subproject('sdsl-lite', options : cmake_options)
++# sdsl_dep = sdsl_subproject.dependency('sdsl', include_type: 'system')
++sdsl_dep = dependency('sdsl-lite')
+ 
+ deps = [ threads_dep, openmp_dep, cpptomp_dep, sdsl_dep ]
+ 
+ # These are unfortunate hacks. Currently, neither cpptoml nor sdsl-lite install their headers (even when set_install(true) is called), and so we need to do it manually
+ meson.add_install_script('scripts/install-cpptoml')
+-meson.add_install_script('scripts/install-sdsl-lite')
++# meson.add_install_script('scripts/install-sdsl-lite')
+ 
+ argparse_subproject = cmake.subproject('argparse', options : cmake_options)
+ argparse_dep = argparse_subproject.dependency('argparse')
+@@ -126,12 +127,12 @@ run_target('test-wrappers', command: joi
+ btllib_include = [ include_directories('include'), include_directories('.') ]
+ btllib_sources = run_command('scripts/get-files', 'src').stdout().strip().split()
+ 
+-btllib_lib = static_library('btllib',
++btllib_lib = shared_library('btllib',
+                            btllib_sources,
+                            include_directories : btllib_include,
+                            dependencies : deps,
+-                           install : true,
+-                           install_dir : 'lib')
++                           soversion : 1,
++                           install : true)
+ 
+ btllib_dep = declare_dependency(
+   link_with : btllib_lib,
+--- origsrc/btllib/scripts/get-python-flags	2023-11-26 11:53:46.000000000 +0900
++++ src/btllib/scripts/get-python-flags	2023-11-26 12:46:59.297912500 +0900
+@@ -26,6 +26,8 @@ get_libs() {
+     libsfound="$(find "$libpath" -maxdepth 1 -regextype sed -regex ".*/lib${libname}\.\(so\|a\)")"
+   elif [[ "$OSTYPE" == "darwin"* ]]; then
+     libsfound="$(find -E "$libpath" -maxdepth 1 -regex ".*/lib${libname}\.(so|dylib|tbd|a)")"
++  else
++    libsfound="$(find "$libpath" -maxdepth 1 -regextype sed -regex ".*/lib${libname}\.dll\.a")"
+   fi
+   echo "$libsfound"
+ }
+--- origsrc/btllib/wrappers/python/meson.build	2023-11-26 11:53:46.000000000 +0900
++++ src/btllib/wrappers/python/meson.build	2023-11-26 15:25:57.210629600 +0900
+@@ -22,17 +22,16 @@ link_extra_args = global_link_args + lin
+ py_sources = ['btllib_wrap.cxx']
+ btllib_py = shared_module('_btllib',
+                            py_sources,
+-                           name_suffix : 'so',
+                            include_directories : btllib_include,
+                            dependencies : deps + [ btllib_dep ],
+                            cpp_args : cpp_extra_args,
+                            link_args : link_extra_args,
+                            install : true,
+-                           install_dir : 'lib/btllib/python/btllib',
++                           install_dir : 'lib/python3.9/site-packages/btllib',
+                            name_prefix : '')
+ 
+-install_data('btllib.py', install_dir : 'lib/btllib/python/btllib', rename : '__init__.py')
++install_data('btllib.py', install_dir : 'lib/python3.9/site-packages/btllib', rename : '__init__.py')
+ configure_file(input : 'setup.py', 
+                output : 'setup.py', 
+-               install_dir : 'lib/btllib/python',
+-               configuration : {'PROJECT_VERSION' : meson.project_version()})
+\ No newline at end of file
++               install_dir : 'lib/python3.9/site-packages/btllib',
++               configuration : {'PROJECT_VERSION' : meson.project_version()})
