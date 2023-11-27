@@ -1,0 +1,177 @@
+--- origsrc/biobloom/BioBloomCategorizer/BioBloomCategorizer.cpp	2023-11-27 15:32:23.000000000 +0900
++++ src/biobloom/BioBloomCategorizer/BioBloomCategorizer.cpp	2023-11-27 16:20:21.979837900 +0900
+@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
+ 
+ 	int fastq = 0;
+ 	int fasta = 0;
+-	bool stdout = false;
++	bool _stdout = false;
+ 
+ 	//advanced options
+ 	bool collab = false;
+@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
+ 			break;
+ 		}
+ 		case 'd': {
+-			stdout = true;
++			_stdout = true;
+ 			break;
+ 		}
+ 		case 'n': {
+@@ -455,7 +455,7 @@ int main(int argc, char *argv[])
+ 	BioBloomClassifier bbc(filterFilePaths, opt::score, opt::outputPrefix,
+ 			opt::filePostfix);
+ 
+-	if (stdout) {
++	if (_stdout) {
+ 		bbc.setStdout();
+ 	}
+ 
+--- origsrc/biobloom/BioBloomCategorizer/BioBloomMICategorizer.cpp	2023-11-27 15:32:23.000000000 +0900
++++ src/biobloom/BioBloomCategorizer/BioBloomMICategorizer.cpp	2023-11-27 16:23:48.912918400 +0900
+@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
+ 			break;
+ 		}
+ 		case 'd': {
+-			opt::stdout = true;
++			opt::_stdout = true;
+ 			break;
+ 		}
+ 		case 'n': {
+--- origsrc/biobloom/BioBloomCategorizer/Options.cpp	2023-11-27 15:32:23.000000000 +0900
++++ src/biobloom/BioBloomCategorizer/Options.cpp	2023-11-27 16:22:46.891152900 +0900
+@@ -27,7 +27,7 @@ bool inverse = false;
+ 
+ std::string filtersFile = "";
+ bool paired = false;
+-bool stdout = false;
++bool _stdout = false;
+ bool bestHitCountAgree = false;
+ 
+ unsigned minCountNonSatCount = 0;
+--- origsrc/biobloom/BioBloomCategorizer/Options.h	2023-11-27 15:32:23.000000000 +0900
++++ src/biobloom/BioBloomCategorizer/Options.h	2023-11-27 16:20:47.978563200 +0900
+@@ -39,7 +39,7 @@ extern double minFPR;
+ 
+ extern std::string filtersFile;
+ extern bool paired;
+-extern bool stdout;
++extern bool _stdout;
+ extern bool bestHitCountAgree;
+ 
+ extern unsigned minCountNonSatCount;
+--- origsrc/biobloom/BioBloomMaker/MIBFGen.hpp	2023-11-27 15:32:23.000000000 +0900
++++ src/biobloom/BioBloomMaker/MIBFGen.hpp	2023-11-27 16:17:50.004300300 +0900
+@@ -66,7 +66,7 @@ public:
+ 					exit(1);
+ 				}
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Opening " << m_fileNames[i] << endl;
+ 				}
+ 				kseq_t *seq = kseq_init(fp);
+@@ -154,7 +154,7 @@ public:
+ 				gzFile fp;
+ 				fp = gzopen(m_fileNames[i].c_str(), "r");
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Opening " << m_fileNames[i] << endl;
+ 				}
+ 				kseq_t *seq = kseq_init(fp);
+@@ -179,7 +179,7 @@ public:
+ 				kseq_destroy(seq);
+ 				gzclose(fp);
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Finished processing " << m_fileNames[i] << endl;
+ 				}
+ 			}
+@@ -192,7 +192,7 @@ public:
+ 				gzFile fp;
+ 				fp = gzopen(m_fileNames[i].c_str(), "r");
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Opening " << m_fileNames[i] << endl;
+ 				}
+ 				kseq_t *seq = kseq_init(fp);
+@@ -330,7 +330,7 @@ private:
+ 			for (unsigned i = 0; i < m_fileNames.size(); ++i) {
+ 				gzFile fp;
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Opening " << m_fileNames[i] << endl;
+ 				}
+ 				fp = gzopen(m_fileNames[i].c_str(), "r");
+@@ -361,7 +361,7 @@ private:
+ 				kseq_destroy(seq);
+ 				gzclose(fp);
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Finished processing " << m_fileNames[i] << endl;
+ 				}
+ 			}
+@@ -369,7 +369,7 @@ private:
+ 			for (unsigned i = 0; i < m_fileNames.size(); ++i) {
+ 				gzFile fp;
+ 				if(opt::verbose){
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Opening " << m_fileNames[i] << endl;
+ 				}
+ 				fp = gzopen(m_fileNames[i].c_str(), "r");
+--- origsrc/biobloom/btl_bloomfilter/MIBloomFilter.hpp	2023-11-27 15:32:26.000000000 +0900
++++ src/biobloom/btl_bloomfilter/MIBloomFilter.hpp	2023-11-27 16:08:32.359575200 +0900
+@@ -153,17 +153,17 @@ class MIBloomFilter
+ 			if (i == 0) {
+ 				FILE* file = fopen(filterFilePath.c_str(), "rb");
+ 				if (file == NULL) {
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "file \"" << filterFilePath << "\" could not be read." << endl;
+ 					exit(1);
+ 				}
+ 
+ 				FileHeader header;
+ 				if (fread(&header, sizeof(struct FileHeader), 1, file) == 1) {
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Loading header..." << endl;
+ 				} else {
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 					cerr << "Failed to Load header" << endl;
+ 					exit(1);
+ 				}
+@@ -172,7 +172,7 @@ class MIBloomFilter
+ 				memcpy(magic, header.magic, 8);
+ 				magic[8] = '\0';
+ 
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 				cerr << "Loaded header... magic: " << magic << " hlen: " << header.hlen
+ 				     << " size: " << header.size << " nhash: " << header.nhash
+ 				     << " kmer: " << header.kmer << endl;
+@@ -226,7 +226,7 @@ class MIBloomFilter
+ 					exit(1);
+ 				}
+ 
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 				cerr << "Loading data vector" << endl;
+ 
+ 				long int lCurPos = ftell(file);
+@@ -247,7 +247,7 @@ class MIBloomFilter
+ 				}
+ 			} else {
+ 				string bvFilename = filterFilePath + ".sdsl";
+-#pragma omp critical(stderr)
++#pragma omp critical
+ 				cerr << "Loading sdsl interleaved bit vector from: " << bvFilename << endl;
+ 				load_from_file(m_bv, bvFilename);
+ 				m_rankSupport = sdsl::rank_support_il<1>(&m_bv);
