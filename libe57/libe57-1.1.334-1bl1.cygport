@@ -1,10 +1,5 @@
-HOMEPAGE="http://www.${PN}.org/"
-SRC_URI="mirror://sourceforge/e57-3d-imgfmt/E57RefImpl_src-${PV}.zip"
-PATCH_URI="
-	https://aur.archlinux.org/cgit/aur.git/plain/build-shared.patch?h=${PN}
-	https://aur.archlinux.org/cgit/aur.git/plain/replace_tr1_with_cpp11.patch?h=${PN}
-"
-SRC_DIR="E57RefImpl_src-${PV}"
+HOMEPAGE="https://github.com/hlrs-vis/${PN}"
+SRC_URI="https://github.com/hlrs-vis/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Software Tools for Managing E57 Files"
@@ -15,13 +10,32 @@ adoption of the standard and to provide a reference to compare other
 implementations against. It is not expected to be the only implementation, and
 it is not intended to be the fastest possible implementation."
 
+LICENSE="BSL-1.0"
+LICENSE_SPDX="SPDX-License-Identifier: BSL-1.0"
+LICENSE_URI="http://libe57.org/license.html"
+
 BUILD_REQUIRES="libboost-devel libxerces-c-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -Dlseek64=lseek"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=${PV[1]}
 	-DVERSION:STRING=${PV}
 "
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	mkdir -p usr/share/doc/${PN}
+	mv usr/*.TXT usr/share/doc/${PN}/
+	mkdir -p usr/lib/cmake/${PN}
+	mv usr/*.cmake usr/lib/cmake/${PN}/
+}
 
 DOCS="
 	*.pdf
@@ -40,7 +54,7 @@ libe57_CONTENTS="
 	usr/share
 "
 libe57_1_CONTENTS="
-	usr/bin/*.dll
+	usr/bin/cyg*-1.dll
 "
 libe57_devel_CONTENTS="
 	usr/include

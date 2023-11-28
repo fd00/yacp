@@ -1,0 +1,76 @@
+--- origsrc/libe57-1.1.334/CMakeLists.txt	2021-06-28 16:35:08.000000000 +0900
++++ src/libe57-1.1.334/CMakeLists.txt	2023-11-28 15:57:41.803500200 +0900
+@@ -110,12 +110,12 @@ endif (NOT Xerces_FOUND)
+ set(XML_LIBRARIES ${Xerces_LIBRARY})
+ set(XML_INCLUDE_DIRS ${Xerces_INCLUDE_DIR})
+ 
+-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
++if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR CYGWIN)
+     add_definitions(-DLINUX)
+     find_package(ICU REQUIRED)
+     set(XML_LIBRARIES ${XML_LIBRARIES} ${ICU_LIBRARIES})
+     set(XML_INCLUDE_DIRS ${XML_INCLUDE_DIRS} ${ICU_INCLUDE_DIRS})
+-elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
++elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR CYGWIN)
+     add_definitions(-DWINDOWS)
+ endif()
+ 
+@@ -146,7 +146,7 @@ link_directories(
+ # The reference implementation
+ #
+ 
+-add_library( E57RefImpl STATIC
++add_library( E57RefImpl SHARED
+     src/refimpl/E57Foundation.cpp
+     src/refimpl/E57FoundationImpl.cpp
+     src/refimpl/E57FoundationImpl.h
+@@ -156,9 +156,13 @@ add_library( E57RefImpl STATIC
+     src/time_conversion/time_conversion.c
+     include/E57Simple.h
+ )
++target_link_libraries(E57RefImpl ${Xerces_LIBRARY})
+ set_target_properties( E57RefImpl
+     PROPERTIES DEBUG_POSTFIX "-d"
+ )
++if (DEFINED SOVERSION)
++    set_target_properties(E57RefImpl PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ #
+ # Files for LAS format support
+@@ -291,3 +295,10 @@ set (CPACK_GENERATOR "ZIP")
+ set (CPACK_STRIP_FILES "TRUE")
+ 
+ include (CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libe57.pc.in ${CMAKE_BINARY_DIR}/libe57.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libe57.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libe57-1.1.334/libe57.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libe57-1.1.334/libe57.pc.in	2023-11-28 15:59:01.127123900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libe57
++Description: Software Tools for Managing E57 Files
++Version: @VERSION@
++Libs: -L${libdir} -lE57RefImpl
++Cflags: -I${includedir}/e57
+--- origsrc/libe57-1.1.334/src/refimpl/E57FoundationImpl.cpp	2021-06-28 16:35:08.000000000 +0900
++++ src/libe57-1.1.334/src/refimpl/E57FoundationImpl.cpp	2023-11-28 14:29:35.823590600 +0900
+@@ -55,7 +55,9 @@
+ #  include <sys/stat.h>
+ #  include <unistd.h>
+ # include <fcntl.h>
++# if !defined(O_BINARY)
+ # define O_BINARY (0)
++# endif
+ # define _unlink unlink
+ #elif defined(__APPLE__)
+ #  define _LARGEFILE64_SOURCE
