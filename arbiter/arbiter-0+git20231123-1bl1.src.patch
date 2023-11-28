@@ -1,0 +1,39 @@
+--- origsrc/arbiter/CMakeLists.txt	2023-11-28 12:29:45.000000000 +0900
++++ src/arbiter/CMakeLists.txt	2023-11-28 13:46:18.587108200 +0900
+@@ -56,6 +56,10 @@ set(OBJS
+ 
+ add_library(arbiter SHARED ${OBJS})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(arbiter PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if (${ARBITER_ZLIB})
+     target_link_libraries(arbiter PUBLIC ${ZLIB_LIBRARIES})
+     target_include_directories(arbiter PRIVATE "${ZLIB_INCLUDE_DIR}")
+@@ -77,5 +81,11 @@ add_subdirectory(third/gtest-1.7.0)
+ include_directories(src third/gtest-1.7.0/include third/gtest-1.7.0)
+ add_subdirectory(test)
+ 
+-install(TARGETS arbiter DESTINATION lib)
++install(TARGETS arbiter RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/arbiter.pc.in ${CMAKE_BINARY_DIR}/arbiter.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/arbiter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/arbiter/arbiter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arbiter/arbiter.pc.in	2023-11-28 12:29:48.824548600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arbiter
++Description: Uniform access to the filesystem
++Version: @VERSION@
++Libs: -L${libdir} -larbiter
++Cflags: -I${includedir}
