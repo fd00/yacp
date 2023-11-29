@@ -1,0 +1,73 @@
+--- origsrc/PDAL-2.6.1-src/CMakeLists.txt	2023-11-25 03:19:18.000000000 +0900
++++ src/PDAL-2.6.1-src/CMakeLists.txt	2023-11-29 14:26:19.778221400 +0900
+@@ -161,7 +161,10 @@ endif()
+ add_subdirectory(plugins)
+ 
+ if (WITH_TESTS)
+-    include (${PDAL_CMAKE_DIR}/gtest.cmake)
++    find_package(gtest)
++    if (NOT GTEST_FOUND)
++        include (${PDAL_CMAKE_DIR}/gtest.cmake)
++    endif()
+     add_subdirectory(test)
+ endif()
+ add_subdirectory(dimbuilder)
+@@ -282,7 +285,7 @@ endif()
+ # specifies linking in libpdal_base.so and libpdal_util.so.  This allows
+ # users to link a single library, libpdalcpp
+ #
+-if (UNIX AND NOT APPLE)
++if (UNIX AND NOT APPLE AND NOT CYGWIN)
+     set(LIBNAME ${CMAKE_SHARED_LIBRARY_PREFIX}${PDAL_LIB_NAME})
+     install(FILES ${LIBNAME} DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         RENAME ${LIBNAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+@@ -400,7 +403,7 @@ if (WITH_COMPLETION)
+             FILES
+                 "${PROJECT_SOURCE_DIR}/scripts/bash-completion/pdal"
+             DESTINATION
+-                "${CMAKE_INSTALL_DATAROOTDIR}/share/bash-completion/completions")
++                "${CMAKE_INSTALL_DATAROOTDIR}/bash-completion/completions")
+     elseif (IS_DIRECTORY /etc/bash_completion.d)
+         install(
+             FILES
+--- origsrc/PDAL-2.6.1-src/apps/pdal-config.in	2023-11-25 03:19:17.000000000 +0900
++++ src/PDAL-2.6.1-src/apps/pdal-config.in	2023-11-29 14:17:40.073799800 +0900
+@@ -25,7 +25,7 @@ fi
+ 
+ case $1 in
+   --libs)
+-    echo -L@CMAKE_INSTALL_PREFIX@/lib -lpdalcpp
++    echo -L@CMAKE_INSTALL_PREFIX@/lib -lpdalcpp @PDAL_BASE_LIB_NAME@
+     ;;
+ 
+   --plugin-dir)
+--- origsrc/PDAL-2.6.1-src/apps/pdal.pc.in	2023-11-25 03:19:17.000000000 +0900
++++ src/PDAL-2.6.1-src/apps/pdal.pc.in	2023-11-29 14:05:59.435748300 +0900
+@@ -7,6 +7,6 @@ Name: PDAL
+ Description: Point Data Abstraction Library
+ Requires:  @PKGCONFIG_LIBRARY_DEFINITIONS@
+ Version: @PDAL_VERSION@
+-Libs: -L${libdir} -l@PDAL_LIB_NAME@
++Libs: -L${libdir} -lpdalcpp @PDAL_BASE_LIB_NAME@
+ Cflags: -I${includedir}/pdal  @PDAL_CONFIG_DEFINITIONS@
+ 
+--- origsrc/PDAL-2.6.1-src/cmake/test.cmake	2023-11-25 03:19:17.000000000 +0900
++++ src/PDAL-2.6.1-src/cmake/test.cmake	2023-11-29 01:10:06.433961400 +0900
+@@ -12,6 +12,4 @@ if (WITH_TESTS)
+     add_definitions(/D _VARIADIC_MAX=10)
+   endif()
+ 
+-  include_directories(${ROOT_DIR}/vendor/gtest/include
+-      ${ROOT_DIR}/vendor/gtest)
+ endif()
+--- origsrc/PDAL-2.6.1-src/plugins/e57/libE57Format/src/CheckedFile.cpp	2023-11-25 03:19:18.000000000 +0900
++++ src/PDAL-2.6.1-src/plugins/e57/libE57Format/src/CheckedFile.cpp	2023-11-29 11:42:39.738216400 +0900
+@@ -37,7 +37,7 @@
+ #error "no supported compiler defined"
+ #endif
+ 
+-#elif defined(__linux__) || defined(__GNU__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
++#elif defined(__linux__) || defined(__GNU__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || defined(__CYGWIN__)
+ #define _LARGEFILE64_SOURCE
+ #define __LARGE64_FILES
+ #include <sys/stat.h>
