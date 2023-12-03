@@ -1,22 +1,24 @@
---- origsrc/libyuv/CMakeLists.txt	2022-04-25 16:24:02.000000000 +0900
-+++ src/libyuv/CMakeLists.txt	2022-04-25 16:26:40.136057700 +0900
-@@ -23,16 +23,22 @@ LIST ( SORT			ly_unittest_sources )
- INCLUDE_DIRECTORIES( BEFORE ${ly_inc_dir} )
+--- origsrc/libyuv/CMakeLists.txt	2023-12-03 12:04:10.000000000 +0900
++++ src/libyuv/CMakeLists.txt	2023-12-03 14:24:31.087808500 +0900
+@@ -26,24 +26,26 @@ if(MSVC)
+   ADD_DEFINITIONS ( -D_CRT_SECURE_NO_WARNINGS )
+ endif()
  
- # this creates the static library (.a)
+-# this creates the static library (.a)
 -ADD_LIBRARY				( ${ly_lib_static} STATIC ${ly_source_files} )
-+if (NOT CYGWIN)
-+  ADD_LIBRARY				( ${ly_lib_static} STATIC ${ly_source_files} )
-+endif()
- 
+-
  # this creates the shared library (.so)
  ADD_LIBRARY				( ${ly_lib_shared} SHARED ${ly_source_files} )
  SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES OUTPUT_NAME "${ly_lib_name}" )
 -SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES PREFIX "lib" )
-+if (CYGWIN)
-+  SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES SOVERSION "${SOVERSION}" )
-+else()
++if (NOT CYGWIN)
 +  SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES PREFIX "lib" )
++endif()
+ if(WIN32)
+   SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES IMPORT_PREFIX "lib" )
+ endif()
++if (DEFINED SOVERSION)
++  set_target_properties(${ly_lib_shared} PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
  
  # this creates the conversion tool
@@ -24,17 +26,14 @@
 -TARGET_LINK_LIBRARIES	( yuvconvert ${ly_lib_static} )
 +TARGET_LINK_LIBRARIES	( yuvconvert ${ly_lib_shared} )
  
+ # this creates the yuvconstants tool
+ ADD_EXECUTABLE      ( yuvconstants ${ly_base_dir}/util/yuvconstants.c )
+-TARGET_LINK_LIBRARIES  ( yuvconstants ${ly_lib_static} )
++TARGET_LINK_LIBRARIES  ( yuvconstants ${ly_lib_shared} )
  
- INCLUDE ( FindJPEG )
-@@ -40,6 +46,7 @@ if (JPEG_FOUND)
-   include_directories( ${JPEG_INCLUDE_DIR} )
-   target_link_libraries( yuvconvert ${JPEG_LIBRARY} )
-   add_definitions( -DHAVE_JPEG )
-+  target_link_libraries( ${ly_lib_shared} ${JPEG_LIBRARY} )
- endif()
- 
- if(TEST)
-@@ -59,7 +66,7 @@ if(TEST)
+ find_package ( JPEG )
+ if (JPEG_FOUND)
+@@ -72,7 +74,7 @@ if(UNIT_TEST)
    endif()
  
    add_executable(libyuv_unittest ${ly_unittest_sources})
@@ -43,31 +42,26 @@
    find_library(PTHREAD_LIBRARY pthread)
    if(NOT PTHREAD_LIBRARY STREQUAL "PTHREAD_LIBRARY-NOTFOUND")
      target_link_libraries(libyuv_unittest pthread)
-@@ -76,10 +83,20 @@ endif()
+@@ -95,10 +97,15 @@ endif()
  
  # install the conversion tool, .so, .a, and all the header files
  INSTALL ( PROGRAMS ${CMAKE_BINARY_DIR}/yuvconvert			DESTINATION bin )
 -INSTALL ( TARGETS ${ly_lib_static}						DESTINATION lib )
 -INSTALL ( TARGETS ${ly_lib_shared} LIBRARY				DESTINATION lib RUNTIME DESTINATION bin )
-+if (NOT CYGWIN)
-+  INSTALL ( TARGETS ${ly_lib_static}						DESTINATION lib )
-+endif()
-+INSTALL ( TARGETS ${ly_lib_shared} ARCHIVE DESTINATION lib RUNTIME DESTINATION bin )
++INSTALL ( TARGETS ${ly_lib_shared} ARCHIVE				DESTINATION lib RUNTIME DESTINATION bin )
  INSTALL ( DIRECTORY ${PROJECT_SOURCE_DIR}/include/		DESTINATION include )
  
  # create the .deb and .rpm packages using cpack
  INCLUDE ( CM_linux_packages.cmake )
  
-+if (CYGWIN)
-+  set(prefix ${CMAKE_INSTALL_PREFIX})
-+  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+  configure_file(${CMAKE_SOURCE_DIR}/libyuv.pc.in ${CMAKE_BINARY_DIR}/libyuv.pc @ONLY)
-+  install(FILES ${CMAKE_BINARY_DIR}/libyuv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-+endif()
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libyuv.pc.in ${CMAKE_BINARY_DIR}/libyuv.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libyuv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/libyuv/libyuv.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libyuv/libyuv.pc.in	2022-04-25 16:24:09.161671400 +0900
++++ src/libyuv/libyuv.pc.in	2023-12-03 14:26:03.921114400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
