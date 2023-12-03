@@ -1,15 +1,15 @@
---- origsrc/SVT-AV1-1.1.0/CMakeLists.txt	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/CMakeLists.txt	2022-06-17 13:47:04.101435400 +0900
-@@ -207,7 +207,7 @@ if(UNIX)
-         set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> Scr <TARGET> <LINK_FLAGS> <OBJECTS>")
-         set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
-         set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+--- origsrc/SVT-AV1-v1.7.0/CMakeLists.txt	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/CMakeLists.txt	2023-12-03 14:50:58.703466700 +0900
+@@ -209,7 +209,7 @@ if(UNIX)
+             set(CMAKE_C_ARCHIVE_FINISH   "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+             set(CMAKE_CXX_ARCHIVE_FINISH "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+         endif()
 -    else()
 +    elseif(NOT CYGWIN)
-         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie -z noexecstack -z relro -z now")
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack -z relro -z now")
      endif()
  endif()
-@@ -533,8 +533,11 @@ endif()
+@@ -584,8 +584,11 @@ endif()
  if(BUILD_TESTING)
      include(CTest)
      message(STATUS "Building UnitTests")
@@ -22,9 +22,9 @@
  endif()
  
  add_subdirectory(third_party/fastfeat)
---- origsrc/SVT-AV1-1.1.0/Source/App/EncApp/EbAppConfig.c	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/Source/App/EncApp/EbAppConfig.c	2022-06-17 13:47:04.108623700 +0900
-@@ -23,8 +23,15 @@
+--- origsrc/SVT-AV1-v1.7.0/Source/App/EncApp/EbAppConfig.c	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/Source/App/EncApp/EbAppConfig.c	2023-12-03 15:05:56.131257100 +0900
+@@ -25,8 +25,15 @@
  #include <io.h>
  #else
  #include <unistd.h>
@@ -38,16 +38,16 @@
  #endif
 +#endif
  
- #if !defined(_WIN32) || !defined(HAVE_STRNLEN_S)
- #include "third_party/safestringlib/safe_str_lib.h"
---- origsrc/SVT-AV1-1.1.0/Source/Lib/Common/Codec/EbUtility.c	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/Source/Lib/Common/Codec/EbUtility.c	2022-06-17 13:47:04.118462100 +0900
-@@ -231,17 +231,17 @@ const CodedBlockStats* get_coded_blk_sta
+ #include "EbAppOutputivf.h"
+ 
+--- origsrc/SVT-AV1-v1.7.0/Source/Lib/Common/Codec/EbUtility.c	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/Source/Lib/Common/Codec/EbUtility.c	2023-12-03 14:52:14.663399000 +0900
+@@ -229,17 +229,17 @@ const CodedBlockStats* svt_aom_get_coded
    *  the log2f of a 32-bit number
    *****************************************/
- uint32_t log2f_32(uint32_t x) {
+ uint32_t svt_aom_log2f_32(uint32_t x) {
 -    uint32_t log = 0;
-+    uint32_t log_ = 0;
++    uint32_t _log = 0;
      int32_t  i;
      for (i = 4; i >= 0; --i) {
          const uint32_t shift = (1 << i);
@@ -55,16 +55,16 @@
          if (n != 0) {
              x = n;
 -            log += shift;
-+            log_ += shift;
++            _log += shift;
          }
      }
 -    return log;
-+    return log_;
++    return _log;
  }
  // concatenate two linked list, and return the pointer to the new concatenated list
- EbLinkedListNode* concat_eb_linked_list(EbLinkedListNode* a, EbLinkedListNode* b) {
---- origsrc/SVT-AV1-1.1.0/Source/Lib/Decoder/CMakeLists.txt	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/Source/Lib/Decoder/CMakeLists.txt	2022-06-17 13:48:22.629859700 +0900
+ EbLinkedListNode* svt_aom_concat_eb_linked_list(EbLinkedListNode* a, EbLinkedListNode* b) {
+--- origsrc/SVT-AV1-v1.7.0/Source/Lib/Decoder/CMakeLists.txt	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/Source/Lib/Decoder/CMakeLists.txt	2023-12-03 14:52:49.417479300 +0900
 @@ -11,9 +11,9 @@
  # Decoder Library directory CMakeLists.txt
  
@@ -73,13 +73,13 @@
 -set(DEC_VERSION_MINOR 8)
 -set(DEC_VERSION_PATCH 7)
 +set(DEC_VERSION_MAJOR 1)
-+set(DEC_VERSION_MINOR 1)
++set(DEC_VERSION_MINOR 7)
 +set(DEC_VERSION_PATCH 0)
  set(DEC_VERSION ${DEC_VERSION_MAJOR}.${DEC_VERSION_MINOR}.${DEC_VERSION_PATCH})
  
  if(UNIX)
---- origsrc/SVT-AV1-1.1.0/test/CMakeLists.txt	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/test/CMakeLists.txt	2022-06-17 13:47:04.146450100 +0900
+--- origsrc/SVT-AV1-v1.7.0/test/CMakeLists.txt	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/test/CMakeLists.txt	2023-12-03 14:54:28.287341000 +0900
 @@ -14,7 +14,6 @@
  # Include Subdirectories
  include_directories(${PROJECT_SOURCE_DIR}/test/
@@ -99,10 +99,10 @@
  # Define helper functions and macros used by Google Test.
  include(../third_party/googletest/cmake/internal_utils.cmake)
  
-@@ -85,8 +88,14 @@ set(lib_list
-     $<TARGET_OBJECTS:ENCODER_ASM_AVX2>
+@@ -152,8 +155,14 @@ set(lib_list
      $<TARGET_OBJECTS:ENCODER_ASM_AVX512>
      $<TARGET_OBJECTS:ENCODER_GLOBALS>
+     $<TARGET_OBJECTS:ENCODER_CODEC>
 -    cpuinfo_public
 -    gtest_all)
 +    cpuinfo_public)
@@ -116,7 +116,7 @@
  if(UNIX)
    # App Source Files
      add_executable(SvtAv1UnitTests
-@@ -110,4 +119,6 @@ install(TARGETS SvtAv1UnitTests RUNTIME
+@@ -177,4 +186,6 @@ install(TARGETS SvtAv1UnitTests RUNTIME
  add_test(SvtAv1UnitTests ${CMAKE_OUTPUT_DIRECTORY}/SvtAv1UnitTests)
  
  add_subdirectory(api_test)
@@ -124,8 +124,8 @@
 +if (NOT CYGWIN)
 +    add_subdirectory(e2e_test)
 +endif()
---- origsrc/SVT-AV1-1.1.0/test/PaletteModeUtilTest.cc	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/test/PaletteModeUtilTest.cc	2022-06-17 13:47:04.153454600 +0900
+--- origsrc/SVT-AV1-v1.7.0/test/PaletteModeUtilTest.cc	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/test/PaletteModeUtilTest.cc	2023-12-03 14:55:00.555393500 +0900
 @@ -22,6 +22,7 @@
   * @author Cidana-Edmond
   *
@@ -134,9 +134,9 @@
  #include <vector>
  #include "gtest/gtest.h"
  // workaround to eliminate the compiling warning on linux
---- origsrc/SVT-AV1-1.1.0/test/api_test/CMakeLists.txt	2022-05-18 13:05:11.000000000 +0900
-+++ src/SVT-AV1-1.1.0/test/api_test/CMakeLists.txt	2022-06-17 13:47:04.158518700 +0900
-@@ -14,17 +14,26 @@
+--- origsrc/SVT-AV1-v1.7.0/test/api_test/CMakeLists.txt	2023-08-24 05:15:16.000000000 +0900
++++ src/SVT-AV1-v1.7.0/test/api_test/CMakeLists.txt	2023-12-03 14:55:48.454454800 +0900
+@@ -14,10 +14,14 @@
  
  # Include Subdirectories
  include_directories(${PROJECT_SOURCE_DIR}/test/
@@ -150,9 +150,11 @@
 +        ${PROJECT_SOURCE_DIR}/third_party/googletest/src)
 +endif()
 +
- file(GLOB all_files
-     "*.h"
-     "*.cc")
+ set(all_files
+     SvtAv1EncApiTest.cc
+     SvtAv1EncApiTest.h
+@@ -26,8 +30,13 @@ set(all_files
+     )
  
  set(lib_list
 -    SvtAv1Enc
