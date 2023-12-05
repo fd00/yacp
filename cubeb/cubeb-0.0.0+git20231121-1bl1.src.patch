@@ -1,0 +1,63 @@
+--- origsrc/cubeb/CMakeLists.txt	2023-12-06 04:24:34.000000000 +0900
++++ src/cubeb/CMakeLists.txt	2023-12-06 04:59:50.570151300 +0900
+@@ -260,7 +260,7 @@ if(USE_AUDIOUNIT)
+ endif()
+ 
+ check_include_files(audioclient.h USE_WASAPI)
+-if(USE_WASAPI)
++if(USE_WASAPI AND WIN32)
+   target_sources(cubeb PRIVATE
+     src/cubeb_wasapi.cpp)
+   target_compile_definitions(cubeb PRIVATE USE_WASAPI)
+@@ -268,7 +268,7 @@ if(USE_WASAPI)
+ endif()
+ 
+ check_include_files("windows.h;mmsystem.h" USE_WINMM)
+-if(USE_WINMM)
++if(USE_WINMM AND WIN32)
+   target_sources(cubeb PRIVATE
+     src/cubeb_winmm.c)
+   target_compile_definitions(cubeb PRIVATE USE_WINMM)
+@@ -370,7 +370,7 @@ if(USE_AUDIOUNIT AND USE_AUDIOUNIT_RUST)
+ endif()
+ 
+ find_package(Doxygen)
+-if(DOXYGEN_FOUND)
++if(DOXYGEN_FOUND AND BUILD_DOCS)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/docs/Doxyfile @ONLY)
+   add_custom_target(doc ALL
+     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/docs/Doxyfile
+@@ -404,7 +404,9 @@ if(BUILD_TESTS)
+   add_sanitizers(test_resampler)
+ 
+   cubeb_add_test(duplex)
+-  cubeb_add_test(logging)
++  if (NOT BUILD_SHARED_LIBS)
++    cubeb_add_test(logging)
++  endif()
+   cubeb_add_test(triple_buffer)
+ 
+   if (USE_WASAPI)
+@@ -444,3 +446,9 @@ add_custom_target(clang-format-check
+   COMMENT "Check formatting with clang-format"
+   VERBATIM)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cubeb.pc.in ${CMAKE_BINARY_DIR}/cubeb.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cubeb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cubeb/cubeb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cubeb/cubeb.pc.in	2023-12-06 05:01:45.108188500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cubeb
++Description: Cross platform audio library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcubeb
++Cflags: -I${includedir}
