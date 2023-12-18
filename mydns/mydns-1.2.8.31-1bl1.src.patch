@@ -1,0 +1,110 @@
+--- origsrc/mydns-1.2.8.31/configure.ac	2010-12-25 06:45:52.000000000 +0900
++++ src/mydns-1.2.8.31/configure.ac	2023-12-18 18:10:36.218666000 +0900
+@@ -35,7 +35,7 @@ AC_PROG_LIBTOOL
+ 
+ ## GNU gettext
+ AM_GNU_GETTEXT
+-AM_GNU_GETTEXT_VERSION(0.12)
++# AM_GNU_GETTEXT_VERSION(0.12)
+ 
+ ## Checks for header files
+ AC_HEADER_STDC
+@@ -119,6 +119,16 @@ PACKAGE_HOMEPAGE="http://mydns.bboy.net"
+ PACKAGE_COPYRIGHT="Copyright (C) 2002-2005 Don Moore  2007-2008 Howard Wilkinson"
+ PACKAGE_AUTHOR="Don Moore <bboy@bboy.net>  Howard Wilkinson <howard@cohtech.com>"
+ 
++PKG_CHECK_MODULES([LIBMARIADB], [libmariadb])
++MYSQL_INCLUDE=$LIBMARIADB_CFLAGS
++LIBMYSQLCLIENT=$LIBMARIADB_LIBS
++AC_SUBST([MYSQL_INCLUDE])
++AC_SUBST([LIBMYSQLCLIENT])
++PKG_CHECK_MODULES([LIBPQ], [libpq])
++PQ_INCLUDE=$LIBPQ_CFLAGS
++LIBPQ=$LOBPQ_LIBS
++AC_SUBST([PQ_INCLUDE])
++AC_SUBST([LIBPQ])
+ 
+ ##
+ ## Some MyDNS-specific checks (see m4/mydns.m4)
+@@ -127,8 +137,8 @@ AC_CHECK_IPV6			#	Check IPv6 support
+ AC_CHECK_SOCKADDR_SA_LEN	#	Check for sa_len in struct sockaddr_in
+ AC_MYDNS_PKGINFO		#	Set some package-specific variables
+ AC_ENABLE_ALIAS			#	Enable David Phillips aliasing?
+-AC_CHECK_MYSQL			#	Check for MySQL support
+-AC_CHECK_PGSQL			#	Check for PostgreSQL support
++# AC_CHECK_MYSQL			#	Check for MySQL support
++# AC_CHECK_PGSQL			#	Check for PostgreSQL support
+ AC_WITH_OPENSSL			#	Check if OpenSSL is desired
+ AC_MYDNS_CONF			#	Set conf file location
+ AC_ENABLE_STATIC_BUILD		#	Build static binary?
+--- origsrc/mydns-1.2.8.31/doc/Makefile.am	2010-12-25 06:45:52.000000000 +0900
++++ src/mydns-1.2.8.31/doc/Makefile.am	2023-12-18 18:23:13.264190400 +0900
+@@ -10,18 +10,18 @@ man_MANS				=	mydns.8 \
+ 							mydnsimport.8 \
+ 							mydnsptrconvert.8
+ 
+-info_TEXINFOS		=	mydns.texi
++# info_TEXINFOS		=	mydns.texi
+ 
+-mydns_TEXINFOS		=	configuration.texi \
+-							database.texi \
+-							fdl.texi \
+-							installation.texi \
+-							introduction.texi \
+-							references.texi \
+-							server.texi \
+-							texinfo.tex \
+-							troubleshooting.texi \
+-							utilities.texi
++# mydns_TEXINFOS		=	configuration.texi \
++#							database.texi \
++#							fdl.texi \
++#							installation.texi \
++#							introduction.texi \
++#							references.texi \
++#							server.texi \
++#							texinfo.tex \
++#							troubleshooting.texi \
++#							utilities.texi
+ 
+ EXTRA_DIST			=	${man_MANS:=.in}
+ 
+--- origsrc/mydns-1.2.8.31/src/mydns/Makefile.am	2010-12-25 06:45:52.000000000 +0900
++++ src/mydns-1.2.8.31/src/mydns/Makefile.am	2023-12-18 18:17:24.101841400 +0900
+@@ -8,9 +8,9 @@ localedir		=	$(datadir)/locale
+ 
+ INCLUDES		=	@UTILINCLUDE@ @MYDNSINCLUDE@ @INTLINCLUDE@ @SQLINCLUDE@ @SSLINCLUDE@
+ DEFS			=	-DLOCALEDIR=\"$(localedir)\"
+-LDADD			=	@LIBMYDNS@ @LIBUTIL@ @LIBINTL@ @LIBSQL@ @LIBSSL@ @LIBSOCKET@ @LIBNSL@ @LIBM@
++LDADD			=	$(top_builddir)/src/lib/libmydns.a $(top_builddir)/lib/libmydnsutil.a @LIBINTL@ @LIBSQL@ @LIBSSL@ @LIBSOCKET@ @LIBNSL@ @LIBM@
+ 
+-mydns_DEPENDENCIES	=	@LIBMYDNS@ @LIBUTIL@
++mydns_DEPENDENCIES	=	$(top_builddir)/src/lib/libmydns.a $(top_builddir)/lib/libmydnsutil.a
+ 
+ noinst_HEADERS		=	cache.h named.h task.h
+ mydns_SOURCES		=	alias.c array.c axfr.c cache.c data.c db.c encode.c \
+--- origsrc/mydns-1.2.8.31/src/util/Makefile.am	2010-12-25 06:45:52.000000000 +0900
++++ src/mydns-1.2.8.31/src/util/Makefile.am	2023-12-18 18:19:07.155320800 +0900
+@@ -8,9 +8,9 @@ localedir				=	$(datadir)/locale
+ 
+ INCLUDES				=	@UTILINCLUDE@ @MYDNSINCLUDE@ @INTLINCLUDE@ @SQLINCLUDE@ @SSLINCLUDE@
+ DEFS					=	-DLOCALEDIR=\"$(localedir)\" -DSBINDIR=\"$(sbindir)\"
+-LDADD					=	@LIBMYDNS@ @LIBUTIL@ @LIBINTL@ @LIBSQL@ @LIBSSL@ @LIBSOCKET@ @LIBNSL@ @LIBM@
++LDADD					=	$(top_builddir)/src/lib/libmydns.a $(top_builddir)/lib/libmydnsutil.a @LIBINTL@ @LIBSQL@ @LIBSSL@ @LIBSOCKET@ @LIBNSL@ @LIBM@
+ 
+-LIBDEPS					=	@LIBMYDNS@ @LIBUTIL@
++LIBDEPS					=	$(top_builddir)/src/lib/libmydns.a $(top_builddir)/lib/libmydnsutil.a
+ 
+ mydnscheck_DEPENDENCIES			=	$(LIBDEPS)
+ mydnsexport_DEPENDENCIES		=	$(LIBDEPS)
+--- origsrc/mydns-1.2.8.31/src/util/util.c	2010-12-25 06:45:52.000000000 +0900
++++ src/mydns-1.2.8.31/src/util/util.c	2023-12-18 18:20:47.421420600 +0900
+@@ -22,7 +22,7 @@
+ 
+ #include "util.h"
+ 
+-CONF *Conf;															/* Configuration data */
++extern CONF *Conf;															/* Configuration data */
+ 
+ 
+ /**************************************************************************************************
