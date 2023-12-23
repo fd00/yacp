@@ -1,0 +1,75 @@
+--- origsrc/libgetar-1.1.5/CMakeLists.txt	2023-12-07 03:40:43.000000000 +0900
++++ src/libgetar-1.1.5/CMakeLists.txt	2023-12-21 21:33:03.523020700 +0900
+@@ -11,10 +11,6 @@ set(GETAR_SRC
+     src/SqliteArchive.cpp
+     src/TarArchive.cpp
+     src/ZipArchive.cpp
+-    lz4/lz4.c
+-    lz4/lz4hc.c
+-    miniz/miniz.cpp
+-    sqlite3/sqlite3.c
+ )
+ 
+ set(GETAR_HEADERS
+@@ -26,30 +22,39 @@ set(GETAR_HEADERS
+     src/SqliteArchive.hpp
+     src/TarArchive.hpp
+     src/ZipArchive.hpp
+-    miniz/miniz.h
+-    sqlite3/sqlite3.h
+ )
+ 
+-include_directories(
+-  lz4
+-  miniz
+-  sqlite3
+-  )
++include(FindPkgConfig)
++pkg_check_modules(MINIZ REQUIRED miniz)
++pkg_check_modules(LIBLZ4 REQUIRED liblz4)
++pkg_check_modules(SQLITE3 REQUIRED sqlite3)
+ 
+-SET(LINK_LIBS ${LINK_LIBS} ${CMAKE_DL_LIBS})
++include_directories(${MINIZ_INCLUDE_DIRS})
+ 
++set(LINK_LIBS ${LINK_LIBS} ${CMAKE_DL_LIBS} ${MINIZ_LIBRARIES} ${LIBLZ4_LIBRARIES} ${SQLITE3_LIBRARIES})
++ 
+ find_package(Threads)
+ 
+ if(LIBGETAR_SHARED)
+   ADD_LIBRARY(getar SHARED ${GETAR_SRC})
++  if (DEFINED SOVERSION)
++    set_target_properties(getar PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
+ else()
+   ADD_LIBRARY(getar STATIC ${GETAR_SRC})
+ endif()
+ 
+ target_link_libraries(getar ${LINK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+ 
+-install(TARGETS getar LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
++install(TARGETS getar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ install(FILES ${GETAR_HEADERS} DESTINATION include/getar)
+ 
+ add_subdirectory(test)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libgetar.pc.in ${CMAKE_BINARY_DIR}/libgetar.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libgetar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgetar-1.1.5/libgetar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgetar-1.1.5/libgetar.pc.in	2023-12-21 21:34:02.096617200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgetar
++Description: Library to read and write GEneric Trajectory ARchives
++Version: @VERSION@
++Libs: -L${libdir} -lgetar
++Cflags: -I${includedir}
