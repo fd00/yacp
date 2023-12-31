@@ -1,0 +1,34 @@
+--- origsrc/knot-3.3.3/src/knot/server/server.c	2023-12-13 15:21:33.000000000 +0900
++++ src/knot-3.3.3/src/knot/server/server.c	2023-12-31 09:18:39.058153700 +0900
+@@ -198,7 +198,9 @@ static bool enable_pktinfo(int sock, int
+ 		break;
+ 	case AF_INET6:
+ 		level = IPPROTO_IPV6;
++#if defined(IPV6_RECVPKTINFO)
+ 		option = IPV6_RECVPKTINFO; /* Multiplatform */
++#endif
+ 		break;
+ 	default:
+ 		assert(0);
+--- origsrc/knot-3.3.3/src/knot/server/udp-handler.c	2023-12-13 15:21:33.000000000 +0900
++++ src/knot-3.3.3/src/knot/server/udp-handler.c	2023-12-31 16:05:25.207971500 +0900
+@@ -109,7 +109,7 @@ static void cmsg_handle_ecn(int **p_ecn,
+ static void cmsg_handle_pktinfo(sockaddr_t *local, const iface_t *iface,
+                                 struct cmsghdr *cmsg)
+ {
+-#if defined(IP_PKTINFO)
++#if defined(IP_PKTINFO) && !defined(__CYGWIN__)
+ 	if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO) {
+ 		struct in_pktinfo *info = (struct in_pktinfo *)CMSG_DATA(cmsg);
+ 		info->ipi_spec_dst = info->ipi_addr;
+--- origsrc/knot-3.3.3/tests/Makefile.am	2023-12-13 15:21:33.000000000 +0900
++++ src/knot-3.3.3/tests/Makefile.am	2023-12-31 09:17:24.967195100 +0900
+@@ -229,7 +229,7 @@ knot/test_semantic_check:
+ 	@chmod +x $(top_builddir)/tests/$@
+ endif HAVE_LIBUTILS
+ 
+-libzscanner/test_zscanner: libzscanner/zscanner-tool
++libzscanner/test_zscanner: libzscanner/zscanner-tool$(EXEEXT)
+ 	@$(edit) < $(top_srcdir)/tests/$@.in > $(top_builddir)/tests/$@
+ 	@chmod +x $(top_builddir)/tests/$@
+ 
