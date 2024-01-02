@@ -1,0 +1,96 @@
+--- origsrc/g15daemon-3.0.4/Makefile.am	2021-08-12 18:07:19.000000000 +0900
++++ src/g15daemon-3.0.4/Makefile.am	2024-01-02 02:53:32.605806200 +0900
+@@ -1,6 +1,6 @@
+ LLIBDIR=@LIBDIR@
+ 
+-SUBDIRS =  libg15daemon_client g15daemon plugins
++SUBDIRS =  libg15daemon_client g15daemon # plugins
+ AM_CFLAGS =  -I$(top_srcdir)/libg15daemon_client -I$(top_srcdir)/g15daemon
+ 
+ EXTRA_DIST = contrib Documentation README.usage FAQ LICENSE images README.Linux README.FreeBSD README.Solaris
+@@ -36,3 +36,6 @@ endif
+ #dist-archives:
+ #	$(MAKE) dist-bzip2
+ #	$(MAKE) dist-rpm                
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/g15daemon-3.0.4/configure.ac	2021-08-12 18:07:19.000000000 +0900
++++ src/g15daemon-3.0.4/configure.ac	2024-01-02 08:26:32.792891500 +0900
+@@ -2,7 +2,7 @@
+ # Process this file with autoconf to produce a configure script.
+ # $Revision: 458 $ -  $Date: 2008-01-31 15:48:40 +1030 (Thu, 31 Jan 2008) $ $Author: mlampard $
+ 
+-AC_INIT([g15daemon],[3.0.1],[menelkir@itroll.org])
++AC_INIT([g15daemon],[3.0.4],[menelkir@itroll.org])
+ AC_PREFIX_DEFAULT(/usr)
+ AC_CONFIG_AUX_DIR(config)
+ AC_CANONICAL_HOST()
+@@ -137,4 +137,5 @@ CPPFLAGS="$CPPFLAGS "'-I$(includedir)'
+ 
+ AC_CONFIG_FILES([Makefile g15daemon/Makefile libg15daemon_client/Makefile plugins/Makefile])
+ 
++AC_CONFIG_FILES([g15daemon.pc])
+ AC_OUTPUT
+--- origsrc/g15daemon-3.0.4/g15daemon/Makefile.am	2021-08-12 18:07:19.000000000 +0900
++++ src/g15daemon-3.0.4/g15daemon/Makefile.am	2024-01-02 02:42:44.368027400 +0900
+@@ -7,6 +7,6 @@ g15daemon_SOURCES = utility_funcs.c g15d
+ g15daemon_LDADD = -ldl
+ g15daemon_LDFLAGS = -rdynamic
+ g15daemontest_SOURCES = lcdclient_test.c
+-AM_CPPFLAGS = -DG15DAEMON_BUILD -Wall -I$(top_builddir)/libg15daemon_client/
++AM_CPPFLAGS = -DG15DAEMON_BUILD -Wall -I$(top_builddir)/libg15daemon_client/ -I$(top_srcdir)/libg15daemon_client/
+ g15daemontest_LDADD = $(top_builddir)/libg15daemon_client/libg15daemon_client.la
+ include_HEADERS = g15daemon.h
+--- origsrc/g15daemon-3.0.4/g15daemon.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/g15daemon-3.0.4/g15daemon.pc.in	2024-01-02 02:55:28.086231100 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: g15daemon
++Description: Provides access to extra keys and the LCD available on the logitech G15 keyboard
++Version: @VERSION@
++Libs: -L${libdir} -lg15daemon_client
++Cflags: -I${includedir}
++Requires: libg15 libg15render
+--- origsrc/g15daemon-3.0.4/libg15daemon_client/Makefile.am	2021-08-12 18:07:19.000000000 +0900
++++ src/g15daemon-3.0.4/libg15daemon_client/Makefile.am	2024-01-02 02:40:35.084340600 +0900
+@@ -1,6 +1,6 @@
+ 
+ METASOURCES = AUTO
+ lib_LTLIBRARIES = libg15daemon_client.la
+-libg15daemon_client_la_LDFLAGS = -version-info 3:0
++libg15daemon_client_la_LDFLAGS = -no-undefined -version-info 3:0
+ libg15daemon_client_la_SOURCES = g15daemon_client.h g15daemon_net.c
+-include_HEADERS= g15daemon_client.h
+\ No newline at end of file
++include_HEADERS= g15daemon_client.h
+--- origsrc/g15daemon-3.0.4/plugins/Makefile.am	2021-08-12 18:07:19.000000000 +0900
++++ src/g15daemon-3.0.4/plugins/Makefile.am	2024-01-02 02:49:34.686430400 +0900
+@@ -1,19 +1,19 @@
+ 
+ METASOURCES = AUTO
+ libdir = @G15DAEMON_PLUGIN_DIR@
+-AM_CFLAGS = -Wall -I$(top_builddir)/libg15daemon_client/ -I$(top_builddir)/g15daemon
++AM_CFLAGS = -Wall -I$(top_builddir)/libg15daemon_client/ -I$(top_builddir)/g15daemon -I$(top_srcdir)/g15daemon
+ 
+ if UINPUT_INTERFACE_PLUGIN
+ g15plugin_uinput_la_SOURCES = g15_plugin_uinput.c
+-g15plugin_uinput_la_LDFLAGS = -avoid-version -module 
++g15plugin_uinput_la_LDFLAGS = -no-undefined -avoid-version -module 
+ input_la = g15plugin_uinput.la
+ endif
+ 
+ lib_LTLIBRARIES = ${input_la} g15plugin_tcpserver.la g15plugin_clock.la
+ 
+ g15plugin_tcpserver_la_SOURCES = g15_plugin_net.c
+-g15plugin_tcpserver_la_LDFLAGS = -avoid-version -module 
++g15plugin_tcpserver_la_LDFLAGS = -no-undefined -avoid-version -module 
+ 
+ g15plugin_clock_la_SOURCES = g15_plugin_clock.c
+-g15plugin_clock_la_LDFLAGS = -avoid-version -module 
++g15plugin_clock_la_LDFLAGS = -no-undefined -avoid-version -module 
+ 
