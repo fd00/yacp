@@ -1,0 +1,165 @@
+--- origsrc/lcdproc-0.5.9/clients/lcdproc/iface.c	2017-06-19 05:40:11.000000000 +0900
++++ src/lcdproc-0.5.9/clients/lcdproc/iface.c	2024-01-03 08:46:54.532657700 +0900
+@@ -32,6 +32,7 @@
+ #define UNSET_INT -1
+ #define UNSET_STR "\01"
+ 
++IfaceInfo iface[MAX_INTERFACES]; /* interface info */
+ 
+ static int iface_count = 0;	/* number of interfaces */
+ static char unit_label[10] = "B";	/* default unit label is Bytes */
+--- origsrc/lcdproc-0.5.9/clients/lcdproc/iface.h	2017-06-19 05:40:11.000000000 +0900
++++ src/lcdproc-0.5.9/clients/lcdproc/iface.h	2024-01-03 08:46:39.344079500 +0900
+@@ -18,7 +18,7 @@
+ /** max number of interfaces in multi-interface mode */
+ #define MAX_INTERFACES 3
+ 
+-IfaceInfo iface[MAX_INTERFACES];	/* interface info */
++extern IfaceInfo iface[MAX_INTERFACES];	/* interface info */
+ 
+ /** Update screen content */
+ int iface_screen(int rep, int display, int *flags_ptr);
+--- origsrc/lcdproc-0.5.9/clients/lcdproc/machine_Linux.c	2017-06-19 05:40:11.000000000 +0900
++++ src/lcdproc-0.5.9/clients/lcdproc/machine_Linux.c	2024-01-03 08:45:24.985582600 +0900
+@@ -9,7 +9,7 @@
+  * Refer to the COPYING file distributed with this package.
+  */
+ 
+-#ifdef linux
++#if defined(linux) || defined(__CYGWIN__)
+ 
+ #include <sys/types.h>
+ #include <stdlib.h>
+@@ -58,13 +58,16 @@
+ # include <sys/procfs.h>
+ #endif
+ 
++#if defined(interface)
++#undef interface
++#endif
++
+ #include "main.h"
+ #include "mode.h"
+ #include "machine.h"
+ #include "shared/LL.h"
+ #include "shared/report.h"
+ 
+-
+ static int batt_fd;
+ static int load_fd;
+ static int loadavg_fd;
+--- origsrc/lcdproc-0.5.9/server/drivers/Makefile.am	2017-06-19 05:40:11.000000000 +0900
++++ src/lcdproc-0.5.9/server/drivers/Makefile.am	2024-01-03 18:17:50.263662600 +0900
+@@ -39,46 +39,60 @@ shuttleVFD_CFLAGS =  @LIBUSB_CFLAGS@ $(A
+ ula200_CFLAGS =      @LIBFTDI_CFLAGS@ $(AM_CFLAGS)
+ xosd_CFLAGS =        @LIBXOSD_CFLAGS@ $(AM_CFLAGS)
+ 
+-bayrad_LDADD =       libLCD.a
+-CFontz_LDADD =       libLCD.a libbignum.a
+-CFontzPacket_LDADD = libLCD.a libbignum.a
+-curses_LDADD =       @LIBCURSES@
+-CwLnx_LDADD =        libLCD.a libbignum.a
+-futaba_LDADD =       @LIBUSB_LIBS@ @LIBUSB_1_0_LIBS@ libLCD.a
+-g15_LDADD =          @LIBG15@
+-glcd_LDADD =         libLCD.a @GLCD_DRIVERS@ @FT2_LIBS@ @LIBPNG_LIBS@ @LIBSERDISP@ @LIBUSB_LIBS@ @LIBX11_LIBS@
++bayrad_LDADD =       libLCD.a $(top_builddir)/shared/libLCDstuff.a
++CFontz_LDADD =       libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++CFontzPacket_LDADD = libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++curses_LDADD =       @LIBCURSES@ $(top_builddir)/shared/libLCDstuff.a
++CwLnx_LDADD =        libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++ea65_LDADD =         $(top_builddir)/shared/libLCDstuff.a
++EyeboxOne_LDADD =    $(top_builddir)/shared/libLCDstuff.a
++futaba_LDADD =       @LIBUSB_LIBS@ @LIBUSB_1_0_LIBS@ libLCD.a $(top_builddir)/shared/libLCDstuff.a
++g15_LDADD =          @LIBG15@ $(top_builddir)/shared/libLCDstuff.a
++glcd_LDADD =         libLCD.a @GLCD_DRIVERS@ @FT2_LIBS@ @LIBPNG_LIBS@ @LIBSERDISP@ @LIBUSB_LIBS@ @LIBX11_LIBS@ $(top_builddir)/shared/libLCDstuff.a
+ glcd_DEPENDENCIES =  @GLCD_DRIVERS@ glcd-glcd-render.o
+-glcdlib_LDADD =      @LIBGLCD@
+-glk_LDADD =          libbignum.a
+-hd44780_LDADD =      libLCD.a @HD44780_DRIVERS@ @HD44780_I2C@ @LIBUSB_LIBS@ @LIBFTDI_LIBS@ @LIBUGPIO@ libbignum.a
++glcdlib_LDADD =      @LIBGLCD@ $(top_builddir)/shared/libLCDstuff.a
++glk_LDADD =          libbignum.a $(top_builddir)/shared/libLCDstuff.a
++hd44780_LDADD =      libLCD.a @HD44780_DRIVERS@ @HD44780_I2C@ @LIBUSB_LIBS@ @LIBFTDI_LIBS@ @LIBUGPIO@ libbignum.a $(top_builddir)/shared/libLCDstuff.a
+ hd44780_DEPENDENCIES = @HD44780_DRIVERS@ @HD44780_I2C@
+-i2500vfd_LDADD =     @LIBFTDI_LIBS@
+-imon_LDADD =         libLCD.a libbignum.a
+-imonlcd_LDADD =      libLCD.a
+-IOWarrior_LDADD =    @LIBUSB_LIBS@ libLCD.a libbignum.a
+-irman_LDADD =        @LIBIRMAN@
+-lb216_LDADD =        libLCD.a
+-lcterm_LDADD =       libLCD.a libbignum.a
+-lirc_LDADD =         @LIBLIRC_CLIENT@
+-lis_LDADD =          libLCD.a @LIBFTDI_LIBS@ @LIBPTHREAD_LIBS@ libbignum.a
+-mdm166a_LDADD =      @LIBHID_LIBS@ libLCD.a
+-mtc_s16209x_LDADD =  libLCD.a
+-MtxOrb_LDADD =       libLCD.a libbignum.a
+-mx5000_LDADD =       @LIBMX5000@
+-NoritakeVFD_LDADD =  libbignum.a
+-picolcd_LDADD =      @LIBUSB_LIBS@ @LIBUSB_1_0_LIBS@ libLCD.a libbignum.a
+-pyramid_LDADD =      libLCD.a libbignum.a
+-sdeclcd_LDADD =      libLCD.a libbignum.a
+-serialPOS_LDADD =    libbignum.a
+-serialVFD_LDADD =    libLCD.a libbignum.a
+-shuttleVFD_LDADD =   @LIBUSB_LIBS@
+-sli_LDADD =          libLCD.a
+-SureElec_LDADD =     libLCD.a libbignum.a
+-svga_LDADD =         @LIBSVGA@
+-t6963_LDADD =        libLCD.a
+-tyan_LDADD =         libLCD.a libbignum.a
+-ula200_LDADD =       @LIBFTDI_LIBS@
+-xosd_LDADD =         @LIBXOSD_LIBS@ libbignum.a
++i2500vfd_LDADD =     @LIBFTDI_LIBS@ $(top_builddir)/shared/libLCDstuff.a
++icp_a106_LDADD =     $(top_builddir)/shared/libLCDstuff.a
++imon_LDADD =         libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++imonlcd_LDADD =      libLCD.a $(top_builddir)/shared/libLCDstuff.a
++IOWarrior_LDADD =    @LIBUSB_LIBS@ libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++irman_LDADD =        @LIBIRMAN@ $(top_builddir)/shared/libLCDstuff.a
++irtrans_LDADD =      $(top_builddir)/shared/libLCDstuff.a
++lb216_LDADD =        libLCD.a $(top_builddir)/shared/libLCDstuff.a
++lcdm001_LDADD =      $(top_builddir)/shared/libLCDstuff.a
++lcterm_LDADD =       libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++lirc_LDADD =         @LIBLIRC_CLIENT@ $(top_builddir)/shared/libLCDstuff.a
++lis_LDADD =          libLCD.a @LIBFTDI_LIBS@ @LIBPTHREAD_LIBS@ libbignum.a $(top_builddir)/shared/libLCDstuff.a
++MD8800_LDADD =       $(top_builddir)/shared/libLCDstuff.a
++mdm166a_LDADD =      @LIBHID_LIBS@ libLCD.a $(top_builddir)/shared/libLCDstuff.a
++ms6931_LDADD =       $(top_builddir)/shared/libLCDstuff.a 
++mtc_s16209x_LDADD =  libLCD.a $(top_builddir)/shared/libLCDstuff.a
++MtxOrb_LDADD =       libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++mx5000_LDADD =       @LIBMX5000@ $(top_builddir)/shared/libLCDstuff.a
++NoritakeVFD_LDADD =  libbignum.a $(top_builddir)/shared/libLCDstuff.a
++picolcd_LDADD =      @LIBUSB_LIBS@ @LIBUSB_1_0_LIBS@ libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++pyramid_LDADD =      libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++rawserial_LDADD =    $(top_builddir)/shared/libLCDstuff.a
++sdeclcd_LDADD =      libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++sed1330_LDADD =      $(top_builddir)/shared/libLCDstuff.a
++sed1520_LDADD =      $(top_builddir)/shared/libLCDstuff.a
++serialPOS_LDADD =    libbignum.a $(top_builddir)/shared/libLCDstuff.a
++serialVFD_LDADD =    libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++shuttleVFD_LDADD =   @LIBUSB_LIBS@ $(top_builddir)/shared/libLCDstuff.a
++sli_LDADD =          libLCD.a $(top_builddir)/shared/libLCDstuff.a
++stv5730_LDADD =      $(top_builddir)/shared/libLCDstuff.a
++SureElec_LDADD =     libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++svga_LDADD =         @LIBSVGA@ $(top_builddir)/shared/libLCDstuff.a
++t6963_LDADD =        libLCD.a $(top_builddir)/shared/libLCDstuff.a
++text_LDADD =         $(top_builddir)/shared/libLCDstuff.a
++tyan_LDADD =         libLCD.a libbignum.a $(top_builddir)/shared/libLCDstuff.a
++ula200_LDADD =       @LIBFTDI_LIBS@ $(top_builddir)/shared/libLCDstuff.a
++vlsys_m428_LDADD =   $(top_builddir)/shared/libLCDstuff.a
++yard2LCD_LDADD =     $(top_builddir)/shared/libLCDstuff.a
++xosd_LDADD =         @LIBXOSD_LIBS@ libbignum.a $(top_builddir)/shared/libLCDstuff.a
+ 
+ libLCD_a_SOURCES =   lcd_lib.h lcd_lib.c
+ libbignum_a_SOURCES = adv_bignum.h  adv_bignum.c
+--- origsrc/lcdproc-0.5.9/server/drivers/glcd-picolcdgfx.c	2017-06-19 05:40:11.000000000 +0900
++++ src/lcdproc-0.5.9/server/drivers/glcd-picolcdgfx.c	2024-01-03 09:00:48.484537600 +0900
+@@ -52,6 +52,11 @@
+ #define PICOLCDGFX_WIDTH	256
+ #define PICOLCDGFX_HEIGHT	64
+ 
++#if defined(__CYGWIN__)
++#define usb_get_driver_np(a, b, c, d) (0)
++#define usb_detach_kernel_driver_np(a, b) (-1)
++#endif
++
+ /** Private data for the picolcdgfx connection type */
+ typedef struct glcd_picolcdgfx_data {
+ 	usb_dev_handle *lcd;
