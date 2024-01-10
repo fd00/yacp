@@ -1,0 +1,41 @@
+--- origsrc/wreport-3.36-1/meson.build	2023-05-25 23:35:50.000000000 +0900
++++ src/wreport-3.36-1/meson.build	2024-01-10 13:05:39.720900500 +0900
+@@ -46,7 +46,9 @@ if python3.found()
+ 
+     doxygen = find_program('doxygen', required : false)
+ 
+-    build_docs = sphinx.found() and doxygen.found()
++    breathe = pymod.find_installation('python3', modules: ['breathe'], required: false)
++
++    build_docs = sphinx.found() and doxygen.found() and breathe.found()
+     docdir = get_option('datadir') / 'doc' / meson.project_name()
+ else
+     warning('Documentation disabled, requires doxygen, sphinx, and the breathe python module')
+--- origsrc/wreport-3.36-1/wreport/utils/subprocess.cc	2023-05-25 23:35:50.000000000 +0900
++++ src/wreport-3.36-1/wreport/utils/subprocess.cc	2024-01-10 12:51:07.466239500 +0900
+@@ -320,10 +320,10 @@ void Child::fork()
+         try {
+             post_fork_child();
+         } catch (std::system_error& e) {
+-            fprintf(::stderr, "Child process setup failed: %s\n", e.what());
++            fprintf(stderr, "Child process setup failed: %s\n", e.what());
+             _exit(EX_OSERR);
+         } catch (std::exception& e) {
+-            fprintf(::stderr, "Child process setup failed: %s\n", e.what());
++            fprintf(stderr, "Child process setup failed: %s\n", e.what());
+             _exit(EX_SOFTWARE);
+         }
+         _exit(main());
+@@ -573,10 +573,10 @@ int Popen::main() noexcept
+         delete[] exec_env;
+         throw std::runtime_error("process flow continued after execvp did not fail");
+     } catch (std::system_error& e) {
+-        fprintf(::stderr, "Child process setup failed: %s\n", e.what());
++        fprintf(stderr, "Child process setup failed: %s\n", e.what());
+         return EX_OSERR;
+     } catch (std::exception& e) {
+-        fprintf(::stderr, "Child process setup failed: %s\n", e.what());
++        fprintf(stderr, "Child process setup failed: %s\n", e.what());
+         return EX_SOFTWARE;
+     }
+ }
