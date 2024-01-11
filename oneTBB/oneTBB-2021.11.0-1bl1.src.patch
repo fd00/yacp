@@ -1,0 +1,44 @@
+--- origsrc/oneTBB-2021.11.0/cmake/compilers/GNU.cmake	2023-11-18 01:23:05.000000000 +0900
++++ src/oneTBB-2021.11.0/cmake/compilers/GNU.cmake	2024-01-11 11:44:55.922343200 +0900
+@@ -72,7 +72,7 @@ set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMO
+ set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMON_COMPILE_FLAGS} -Wformat -Wformat-security -Werror=format-security
+     -fstack-protector-strong )
+ # -z switch is not supported on MacOS
+-if (NOT APPLE)
++if (NOT APPLE AND NOT CYGWIN)
+     set(TBB_LIB_LINK_FLAGS ${TBB_LIB_LINK_FLAGS} -Wl,-z,relro,-z,now,-z,noexecstack)
+ endif()
+ set(TBB_COMMON_COMPILE_FLAGS ${TBB_COMMON_COMPILE_FLAGS} $<$<NOT:$<CONFIG:Debug>>:-D_FORTIFY_SOURCE=2> )
+--- origsrc/oneTBB-2021.11.0/include/oneapi/tbb/detail/_config.h	2023-11-18 01:23:05.000000000 +0900
++++ src/oneTBB-2021.11.0/include/oneapi/tbb/detail/_config.h	2024-01-11 11:50:28.384153500 +0900
+@@ -201,7 +201,7 @@
+ 
+ /** __TBB_WEAK_SYMBOLS_PRESENT denotes that the system supports the weak symbol mechanism **/
+ #ifndef __TBB_WEAK_SYMBOLS_PRESENT
+-    #define __TBB_WEAK_SYMBOLS_PRESENT ( !__EMSCRIPTEN__ && !_WIN32 && !__APPLE__ && !__sun && (__TBB_GCC_VERSION >= 40000 || __INTEL_COMPILER ) )
++    #define __TBB_WEAK_SYMBOLS_PRESENT ( !__EMSCRIPTEN__ && !_WIN32 && !__CYGWIN__ && !__APPLE__ && !__sun && (__TBB_GCC_VERSION >= 40000 || __INTEL_COMPILER ) )
+ #endif
+ 
+ /** Presence of compiler features **/
+--- origsrc/oneTBB-2021.11.0/test/common/common_arena_constraints.h	2023-11-18 01:23:05.000000000 +0900
++++ src/oneTBB-2021.11.0/test/common/common_arena_constraints.h	2024-01-11 12:54:53.186748000 +0900
+@@ -86,7 +86,7 @@ int get_processors_group_count() { retur
+ #define __HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_CPUBINDING_PRESENT (HWLOC_API_VERSION >= 0x20500)
+ // At this moment the hybrid CPUs HWLOC interfaces returns unexpected results on some Windows machines
+ // in the 32-bit arch mode.
+-#define __HWLOC_HYBRID_CPUS_INTERFACES_VALID (!_WIN32 || _WIN64)
++#define __HWLOC_HYBRID_CPUS_INTERFACES_VALID (!_WIN32)
+ 
+ #define __HYBRID_CPUS_TESTING __HWLOC_HYBRID_CPUS_INTERFACES_PRESENT && __HWLOC_HYBRID_CPUS_INTERFACES_VALID
+ #define __HWLOC_CPUBIND_PRESENT (!__APPLE__)
+--- origsrc/oneTBB-2021.11.0/test/tbb/test_eh_thread.cpp	2023-11-18 01:23:05.000000000 +0900
++++ src/oneTBB-2021.11.0/test/tbb/test_eh_thread.cpp	2024-01-11 12:50:45.530740200 +0900
+@@ -34,7 +34,7 @@
+ // On Windows there is no real thread number limit beside available memory.
+ // Therefore, the test for thread limit is unreasonable.
+ // TODO: enable limitThreads with sanitizer under docker
+-#if TBB_USE_EXCEPTIONS && !_WIN32 && !__ANDROID__
++#if TBB_USE_EXCEPTIONS && !_WIN32 && !__ANDROID__ && !__CYGWIN__
+ 
+ #include <limits.h>
+ #include <sys/types.h>
