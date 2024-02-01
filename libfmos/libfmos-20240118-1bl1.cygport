@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/libyal/${PN}"
+SRC_URI="https://github.com/libyal/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Library for Mac OS data types"
+DESCRIPTION="libfmos is a library for Mac OS data types."
+
+LICENSE="LGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-3.0-or-later"
+LICENSE_URI="COPYING.LESSER"
+
+BUILD_REQUIRES="libcerror-devel libcnotify-devel python39-devel"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}/tests
+	chmod u+x *.sh *.py
+}
+
+CYGCONF_ARGS="
+	--enable-python
+"
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+		for sh in ${S}/tests/*.sh ${S}/tests/*.py
+		do
+			ln -fs ${sh} .
+		done
+	popd
+	cygtest
+	rm tests/*.sh tests/*.py
+}
+
+PKG_NAMES="
+	libfmos
+	libfmos1
+	libfmos-devel
+	python39-libfmos
+"
+libfmos_CONTENTS="
+	usr/share
+"
+libfmos1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+libfmos_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
+"
+python39_libfmos_CONTENTS="
+	usr/lib/python3.9
+"
+libfmos_SUMMARY="${SUMMARY} (licensing & readmes)"
+libfmos1_SUMMARY="${SUMMARY} (runtime)"
+libfmos_devel_SUMMARY="${SUMMARY} (development)"
+python39_libfmos_SUMMARY="${SUMMARY} (python39 bindings)"
