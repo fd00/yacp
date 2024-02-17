@@ -1,0 +1,74 @@
+--- origsrc/eblob-0.23.14/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/CMakeLists.txt	2024-02-17 16:38:21.976896700 +0900
+@@ -129,7 +129,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD ON)
+ find_package(Threads REQUIRED)
+ 
+ # Check for boost
+-find_package(Boost REQUIRED COMPONENTS iostreams thread system regex python unit_test_framework)
++find_package(Boost REQUIRED COMPONENTS iostreams thread system regex python3 unit_test_framework)
+ message(STATUS "Boost information:")
+ message(STATUS "  Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+ message(STATUS "  Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
+--- origsrc/eblob-0.23.14/bindings/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/bindings/CMakeLists.txt	2024-02-17 16:59:38.805661700 +0900
+@@ -1,5 +1,5 @@
+ add_subdirectory(cpp)
+-if(Boost_PYTHON_LIBRARY AND WITH_PYTHON)
++if(Boost_PYTHON3_LIBRARY AND WITH_PYTHON)
+     add_subdirectory(python)
+ endif()
+ 
+--- origsrc/eblob-0.23.14/bindings/cpp/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/bindings/cpp/CMakeLists.txt	2024-02-17 16:57:11.182617200 +0900
+@@ -11,6 +11,7 @@ set_target_properties(eblob_cpp PROPERTI
+ target_link_libraries(eblob_cpp ${EBLOB_CPP_LIBRARIES} eblob)
+ 
+ install(TARGETS eblob_cpp
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib${LIB_SUFFIX}
+     ARCHIVE DESTINATION lib${LIB_SUFFIX}
+     BUNDLE DESTINATION library
+--- origsrc/eblob-0.23.14/bindings/python/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/bindings/python/CMakeLists.txt	2024-02-17 17:05:14.260761900 +0900
+@@ -1,5 +1,5 @@
+ add_library(eblob_python SHARED eblob_python.cpp)
+-target_link_libraries(eblob_python eblob eblob_cpp ${EBLOB_PYTHON_LIBRARIES})
++target_link_libraries(eblob_python eblob eblob_cpp ${Boost_PYTHON3_LIBRARY} ${PYTHON_LIBRARY})
+ 
+ set_target_properties(eblob_python PROPERTIES
+     VERSION ${EBLOB_VERSION}
+@@ -7,7 +7,6 @@ set_target_properties(eblob_python PROPE
+ )
+ 
+ install(TARGETS eblob_python
+-    LIBRARY DESTINATION lib${LIB_SUFFIX}
+-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
++    RUNTIME DESTINATION bin
+     BUNDLE DESTINATION library
+ )
+--- origsrc/eblob-0.23.14/library/CMakeLists.txt	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/library/CMakeLists.txt	2024-02-17 16:58:00.429149600 +0900
+@@ -29,6 +29,7 @@ set_target_properties(eblob PROPERTIES
+ target_link_libraries(eblob ${EBLOB_LIBRARIES} ${Boost_SYSTEM_LIBRARIES} handystats rt)
+ 
+ install(TARGETS eblob
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib${LIB_SUFFIX}
+     ARCHIVE DESTINATION lib${LIB_SUFFIX}
+     BUNDLE DESTINATION library
+--- origsrc/eblob-0.23.14/library/mobjects.c	2017-01-28 18:32:25.000000000 +0900
++++ src/eblob-0.23.14/library/mobjects.c	2024-02-17 16:44:18.098535500 +0900
+@@ -47,8 +47,12 @@
+ 
+ #include "measure_points.h"
+ 
+-#if !defined(_D_EXACT_NAMLEN) && (defined(__FreeBSD__) || defined(__APPLE__))
++#if !defined(_D_EXACT_NAMLEN)
++#if defined(__FreeBSD__) || defined(__APPLE__)
+ #define _D_EXACT_NAMLEN(d) ((d)->d_namlen)
++#else
++#define _D_EXACT_NAMLEN(d) strlen((d)->d_name)
++#endif
+ #endif
+ 
+ static const char *eblob_get_base(const char *blob_base)
