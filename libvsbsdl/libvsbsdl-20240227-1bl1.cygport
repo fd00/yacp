@@ -1,0 +1,70 @@
+HOMEPAGE="https://github.com/libyal/${PN}"
+SRC_URI="https://github.com/libyal/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Library and tools to access BSD disklabel volume system format"
+DESCRIPTION="libvsbsdl is a library to access the BSD disklabel volume system format."
+
+LICENSE="LGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-3.0-or-later"
+LICENSE_URI="COPYING.LESSER"
+
+BUILD_REQUIRES="libbfio-devel libcdata-devel libcerror-devel libclocale-devel libcnotify-devel libcthreads-devel libfcache-devel libfdata-devel python39-devel"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}/tests
+	chmod u+x *.py
+}
+
+CYGCONF_ARGS="
+	--enable-python
+	--enable-wide-character-type
+"
+
+src_test()
+{
+	cd ${B}
+	pushd tests
+		for f in ${S}/tests/*.{py,sh}
+		do
+			ln -fs ${f} .
+		done
+	popd
+	cygtest
+	rm tests/*.{py,sh}
+}
+
+DOCS="
+	COPYING.LESSER
+	documentation/*
+"
+
+PKG_NAMES="
+	${PN}
+	${PN}1
+	${PN}-devel
+	python39-${PN}
+"
+libvsbsdl_CONTENTS="
+	usr/bin/*.exe
+	usr/share/doc
+	usr/share/man/man1
+"
+libvsbsdl1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+libvsbsdl_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
+	usr/share/man/man3
+"
+python39_libvsbsdl_CONTENTS="
+	usr/lib/python3.9
+"
+libvsbsdl_SUMMARY="${SUMMARY} (utilities)"
+libvsbsdl1_SUMMARY="${SUMMARY} (runtime)"
+libvsbsdl_devel_SUMMARY="${SUMMARY} (development)"
+python39_libvsbsdl_SUMMARY="${SUMMARY} (python39 bindings)"
