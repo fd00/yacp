@@ -1,0 +1,61 @@
+--- origsrc/ugrep-5.1.0/Makefile.am	2024-03-08 03:29:06.000000000 +0900
++++ src/ugrep-5.1.0/Makefile.am	2024-03-08 10:33:07.835650200 +0900
+@@ -43,7 +43,7 @@ cp2bin:		$(top_builddir)/src/ugrep$(EXEE
+ 		@echo
+ 
+ install-exec-hook:
+-		cp -f $(top_builddir)/bin/ugrep+ $(top_builddir)/bin/ug+ $(DESTDIR)$(bindir)
++#		cp -f $(top_builddir)/bin/ugrep+ $(top_builddir)/bin/ug+ $(DESTDIR)$(bindir)
+ 		rm -f $(DESTDIR)$(bindir)/ug$(EXEEXT)
+ 		cd $(DESTDIR)$(bindir) && cp -f ugrep$(EXEEXT) ug$(EXEEXT)
+ 
+--- origsrc/ugrep-5.1.0/include/reflex/timer.h	2024-03-08 03:29:06.000000000 +0900
++++ src/ugrep-5.1.0/include/reflex/timer.h	2024-03-08 10:43:02.154105300 +0900
+@@ -37,7 +37,7 @@
+ #ifndef REFLEX_TIMER_H
+ #define REFLEX_TIMER_H
+ 
+-#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
++#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
+ 
+ // disable min/max macros to use std::min and std::max
+ #define NOMINMAX
+--- origsrc/ugrep-5.1.0/src/Makefile.am	2024-03-08 03:29:06.000000000 +0900
++++ src/ugrep-5.1.0/src/Makefile.am	2024-03-08 10:33:07.835650200 +0900
+@@ -1,4 +1,4 @@
+ bin_PROGRAMS   = ugrep
+-ugrep_CPPFLAGS = -I$(top_srcdir)/include $(EXTRA_CFLAGS) $(SIMD_FLAGS) $(PTHREAD_CFLAGS) -DPLATFORM=\"$(PLATFORM)\" -DGREP_PATH=\"$(GREP_PATH)\" -DWITH_NO_INDENT
++ugrep_CPPFLAGS = -I$(top_srcdir)/include $(EXTRA_CFLAGS) $(SIMD_FLAGS) $(PTHREAD_CFLAGS) -DPLATFORM=\"$(PLATFORM)\" -DGREP_PATH=\"$(GREP_PATH)\" -DWITH_NO_INDENT -I$(top_srcdir)/lzma/C
+ ugrep_SOURCES  = ugrep.cpp cnf.hpp cnf.cpp flag.hpp glob.hpp glob.cpp mmap.hpp output.hpp output.cpp query.hpp query.cpp screen.hpp screen.cpp stats.hpp stats.cpp vkey.hpp vkey.cpp zstream.hpp zopen.h zopen.c
+ ugrep_LDADD    = $(PTHREAD_LIBS) $(top_builddir)/lib/libreflex.a
+--- origsrc/ugrep-5.1.0/src/glob.cpp	2024-03-08 03:29:06.000000000 +0900
++++ src/ugrep-5.1.0/src/glob.cpp	2024-03-08 10:44:04.709679800 +0900
+@@ -79,7 +79,7 @@
+ //  a\?b      matches a?b                  but not a, b, ab, axb, a/b
+ 
+ // check if we are on a windows OS
+-#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
++#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
+ # define OS_WIN
+ #endif
+ 
+--- origsrc/ugrep-5.1.0/src/ugrep.cpp	2024-03-08 03:29:06.000000000 +0900
++++ src/ugrep-5.1.0/src/ugrep.cpp	2024-03-08 10:44:41.691527200 +0900
+@@ -486,7 +486,7 @@ static void set_this_thread_affinity_and
+ {
+   // set affinity
+ 
+-#if defined(OS_WIN) || defined(__CYGWIN__)
++#if defined(OS_WIN)
+ 
+   (void)SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << cpu);
+ 
+@@ -540,7 +540,7 @@ static void set_this_thread_affinity_and
+ 
+   // set priority
+ 
+-#if defined(OS_WIN) || defined(__CYGWIN__)
++#if defined(OS_WIN)
+ 
+   (void)SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+ 
