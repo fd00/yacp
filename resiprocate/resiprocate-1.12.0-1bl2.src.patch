@@ -1,5 +1,5 @@
 --- origsrc/resiprocate-resiprocate-1.12.0/repro/Makefile.am	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/repro/Makefile.am	2022-06-07 22:49:45.298461700 +0900
++++ src/resiprocate-resiprocate-1.12.0/repro/Makefile.am	2024-03-09 23:16:43.803215700 +0900
 @@ -45,11 +45,12 @@ repro_LDADD += @LIBSSL_LIBADD@ @LIBPTHRE
  
  lib_LTLIBRARIES = librepro.la
@@ -15,8 +15,19 @@
  librepro_la_LIBADD += ../resip/dum/libdum.la
  librepro_la_LIBADD += ../resip/stack/libresip.la
  librepro_la_LIBADD += ../rutil/librutil.la
+--- origsrc/resiprocate-resiprocate-1.12.0/repro/PersistentMessageQueue.cxx	2020-05-09 20:55:09.000000000 +0900
++++ src/resiprocate-resiprocate-1.12.0/repro/PersistentMessageQueue.cxx	2024-03-10 07:16:22.309381600 +0900
+@@ -108,7 +108,7 @@ struct Cursor
+ 
+ PersistentMessageQueue::PersistentMessageQueue(const Data& baseDir) : 
+ #ifndef DISABLE_BERKELEYDB_USE
+-   DbEnv(0), 
++   DbEnv((u_int32_t) 0), 
+    mDb(0), 
+ #endif
+    mBaseDir(baseDir),
 --- origsrc/resiprocate-resiprocate-1.12.0/resip/dum/Makefile.am	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/resip/dum/Makefile.am	2022-06-07 13:42:45.900925400 +0900
++++ src/resiprocate-resiprocate-1.12.0/resip/dum/Makefile.am	2024-03-09 23:16:43.803215700 +0900
 @@ -15,7 +15,7 @@ libdum_la_LIBADD = ../stack/libresip.la
  libdum_la_LIBADD += ../../rutil/librutil.la
  libdum_la_LIBADD += @LIBSSL_LIBADD@ @LIBRADIUS_LIBADD@
@@ -27,7 +38,7 @@
  libdum_la_SOURCES =   \
  	AppDialog.cxx \
 --- origsrc/resiprocate-resiprocate-1.12.0/resip/stack/Makefile.am	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/resip/stack/Makefile.am	2022-06-07 13:11:01.678958600 +0900
++++ src/resiprocate-resiprocate-1.12.0/resip/stack/Makefile.am	2024-03-09 23:16:43.803215700 +0900
 @@ -41,7 +41,7 @@ lib_LTLIBRARIES = libresip.la
  libresip_la_LIBADD = ../../rutil/librutil.la
  libresip_la_LIBADD += @LIBSSL_LIBADD@
@@ -37,8 +48,19 @@
  
  libresip_la_SOURCES = \
  	Auth.cxx \
+--- origsrc/resiprocate-resiprocate-1.12.0/resip/stack/ssl/Security.cxx	2020-05-09 20:55:09.000000000 +0900
++++ src/resiprocate-resiprocate-1.12.0/resip/stack/ssl/Security.cxx	2024-03-10 06:42:39.451761100 +0900
+@@ -962,7 +962,7 @@ BaseSecurity::addPrivateKeyPEM( PEMType
+          char buffer[120];
+          unsigned long err = ERR_get_error();
+          ERR_error_string(err, buffer);
+-         if(ERR_GET_LIB(err) == ERR_LIB_EVP && ERR_GET_FUNC(err) == EVP_F_EVP_DECRYPTFINAL_EX && ERR_GET_REASON(err) == EVP_R_BAD_DECRYPT)
++         if(ERR_GET_LIB(err) == ERR_LIB_EVP && ERR_GET_REASON(err) == EVP_R_BAD_DECRYPT)
+          {
+             ErrLog(<< "Could not read private key (error=" << buffer << ") - likely incorrect password provided, may load correctly when transports are added with appropriate password");
+          }
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/Condition.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/Condition.cxx	2022-06-07 11:34:54.481987300 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/Condition.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -5,7 +5,9 @@
  #  include <pthread.h>
  #  include <errno.h>
@@ -51,7 +73,7 @@
  #endif
  
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/Makefile.am	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/Makefile.am	2022-06-07 12:51:30.250987200 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/Makefile.am	2024-03-09 23:16:43.818844500 +0900
 @@ -30,7 +30,7 @@ librutil_la_LIBADD += @LIBSTL_LIBADD@
  librutil_la_LIBADD += @LIBLOG_LIBADD@
  #librutil_la_LIBADD += -lrt
@@ -62,7 +84,7 @@
  librutil_la_SOURCES = \
  	AbstractFifo.cxx \
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/Timer.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/Timer.cxx	2022-06-07 11:39:50.375089400 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/Timer.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -9,7 +9,9 @@
  #  include <winbase.h>
  #else
@@ -75,7 +97,7 @@
  #endif
  
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/AresDns.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/AresDns.cxx	2022-06-07 11:41:49.121770900 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/AresDns.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -22,10 +22,8 @@
  #include "rutil/FdPoll.hxx"
  
@@ -88,7 +110,7 @@
  using namespace resip;
  
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/DnsCnameRecord.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsCnameRecord.cxx	2022-06-07 11:43:19.648632800 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsCnameRecord.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -6,14 +6,12 @@
  
  #include "AresCompat.hxx"
@@ -105,7 +127,7 @@
  #include "rutil/Data.hxx"
  #include "rutil/BaseException.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/DnsHostRecord.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsHostRecord.cxx	2022-06-07 11:44:04.037948400 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsHostRecord.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -6,14 +6,12 @@
  
  #include "AresCompat.hxx"
@@ -122,7 +144,7 @@
  #include "rutil/Data.hxx"
  #include "rutil/DnsUtil.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/DnsNaptrRecord.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsNaptrRecord.cxx	2022-06-07 11:48:29.319744300 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsNaptrRecord.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -6,14 +6,12 @@
  
  #include "AresCompat.hxx"
@@ -139,7 +161,7 @@
  #include "rutil/Data.hxx"
  #include "rutil/Logger.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/DnsSrvRecord.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsSrvRecord.cxx	2022-06-07 11:49:14.031918000 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsSrvRecord.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -6,14 +6,12 @@
  
  #include "AresCompat.hxx"
@@ -156,7 +178,7 @@
  #include "rutil/Data.hxx"
  #include "rutil/BaseException.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/DnsStub.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsStub.cxx	2022-06-07 11:49:47.621360900 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/DnsStub.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -13,10 +13,8 @@
  #include "AresCompat.hxx"
  
@@ -169,7 +191,7 @@
  #include "rutil/FdPoll.hxx"
  #include "rutil/Logger.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/RRCache.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RRCache.cxx	2022-06-07 12:45:05.410631000 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RRCache.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -8,11 +8,9 @@
  #include <sys/types.h>
  #include <sys/socket.h>
@@ -186,7 +208,7 @@
  #include <netinet/in.h>
  #else
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/RRList.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RRList.cxx	2022-06-07 12:48:38.425509800 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RRList.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -11,10 +11,8 @@
  #endif
  
@@ -199,7 +221,7 @@
  #include "rutil/Logger.hxx"
  #include "rutil/compat.hxx"
 --- origsrc/resiprocate-resiprocate-1.12.0/rutil/dns/RROverlay.cxx	2020-05-09 20:55:09.000000000 +0900
-+++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RROverlay.cxx	2022-06-07 12:50:09.441243400 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/dns/RROverlay.cxx	2024-03-09 23:16:43.818844500 +0900
 @@ -4,14 +4,12 @@
  
  #include "AresCompat.hxx"
@@ -215,3 +237,20 @@
  
  #include <cstdlib>
  #include <vector>
+--- origsrc/resiprocate-resiprocate-1.12.0/rutil/ssl/OpenSSLInit.cxx	2020-05-09 20:55:09.000000000 +0900
++++ src/resiprocate-resiprocate-1.12.0/rutil/ssl/OpenSSLInit.cxx	2024-03-09 23:34:53.567208700 +0900
+@@ -72,11 +72,13 @@ OpenSSLInit::OpenSSLInit()
+ #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
+ 	CRYPTO_malloc_debug_init();
+ 	CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
+-#else
++#elif OPENSSL_VERSION_MAJOR < 3
+ 	CRYPTO_set_mem_debug(1);
+ #endif
+ 
++#if OPENSSL_VERSION_MAJOR < 3
+ 	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
++#endif
+ 
+ 	SSL_library_init();
+ 	SSL_load_error_strings();
