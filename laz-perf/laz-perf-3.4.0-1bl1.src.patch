@@ -1,20 +1,18 @@
---- origsrc/laz-perf-3.3.0/CMakeLists.txt	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/CMakeLists.txt	2023-08-12 09:02:12.644768800 +0900
-@@ -43,3 +43,12 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
+--- origsrc/laz-perf-3.4.0/CMakeLists.txt	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/CMakeLists.txt	2024-03-17 11:38:03.452146100 +0900
+@@ -43,3 +43,10 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
  endif()
  
  add_subdirectory(cpp)
 +
-+if (CYGWIN)
-+  set(prefix ${CMAKE_INSTALL_PREFIX})
-+  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+  configure_file(${CMAKE_SOURCE_DIR}/laz-perf.pc.in ${CMAKE_BINARY_DIR}/laz-perf.pc @ONLY)
-+  install(FILES ${CMAKE_BINARY_DIR}/laz-perf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-+endif()
---- origsrc/laz-perf-3.3.0/cmake/install.cmake	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cmake/install.cmake	2023-08-12 09:02:12.644768800 +0900
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/laz-perf.pc.in ${CMAKE_BINARY_DIR}/laz-perf.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/laz-perf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/laz-perf-3.4.0/cmake/install.cmake	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cmake/install.cmake	2024-03-17 11:37:40.538246700 +0900
 @@ -14,7 +14,8 @@ function(lazperf_install_library _target
              ${_target}
          EXPORT
@@ -25,17 +23,19 @@
      )
      target_include_directories(${_target} INTERFACE $<INSTALL_INTERFACE:include>)
  endfunction()
---- origsrc/laz-perf-3.3.0/cmake/unix_compiler_options.cmake	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cmake/unix_compiler_options.cmake	2023-08-12 11:27:56.749505600 +0900
-@@ -1,5 +1,5 @@
+--- origsrc/laz-perf-3.4.0/cmake/unix_compiler_options.cmake	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cmake/unix_compiler_options.cmake	2024-03-17 11:38:52.161127000 +0900
+@@ -1,5 +1,7 @@
  function(lazperf_target_compile_settings target)
 -    set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
-+    # set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
++    if (NOT CYGWIN)
++        set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
++    endif()
      set_property(TARGET ${target} PROPERTY CXX_STANDARD_REQUIRED TRUE)
      if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
          #
---- origsrc/laz-perf-3.3.0/cpp/CMakeLists.txt	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cpp/CMakeLists.txt	2023-08-12 09:45:40.340949500 +0900
+--- origsrc/laz-perf-3.4.0/cpp/CMakeLists.txt	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cpp/CMakeLists.txt	2024-03-17 11:37:40.538246700 +0900
 @@ -9,8 +9,13 @@ set (LAZPERF_STATIC_LIB lazperf_s)
  
  if (NOT EMSCRIPTEN)
@@ -51,8 +51,8 @@
  
  install(
      FILES
---- origsrc/laz-perf-3.3.0/cpp/examples/CMakeLists.txt	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cpp/examples/CMakeLists.txt	2023-08-12 09:02:12.644768800 +0900
+--- origsrc/laz-perf-3.4.0/cpp/examples/CMakeLists.txt	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cpp/examples/CMakeLists.txt	2024-03-17 11:37:40.538246700 +0900
 @@ -5,7 +5,7 @@ target_include_directories(point10
  )
  target_link_libraries(point10
@@ -71,8 +71,8 @@
  )
  lazperf_target_compile_settings(readlaz)
  
---- origsrc/laz-perf-3.3.0/cpp/test/CMakeLists.txt	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cpp/test/CMakeLists.txt	2023-08-12 09:02:12.644768800 +0900
+--- origsrc/laz-perf-3.4.0/cpp/test/CMakeLists.txt	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cpp/test/CMakeLists.txt	2024-03-17 11:37:40.538246700 +0900
 @@ -4,7 +4,7 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORC
  
  macro(LAZPERF_ADD_TEST _name)
@@ -95,8 +95,8 @@
  
  LAZPERF_ADD_TEST(io_tests)
  LAZPERF_ADD_TEST(lazperf_tests)
---- origsrc/laz-perf-3.3.0/cpp/tools/CMakeLists.txt	2023-01-12 06:14:51.000000000 +0900
-+++ src/laz-perf-3.3.0/cpp/tools/CMakeLists.txt	2023-08-12 09:02:12.644768800 +0900
+--- origsrc/laz-perf-3.4.0/cpp/tools/CMakeLists.txt	2023-08-23 21:53:21.000000000 +0900
++++ src/laz-perf-3.4.0/cpp/tools/CMakeLists.txt	2024-03-17 11:37:40.538246700 +0900
 @@ -3,5 +3,5 @@ add_executable(random random.cpp)
  
  target_include_directories(random PRIVATE ../lazperf)
@@ -104,8 +104,8 @@
 -target_link_libraries(random PRIVATE ${LAZPERF_STATIC_LIB})
 +target_link_libraries(random PRIVATE ${LAZPERF_SHARED_LIB})
  
---- origsrc/laz-perf-3.3.0/laz-perf.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/laz-perf-3.3.0/laz-perf.pc.in	2023-08-12 09:02:12.644768800 +0900
+--- origsrc/laz-perf-3.4.0/laz-perf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/laz-perf-3.4.0/laz-perf.pc.in	2024-03-17 11:37:40.538246700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
