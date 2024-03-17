@@ -1,0 +1,151 @@
+--- origsrc/libappanvil-0.2/CMakeLists.txt	2023-05-09 09:53:41.000000000 +0900
++++ src/libappanvil-0.2/CMakeLists.txt	2024-03-17 17:00:52.299537200 +0900
+@@ -9,7 +9,11 @@ set(AUTOGEN_SOURCE_DIR ${CMAKE_CURRENT_S
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
+ 
+-set(LIBRARY_NAME ${PROJECT_NAME}-dev)
++if (CYGWIN)
++  set(LIBRARY_NAME ${PROJECT_NAME})
++else()
++  set(LIBRARY_NAME ${PROJECT_NAME}-dev)
++endif()
+ 
+ # Create the directory, so that it exists for FLEX/BISON to use 
+ file(MAKE_DIRECTORY ${AUTOGEN_SOURCE_DIR})
+@@ -146,8 +150,18 @@ target_include_directories(${LIBRARY_NAM
+ target_include_directories(${LIBRARY_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/parser)
+ target_include_directories(${LIBRARY_NAME} SYSTEM PRIVATE ${AUTOGEN_SOURCE_DIR})
+ 
++target_link_libraries(${LIBRARY_NAME} intl)
++
++if (DEFINED SOVERSION)
++  set_target_properties(${LIBRARY_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # Create target to install library
+-install(TARGETS ${LIBRARY_NAME} DESTINATION lib/${PROJECT_NAME})
++if (CYGWIN)
++  install(TARGETS ${LIBRARY_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++else()
++  install(TARGETS ${LIBRARY_NAME} DESTINATION lib/${PROJECT_NAME})
++endif()
+ install(FILES ${OUTPUT_HEADERS} DESTINATION include/${PROJECT_NAME})
+ install(FILES ${OUTPUT_TREE_HEADERS} DESTINATION include/${PROJECT_NAME}/tree/)
+ 
+@@ -166,3 +180,9 @@ endif()
+ #### Create the test executable ####
+ enable_testing()
+ add_subdirectory(test)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libappanvil.pc.in ${CMAKE_BINARY_DIR}/libappanvil.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libappanvil.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libappanvil-0.2/libappanvil.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libappanvil-0.2/libappanvil.pc.in	2024-03-17 17:00:52.221420700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libappanvil
++Description: 
++Version: @VERSION@
++Libs: -L${libdir} -lappanvil
++Cflags: -I${includedir}
+--- origsrc/libappanvil-0.2/src/parser/parser.cc	2023-05-09 09:53:41.000000000 +0900
++++ src/libappanvil-0.2/src/parser/parser.cc	2024-03-17 14:40:45.560649600 +0900
+@@ -27,7 +27,9 @@
+ #include <cstdlib>
+ #include <cstring>
+ #include <fcntl.h>
++#if defined(__linux__)
+ #include <linux/capability.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+@@ -110,17 +112,29 @@ static struct keyword_table rlimit_table
+ 	{"data",		RLIMIT_DATA},
+ 	{"stack",		RLIMIT_STACK},
+ 	{"core",		RLIMIT_CORE},
++#if defined(RLIMIT_RSS)
+ 	{"rss",			RLIMIT_RSS},
++#endif
+ 	{"nofile",		RLIMIT_NOFILE},
+ #ifdef RLIMIT_OFILE
+ 	{"ofile",		RLIMIT_OFILE},
+ #endif
+ 	{"as",			RLIMIT_AS},
++#if defined(RLIMIT_NPROC)
+ 	{"nproc",		RLIMIT_NPROC},
++#endif
++#if defined(RLIMIT_MEMLOCK)
+ 	{"memlock",		RLIMIT_MEMLOCK},
++#endif
++#if defined(RLIMIT_LOCKS)
+ 	{"locks",		RLIMIT_LOCKS},
++#endif
++#if defined(RLIMIT_SIGPENDING)
+ 	{"sigpending",		RLIMIT_SIGPENDING},
++#endif
++#if defined(RLIMIT_MSGQUEUE)
+ 	{"msgqueue",		RLIMIT_MSGQUEUE},
++#endif
+ #ifdef RLIMIT_NICE
+ 	{"nice",		RLIMIT_NICE},
+ #endif
+--- origsrc/libappanvil-0.2/src/parser/parser_yacc.y	2023-05-09 09:53:41.000000000 +0900
++++ src/libappanvil-0.2/src/parser/parser_yacc.y	2024-03-17 14:36:41.222752400 +0900
+@@ -544,7 +544,7 @@ void yyerror(const char *msg, ...)
+ }
+ 
+ void yy::parser::error(YYLTYPE const& location, 
+-					   std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const& str)
++					   std::basic_string<char, std::char_traits<char>, std::allocator<char> > const& str)
+ {
+ 	yyerror("(%lu, %lu): %s", location.first_pos, location.last_pos, str.c_str());
+-}
+\ No newline at end of file
++}
+--- origsrc/libappanvil-0.2/test/e2e/CMakeLists.txt	2023-05-09 09:53:41.000000000 +0900
++++ src/libappanvil-0.2/test/e2e/CMakeLists.txt	2024-03-17 14:43:51.003856400 +0900
+@@ -26,6 +26,9 @@ if(${GTEST_FOUND})
+ 
+   target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBRARY_NAME})
+   target_link_libraries(${PROJECT_NAME} PUBLIC gtest)
++  if (CYGWIN)
++    target_link_libraries(${PROJECT_NAME} PUBLIC intl)
++  endif()
+ 
+   #### Create fixture for tests ####
+   add_test(e2e_test_build
+@@ -50,4 +53,4 @@ if(${GTEST_FOUND})
+ 
+   set_tests_properties(${ADDED_TESTS} PROPERTIES FIXTURES_REQUIRED test_fixture)
+ 
+-endif()
+\ No newline at end of file
++endif()
+--- origsrc/libappanvil-0.2/test/simple/CMakeLists.txt	2023-05-09 09:53:41.000000000 +0900
++++ src/libappanvil-0.2/test/simple/CMakeLists.txt	2024-03-17 14:42:46.447721900 +0900
+@@ -7,6 +7,9 @@ set(TEST_SOURCES ${CMAKE_CURRENT_SOURCE_
+ #### Create the test executable ####
+ add_executable(${PROJECT_NAME} ${TEST_SOURCES})
+ target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBRARY_NAME})
++if (CYGWIN)
++  target_link_libraries(${PROJECT_NAME} PUBLIC intl)
++endif()
+ 
+ #### Create fixture for tests ####
+ add_test(test_build
+@@ -44,4 +47,4 @@ foreach(PROFILE ${TEST_PROFILES})
+         set_tests_properties(${TEST_NAME} PROPERTIES WILL_FAIL TRUE)
+     endif()
+   endif()
+-endforeach()
+\ No newline at end of file
++endforeach()
