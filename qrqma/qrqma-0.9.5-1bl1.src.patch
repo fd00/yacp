@@ -1,0 +1,39 @@
+--- origsrc/qrqma-0.9.5/CMakeLists.txt	2021-08-20 02:29:43.000000000 +0900
++++ src/qrqma-0.9.5/CMakeLists.txt	2024-03-18 12:19:30.639363300 +0900
+@@ -9,8 +9,13 @@ file(GLOB_RECURSE CPP_SRCS ./*.cpp)
+ 
+ add_library(qrqma SHARED ${CPP_SRCS})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(qrqma PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ set(DEST_DIR "${CMAKE_INSTALL_PREFIX}")
+ 
++if (EXISTS ${PROJECT_SOURCE_DIR}/.git)
+ execute_process(
+         COMMAND git describe --tags
+         OUTPUT_VARIABLE VERSION
+@@ -21,12 +26,13 @@ execute_process(
+ if(VERSION STREQUAL "")
+     message(FATAL_ERROR "cannot generate version string")
+ endif()
++endif()
+ 
+ message("qrqma version: " ${VERSION})
+ 
+ configure_file(qrqma.pc.in qrqma.pc @ONLY)
+ 
+-install(TARGETS qrqma DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS qrqma RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES
+     loader.h
+     template.h
+@@ -34,6 +40,6 @@ install(FILES
+     symbol.h
+     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qrqma)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qrqma.pc
+-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/pkgconfig)
++    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+ install(FILES LICENSE
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/share/licenses/${PROJECT_NAME})
