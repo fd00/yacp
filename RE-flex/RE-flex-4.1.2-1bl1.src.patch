@@ -1,0 +1,76 @@
+--- origsrc/RE-flex-4.1.2/CMakeLists.txt	2024-03-18 05:54:34.000000000 +0900
++++ src/RE-flex-4.1.2/CMakeLists.txt	2024-03-22 11:24:49.083475900 +0900
+@@ -54,24 +54,17 @@ target_include_directories(ReflexLib PUB
+ target_compile_definitions(ReflexLib PRIVATE ${simd_definitions})
+ target_compile_options(ReflexLib PRIVATE ${simd_flags})
+ 
+-add_library(ReflexLibStatic STATIC "")
+-target_sources(ReflexLibStatic PRIVATE ${lib_sources})
+-target_include_directories(ReflexLibStatic PUBLIC
+-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+-)
+-target_compile_definitions(ReflexLibStatic PRIVATE ${simd_definitions})
+-target_compile_options(ReflexLibStatic PRIVATE ${simd_flags})
+-
+ add_executable(Reflex "")
+ target_sources(Reflex PRIVATE ${bin_sources})
+-target_link_libraries(Reflex PRIVATE ReflexLibStatic)
++target_link_libraries(Reflex PRIVATE ReflexLib)
+ target_compile_definitions(Reflex PRIVATE ${simd_definitions})
+ target_compile_options(Reflex PRIVATE ${simd_flags})
+ 
+ # Don't user target name as filename instead use lowercase name for backwards compatibility
+-set_target_properties(ReflexLibStatic PROPERTIES OUTPUT_NAME reflex_static_lib)
+-set_target_properties(ReflexLib PROPERTIES OUTPUT_NAME reflex_shared_lib)
++set_target_properties(ReflexLib PROPERTIES OUTPUT_NAME reflex)
++if (DEFINED SOVERSION)
++  set_target_properties(ReflexLib PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ set_target_properties(Reflex PROPERTIES OUTPUT_NAME reflex)
+ 
+ #
+@@ -80,7 +73,7 @@ set_target_properties(Reflex PROPERTIES
+ 
+ include(GNUInstallDirs)
+ 
+-install(TARGETS Reflex ReflexLib ReflexLibStatic
++install(TARGETS Reflex ReflexLib
+   EXPORT ReflexTargets
+   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+@@ -113,3 +106,10 @@ install(FILES
+   "${CMAKE_CURRENT_BINARY_DIR}/ReflexConfig.cmake"
+   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/reflex
+ )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/reflex.pc.in ${CMAKE_BINARY_DIR}/reflex.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/reflex.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/RE-flex-4.1.2/include/reflex/timer.h	2024-03-18 05:54:34.000000000 +0900
++++ src/RE-flex-4.1.2/include/reflex/timer.h	2024-03-22 11:15:20.641794600 +0900
+@@ -37,7 +37,7 @@
+ #ifndef REFLEX_TIMER_H
+ #define REFLEX_TIMER_H
+ 
+-#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
++#if defined(__WIN32__) || defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__) || defined(__BORLANDC__)
+ 
+ // disable min/max macros to use std::min and std::max
+ #define NOMINMAX
+--- origsrc/RE-flex-4.1.2/reflex.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/RE-flex-4.1.2/reflex.pc.in	2024-03-22 11:25:20.269819600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: RE-flex
++Description: High-performance C++ regex library and lexical analyzer generator with Unicode support
++Version: @VERSION@
++Libs: -L${libdir} -lreflex
++Cflags: -I${includedir}
