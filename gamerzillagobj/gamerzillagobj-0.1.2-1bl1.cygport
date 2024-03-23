@@ -1,0 +1,72 @@
+HOMEPAGE="https://github.com/dulsi/${PN}"
+SRC_URI="https://github.com/dulsi/${PN}/archive/refs/tags/release-${PV}.tar.gz"
+SRC_DIR="${PN}-release-${PV}"
+
+CATEGORY="Libs"
+SUMMARY="GObject introspection into gamerzilla"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="Zlib"
+LICENSE_SPDX="SPDX-License-Identifier: Zlib"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libgamerzilla-devel libglib2.0-devel"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake
+}
+
+src_install()
+{
+	cd ${B}
+	dobin .libs/cyg*-0.dll
+	doinclude ${PN}.h
+	dolib .libs/lib*.dll.a
+	insinto /usr/lib/girepository-1.0
+	doins Gamerzilla-0.1.typelib
+	insinto /usr/share/gir-1.0
+	doins Gamerzilla-0.1.gir
+
+	mkdir -p ${D}/usr/lib/pkgconfig
+cat <<EOF > ${D}/usr/lib/pkgconfig/gamerzillagobj.pc
+prefix=/usr
+exec_prefix=/usr
+libdir=/usr/lib
+includedir=/usr/include
+
+Name: Gamerzillagobj
+Description: ${SUMMARY}
+Version: ${PV}
+Libs: -L/usr/lib -lgamerzillagobj
+Cflags: -I/usr/include
+EOF
+}
+
+PKG_NAMES="
+	gamerzillagobj
+	libgamerzillagobj0
+	libgamerzillagobj-devel
+	girepository-Gamerzilla0.1
+"
+gamerzillagobj_CONTENTS="
+	usr/share/doc
+"
+libgamerzillagobj0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libgamerzillagobj_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
+"
+girepository_Gamerzilla0_1_CONTENTS="
+	usr/lib/girepository-1.0
+	usr/share/gir-1.0
+"
+gamerzillagobj_SUMMARY="${SUMMARY} (licensing & readmes)"
+libgamerzillagobj0_SUMMARY="${SUMMARY} (runtime)"
+libgamerzillagobj_devel_SUMMARY="${SUMMARY} (development)"
+girepository_Gamerzilla0_1_SUMMARY="${SUMMARY} (GObject Introspection)"
