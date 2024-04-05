@@ -1,0 +1,123 @@
+--- origsrc/gcli-2.3.0/Makefile.am	2024-03-27 04:45:14.000000000 +0900
++++ src/gcli-2.3.0/Makefile.am	2024-04-04 23:48:56.905761700 +0900
+@@ -21,13 +21,13 @@ pgen_SOURCES = \
+ 	src/pgen/lexer.l
+ 
+ lib_LTLIBRARIES = libgcli.la
+-noinst_LTLIBRARIES = libpdjson.la
++noinst_LTLIBRARIES = 
+ 
+ # For testing puproses I'll reenable parallel builds. If it breaks again, uncomment.
+ # .NOTPARALLEL: pgen$(EXEEXT) $(builddir)/src/pgen/parser.c $(builddir)/src/pgen/parser.h $(builddir)/src/pgen/lexer.c
+ src/pgen/lexer.c: src/pgen/parser.h
+ 
+-libgcli_la_DEPENDENCIES = pgen$(EXEEXT) libpdjson.la
++libgcli_la_DEPENDENCIES = pgen$(EXEEXT) 
+ 
+ $(BUILT_SOURCES): pgen$(EXEEXT)
+ 
+@@ -41,7 +41,7 @@ SUFFIXES = .t
+ bin_PROGRAMS = gcli$(EXEEXT)
+ gcli_LDADD = libgcli.la
+ 
+-libgcli_la_LIBADD = libpdjson.la
++libgcli_la_LIBADD = $(PDJSON_LIBS)
+ libgcli_la_LDFLAGS = -no-undefined
+ 
+ dist_man_MANS = \
+@@ -88,10 +88,6 @@ gcli_SOURCES = \
+ 	src/cmd/api.c \
+ 	src/cmd/gcli.c
+ 
+-libpdjson_la_SOURCES = \
+-	thirdparty/pdjson/pdjson.c \
+-	thirdparty/pdjson/pdjson.h
+-
+ TEMPLATES = \
+ 	templates/github/api.t \
+ 	templates/github/checks.t \
+@@ -249,7 +245,7 @@ tests_json_escape_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_json_escape_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_github_parse_tests_SOURCES = \
+@@ -258,7 +254,7 @@ tests_github_parse_tests_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_github_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_gitlab_parse_tests_SOURCES = \
+@@ -267,7 +263,7 @@ tests_gitlab_parse_tests_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_gitlab_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_gitea_parse_tests_SOURCES = \
+@@ -276,7 +272,7 @@ tests_gitea_parse_tests_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_gitea_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_bugzilla_parse_tests_SOURCES = \
+@@ -285,7 +281,7 @@ tests_bugzilla_parse_tests_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_bugzilla_parse_tests_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_base64_tests_SOURCES = \
+@@ -294,7 +290,7 @@ tests_base64_tests_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_base64_tests_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_url_encode_SOURCES = \
+@@ -303,7 +299,7 @@ tests_url_encode_CFLAGS = \
+ 	$(AM_CFLAGS) \
+ 	$(LIBATFC_CFLAGS)
+ tests_url_encode_LDADD = \
+-	libgcli.la libpdjson.la \
++	libgcli.la $(PDJSON_LIBS) \
+ 	$(LIBATFC_LIBS)
+ 
+ tests_pretty_print_test_SOURCES = \
+--- origsrc/gcli-2.3.0/configure.ac	2024-03-27 04:45:14.000000000 +0900
++++ src/gcli-2.3.0/configure.ac	2024-04-04 23:49:07.924907100 +0900
+@@ -35,6 +35,8 @@ dnl Inspired by the way dpkg solves the
+ m4_ifndef([PKG_PROG_PKG_CONFIG], [m4_fatal([pkgconf macros missing. do you have pkgconf installed?])])
+ PKG_PROG_PKG_CONFIG
+ 
++PKG_CHECK_MODULES([PDJSON], [pdjson])
++
+ dnl Use ccache if found
+ CCACHE=""
+ AC_CHECK_PROG([CCACHE], [ccache], [ccache])
+--- origsrc/gcli-2.3.0/libgcli.pc.in	2024-03-27 04:45:14.000000000 +0900
++++ src/gcli-2.3.0/libgcli.pc.in	2024-04-04 23:49:18.953719500 +0900
+@@ -7,7 +7,7 @@ includedir=@includedir@
+ 
+ Name: gcli
+ Description: Library to interact with various Git forges
+-Version: 2.0
++Version: @VERSION@
+ URL: https://herrhotzenplotz.de/gcli
+ Requires: libcurl >= 8.0
+ Libs: -L${libdir} -lgcli
