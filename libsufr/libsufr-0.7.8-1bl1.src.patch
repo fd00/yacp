@@ -1,0 +1,71 @@
+--- origsrc/libsufr-0.7.8/CMakeLists.txt	2023-08-05 21:23:37.000000000 +0900
++++ src/libsufr-0.7.8/CMakeLists.txt	2024-04-10 11:19:49.385487800 +0900
+@@ -49,14 +49,6 @@ include( SetCompileOptions )
+ 
+ # Place the products in their directories:
+ get_filename_component( Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME )
+-if( COMPILER_SPECIFIC_LIBS )
+-  set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libSUFR/${Fortran_COMPILER_NAME}" )
+-else( COMPILER_SPECIFIC_LIBS )
+-  set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libSUFR" )
+-endif( COMPILER_SPECIFIC_LIBS )
+-
+-set( LIBRARY_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/usr/lib${LIB_SUFFIX}" )
+-
+ 
+ # Set source files:
+ include( FileList )
+@@ -86,7 +78,10 @@ if( CREATE_SHAREDLIB )
+   else( COMPILER_SPECIFIC_LIBS )
+     set_target_properties( libSUFR_shared PROPERTIES OUTPUT_NAME "SUFR" )  # Sets the file name and soname to libSUFR.so
+   endif( COMPILER_SPECIFIC_LIBS )
+-  set_target_properties( libSUFR_shared PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY} )
++  if (DEFINED SOVERSION)
++    set_target_properties(libSUFR_shared PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
++  install(TARGETS libSUFR_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ endif( CREATE_SHAREDLIB )
+ 
+ # Use add_dependencies below in order to pretend the static lib depends on the shared.  This
+@@ -128,22 +123,17 @@ message( STATUS "Compiling for an ${CMAK
+ message( STATUS "" )
+ 
+ # Install to destination:
+-#   use DIRECTORY rather than TARGETS to allow include/<fortrancompiler>/
+-install( DIRECTORY usr/ DESTINATION ${CMAKE_INSTALL_PREFIX} )
+-
+ # Install man pages:
+ install( DIRECTORY man/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man )
+ 
+-# Install documents:
+-if( NOT EXISTS VERSION )
+-  install( FILES doc/CHANGELOG doc/LICENCE doc/README doc/VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
+-else( NOT EXISTS VERSION )
+-  install( FILES CHANGELOG LICENCE README VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libsufr-${PKG_VERSION} )
+-endif( NOT EXISTS VERSION )
+-
+-
+ # Create Linux-distribution binary package:
+ if( WANT_PACKAGE )
+   include( CPack_package )
+ endif( WANT_PACKAGE )
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libsufr.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsufr-0.7.8/libsufr.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsufr-0.7.8/libsufr.pc.in	2024-04-10 11:20:26.514907200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsufr
++Description: Some Useful Fortran Routines
++Version: @VERSION@
++Libs: -L${libdir} -lSUFR
++Cflags: -I${includedir}
