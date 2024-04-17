@@ -1,0 +1,100 @@
+--- origsrc/c-toxcore-0.2.19/auto_tests/network_test.c	2024-03-28 07:29:16.000000000 +0900
++++ src/c-toxcore-0.2.19/auto_tests/network_test.c	2024-04-16 16:06:21.856399800 +0900
+@@ -1,5 +1,8 @@
+ #include <stdlib.h>
+ #include <string.h>
++#if defined(__CYGWIN__)
++#include <errno.h>
++#endif
+ 
+ #include "../testing/misc_tools.h"
+ #include "../toxcore/network.h"
+@@ -16,7 +19,8 @@ static void test_addr_resolv_localhost(v
+      * normally this should happen automatically
+      * cygwin doesn't do it for every network related function though
+      * e.g. not for getaddrinfo... */
+-    net_socket(0, 0, 0);
++    Family f = {0};
++    net_socket(0, f, 0, 0);
+     errno = 0;
+ #endif
+ 
+--- origsrc/c-toxcore-0.2.19/configure.ac	2024-03-28 07:29:16.000000000 +0900
++++ src/c-toxcore-0.2.19/configure.ac	2024-04-16 15:17:40.080233200 +0900
+@@ -225,6 +225,9 @@ case $host_os in
+         WIN32="yes"
+         EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
+     ;;
++    *cygwin*)
++        EXTRA_LT_LDFLAGS="$EXTRA_LT_LDFLAGS -no-undefined"
++    ;;
+     *solaris*)
+         LIBS="$LIBS -lssp -lsocket -lnsl"
+     ;;
+@@ -394,6 +397,15 @@ else
+     AC_MSG_WARN([pkg-config was not found on your system, will search for libraries manually])
+ fi
+ 
++PKG_CHECK_MODULES([CMP], [cmp],
++    [
++        CMP_FOUND="yes"
++    ],
++    [
++        CMP_FOUND="no"
++    ])
++AM_CONDITIONAL(CMP_FOUND, test "x$CMP_FOUND" = "xyes")
++
+ if (test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes") && \
+    (test "x$LIBCONFIG_FOUND" = "xno"); then
+     AC_CHECK_HEADER(libconfig.h,
+--- origsrc/c-toxcore-0.2.19/toxcore/Makefile.inc	2024-03-28 07:29:16.000000000 +0900
++++ src/c-toxcore-0.2.19/toxcore/Makefile.inc	2024-04-16 15:18:37.554954600 +0900
+@@ -5,9 +5,7 @@ libtoxcore_la_include_HEADERS = \
+ 
+ libtoxcore_la_includedir = $(includedir)/tox
+ 
+-libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
+-                        ../third_party/cmp/cmp.h \
+-                        ../toxcore/attributes.h \
++libtoxcore_la_SOURCES = ../toxcore/attributes.h \
+                         ../toxcore/bin_pack.c \
+                         ../toxcore/bin_pack.h \
+                         ../toxcore/bin_unpack.c \
+@@ -163,6 +161,15 @@ libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS
+                         $(MSGPACK_LIBS) \
+                         $(PTHREAD_LIBS)
+ 
++if CMP_FOUND
++libtoxcore_la_CFLAGS += $(CMP_CFLAGS)
++libtoxcore_la_LIBADD += $(CMP_LIBS)
++else
++libtoxcore_la_CFLAGS += -I$(top_srcdir)/third_party/cmp
++libtoxcore_la_SOURCES += ../third_party/cmp/cmp.c \
++                         ../third_party/cmp/cmp.h
++endif
++
+ if SET_SO_VERSION
+ 
+ EXTRA_libtoxcore_la_DEPENDENCIES = ../so.version
+--- origsrc/c-toxcore-0.2.19/toxcore/bin_pack.c	2024-03-28 07:29:16.000000000 +0900
++++ src/c-toxcore-0.2.19/toxcore/bin_pack.c	2024-04-16 15:19:16.320216300 +0900
+@@ -7,7 +7,7 @@
+ #include <assert.h>
+ #include <string.h>
+ 
+-#include "../third_party/cmp/cmp.h"
++#include "cmp.h"
+ #include "attributes.h"
+ #include "ccompat.h"
+ #include "logger.h"
+--- origsrc/c-toxcore-0.2.19/toxcore/bin_unpack.c	2024-03-28 07:29:16.000000000 +0900
++++ src/c-toxcore-0.2.19/toxcore/bin_unpack.c	2024-04-16 15:19:29.773051000 +0900
+@@ -8,7 +8,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "../third_party/cmp/cmp.h"
++#include "cmp.h"
+ #include "attributes.h"
+ #include "ccompat.h"
+ 
