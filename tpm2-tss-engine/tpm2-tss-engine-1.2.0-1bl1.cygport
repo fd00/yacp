@@ -1,0 +1,58 @@
+HOMEPAGE="https://github.com/tpm2-software/${PN}"
+SRC_URI="https://github.com/tpm2-software/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Security"
+SUMMARY="OpenSSL Engine for TPM2 devices"
+DESCRIPTION="The tpm2-tss-engine project implements a cryptographic engine for OpenSSL for
+Trusted Platform Module (TPM 2.0) using the tpm2-tss software stack that
+follows the Trusted Computing Groups (TCG) TPM Software Stack (TSS 2.0). It
+uses the Enhanced System API (ESAPI) interface of the TSS 2.0 for downwards
+communication. It supports RSA decryption and signatures as well as ECDSA
+signatures."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libssl-devel libtss2-esys-devel libtss2-mu-devel libtss2-tctildr-devel"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	echo ${PV} > VERSION
+}
+
+src_compile()
+{
+	cd ${S}
+	./bootstrap
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
+DIFF_EXCLUDES="
+	m4
+"
+
+PKG_NAMES="
+	${PN}
+	libtpm2tss0
+	libtpm2tss-devel
+"
+tpm2_tss_engine_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libtpm2tss0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libtpm2tss_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+tpm2_tss_engine_SUMMARY="${SUMMARY} (utilities)"
+libtpm2tss0_SUMMARY="${SUMMARY} (runtime)"
+libtpm2tss_devel_SUMMARY="${SUMMARY} (development)"
