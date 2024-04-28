@@ -1,17 +1,12 @@
---- origsrc/whisper.cpp-1.5.4/CMakeLists.txt	2024-01-06 00:11:27.000000000 +0900
-+++ src/whisper.cpp-1.5.4/CMakeLists.txt	2024-01-15 17:46:57.220190100 +0900
-@@ -105,6 +105,9 @@ endif()
- 
- find_package(Threads REQUIRED)
+--- origsrc/whisper.cpp-1.5.5/CMakeLists.txt	2024-04-16 20:08:31.000000000 +0900
++++ src/whisper.cpp-1.5.5/CMakeLists.txt	2024-04-28 19:31:21.374077000 +0900
+@@ -633,8 +633,15 @@ endif()
+ # whisper - this is the main library of the project
+ #
  
 +find_package(pkgconfig)
 +pkg_check_modules(GGML ggml)
 +
- # on APPLE
- if (APPLE)
-     # include Accelerate framework
-@@ -465,6 +468,10 @@ endif()
- 
  set(TARGET whisper)
  
 +if (GGML_FOUND)
@@ -21,26 +16,15 @@
  add_library(${TARGET}
      ggml.h
      ggml.c
-@@ -480,6 +487,7 @@ add_library(${TARGET}
+@@ -652,6 +659,7 @@ add_library(${TARGET}
      whisper.h
      whisper.cpp
      )
 +endif()
  
- include(DefaultTargetOptions)
- 
-@@ -523,6 +531,10 @@ if (BUILD_SHARED_LIBS)
-         #       but for some reason it does not work here like it does in llama.cpp
-         set_target_properties(${TARGET} PROPERTIES RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ggml-metal.metal")
-     endif()
-+
-+    if (DEFINED SOVERSION)
-+        set_target_properties(${TARGET} PROPERTIES SOVERSION "${SOVERSION}")
-+    endif()
- endif()
- 
- if (GGML_SOURCES_CUDA)
-@@ -545,13 +557,17 @@ target_compile_definitions(${TARGET} PUB
+ # Set the version numbers
+ set_target_properties(whisper PROPERTIES
+@@ -728,14 +736,18 @@ target_compile_definitions(${TARGET} PUB
      ${WHISPER_EXTRA_FLAGS}
      )
  
@@ -49,6 +33,7 @@
 +else()
  set_target_properties(${TARGET} PROPERTIES PUBLIC_HEADER "ggml.h;whisper.h")
 +endif()
+ set_target_properties(${TARGET} PROPERTIES FOLDER "libs")
  
  include(GNUInstallDirs)
  
@@ -59,7 +44,7 @@
      RUNTIME  DESTINATION bin
      RESOURCE DESTINATION bin
      PUBLIC_HEADER DESTINATION include
-@@ -575,3 +591,10 @@ endif ()
+@@ -759,3 +771,10 @@ endif ()
  if (WHISPER_BUILD_EXAMPLES)
      add_subdirectory(examples)
  endif()
@@ -70,8 +55,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/whisper.cpp.pc.in ${CMAKE_BINARY_DIR}/whisper.cpp.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/whisper.cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/whisper.cpp-1.5.4/whisper.cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/whisper.cpp-1.5.4/whisper.cpp.pc.in	2024-01-15 17:47:09.529565300 +0900
+--- origsrc/whisper.cpp-1.5.5/whisper.cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/whisper.cpp-1.5.5/whisper.cpp.pc.in	2024-04-28 19:31:11.590455000 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
