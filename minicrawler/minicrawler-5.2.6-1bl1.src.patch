@@ -1,0 +1,76 @@
+--- origsrc/minicrawler-5.2.6/Makefile.am	2023-06-30 18:48:35.000000000 +0900
++++ src/minicrawler-5.2.6/Makefile.am	2024-05-01 16:12:04.732232300 +0900
+@@ -1,23 +1,25 @@
+ ## No default includes
+ DEFAULT_INCLUDES = 
+ AM_CXXFLAGS = -std=c++14
++AM_CPPFLAGS = -I$(top_builddir)/src -I$(top_builddir)/src/h
+ 
+ minicrawlerincludedir = $(includedir)/libminicrawler-@MINICRAWLER_API_VERSION@/minicrawler
+ minicrawlerinclude_HEADERS = src/url/minicrawler-url.h src/h/minicrawler.h
+ 
+ libminicrawler_url_sources = src/url/parse.cc src/url/serialize.c src/url/api.c src/url/alloc.c
+-libminicrawler_sources = src/crawler.c src/cert.c src/conv.c src/converthtml2text.c src/entities.c src/inflate.c src/time.c src/malloc.c src/base64.c src/digcalc.c src/cookies.c src/tpl/tpl.c src/serialize.c src/memory.c src/auth.c src/http1.c src/http2.c src/debug.c src/buf.c src/api.c $(libminicrawler_url_sources)
+-minicrawler_sources = src/main.c src/cli.c $(libminicrawler_sources)
++libminicrawler_sources = src/crawler.c src/cert.c src/conv.c src/converthtml2text.c src/entities.c src/inflate.c src/time.c src/malloc.c src/base64.c src/digcalc.c src/cookies.c src/serialize.c src/memory.c src/auth.c src/http1.c src/http2.c src/debug.c src/buf.c src/api.c
++minicrawler_sources = src/main.c src/cli.c
+ 
+ lib_LTLIBRARIES = libminicrawler/libminicrawler-url-@MINICRAWLER_API_VERSION@.la libminicrawler/libminicrawler-@MINICRAWLER_API_VERSION@.la
+ 
+ libminicrawler_libminicrawler_url_@MINICRAWLER_API_VERSION@_la_SOURCES = $(libminicrawler_url_sources)
+-libminicrawler_libminicrawler_url_@MINICRAWLER_API_VERSION@_la_LDFLAGS = -version-info $(MINICRAWLER_LT_VERSION)
++libminicrawler_libminicrawler_url_@MINICRAWLER_API_VERSION@_la_LDFLAGS = -no-undefined -version-info $(MINICRAWLER_LT_VERSION)
+ libminicrawler_libminicrawler_url_@MINICRAWLER_API_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS) -DBUILDING_MCRAWLER
+ libminicrawler_libminicrawler_url_@MINICRAWLER_API_VERSION@_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden
+ 
+ libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_SOURCES =  $(libminicrawler_sources)
+-libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_LDFLAGS = -version-info $(MINICRAWLER_LT_VERSION)
++libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_LDFLAGS = -no-undefined -version-info $(MINICRAWLER_LT_VERSION)
++libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_LIBADD = libminicrawler/libminicrawler-url-@MINICRAWLER_API_VERSION@.la $(TPL_LIBS)
+ libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS) -DBUILDING_MCRAWLER
+ libminicrawler_libminicrawler_@MINICRAWLER_API_VERSION@_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden
+ 
+@@ -25,6 +27,7 @@ bin_PROGRAMS = minicrawler@MINICRAWLER_A
+ 
+ minicrawler@MINICRAWLER_API_VERSION@_SOURCES = $(minicrawler_sources)
+ minicrawler@MINICRAWLER_API_VERSION@_CFLAGS = $(AM_CFLAGS)
++minicrawler@MINICRAWLER_API_VERSION@_LDADD = libminicrawler/libminicrawler-@MINICRAWLER_API_VERSION@.la
+ 
+ check_PROGRAMS = test/url
+ 
+--- origsrc/minicrawler-5.2.6/configure.ac	2023-06-30 18:48:35.000000000 +0900
++++ src/minicrawler-5.2.6/configure.ac	2024-05-01 12:00:30.257145700 +0900
+@@ -41,7 +41,9 @@ AC_CHECK_LIB([icuuc], [uidna_nameToASCII
+                             AC_CHECK_LIB([icuuc], [uidna_nameToASCII_70], [],
+                                 AC_CHECK_LIB([icuuc], [uidna_nameToASCII_71], [],
+                                     AC_CHECK_LIB([icuuc], [uidna_nameToASCII_72], [],
+-                                        AC_MSG_WARN([Unable to find libicuuc library! apt install libicu-dev!])
++                                        AC_CHECK_LIB([icuuc], [uidna_nameToASCII_74], [],
++                                            AC_MSG_WARN([Unable to find libicuuc library! apt install libicu-dev!])
++                                        )
+                                     )
+                                 )
+                             )
+@@ -52,8 +54,11 @@ AC_CHECK_LIB([icuuc], [uidna_nameToASCII
+         )
+     )
+ )
+-AC_SEARCH_LIBS([iconv], [iconv], [], AC_MSG_ERROR([Unable to find iconv dev files! apt install libiconv-dev]))
+-
++AC_CHECK_LIB([iconv], [iconv], [],
++    AC_CHECK_LIB([iconv], [libiconv], [],
++        AC_MSG_ERROR([Unable to find iconv dev files! apt install libiconv-dev])
++    )
++)
+ AC_ARG_WITH([ssl],
+ 			[AS_HELP_STRING([--without-ssl], [disable support for https])],
+ 			[],
+@@ -112,6 +117,8 @@ AC_ARG_WITH([debug],
+ AS_IF([test "x$want_debug" != xno],
+ 			[AC_DEFINE([HAVE_DEBUG], [1], [Build with debug])])
+ 
++PKG_CHECK_MODULES([TPL], [tpl])
++
+ # Checks for header files.
+ AC_CHECK_HEADERS([limits.h sys/types.h sys/select.h])
+ ##AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h stddef.h stdlib.h string.h sys/socket.h unistd.h])
