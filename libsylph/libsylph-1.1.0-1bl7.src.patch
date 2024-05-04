@@ -1,5 +1,5 @@
 --- origsrc/libsylph-1.1.0/Makefile.am	2006-11-20 16:31:43.000000000 +0900
-+++ src/libsylph-1.1.0/Makefile.am	2019-06-11 11:13:14.813077100 +0900
++++ src/libsylph-1.1.0/Makefile.am	2024-05-04 04:12:21.733485200 +0900
 @@ -15,4 +15,7 @@ release: distdir
  	BZIP2=$(BZIP2_ENV) $(TAR) --bzip2 -chof $(distdir).tar.bz2 $(distdir)
  	-rm -rf $(distdir)
@@ -10,8 +10,16 @@
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/libsylph-1.1.0/configure.in	2007-12-27 15:04:01.000000000 +0900
-+++ src/libsylph-1.1.0/configure.in	2019-06-11 11:13:14.828700700 +0900
-@@ -268,6 +268,7 @@ AC_CHECK_FUNCS(gethostname mkdir mktime
++++ src/libsylph-1.1.0/configure.in	2024-05-04 04:53:44.279625800 +0900
+@@ -159,6 +159,7 @@ if test "$ac_cv_enable_oniguruma" = yes;
+ 		CFLAGS="$CFLAGS `$ONIG_CONFIG --cflags`"
+ 		LIBS="$LIBS `$ONIG_CONFIG --libs`"
+ 		AC_DEFINE(USE_ONIGURUMA, 1, Define if you want to use Oniguruma.)
++		AC_CHECK_HEADERS([onigposix.h])
+ 	else
+ 		AC_MSG_RESULT(no)
+ 		ac_cv_enable_oniguruma=no
+@@ -268,6 +269,7 @@ AC_CHECK_FUNCS(gethostname mkdir mktime
  	       fchmod truncate getuid regcomp mlock)
  
  AC_OUTPUT([
@@ -20,7 +28,7 @@
  ac/Makefile
  doc/Makefile
 --- origsrc/libsylph-1.1.0/libsylph/Makefile.am	2006-10-04 11:14:10.000000000 +0900
-+++ src/libsylph-1.1.0/libsylph/Makefile.am	2019-06-11 11:13:14.844331900 +0900
++++ src/libsylph-1.1.0/libsylph/Makefile.am	2024-05-04 04:12:21.733485200 +0900
 @@ -89,12 +89,12 @@ libsylphinclude_HEADERS = \
  	xml.h
  
@@ -37,7 +45,7 @@
 -libsylph_la_LIBADD = $(GLIB_LIBS)
 +libsylph_la_LIBADD = $(GLIB_LIBS) $(LTLIBICONV)
 --- origsrc/libsylph-1.1.0/libsylph/defs.h	2006-09-22 13:10:24.000000000 +0900
-+++ src/libsylph-1.1.0/libsylph/defs.h	2019-06-11 11:13:14.859969500 +0900
++++ src/libsylph-1.1.0/libsylph/defs.h	2024-05-04 04:12:21.733485200 +0900
 @@ -24,7 +24,7 @@
  #  include "config.h"
  #endif
@@ -47,8 +55,28 @@
  
  #ifdef G_OS_WIN32
  #  include <glib/gwin32.h>
+--- origsrc/libsylph-1.1.0/libsylph/filter.c	2006-08-03 15:28:53.000000000 +0900
++++ src/libsylph-1.1.0/libsylph/filter.c	2024-05-04 04:57:34.586755900 +0900
+@@ -29,7 +29,7 @@
+ #include <strings.h>
+ #include <stdlib.h>
+ #include <sys/types.h>
+-#if USE_ONIGURUMA
++#if USE_ONIGURUMA && defined(HAVE_ONIGPOSIX_H)
+ #  include <onigposix.h>
+ #elif HAVE_REGEX_H
+ #  include <regex.h>
+@@ -282,7 +282,7 @@ static gboolean strmatch_regex(const gch
+ 	gint ret = 0;
+ 	regex_t preg;
+ 
+-#if USE_ONIGURUMA
++#if USE_ONIGURUMA && defined(HAVE_ONIGPOSIX_H)
+ 	reg_set_encoding(REG_POSIX_ENCODING_UTF8);
+ #endif
+ 	ret = regcomp(&preg, needle, REG_ICASE|REG_EXTENDED);
 --- origsrc/libsylph-1.1.0/libsylph.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libsylph-1.1.0/libsylph.pc.in	2019-06-11 11:13:14.922485600 +0900
++++ src/libsylph-1.1.0/libsylph.pc.in	2024-05-04 04:12:21.733485200 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
