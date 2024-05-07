@@ -1,0 +1,88 @@
+--- origsrc/libtwitc-0.2/Makefile.am	2013-08-24 00:12:53.000000000 +0900
++++ src/libtwitc-0.2/Makefile.am	2024-05-07 21:27:54.265553500 +0900
+@@ -14,4 +14,7 @@ all: doxygen-doc
+ 
+ endif
+ 
+-MOSTLYCLEANFILES = $(DX_CLEANFILES)
+\ No newline at end of file
++MOSTLYCLEANFILES = $(DX_CLEANFILES)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libtwitc-0.2/configure.ac	2013-08-24 00:12:53.000000000 +0900
++++ src/libtwitc-0.2/configure.ac	2024-05-07 21:30:31.663906200 +0900
+@@ -50,11 +50,11 @@ DX_PDF_FEATURE(ON)
+ DX_PS_FEATURE(OFF)
+ DX_INIT_DOXYGEN([$PACKAGE_NAME],[twitc.doxyfile],[doc])
+ 
+-PKG_CHECK_MODULES(EXTERN_DEP, [libcurl libxml-2.0 oauth json])
++PKG_CHECK_MODULES(EXTERN_DEP, [libcurl libxml-2.0 oauth json-c])
+ 
+ AC_CONFIG_SUBDIRS( libtwitc )
+ 	libtwitc_CFLAGS="-I\$(top_srcdir)/include"
+-	libtwitc_LIBS="\$(top_builddir)/src/libtwitc.a"
++	libtwitc_LIBS="\$(top_builddir)/src/libtwitc.la"
+ AC_SUBST(libtwitc_CFLAGS)
+ AC_SUBST(libtwitc_LIBS)
+ 
+@@ -69,13 +69,14 @@ esac], [debug=false])
+ 
+ AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+ 
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ AC_CONFIG_FILES(
++libtwitc.pc
+ Makefile
+ src/Makefile
+ include/Makefile
+ include/twitc/Makefile
+ tests/Makefile
+ )
+-AC_OUTPUT
+\ No newline at end of file
++AC_OUTPUT
+--- origsrc/libtwitc-0.2/libtwitc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtwitc-0.2/libtwitc.pc.in	2024-05-07 21:27:54.265553500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtwitc
++Description: C Support Library for Twitter
++Version: @VERSION@
++Libs: -L${libdir} -ltwitc
++Cflags: -I${includedir}
+--- origsrc/libtwitc-0.2/src/Makefile.am	2013-08-24 00:12:53.000000000 +0900
++++ src/libtwitc-0.2/src/Makefile.am	2024-05-07 21:27:54.265553500 +0900
+@@ -1,6 +1,6 @@
+-noinst_LIBRARIES = libtwitc.a
++lib_LTLIBRARIES = libtwitc.la
+ 
+-libtwitc_a_SOURCES = \
++libtwitc_la_SOURCES = \
+ 		 functions.c \
+ 		 user.c \
+ 		 http.c \
+@@ -13,7 +13,8 @@ libtwitc_a_SOURCES = \
+ 		 twitcver.c
+ 
+ 
+-libtwitc_a_LIBADD =
++libtwitc_la_LIBADD = $(EXTERN_DEP_LIBS)
++libtwitc_la_LDFLAGS = -no-undefined
+ 
+ if DEBUG
+ 
+@@ -28,7 +29,3 @@ AM_CFLAGS = -O2 \
+ 	@libtwitc_CFLAGS@
+ 
+ endif
+-
+-
+-
+-
