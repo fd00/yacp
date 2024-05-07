@@ -1,0 +1,87 @@
+--- origsrc/libsxg-0.2/CMakeLists.txt	2019-12-20 14:20:35.000000000 +0900
++++ src/libsxg-0.2/CMakeLists.txt	2024-05-07 11:20:55.088079300 +0900
+@@ -39,7 +39,7 @@ else ()
+   cmake_minimum_required (VERSION 3.0)
+ endif ()
+ 
+-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++11 -fPIC")
++set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++14 -fPIC")
+ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -std=c99 -fPIC")
+ 
+ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb")
+@@ -159,6 +159,10 @@ if (RUN_TEST)
+ 
+   file (COPY tests/testdata DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+ 
++  find_package(gtest)
++  if (GTEST_FOUND)
++    set(GTEST_INCLUDE ${GTEST_INCLUDE_DIRS})
++  else()
+   ExternalProject_Add(
+     gtest
+     GIT_REPOSITORY https://github.com/google/googletest
+@@ -182,6 +186,7 @@ if (RUN_TEST)
+       "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+   )
+   set (GTEST_INCLUDE ${PROJECT_BINARY_DIR}/third_party/gtest/googletest/include)
++  endif()
+ 
+   add_library(test_util
+     SHARED
+@@ -192,12 +197,12 @@ if (RUN_TEST)
+       ${PROJECT_SOURCE_DIR}/include
+       ${GTEST_INCLUDE}
+   )
+-  add_dependencies (test_util sxg libgtest libgtest_main gtest)
++  add_dependencies (test_util sxg)
+   target_link_libraries (
+     test_util
+-    INTERFACE
+-      libgtest
+-      libgtest_main
++    # INTERFACE
++      gtest
++      gtest_main
+       pthread
+       sxg
+       ${OPENSSL_LIBRARIES}
+@@ -210,12 +215,12 @@ macro (add_test_macro target_name test_n
+     NAME ${target_name}
+     COMMAND ${target_name}
+   )
+-  add_dependencies (${target_name} libgtest libgtest_main gtest sxg test_util)
++  add_dependencies (${target_name} sxg test_util)
+   target_link_libraries (
+     ${target_name}
+     PRIVATE
+-      libgtest
+-      libgtest_main
++      gtest
++      gtest_main
+       pthread
+       sxg
+       test_util
+@@ -307,3 +312,10 @@ if (RUN_TEST)
+     message ("fuzzer disabled because the compiler ${CMAKE_CXX_COMPILER} does not support [${fuzzer_option}] option")
+   endif ()
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libsxg.pc.in ${CMAKE_BINARY_DIR}/libsxg.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libsxg.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libsxg-0.2/libsxg.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsxg-0.2/libsxg.pc.in	2024-05-07 11:21:56.828643600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsxg
++Description: Signed HTTP Exchange library
++Version: @CMAKE_PROJECT_VERSION_MAJOR@.@CMAKE_PROJECT_VERSION_MINOR@.@CMAKE_PROJECT_VERSION_PATCH@
++Libs: -L${libdir} -lsxg
++Cflags: -I${includedir}
