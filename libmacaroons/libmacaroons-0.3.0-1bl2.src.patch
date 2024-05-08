@@ -1,5 +1,5 @@
 --- origsrc/libmacaroons-releases-0.3.0/Makefile.am	2015-05-27 00:39:34.000000000 +0900
-+++ src/libmacaroons-releases-0.3.0/Makefile.am	2018-07-08 11:50:27.503471300 +0900
++++ src/libmacaroons-releases-0.3.0/Makefile.am	2024-05-08 15:47:21.025923200 +0900
 @@ -53,7 +53,7 @@ libmacaroons_la_LIBADD += $(SODIUM_LIBS)
  if ENABLE_JSON_SUPPORT
  libmacaroons_la_LIBADD += $(JSON_LIBS)
@@ -19,7 +19,7 @@
 -	$(pyx_verbose)cython bindings/python/macaroons.pyx
 +	$(pyx_verbose)cython $(top_srcdir)/bindings/python/macaroons.pyx
 --- origsrc/libmacaroons-releases-0.3.0/configure.ac	2015-05-27 00:39:34.000000000 +0900
-+++ src/libmacaroons-releases-0.3.0/configure.ac	2018-07-08 11:47:53.401600800 +0900
++++ src/libmacaroons-releases-0.3.0/configure.ac	2024-05-08 15:47:21.025923200 +0900
 @@ -52,8 +52,19 @@ if test x"${json_support}" = xyes; then
  
      if test x"${needs_json}" = xyes; then
@@ -53,3 +53,29 @@
  fi
  
  AM_CONDITIONAL([ENABLE_PYTHON_BINDINGS], [test x"${python_bindings}" = xyes])
+--- origsrc/libmacaroons-releases-0.3.0/macaroons.c	2024-05-08 15:47:20.354052200 +0900
++++ src/libmacaroons-releases-0.3.0/macaroons.c	2024-05-08 16:00:23.045883500 +0900
+@@ -37,8 +37,12 @@
+ 
+ /* json */
+ #ifdef MACAROONS_JSON_SUPPORT
++#if defined(USE_JSON_C)
++#include <json-c/json.h>
++#else
+ #include <json/json.h>
+ #endif
++#endif
+ 
+ /* macaroons */
+ #include "base64.h"
+@@ -1475,6 +1479,10 @@ macaroon_deserialize_json(const char* da
+         return NULL;
+     }
+ 
++#if !defined(TRUE)
++#define TRUE 1
++#endif
++
+     if ((tok->char_offset < 0 || (size_t)tok->char_offset < data_sz) ||
+         (json_object_object_get_ex(obj, "caveats", &arr) != TRUE) ||
+         (json_object_get_type(arr) != json_type_array) ||
