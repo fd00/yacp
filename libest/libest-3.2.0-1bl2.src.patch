@@ -1,0 +1,179 @@
+--- origsrc/libest-r3.2.0/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/Makefile.am	2024-05-09 15:43:11.900329000 +0900
+@@ -7,3 +7,6 @@ SUBDIRS = safe_c_stub src java/jni examp
+ endif
+ 
+ EXTRA_DIST = autogen.sh example/util LICENSE README.brski $(srcdir)/build.gradle $(srcdir)/example/build_examples.gradle
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libest-r3.2.0/configure.ac	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/configure.ac	2024-05-09 15:43:11.900329000 +0900
+@@ -198,5 +198,5 @@ AC_PREFIX_DEFAULT([/usr/local/est])
+ 
+ cp confdefs.h est_config.h
+ 
+-AC_CONFIG_FILES([Makefile version safe_c_stub/Makefile safe_c_stub/lib/Makefile java/jni/Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/client-brski/Makefile example/server/Makefile example/proxy/Makefile])
++AC_CONFIG_FILES([libest.pc Makefile version safe_c_stub/Makefile safe_c_stub/lib/Makefile java/jni/Makefile src/Makefile src/est/Makefile example/client/Makefile example/client-simple/Makefile example/client-brski/Makefile example/server/Makefile example/proxy/Makefile])
+ AC_OUTPUT
+--- origsrc/libest-r3.2.0/example/client/estclient.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/example/client/estclient.c	2024-05-09 16:11:33.437470600 +0900
+@@ -58,6 +58,8 @@ static CRITICAL_SECTION logger_critical_
+ #define SLEEP(x) sleep(x)
+ #endif 
+ 
++#define FIPS_mode_set(x) EVP_default_properties_enable_fips(NULL, x)
++
+ /*
+  * Global variables to hold command line options
+  */
+--- origsrc/libest-r3.2.0/example/proxy/estproxy.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/example/proxy/estproxy.c	2024-05-09 16:13:22.275575300 +0900
+@@ -59,6 +59,8 @@
+ #define DEFAULT_ENHCD_CERT_PWD "cisco"
+ #define DEFAULT_ENHCD_CERT_LOCAL_PKI_NID NID_commonName
+ 
++#define FIPS_mode_set(x) EVP_default_properties_enable_fips(NULL, x)
++
+ int coap_mode = 0;
+ #if HAVE_LIBCOAP
+ static int dtls_handshake_timeout = EST_DTLS_HANDSHAKE_TIMEOUT_DEF;
+--- origsrc/libest-r3.2.0/example/server/estserver.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/example/server/estserver.c	2024-05-09 16:12:44.262940900 +0900
+@@ -61,6 +61,8 @@
+ #define DEFAULT_ENHCD_CERT_PWD "cisco"
+ #define DEFAULT_ENHCD_CERT_LOCAL_PKI_NID NID_commonName
+ 
++#define FIPS_mode_set(x) EVP_default_properties_enable_fips(NULL, x)
++
+ /*
+  * The OpenSSL CA needs this BIO to send errors too
+  */
+--- origsrc/libest-r3.2.0/example/util/utils.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/example/util/utils.c	2024-05-09 15:43:11.900329000 +0900
+@@ -29,6 +29,7 @@
+  * detail to the user regarding the cause of the
+  * failure.
+  */
++#if 0
+ void ossl_dump_ssl_errors ()
+ {
+     BIO		*e = NULL;
+@@ -45,6 +46,7 @@ void ossl_dump_ssl_errors ()
+     printf("\nOSSL error: %s\n", bptr->data); 
+     BIO_free_all(e);
+ }
++#endif
+ 
+ /*
+  * Reads a file into an unsigned char array.
+--- origsrc/libest-r3.2.0/libest.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libest-r3.2.0/libest.pc.in	2024-05-09 15:43:11.900329000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libest
++Description: Library that implements RFC 7030 (Enrollment over Secure Transport)
++Version: @VERSION@
++Libs: -L${libdir} -lest
++Cflags: -I${includedir}
+--- origsrc/libest-r3.2.0/safe_c_stub/lib/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/safe_c_stub/lib/Makefile.am	2024-05-09 15:43:11.900329000 +0900
+@@ -7,14 +7,14 @@
+ # used with safec
+ #
+ #
+-noinst_LIBRARIES= libsafe_lib.a
++noinst_LTLIBRARIES= libsafe_lib.la
+ #libsafe_lib_a_LDFLAGS= -module -avoid-version -no-undefined
+ 
+-libsafe_lib_a_SOURCES =  \
++libsafe_lib_la_SOURCES =  \
+ ../src/safe_mem_stub.c \
+ ../src/safe_str_stub.c
+ 
+-libsafe_lib_a_CFLAGS=-I../include $(AM_CFLAGS) -fPIC
++libsafe_lib_la_CFLAGS=-I$(top_srcdir)/safe_c_stub/include $(AM_CFLAGS) -fPIC
+ 
+ 
+ 
+--- origsrc/libest-r3.2.0/src/est/Makefile.am	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/Makefile.am	2024-05-09 15:45:41.549810700 +0900
+@@ -1,29 +1,29 @@
+ if ENABLE_CLIENT_ONLY 
+ lib_LTLIBRARIES = libest_client.la
+-AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
+-libest_client_la_LDFLAGS = -release $(PACKAGE_VERSION) 
+-libest_client_la_SOURCES = est.c est_client.c est_client_http.c est_ossl_util.c est_client_proxy.c jsmn.c \
++AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(top_srcdir)/safe_c_stub/include -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
++libest_client_la_LDFLAGS = -no-undefined -release $(PACKAGE_VERSION) 
++libest_client_la_SOURCES = est.c est_client.c est_client_http.c est_ossl_util.c est_client_proxy.c \
+                            multipart_parser.c
+ 
+-libest_client_la_LIBADD = $(SAFEC_LDFLAGS)
++libest_client_la_LIBADD = $(SAFEC_LDFLAGS) -ljsmn
+ library_includedir=$(includedir)/est
+ library_include_HEADERS = est.h
+-EXTRA_DIST = est_locl.h est_ossl_util.h est_client_proxy.h est_sock_compat.h jsmn.h multipart_parser.h
++EXTRA_DIST = est_locl.h est_ossl_util.h est_client_proxy.h est_sock_compat.h multipart_parser.h
+ 
+ else
+ 
+ lib_LTLIBRARIES = libest.la
+-AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
+-libest_la_LDFLAGS = -release $(PACKAGE_VERSION) 
++AM_CFLAGS = -I$(SSL_CFLAGS) -I../.. -I$(top_srcdir)/safe_c_stub/include -I$(SAFEC_CFLAGS) $(LIBCURL_CFLAGS)
++libest_la_LDFLAGS = -no-undefined -release $(PACKAGE_VERSION) 
+ libest_la_SOURCES = est.c est_client.c est_server.c est_server_http.c \
+                     est_proxy.c est_client_http.c est_ossl_util.c \
+-                    est_client_proxy.c jsmn.c multipart_parser.c \
++                    est_client_proxy.c multipart_parser.c \
+                     est_enhcd_cert_auth.c est_server_coap.c
+ 
+-libest_la_LIBADD = $(SAFEC_LDFLAGS)
++libest_la_LIBADD = $(SAFEC_LDFLAGS) -ljsmn
+ library_includedir=$(includedir)/est
+ library_include_HEADERS = est.h
+ EXTRA_DIST = est_locl.h est_ossl_util.h est_server.h est_server_http.h est_client_proxy.h est_sock_compat.h \
+-             jsmn.h multipart_parser.h
++             multipart_parser.h
+ 
+-endif
+\ No newline at end of file
++endif
+--- origsrc/libest-r3.2.0/src/est/est_client.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/est_client.c	2024-05-09 16:05:48.945118700 +0900
+@@ -53,6 +53,8 @@ WSADATA wsaData;
+ #define SLEEP(x) sleep(x)
+ #endif
+ 
++#define FIPS_mode() EVP_default_properties_is_fips_enabled(NULL)
++
+ #define SSL_EXDATA_INDEX_INVALID -1
+ 
+ int e_ctx_ssl_exdata_index = SSL_EXDATA_INDEX_INVALID;
+--- origsrc/libest-r3.2.0/src/est/est_locl.h	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/est_locl.h	2024-05-09 15:43:11.915966900 +0900
+@@ -590,7 +590,9 @@ typedef struct est_oid_list {
+ /*
+  * Index used to link the EST Ctx into the SSL structures
+  */
++#if 0
+ int e_ctx_ssl_exdata_index;
++#endif
+ 
+ LIBEST_TEST_API void est_log (EST_LOG_LEVEL lvl, char *format, ...);
+ LIBEST_TEST_API void est_log_backtrace (void);
+--- origsrc/libest-r3.2.0/src/est/est_server.c	2020-07-06 13:42:19.000000000 +0900
++++ src/libest-r3.2.0/src/est/est_server.c	2024-05-09 16:06:33.811936100 +0900
+@@ -31,6 +31,7 @@
+ #include <openssl/cms.h>
+ #include <openssl/bio.h>
+ 
++#define FIPS_mode() EVP_default_properties_is_fips_enabled(NULL)
+ 
+ static ASN1_OBJECT *o_cmcRA = NULL;
+ #define EST_SERVER_RSA_KEYSIZE_4096       4096
