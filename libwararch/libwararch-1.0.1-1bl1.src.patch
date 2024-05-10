@@ -1,0 +1,58 @@
+--- origsrc/libwararch-1.0.1/CMakeLists.txt	2014-06-21 08:24:30.000000000 +0900
++++ src/libwararch-1.0.1/CMakeLists.txt	2024-05-10 09:13:47.817897600 +0900
+@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.6)
+ #Set the current version of the library
+ set(LIBWARARCH_MAJOR_VERSION 1)
+ set(LIBWARARCH_MINOR_VERSION 0)
+-set(LIBWARARCH_PATCH_VERSION 0)
++set(LIBWARARCH_PATCH_VERSION 1)
+ 
+ #If you want debug information add the flag -DVERBOSE= [1-5]
+ #1 being basic 5 for everything
+@@ -85,6 +85,7 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
+ endif()
+ 
+ add_library(wararch SHARED ${LIBWARARCH_SOURCE} ${LIBWARARCH_ARCHIVE_SOURCE})
++install(TARGETS wararch RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ if(APPLE)
+ 
+@@ -136,12 +137,23 @@ if(SAMPLECODE)
+ 	add_executable(ExtractFile ${SAMPLES_EXTRACTFILE_SOURCE})
+ 	target_link_libraries(ExtractFile wararch)
+ 
++	set_target_properties(ExtractFile PROPERTIES OUTPUT_NAME wararch)
++	install(TARGETS ExtractFile DESTINATION bin)
+ endif()
+ 
++install(DIRECTORY ${CMAKE_SOURCE_DIR}/Source/ DESTINATION include/wararch FILES_MATCHING PATTERN "*.hpp*")
++
+ #Tell the developer the current build options
+ message("\n\nlibgrp Compile Options\n Unit Tests: ${UNITTESTS} [-DUNITESTS=(off-on)]")
+ message(" Verbose Level: ${VERBOSE} [-DVERBOSE=[(1-5)] 1-Min 5-Max")
+ if(APPLE)
+ message(" Compile Framework: ${MAKEFRAMEWORK} [-DMAKEFRAMEWORK=(off-on)")
+ endif()
+-message(" Sample Code: ${SAMPLECODE} [-DSAMPLECODE=(off-on)\n")
+\ No newline at end of file
++message(" Sample Code: ${SAMPLECODE} [-DSAMPLECODE=(off-on)\n")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libwararch.pc.in ${CMAKE_BINARY_DIR}/libwararch.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libwararch.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libwararch-1.0.1/libwararch.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libwararch-1.0.1/libwararch.pc.in	2024-05-10 09:15:00.406633300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libwararch
++Description: Library to extract files from Blizzard's WAR archive format
++Version: @LIBWARARCH_MAJOR_VERSION@.@LIBWARARCH_MINOR_VERSION@.@LIBWARARCH_PATCH_VERSION@
++Libs: -L${libdir} -lwararch
++Cflags: -I${includedir}
