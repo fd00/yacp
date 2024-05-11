@@ -1,0 +1,54 @@
+--- origsrc/libSavitar-5.3.0/CMakeLists.txt	2023-09-09 03:09:36.000000000 +0900
++++ src/libSavitar-5.3.0/CMakeLists.txt	2024-05-11 22:15:30.819437900 +0900
+@@ -1,7 +1,6 @@
+ cmake_policy(SET CMP0091 NEW)
+ project(libsavitar)
+ cmake_minimum_required(VERSION 3.20)
+-find_package(standardprojectsettings REQUIRED)
+ 
+ find_package(pugixml REQUIRED)
+ 
+@@ -20,13 +19,16 @@ if(BUILD_SHARED_LIBS)
+     if(WIN32)
+         set_target_properties(Savitar PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+     endif()
++    if (DEFINED SOVERSION)
++        set_target_properties(Savitar PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+ else()
+     add_library(Savitar STATIC ${savitar_SRCS})
+ endif()
++install(TARGETS Savitar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Savitar DESTINATION include)
+ 
+-set_project_warnings(Savitar)
+-
+-target_link_libraries(Savitar PUBLIC pugixml::pugixml)
++target_link_libraries(Savitar PUBLIC pugixml)
+ 
+ target_include_directories(Savitar
+         PUBLIC
+@@ -41,3 +43,10 @@ if (ENABLE_TESTING)
+     enable_testing()
+     add_subdirectory(tests)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libSavitar.pc.in ${CMAKE_BINARY_DIR}/libSavitar.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libSavitar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libSavitar-5.3.0/libSavitar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libSavitar-5.3.0/libSavitar.pc.in	2024-05-11 22:14:17.245291500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libSavitar
++Description: C++ implementation of 3mf loading with SIP python bindings
++Version: @VERSION@
++Libs: -L${libdir} -lSavitar
++Cflags: -I${includedir}
