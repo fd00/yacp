@@ -1,0 +1,58 @@
+--- origsrc/matio-cpp-0.2.4/CMakeLists.txt	2024-04-09 19:08:28.000000000 +0900
++++ src/matio-cpp-0.2.4/CMakeLists.txt	2024-05-12 12:13:15.507276400 +0900
+@@ -204,6 +204,10 @@ set_target_properties(matioCpp PROPERTIE
+   PUBLIC_HEADER "${MATIOCPP_HDR}"
+   PRIVATE_HEADER "${MATIOCPP_TPP}")
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(matioCpp PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ add_library(matioCpp::matioCpp ALIAS matioCpp)
+ 
+ # Specify installation targets, typology and destination folders.
+@@ -216,10 +220,10 @@ install(TARGETS    matioCpp
+   PUBLIC_HEADER    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/matioCpp/"     COMPONENT dev
+   PRIVATE_HEADER   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/matioCpp/impl" COMPONENT dev)
+ 
+-install(FILES "cmake/FindMATIO.cmake" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/matioCpp/cmake")
++install(FILES "cmake/FindMATIO.cmake" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/matioCpp/Modules")
+ file(COPY "cmake/FindMATIO.cmake" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/share/matioCpp/cmake")
+ 
+-install(FILES "cmake/Findvisit_struct.cmake" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/matioCpp/cmake")
++install(FILES "cmake/Findvisit_struct.cmake" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/matioCpp/Modules")
+ file(COPY "cmake/Findvisit_struct.cmake" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/share/matioCpp/cmake")
+ 
+ include(InstallBasicPackageFiles)
+@@ -231,7 +235,7 @@ install_basic_package_files(${PROJECT_NA
+                             VARS_PREFIX ${PROJECT_NAME}
+                             NO_CHECK_REQUIRED_COMPONENTS_MACRO
+                             DEPENDENCIES ${MATIOCPP_DEPENDENCIES}
+-                            OVERRIDE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/matioCpp/cmake)
++                            OVERRIDE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/lib/cmake/matioCpp)
+ # Add the uninstall target
+ include(AddUninstallTarget)
+ 
+@@ -239,3 +243,9 @@ if(BUILD_TESTING)
+     include(AddUnitTest)
+     add_subdirectory(test)
+ endif()
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/matio-cpp.pc.in ${CMAKE_BINARY_DIR}/matio-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/matio-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/matio-cpp-0.2.4/matio-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/matio-cpp-0.2.4/matio-cpp.pc.in	2024-05-12 12:14:29.823703200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: matio-cpp
++Description: C++ wrapper of the matio library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmatioCpp
++Cflags: -I${includedir}
