@@ -1,0 +1,46 @@
+--- origsrc/libzim-9.2.1/include/zim/writer/contentProvider.h	2024-05-02 19:49:54.000000000 +0900
++++ src/libzim-9.2.1/include/zim/writer/contentProvider.h	2024-05-26 23:40:45.554334000 +0900
+@@ -32,6 +32,9 @@ namespace zim
+   namespace windows {
+ #else
+   #define DEFAULTFD zim::unix::FD
++#if defined(unix)
++#undef unix
++#endif
+   namespace unix {
+ #endif
+     class FD;
+--- origsrc/libzim-9.2.1/src/file_reader.cpp	2024-05-02 19:49:54.000000000 +0900
++++ src/libzim-9.2.1/src/file_reader.cpp	2024-05-26 23:41:26.463895900 +0900
+@@ -137,7 +137,7 @@ class MMapException : std::exception {};
+ char*
+ mmapReadOnly(int fd, offset_type offset, size_type size)
+ {
+-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__HAIKU__) || defined(__CYGWIN__)
+   const auto MAP_FLAGS = MAP_PRIVATE;
+ #elif defined(__FreeBSD__)
+   const auto MAP_FLAGS = MAP_PRIVATE|MAP_PREFAULT_READ;
+--- origsrc/libzim-9.2.1/src/fs_unix.cpp	2024-05-02 19:49:54.000000000 +0900
++++ src/libzim-9.2.1/src/fs_unix.cpp	2024-05-26 23:41:47.999143000 +0900
+@@ -36,7 +36,7 @@ namespace unix {
+ 
+ zsize_t FD::readAt(char* dest, zsize_t size, offset_t offset) const
+ {
+-#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__)
++#if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__CYGWIN__)
+ # define PREAD pread
+ #else
+ # define PREAD pread64
+--- origsrc/libzim-9.2.1/src/fs_unix.h	2024-05-02 19:49:54.000000000 +0900
++++ src/libzim-9.2.1/src/fs_unix.h	2024-05-26 23:42:11.419199900 +0900
+@@ -30,6 +30,9 @@
+ 
+ namespace zim {
+ 
++#if defined(unix)
++#undef unix
++#endif
+ namespace unix {
+ 
+ using path_t = const std::string&;
