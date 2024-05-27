@@ -1,0 +1,94 @@
+--- origsrc/octomap-1.10.0/octomap/CMakeLists.txt	2024-03-20 05:01:09.000000000 +0900
++++ src/octomap-1.10.0/octomap/CMakeLists.txt	2024-05-27 10:28:21.618449000 +0900
+@@ -120,7 +120,7 @@ CONFIGURE_PACKAGE_CONFIG_FILE(
+   octomap-config.cmake.in
+   "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap/octomap-config.cmake"
+   PATH_VARS OCTOMAP_INCLUDE_DIRS OCTOMAP_LIB_DIR
+-  INSTALL_DESTINATION "${CMAKE_INSTALL_FULL_DATADIR}/octomap")
++  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/octomap")
+ 
+ WRITE_BASIC_PACKAGE_VERSION_FILE(
+   "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap/octomap-config-version.cmake"
+@@ -140,7 +140,7 @@ CONFIGURE_PACKAGE_CONFIG_FILE(
+   octomap-config.cmake.in
+   "${PROJECT_BINARY_DIR}/InstallFiles/octomap-config.cmake"
+   PATH_VARS OCTOMAP_INCLUDE_DIRS OCTOMAP_LIB_DIR
+-  INSTALL_DESTINATION "${CMAKE_INSTALL_FULL_DATADIR}/octomap")
++  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/octomap")
+ 
+ WRITE_BASIC_PACKAGE_VERSION_FILE(
+   ${PROJECT_BINARY_DIR}/InstallFiles/octomap-config-version.cmake
+@@ -150,7 +150,7 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(
+ install(FILES
+   "${PROJECT_BINARY_DIR}/InstallFiles/octomap-config.cmake"
+   "${PROJECT_BINARY_DIR}/InstallFiles/octomap-config-version.cmake"
+-  DESTINATION "${CMAKE_INSTALL_DATADIR}/octomap")
++  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/octomap")
+ 
+ # Write pkgconfig-file:
+ include(InstallPkgConfigFile)
+--- origsrc/octomap-1.10.0/octomap/src/CMakeLists.txt	2024-03-20 05:01:09.000000000 +0900
++++ src/octomap-1.10.0/octomap/src/CMakeLists.txt	2024-05-27 10:24:42.253126700 +0900
+@@ -10,15 +10,12 @@ SET (octomap_SRCS
+   ColorOcTree.cpp
+   )
+ 
+-# dynamic and static libs, see CMake FAQ:
++# dynamic libs, see CMake FAQ:
+ ADD_LIBRARY( octomap SHARED ${octomap_SRCS})
+ set_target_properties( octomap PROPERTIES
+   VERSION ${OCTOMAP_VERSION}
+   SOVERSION ${OCTOMAP_SOVERSION}
+ )
+-ADD_LIBRARY( octomap-static STATIC ${octomap_SRCS})
+-SET_TARGET_PROPERTIES(octomap-static PROPERTIES OUTPUT_NAME "octomap") 
+-add_dependencies(octomap-static octomath-static)
+ 
+ TARGET_LINK_LIBRARIES(octomap octomath)
+ 
+@@ -26,7 +23,7 @@ if(NOT EXISTS "${CMAKE_LIBRARY_OUTPUT_DI
+   file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap")
+ endif()
+ 
+-export(TARGETS octomap octomap-static
++export(TARGETS octomap 
+   APPEND FILE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap/octomap-targets.cmake")
+ 
+ ADD_SUBDIRECTORY( testing )
+@@ -67,12 +64,12 @@ TARGET_LINK_LIBRARIES(intersection_examp
+ ADD_EXECUTABLE(octree2pointcloud octree2pointcloud.cpp)
+ TARGET_LINK_LIBRARIES(octree2pointcloud octomap)
+ 
+-install(TARGETS octomap octomap-static
++install(TARGETS octomap
+   EXPORT octomap-targets
+   INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+   ${INSTALL_TARGETS_DEFAULT_ARGS}
+ )
+-install(EXPORT octomap-targets DESTINATION "${CMAKE_INSTALL_DATADIR}/octomap")
++install(EXPORT octomap-targets DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/octomap")
+ 
+ install(TARGETS
+ 	graph2tree
+--- origsrc/octomap-1.10.0/octomap/src/math/CMakeLists.txt	2024-03-20 05:01:09.000000000 +0900
++++ src/octomap-1.10.0/octomap/src/math/CMakeLists.txt	2024-05-27 10:12:19.308994400 +0900
+@@ -12,17 +12,14 @@ SET_TARGET_PROPERTIES( octomath PROPERTI
+   SOVERSION ${OCTOMAP_SOVERSION}
+ )
+ 
+-ADD_LIBRARY( octomath-static STATIC ${octomath_SRCS})
+-SET_TARGET_PROPERTIES(octomath-static PROPERTIES OUTPUT_NAME "octomath")
+-
+ if(NOT EXISTS "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap")
+   file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap")
+ endif()
+ 
+-export(TARGETS octomath octomath-static
++export(TARGETS octomath
+   APPEND FILE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/cmake/octomap/octomap-targets.cmake")
+ 
+-install(TARGETS octomath octomath-static
++install(TARGETS octomath
+   EXPORT octomap-targets
+   INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+   ${INSTALL_TARGETS_DEFAULT_ARGS}
