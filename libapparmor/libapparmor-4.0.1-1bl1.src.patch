@@ -1,15 +1,15 @@
---- origsrc/apparmor-v3.1.7/libraries/libapparmor/src/Makefile.am	2024-02-03 07:13:05.000000000 +0900
-+++ src/apparmor-v3.1.7/libraries/libapparmor/src/Makefile.am	2024-02-14 14:58:13.484946800 +0900
-@@ -59,7 +59,7 @@ lib_LTLIBRARIES = libapparmor.la
+--- origsrc/apparmor-v4.0.1/libraries/libapparmor/src/Makefile.am	2024-04-12 12:59:30.000000000 +0900
++++ src/apparmor-v4.0.1/libraries/libapparmor/src/Makefile.am	2024-06-15 23:38:35.860508300 +0900
+@@ -58,7 +58,7 @@ lib_LTLIBRARIES = libapparmor.la
  noinst_HEADERS = grammar.h parser.h scanner.h af_protos.h private.h PMurHash.h
  
  libapparmor_la_SOURCES = grammar.y libaalogparse.c kernel.c scanner.c private.c features.c kernel_interface.c policy_cache.c PMurHash.c
--libapparmor_la_LDFLAGS = -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -dynamic -pthread \
-+libapparmor_la_LDFLAGS = -no-undefined -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -dynamic -pthread \
+-libapparmor_la_LDFLAGS = -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -Bdynamic -pthread \
++libapparmor_la_LDFLAGS = -no-undefined -version-info $(AA_LIB_CURRENT):$(AA_LIB_REVISION):$(AA_LIB_AGE) -XCClinker -Bdynamic -pthread \
  	-Wl,--version-script=$(top_srcdir)/src/libapparmor.map
  
  pkgconfigdir = $(libdir)/pkgconfig
-@@ -72,13 +72,13 @@ CLEANFILES = libapparmor.pc
+@@ -71,13 +71,13 @@ CLEANFILES = libapparmor.pc
  	$(SHELL) ./config.status --file="src/$@"
  
  tst_aalogmisc_SOURCES = tst_aalogmisc.c
@@ -26,8 +26,8 @@
  tst_kernel_LDFLAGS = -pthread
  
  check_PROGRAMS = tst_aalogmisc tst_features tst_kernel
---- origsrc/apparmor-v3.1.7/libraries/libapparmor/src/kernel.c	2024-02-03 07:13:05.000000000 +0900
-+++ src/apparmor-v3.1.7/libraries/libapparmor/src/kernel.c	2024-02-14 14:58:13.484946800 +0900
+--- origsrc/apparmor-v4.0.1/libraries/libapparmor/src/kernel.c	2024-04-12 12:59:30.000000000 +0900
++++ src/apparmor-v4.0.1/libraries/libapparmor/src/kernel.c	2024-06-15 23:41:55.241026900 +0900
 @@ -21,7 +21,9 @@
  #include <unistd.h>
  #include <sys/types.h>
@@ -38,7 +38,7 @@
  #include <sys/socket.h>
  #include <fcntl.h>
  #include <errno.h>
-@@ -39,10 +41,16 @@
+@@ -39,10 +41,15 @@
  # define PATH_MAX 4096
  #endif
  
@@ -51,15 +51,18 @@
 +#define symbol_version(real, name, version)
 +#define default_symbol_version(real, name, version)
 +#endif
-+
  #define DLLEXPORT __attribute__((visibility("default"),externally_visible))
  
  #define UNCONFINED		"unconfined"
-@@ -1227,6 +1235,12 @@ DLLEXPORT extern typeof((query_label)) _
+@@ -1227,9 +1234,15 @@ int query_label(uint32_t mask, char *que
+ /* export multiple aa_query_label symbols to compensate for downstream
+  * releases with differing symbol versions. */
+ DLLEXPORT extern typeof((query_label)) __aa_query_label __attribute__((alias ("query_label")));
++#if defined(__ELF__)
  symbol_version(__aa_query_label, aa_query_label, APPARMOR_1.1);
  default_symbol_version(query_label, aa_query_label, APPARMOR_2.9);
- 
-+#if !defined(__ELF__)
+-
++#else
 +int aa_query_label(uint32_t mask, char *query, size_t size, int *allowed, int *audited)
 +{
 +	return query_label(mask, query, size, allowed, audited);
@@ -68,8 +71,8 @@
  
  /**
   * aa_query_file_path_len - query access permissions for a file @path
---- origsrc/apparmor-v3.1.7/libraries/libapparmor/swig/python/Makefile.am	2024-02-03 07:13:05.000000000 +0900
-+++ src/apparmor-v3.1.7/libraries/libapparmor/swig/python/Makefile.am	2024-02-14 14:58:13.484946800 +0900
+--- origsrc/apparmor-v4.0.1/libraries/libapparmor/swig/python/Makefile.am	2024-04-12 12:59:30.000000000 +0900
++++ src/apparmor-v4.0.1/libraries/libapparmor/swig/python/Makefile.am	2024-06-15 23:42:17.494659500 +0900
 @@ -17,7 +17,7 @@ all-local: libapparmor_wrap.c setup.py
  	CC="$(CC)" CFLAGS="$(PYTHON_CPPFLAGS) $(EXTRA_WARNINGS)" LDSHARED="$(CC) -shared" LDFLAGS="$(PYTHON_LDFLAGS) $(LDFLAGS)" $(PYTHON) setup.py build
  
