@@ -1,0 +1,88 @@
+--- origsrc/nsd-4.10.0/Makefile.in	2024-06-13 19:24:07.000000000 +0900
++++ src/nsd-4.10.0/Makefile.in	2024-06-18 07:53:24.606019800 +0900
+@@ -38,10 +38,10 @@ MAKECMDGOALS ?= $(.TARGETS)
+ U=
+ 
+ CC		= @CC@
+-CPPFLAGS	= @CPPFLAGS@ -I@srcdir@/simdzone/include
+-CFLAGS		= @CFLAGS@
++CPPFLAGS	= @CPPFLAGS@
++CFLAGS		= @CFLAGS@ @SIMDZONE_CFLAGS@
+ LDFLAGS		= @LDFLAGS@
+-LIBS		= @LIBS@
++LIBS		= @LIBS@ @SIMDZONE_LIBS@
+ SSL_LIBS	= @SSL_LIBS@
+ LIBOBJS		= @LIBOBJS@
+ INSTALL		= $(srcdir)/install-sh -c
+@@ -155,29 +155,26 @@ uninstall:
+ 
+ test: 
+ 
+-simdzone/libzone.a:
+-	$(MAKE) -C simdzone
++nsd:	 $(NSD_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_OBJ) $(LIBOBJS)  $(SSL_LIBS) $(LIBS)
+ 
+-nsd:	simdzone/libzone.a $(NSD_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++nsd-checkconf:	 $(NSD_CHECKCONF_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CHECKCONF_OBJ)  $(LIBOBJS) $(LIBS)
+ 
+-nsd-checkconf:	simdzone/libzone.a $(NSD_CHECKCONF_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CHECKCONF_OBJ) simdzone/libzone.a $(LIBOBJS) $(LIBS)
++nsd-checkzone:	 $(NSD_CHECKZONE_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CHECKZONE_OBJ) $(LIBOBJS)  $(SSL_LIBS) $(LIBS)
+ 
+-nsd-checkzone:	simdzone/libzone.a $(NSD_CHECKZONE_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CHECKZONE_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++nsd-control:	 $(NSD_CONTROL_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CONTROL_OBJ) $(LIBOBJS)  $(SSL_LIBS) $(LIBS)
+ 
+-nsd-control:	simdzone/libzone.a $(NSD_CONTROL_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CONTROL_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++nsd-mem:	 $(NSD_MEM_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_MEM_OBJ) $(LIBOBJS)  $(SSL_LIBS) $(LIBS)
+ 
+-nsd-mem:	simdzone/libzone.a $(NSD_MEM_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_MEM_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++cutest:	 $(CUTEST_OBJ) $(LIBOBJS) popen3_echo
++	$(LINK) -o $@ $(CUTEST_OBJ) $(LIBOBJS)  $(SSL_LIBS) $(LIBS)
+ 
+-cutest:	simdzone/libzone.a $(CUTEST_OBJ) $(LIBOBJS) popen3_echo
+-	$(LINK) -o $@ $(CUTEST_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
+-
+-xfr-inspect:	simdzone/libzone.a xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS)
+-	$(LINK) -o $@ xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS) simdzone/libzone.a $(LIBS)
++xfr-inspect:	 xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS)
++	$(LINK) -o $@ xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS)  $(LIBS)
+ 
+ popen3_echo: popen3.o popen3_echo.o
+ 	$(LINK) -o $@ popen3.o popen3_echo.o
+@@ -195,7 +192,6 @@ audit: nsd nsd-checkconf nsd-checkzone n
+ 
+ clean:
+ 	rm -f *.o $(TARGETS) $(MANUALS) cutest popen3_echo xfr-inspect nsd-mem
+-	make -C simdzone $(MAKECMDGOALS)
+ 
+ distclean: clean
+ 	rm -f Makefile config.h config.log config.status dnstap/dnstap_config.h
+--- origsrc/nsd-4.10.0/configure.ac	2024-06-13 19:24:07.000000000 +0900
++++ src/nsd-4.10.0/configure.ac	2024-06-18 07:55:06.055694100 +0900
+@@ -486,6 +486,8 @@ else
+ 	AC_DEFINE(USE_MINI_EVENT, 1, [Define if you want to use internal select based events])
+ fi
+ 
++PKG_CHECK_MODULES([SIMDZONE], [simdzone])
++
+ # Checks for header files.
+ AC_HEADER_SYS_WAIT
+ AC_CHECK_HEADERS([time.h arpa/inet.h signal.h string.h strings.h fcntl.h limits.h netinet/in.h netinet/tcp.h stddef.h sys/param.h sys/socket.h sys/un.h syslog.h unistd.h sys/select.h stdarg.h stdint.h netdb.h sys/bitypes.h tcpd.h glob.h grp.h endian.h sys/random.h ifaddrs.h],,, [AC_INCLUDES_DEFAULT])
+@@ -1400,8 +1402,4 @@ fi
+ 
+ AC_CONFIG_FILES([Makefile $dnstap_config])
+ 
+-# Arguments introduced specifically for simdzone.
+-AC_ARG_ENABLE(westmere, AS_HELP_STRING([--disable-westmere], [Disable Westmere (SSE4.2) parser kernel]))
+-AC_ARG_ENABLE(haswell, AS_HELP_STRING([--disable-haswell], [Disable Haswell (AVX2) parser kernel]))
+-AC_CONFIG_SUBDIRS([simdzone])
+ AC_OUTPUT
