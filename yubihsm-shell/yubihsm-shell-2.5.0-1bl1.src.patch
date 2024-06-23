@@ -1,5 +1,5 @@
---- origsrc/yubihsm-shell-2.4.2/CMakeLists.txt	2023-10-31 02:45:30.000000000 +0900
-+++ src/yubihsm-shell-2.4.2/CMakeLists.txt	2023-11-18 17:35:27.383780500 +0900
+--- origsrc/yubihsm-shell-2.5.0/CMakeLists.txt	2024-03-26 07:30:24.000000000 +0900
++++ src/yubihsm-shell-2.5.0/CMakeLists.txt	2024-06-23 04:49:15.425507500 +0900
 @@ -200,7 +200,7 @@ add_subdirectory (lib)
  if(NOT BUILD_ONLY_LIB)
    add_subdirectory (pkcs11)
@@ -9,8 +9,8 @@
      pkg_search_module (LIBPCSC REQUIRED libpcsclite)
    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
      set (LIBPCSC_LDFLAGS "winscard.lib")
---- origsrc/yubihsm-shell-2.4.2/cmake/SecurityFlags.cmake	2023-10-31 02:45:30.000000000 +0900
-+++ src/yubihsm-shell-2.4.2/cmake/SecurityFlags.cmake	2023-11-18 17:35:27.383780500 +0900
+--- origsrc/yubihsm-shell-2.5.0/cmake/SecurityFlags.cmake	2024-03-26 07:30:24.000000000 +0900
++++ src/yubihsm-shell-2.5.0/cmake/SecurityFlags.cmake	2024-06-23 05:06:35.273519800 +0900
 @@ -4,7 +4,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
      CMAKE_C_COMPILER_ID STREQUAL "AppleClang" OR
      CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -23,7 +23,18 @@
      add_compile_options (-Wformat -Wformat-nonliteral -Wformat-security)
      add_compile_options (-Wshadow)
      add_compile_options (-Wcast-qual)
-@@ -43,8 +46,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
+@@ -14,7 +17,9 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
+     add_compile_options (-fpie -fpic)
+     if (NOT FUZZ)
+         add_compile_options(-O2)
+-        add_definitions (-D_FORTIFY_SOURCE=2)
++        if (NOT CMAKE_C_FLAGS MATCHES "-D_FORTIFY_SOURCE=")
++            add_definitions (-D_FORTIFY_SOURCE=2)
++        endif()
+     endif ()
+ 
+     check_c_compiler_flag("-fstack-protector-all" HAVE_STACK_PROTECTOR_ALL)
+@@ -43,8 +48,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "Clang"
      if (NOT APPLE)
          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pie")
          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")
@@ -36,8 +47,8 @@
      endif()
  elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
      add_compile_options (/GS)
---- origsrc/yubihsm-shell-2.4.2/pkcs11/CMakeLists.txt	2023-10-31 02:45:30.000000000 +0900
-+++ src/yubihsm-shell-2.4.2/pkcs11/CMakeLists.txt	2023-11-18 17:35:27.396379000 +0900
+--- origsrc/yubihsm-shell-2.5.0/pkcs11/CMakeLists.txt	2024-03-26 07:30:24.000000000 +0900
++++ src/yubihsm-shell-2.5.0/pkcs11/CMakeLists.txt	2024-06-23 04:49:15.425507500 +0900
 @@ -89,11 +89,18 @@ if(WIN32)
    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
  endif(WIN32)
