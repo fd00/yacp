@@ -1,0 +1,51 @@
+--- origsrc/sjpeg/CMakeLists.txt	2024-06-24 19:23:17.000000000 +0900
++++ src/sjpeg/CMakeLists.txt	2024-06-24 19:53:03.231293000 +0900
+@@ -126,7 +126,7 @@ endif()
+ 
+ # build the utils library
+ include_directories(${SJPEG_DEP_IMG_INCLUDE_DIRS})
+-add_library(sjpeg-utils
++add_library(sjpeg-utils STATIC
+             ${CMAKE_CURRENT_SOURCE_DIR}/examples/utils.cc
+             ${CMAKE_CURRENT_SOURCE_DIR}/examples/utils.h
+ )
+@@ -202,6 +202,7 @@ endif()
+ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/sjpeg.h
+         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ install(TARGETS sjpeg
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+@@ -215,7 +216,7 @@ write_basic_package_version_file(
+ 
+ # Create the Config file.
+ include(CMakePackageConfigHelpers)
+-set(ConfigPackageLocation ${CMAKE_INSTALL_DATADIR}/sjpeg/cmake/)
++option(ConfigPackageLocation "CMake config package location" ${CMAKE_INSTALL_DATADIR}/sjpeg/cmake/)
+ configure_package_config_file(
+   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sjpegConfig.cmake.in
+   ${CMAKE_CURRENT_BINARY_DIR}/sjpegConfig.cmake
+@@ -235,3 +236,9 @@ install(
+ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/man/sjpeg.1
+               ${CMAKE_CURRENT_SOURCE_DIR}/man/vjpeg.1
+   DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/sjpeg.pc.in ${CMAKE_BINARY_DIR}/sjpeg.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/sjpeg.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/sjpeg/sjpeg.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/sjpeg/sjpeg.pc.in	2024-06-24 19:53:44.646864000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: sjpeg
++Description: Simple jpeg encoder
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lsjpeg
++Cflags: -I${includedir}
