@@ -1,0 +1,53 @@
+--- origsrc/clBLAS-2.12/src/CMakeLists.txt	2017-01-19 02:00:31.000000000 +0900
++++ src/clBLAS-2.12/src/CMakeLists.txt	2024-06-25 05:04:01.410140000 +0900
+@@ -157,7 +157,7 @@ if(TARGET_PLATFORM EQUAL 32)
+ else()
+     set(_arch "x86_64" INTERNAL)
+     set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
+-    if( NOT APPLE )
++    if( NOT APPLE AND NOT CYGWIN)
+         set( SUFFIX_LIB_DEFAULT "64" )
+     endif( )
+ endif()
+@@ -279,7 +279,7 @@ find_package( OpenCL ${OPENCL_VERSION} )
+ 
+ # Find Boost on the system, and configure the type of boost build we want
+ set( Boost_USE_MULTITHREADED ON )
+-set( Boost_USE_STATIC_LIBS   ON )
++option( Boost_USE_STATIC_LIBS "Use Boost static libs" ON )
+ set( Boost_DETAILED_FAILURE_MSG   ON )
+ # set( Boost_DEBUG ON )
+ set( Boost_ADDITIONAL_VERSIONS "1.44.0" "1.44" "1.47.0" "1.47" "1.60.0" "1.60" )
+--- origsrc/clBLAS-2.12/src/library/CMakeLists.txt	2017-01-19 02:00:31.000000000 +0900
++++ src/clBLAS-2.12/src/library/CMakeLists.txt	2024-06-25 07:02:28.319305900 +0900
+@@ -892,10 +892,8 @@ target_link_libraries(clBLAS ${OPENCL_LI
+ # CPack configuration; include the executable into the package
+ install( TARGETS clBLAS
+          EXPORT Library
+-         RUNTIME DESTINATION bin${SUFFIX_BIN}
+-         LIBRARY DESTINATION lib${SUFFIX_LIB}
+-		 ARCHIVE DESTINATION lib${SUFFIX_LIB}/import
+-		)
++         RUNTIME DESTINATION bin
++         ARCHIVE DESTINATION lib${SUFFIX_LIB})
+ 
+ # For debug builds, include the debug runtimes into the package for testing on non-developer machines
+ set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP true )
+@@ -929,4 +927,3 @@ if(INSTALL_SRC)
+                 OPTIONAL
+                 CONFIGURATIONS Debug )
+ endif()
+-
+--- origsrc/clBLAS-2.12/src/tests/CMakeLists.txt	2017-01-19 02:00:31.000000000 +0900
++++ src/clBLAS-2.12/src/tests/CMakeLists.txt	2024-06-25 07:08:25.230722000 +0900
+@@ -393,8 +393,10 @@ if( GTEST_FOUND )
+         @ONLY
+     )
+ 
++    if (NOT CYGWIN)
+     # Register script at run at install time to analyze the executable and copy dependencies into package
+     install( SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/copyTestDependencies.cmake")
++    endif()
+ 
+ 	if( ACML_FOUND )
+ 		include_directories(${OPENCL_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS}
