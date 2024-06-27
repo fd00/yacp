@@ -1,0 +1,35 @@
+--- origsrc/sbva/CMakeLists.txt	2024-06-27 19:37:30.000000000 +0900
++++ src/sbva/CMakeLists.txt	2024-06-27 19:42:15.745500000 +0900
+@@ -355,7 +355,7 @@ function(SetVersionNumber PREFIX VERSION
+ endfunction()
+ 
+ find_program (GIT_EXECUTABLE git)
+-if (GIT_EXECUTABLE)
++if (GIT_EXECUTABLE AND EXISTS ${PROJECT_SOURCE_DIR}/.git)
+   include(GetGitRevisionDescription)
+   get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+   MESSAGE(STATUS "GIT hash found: ${GIT_SHA1}")
+@@ -466,3 +466,10 @@ install(
+     EXPORT ${SBVA_EXPORT_NAME}
+     DESTINATION "${SBVA_INSTALL_CMAKE_DIR}"
+ )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/sbva.pc.in ${CMAKE_BINARY_DIR}/sbva.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/sbva.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/sbva/sbva.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/sbva/sbva.pc.in	2024-06-27 19:42:28.026659600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: sbva
++Description: Structured BVA CNF rewriter
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lsbva
++Cflags: -I${includedir}
