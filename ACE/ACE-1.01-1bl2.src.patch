@@ -1,0 +1,107 @@
+--- origsrc/ACE-1.01/ace.cpp	2015-05-01 18:47:58.000000000 +0900
++++ src/ACE-1.01/ace.cpp	2024-07-23 12:46:40.908679300 +0900
+@@ -11,9 +11,9 @@
+ #include <math.h>
+ #include <omp.h>
+ #include <bitset>
++#include <malloc.h>
+ 
+ #ifdef __linux__
+-#include <malloc.h>
+ #include <sys/sysinfo.h>
+ #endif
+ 
+@@ -64,12 +64,12 @@ double teta,Maxteta,cov,decrs;
+ char sym[]={ 'A', 'C', 'G', 'T' };
+ int p1_len,p2_len,p_len,p1_num,p_num,phase,K, k, cores, top,phnum,minL=100000,maxL=0;
+ long avgL;
+-long size;
++long size_;
+ unsigned long N, G;
+ Read* Reads;
+ node*** root;
+ node** level;
+-node** prev;
++node** prev_;
+ bool* first;
+ unsigned long Index[20];
+ char filetype;
+@@ -136,12 +136,12 @@ void insert(unsigned long kmer, unsigned
+     if (first[x])
+     {
+       first[x] = false;
+-      prev[x] = level[x] = v;
++      prev_[x] = level[x] = v;
+     }
+     else
+     {
+-      prev[x]->children[3] = v;
+-      prev[x] = v;
++      prev_[x]->children[3] = v;
++      prev_[x] = v;
+       v->children[3] = 0;
+     }
+   }
+@@ -353,7 +353,7 @@ void free_trie()
+ {
+   int i,j;
+   for (i = 0; i < cores; ++i)
+-    for (j = 0; j < size; ++j)
++    for (j = 0; j < size_; ++j)
+       if(root[i][j])
+       {
+ 	delete root[i][j];
+@@ -417,7 +417,7 @@ void finalize(char* argv[])
+   delete Reads;
+   for (i = 0; i < cores; ++i)
+   {
+-    for (j = 0; j < size; ++j)
++    for (j = 0; j < size_; ++j)
+       if(root[i][j])
+       {
+ 	delete root[i][j];
+@@ -426,7 +426,7 @@ void finalize(char* argv[])
+   }	    
+   delete root;
+   delete level;
+-  delete prev;
++  delete prev_;
+   delete first;
+ }
+ 
+@@ -534,7 +534,7 @@ void Initialize(char* argv[])
+   cores=1<<2*p2_len;
+   root=new node**[cores];
+   level=new node*[cores];
+-  prev=new node*[cores];
++  prev_=new node*[cores];
+   first=new bool[cores];	
+   
+   #ifdef __linux__
+@@ -544,7 +544,7 @@ void Initialize(char* argv[])
+   
+   #ifdef __APPLE__
+   int32_t freepages, specpages;
+-  size_t len = sizeof(freepages);
++  size__t len = size_of(freepages);
+   sysctlbyname("vm.page_free_count", &freepages, &len, NULL, 0);
+   sysctlbyname("vm.page_speculative_count", &specpages, &len, NULL, 0);
+   freemem = 1+(freepages+specpages)/1000000000*4096;
+@@ -561,14 +561,14 @@ void Initialize(char* argv[])
+   k = K - p1_len;
+   cov = N * (float)avgL  / G;
+   top =(int)(min(floor(log2(N)/2),floor(log2(G)/2))- p_len);
+-  size = 1L<<(2*top);
++  size_ = 1L<<(2*top);
+   teta = 2+cov/20;
+   Maxteta = 2*teta;
+   decrs = phnum>1?(teta-2) / (phnum - 1):0;
+   for (i = 0; i < cores; ++i)
+   {
+-    root[i] = new node*[size];
+-    for (j = 0; j < size; ++j)
++    root[i] = new node*[size_];
++    for (j = 0; j < size_; ++j)
+       root[i][j]=0;
+   }
+   cout<<"Genome length = "<<G<<endl;
