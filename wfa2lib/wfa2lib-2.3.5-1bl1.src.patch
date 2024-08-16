@@ -1,6 +1,6 @@
---- origsrc/WFA2-lib-2.3.3/CMakeLists.txt	2023-02-11 05:23:27.000000000 +0900
-+++ src/WFA2-lib-2.3.3/CMakeLists.txt	2023-04-02 20:27:36.444580300 +0900
-@@ -139,16 +139,10 @@ set(wfa2lib_SOURCE
+--- origsrc/WFA2-lib-2.3.5/CMakeLists.txt	2024-04-20 19:10:15.000000000 +0900
++++ src/WFA2-lib-2.3.5/CMakeLists.txt	2024-08-16 15:42:36.035795600 +0900
+@@ -142,19 +142,12 @@ set(wfa2lib_SOURCE
    alignment/score_matrix.c
  )
  
@@ -15,9 +15,12 @@
  add_library(wfa2::wfa2 ALIAS wfa2)
 -add_library(wfa2::wfa2_static ALIAS wfa2_static)
  
- # ---- C++ binding library
+ if(OPENMP)
+-  target_link_libraries(wfa2_static PRIVATE OpenMP::OpenMP_C)
+   target_link_libraries(wfa2 PRIVATE OpenMP::OpenMP_C)
+ endif(OPENMP)
  
-@@ -158,18 +152,18 @@ set(wfa2cpp_SOURCE
+@@ -166,17 +159,12 @@ set(wfa2cpp_SOURCE
  file(GLOB CPP_INCLUDES
    bindings/cpp/*.h*
    )
@@ -26,22 +29,16 @@
  set_target_properties(wfa2cpp PROPERTIES SOVERSION 0)
 -set_target_properties(wfa2cpp_static PROPERTIES OUTPUT_NAME wfa2cpp)
  target_link_libraries(wfa2cpp PUBLIC wfa2)
--target_link_libraries(wfa2cpp_static PUBLIC wfa2)
+-target_link_libraries(wfa2cpp_static PUBLIC wfa2_static)
  add_library(wfa2::wfa2cpp ALIAS wfa2cpp)
 -add_library(wfa2::wfa2cpp_static ALIAS wfa2cpp_static)
  
- # ---- Get version
+ if(OPENMP)
+-  target_link_libraries(wfa2cpp_static PRIVATE OpenMP::OpenMP_CXX)
+   target_link_libraries(wfa2cpp PRIVATE OpenMP::OpenMP_CXX)
+ endif(OPENMP)
  
--file (STRINGS "VERSION" BUILD_NUMBER)
-+if (DEFINED VERSION)
-+  set(BUILD_NUMBER "${VERSION}")
-+else()
-+  file (STRINGS "VERSION" BUILD_NUMBER)
-+endif()
- add_definitions(-DWFA2LIB_VERSION="${BUILD_NUMBER}")
- add_definitions(-DVERSION="${BUILD_NUMBER}")
- 
-@@ -199,15 +193,22 @@ add_wfa_test()
+@@ -254,15 +242,22 @@ add_wfa_test()
  
  # Do not install anything when used with FetchContent
  if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -68,8 +65,14 @@
 +install(FILES ${CMAKE_BINARY_DIR}/libwfa2.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 +configure_file(${CMAKE_SOURCE_DIR}/libwfa2cpp.pc.in ${CMAKE_BINARY_DIR}/libwfa2cpp.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/libwfa2cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/WFA2-lib-2.3.3/libwfa2.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/WFA2-lib-2.3.3/libwfa2.pc.in	2023-04-02 20:38:42.345063100 +0900
+--- origsrc/WFA2-lib-2.3.5/VERSION.txt	2024-04-20 19:10:15.000000000 +0900
++++ src/WFA2-lib-2.3.5/VERSION.txt	2024-08-16 16:02:24.093887000 +0900
+@@ -1 +1 @@
+-v2.3
+\ No newline at end of file
++2.3.5
+--- origsrc/WFA2-lib-2.3.5/libwfa2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/WFA2-lib-2.3.5/libwfa2.pc.in	2024-08-16 15:39:03.513768800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -81,15 +84,15 @@
 +Version: @BUILD_NUMBER@
 +Libs: -L${libdir} -lwfa2
 +Cflags: -I${includedir}
---- origsrc/WFA2-lib-2.3.3/libwfa2cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/WFA2-lib-2.3.3/libwfa2cpp.pc.in	2023-04-02 20:38:35.341860000 +0900
+--- origsrc/WFA2-lib-2.3.5/libwfa2cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/WFA2-lib-2.3.5/libwfa2cpp.pc.in	2024-08-16 15:44:59.772411200 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
 +libdir=@libdir@
 +includedir=@includedir@
 +
-+Name: wfa2lib (cpp)
++Name: wfa2libcpp
 +Description: Wavefront alignment algorithm library v2 (cpp)
 +Version: @BUILD_NUMBER@
 +Libs: -L${libdir} -lwfa2cpp
