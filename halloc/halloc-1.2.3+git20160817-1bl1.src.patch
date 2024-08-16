@@ -1,0 +1,81 @@
+--- origsrc/halloc/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/halloc/Makefile.am	2024-08-16 11:16:21.770133700 +0900
+@@ -0,0 +1,10 @@
++
++include_HEADERS = halloc.h
++
++lib_LTLIBRARIES = libhalloc.la
++libhalloc_la_SOURCES = src/align.h src/halloc.c src/hlist.h src/macros.h
++libhalloc_la_LDFLAGS = -no-undefined
++
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/halloc/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/halloc/configure.ac	2024-08-16 11:16:21.770133700 +0900
+@@ -0,0 +1,30 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.72])
++AC_INIT([halloc], [1.2.3], [BUG-REPORT-ADDRESS])
++AC_CONFIG_SRCDIR([halloc.h])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE
++
++# Checks for programs.
++LT_INIT
++AC_PROG_AR
++AC_PROG_CC
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([malloc.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_SIZE_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_FUNC_REALLOC
++AC_CHECK_FUNCS([memset])
++
++AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([halloc.pc])
++AC_OUTPUT
+--- origsrc/halloc/halloc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/halloc/halloc.pc.in	2024-08-16 11:16:21.754508100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: halloc
++Description: Hierarchical Allocator for C
++Version: @VERSION@
++Libs: -L${libdir} -lhalloc
++Cflags: -I${includedir}
+--- origsrc/halloc/src/align.h	2024-08-16 11:13:22.000000000 +0900
++++ src/halloc/src/align.h	2024-08-16 11:36:45.896075100 +0900
+@@ -30,7 +30,7 @@ union max_align
+ 	void (*q)(void);
+ };
+ 
+-typedef union max_align max_align_t;
++typedef union max_align halloc_max_align_t;
+ 
+ #endif
+ 
+--- origsrc/halloc/src/halloc.c	2024-08-16 11:13:22.000000000 +0900
++++ src/halloc/src/halloc.c	2024-08-16 11:36:59.959380700 +0900
+@@ -30,7 +30,7 @@ typedef struct hblock
+ #endif
+ 	hlist_item_t  siblings; /* 2 pointers */
+ 	hlist_head_t  children; /* 1 pointer  */
+-	max_align_t   data[1];  /* not allocated, see below */
++	halloc_max_align_t   data[1];  /* not allocated, see below */
+ 	
+ } hblock_t;
+ 
