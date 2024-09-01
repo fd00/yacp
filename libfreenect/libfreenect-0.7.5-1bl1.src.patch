@@ -1,5 +1,5 @@
---- origsrc/libfreenect-0.7.0/CMakeLists.txt	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/CMakeLists.txt	2023-09-07 07:40:24.029226200 +0900
+--- origsrc/libfreenect-0.7.5/CMakeLists.txt	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/CMakeLists.txt	2024-08-31 13:53:27.043814400 +0900
 @@ -181,7 +181,7 @@ configure_file(
  
  # --- cmake config file ---
@@ -9,21 +9,21 @@
  
  add_custom_target(uninstall
    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/UninstallTarget.cmake)
---- origsrc/libfreenect-0.7.0/fakenect/CMakeLists.txt	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/fakenect/CMakeLists.txt	2023-09-07 07:40:24.029226200 +0900
+--- origsrc/libfreenect-0.7.5/fakenect/CMakeLists.txt	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/fakenect/CMakeLists.txt	2024-08-31 13:54:14.051087200 +0900
 @@ -12,7 +12,8 @@ set_target_properties ( fakenect PROPERT
  target_link_libraries(fakenect ${MATH_LIB})
  
  install (TARGETS fakenect
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}/fakenect")
 +  RUNTIME DESTINATION bin
-+  ARCHIVE DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
++  ARCHIVE DESTINATION lib)
  
  add_executable(fakenect-record record.c parson.c)
  target_link_libraries(fakenect-record freenect ${MATH_LIB})
---- origsrc/libfreenect-0.7.0/src/CMakeLists.txt	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/src/CMakeLists.txt	2023-09-07 07:40:24.029226200 +0900
-@@ -10,7 +10,7 @@ include(FindPythonInterp)
+--- origsrc/libfreenect-0.7.5/src/CMakeLists.txt	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/src/CMakeLists.txt	2024-09-01 09:58:51.831771000 +0900
+@@ -9,7 +9,7 @@ include_directories(${LIBUSB_1_INCLUDE_D
  IF(BUILD_REDIST_PACKAGE)
    # If this build is intended for a redistributable package, we can't include audios.bin, so we should include fwfetcher.py
    # and the package should run "python fwfetcher.py $INSTALL_PREFIX/share" as a postinst hook
@@ -31,15 +31,13 @@
 +  install (FILES "fwfetcher.py" DESTINATION "${CMAKE_INSTALL_PREFIX}/share/libfreenect")
  ELSE(BUILD_REDIST_PACKAGE)
    # If the install is local only, we can just run fwfetcher.py and install the audios.bin firmware to the system folder
-   add_custom_target(firmware ALL
-@@ -26,18 +26,23 @@ set_target_properties ( freenect PROPERT
+   cmake_minimum_required(VERSION 3.12)
+@@ -27,18 +27,10 @@ set_target_properties ( freenect PROPERT
    VERSION ${PROJECT_VER}
    SOVERSION ${PROJECT_APIVER})	
  install (TARGETS freenect
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+  RUNTIME DESTINATION bin
-+  ARCHIVE DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
- 
+-
 -add_library (freenectstatic STATIC ${SRC})
 -set_target_properties (freenectstatic PROPERTIES OUTPUT_NAME freenect)
 -IF(UNIX AND NOT APPLE)
@@ -47,34 +45,16 @@
 -ENDIF()
 -install (TARGETS freenectstatic
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+if(NOT BUILD_SHARED_LIBS)
-+  add_library (freenectstatic STATIC ${SRC})
-+  set_target_properties (freenectstatic PROPERTIES OUTPUT_NAME freenect)
-+  IF(UNIX AND NOT APPLE)
-+    SET_TARGET_PROPERTIES (freenectstatic PROPERTIES COMPILE_FLAGS "-fPIC")
-+  ENDIF()
-+  install (TARGETS freenectstatic
-+    DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+endif()
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib)
  
  target_link_libraries (freenect ${LIBUSB_1_LIBRARIES})
 -target_link_libraries (freenectstatic ${LIBUSB_1_LIBRARIES})
-+if(NOT BUILD_SHARED_LIBS)
-+  target_link_libraries (freenectstatic ${LIBUSB_1_LIBRARIES})
-+endif()
  
  # Install the header files
  install (FILES "../include/libfreenect.h" "../include/libfreenect_registration.h" "../include/libfreenect_audio.h"
---- origsrc/libfreenect-0.7.0/src/fwfetcher.py	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/src/fwfetcher.py	2023-09-07 07:52:53.832886100 +0900
-@@ -1,4 +1,4 @@
--#!/usr/bin/env python2
-+#!/usr/bin/env python
- 
- from __future__ import absolute_import, division, print_function
- 
---- origsrc/libfreenect-0.7.0/src/libfreenect.pc.in	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/src/libfreenect.pc.in	2023-09-07 07:40:24.029226200 +0900
+--- origsrc/libfreenect-0.7.5/src/libfreenect.pc.in	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/src/libfreenect.pc.in	2024-08-31 13:56:17.351924300 +0900
 @@ -6,6 +6,6 @@ includedir=${prefix}/@PROJECT_INCLUDE_IN
  Name: @CMAKE_PROJECT_NAME@
  Description: Interface to the Microsoft Kinect sensor device.
@@ -83,18 +63,14 @@
 +Version: @PROJECT_VER@
  Libs: -L${libdir} -lfreenect
  Cflags: -I${includedir}
---- origsrc/libfreenect-0.7.0/wrappers/c_sync/CMakeLists.txt	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/wrappers/c_sync/CMakeLists.txt	2023-09-07 07:40:24.029226200 +0900
-@@ -7,19 +7,26 @@ find_package(Threads REQUIRED)
+--- origsrc/libfreenect-0.7.5/wrappers/c_sync/CMakeLists.txt	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/wrappers/c_sync/CMakeLists.txt	2024-08-31 15:34:28.810124300 +0900
+@@ -7,19 +7,15 @@ find_package(Threads REQUIRED)
  include_directories(${THREADS_PTHREADS_INCLUDE_DIR})
  
  add_library (freenect_sync SHARED libfreenect_sync.c)
 -add_library (freenect_sync_static STATIC libfreenect_sync.c)
 -set_target_properties (freenect_sync_static PROPERTIES OUTPUT_NAME freenect_sync)
-+if(NOT BUILD_SHARED_LIBS)
-+  add_library (freenect_sync_static STATIC libfreenect_sync.c)
-+  set_target_properties (freenect_sync_static PROPERTIES OUTPUT_NAME freenect_sync)
-+endif()
  
  set_target_properties (freenect_sync PROPERTIES
    VERSION ${PROJECT_VER}
@@ -102,31 +78,24 @@
  
  target_link_libraries (freenect_sync freenect ${CMAKE_THREAD_LIBS_INIT})
 -target_link_libraries (freenect_sync_static freenect ${CMAKE_THREAD_LIBS_INIT})
-+if(NOT BUILD_SHARED_LIBS)
-+  target_link_libraries (freenect_sync_static freenect ${CMAKE_THREAD_LIBS_INIT})
-+endif()
  
  install (TARGETS freenect_sync
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 -install (TARGETS freenect_sync_static
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 +  RUNTIME DESTINATION bin
-+  ARCHIVE DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+if(NOT BUILD_SHARED_LIBS)
-+  install (TARGETS freenect_sync_static
-+    DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
-+endif()
++  ARCHIVE DESTINATION lib)
  install (FILES "libfreenect_sync.h"
    DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
---- origsrc/libfreenect-0.7.0/wrappers/opencv/CMakeLists.txt	2023-04-04 06:59:43.000000000 +0900
-+++ src/libfreenect-0.7.0/wrappers/opencv/CMakeLists.txt	2023-09-07 07:40:24.029226200 +0900
+--- origsrc/libfreenect-0.7.5/wrappers/opencv/CMakeLists.txt	2024-01-07 01:57:12.000000000 +0900
++++ src/libfreenect-0.7.5/wrappers/opencv/CMakeLists.txt	2024-08-31 13:57:18.672440100 +0900
 @@ -12,7 +12,8 @@ include_directories (../c_sync)
  target_link_libraries (freenect_cv freenect_sync ${OpenCV_LIBS})
  
  install (TARGETS freenect_cv
 -  DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
 +  RUNTIME DESTINATION bin
-+  ARCHIVE DESTINATION "${PROJECT_LIBRARY_INSTALL_DIR}")
++  ARCHIVE DESTINATION lib)
  install (FILES "libfreenect_cv.h"
    DESTINATION ${PROJECT_INCLUDE_INSTALL_DIR})
  
