@@ -1,0 +1,42 @@
+--- origsrc/kfr-6.0.2/cmake/add_kfr_library.cmake	2024-02-14 18:01:12.000000000 +0900
++++ src/kfr-6.0.2/cmake/add_kfr_library.cmake	2024-09-09 16:35:37.081476100 +0900
+@@ -8,7 +8,7 @@ function (add_kfr_library)
+     if (KFR_ENABLE_MULTIARCH AND LIB_MULTIARCH)
+         add_library(${LIB_NAME} INTERFACE)
+         foreach (ARCH IN LISTS KFR_ARCHS)
+-            add_library(${LIB_NAME}_${ARCH} STATIC ${LIB_SOURCES})
++            add_library(${LIB_NAME}_${ARCH} ${LIB_SOURCES})
+             target_compile_definitions(${LIB_NAME}_${ARCH} PRIVATE CMT_MULTI=1)     
+             foreach (ENABLED_ARCH IN LISTS KFR_ARCHS)
+                 string(TOUPPER ${ENABLED_ARCH} ENABLED_ARCH_UPPER)
+@@ -26,12 +26,16 @@ function (add_kfr_library)
+         
+         list(APPEND ${LIB_NAME}_TARGETS ${LIB_NAME})
+     else ()
+-        add_library(${LIB_NAME} STATIC ${LIB_SOURCES})
++        add_library(${LIB_NAME} ${LIB_SOURCES})
+         list(APPEND ${LIB_NAME}_LIBS ${LIB_NAME})
+         list(APPEND ${LIB_NAME}_TARGETS ${LIB_NAME})
+         target_set_arch(${LIB_NAME} PRIVATE ${KFR_ARCH})
+     endif ()
+ 
++    if (DEFINED SOVERSION)
++        set_target_properties(${LIB_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
++
+     foreach (LIB IN LISTS ${LIB_NAME}_LIBS)
+         target_link_libraries(${LIB} PUBLIC kfr)
+         target_link_libraries(${LIB} PRIVATE ${LIB_LIBRARIES})
+--- origsrc/kfr-6.0.2/src/capi/CMakeLists.txt	2024-02-14 18:01:12.000000000 +0900
++++ src/kfr-6.0.2/src/capi/CMakeLists.txt	2024-09-09 17:01:16.729651600 +0900
+@@ -45,6 +45,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+                  -s)
+ endif ()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(kfr_capi PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if (KFR_INSTALL_LIBRARIES)
+     if (KFR_ENABLE_CAPI_BUILD)
+         install(
