@@ -1,0 +1,78 @@
+--- origsrc/gnunet-0.22.0/pkgconfig/gnunetnat.pc.in	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.22.0/pkgconfig/gnunetnat.pc.in	2024-09-11 14:55:05.343044300 +0900
+@@ -8,5 +8,5 @@ Description: library for NAT traversal
+ URL: https://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunetnat
++Libs: -L${libdir} -lgnunetnatnew
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.22.0/pkgconfig/gnunettransport.pc.in	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.22.0/pkgconfig/gnunettransport.pc.in	2024-09-11 22:56:02.635087800 +0900
+@@ -8,5 +8,5 @@ Description: Library to access the low-l
+ URL: http://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunettransport
++Libs: -L${libdir} -lgnunettransportapplication -lgnunettransportcommunicator -lgnunettransportcore -lgnunettransportmonitor
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.22.0/src/cli/reclaim/Makefile.am	2024-03-02 22:26:36.000000000 +0900
++++ src/gnunet-0.22.0/src/cli/reclaim/Makefile.am	2024-09-11 14:55:05.358669400 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_srcdir)/src/service/reclaim
+ 
+  plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.22.0/src/lib/testing/Makefile.am	2024-08-29 18:28:36.000000000 +0900
++++ src/gnunet-0.22.0/src/lib/testing/Makefile.am	2024-09-11 15:22:39.514916100 +0900
+@@ -93,3 +93,4 @@ libgnunet_test_testing_plugin_ping_la_LI
+   libgnunettesting.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la \
+   $(LTLIBINTL)
++libgnunet_test_testing_plugin_ping_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+--- origsrc/gnunet-0.22.0/src/service/arm/Makefile.am	2024-08-29 17:42:56.000000000 +0900
++++ src/gnunet-0.22.0/src/service/arm/Makefile.am	2024-09-11 16:06:10.933530400 +0900
+@@ -113,3 +113,4 @@ libgnunet_test_arm_plugin_probnat_la_LIB
+   libgnunetarm.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la \
+   $(LTLIBINTL)
++libgnunet_test_arm_plugin_probnat_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+--- origsrc/gnunet-0.22.0/src/service/dht/plugin_dhtu_ip.c	2024-02-24 03:05:08.000000000 +0900
++++ src/gnunet-0.22.0/src/service/dht/plugin_dhtu_ip.c	2024-09-11 14:55:05.358669400 +0900
+@@ -1062,6 +1062,7 @@ DHTU_ip_init (struct GNUNET_DHTU_PluginE
+     {
+       int on = 1;
+ 
++#if defined(IPV6_RECVPKTINFO)
+       if (0 !=
+           setsockopt (sock,
+                       IPPROTO_IPV6,
+@@ -1072,6 +1073,7 @@ DHTU_ip_init (struct GNUNET_DHTU_PluginE
+         GNUNET_log_strerror (GNUNET_ERROR_TYPE_ERROR,
+                              "setsockopt");
+       }
++#endif
+     }
+     {
+       struct sockaddr_in6 sa = {
+--- origsrc/gnunet-0.22.0/src/service/testbed/Makefile.am	2024-06-08 18:24:29.000000000 +0900
++++ src/gnunet-0.22.0/src/service/testbed/Makefile.am	2024-09-11 15:52:27.044523100 +0900
+@@ -18,6 +18,7 @@ libgnunettestbed_la_SOURCES = \
+   testbed.c
+ libgnunettestbed_la_LIBADD = \
+  $(top_builddir)/src/lib/util/libgnunetutil.la
++libgnunettestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ libgnunettestingtestbed_la_SOURCES = \
+   testbed_api_cmd_system_create.c \
+@@ -26,7 +27,7 @@ libgnunettestingtestbed_la_LIBADD = \
+   libgnunettestbed.la \
+   $(top_builddir)/src/lib/testing/libgnunettesting.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la
+-
++libgnunettestingtestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ bin_PROGRAMS = \
+  gnunet-testbed
