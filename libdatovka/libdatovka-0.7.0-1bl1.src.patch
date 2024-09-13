@@ -1,0 +1,29 @@
+--- origsrc/libdatovka-0.7.0/configure.ac	2024-08-29 22:44:42.000000000 +0900
++++ src/libdatovka-0.7.0/configure.ac	2024-09-13 01:42:34.105680400 +0900
+@@ -137,13 +137,15 @@ AS_IF([test "x${enable_openssl_backend}"
+   dnl Use default cryptographic back-end.
+ 
+   #TODO: Determine minimal version
+-  AM_PATH_LIBGCRYPT([1:1.4.0])
++  PKG_CHECK_MODULES([LIBGCRYPT], [libgcrypt >= 1.4.0])
+ 
+   # GPGME is compiled with large file support by default. We need to follow not
+   # to break ABI.
+   AC_SYS_LARGEFILE
+   #TODO: Determine minimal version
+   AM_PATH_GPGME()
++
++  PKG_CHECK_MODULES([GPG_ERROR], [gpg-error])
+ ])
+ AM_CONDITIONAL([USE_OPENSSL_BACKEND], [test "x${enable_openssl_backend}" = "xyes"])
+ 
+--- origsrc/libdatovka-0.7.0/src/Makefile.am	2024-08-29 22:38:08.000000000 +0900
++++ src/libdatovka-0.7.0/src/Makefile.am	2024-09-13 01:50:09.930016700 +0900
+@@ -69,5 +69,5 @@ endif
+ libdatovka_la_CPPFLAGS = @XML_CPPFLAGS@ @LIBCURL_CPPFLAGS@ \
+ 	-DLOCALEDIR=\"$(localedir)\" $(AM_CPPFLAGS)
+ libdatovka_la_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@
+-libdatovka_la_LDFLAGS = -version-info 8:0:0 @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ \
+-	@GPGME_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@
++libdatovka_la_LDFLAGS = -no-undefined -version-info 8:0:0 @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ \
++	@GPGME_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@ $(GPG_ERROR_LIBS)
