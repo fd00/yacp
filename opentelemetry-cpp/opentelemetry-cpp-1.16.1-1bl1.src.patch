@@ -1,0 +1,51 @@
+--- origsrc/opentelemetry-cpp/CMakeLists.txt	2024-09-14 16:55:25.000000000 +0900
++++ src/opentelemetry-cpp/CMakeLists.txt	2024-09-14 22:46:15.885246100 +0900
+@@ -634,6 +634,9 @@ if(BUILD_TESTING)
+     elseif(TARGET GTest::GTest)
+       set(GTEST_BOTH_LIBRARIES GTest::GTest GTest::Main)
+     endif()
++    if (CYGWIN)
++      set(GTEST_BOTH_LIBRARIES ${GTEST_BOTH_LIBRARIES} gmock)
++    endif()
+   endif()
+   if(GTEST_INCLUDE_DIRS)
+     include_directories(SYSTEM ${GTEST_INCLUDE_DIRS})
+--- origsrc/opentelemetry-cpp/api/include/opentelemetry/nostd/internal/absl/base/policy_checks.h	2024-09-14 16:55:25.000000000 +0900
++++ src/opentelemetry-cpp/api/include/opentelemetry/nostd/internal/absl/base/policy_checks.h	2024-09-14 17:07:51.722855300 +0900
+@@ -33,14 +33,6 @@
+ #endif
+ 
+ // -----------------------------------------------------------------------------
+-// Operating System Check
+-// -----------------------------------------------------------------------------
+-
+-#if defined(__CYGWIN__)
+-#error "Cygwin is not supported."
+-#endif
+-
+-// -----------------------------------------------------------------------------
+ // Compiler Check
+ // -----------------------------------------------------------------------------
+ 
+--- origsrc/opentelemetry-cpp/cmake/opentelemetry-proto.cmake	2024-09-14 16:55:25.000000000 +0900
++++ src/opentelemetry-cpp/cmake/opentelemetry-proto.cmake	2024-09-14 23:51:30.629907500 +0900
+@@ -332,6 +332,8 @@ set_target_properties(
+   PROPERTIES CXX_INCLUDE_WHAT_YOU_USE ""
+ )
+ 
++set_target_version(opentelemetry_proto)
++
+ if(WITH_ABSEIL)
+   target_link_libraries(opentelemetry_proto PUBLIC absl::bad_variant_access)
+ endif()
+--- origsrc/opentelemetry-cpp/cmake/templates/config.pc.in	2024-09-14 16:55:25.000000000 +0900
++++ src/opentelemetry-cpp/cmake/templates/config.pc.in	2024-09-15 02:10:21.274633100 +0900
+@@ -1,7 +1,7 @@
+ # Copyright The OpenTelemetry Authors
+ # SPDX-License-Identifier: Apache-2.0
+ 
+-prefix=${pcfiledir}/../..
++prefix=@CMAKE_INSTALL_PREFIX@
+ exec_prefix=${prefix}
+ libdir=@OPENTELEMETRY_PC_LIBDIR@
+ includedir=@OPENTELEMETRY_PC_INCLUDEDIR@
