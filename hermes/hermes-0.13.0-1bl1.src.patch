@@ -1,0 +1,131 @@
+--- origsrc/hermes-0.13.0/API/hermes/CMakeLists.txt	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/API/hermes/CMakeLists.txt	2024-09-22 06:30:11.687653400 +0900
+@@ -158,6 +158,8 @@ if(APPLE AND HERMES_BUILD_APPLE_FRAMEWOR
+       COMMAND /usr/libexec/PlistBuddy -c "Add :MinimumOSVersion string ${CMAKE_OSX_DEPLOYMENT_TARGET}" $<TARGET_FILE_DIR:libhermes>/Info.plist
+     )
+   endif()
++elseif(DEFINED SOVERSION)
++  set_target_properties(libhermes PROPERTIES SOVERSION "${SOVERSION}")
+ endif()
+ 
+ install(TARGETS libhermes
+--- origsrc/hermes-0.13.0/API/hermes_sandbox/external/wasm-rt-fb.h	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/API/hermes_sandbox/external/wasm-rt-fb.h	2024-09-22 18:58:09.894706100 +0900
+@@ -20,12 +20,12 @@ typedef atomic_uint seed_t;
+ #if defined(__linux__) || defined(__ANDROID__)
+ #include <sys/random.h>
+ #include <sys/syscall.h>
+-#include <unistd.h>
+ #elif defined(__APPLE__)
+ #include <time.h>
+-#include <unistd.h>
+ #endif
+ 
++#include <unistd.h>
++
+ #if (defined(__linux__) || defined(__ANDROID__)) && defined(__aarch64__)
+ /* On Linux on ARM64 we most likely have at least 39 bits of virtual address
+  * space https://github.com/torvalds/linux/blob/v6.7/arch/arm64/Kconfig#L1262 If
+--- origsrc/hermes-0.13.0/API/jsi/jsi/CMakeLists.txt	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/API/jsi/jsi/CMakeLists.txt	2024-09-22 20:07:48.804119700 +0900
+@@ -26,6 +26,11 @@ if (HERMES_ENABLE_BITCODE)
+ endif ()
+ target_compile_options(jsi PRIVATE ${jsi_compile_flags})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(jsi PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(DIRECTORY "${PROJECT_SOURCE_DIR}/API/jsi/" DESTINATION include
+   FILES_MATCHING PATTERN "*.h"
+   PATTERN "test" EXCLUDE)
++install(TARGETS jsi RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+--- origsrc/hermes-0.13.0/lib/Support/OSCompatPosix.cpp	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/lib/Support/OSCompatPosix.cpp	2024-09-22 18:06:41.778331300 +0900
+@@ -269,7 +269,7 @@ void vm_unused(void *p, size_t sz) {
+ /// the process's physical footprint.
+ #define MADV_UNUSED MADV_FREE
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ 
+ /// On linux, telling the OS that we \p MADV_DONTNEED some pages will cause it
+ /// to immediately deduct their size from the process's resident set.
+@@ -434,9 +434,11 @@ int pages_in_ram(const void *p, size_t s
+   using MapElm = char;
+ #endif
+   std::vector<MapElm> bitMap(mapSize);
++#if defined(__GLIBC__)
+   if (mincore(const_cast<void *>(p), sz, bitMap.data())) {
+     return -1;
+   }
++#endif
+   // Total pages in RAM.
+   int totalIn = 0;
+   bool currentRunStatus = true;
+@@ -603,6 +605,12 @@ uint64_t global_thread_id() {
+   return syscall(__NR_gettid);
+ }
+ 
++#elif defined(__CYGWIN__)
++
++uint64_t global_thread_id() {
++  return getpid();
++}
++
+ #else
+ #error "Thread ID not supported on this platform"
+ #endif
+@@ -685,7 +693,7 @@ std::chrono::microseconds thread_cpu_tim
+   return microseconds(total);
+ }
+ 
+-#elif defined(__linux__) // !(__APPLE__ && __MACH__)
++#elif defined(__linux__) || defined(__CYGWIN__) // !(__APPLE__ && __MACH__)
+ 
+ std::chrono::microseconds thread_cpu_time() {
+   using namespace std::chrono;
+@@ -722,7 +730,11 @@ bool thread_page_fault_count(int64_t *ou
+   return kr == KERN_SUCCESS;
+ }
+ 
+-#elif defined(__linux__) // !(__APPLE__ && __MACH__)
++#elif defined(__linux__) || defined(__CYGWIN__) // !(__APPLE__ && __MACH__)
++
++#if !defined(RUSAGE_THREAD) && defined(RUSAGE_SELF)
++#define RUSAGE_THREAD RUSAGE_SELF
++#endif
+ 
+ bool thread_page_fault_count(int64_t *outMinorFaults, int64_t *outMajorFaults) {
+   struct rusage stats = {};
+--- origsrc/hermes-0.13.0/lib/VM/Instrumentation/ProcessStats.cpp	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/lib/VM/Instrumentation/ProcessStats.cpp	2024-09-22 06:30:11.687653400 +0900
+@@ -19,7 +19,7 @@
+ #include <psapi.h>
+ #elif defined(__MACH__)
+ #include <mach/mach.h>
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #include <unistd.h>
+ #include <fstream>
+ #endif // __MACH__, __linux__
+@@ -61,7 +61,7 @@ ProcessStats::Info getProcessStatSnapsho
+ 
+   rss = info.resident_size / 1024;
+   va = info.virtual_size / 1024;
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+   std::ifstream statm("/proc/self/statm");
+   statm >> va >> rss;
+ 
+--- origsrc/hermes-0.13.0/lib/VM/Runtime.cpp	2024-08-15 16:17:16.000000000 +0900
++++ src/hermes-0.13.0/lib/VM/Runtime.cpp	2024-09-22 06:30:11.687653400 +0900
+@@ -74,6 +74,8 @@ __attribute__((__weak__)) extern "C" boo
+ }
+ #endif
+ 
++#include <alloca.h>
++
+ namespace hermes {
+ namespace vm {
+ 
