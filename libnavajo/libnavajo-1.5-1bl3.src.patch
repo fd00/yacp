@@ -1,17 +1,17 @@
 --- origsrc/libnavajo-1.5/CMakeLists.txt	2017-05-25 04:26:23.000000000 +0900
-+++ src/libnavajo-1.5/CMakeLists.txt	2020-09-29 10:21:59.074974500 +0900
++++ src/libnavajo-1.5/CMakeLists.txt	2024-09-23 17:26:08.453470300 +0900
 @@ -86,10 +86,14 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINA
  ###############      build the library     #####################
  
  add_library(navajo SHARED ${sources_lib} ${headers_lib} )
 -add_library(navajoStatic STATIC ${sources_lib} ${headers_lib} )
-+if (NOT CYGWIN)
++if (NOT BUILD_SHARED_LIBS)
 +  add_library(navajoStatic STATIC ${sources_lib} ${headers_lib} )
 +endif()
  
  set_target_properties (navajo PROPERTIES VERSION ${LIBNAVAJO_VERSION} SOVERSION ${LIBNAVAJO_MVERSION})
 -set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
-+if (NOT CYGWIN)
++if (NOT BUILD_SHARED_LIBS)
 +  set_target_properties(navajoStatic PROPERTIES OUTPUT_NAME navajo)
 +endif()
  
@@ -25,25 +25,24 @@
 +install(TARGETS navajo RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT libraries)
  
 -install(TARGETS navajoStatic ARCHIVE DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries)
-+if (NOT CYGWIN)
++if (NOT BUILD_SHARED_LIBS)
 +  install(TARGETS navajoStatic ARCHIVE DESTINATION lib LIBRARY DESTINATION lib COMPONENT libraries)
 +endif()
  
  ############### navajoPrecompiler binary generation ###################
  file( GLOB  navajoPrecompiler_source ${PROJECT_SOURCE_DIR}/src/navajoPrecompiler.cc )
-@@ -126,3 +132,10 @@ COMMENT "Generating API documentation wi
+@@ -126,3 +132,9 @@ COMMENT "Generating API documentation wi
  )
  endif(DOXYGEN_FOUND)
  
-+
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libnavajo.pc.in ${CMAKE_BINARY_DIR}/libnavajo.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/libnavajo.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnavajo.pc.in ${CMAKE_BINARY_DIR}/libnavajo.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnavajo.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/libnavajo-1.5/libnavajo.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libnavajo-1.5/libnavajo.pc.in	2020-09-29 10:22:25.813726300 +0900
++++ src/libnavajo-1.5/libnavajo.pc.in	2024-09-23 17:25:21.487746400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
