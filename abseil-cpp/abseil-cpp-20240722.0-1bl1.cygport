@@ -1,0 +1,54 @@
+HOMEPAGE="https://github.com/abseil/${PN}"
+SRC_URI="https://github.com/abseil/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="C++ Common Libraries"
+DESCRIPTION="Abseil is an open-source collection of C++ library code designed to augment
+the C++ standard library. The Abseil library code is collected from Google's
+own C++ code base, has been extensively tested and used in production, and is
+the same code we depend on in our daily coding lives."
+
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libgmock-devel libgtest-devel"
+
+export CXXFLAGS="${CXXFLAGS} -fpermissive"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DABSL_BUILD_MONOLITHIC_SHARED_LIBS:BOOL=ON
+	-DABSL_BUILD_TESTING:BOOL=ON
+	-DABSL_USE_EXTERNAL_GOOGLETEST:BOOL=ON
+	-DBUILD_SHARED_LIBS:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -rf usr/lib/libabsl_*.a
+}
+
+PKG_NAMES="
+	abseil-cpp
+	libabseil2407.0.0
+	libabseil-devel
+"
+abseil_cpp_CONTENTS="
+	usr/share
+"
+libabseil2407_0_0_CONTENTS="
+	usr/bin/cyg*-2407.0.0.dll
+"
+libabseil_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+abseil_cpp_SUMMARY="${SUMMARY} (licensing & readmes)"
+libabseil2407_0_0_SUMMARY="${SUMMARY} (runtime)"
+libabseil_devel_SUMMARY="${SUMMARY} (development)"
