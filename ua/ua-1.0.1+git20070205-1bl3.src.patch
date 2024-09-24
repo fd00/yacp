@@ -1,0 +1,151 @@
+--- origsrc/ua/Makefile.am	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/Makefile.am	2024-09-25 08:40:40.385146100 +0900
+@@ -1,7 +1,9 @@
+ bin_PROGRAMS = ua kua
+ 
+ ua_SOURCES = filei.cc filei.h ua.cc 
++ua_LDADD = $(OPENSSL_LIBADD)
+ kua_SOURCES = filei.cc filei.h kua.cc
++kua_LDADD = $(OPENSSL_LIBADD)
+ man_MANS = ua.1 kua.1
+ 
+ EXTRA_DIST = $(man_MANS)
+--- origsrc/ua/configure.in	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/configure.in	2024-09-25 08:40:40.400770700 +0900
+@@ -9,5 +9,6 @@ AC_PROG_INSTALL
+ AC_CHECK_LIB(crypto, MD5_Init)
+ AC_CHECK_LIB(crypto, MD5_Update)
+ AC_CHECK_LIB(crypto, MD5_Final)
++PKG_CHECK_MODULES([OPENSSL], [openssl])
+ 
+ AC_OUTPUT(Makefile)
+--- origsrc/ua/filei.cc	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/filei.cc	2024-09-25 08:45:17.351257900 +0900
+@@ -36,6 +36,7 @@
+ 
+ extern "C" {
+ #include <stdlib.h>
++#include <string.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -50,8 +51,8 @@ void (*filei::_relbuff)(void*) = 0;
+ char filei::_buffer[__UABUFFSIZE];
+      
+ filei::filei(const std::string& path, bool ic, bool iw, size_t m, size_t bs)
+-throw(const char*):_path(path),_h(0)  {
+-   ::bzero(_md5,16); // zero out
++:_path(path),_h(0)  {
++   bzero(_md5,16); // zero out
+    calc(ic,iw,bs,m);
+ }
+ 
+@@ -98,7 +99,7 @@ static int __remove_white(char* buffer,
+    return r;
+ }
+ 
+-void filei::calc(bool ic, bool iw, size_t bn, size_t m) throw(const char*) {
++void filei::calc(bool ic, bool iw, size_t bn, size_t m) {
+    
+    const char* error = 0;
+ 
+@@ -167,7 +168,7 @@ FINALLY:
+    if (error) throw error;
+ }
+ 
+-off_t filei::fsize(const std::string& path) throw(const char*) {
++off_t filei::fsize(const std::string& path) {
+    struct stat fsi;
+ 
+    if (::stat(path.c_str(),&fsi)) throw "Could not stat file.";
+@@ -178,7 +179,7 @@ off_t filei::fsize(const std::string& pa
+ static bool __bytesame(
+    std::istream& is1, std::istream& is2,
+    char* buff1, char* buff2, 
+-   size_t c1, size_t c2, size_t m) throw(const char*) {
++   size_t c1, size_t c2, size_t m) {
+ 
+    size_t tot1 = 0, tot2 = 0;
+ 
+@@ -265,7 +266,7 @@ static bool __same(
+ 
+ bool filei::eq(
+    const std::string& p1, const std::string& p2,
+-   bool ic, bool iw, size_t m, size_t bn) throw(const char*) {
++   bool ic, bool iw, size_t m, size_t bn) {
+ 
+    const char* error = 0;
+    char* buffer = 0;
+@@ -333,5 +334,3 @@ bool filei::md5eq::operator()(const file
+    }
+    return true;
+ }
+-
+-
+--- origsrc/ua/filei.h	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/filei.h	2024-09-25 08:46:21.604211900 +0900
+@@ -99,7 +99,7 @@ class filei {
+       size_t _h; // hash of hash :)
+ 
+       // calculate hash
+-      void calc(bool ic, bool iw, size_t bs, size_t m) throw(const char*); 
++      void calc(bool ic, bool iw, size_t bs, size_t m); 
+ 
+       // return buffer 
+       static void* gbuff(size_t) { return _buffer; }
+@@ -122,7 +122,7 @@ class filei {
+        */
+       filei(const std::string& path, bool ic, bool iw, 
+          size_t m = 0ul, size_t bs=1024ul)
+-      throw(const char*);
++      ;
+ 
+       /** Get an md5 hash char.
+        * @param i index
+@@ -153,7 +153,7 @@ class filei {
+         * @return file size in bytes
+         * @throws an exception if status cannot be determined.
+         */
+-      static off_t fsize(const std::string& path) throw(const char*);
++      static off_t fsize(const std::string& path);
+ 
+       /** Determine whether the two files are identical.
+         * @param p1 path of one file
+@@ -167,7 +167,7 @@ class filei {
+         */
+       static bool eq(const std::string& p1, const std::string& p2,
+          bool ic, bool iw, size_t m = 0ul, size_t bs = 1024ul)
+-      throw(const char*);
++      ;
+ 
+       /** Functor for hashed containers.
+        */
+@@ -310,7 +310,7 @@ class fset {
+         * @param path file
+         * @throws a description if hash could not be constructed
+         */
+-      void add(const std::string& path) throw(const char*) {
++      void add(const std::string& path) {
+          add(filei(path,_ic,_iw,_max,_bs));
+       }
+ 
+--- origsrc/ua/kua.cc	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/kua.cc	2024-09-25 08:40:40.400770700 +0900
+@@ -49,6 +49,7 @@
+ 
+ extern "C" {
+ #include <stdio.h>
++#include <getopt.h>
+ }
+ 
+ static char __help[] = 
+--- origsrc/ua/ua.cc	2024-09-25 08:40:39.000000000 +0900
++++ src/ua/ua.cc	2024-09-25 08:40:40.400770700 +0900
+@@ -57,6 +57,7 @@
+ 
+ extern "C" {
+ #include <stdio.h>
++#include <getopt.h>
+ }
+ 
+ static char __help[] = 
