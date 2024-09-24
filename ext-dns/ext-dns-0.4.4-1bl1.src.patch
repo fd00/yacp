@@ -1,0 +1,52 @@
+--- origsrc/ext-dns/configure.ac	2024-09-25 01:15:07.000000000 +0900
++++ src/ext-dns/configure.ac	2024-09-25 01:30:13.674957500 +0900
+@@ -54,7 +54,7 @@ AM_PROG_LIBTOOL
+ compiler_options=""
+ STRICT_PROTOTYPES=""
+ if test "$compiler" = "gcc" ; then
+-   compiler_options="-Wstrict-prototypes -Wall -Werror -g -ansi"
++   compiler_options="-Wstrict-prototypes -Wall -g -ansi"
+    echo "Detected gcc compiler: $compiler, adding options: $compiler_options"
+ fi
+ AC_SUBST(compiler_options)
+@@ -243,7 +243,8 @@ case $host in
+ esac
+ AC_SUBST(ADDITIONAL_LIBS)
+ 
+-python ./gen-os-header.py
++mkdir -p src
++python ${srcdir}/gen-os-header.py
+ 
+ AC_OUTPUT([
+ Makefile
+--- origsrc/ext-dns/src/ext-dns-errno.c	2024-09-25 01:15:07.000000000 +0900
++++ src/ext-dns/src/ext-dns-errno.c	2024-09-25 01:38:01.406072800 +0900
+@@ -91,7 +91,7 @@
+ #define ERRNO_WSASYSCALLFAILURE     "OS dependent. System call failure. Generic error code, returned under various conditions. Returned when a system call that should never fail does fail. For example, if a call to WaitForMultipleEvents fails or one of the registry functions fails trying to manipulate the protocol/namespace catalogs. Returned when a provider does not return SUCCESS and does not provide an extended error code. Can indicate a service provider implementation error."
+ #endif 
+ 
+-void    ext_dns_errno_show_error        (extDnsCtx * ctx, int  __errno)
++void    ext_dns_errno_show_error        (extDnsCtx * ctx, int unused)
+ {
+ 
+ #if defined(AXL_OS_WIN32)
+@@ -211,7 +211,7 @@ void    ext_dns_errno_show_last_error
+ 	return;
+ }
+ 
+-char  * ext_dns_errno_get_error         (int  __errno)
++char  * ext_dns_errno_get_error         (int unused)
+ {
+ #if defined(AXL_OS_WIN32)
+ 	switch (errno) {
+--- origsrc/ext-dns/src/ext-dns.c	2024-09-25 01:15:07.000000000 +0900
++++ src/ext-dns/src/ext-dns.c	2024-09-25 01:24:31.747437500 +0900
+@@ -51,7 +51,7 @@
+  * vsprintf where the output buffer is limited) but unfortunately is
+  * not available in ANSI C. This is only required when compile ext_dns
+  * with log support */
+-#if defined(ENABLE_EXT_DNS_LOG)
++#if defined(ENABLE_EXT_DNS_LOG) && !defined(__CYGWIN__)
+ int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+ #endif
+ 
