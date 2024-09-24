@@ -1,0 +1,335 @@
+--- origsrc/turbulence-0.6.4/configure.ac	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/configure.ac	2024-09-24 19:18:00.332919700 +0900
+@@ -37,7 +37,7 @@ dnl
+ 
+ AC_INIT(turbulence,0.6.4.b2879)
+ 
+-TURBULENCE_VERSION=`cat VERSION`
++TURBULENCE_VERSION=`cat ${srcdir}/VERSION`
+ AC_SUBST(TURBULENCE_VERSION)
+ 
+ AC_CONFIG_AUX_DIR(.)
+@@ -59,7 +59,7 @@ AM_CONDITIONAL(ENABLE_TERMIOS, test ".$t
+ compiler_options=""
+ STRICT_PROTOTYPES=""
+ if test "$compiler" = "gcc" ; then
+-   compiler_options="-Wstrict-prototypes -Wall -Werror -g -ansi -fstack-protector-all -Wstack-protector"
++   compiler_options="-Wstrict-prototypes -Wall -g -ansi -fstack-protector-all -Wstack-protector"
+    echo "Detected gcc compiler: $compiler, adding options: $compiler_options"
+ fi
+ AC_SUBST(compiler_options)
+@@ -260,17 +260,17 @@ AC_SUBST(EXARG_FLAGS)
+ 
+ # find python-config
+ if test -f "/bin/bash" ; then
+-   PYTHON_CONFIG=`./get-python-config`
++   PYTHON_CONFIG=`${srcdir}/get-python-config`
+ else
+    bash_location=`which bash`
+    echo "Bash location found: $bash_location"
+-   PYTHON_CONFIG=`${bash_location} ./get-python-config`
++   PYTHON_CONFIG=`${bash_location} ${srcdir}/get-python-config`
+ fi 
+ 
+ # get python includes 
+ PYTHON_INCLUDES=`$PYTHON_CONFIG --includes 2>/dev/null`
+ old_CPPFLAGS=$CPPFLAGS
+-CPPFLAGS="-Wall -Werror $PYTHON_INCLUDES"
++CPPFLAGS="-Wall $PYTHON_INCLUDES"
+ echo "Python includes: $PYTHON_INCLUDES"
+ AC_SUBST(PYTHON_INCLUDES)
+ 
+@@ -290,10 +290,12 @@ PYTHON_LIBS=`$PYTHON_CONFIG --ldflags 2>
+ AC_SUBST(PYTHON_CFLAGS)
+ AC_SUBST(PYTHON_LIBS)
+ 
++if test "x$python_devel_found" = "xyes"; then
+ dnl get py-vortex flags
+ PKG_CHECK_MODULES(PY_VORTEX, py-vortex >= 0.3.8 py-vortex-sasl >= 0.3.8 py-vortex-tls >= 0.3.8) 
+ AC_SUBST(PY_VORTEX_CFLAGS)
+ AC_SUBST(PY_VORTEX_LIBS)
++fi
+ 
+ dnl mod-sasl-mysql flags
+ MYSQL_CFLAGS=`mysql_config --cflags 2>/dev/null`
+--- origsrc/turbulence-0.6.4/modules/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/Makefile.am	2024-09-24 20:03:34.930903600 +0900
+@@ -1,4 +1,8 @@
+-SUBDIRS = mod-test mod-tunnel mod-sasl mod-python mod-radmin mod-tls mod-websocket
++SUBDIRS = mod-test mod-tunnel mod-sasl mod-radmin mod-tls mod-websocket
++
++if ENABLE_MOD_PYTHON
++SUBDIRS += mod-python
++endif
+ 
+ install-exec-hook:
+ 	mkdir -p $(sysconfdir)/turbulence/mods-enabled
+--- origsrc/turbulence-0.6.4/modules/mod-python/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-python/Makefile.am	2024-09-24 19:27:12.996683700 +0900
+@@ -2,7 +2,7 @@
+ EXTRA_DIST = mod-python-def.xml python.example.conf
+ SUBDIRS = doc
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) $(PYTHON_CFLAGS) $(PY_VORTEX_CFLAGS)
+ 
+@@ -11,7 +11,7 @@ lib_LTLIBRARIES      = mod_python.la
+ mod_python_la_SOURCES  = mod_python.c \
+ 		py_turbulence.c py_turbulence.h \
+ 		py_turbulence_ctx.c py_turbulence_ctx.h
+-mod_python_la_LDFLAGS  = -module -ldl $(PYTHON_LIBS) $(PY_VORTEX_LIBS)
++mod_python_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl $(PYTHON_LIBS) $(PY_VORTEX_LIBS)
+ 
+ # reconfigure module installation directory
+ libdir = $(prefix)/lib/turbulence/modules
+--- origsrc/turbulence-0.6.4/modules/mod-radmin/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-radmin/Makefile.am	2024-09-24 20:07:19.737002800 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = mod_radmin.win32.xml
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_radmin.la
+ mod_radmin_la_SOURCES  = mod_radmin.c  mod_radmin.h
+-mod_radmin_la_LDFLAGS  = -module -ldl
++mod_radmin_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl
++mod_radmin_la_LIBADD   = $(AXL_LIBS) $(VORTEX_SASL_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/modules/mod-sasl/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-sasl/Makefile.am	2024-09-24 20:02:09.942156200 +0900
+@@ -11,7 +11,7 @@ EXTRA_DIST = mod-sasl.xml common.sasl.dt
+ 	     auth-db.example.xml remote-admins.example.xml gen-mod-sasl-pass.py create-mysql-sasl-database.sql \
+ 	     extension.example.modules auth-db.mysql.example.xml sasl-radmin.idl
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi -I ../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi -I ../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" \
+ 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) $(VORTEX_XML_RPC_CFLAGS) $(VORTEX_SASL_CFLAGS) $(MYSQL_CFLAGS)
+ 
+@@ -22,12 +22,14 @@ lib_LTLIBRARIES   = mod-sasl.la $(BUILD_
+ 
+ # mod-sasl.so
+ mod_sasl_la_SOURCES  = mod-sasl.c mod-sasl.h common-sasl.c common-sasl.h common.sasl.dtd.h $(sasl_radmin_files)
+-mod_sasl_la_LDFLAGS  = -module -ldl -lcrypt $(VORTEX_XML_RPC_LIBS) $(VORTEX_SASL_LIBS) $(VORTEX_TLS_LIBS)
++mod_sasl_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl -lcrypt $(VORTEX_XML_RPC_LIBS) $(VORTEX_SASL_LIBS) $(VORTEX_TLS_LIBS)
++mod_sasl_la_LIBADD   = $(top_builddir)/src/libturbulence.la
+ 
+ # mod-sasl-mysql.so
+ if ENABLE_MYSQL_SUPPORT
+ mod_sasl_mysql_la_SOURCES   = mod_sasl_mysql.c common-sasl.c common-sasl.h common.sasl.dtd.h mysql.sasl.dtd.h
+-mod_sasl_mysql_la_LDFLAGS   = -module -ldl $(MYSQL_LIBS)
++mod_sasl_mysql_la_LDFLAGS   = -avoid-version -no-undefined -module -ldl $(MYSQL_LIBS)
++mod_sasl_mysql_la_LIBADD    = -lcrypt $(VORTEX_SASL_LIBS) $(VORTEX_TLS_LIBS) $(top_builddir)/src/libturbulence.la
+ endif
+ 
+ # reconfigure module installation directory
+--- origsrc/turbulence-0.6.4/modules/mod-test/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-test/Makefile.am	2024-09-24 19:32:56.658065700 +0900
+@@ -1,12 +1,13 @@
+ EXTRA_DIST = mod-test.xml  mod-test.win32.xml
+ 
+-INCLUDES = -Wall -g -ansi -I ../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = -Wall -g -ansi -I ../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" \
+ 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ lib_LTLIBRARIES      = mod-test.la
+ mod_test_la_SOURCES  = mod-test.c
+-mod_test_la_LDFLAGS  = -module -ldl
++mod_test_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl
++mod_test_la_LIBADD   = $(VORTEX_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = $(prefix)/lib/turbulence/modules
+--- origsrc/turbulence-0.6.4/modules/mod-tls/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-tls/Makefile.am	2024-09-24 20:13:00.110190800 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = mod_tls.xml mod_tls.win32.xml tls.example.conf
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) $(VORTEX_TLS_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_tls.la
+ mod_tls_la_SOURCES  = mod_tls.c 
+-mod_tls_la_LDFLAGS  = -module -ldl $(VORTEX_TLS_LIBS)
++mod_tls_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl $(VORTEX_TLS_LIBS)
++mod_tls_la_LIBADD   = $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = $(prefix)/lib/turbulence/modules
+--- origsrc/turbulence-0.6.4/modules/mod-tunnel/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-tunnel/Makefile.am	2024-09-24 19:54:51.175993000 +0900
+@@ -1,12 +1,13 @@
+ EXTRA_DIST = mod-tunnel.xml tunnel.conf resolver.xml mod-tunnel.win32.xml
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi -I ../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi -I ../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" \
+ 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) $(VORTEX_TUNNEL_CFLAGS)
+ 
+ lib_LTLIBRARIES      = mod-tunnel.la
+ mod_tunnel_la_SOURCES  = mod-tunnel.c mod-tunnel.h
+-mod_tunnel_la_LDFLAGS  = -module -ldl $(VORTEX_TUNNEL_LIBS)
++mod_tunnel_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl $(VORTEX_TUNNEL_LIBS)
++mod_tunnel_la_LIBADD   = $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = $(prefix)/lib/turbulence/modules
+--- origsrc/turbulence-0.6.4/modules/mod-websocket/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/modules/mod-websocket/Makefile.am	2024-09-24 20:13:01.521010100 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = websocket.example.conf
+ 
+-INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = $(compiler_options) -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) $(VORTEX_WEBSOCKET_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_websocket.la
+ mod_websocket_la_SOURCES  = mod_websocket.c 
+-mod_websocket_la_LDFLAGS  = -module -ldl $(VORTEX_WEBSOCKET_LIBS)
++mod_websocket_la_LDFLAGS  = -avoid-version -no-undefined -module -ldl $(VORTEX_WEBSOCKET_LIBS)
++mod_websocket_la_LIBADD   = $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/src/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/src/Makefile.am	2024-09-24 19:22:02.822634000 +0900
+@@ -21,7 +21,7 @@ INCLUDES = $(compiler_options) -DCOMPILA
+ 	   -DTBC_RUNTIME_DATADIR=\""$(runtimedatadir)"\" \
+ 	   -DTBC_DATADIR=\""$(datadir)"\" $(INCLUDE_PCRE_SUPPORT) $(PCRE_CFLAGS) $(INCLUDE_TERMIOS) $(EXARG_FLAGS) \
+ 	   -D__TURBULENCE_ENABLE_DEBUG_CODE__ \
+-	   $(AXL_CFLAGS) $(VORTEX_CFLAGS)  -g -Wall -Werror -Wstrict-prototypes 
++	   $(AXL_CFLAGS) $(VORTEX_CFLAGS)  -g -Wall -Wstrict-prototypes 
+ 
+ bin_PROGRAMS = turbulence
+ 
+--- origsrc/turbulence-0.6.4/test/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/test/Makefile.am	2024-09-25 00:28:44.533833800 +0900
+@@ -1,6 +1,6 @@
+ SUBDIRS = test_06a test_10_prev test_10b_module test_11_module test_12_module test_15_module
+ 
+-INCLUDES = -I../src/ -I../modules/mod-sasl/ \
++INCLUDES = -I../src/ -I$(top_srcdir)/src -I../modules/mod-sasl/ -I$(top_srcdir)/modules/mod-sasl \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) -Wall -ansi  \
+ 	-DAXL_VERSION=\"$(AXL_VERSION)\" -DVORTEX_VERSION=\"$(VORTEX_VERSION)\" $(VORTEX_WEBSOCKET_CFLAGS) \
+         -DVERSION=\"$(VERSION)\" 
+--- origsrc/turbulence-0.6.4/test/test_10_prev/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/test/test_10_prev/Makefile.am	2024-09-25 00:18:38.096239900 +0900
+@@ -1,12 +1,13 @@
+ EXTRA_DIST = mod_test_10_prev.xml mod_test_10_prev.win32.xml
+-INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_test_10_prev.la
+ mod_test_10_prev_la_SOURCES  = mod_test_10_prev.c 
+-mod_test_10_prev_la_LDFLAGS  = -module -ldl
++mod_test_10_prev_la_LDFLAGS  = -no-undefined -avoid-version -module -ldl
++mod_test_10_prev_la_LIBADD   = $(AXL_LIBS) $(VORTEX_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/test/test_10b_module/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/test/test_10b_module/Makefile.am	2024-09-25 00:21:17.959545300 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = mod_test_10b.xml
+ 
+-INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_test_10b.la
+ mod_test_10b_la_SOURCES  = mod_test_10b.c 
+-mod_test_10b_la_LDFLAGS  = -module -ldl
++mod_test_10b_la_LDFLAGS  = -no-undefined -avoid-version -module -ldl
++mod_test_10b_la_LIBADD   = $(AXL_LIBS) $(VORTEX_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/test/test_11_module/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/test/test_11_module/Makefile.am	2024-09-25 00:24:53.414838600 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = mod-test-11.xml
+ 
+-INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_test_11.la
+ mod_test_11_la_SOURCES  = mod_test_11.c 
+-mod_test_11_la_LDFLAGS  = -module -ldl
++mod_test_11_la_LDFLAGS  = -no-undefined -avoid-version -module -ldl
++mod_test_11_la_LIBADD   = $(AXL_LIBS) $(VORTEX_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/test/test_15_module/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/test/test_15_module/Makefile.am	2024-09-25 00:25:57.038247100 +0900
+@@ -1,14 +1,15 @@
+ # Module definition
+ EXTRA_DIST = 
+ 
+-INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -DCOMPILATION_DATE=`date +%s` \
++INCLUDES = -Wall -g -ansi $(TURBULENCE_CFLAGS) -I../../src -I$(top_srcdir)/src -DCOMPILATION_DATE=`date +%s` \
+ 	-DVERSION=\"$(VERSION)\" \
+ 	$(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS)
+ 
+ # configure module binary
+ lib_LTLIBRARIES      = mod_test_15.la
+ mod_test_15_la_SOURCES  = mod_test_15.c 
+-mod_test_15_la_LDFLAGS  = -module -ldl
++mod_test_15_la_LDFLAGS  = -no-undefined -avoid-version -module -ldl
++mod_test_15_la_LIBADD   = $(AXL_LIBS) $(VORTEX_LIBS) $(top_builddir)/src/libturbulence.la
+ 
+ # reconfigure module installation directory
+ libdir = `../../turbulence-config --mod-dir`
+--- origsrc/turbulence-0.6.4/tools/tbc-ctl/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/tools/tbc-ctl/Makefile.am	2024-09-24 20:14:37.656050900 +0900
+@@ -1,4 +1,4 @@
+-INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src \
++INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src -I$(top_srcdir)/src \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" \
+ 	   $(INCLUDE_PCRE_SUPPORT) $(PCRE_CFLAGS) -I$(READLINE_PATH)/include \
+ 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) -g -Wall -ansi
+--- origsrc/turbulence-0.6.4/tools/tbc-dblist-mgr/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/tools/tbc-dblist-mgr/Makefile.am	2024-09-24 20:14:09.489179600 +0900
+@@ -1,4 +1,4 @@
+-INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src \
++INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src -I$(top_srcdir)/src \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" \
+ 	   $(INCLUDE_PCRE_SUPPORT) $(PCRE_CFLAGS) $(INCLUDE_TERMIOS)\
+ 	   $(AXL_CFLAGS) $(VORTEX_CFLAGS) $(EXARG_CFLAGS) -g -Wall -ansi
+--- origsrc/turbulence-0.6.4/tools/tbc-mod-gen/Makefile.am	2022-09-01 18:43:27.000000000 +0900
++++ src/turbulence-0.6.4/tools/tbc-mod-gen/Makefile.am	2024-09-24 20:13:36.105495600 +0900
+@@ -1,6 +1,6 @@
+ EXTRA_DIST = tbc-mod-gen.dtd tbc-mod-gen.dtd.h
+ 
+-INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src \
++INCLUDES = -DCOMPILATION_DATE=`date +%s` -I ../../src -I$(top_srcdir)/src \
+ 	   -DVERSION=\"$(TURBULENCE_VERSION)\" -DAXL_VERSION=\"$(AXL_VERSION)\" \
+ 	   -DVORTEX_VERSION=\"$(VORTEX_VERSION)\" \
+ 	   $(INCLUDE_PCRE_SUPPORT) $(PCRE_CFLAGS) $(INCLUDE_TERMIOS)\
