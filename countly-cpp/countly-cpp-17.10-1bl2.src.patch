@@ -1,0 +1,84 @@
+--- origsrc/countly-cpp-17.10/CMakeLists.txt	2017-10-27 23:57:00.000000000 +0900
++++ src/countly-cpp-17.10/CMakeLists.txt	2024-09-25 09:03:33.179901300 +0900
+@@ -38,11 +38,8 @@ ELSE()
+   SET(CMAKE_CXX_FLAGS "-O0 -g ${CMAKE_CXX_FLAGS}")
+ ENDIF()
+ 
+-IF(APPLE)
+-  # use OpenSSL from Homebrew installation due to Apple deprecated its support
+-  INCLUDE_DIRECTORIES(/usr/local/opt/openssl/include)
+-  LINK_DIRECTORIES(/usr/local/opt/openssl/lib)
+-ENDIF()
++INCLUDE(FindPkgConfig)
++PKG_CHECK_MODULES(OPENSSL REQUIRED openssl)
+ 
+ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
+@@ -54,6 +51,15 @@ ADD_EXECUTABLE(test-countly
+ 
+ TARGET_LINK_LIBRARIES(test-countly
+   Countly
+-  ssl
+-  crypto
++  ${OPENSSL_LIBRARIES}
+ )
++
++FILE(GLOB headers "include/countly/*.h")
++INSTALL(FILES ${headers} DESTINATION include/countly)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/countly-cpp.pc.in ${CMAKE_BINARY_DIR}/countly-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/countly-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/countly-cpp-17.10/countly-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/countly-cpp-17.10/countly-cpp.pc.in	2024-09-25 09:08:01.666986000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: countly-cpp
++Description: Lightweight C++ library for Countly
++Version: @VERSION@
++Libs: -L${libdir} -lCountly
++Cflags: -I${includedir}
+--- origsrc/countly-cpp-17.10/lib/CMakeLists.txt	2017-10-27 23:57:00.000000000 +0900
++++ src/countly-cpp-17.10/lib/CMakeLists.txt	2024-09-25 08:56:40.388964600 +0900
+@@ -20,3 +20,11 @@ ADD_LIBRARY(Countly
+     Event.cpp
+     Version.cpp
+     )
++
++TARGET_LINK_LIBRARIES(Countly ${OPENSSL_LIBRARIES})
++IF (DEFINED SOVERSION)
++    SET_TARGET_PROPERTIES(Countly PROPERTIES SOVERSION "${SOVERSION}")
++ENDIF()
++
++INSTALL(TARGETS Countly RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
+--- origsrc/countly-cpp-17.10/lib/Device.cpp	2017-10-27 23:57:00.000000000 +0900
++++ src/countly-cpp-17.10/lib/Device.cpp	2024-09-25 08:57:02.294645700 +0900
+@@ -39,7 +39,7 @@
+ #include <net/if_dl.h>
+ #include <ifaddrs.h>
+ #include <net/if_types.h>
+-#else
++#elif defined(__linux__)
+ #include <linux/if.h>
+ #include <linux/sockios.h>
+ #endif
+--- origsrc/countly-cpp-17.10/lib/Network.cpp	2017-10-27 23:57:00.000000000 +0900
++++ src/countly-cpp-17.10/lib/Network.cpp	2024-09-25 09:02:53.156067800 +0900
+@@ -48,7 +48,9 @@ Network::Network()
+ 
+ Network::~Network()
+ {
++#if OPENSSL_VERSION_MAJOR < 3
+   FIPS_mode_set(0);
++#endif
+   EVP_cleanup();
+   CRYPTO_cleanup_all_ex_data();
+   ERR_free_strings();
