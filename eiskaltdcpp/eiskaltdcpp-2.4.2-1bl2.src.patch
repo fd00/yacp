@@ -1,0 +1,66 @@
+--- origsrc/eiskaltdcpp-2.4.2/CMakeLists.txt	2021-03-03 06:07:33.000000000 +0900
++++ src/eiskaltdcpp-2.4.2/CMakeLists.txt	2024-09-26 00:37:37.527228100 +0900
+@@ -2,7 +2,7 @@ project (eiskaltdcpp)
+ cmake_minimum_required (VERSION 2.6.3)
+ 
+ set (PROJECT_NAME "EiskaltDC++")
+-set (VERSION "2.4.2-stable") # Main program version (displayed in UI)
++set (VERSION "2.4.2") # Main program version (displayed in UI)
+ set (SOVERSION "2.4") # Library version (incremented after changes in API or ABI)
+ 
+ if (WIN32 OR APPLE OR HAIKU)
+@@ -107,12 +107,19 @@ if (XATTR_FOUND)
+     message (STATUS "Building with libattr support")
+ endif (XATTR_FOUND)
+ 
++find_package(pkgconfig)
++
+ if (LUA_SCRIPT)
++    pkg_check_modules(LUA lua-5.3)
++    if (LUA_FOUND)
++        set(LUA_INCLUDE_DIR "${LUA_INCLUDE_DIRS}")
++    else()
+     if (DEFINED LUA_VERSION)
+         find_package (Lua ${LUA_VERSION} EXACT REQUIRED)
+     else (DEFINED LUA_VERSION)
+         find_package (Lua REQUIRED)
+     endif (DEFINED LUA_VERSION)
++    endif()
+     add_definitions ( -DLUA_SCRIPT )
+     message (STATUS "Building with Lua scripts support")
+ else (LUA_SCRIPT)
+@@ -431,3 +438,10 @@ configure_file("${PROJECT_SOURCE_DIR}/cm
+     IMMEDIATE @ONLY)
+ add_custom_target(uninstall
+     "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/cmake_uninstall.cmake")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/eiskaltdcpp.pc.in ${CMAKE_BINARY_DIR}/eiskaltdcpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/eiskaltdcpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/eiskaltdcpp-2.4.2/eiskaltdcpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/eiskaltdcpp-2.4.2/eiskaltdcpp.pc.in	2024-09-26 00:29:37.570896200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: eiskaltdcpp
++Description: Cross-platform program that uses the Direct Connect and ADC protocols
++Version: @VERSION@
++Libs: -L${libdir} -leiskaltdcpp
++Cflags: -I${includedir}
+--- origsrc/eiskaltdcpp-2.4.2/extra/upnpc.cpp	2021-03-03 06:07:33.000000000 +0900
++++ src/eiskaltdcpp-2.4.2/extra/upnpc.cpp	2024-09-26 00:40:48.697565400 +0900
+@@ -53,7 +53,7 @@ bool UPnPc::init()
+     if (!devices)
+         return false;
+ 
+-    bool ret = UPNP_GetValidIGD(devices, &urls, &data, nullptr, 0);
++    bool ret = UPNP_GetValidIGD(devices, &urls, &data, nullptr, 0, nullptr, 0);
+ 
+     freeUPNPDevlist(devices);
+ 
