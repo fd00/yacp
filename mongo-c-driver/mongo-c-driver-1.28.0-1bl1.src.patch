@@ -1,0 +1,29 @@
+--- origsrc/mongo-c-driver-1.28.0/src/libmongoc/src/mongoc/mongoc-client.c	2024-09-19 00:27:21.000000000 +0900
++++ src/mongo-c-driver-1.28.0/src/libmongoc/src/mongoc/mongoc-client.c	2024-09-25 18:48:54.245934900 +0900
+@@ -461,6 +461,10 @@ _mongoc_get_rr_search (const char *hostn
+       }
+    } while (size >= buffer_size);
+ 
++#if defined(__CYGWIN__)
++   DNS_ERROR("ns_* are not implemented in cygwin, %s", hostname);
++#endif
++
+    if (ns_initparse (search_buf, size, &ns_answer)) {
+       DNS_ERROR ("Invalid %s answer for \"%s\"", rr_type_name, hostname);
+    }
+@@ -523,6 +527,7 @@ done:
+ 
+    bson_free (search_buf);
+ 
++#if !defined(__CYGWIN__)
+ #ifdef MONGOC_HAVE_RES_NDESTROY
+    /* defined on BSD/Darwin, and only if MONGOC_HAVE_RES_NSEARCH is defined */
+    res_ndestroy (&state);
+@@ -530,6 +535,7 @@ done:
+    /* defined on Linux, and only if MONGOC_HAVE_RES_NSEARCH is defined */
+    res_nclose (&state);
+ #endif
++#endif
+    RETURN (dns_success && callback_success);
+ }
+ #endif // ↑↑↑↑↑↑↑↑↑↑↑↑↑ resolv
