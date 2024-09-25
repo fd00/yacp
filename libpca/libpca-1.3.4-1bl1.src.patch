@@ -1,0 +1,66 @@
+--- origsrc/libpca-1.3.4/Makefile.am	2020-02-23 12:14:05.000000000 +0900
++++ src/libpca-1.3.4/Makefile.am	2024-09-26 08:18:00.461043400 +0900
+@@ -11,3 +11,6 @@ examples
+ TESTS = \
+ test/unittest \
+ examples/simple/pca_example
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libpca-1.3.4/configure.ac	2020-02-23 12:14:05.000000000 +0900
++++ src/libpca-1.3.4/configure.ac	2024-09-26 08:18:00.461043400 +0900
+@@ -54,4 +54,5 @@ AC_CONFIG_FILES([examples/simple/Makefil
+ 
+ AC_PROG_INSTALL
+ 
++AC_CONFIG_FILES([libpca.pc])
+ AC_OUTPUT
+--- origsrc/libpca-1.3.4/examples/simple/Makefile.am	2020-02-23 12:14:05.000000000 +0900
++++ src/libpca-1.3.4/examples/simple/Makefile.am	2024-09-26 08:16:04.041884100 +0900
+@@ -3,4 +3,4 @@ check_PROGRAMS = pca_example
+ 
+ pca_example_SOURCES = \
+ pca_example.cpp
+-pca_example_LDADD = $(top_builddir)/src/lib/.libs/libpca.a $(AM_LDFLAGS)
++pca_example_LDADD = $(top_builddir)/src/lib/.libs/libpca.la $(AM_LDFLAGS)
+--- origsrc/libpca-1.3.4/libpca.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpca-1.3.4/libpca.pc.in	2024-09-26 08:18:00.430508600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpca
++Description: C++ library for principal component analysis
++Version: @VERSION@
++Libs: -L${libdir} -lpca
++Cflags: -I${includedir}
+--- origsrc/libpca-1.3.4/src/lib/pca.cpp	2020-02-23 12:14:05.000000000 +0900
++++ src/libpca-1.3.4/src/lib/pca.cpp	2024-09-26 02:30:07.294663000 +0900
+@@ -178,7 +178,7 @@ void pca::solve() {
+ 
+ 	arma::Mat<double> cov_mat = utils::make_covariance_matrix(data_);
+ 	arma::eig_sym(eigval, eigvec, cov_mat, solver_.c_str());
+-	arma::uvec indices = arma::sort_index(eigval, 1);
++	arma::uvec indices = arma::sort_index(eigval, "d");
+ 
+ 	for (long i=0; i<num_vars_; ++i) {
+ 		eigval_(i) = eigval(indices(i));
+@@ -207,7 +207,7 @@ void pca::bootstrap_eigenvalues_() {
+ 
+ 		const arma::Mat<double> cov_mat = utils::make_covariance_matrix(shuffle);
+ 		arma::eig_sym(eigval, dummy, cov_mat, solver_.c_str());
+-		eigval = arma::sort(eigval, 1);
++		eigval = arma::sort(eigval, "d");
+ 
+ 		energy_boot_(b) = arma::sum(eigval);
+ 		eigval *= 1./energy_boot_(b);
+--- origsrc/libpca-1.3.4/test/Makefile.am	2020-02-23 12:14:05.000000000 +0900
++++ src/libpca-1.3.4/test/Makefile.am	2024-09-26 08:14:23.407885100 +0900
+@@ -12,4 +12,4 @@ main.cpp \
+ testcases.cpp \
+ test_pca.cpp \
+ test_utils.cpp
+-unittest_LDADD = $(top_builddir)/src/lib/.libs/libpca.a $(AM_LDFLAGS)
++unittest_LDADD = $(top_builddir)/src/lib/.libs/libpca.la $(AM_LDFLAGS)
