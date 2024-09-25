@@ -1,0 +1,94 @@
+--- origsrc/verse-0.0.1/CMakeLists.txt	2015-02-16 23:59:04.000000000 +0900
++++ src/verse-0.0.1/CMakeLists.txt	2024-09-25 12:26:00.036560200 +0900
+@@ -17,8 +17,8 @@ project (Verse)
+ 
+ # The version number
+ set (${PROJECT_NAME}_VERSION_MAJOR 0)
+-set (${PROJECT_NAME}_VERSION_MINOR 1)
+-set (${PROJECT_NAME}_PATCH_LEVEL 0)
++set (${PROJECT_NAME}_VERSION_MINOR 0)
++set (${PROJECT_NAME}_PATCH_LEVEL 1)
+ 
+ set (${PROJECT_NAME}_VERSION
+ 	"${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
+@@ -61,12 +61,14 @@ set (CMAKE_MODULE_PATH
+ 
+ # Try to get information about using /lib/ or /lib64/
+ get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
+-if (${LIB64} STREQUAL "TRUE")
++if (${LIB64} STREQUAL "TRUE" AND NOT CYGWIN)
+ 	set(LIBSUFFIX 64)
+ else()
+ 	set(LIBSUFFIX "")
+ endif()
+ 
++find_package(pkgconfig)
++
+ # Check OpenSSL library
+ if (VERSE_OPENSSL)
+ 
+@@ -82,6 +84,10 @@ if (VERSE_INIPARSER)
+ 	# Try to find iniparser library
+ 	find_package (Iniparser)
+ 
++	if (NOT INIPARSER_FOUND)
++		pkg_check_modules(INIPARSER iniparser)
++	endif()
++
+ endif (VERSE_INIPARSER)
+ 
+ 
+@@ -132,7 +138,7 @@ if (VERSE_PYTHON3_MODULE)
+ 	endif (PYTHONLIBS_FOUND)
+ 
+ 	# Try to find optional package Python
+-	if (UNIX AND NOT APPLE)
++	if (UNIX AND NOT APPLE AND NOT CYGWIN)
+ 		# find_package (PythonLibs 3) # Does not work at Linux for Python 3
+ 		find_package (PythonLibsUnix 3)
+ 	else ()
+@@ -324,3 +330,10 @@ else ()
+ endif (DOXYGEN_FOUND)
+ 
+ message ("")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/verse.pc.in ${CMAKE_BINARY_DIR}/verse.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/verse.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/verse-0.0.1/python/3.x/CMakeLists.txt	2015-02-16 23:59:04.000000000 +0900
++++ src/verse-0.0.1/python/3.x/CMakeLists.txt	2024-09-25 11:47:45.195041200 +0900
+@@ -45,5 +45,5 @@ execute_process(COMMAND python3 -c "impo
+     OUTPUT_VARIABLE PYTHON_PREFIX)
+ 
+ install (TARGETS py3_verse
+-	LIBRARY
++	RUNTIME
+ 	DESTINATION ${PYTHON_PREFIX}/lib/python${PYTHON_VERSION}/site-packages)
+--- origsrc/verse-0.0.1/src/lib/CMakeLists.txt	2015-02-16 23:59:04.000000000 +0900
++++ src/verse-0.0.1/src/lib/CMakeLists.txt	2024-09-25 11:55:44.222563800 +0900
+@@ -99,7 +99,8 @@ endif (OPENSSL_FOUND)
+ 
+ # The rule to install shared library used by Verse server and Verse clients
+ install (TARGETS verse_shared_lib
+-	LIBRARY
++	RUNTIME DESTINATION bin
++	ARCHIVE
+ 	DESTINATION lib${LIBSUFFIX})
+ 
+ 
+--- origsrc/verse-0.0.1/verse.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/verse-0.0.1/verse.pc.in	2024-09-25 12:28:50.900673200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: verse
++Description: Network protocol for real-time sharing between graphical applications
++Version: @Verse_VERSION_MAJOR@.@Verse_VERSION_MINOR@.@Verse_PATCH_LEVEL@
++Libs: -L${libdir} -lverse
++Cflags: -I${includedir}
