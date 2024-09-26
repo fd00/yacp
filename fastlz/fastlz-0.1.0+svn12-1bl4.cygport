@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/ariya/FastLZ"
+GIT_URI="https://github.com/ariya/FastLZ.git"
+
+CATEGORY="Archive"
+SUMMARY="Free, open-source, portable real-time compression library"
+DESCRIPTION="FastLZ is a lossless data compression library designed for real-time
+compression and decompression. It favors speed over compression ratio.
+Decompression requires no memory. Decompression algorithm is very simple, and
+thus extremely fast."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE.MIT"
+
+inherit git
+
+src_test()
+{
+	cd ${B}
+	./6pack.exe -v
+	./6unpack.exe -v
+
+	cp Makefile tmpin
+
+	./6pack.exe -1 tmpin tmpout1
+	./6pack.exe -2 tmpin tmpout2
+
+	rm tmpin
+	./6unpack.exe tmpout1
+	diff Makefile tmpin
+
+	rm tmpin
+	./6unpack.exe tmpout2
+	diff Makefile tmpin
+
+	rm tmpin
+}
+
+DOCS="
+	LICENSE.MIT
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+fastlz_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libfastlz0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libfastlz_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+fastlz_SUMMARY="${SUMMARY} (utilities)"
+libfastlz0_SUMMARY="${SUMMARY} (runtime)"
+libfastlz_devel_SUMMARY="${SUMMARY} (development)"
