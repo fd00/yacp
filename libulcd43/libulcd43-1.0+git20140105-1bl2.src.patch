@@ -1,0 +1,110 @@
+--- origsrc/libulcd43/Makefile.am	2024-09-26 12:59:19.000000000 +0900
++++ src/libulcd43/Makefile.am	2024-09-26 13:06:18.411591100 +0900
+@@ -1,2 +1,5 @@
+ SUBDIRS = src . tests
+ dist_doc_DATA = README
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libulcd43.pc
+--- origsrc/libulcd43/configure.ac	2024-09-26 12:59:19.000000000 +0900
++++ src/libulcd43/configure.ac	2024-09-26 13:00:43.783157400 +0900
+@@ -1,7 +1,7 @@
+ AC_PREREQ([2.69])
+ AC_INIT([ulcd43], [1.0], [kimtjen@gmail.com])
+ LT_INIT
+-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AM_INIT_AUTOMAKE([-Wall foreign])
+ AM_PATH_CHECK
+ 
+ AC_CONFIG_SRCDIR([src/test.c])
+@@ -9,8 +9,7 @@ AC_CONFIG_HEADERS([src/config.h])
+ 
+ # Checks for programs.
+ AC_PROG_CC
+-AC_PROG_LIBTOOL
+-AM_PROG_LIBTOOL
++LT_INIT
+ 
+ # Checks for the RPI serial bug.
+ AC_ARG_WITH([serial-bug],
+@@ -46,4 +45,5 @@ AC_CONFIG_FILES([
+     src/Makefile
+     tests/Makefile
+ ])
++AC_CONFIG_FILES([libulcd43.pc])
+ AC_OUTPUT
+--- origsrc/libulcd43/libulcd43.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libulcd43/libulcd43.pc.in	2024-09-26 13:00:43.751898900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libulcd43
++Description: POSIX C library for interfacing with the uLCD43PCT series touch screens
++Version: @VERSION@
++Libs: -L${libdir} -lulcd43
++Cflags: -I${includedir}
+--- origsrc/libulcd43/src/Makefile.am	2024-09-26 12:59:19.000000000 +0900
++++ src/libulcd43/src/Makefile.am	2024-09-26 13:00:19.033772900 +0900
+@@ -1,3 +1,4 @@
+ lib_LTLIBRARIES = libulcd43.la
+ libulcd43_la_SOURCES = util.c touch.c text.c gfx.c image.c serial.c system.c util.h
++libulcd43_la_LDFLAGS = -no-undefined
+ include_HEADERS = ulcd43.h
+--- origsrc/libulcd43/src/util.c	2024-09-26 12:59:19.000000000 +0900
++++ src/libulcd43/src/util.c	2024-09-26 13:05:27.916050800 +0900
+@@ -21,7 +21,7 @@ char recvbuf[2];
+ /**
+  * Pack an unsigned int into two bytes, little endian.
+  */
+-inline int
++int
+ pack_uint(char *dest, param_t src)
+ {
+     dest[0] = (src & 0xff00) >> 8;
+@@ -33,7 +33,7 @@ pack_uint(char *dest, param_t src)
+ /**
+  * Unpack an unsigned int from two bytes, little endian.
+  */
+-inline void
++void
+ unpack_uint(param_t *dest, const char *src)
+ {
+     *dest = ((src[0] << 8) & 0xff00) | (src[1] & 0x00ff);
+@@ -43,7 +43,7 @@ unpack_uint(param_t *dest, const char *s
+ /**
+  * Pack a variable list of unsigned ints into a char pointer.
+  */
+-inline int
++int
+ pack_uints(char *buffer, int args, ...)
+ {
+     int i;
+@@ -63,7 +63,7 @@ pack_uints(char *buffer, int args, ...)
+ /**
+  * Pack a polygon_t into N bytes.
+  */
+-inline int
++int
+ pack_polygon(char *dest, struct polygon_t *poly)
+ {
+     int written = 0;
+--- origsrc/libulcd43/src/util.h	2024-09-26 12:59:19.000000000 +0900
++++ src/libulcd43/src/util.h	2024-09-26 13:04:46.548764300 +0900
+@@ -4,10 +4,10 @@
+ #include "ulcd43.h"
+ 
+ /* Utility functions */
+-inline int pack_uint(char *dest, param_t src);
+-inline void unpack_uint(param_t *dest, const char *src);
+-inline int pack_uints(char *buffer, int args, ...);
+-inline int pack_polygon(char *dest, struct polygon_t *poly);
++int pack_uint(char *dest, param_t src);
++void unpack_uint(param_t *dest, const char *src);
++int pack_uints(char *buffer, int args, ...);
++int pack_polygon(char *dest, struct polygon_t *poly);
+ void print_hex(const char *buffer, int size);
+ 
+ /* Send and receive */
