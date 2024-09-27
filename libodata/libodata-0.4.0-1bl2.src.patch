@@ -1,0 +1,73 @@
+--- origsrc/libodata-0.4.0/CMakeLists.txt	2018-12-05 22:25:54.000000000 +0900
++++ src/libodata-0.4.0/CMakeLists.txt	2024-09-28 08:32:17.842310900 +0900
+@@ -4,7 +4,7 @@ project (odata VERSION 0.4.0)
+ #project definition
+ set(CMAKE_CXX_STANDARD 14)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+-add_definitions(-Wall -std=c++14 -pedantic -Wextra -Werror)
++add_definitions(-Wall -std=c++14 -pedantic -Wextra)
+ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules" ${CMAKE_MODULE_PATH})
+ 
+ # check dependencies
+@@ -17,7 +17,7 @@ find_library(TINYXML2_LIBRARIES NAMES ti
+ if(NOT TINYXML2_LIBRARIES)
+     message(SEND_ERROR "tinyxml2 library not found")
+ endif (NOT TINYXML2_LIBRARIES)
+-find_package(Boost REQUIRED COMPONENTS filesystem thread serialization iostreams program_options)
++find_package(Boost REQUIRED COMPONENTS filesystem thread serialization iostreams program_options system)
+ find_package(BerkeleyDB REQUIRED)
+ 
+ 
+@@ -66,6 +66,10 @@ target_link_libraries(${LIB_NAME} PUBLIC
+ target_link_libraries(${LIB_NAME} PUBLIC ${Boost_LIBRARIES})
+ target_link_libraries(${LIB_NAME} PUBLIC ${BERKELEY_DB_LIBRARIES})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${LIB_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ #install
+ include(CMakePackageConfigHelpers)
+ set(INCLUDE_INSTALL_DIR include/ CACHE PATH "Headers installation directory")
+@@ -84,7 +88,7 @@ configure_package_config_file(
+     INSTALL_DESTINATION ${CONFIG_INSTALL_DIR})
+ install(TARGETS ${LIB_NAME} 
+     EXPORT ${TARGETS_EXPORT_NAME}
+-    LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT ${LIB_COMPONENT_NAME}
++    RUNTIME DESTINATION bin COMPONENT ${LIB_COMPONENT_NAME}
+     ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT ${LIB_COMPONENT_NAME})
+ install(
+     DIRECTORY include/odata DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT ${DEVEL_COMPONENT_NAME})
+@@ -101,7 +105,7 @@ target_link_libraries(${TEST_CLIENT} ${L
+ 
+ # fuse binary
+ find_package(FUSE)
+-if(FUSE_FOUND)
++if(BUILD_FUSE AND FUSE_FOUND)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=26")
+     set(FUSE_BINARY odatafs)
+     add_executable(${FUSE_BINARY} src/fuse.cpp src/FuseAdapter.cpp src/FuseAdapter.h)
+@@ -170,3 +174,10 @@ set(CPACK_DEB_COMPONENT_INSTALL ON)
+ set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS ON)
+ 
+ include(CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libodata.pc.in ${CMAKE_BINARY_DIR}/libodata.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libodata.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libodata-0.4.0/libodata.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libodata-0.4.0/libodata.pc.in	2024-09-28 08:32:33.372168300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libodata
++Description: Access to products stored in Copernicus Data Hub
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lodata
++Cflags: -I${includedir}
