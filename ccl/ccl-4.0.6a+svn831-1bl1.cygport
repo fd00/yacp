@@ -1,0 +1,58 @@
+HOMEPAGE="https://sourceforge.net/projects/cigi/"
+SVN_URI="https://svn.code.sf.net/p/cigi/code/trunk"
+SVN_REV="831"
+
+CATEGORY="Libs"
+SUMMARY="CIGI Class Library"
+DESCRIPTION="This is the source distribution of the CIGI Class Library (CCL).  This library
+makes integration of CIGI into an application much easier."
+
+LICENSE="LGPL-2.1-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.1-or-later"
+LICENSE_URI="ccl/COPYING"
+
+inherit cmake
+inherit svn
+
+src_compile()
+{
+	CYGCMAKE_SOURCE=${S}/${PN}
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	mkdir -p usr/share/doc/ccl
+	mv usr/share/cigicl/* usr/share/doc/ccl/
+}
+
+PKG_IGNORE="
+	usr/lib/libcigicl.a
+"
+
+PKG_NAMES="
+	${PN}
+	libcigicl1
+	libcigicl-devel
+"
+ccl_CONTENTS="
+	usr/share
+"
+libcigicl1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+libcigicl_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+	usr/lib/pkgconfig
+"
+ccl_SUMMARY="${SUMMARY} (licensing & readmes)"
+libcigicl1_SUMMARY="${SUMMARY} (runtime)"
+libcigicl_devel_SUMMARY="${SUMMARY} (development)"
