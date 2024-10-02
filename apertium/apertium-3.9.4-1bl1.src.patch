@@ -1,5 +1,5 @@
---- origsrc/apertium-3.8.3/Makefile.am	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/Makefile.am	2023-01-13 11:11:49.813190100 +0900
+--- origsrc/apertium-3.9.4/Makefile.am	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/Makefile.am	2024-10-02 10:41:15.417022700 +0900
 @@ -19,7 +19,7 @@ EXTRA_DIST=autogen.sh README-MODES apert
  
  install-data-local:
@@ -9,9 +9,9 @@
  
  # just a synonym:
  test: check
---- origsrc/apertium-3.8.3/apertium/Makefile.am	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/apertium/Makefile.am	2023-01-13 11:36:09.819720200 +0900
-@@ -156,7 +156,7 @@ GENERATEDSCRIPTS = apertium-gen-deformat
+--- origsrc/apertium-3.9.4/apertium/Makefile.am	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/apertium/Makefile.am	2024-10-02 10:50:27.354099100 +0900
+@@ -160,7 +160,7 @@ GENERATEDSCRIPTS = apertium-gen-deformat
  
  lib_LTLIBRARIES = libapertium.la
  libapertium_la_SOURCES = $(h_sources) $(cc_sources)
@@ -20,8 +20,8 @@
  
  bin_PROGRAMS = apertium-cleanstream \
  	       apertium-deshtml \
-@@ -220,7 +220,7 @@ apertium_DATA = deformat.xsl reformat.xs
- 				tagger.dtd interchunk.dtd format.dtd  transfer.dtd postchunk.dtd modes.dtd \
+@@ -227,7 +227,7 @@ apertium_DATA = deformat.xsl reformat.xs
+ 				tagger.dtd interchunk.dtd format.dtd  transfer.dtd postchunk.dtd modes.dtd crx.dtd \
  				tagger.rnc interchunk.rnc format.rnc  transfer.rnc postchunk.rnc modes.rnc
  
 -LDADD = -lapertium $(lib_LTLIBRARIES)
@@ -29,7 +29,7 @@
  
  apertium_cleanstream_SOURCES = apertium_cleanstream.cc
  apertium_pretransfer_SOURCES = apertium_pretransfer.cc
-@@ -283,9 +283,9 @@ apertium_adapt_docx_SOURCES = adapt_docx
+@@ -294,9 +294,9 @@ apertium_adapt_docx_SOURCES = adapt_docx
  apertium_gen_modes_SOURCES = gen_modes.cc
  
  if WINDOWS
@@ -41,7 +41,7 @@
  endif
  CLEANFILES = *~ apertium_destxt.cc apertium_retxt.cc apertium_deshtml.cc \
               apertium_rehtml.cc apertium_desrtf.cc apertium_rertf.cc \
-@@ -303,193 +303,193 @@ CLEANFILES = *~ apertium_destxt.cc apert
+@@ -314,200 +314,200 @@ CLEANFILES = *~ apertium_destxt.cc apert
               apertium_prelatex.cc apertium_postlatex.cc \
               $(GENERATEDSCRIPTS)
  
@@ -275,6 +275,15 @@
  	@echo "xmllint --relaxng \"$(prefix)\"/share/lttoolbox/acx.rng --schema \"$(prefix)\"/share/lttoolbox/acx.xsd --noout \"\$$FILE1\"" >>$@
  	@chmod a+x $@
  
+-apertium-validate-crx: Makefile.am validate-header.sh
++apertium-validate-crx: Makefile.am $(srcdir)/validate-header.sh
+ 	@echo "Creating apertium-validate-crx script"
+ 	@echo "#!/usr/bin/env bash" > $@
+-	@cat validate-header.sh >> $@
++	@cat $(srcdir)/validate-header.sh >> $@
+ 	@echo "xmllint --dtdvalid \"$(apertiumdir)\"/crx.dtd --noout \"\$$FILE1\"" >>$@
+ 	@chmod a+x $@
+ 
 -apertium-validate-modes: Makefile.am validate-header.sh
 +apertium-validate-modes: Makefile.am $(srcdir)/validate-header.sh
  	@echo "Creating apertium-validate-modes script"
@@ -305,7 +314,7 @@
  	@echo "xmllint --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \"\$$FILE1\" && \\" >> $@
  	@if [ `basename xsltproc` == xsltproc ]; \
  	  then echo "xsltproc --stringparam mode \$$MODE \"$(apertiumdir)\"/deformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.deformat.l && \\"; \
-@@ -500,10 +500,10 @@ apertium-gen-deformat: Makefile.am defor
+@@ -518,10 +518,10 @@ apertium-gen-deformat: Makefile.am defor
  	@echo "rm /tmp/\$$\$$.deformat.l /tmp/\$$\$$.lex.cc" >> $@
  	@chmod a+x $@
  
@@ -318,7 +327,7 @@
  	@echo "xmllint --dtdvalid \"$(apertiumdir)\"/format.dtd --noout \"\$$FILE1\" && \\" >> $@
  	@echo "xsltproc \"$(apertiumdir)\"/reformat.xsl \"\$$FILE1\" >/tmp/\$$\$$.reformat.l && \\" >> $@
  	@echo "$(FLEX) \$$FLEXOPTS -o/tmp/\$$\$$.lex.cc /tmp/\$$\$$.reformat.l && \\" >> $@
-@@ -511,26 +511,26 @@ apertium-gen-reformat: Makefile.am gen-h
+@@ -529,26 +529,26 @@ apertium-gen-reformat: Makefile.am gen-h
  	@echo "rm /tmp/\$$\$$.reformat.l /tmp/\$$\$$.lex.cc" >> $@
  	@chmod a+x $@
  
@@ -351,8 +360,8 @@
  	@chmod a+x $@
  
  man_MANS=apertium.1 apertium-deshtml.1 apertium-desrtf.1 apertium-destxt.1 \
---- origsrc/apertium-3.8.3/configure.ac	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/configure.ac	2023-01-13 11:22:22.111081400 +0900
+--- origsrc/apertium-3.9.4/configure.ac	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/configure.ac	2024-10-02 10:51:11.257882400 +0900
 @@ -78,7 +78,9 @@ AC_C_BIGENDIAN
  AC_LANG(C++)
  AC_HEADER_STDC
@@ -373,8 +382,8 @@
  #AS_IF([test x$version_type = xwindows], [AC_DEFINE(HAVE_GETOPT_LONG,0)], [])
  
  # Checks for highest supported C++ standard
---- origsrc/apertium-3.8.3/python/Makefile.am	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/python/Makefile.am	2023-01-13 11:22:58.875105600 +0900
+--- origsrc/apertium-3.9.4/python/Makefile.am	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/python/Makefile.am	2024-10-02 10:51:39.370200600 +0900
 @@ -2,7 +2,7 @@ SWIG_INTERFACE = apertium_core.i
  
  BUILT_SOURCES = %_wrap.cpp
@@ -384,8 +393,8 @@
  	$(PYTHON) setup.py build
  
  install-exec-local:
---- origsrc/apertium-3.8.3/python/setup.py.in	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/python/setup.py.in	2023-01-13 13:30:06.035477400 +0900
+--- origsrc/apertium-3.9.4/python/setup.py.in	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/python/setup.py.in	2024-10-02 10:53:37.868582100 +0900
 @@ -7,7 +7,7 @@ from distutils.core import Extension, se
  from sys import platform
  
@@ -415,8 +424,8 @@
  )
  
  setup(
---- origsrc/apertium-3.8.3/tests/tagger/Makefile.am	2022-11-01 18:01:55.000000000 +0900
-+++ src/apertium-3.8.3/tests/tagger/Makefile.am	2023-01-13 11:25:30.837241300 +0900
+--- origsrc/apertium-3.9.4/tests/tagger/Makefile.am	2023-12-27 23:22:42.000000000 +0900
++++ src/apertium-3.9.4/tests/tagger/Makefile.am	2024-10-02 10:53:59.869414200 +0900
 @@ -14,4 +14,4 @@ apertiumlib = $(prefix)/lib
  apertiumsysconf = $(prefix)/etc/apertium
  
