@@ -1,0 +1,46 @@
+--- origsrc/aravis-0.8.33/src/arvnetwork.c	2024-09-05 01:29:10.000000000 +0900
++++ src/aravis-0.8.33/src/arvnetwork.c	2024-10-02 11:36:11.420786500 +0900
+@@ -33,6 +33,8 @@
+ 	#include <winnt.h>	/* For PWCHAR */
+ #endif
+ 
++#include <errno.h>
++
+ struct _ArvNetworkInterface{
+ 	struct sockaddr *addr;
+ 	struct sockaddr *netmask;
+@@ -363,6 +365,7 @@ arv_enumerate_network_interfaces (void)
+ 			a->addr = arv_memdup (ifap_iter->ifa_addr, sizeof(struct sockaddr));
+ 			if (ifap_iter->ifa_netmask)
+ 				a->netmask = arv_memdup (ifap_iter->ifa_netmask, sizeof(struct sockaddr));
++#if !defined(__CYGWIN__)
+ #if (defined(__APPLE__) && defined(__MACH__)) || defined(BSD)
+ 			if (ifap_iter->ifa_broadaddr &&
+ 			    ifap_iter->ifa_broadaddr->sa_len != 0) {
+@@ -379,7 +382,7 @@ arv_enumerate_network_interfaces (void)
+ 			if (ifap_iter->ifa_ifu.ifu_broadaddr)
+ 				a->broadaddr = arv_memdup(ifap_iter->ifa_ifu.ifu_broadaddr, sizeof(struct sockaddr));
+ #endif
+-
++#endif
+ 			if (ifap_iter->ifa_name)
+ 				a->name = g_strdup(ifap_iter->ifa_name);
+ 
+--- origsrc/aravis-0.8.33/src/arvrealtime.c	2024-09-05 01:29:10.000000000 +0900
++++ src/aravis-0.8.33/src/arvrealtime.c	2024-10-02 11:26:15.229658300 +0900
+@@ -225,11 +225,15 @@ arv_rtkit_make_high_priority (GDBusConne
+ #endif
+ 
+ #include <sys/resource.h>
++#if defined(__CYGWIN__)
++static pid_t _gettid(void) { return getpid(); }
++#else
+ #include <sys/syscall.h>
+ 
+ static pid_t _gettid(void) {
+         return (pid_t) syscall(SYS_gettid);
+ }
++#endif
+ 
+ /**
+  * arv_make_thread_realtime:
