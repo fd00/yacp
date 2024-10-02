@@ -1,9 +1,9 @@
---- origsrc/customfetch-0.8.8/Makefile	2024-08-27 15:28:05.000000000 +0900
-+++ src/customfetch-0.8.8/Makefile	2024-08-28 18:22:07.034478300 +0900
-@@ -42,11 +42,11 @@ VERSION    	 = 0.8.8
- BRANCH     	 = $(shell git rev-parse --abbrev-ref HEAD)
- SRC 	   	 = $(wildcard src/*.cpp src/query/unix/*.cpp src/query/unix/utils/*.cpp)
- OBJ 	   	 = $(SRC:.cpp=.o)
+--- origsrc/customfetch-0.9.3/Makefile	2024-09-14 23:02:52.000000000 +0900
++++ src/customfetch-0.9.3/Makefile	2024-10-03 05:51:54.658136100 +0900
+@@ -44,11 +44,11 @@ VERSION    	= 0.9.3
+ BRANCH     	= $(shell git rev-parse --abbrev-ref HEAD)
+ SRC 	   	= $(wildcard src/*.cpp src/query/unix/*.cpp src/query/unix/utils/*.cpp)
+ OBJ 	   	= $(SRC:.cpp=.o)
 -LDFLAGS   	+= -L./$(BUILDDIR)/fmt -lfmt -ldl
 +LDFLAGS   	+= -lfmt -ldl -ltomlplusplus
  CXXFLAGS  	?= -mtune=generic -march=native
@@ -15,7 +15,7 @@
  
  fmt:
  ifeq ($(wildcard $(BUILDDIR)/fmt/libfmt.a),)
-@@ -60,9 +60,9 @@ ifeq ($(wildcard $(BUILDDIR)/toml++/toml
+@@ -62,9 +62,9 @@ ifeq ($(wildcard $(BUILDDIR)/toml++/toml
  	make -C src/toml++ BUILDDIR=$(BUILDDIR)/toml++
  endif
  
@@ -27,16 +27,17 @@
  
  dist:
  	bsdtar -zcf $(NAME)-v$(VERSION).tar.gz LICENSE cufetch.1 assets/ascii/ -C $(BUILDDIR) $(TARGET)
-@@ -81,6 +81,6 @@ install: $(TARGET)
+@@ -83,7 +83,7 @@ install: $(TARGET)
  	mkdir -p $(DESTDIR)$(MANPREFIX)/man1/
  	sed -e "s/@VERSION@/$(VERSION)/g" -e "s/@BRANCH@/$(BRANCH)/g" < cufetch.1 > $(DESTDIR)$(MANPREFIX)/man1/cufetch.1
  	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/cufetch.1
 -	cd assets/ && find ascii/ -type f -exec install -Dm 644 "{}" "$(DESTDIR)$(PREFIX)/share/customfetch/{}" \;
 +	cd assets/ && find -L ascii/ -type f -exec install -Dm 644 "{}" "$(DESTDIR)$(PREFIX)/share/customfetch/{}" \;
- 
- .PHONY: $(TARGET) dist distclean fmt toml install all
---- origsrc/customfetch-0.8.8/src/query/unix/system.cpp	2024-08-27 15:28:05.000000000 +0900
-+++ src/customfetch-0.8.8/src/query/unix/system.cpp	2024-08-28 18:13:27.738218000 +0900
+ ifeq ($(GUI_MODE), 1)
+ 	mkdir -p $(DESTDIR)$(APPPREFIX)
+ 	cp -f cufetch.desktop $(DESTDIR)$(APPPREFIX)
+--- origsrc/customfetch-0.9.3/src/query/unix/system.cpp	2024-09-14 23:02:52.000000000 +0900
++++ src/customfetch-0.9.3/src/query/unix/system.cpp	2024-10-03 05:52:50.079550200 +0900
 @@ -1,4 +1,8 @@
 +#if defined(__LINUX__)
  #include <linux/limits.h>
