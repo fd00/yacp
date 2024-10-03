@@ -1,0 +1,110 @@
+--- origsrc/gosu-1.4.6/CMakeLists.txt	2023-05-20 20:24:00.000000000 +0900
++++ src/gosu-1.4.6/CMakeLists.txt	2024-10-03 13:46:45.014071600 +0900
+@@ -22,21 +22,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ find_package(SDL2 REQUIRED)
+ find_package(OpenGL REQUIRED)
+ 
++find_package(PkgConfig REQUIRED)
++
+ if(APPLE)
+     find_library(COCOA_LIBRARY Cocoa)
+     find_library(AUDIO_TOOLBOX_LIBRARY AudioToolbox)
+     find_library(CORE_TEXT_LIBRARY CoreText)
+     find_library(ICONV_LIBRARY iconv)
+ else()
+-    find_package(PkgConfig REQUIRED)
+     pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
+ endif()
+ 
++pkg_check_modules(SDL2_SOUND SDL2_sound)
++pkg_check_modules(MOJOAL mojoAL)
++pkg_check_modules(UTF8PROC libutf8proc)
+ 
+ ##############################################
+ # Create target and set properties
+ 
+-file(GLOB_RECURSE C_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/*.c)
++if (NOT SDL2_SOUND_FOUND)
++    file(GLOB_RECURSE SDL2_SOUND_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/SDL_sound/*.c)
++endif()
++if (NOT MOJOAL_FOUND)
++    file(GLOB_RECURSE MOJOAL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/mojoAL/*.c)
++endif()
++if (NOT UTF8PROC_FOUND)
++    file(GLOB_RECURSE UTF8PROC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/utf8proc/*.c)
++endif()
++set(C_FILES ${SDL2_SOUND_FILES} ${MOJOAL_FILES} ${UTF8PROC_FILES})
++
++#file(GLOB_RECURSE C_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/*.c)
+ file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/Gosu/*.hpp)
+ file(GLOB SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+ 
+@@ -49,6 +64,10 @@ add_library(gosu SHARED ${C_FILES} ${HEA
+ set_target_properties(gosu PROPERTIES
+         COMPILE_DEFINITIONS "GOSU_DEPRECATED=")
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(gosu PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # Compile all C++ files as Objective-C++ on macOS so that we can use ObjC APIs.
+ if(APPLE)
+     set_source_files_properties(${SOURCE_FILES} PROPERTIES
+@@ -74,6 +93,10 @@ target_link_libraries(gosu
+         # The SDL2::SDL2 target is not available on Ubuntu 18.04.
+         ${SDL2_LIBRARIES}
+         OpenGL::GL
++        # Only defined when installed on system
++        ${SDL2_SOUND_LIBRARIES}
++        ${MOJOAL_LIBRARIES}
++        ${UTF8PROC_LIBRARIES}
+         # Only defined on macOS
+         ${COCOA_LIBRARY}
+         ${AUDIO_TOOLBOX_LIBRARY}
+@@ -91,6 +114,7 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LI
+ 
+ install(TARGETS gosu
+         EXPORT gosu-targets
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+@@ -136,5 +160,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRE
+     add_subdirectory(examples)
+ 
+     # If GoogleTest is not available as a CMake module, this is a no-op.
++    if (BUILD_TESTS)
+     add_subdirectory(test)
++    endif()
+ endif()
+--- origsrc/gosu-1.4.6/ffi/CMakeLists.txt	2023-05-20 20:24:00.000000000 +0900
++++ src/gosu-1.4.6/ffi/CMakeLists.txt	2024-10-03 13:38:41.834346200 +0900
+@@ -7,6 +7,10 @@ add_library(gosu-ffi SHARED ${FFI_HEADER
+ set_target_properties(gosu-ffi PROPERTIES
+         COMPILE_DEFINITIONS "GOSU_DEPRECATED=;GOSU_FFI_EXPORTS")
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(gosu-ffi PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_link_libraries(gosu-ffi
+     PRIVATE
+         Gosu::Gosu)
+@@ -14,5 +18,6 @@ target_link_libraries(gosu-ffi
+ include(GNUInstallDirs)
+ 
+ install(TARGETS gosu-ffi
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+--- origsrc/gosu-1.4.6/include/Gosu/Platform.hpp	2023-05-20 20:24:00.000000000 +0900
++++ src/gosu-1.4.6/include/Gosu/Platform.hpp	2024-10-03 13:33:20.592934700 +0900
+@@ -4,7 +4,7 @@
+ # define GOSU_IS_WIN
+ #else
+ # define GOSU_IS_UNIX
+-# if defined(__linux) || defined(__FreeBSD__)
++# if defined(__linux) || defined(__FreeBSD__) || defined(__CYGWIN__)
+ #  define GOSU_IS_X
+ # else
+ #  define GOSU_IS_MAC
