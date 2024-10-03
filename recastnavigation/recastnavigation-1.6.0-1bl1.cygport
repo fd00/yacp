@@ -1,0 +1,55 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Industry-standard navigation-mesh toolset for games"
+DESCRIPTION="Recast is state of the art navigation mesh construction toolset for games."
+
+LICENSE="Zlib"
+LICENSE_SPDX="SPDX-License-Identifier: Zlib"
+LICENSE_URI="License.txt"
+
+BUILD_REQUIRES="libGL-devel libGLU-devel libSDL2-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	datadir=usr/share/${PN}
+	mkdir -p ${datadir}
+	mv usr/bin/DroidSans.ttf usr/bin/Meshes usr/bin/TestCases ${datadir}
+}
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/Detour:${B}/Recast:${PATH} ninja_test
+}
+
+PKG_NAMES="
+	recastnavigation
+	librecastnavigation1
+	librecastnavigation-devel
+"
+recastnavigation_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+librecastnavigation1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+librecastnavigation_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+recastnavigation_SUMMARY="${SUMMARY} (utilities)"
+librecastnavigation1_SUMMARY="${SUMMARY} (runtime)"
+librecastnavigation_devel_SUMMARY="${SUMMARY} (development)"
