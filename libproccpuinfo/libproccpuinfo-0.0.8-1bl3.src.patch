@@ -1,0 +1,40 @@
+--- origsrc/libproccpuinfo-0.0.8/CMakeLists.txt	2009-04-04 10:10:21.000000000 +0900
++++ src/libproccpuinfo-0.0.8/CMakeLists.txt	2024-10-05 23:03:20.058313500 +0900
+@@ -33,15 +33,22 @@ ENABLE_TESTING()
+ FIND_PROGRAM(FLEX_EXECUTABLE NAMES flex PATHS /usr/bin DOC "Flex executable")
+ IF (FLEX_EXECUTABLE)
+   MESSAGE(STATUS "Found flex: ${FLEX_EXECUTABLE}")
+-  ADD_CUSTOM_COMMAND(OUTPUT lex.yy.c DEPENDS scanner.l COMMAND ${FLEX_EXECUTABLE} scanner.l)
++  ADD_CUSTOM_COMMAND(OUTPUT lex.yy.c DEPENDS ${libproccpuinfo_SOURCE_DIR}/scanner.l COMMAND ${FLEX_EXECUTABLE} ${libproccpuinfo_SOURCE_DIR}/scanner.l)
+ ELSE (FLEX_EXECUTABLE)
+   MESSAGE (FATAL_ERROR "flex not found")
+ ENDIF (FLEX_EXECUTABLE)
+ 
+ ADD_LIBRARY(proccpuinfo SHARED libproccpuinfo.c cputype.c lex.yy.c)
+ SET_TARGET_PROPERTIES(proccpuinfo PROPERTIES SOVERSION "${SOVERSION}")
+-INSTALL(TARGETS proccpuinfo DESTINATION lib)
++INSTALL(TARGETS proccpuinfo RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ INSTALL(FILES proccpuinfo.h DESTINATION include)
+ 
+ ADD_SUBDIRECTORY(examples)
+ ADD_SUBDIRECTORY(tests)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libproccpuinfo.pc.in ${CMAKE_BINARY_DIR}/libproccpuinfo.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libproccpuinfo.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libproccpuinfo-0.0.8/libproccpuinfo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libproccpuinfo-0.0.8/libproccpuinfo.pc.in	2024-10-05 23:01:58.708487700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libproccpuinfo
++Description: Architecture independent C API for reading /proc/cpuinfo
++Version: @VERSION@
++Libs: -L${libdir} -lproccpuinfo
++Cflags: -I${includedir}
