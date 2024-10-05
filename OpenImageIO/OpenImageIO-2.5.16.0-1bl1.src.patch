@@ -1,0 +1,203 @@
+--- origsrc/OpenImageIO-2.5.16.0/src/cineon.imageio/CMakeLists.txt	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/cineon.imageio/CMakeLists.txt	2024-10-05 03:26:49.307534200 +0900
+@@ -2,10 +2,7 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # https://github.com/AcademySoftwareFoundation/OpenImageIO
+ 
+-add_oiio_plugin (cineoninput.cpp
+-                 libcineon/Cineon.cpp libcineon/OutStream.cpp libcineon/Codec.cpp
+-                 libcineon/Reader.cpp libcineon/CineonHeader.cpp
+-                 libcineon/ElementReadStream.cpp libcineon/InStream.cpp)
++add_oiio_plugin (cineoninput.cpp)
+ 
+ # Note: OIIO doesn't support cineon output, so we don't compile
+ # libcineon/Writer.cpp
+--- origsrc/OpenImageIO-2.5.16.0/src/cineon.imageio/cineoninput.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/cineon.imageio/cineoninput.cpp	2024-10-05 04:31:19.124087100 +0900
+@@ -4,15 +4,13 @@
+ 
+ #include <cmath>
+ 
+-#include "libcineon/Cineon.h"
++#include <Cineon.h>
+ 
+ #include <OpenImageIO/dassert.h>
+ #include <OpenImageIO/imageio.h>
+ #include <OpenImageIO/strutil.h>
+ #include <OpenImageIO/typedesc.h>
+ 
+-using namespace cineon;
+-
+ OIIO_PLUGIN_NAMESPACE_BEGIN
+ 
+ 
+@@ -338,7 +336,7 @@ CineonInput::open(const std::string& nam
+     }
+     {
+         char filmedge[17];
+-        m_cin.header.FilmEdgeCode(filmedge, sizeof(filmedge));
++        m_cin.header.FilmEdgeCode(filmedge);
+         if (filmedge[0])
+             m_spec.attribute("cineon:FilmEdgeCode", filmedge);
+     }
+--- origsrc/OpenImageIO-2.5.16.0/src/cmake/externalpackages.cmake	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/cmake/externalpackages.cmake	2024-10-05 03:28:53.944016400 +0900
+@@ -390,5 +390,9 @@ if (fmt_VERSION VERSION_EQUAL 9.1.0
+     message (WARNING "${ColorRed}fmt 9.1 is known to not work with gcc <= 7.2${ColorReset}")
+ endif ()
+ 
++find_package(pkgconfig)
++pkg_check_modules(DPX REQUIRED dpx)
++pkg_check_modules(LIBCINEON REQUIRED libcineon)
++
+ list (SORT CFP_ALL_BUILD_DEPS_FOUND COMPARE STRING CASE INSENSITIVE)
+ message (STATUS "All build dependencies: ${CFP_ALL_BUILD_DEPS_FOUND}")
+--- origsrc/OpenImageIO-2.5.16.0/src/dpx.imageio/CMakeLists.txt	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/dpx.imageio/CMakeLists.txt	2024-10-05 03:29:33.123872000 +0900
+@@ -3,7 +3,5 @@
+ # https://github.com/AcademySoftwareFoundation/OpenImageIO
+ 
+ add_oiio_plugin (dpxinput.cpp dpxoutput.cpp
+-  libdpx/DPX.cpp libdpx/OutStream.cpp libdpx/RunLengthEncoding.cpp
+-  libdpx/Codec.cpp libdpx/Reader.cpp libdpx/Writer.cpp libdpx/DPXHeader.cpp
+-  libdpx/ElementReadStream.cpp libdpx/InStream.cpp libdpx/DPXColorConverter.cpp
++  libdpx/DPXColorConverter.cpp
+   )
+--- origsrc/OpenImageIO-2.5.16.0/src/dpx.imageio/dpxinput.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/dpx.imageio/dpxinput.cpp	2024-10-05 03:30:43.584770300 +0900
+@@ -10,9 +10,9 @@
+ 
+ // Note: libdpx originally from: https://github.com/PatrickPalmer/dpx
+ // But that seems not to be actively maintained.
+-#include "libdpx/DPX.h"
+-#include "libdpx/DPXColorConverter.h"
+-#include "libdpx/DPXHeader.h"
++#include <DPX.h>
++#include "DPXColorConverter.h"
++#include <DPXHeader.h>
+ 
+ #include <OpenImageIO/imageio.h>
+ #include <OpenImageIO/strutil.h>
+--- origsrc/OpenImageIO-2.5.16.0/src/dpx.imageio/dpxoutput.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/dpx.imageio/dpxoutput.cpp	2024-10-05 03:31:13.133084200 +0900
+@@ -9,8 +9,8 @@
+ 
+ // Note: libdpx originally from: https://github.com/PatrickPalmer/dpx
+ // But that seems not to be actively maintained.
+-#include "libdpx/DPX.h"
+-#include "libdpx/DPXColorConverter.h"
++#include <DPX.h>
++#include "DPXColorConverter.h"
+ 
+ #include <OpenImageIO/fmath.h>
+ #include <OpenImageIO/imageio.h>
+--- origsrc/OpenImageIO-2.5.16.0/src/libOpenImageIO/CMakeLists.txt	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/libOpenImageIO/CMakeLists.txt	2024-10-05 03:32:10.121953200 +0900
+@@ -175,6 +175,11 @@ if (MINGW)
+     target_link_libraries (OpenImageIO PRIVATE ws2_32)
+ endif()
+ 
++include_directories (../dpx.imageio/libdpx/)
++
++target_link_libraries (OpenImageIO PRIVATE ${DPX_LIBRARIES})
++target_link_libraries (OpenImageIO PRIVATE ${LIBCINEON_LIBRARIES})
++
+ file (GLOB iba_sources "imagebufalgo_*.cpp")
+ if (MSVC)
+     # In some MSVC setups, the IBA functions with huge template expansions
+--- origsrc/OpenImageIO-2.5.16.0/src/libutil/plugin.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/libutil/plugin.cpp	2024-10-05 03:32:44.734819100 +0900
+@@ -40,7 +40,7 @@ static thread_local std::string last_err
+ const char*
+ Plugin::plugin_extension(void)
+ {
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__CYGWIN__)
+     return "dll";
+ #else
+     return "so";
+--- origsrc/OpenImageIO-2.5.16.0/src/libutil/strutil.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/libutil/strutil.cpp	2024-10-05 04:09:51.827672200 +0900
+@@ -67,7 +67,7 @@ static std::mutex output_mutex;
+ // On systems that support it, get a location independent locale.
+ #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+     || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)           \
+-    || defined(__GLIBC__)
++    || defined(__GLIBC__) || defined(__CYGWIN__)
+ static locale_t c_loc = newlocale(LC_ALL_MASK, "C", nullptr);
+ #elif defined(_WIN32)
+ static _locale_t c_loc = _create_locale(LC_ALL, "C");
+@@ -452,7 +452,7 @@ strcasecmp(const char* a, const char* b)
+ {
+ #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+     || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)           \
+-    || defined(__GLIBC__)
++    || defined(__GLIBC__) || defined(__CYGWIN__)
+     return strcasecmp_l(a, b, c_loc);
+ #elif defined(_WIN32)
+     return _stricmp_l(a, b, c_loc);
+@@ -467,7 +467,7 @@ strncasecmp(const char* a, const char* b
+ {
+ #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+     || defined(__FreeBSD_kernel__) || defined(__OpenBSD__)           \
+-    || defined(__GLIBC__)
++    || defined(__GLIBC__) || defined(__CYGWIN__)
+     return strncasecmp_l(a, b, size, c_loc);
+ #elif defined(_WIN32)
+     return _strnicmp_l(a, b, size, c_loc);
+--- origsrc/OpenImageIO-2.5.16.0/src/libutil/sysutil.cpp	2024-10-02 03:26:22.000000000 +0900
++++ src/OpenImageIO-2.5.16.0/src/libutil/sysutil.cpp	2024-10-05 03:34:32.482565200 +0900
+@@ -16,7 +16,7 @@
+ #include <string>
+ #include <thread>
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(__CYGWIN__)
+ #    include <sys/ioctl.h>
+ #    include <sys/sysinfo.h>
+ #    include <unistd.h>
+@@ -92,7 +92,7 @@ using namespace Sysutil;
+ size_t
+ Sysutil::memory_used(bool resident)
+ {
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+ #    if 0
+     // doesn't seem to work?
+     struct rusage ru;
+@@ -154,7 +154,7 @@ Sysutil::memory_used(bool resident)
+ size_t
+ Sysutil::physical_memory()
+ {
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+     size_t size = 0;
+     FILE* file  = fopen("/proc/meminfo", "r");
+     if (file) {
+@@ -249,7 +249,7 @@ Sysutil::this_program_path()
+ 
+     char filename[10240] = "";
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__CYGWIN__)
+     unsigned int size = sizeof(filename);
+     int r             = readlink("/proc/self/exe", filename, size);
+     // user won't get the right answer if the filename is too long to store
+@@ -334,7 +334,7 @@ Sysutil::terminal_columns()
+ 
+ #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+     || defined(__FreeBSD_kernel__) || defined(__NetBSD__)            \
+-    || defined(__OpenBSD__) || defined(__GNU__)
++    || defined(__OpenBSD__) || defined(__GNU__) || defined(__CYGWIN__)
+     struct winsize w;
+     ioctl(0, TIOCGWINSZ, &w);
+     columns = w.ws_col;
+@@ -359,7 +359,7 @@ Sysutil::terminal_rows()
+ 
+ #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+     || defined(__FreeBSD_kernel__) || defined(__NetBSD__)            \
+-    || defined(__OpenBSD__) || defined(__GNU__)
++    || defined(__OpenBSD__) || defined(__GNU__) || defined(__CYGWIN__)
+     struct winsize w;
+     ioctl(0, TIOCGWINSZ, &w);
+     rows = w.ws_row;
