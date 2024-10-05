@@ -1,0 +1,95 @@
+--- origsrc/librdns/CMakeLists.txt	2024-10-05 23:46:50.000000000 +0900
++++ src/librdns/CMakeLists.txt	2024-10-06 00:55:07.290566200 +0900
+@@ -40,31 +40,61 @@ IF(NOT SLAVE_BUILD)
+ 		MESSAGE(FATAL_ERROR "Your system does not support getaddrinfo call, please consider upgrading it to run librdns")
+ 	ENDIF(NOT HAVE_GETADDRINFO)
+ 	
+-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+-
++	find_package(pkgconfig)
+ 	IF(ENABLE_CURVE MATCHES "ON")
+-		ADD_SUBDIRECTORY(contrib/tweetnacl)
+-		INCLUDE_DIRECTORIES("contrib/tweetnacl")
++		pkg_check_modules(TWEETNACL tweetnacl)
++		if (TWEETNACL_FOUND)
++			include_directories(${TWEETNACL_INCLUDE_DIRS})
++		else()
++			ADD_SUBDIRECTORY(contrib/tweetnacl)
++			INCLUDE_DIRECTORIES("contrib/tweetnacl")
++		endif()
+ 		SET(TWEETNACL 1)
+ 		ADD_DEFINITIONS("-DTWEETNACL")
+ 	ENDIF(ENABLE_CURVE MATCHES "ON")
++
++	set(DLIBS)
+ 	
++	pkg_check_modules(LIBOTTERY libottery)
++	if (LIBOTTERY_FOUND)
++		include_directories(${LIBOTTERY_INCLUDE_DIRS})
++	else()
+ 		ADD_SUBDIRECTORY(contrib/libottery)
++		LIST(APPEND DLIBS "$<TARGET_OBJECTS:ottery>")
++	endif()
+ 	ADD_SUBDIRECTORY(test)
+ 	
+ 	ADD_LIBRARY(rdns_core OBJECT ${LIBRDNSSRC})
+ 	SET_TARGET_PROPERTIES(rdns_core PROPERTIES COMPILE_FLAGS "-fPIC")
+ 	
+-	SET(DLIBS "$<TARGET_OBJECTS:ottery>")
+-	IF(ENABLE_CURVE MATCHES "ON")
++	IF(ENABLE_CURVE MATCHES "ON" AND NOT TWEETNACL_FOUND)
+ 		LIST(APPEND DLIBS "$<TARGET_OBJECTS:tweetnacl>")
+ 	ENDIF(ENABLE_CURVE MATCHES "ON")
+ 	
+-	ADD_LIBRARY(rdns_static STATIC $<TARGET_OBJECTS:rdns_core> ${DLIBS})
++	if (BUILD_STATIC_LIBS)
++		ADD_LIBRARY(rdns_static STATIC $<TARGET_OBJECTS:rdns_core> ${DLIBS})
++	endif()
+ 	ADD_LIBRARY(rdns SHARED $<TARGET_OBJECTS:rdns_core> ${DLIBS})
++	if (TWEETNACL_FOUND)
++		target_link_libraries(rdns ${TWEETNACL_LIBRARIES})
++	endif()
++	if (LIBOTTERY_FOUND)
++		target_link_libraries(rdns ${LIBOTTERY_LIBRARIES})
++	endif()
+ 	SET_TARGET_PROPERTIES(rdns PROPERTIES
+ 			VERSION ${RDNS_VERSION_MAJOR}.${RDNS_VERSION_MINOR}.${RDNS_VERSION_PATCH}
+ 			SOVERSION ${RDNS_VERSION_MINOR})
++
++	file(GLOB HEADERS "include/*.h")
++	install(FILES ${HEADERS} DESTINATION include)
++	install(TARGETS rdns RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ ELSE(NOT SLAVE_BUILD)
+ 	ADD_LIBRARY(rdns STATIC ${LIBRDNSSRC})
+ ENDIF(NOT SLAVE_BUILD)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/librdns.pc.in ${CMAKE_BINARY_DIR}/librdns.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/librdns.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/librdns/librdns.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/librdns/librdns.pc.in	2024-10-06 00:55:49.805567300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: librdns
++Description: Asynchronous DNS resolver
++Version: @RDNS_VERSION_MAJOR@.@RDNS_VERSION_MINOR@.@RDNS_VERSION_PATCH@
++Libs: -L${libdir} -lrdns
++Cflags: -I${includedir}
+--- origsrc/librdns/test/dns_curve.c	2024-10-05 23:46:50.000000000 +0900
++++ src/librdns/test/dns_curve.c	2024-10-06 00:43:58.683293400 +0900
+@@ -54,7 +54,7 @@ rdns_test_a (struct rdns_resolver *resol
+ 	const char **cur;
+ 
+ 	for (cur = names; *cur != NULL; cur ++) {
+-		rdns_make_request_full (resolver, rdns_regress_callback, *cur, 1.0, 2, *cur, 1, DNS_REQUEST_A);
++		rdns_make_request_full (resolver, rdns_regress_callback, *cur, 1.0, 2, *cur, 1, RDNS_REQUEST_A);
+ 		remain_tests ++;
+ 	}
+ }
