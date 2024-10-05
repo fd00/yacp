@@ -1,0 +1,48 @@
+--- origsrc/cbitset-0.2.1/CMakeLists.txt	2021-06-08 02:40:04.000000000 +0900
++++ src/cbitset-0.2.1/CMakeLists.txt	2024-10-05 14:21:26.401089500 +0900
+@@ -1,6 +1,6 @@
+ cmake_minimum_required(VERSION 3.9)
+ 
+-project(cbitset VERSION 0.1.0 LANGUAGES C)
++project(cbitset VERSION 0.2.1 LANGUAGES C)
+ set(CMAKE_C_STANDARD 11)
+ set(CMAKE_C_STANDARD_REQUIRED ON)
+ 
+@@ -15,3 +15,10 @@ enable_testing()
+ 
+ add_subdirectory(tests)
+ add_subdirectory(benchmarks)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cbitset.pc.in ${CMAKE_BINARY_DIR}/cbitset.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cbitset.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cbitset-0.2.1/cbitset.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cbitset-0.2.1/cbitset.pc.in	2024-10-05 14:21:42.884731100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cbitset
++Description: Simple bitset library in C
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcbitset
++Cflags: -I${includedir}
+--- origsrc/cbitset-0.2.1/src/CMakeLists.txt	2021-06-08 02:40:04.000000000 +0900
++++ src/cbitset-0.2.1/src/CMakeLists.txt	2024-10-05 14:16:39.229461600 +0900
+@@ -2,5 +2,8 @@ add_library (cbitset bitset.c)
+ target_link_libraries(cbitset  PUBLIC cbitset-headers)
+ install(TARGETS cbitset   
+   ARCHIVE DESTINATION lib
+-  LIBRARY DESTINATION lib
+-  COMPONENT library)
+\ No newline at end of file
++  RUNTIME DESTINATION bin
++  COMPONENT library)
++if (DEFINED SOVERSION)
++  set_target_properties(cbitset PROPERTIES SOVERSION "${SOVERSION}")
++endif()
