@@ -1,0 +1,50 @@
+--- origsrc/yafc-1.3.7/Makefile.am	2016-01-02 01:46:35.000000000 +0900
++++ src/yafc-1.3.7/Makefile.am	2024-10-06 12:26:37.114168000 +0900
+@@ -140,6 +140,7 @@ BUILT_SOURCES = src/yafcrc.h
+ AM_CPPFLAGS = $(BSD_CFLAGS) \
+ 							$(SSH_CFLAGS) \
+ 							$(EDITLINE_CFLAGS) \
++							-I$(top_builddir)/src \
+ 							-I$(top_srcdir)/src \
+ 							-I$(top_srcdir)/src/ftp \
+ 							-I$(top_srcdir)/src/libmhe
+--- origsrc/yafc-1.3.7/configure.ac	2016-01-02 01:46:35.000000000 +0900
++++ src/yafc-1.3.7/configure.ac	2024-10-06 12:28:47.187157000 +0900
+@@ -143,7 +143,7 @@ AC_SEARCH_LIBS(socket, socket, [],
+   AC_MSG_WARN(cannot find socket function)
+ ])
+ 
+-AC_CHECK_FUNCS(getopt_long, [],
++AC_CHECK_FUNCS(getopt_long, [AC_CHECK_HEADERS(getopt.h)],
+ [
+   AC_LIBOBJ([getopt])
+   AC_LIBOBJ([getopt1])
+--- origsrc/yafc-1.3.7/lib/fnmatch.c	2016-01-02 01:46:35.000000000 +0900
++++ src/yafc-1.3.7/lib/fnmatch.c	2024-10-06 12:36:10.878708300 +0900
+@@ -21,7 +21,9 @@
+ 
+ #include <config.h>
+ 
++#if !defined(__CYGWIN__)
+ #define EXTENDED_GLOB
++#endif
+ 
+ #include <stdio.h>	/* for debugging */
+                                 
+@@ -289,6 +291,7 @@ gmatch (string, se, pattern, pe, flags)
+ 	    c1 = FOLD (c1);
+ 	    for (--p; n < se; ++n)
+ 	      {
++#if defined(EXTENDED_GLOB)
+ 		/* Only call fnmatch if the first character indicates a
+ 		   possible match.  We can check the first character if
+ 		   we're not doing an extended glob match. */
+@@ -301,7 +304,7 @@ gmatch (string, se, pattern, pe, flags)
+ 		if ((flags & FNM_EXTMATCH) && p[1] != '(' && /*)*/
+ 		    strchr ("?*+@!", *p) == 0 && c != '[' && FOLD (*n) != c1)
+ 		  continue;
+-
++#endif
+ 		/* Otherwise, we just recurse. */
+ 		if (gmatch (n, se, p, pe, flags & ~FNM_PERIOD) == 0)
+ 		  return (0);
