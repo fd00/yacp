@@ -1,0 +1,49 @@
+--- origsrc/libzorpll/configure.in	2024-10-06 09:11:22.000000000 +0900
++++ src/libzorpll/configure.in	2024-10-06 09:12:17.008041000 +0900
+@@ -378,7 +378,7 @@ EOF
+ 
+ # -Wbad-function-cast cannot be used because in log.c we cast g_hash_table_lookup
+ # return value (which is a pointer) to int.
+-CFLAGS="$CFLAGS -D_GNU_SOURCE -Wall -Werror -Wshadow -W -Wstrict-prototypes -Werror-implicit-function-declaration -Wpointer-arith -g"
++CFLAGS="$CFLAGS -D_GNU_SOURCE -Wall -Wshadow -W -Wstrict-prototypes -Wpointer-arith -g"
+ 
+ if test "x$enable_debug" = "xno"; then
+ 	dnl CFLAGS="$CFLAGS -Werror"
+--- origsrc/libzorpll/src/Makefile.am	2024-10-06 09:11:22.000000000 +0900
++++ src/libzorpll/src/Makefile.am	2024-10-06 09:12:36.496406300 +0900
+@@ -43,7 +43,7 @@ libzorpll_la_SOURCES = \
+ 	zurlparse.c
+ 	
+ 
+-libzorpll_la_LDFLAGS = \
++libzorpll_la_LDFLAGS = -no-undefined \
+ 	-version-info $(LIBZORPLL_LT_CURRENT):0:$(LIBZORPLL_LT_AGE) \
+ 	-release $(LIBZORPLL_LT_RELEASE) \
+ 	-export-dynamic
+--- origsrc/libzorpll/src/process.c	2024-10-06 09:11:22.000000000 +0900
++++ src/libzorpll/src/process.c	2024-10-06 09:16:00.145559500 +0900
+@@ -505,7 +505,9 @@ z_process_detach_tty(void)
+       /* detach ourselves from the tty when not staying in the foreground */
+       if (isatty(STDIN_FILENO))
+         {
++#if defined(TIOCNOTTY)
+           ioctl(STDIN_FILENO, TIOCNOTTY, 0);
++#endif
+           setsid();
+         }
+     }
+--- origsrc/libzorpll/src/sockaddr.c	2024-10-06 09:11:22.000000000 +0900
++++ src/libzorpll/src/sockaddr.c	2024-10-06 09:26:05.709220300 +0900
+@@ -400,7 +400,12 @@ z_sockaddr_inet_new_hostname(const gchar
+   int rc;
+   ZSockAddr *saddr = NULL;
+ 
++#if defined(__CYGWIN__)
++  he = gethostbyname(hostname);
++  rc = he ? 0 : 1;
++#else
+   rc = gethostbyname_r(hostname, &hes, hostbuf, sizeof(hostbuf), &he, &err);
++#endif
+ 
+   if (rc == 0 && he && he->h_addr_list[0])
+     {
