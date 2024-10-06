@@ -1,39 +1,50 @@
 HOMEPAGE="https://github.com/Azure/${PN}"
-SRC_URI="https://github.com/Azure/${PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/Azure/${PN}/archive/refs/tags/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Azure C SDKs common code"
 DESCRIPTION="azure-c-shared-utility is a C library providing common functionality for basic
 tasks (like string, list manipulation, IO, etc.)."
 
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libcurl-devel libssl-devel"
+
 CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
 	-Duse_installed_dependencies:BOOL=ON
 	-Duse_default_uuid:BOOL=ON
-	-Dbuild_as_dynamic:BOOL=ON
 "
 
 inherit cmake
 
-PKG_IGNORE="
-	usr/lib/libaziotsharedutil.a
-"
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	dobin samples/*/*.exe
+}
 
 PKG_NAMES="
 	azure-c-shared-utility
-	libaziotsharedutil0
+	libaziotsharedutil1
 	libaziotsharedutil-devel
 "
 azure_c_shared_utility_CONTENTS="
+	usr/bin/*.exe
 	usr/share
 "
-libaziotsharedutil0_CONTENTS="
-	usr/bin
+libaziotsharedutil1_CONTENTS="
+	usr/bin/cyg*-1.dll
 "
 libaziotsharedutil_devel_CONTENTS="
 	usr/include
-	usr/lib/cmake
-	usr/lib/*.dll.a
+	usr/lib
 "
-azure_c_shared_utility_SUMMARY="${SUMMARY} (licensing & readmes)"
-libaziotsharedutil0_SUMMARY="${SUMMARY} (runtime)"
+azure_c_shared_utility_SUMMARY="${SUMMARY} (utilities)"
+libaziotsharedutil1_SUMMARY="${SUMMARY} (runtime)"
 libaziotsharedutil_devel_SUMMARY="${SUMMARY} (development)"

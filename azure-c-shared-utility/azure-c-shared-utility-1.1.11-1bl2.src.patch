@@ -1,0 +1,115 @@
+--- origsrc/azure-c-shared-utility-1.1.11/CMakeLists.txt	2018-11-21 05:55:57.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/CMakeLists.txt	2024-10-06 14:54:11.120300100 +0900
+@@ -387,6 +387,10 @@ SOURCE_GROUP(devdoc FILES ${aziotsharedu
+ add_library(aziotsharedutil ${source_c_files} ${source_h_files} ${aziotsharedutil_md_files})
+ setTargetBuildProperties(aziotsharedutil)
+ 
++if (DEFINED SOVERSION)
++   set_target_properties(aziotsharedutil PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_include_directories(aziotsharedutil PUBLIC $<BUILD_INTERFACE:${SHARED_UTIL_INC_FOLDER}>)
+ 
+ if(MSVC)
+@@ -500,7 +504,7 @@ if(WIN32)
+     endif()
+ endif()
+ 
+-if(LINUX)
++if(LINUX OR CYGWIN)
+     set(aziotsharedutil_target_libs ${aziotsharedutil_target_libs} pthread m rt)
+     if (NOT ${use_default_uuid})
+         if(APPLE)
+@@ -578,7 +582,7 @@ if(${use_installed_dependencies})
+     endif()
+ 
+     # Install Azure C Shared Utility
+-    set(package_location "cmake")
++    set(package_location "lib/cmake/azure-c-shared-utility")
+ 
+     if(${build_as_dynamic})
+         set(targets aziotsharedutil aziotsharedutil_dll)
+@@ -634,3 +638,10 @@ else()
+ endif()
+ 
+ compileTargetAsC99(aziotsharedutil)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/azure-c-shared-utility.pc.in ${CMAKE_BINARY_DIR}/azure-c-shared-utility.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/azure-c-shared-utility.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/azure-c-shared-utility-1.1.11/adapters/socketio_berkeley.c	2018-11-21 05:55:57.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/adapters/socketio_berkeley.c	2024-10-06 14:13:03.291418600 +0900
+@@ -597,11 +597,13 @@ static int set_target_network_interface(
+             LogError("Did not find a network interface matching MAC ADDRESS");
+             result = __FAILURE__;
+         }
++#if defined(SO_BINDTODEVICE)
+         else if (setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, current_nid->name, strlen(current_nid->name)) != 0)
+         {
+             LogError("setsockopt failed (%d)", errno);
+             result = __FAILURE__;
+         }
++#endif
+         else
+         {
+             result = 0;
+--- origsrc/azure-c-shared-utility-1.1.11/adapters/x509_openssl.c	2018-11-21 05:55:57.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/adapters/x509_openssl.c	2024-10-06 14:15:07.128810900 +0900
+@@ -73,7 +73,7 @@ static int load_certificate_chain(SSL_CT
+                 // certificates.
+ 
+                 /* Codes_SRS_X509_OPENSSL_07_006: [ If successful x509_openssl_add_ecc_credentials shall to import each certificate in the cert chain. ] */
+-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L) && (OPENSSL_VERSION_NUMBER < 0x20000000L)
++#if (OPENSSL_VERSION_NUMBER >= 0x10100000L) 
+                 SSL_CTX_clear_extra_chain_certs(ssl_ctx);
+ #else
+                 if (ssl_ctx->extra_certs != NULL)
+--- origsrc/azure-c-shared-utility-1.1.11/azure-c-shared-utility.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/azure-c-shared-utility.pc.in	2024-10-06 14:57:21.757945800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: azure-c-shared-utility
++Description: Azure C SDKs common code
++Version: @C_SHARED_VERSION@
++Libs: -L${libdir} -laziotsharedutil
++Cflags: -I${includedir}/azureiot
+--- origsrc/azure-c-shared-utility-1.1.11/configs/azure_c_shared_utilityFunctions.cmake	2018-11-21 05:55:57.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/configs/azure_c_shared_utilityFunctions.cmake	2024-10-06 14:13:03.307038900 +0900
+@@ -175,7 +175,7 @@ function(linux_unittests_add_exe whatIsB
+                 set(VALGRIND_SUPPRESSIONS_FILE_EXTRA_PARAMETER "--suppressions=${f}")
+             endif()
+         endif()
+-
++        endif()
+     endforeach()
+ 
+     target_link_libraries(${whatIsBuilding}_exe micromock_ctest umock_c ctest)
+--- origsrc/azure-c-shared-utility-1.1.11/configs/azure_iot_build_rules.cmake	2018-11-21 05:55:57.000000000 +0900
++++ src/azure-c-shared-utility-1.1.11/configs/azure_iot_build_rules.cmake	2024-10-06 14:13:03.307038900 +0900
+@@ -77,8 +77,6 @@ if(MSVC)
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
+     endif()
+ elseif(UNIX) #LINUX OR APPLE
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+     if(NOT (IN_OPENWRT OR APPLE))
+         set (CMAKE_C_FLAGS "-D_POSIX_C_SOURCE=200112L ${CMAKE_C_FLAGS}")
+     endif()
+@@ -204,10 +202,6 @@ IF((WIN32) AND (NOT(MINGW)))
+     # Make warning as error
+     add_definitions(/WX)
+     ENDIF()
+-ELSE()
+-    # Make warning as error
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+ ENDIF()
+ 
+ 
