@@ -1,0 +1,468 @@
+--- origsrc/upscaledb-release-2.2.2/3rdparty/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/3rdparty/Makefile.am	2024-10-07 11:12:14.017784800 +0900
+@@ -1,8 +1,27 @@
+ 
+-SUBDIRS = liblzf murmurhash3 libfor libvbyte
++SUBDIRS = .
++
++if !HAVE_LIBLZF
++SUBDIRS += liblzf
++endif
++
++if !HAVE_LIBMURMURHASH
++SUBDIRS += murmurhash3
++endif
++
++SUBDIRS += libfor
++
++if !HAVE_LIBVBYTE
++SUBDIRS += libvbyte
++endif
+ 
+ if ENABLE_SSE2
+-SUBDIRS += simdcomp streamvbyte
++if !HAVE_SIMDCOMP
++SUBDIRS += simdcomp
++endif
++if !HAVE_STREAMVBYTE
++SUBDIRS += streamvbyte
++endif
+ endif
+ 
+ if ENABLE_REMOTE
+--- origsrc/upscaledb-release-2.2.2/3rdparty/libfor/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/3rdparty/libfor/Makefile.am	2024-10-07 11:13:24.439828500 +0900
+@@ -10,7 +10,13 @@ endif
+ 
+ noinst_LTLIBRARIES = libfor.la
+ 
+-libfor_la_SOURCES = for.c for.h
++libfor_la_SOURCES = 
++
++if HAVE_LIBFOR
++libfor_la_LIBADD = $(LIBFOR_LIBS)
++else
++libfor_la_SOURCES += for.c for.h
++endif
+ 
+ if ENABLE_SSE4
+ libfor_la_SOURCES += frameofreference.cpp
+--- origsrc/upscaledb-release-2.2.2/configure.ac	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/configure.ac	2024-10-07 11:11:50.160453400 +0900
+@@ -246,6 +246,14 @@ else
+   AM_CONDITIONAL(WITH_BERKELEYDB, false)
+ fi
+ 
++PKG_CHECK_MODULES([LIBFOR], [libfor], [AM_CONDITIONAL([HAVE_LIBFOR], [true])], [AM_CONDITIONAL([HAVE_LIBFOR], [false])])
++PKG_CHECK_MODULES([LIBLZF], [liblzf], [AM_CONDITIONAL([HAVE_LIBLZF], [true])], [AM_CONDITIONAL([HAVE_LIBLZF], [false])])
++PKG_CHECK_MODULES([LIBMURMURHASH], [libmurmurhash], [AM_CONDITIONAL([HAVE_LIBMURMURHASH], [true])], [AM_CONDITIONAL([HAVE_LIBMURMURHASH], [false])])
++PKG_CHECK_MODULES([LIBVBYTE], [libvbyte], [AM_CONDITIONAL([HAVE_LIBVBYTE], [true])], [AM_CONDITIONAL([HAVE_LIBVBYTE], [false])])
++PKG_CHECK_MODULES([SIMDCOMP], [simdcomp], [AM_CONDITIONAL([HAVE_SIMDCOMP], [true])], [AM_CONDITIONAL([HAVE_SIMDCOMP], [false])])
++AM_CONDITIONAL([HAVE_STREAMVBYTE], [false])
++# PKG_CHECK_MODULES([STREAMVBYTE], [streamvbyte], [AM_CONDITIONAL([HAVE_STREAMVBYTE], [true])], [AM_CONDITIONAL([HAVE_STREAMVBYTE], [false])])
++
+ 
+ CXXFLAGS=${CFLAGS}
+ 
+--- origsrc/upscaledb-release-2.2.2/samples/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/samples/Makefile.am	2024-10-07 11:31:55.362992600 +0900
+@@ -1,5 +1,5 @@
+ 
+-AM_CPPFLAGS     = -I../include -I$(top_builddir)/include
++AM_CPPFLAGS     = -I../include -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ noinst_PROGRAMS = db1 db2 db3 db4 db5 db6 env1 env2 env3 uqi1 uqi2
+ 
+--- origsrc/upscaledb-release-2.2.2/src/1globals/callbacks.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/1globals/callbacks.cc	2024-10-07 00:28:06.099285600 +0900
+@@ -22,7 +22,8 @@
+ #include <string>
+ #include <map>
+ 
+-#include "3rdparty/murmurhash3/MurmurHash3.h"
++//#include "3rdparty/murmurhash3/MurmurHash3.h"
++#include <murmurhash.h>
+ 
+ #include "1globals/callbacks.h"
+ #include "1base/mutex.h"
+--- origsrc/upscaledb-release-2.2.2/src/2compressor/compressor_lzf.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/2compressor/compressor_lzf.h	2024-10-07 11:29:52.014177000 +0900
+@@ -28,7 +28,14 @@
+ 
+ #include "0root/root.h"
+ 
+-#include "3rdparty/liblzf/lzf.h"
++//#include "3rdparty/liblzf/lzf.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#include <lzf.h>
++#ifdef __cplusplus
++} // extern "C"
++#endif
+ 
+ #include "2compressor/compressor.h"
+ 
+--- origsrc/upscaledb-release-2.2.2/src/2device/device_disk.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/2device/device_disk.h	2024-10-07 06:42:21.327043600 +0900
+@@ -72,7 +72,13 @@ class DiskDevice : public Device {
+       // Allow state to be swapped
+       friend void swap(State& oldState, State& newState) 
+       {
++#if defined(__CYGWIN__)
++		  State tmpState = oldState;
++		  oldState = newState;
++		  newState = tmpState;
++#else
+ 		  std::swap(oldState, newState);
++#endif
+       }
+     };
+ 
+--- origsrc/upscaledb-release-2.2.2/src/2page/page.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/2page/page.cc	2024-10-07 00:28:06.099285600 +0900
+@@ -19,7 +19,8 @@
+ #include "0root/root.h"
+ 
+ #include <string.h>
+-#include "3rdparty/murmurhash3/MurmurHash3.h"
++//#include "3rdparty/murmurhash3/MurmurHash3.h"
++#include <murmurhash.h>
+ 
+ #include "1base/error.h"
+ #include "1os/os.h"
+--- origsrc/upscaledb-release-2.2.2/src/2protobuf/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/2protobuf/Makefile.am	2024-10-07 00:28:06.114914800 +0900
+@@ -11,5 +11,5 @@ libprotocol_la_LIBADD = -lprotobuf
+ 
+ EXTRA_DIST = messages.proto
+ messages.pb.cc proto: $(srcdir)/messages.proto
+-	protoc $(srcdir)/messages.proto --cpp_out=.
+-
++	protoc messages.proto --cpp_out=. -I$(srcdir)
++	sed --in-place 's \bfinal\b /*final*/ ' messages.pb.h # https://github.com/protocolbuffers/protobuf/issues/5869#issuecomment-882520871
+--- origsrc/upscaledb-release-2.2.2/src/2worker/worker.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/2worker/worker.h	2024-10-07 00:28:06.114914800 +0900
+@@ -81,7 +81,7 @@ struct WorkerPool {
+   // the io_service we are wrapping
+   boost::asio::io_service service;
+   boost::asio::io_service::work working;
+-  boost::asio::strand strand;
++  boost::asio::io_service::strand strand;
+ };
+ 
+ inline void
+--- origsrc/upscaledb-release-2.2.2/src/3blob_manager/blob_manager_disk.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/3blob_manager/blob_manager_disk.cc	2024-10-07 00:28:06.114914800 +0900
+@@ -21,7 +21,8 @@
+ #include <algorithm>
+ #include <vector>
+ 
+-#include "3rdparty/murmurhash3/MurmurHash3.h"
++//#include "3rdparty/murmurhash3/MurmurHash3.h"
++#include <murmurhash.h>
+ 
+ // Always verify that a file of level N does not include headers > N!
+ #include "1base/error.h"
+@@ -65,8 +66,8 @@ check_integrity(DiskBlobManager *dbm, PB
+       continue;
+     }
+     total_sizes += header->freelist[i].size;
+-    ranges.push_back(std::make_pair(header->freelist[i].offset,
+-                header->freelist[i].size));
++    ranges.push_back(std::make_pair(+header->freelist[i].offset,
++                +header->freelist[i].size));
+   }
+ 
+   // the sum of freelist chunks must not exceed total number of free bytes
+--- origsrc/upscaledb-release-2.2.2/src/3btree/btree_zint32_for.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/3btree/btree_zint32_for.h	2024-10-07 07:56:44.898038200 +0900
+@@ -28,7 +28,8 @@
+ 
+ #include "0root/root.h"
+ 
+-#include "3rdparty/libfor/for.h"
++//#include "3rdparty/libfor/for.h"
++#include <libfor/for.h>
+ 
+ // Always verify that a file of level N does not include headers > N!
+ #include "3btree/btree_zint32_block.h"
+--- origsrc/upscaledb-release-2.2.2/src/3btree/btree_zint32_simdcomp.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/3btree/btree_zint32_simdcomp.h	2024-10-07 06:45:34.783437500 +0900
+@@ -31,7 +31,8 @@
+ 
+ #include "0root/root.h"
+ 
+-#include "3rdparty/simdcomp/include/simdcomp.h"
++//#include "3rdparty/simdcomp/include/simdcomp.h"
++#include <simdcomp.h>
+ 
+ // Always verify that a file of level N does not include headers > N!
+ #include "3btree/btree_zint32_block.h"
+--- origsrc/upscaledb-release-2.2.2/src/3btree/btree_zint32_varbyte.h	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/3btree/btree_zint32_varbyte.h	2024-10-07 07:57:46.303801100 +0900
+@@ -26,7 +26,8 @@
+ #include <sstream>
+ #include <iostream>
+ 
+-#include "3rdparty/libvbyte/vbyte.h"
++//#include "3rdparty/libvbyte/vbyte.h"
++#include <libvbyte/vbyte.h>
+ 
+ #include "0root/root.h"
+ 
+--- origsrc/upscaledb-release-2.2.2/src/3page_manager/page_manager.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/3page_manager/page_manager.cc	2024-10-07 08:09:54.961918600 +0900
+@@ -22,7 +22,8 @@
+ 
+ #include <string.h>
+ 
+-#include "3rdparty/murmurhash3/MurmurHash3.h"
++//#include "3rdparty/murmurhash3/MurmurHash3.h"
++#include <murmurhash.h>
+ // Always verify that a file of level N does not include headers > N!
+ #include "1base/signal.h"
+ #include "1base/dynamic_array.h"
+--- origsrc/upscaledb-release-2.2.2/src/4env/env_remote.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/4env/env_remote.cc	2024-10-07 08:48:48.393900500 +0900
+@@ -109,7 +109,7 @@ static void
+ add_result_keys(Result *r, const upscaledb::SelectRangeReply *reply)
+ {
+   uint8_t *p = (uint8_t *)&reply->key_data()[0];
+-  uint32_t *offsets = (uint32_t *)reply->key_offsets().begin();
++  uint32_t *offsets = (uint32_t *)*reply->key_offsets().begin();
+   uint32_t size = reply->key_offsets().size();
+   for (uint32_t i = 0; i < size; i++) {
+     if (likely(i < size - 1))
+@@ -124,7 +124,7 @@ add_result_records(Result *r, const upsc
+ {
+   r->record_type = reply->record_type();
+   uint8_t *p = (uint8_t *)&reply->record_data()[0];
+-  uint32_t *offsets = (uint32_t *)reply->record_offsets().begin();
++  uint32_t *offsets = (uint32_t *)*reply->record_offsets().begin();
+   uint32_t size = reply->record_offsets().size();
+   for (uint32_t i = 0; i < size; i++) {
+     if (likely(i < size - 1))
+--- origsrc/upscaledb-release-2.2.2/src/5server/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/5server/Makefile.am	2024-10-07 00:28:06.114914800 +0900
+@@ -1,13 +1,14 @@
+ 
+-AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty
++AM_CPPFLAGS = -I../../include -I.. -I../../3rdparty -I$(top_srcdir)/src -I$(top_srcdir)/include
+ 
+ lib_LTLIBRARIES = libupsserver.la
+ 
+ libupsserver_la_SOURCES = upsserver.cc upsserver.h
+ 
+-libupsserver_la_LDFLAGS = -version-info 0:0:0
++libupsserver_la_LDFLAGS = -no-undefined -version-info 0:0:0
+ 
+ libupsserver_la_LDFLAGS += $(top_builddir)/3rdparty/json/libjson.la \
+                            $(top_builddir)/src/2protobuf/libprotocol.la \
++                           $(top_builddir)/src/libupscaledb.la \
+ 						   $(BOOST_SYSTEM_LIBS) luv -ldl
+ 
+--- origsrc/upscaledb-release-2.2.2/src/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/src/Makefile.am	2024-10-07 11:25:44.516226800 +0900
+@@ -1,7 +1,11 @@
+ 
+ SUBDIRS  = 2protoserde
+ if ENABLE_REMOTE
+-SUBDIRS += 2protobuf 5server
++SUBDIRS += 2protobuf 
++endif # ENABLE_REMOTE
++SUBDIRS += .
++if ENABLE_REMOTE
++SUBDIRS += 5server
+ endif # ENABLE_REMOTE
+ 
+ lib_LTLIBRARIES = libupscaledb.la
+@@ -173,19 +177,58 @@ EXTRA_DIST = 1os/os_win32.cc
+ 
+ AM_CPPFLAGS = -I../include -I$(top_srcdir)/include \
+ 			  $(BOOST_CPPFLAGS)
+-libupscaledb_la_LDFLAGS = -version-info 1:0:1 $(BOOST_SYSTEM_LDFLAGS) \
++libupscaledb_la_LDFLAGS = -no-undefined -version-info 1:0:1 $(BOOST_SYSTEM_LDFLAGS) \
+ 			  $(BOOST_THREAD_LDFLAGS)
+ libupscaledb_la_LIBADD  = $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
+-			  $(top_builddir)/3rdparty/murmurhash3/libmurmurhash3.la -ldl
++			  -ldl
++
++AM_CFLAGS	 =
++AM_CXXFLAGS	 =
++
++if HAVE_LIBMURMURHASH
++libupscaledb_la_LIBADD  += $(LIBMURMURHASH_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/murmurhash3/libmurmurhash3.la
++endif
++
++if HAVE_LIBLZF
++libupscaledb_la_LIBADD  += $(LIBLZF_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/liblzf/liblzf.la
++endif
++
++if HAVE_LIBFOR
++libupscaledb_la_LIBADD  += $(LIBFOR_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/libfor/libfor.la
++endif
++if ENABLE_SSE4
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/libfor/libfor.la
++endif
+ 
+-libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/liblzf/liblzf.la \
+-						   $(top_builddir)/3rdparty/libfor/libfor.la \
+-						   $(top_builddir)/3rdparty/libvbyte/libvbyte.la
++if HAVE_LIBVBYTE
++libupscaledb_la_LIBADD  += $(LIBVBYTE_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/libvbyte/libvbyte.la
++endif
+ 
+ if ENABLE_SSE2
+ AM_CPPFLAGS 			+= -DHAVE_SSE2
+-libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/simdcomp/libsimdcomp.la \
+-						   $(top_builddir)/3rdparty/streamvbyte/libstreamvbyte.la
++
++if HAVE_SIMDCOMP
++AM_CFLAGS	+= $(SIMDCOMP_CFLAGS)
++AM_CXXFLAGS	+= $(SIMDCOMP_CFLAGS)
++libupscaledb_la_LIBADD  += $(SIMDCOMP_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/simdcomp/libsimdcomp.la
++endif
++
++if HAVE_STREAMVBYTE
++libupscaledb_la_LIBADD  += $(STREAMVBYTE_LIBS)
++else
++libupscaledb_la_LIBADD  += $(top_builddir)/3rdparty/streamvbyte/libstreamvbyte.la
++endif
++
+ endif
+ if WITH_ZLIB
+ libupscaledb_la_LIBADD  += -lz
+@@ -204,8 +247,6 @@ AM_CPPFLAGS += -DUPS_ENABLE_REMOTE
+ libupscaledb_la_LIBADD += $(top_builddir)/src/2protobuf/libprotocol.la
+ endif
+ 
+-AM_CFLAGS	 =
+-AM_CXXFLAGS	 =
+ if ENABLE_SSE2
+ AM_CFLAGS	+= -msse2 -flax-vector-conversions
+ AM_CXXFLAGS	+= -msse2 -flax-vector-conversions
+--- origsrc/upscaledb-release-2.2.2/tools/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/tools/Makefile.am	2024-10-07 12:41:49.883837500 +0900
+@@ -5,7 +5,7 @@ COMMON				= getopts.h getopts.cc common.
+ BOOST_LIBS			= $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS)
+ 
+ AM_CPPFLAGS         = -I../include -I$(top_srcdir)/include -I../src \
+-					  -I../3rdparty/json
++					  -I../3rdparty/json -I$(top_srcdir)/3rdparty/json
+ 
+ upszilla_SOURCES    = upszilla.cc config.h config.c $(COMMON)
+ upszilla_LDADD      = $(top_builddir)/src/libupscaledb.la \
+@@ -18,7 +18,7 @@ ups_dump_SOURCES    = ups_dump.cc $(COMM
+ ups_dump_LDADD      = $(top_builddir)/src/libupscaledb.la
+ 
+ ups_export_SOURCES  = export.pb.cc ups_export.cc $(COMMON)
+-ups_export_LDADD    = $(top_builddir)/src/.libs/libupscaledb.a \
++ups_export_LDADD    = $(top_builddir)/src/libupscaledb.la \
+ 					  -lprotobuf $(BOOST_LIBS) -ldl
+ ups_export_LDFLAGS  = $(BOOST_SYSTEM_LDFLAGS) 
+ if WITH_ZLIB
+@@ -43,5 +43,5 @@ bin_PROGRAMS        += upszilla ups_expo
+ endif
+ 
+ export.pb.cc proto: $(srcdir)/export.proto
+-	protoc $(srcdir)/export.proto --cpp_out=.
++	protoc export.proto --cpp_out=. -I$(srcdir)
+ 
+--- origsrc/upscaledb-release-2.2.2/tools/ups_bench/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/tools/ups_bench/Makefile.am	2024-10-07 12:36:52.931572600 +0900
+@@ -1,6 +1,6 @@
+ 
+ bin_PROGRAMS	= ups_bench
+-AM_CPPFLAGS     = -I$(top_builddir)/include -I.. -I$(top_builddir)/src 
++AM_CPPFLAGS     = -I$(top_builddir)/include -I.. -I$(top_builddir)/src -I$(top_srcdir)/include -I$(top_srcdir)/src
+ 
+ ups_bench_SOURCES = berkeleydb.h \
+ 				  berkeleydb.cc \
+@@ -45,12 +45,12 @@ endif
+ 
+ if ENABLE_REMOTE
+ AM_CPPFLAGS     += -DUPS_ENABLE_REMOTE
+-ups_bench_LDADD += $(top_builddir)/src/5server/.libs/libupsserver.a \
++ups_bench_LDADD += $(top_builddir)/src/5server/libupsserver.la \
+ 				   -lprotobuf
+ endif
+ 
+ # add this here because the build order matters!
+-ups_bench_LDADD += $(top_builddir)/src/.libs/libupscaledb.a -ldl
++ups_bench_LDADD += $(top_builddir)/src/libupscaledb.la -ldl
+ 
+ if WITH_BERKELEYDB
+ AM_CPPFLAGS     += -DUPS_WITH_BERKELEYDB
+--- origsrc/upscaledb-release-2.2.2/tools/upszilla.cc	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/tools/upszilla.cc	2024-10-07 12:40:13.780831900 +0900
+@@ -253,11 +253,13 @@ daemonize() {
+   /* disassociate from process group */
+   setpgrp();
+ 
++#if defined(TIOCNOTTY)
+   /* disassociate from control terminal */
+   if ((fd = open("dev/tty", O_RDWR)) >= 0) {
+     ioctl(fd, TIOCNOTTY, NULL);
+     close(fd);
+   }
++#endif
+ }
+ #endif
+ 
+--- origsrc/upscaledb-release-2.2.2/unittests/Makefile.am	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/unittests/Makefile.am	2024-10-07 13:15:32.675601800 +0900
+@@ -6,7 +6,7 @@ EXTRA_DIST      = recovery.pl valgrind.s
+ BOOST_LIBS		= $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) $(BOOST_FILESYSTEM_LIBS)
+ BOOST_FLAGS     = $(BOOST_SYSTEM_LDFLAGS) $(BOOST_THREAD_LDFLAGS) $(BOOST_FILESYSTEM_LDFLAGS)
+ 
+-AM_CPPFLAGS     = -I../include -I$(top_srcdir)/include -I../src -std=c++11
++AM_CPPFLAGS     = -I../include -I$(top_srcdir)/include -I../src -I$(top_srcdir) -I$(top_srcdir)/src
+ 
+ test_SOURCES    = api110.cpp \
+ 			      approx.cpp \
+@@ -46,9 +46,9 @@ test_SOURCES    = api110.cpp \
+ 
+ recovery_SOURCES = recovery.cpp
+ 
+-test_LDADD      = $(top_builddir)/src/.libs/libupscaledb.a \
++test_LDADD      = $(top_builddir)/src/libupscaledb.la \
+ 				  $(BOOST_LIBS) -lpthread -ldl
+-recovery_LDADD  = $(top_builddir)/src/.libs/libupscaledb.a \
++recovery_LDADD  = $(top_builddir)/src/libupscaledb.la \
+ 				  $(BOOST_LIBS) -lpthread -ldl
+ test_LDFLAGS    = $(BOOST_FLAGS)
+ recovery_LDFLAGS= $(BOOST_FLAGS)
+@@ -56,9 +56,9 @@ recovery_LDFLAGS= $(BOOST_FLAGS)
+ if ENABLE_REMOTE
+ test_SOURCES   += remote.cpp
+ AM_CPPFLAGS    += -DUPS_ENABLE_REMOTE
+-test_LDADD     += $(top_builddir)/src/5server/.libs/libupsserver.a \
++test_LDADD     += $(top_builddir)/src/5server/libupsserver.la \
+ 				  -lprotobuf -ldl
+-recovery_LDADD += $(top_builddir)/src/5server/.libs/libupsserver.a \
++recovery_LDADD += $(top_builddir)/src/5server/libupsserver.la \
+ 				  -lprotobuf -ldl
+ endif
+ 
+--- origsrc/upscaledb-release-2.2.2/unittests/simd.cpp	2017-06-04 23:50:49.000000000 +0900
++++ src/upscaledb-release-2.2.2/unittests/simd.cpp	2024-10-07 13:05:52.251354200 +0900
+@@ -22,6 +22,8 @@
+ 
+ #include "2simd/simd.h"
+ 
++#include <array>
++
+ using namespace upscaledb;
+ 
+ template<typename T, int S>
