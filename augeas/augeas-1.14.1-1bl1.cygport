@@ -1,5 +1,6 @@
-HOMEPAGE="http://${PN}.net/"
-SRC_URI="http://download.${PN}.net/${P}.tar.gz"
+HOMEPAGE="https://github.com/hercules-team/${PN}"
+GIT_URI="https://github.com/hercules-team/${PN}.git"
+GIT_TAG="release-${PV}"
 
 CATEGORY="Libs"
 SUMMARY="Library for changing configuration files"
@@ -7,8 +8,32 @@ DESCRIPTION="Augeas is a configuration editing tool. It parses configuration fil
 native formats and transforms them into a tree. Configuration changes are made
 by manipulating this tree and saving it back into native config files."
 
+LICENSE="LGPL-2.1-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.1-or-later"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libreadline-devel libxml2-devel"
+
+export CPPFLAGS="${CPPFLAGS} -DDLL_EXPORTED="
+
+inherit git
+
+CYGCONF_ARGS="
+	--disable-gnulib-tests
+"
+
+src_compile()
+{
+	cd ${S}
+	./bootstrap
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+}
+
 DIFF_EXCLUDES="
-	*.m4
+	gnulib
 "
 
 PKG_NAMES="
@@ -23,7 +48,7 @@ augeas_CONTENTS="
 	usr/share
 "
 libaugeas0_CONTENTS="
-	usr/bin/cygaugeas-*.dll
+	usr/bin/cygaugeas-0.dll
 "
 libaugeas_devel_CONTENTS="
 	usr/include/${PN}.h
@@ -31,7 +56,7 @@ libaugeas_devel_CONTENTS="
 	usr/lib/pkgconfig/${PN}.pc
 "
 libfa1_CONTENTS="
-	usr/bin/cygfa-*.dll
+	usr/bin/cygfa-1.dll
 "
 libfa_devel_CONTENTS="
 	usr/include/fa.h
