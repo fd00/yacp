@@ -1,5 +1,5 @@
---- origsrc/uatraits/configure.in	2017-06-25 18:27:40.000000000 +0900
-+++ src/uatraits/configure.in	2017-06-25 18:28:23.630000200 +0900
+--- origsrc/uatraits/configure.in	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/configure.in	2024-10-08 16:57:53.561281800 +0900
 @@ -10,13 +10,12 @@ AC_LANG([C++])
  AC_PROG_LIBTOOL
  AM_MAINTAINER_MODE
@@ -25,30 +25,30 @@
  if test "f$ax_have_boost" = "fyes"; then
  	AM_PATH_PYTHON
  	AX_PYTHON_DEVEL
--	AX_BOOST_PYTHON([], [ax_have_boost_python="no"])
--	AX_BOOST_THREAD([], [ax_have_boost_thread="no"])
+ 	AX_BOOST_PYTHON([], [ax_have_boost_python="no"])
++	AX_BOOST_SYSTEM
+ 	AX_BOOST_THREAD([], [ax_have_boost_thread="no"])
 -	AX_BOOST_UNIT_TEST([], [ax_have_boost_unit_test="no"])
-+	BOOST_REQUIRE
-+	BOOST_PYTHON
-+	BOOST_THREADS
-+	BOOST_TEST
++	AX_BOOST_UNIT_TEST_FRAMEWORK([], [ax_have_boost_unit_test="no"])
  fi
  
  ac_python_binding="smart"
---- origsrc/uatraits/library/Makefile.am	2017-06-25 18:27:40.000000000 +0900
-+++ src/uatraits/library/Makefile.am	2017-06-25 18:27:44.178165300 +0900
-@@ -4,7 +4,6 @@ libuatraits_la_SOURCES = detector.cpp de
+--- origsrc/uatraits/library/Makefile.am	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/library/Makefile.am	2024-10-08 16:19:06.791433400 +0900
+@@ -3,8 +3,8 @@ lib_LTLIBRARIES = libuatraits.la
+ libuatraits_la_SOURCES = detector.cpp detector_helper.cpp \
  	error.cpp pcre_utils.cpp \
  	type_traits.cpp xml_utils.cpp
++libuatraits_la_LDFLAGS = -no-undefined
++libuatraits_la_LIBADD = @XML_LIBS@ @PCRE_LIBS@
  
 -AM_CXXFLAGS = -pthread
  AM_CPPFLAGS = -I${top_srcdir}/include -I${topc_srcdir}/config \
 -	@XML_CPPFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@
 -AM_LDFLAGS = @XML_LIBS@ @PCRE_LIBS@
 +	@XML_CFLAGS@ @PCRE_CFLAGS@ @BOOST_CPPFLAGS@
-+AM_LDFLAGS = @XML_LIBS@ @PCRE_LIBS@ -no-undefined
---- origsrc/uatraits/perl/Makefile.PL.in	2017-06-25 18:27:40.000000000 +0900
-+++ src/uatraits/perl/Makefile.PL.in	2017-06-25 18:27:44.178165300 +0900
+--- origsrc/uatraits/perl/Makefile.PL.in	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/perl/Makefile.PL.in	2024-10-08 15:50:26.956258900 +0900
 @@ -15,7 +15,7 @@ WriteMakefile(
         AUTHOR         => 'Oleg Obolensky <highpower@yandex-team.ru>') : ()),
      LIBS              => ['-L../library/.libs/ @XML_LIBS@ @PCRE_LIBS@ -luatraits'],
@@ -58,16 +58,17 @@
  	CC                => 'g++',
  	LD                => 'g++',
  	XSOPT             => '-C++',
---- origsrc/uatraits/python/Makefile.am	2017-06-25 18:27:40.000000000 +0900
-+++ src/uatraits/python/Makefile.am	2017-06-25 18:27:44.178165300 +0900
+--- origsrc/uatraits/python/Makefile.am	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/python/Makefile.am	2024-10-08 16:34:43.808274600 +0900
 @@ -2,12 +2,11 @@ pyexec_LTLIBRARIES = uatraits.la
  
  uatraits_la_SOURCES = dict_wrapper.cpp module.cpp streambuf.cpp
  
 -uatraits_la_LDFLAGS = -module -avoid-version @PYTHON_LDFLAGS@ \
-+uatraits_la_LDFLAGS = -no-undefined -module -avoid-version @PYTHON_LDFLAGS@ \
- 	@XML_LIBS@ @PCRE_LIBS@ @BOOST_LDFLAGS@ @BOOST_PYTHON_LDFLAGS@ 
+-	@XML_LIBS@ @PCRE_LIBS@ @BOOST_LDFLAGS@ @BOOST_PYTHON_LDFLAGS@ 
 -uatraits_la_LIBADD = ${top_srcdir}/library/libuatraits.la
++uatraits_la_LDFLAGS = -no-undefined -module -avoid-version @PYTHON_LDFLAGS@ \
++	@XML_LIBS@ @PCRE_LIBS@ @BOOST_LDFLAGS@ @BOOST_PYTHON_LIB@ 
 +uatraits_la_LIBADD = ${top_builddir}/library/libuatraits.la $(PYTHON_LIBS) $(BOOST_PYTHON_LIBS)
  
 -AM_CXXFLAGS = -pthread
@@ -76,8 +77,27 @@
 +	@XML_CFLAGS@ @PCRE_CFLAGS@ @PYTHON_CPPFLAGS@ @BOOST_CPPFLAGS@
  
  noinst_HEADERS = dict_wrapper.hpp streambuf.hpp
---- origsrc/uatraits/utils/Makefile.am	2017-06-25 18:27:40.000000000 +0900
-+++ src/uatraits/utils/Makefile.am	2017-06-25 18:27:44.193739900 +0900
+--- origsrc/uatraits/tests/Makefile.am	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/tests/Makefile.am	2024-10-08 16:59:53.197916200 +0900
+@@ -9,13 +9,13 @@ uatraits_tests_SOURCES = main.cpp mock_s
+ 	static_assert_test.cpp string_match_test.cpp string_utils_test.cpp \
+ 	type_list_test.cpp type_traits_test.cpp
+ 
+-uatraits_tests_LDADD = ${top_srcdir}/library/libuatraits.la
++uatraits_tests_LDADD = ${top_builddir}/library/libuatraits.la $(BOOST_THREAD_LIB) $(BOOST_UNIT_TEST_FRAMEWORK_LIB) $(BOOST_SYSTEM_LIB)
+ 	
+ AM_CXXFLAGS = -pthread
+ AM_CPPFLAGS = -I${top_srcdir}/include -I${top_srcdir}/config \
+-	@BOOST_CPPFLAGS@ @XML_CPPFLAGS@ @PCRE_CFLAGS@
++	@BOOST_CPPFLAGS@ @XML_CFLAGS@ @PCRE_CFLAGS@
+ 	
+-AM_LDFLAGS = @BOOST_LDFLAGS@ @BOOST_THREAD_LDFLAGS@ @BOOST_UNIT_TEST_LDFLAGS@ \
++AM_LDFLAGS = @BOOST_LDFLAGS@ \
+ 	@XML_LIBS@ @PCRE_LIBS@
+ 
+ TESTS = uatraits-tests
+--- origsrc/uatraits/utils/Makefile.am	2024-10-08 15:50:25.000000000 +0900
++++ src/uatraits/utils/Makefile.am	2024-10-08 15:50:26.956258900 +0900
 @@ -1,8 +1,7 @@
  bin_PROGRAMS = check-uatraits
  
@@ -87,5 +107,5 @@
  
 -AM_CXXFLAGS = -pthread
 -AM_CPPFLAGS = -I${top_srcdir}/include -I${topc_srcdir}/config @XML_CPPFLAGS@
-+AM_CPPFLAGS = -I${top_srcdir}/include -I${top_srcdir}/config @XML_CFLAGS@
++AM_CPPFLAGS = -I${top_srcdir}/include -I${topc_srcdir}/config @XML_CFLAGS@
  AM_LDFLAGS = @XML_LIBS@
