@@ -1,0 +1,44 @@
+--- origsrc/twemcache-2.6.3/configure.ac	2017-09-30 08:51:36.000000000 +0900
++++ src/twemcache-2.6.3/configure.ac	2024-10-09 00:01:16.553847500 +0900
+@@ -1,7 +1,7 @@
+ # Define the package version numbers and the bug reporting address
+ m4_define([MC_MAJOR], 2)
+ m4_define([MC_MINOR], 6)
+-m4_define([MC_PATCH], 2)
++m4_define([MC_PATCH], 3)
+ m4_define([MC_BUGS], [cache-team@twitter.com])
+ 
+ # Initialize autoconf
+@@ -35,6 +35,7 @@ case $host_os in
+     darwin*)  OS_DARWIN=yes
+               AC_DEFINE([OS_DARWIN], [1], [Define to 1 if OS has Darwin kernel])
+               ;;
++    cygwin*)  ;;
+     *)        AC_MSG_ERROR([Your platform is not currently supported]) ;;
+ esac
+ AM_CONDITIONAL([RDYNAMIC], [test x$OS_LINUX = xyes])
+--- origsrc/twemcache-2.6.3/src/mc_assoc.c	2017-09-30 08:51:36.000000000 +0900
++++ src/twemcache-2.6.3/src/mc_assoc.c	2024-10-08 23:57:15.297858600 +0900
+@@ -38,6 +38,9 @@
+ extern struct settings settings;
+ extern pthread_mutex_t cache_lock;
+ 
++size_t nbyte_primary;
++size_t nbyte_old;
++
+ /*
+  * We always look for items in the primary_hashtable expect when we are
+  * expanding. During expansion (expanding = 1), we migrate key-values at
+--- origsrc/twemcache-2.6.3/src/mc_assoc.h	2017-09-30 08:51:36.000000000 +0900
++++ src/twemcache-2.6.3/src/mc_assoc.h	2024-10-08 23:57:29.066910600 +0900
+@@ -32,8 +32,8 @@
+ 
+ #define HASH_MAX_POWER  32
+ 
+-size_t nbyte_primary;
+-size_t nbyte_old;
++extern size_t nbyte_primary;
++extern size_t nbyte_old;
+ 
+ rstatus_t assoc_init(void);
+ void assoc_deinit(void);
