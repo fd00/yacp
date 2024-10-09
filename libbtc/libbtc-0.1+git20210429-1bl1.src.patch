@@ -1,0 +1,385 @@
+--- origsrc/libbtc/Makefile.am	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/Makefile.am	2024-10-09 22:04:16.055378000 +0900
+@@ -5,11 +5,6 @@ AUTOMAKE_OPTIONS = serial-tests
+ 
+ DIST_SUBDIRS = src/secp256k1
+ 
+-LIBSECP256K1=src/secp256k1/libsecp256k1.la
+-
+-$(LIBSECP256K1): $(wildcard src/secp256k1/src/*) $(wildcard src/secp256k1/include/*)
+-	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C $(@D) $(@F)
+-
+ lib_LTLIBRARIES = libbtc.la
+ libbtcincludedir = $(includedir)/btc
+ libbtcinclude_HEADERS = \
+@@ -21,7 +16,6 @@ libbtcinclude_HEADERS = \
+     include/btc/btc.h \
+     include/btc/buffer.h \
+     include/btc/chainparams.h \
+-    include/btc/cstr.h \
+     include/btc/ctaes.h \
+     include/btc/ecc_key.h \
+     include/btc/ecc.h \
+@@ -34,7 +28,6 @@ libbtcinclude_HEADERS = \
+     include/btc/script.h \
+     include/btc/segwit_addr.h \
+     include/btc/serialize.h \
+-    include/btc/sha2.h \
+     include/btc/tool.h \
+     include/btc/tx.h \
+     include/btc/utils.h \
+@@ -54,7 +47,6 @@ trezorcryptoinclude_HEADERS = \
+     src/trezor-crypto/options.h \
+     src/trezor-crypto/ripemd160.h \
+     src/trezor-crypto/segwit_addr.h \
+-    src/trezor-crypto/sha2.h \
+     src/trezor-crypto/sha3.h
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+@@ -94,8 +86,9 @@ libbtc_la_SOURCES += \
+     src/trezor-crypto/sha2.c \
+     src/trezor-crypto/sha3.c
+ 
+-libbtc_la_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/logdb/include
+-libbtc_la_LIBADD = $(LIBSECP256K1)
++libbtc_la_CFLAGS = -I$(top_srcdir)/include $(LIBLOGDB_CFLAGS)
++libbtc_la_LIBADD = $(LIBSECP256K1_LIBS)
++libbtc_la_LDFLAGS = -no-undefined
+ 
+ if USE_TESTS
+ noinst_PROGRAMS = tests
+@@ -122,34 +115,12 @@ tests_SOURCES = \
+ 
+ tests_CFLAGS = $(libbtc_la_CFLAGS)
+ tests_CPPFLAGS = -I$(top_srcdir)/src
+-tests_LDFLAGS = -static
++tests_LDFLAGS =
+ TESTS = tests
+ endif
+ 
+ if WITH_LOGDB
+-libbtc_la_SOURCES += \
+-    src/logdb/logdb_core.c \
+-    src/logdb/logdb_memdb_llist.c \
+-    src/logdb/logdb_memdb_rbtree.c \
+-    src/logdb/logdb_rec.c \
+-    src/logdb/red_black_tree.c
+-
+-logdbincludedir = $(includedir)/logdb
+-logdbinclude_HEADERS = \
+-    src/logdb/include/logdb/logdb_base.h \
+-    src/logdb/include/logdb/logdb_core.h \
+-    src/logdb/include/logdb/logdb_memdb_llist.h \
+-    src/logdb/include/logdb/logdb_memdb_rbtree.h \
+-    src/logdb/include/logdb/logdb_rec.h \
+-    src/logdb/include/logdb/logdb.h \
+-    src/logdb/include/logdb/red_black_tree.h
+-
+-if USE_TESTS
+-tests_SOURCES += \
+-    src/logdb/test/logdb_tests.c \
+-    src/logdb/test/tests_red_black_tree.c \
+-    src/logdb/test/logdb_tests_sample.h
+-endif
++libbtc_la_LIBADD += $(LIBLOGDB_LIBS)
+ endif
+ 
+ if WITH_WALLET
+@@ -203,7 +174,7 @@ bitcointool_SOURCES = \
+     src/tools/bitcointool.c
+ bitcointool_CFLAGS = $(libbtc_la_CFLAGS)
+ bitcointool_CPPFLAGS = -I$(top_srcdir)/src
+-bitcointool_LDFLAGS = -static
++bitcointool_LDFLAGS =
+ 
+ if WITH_NET
+ inst_PROGRAMS += bitcoin-send-tx
+@@ -212,7 +183,7 @@ bitcoin_send_tx_SOURCES = \
+     src/tools/bitcoin-send-tx.c
+ bitcoin_send_tx_CFLAGS = $(libbtc_la_CFLAGS) $(EVENT_CFLAGS) $(EVENT_PTHREADS_CFLAGS)
+ bitcoin_send_tx_CPPFLAGS = -I$(top_srcdir)/src
+-bitcoin_send_tx_LDFLAGS = -static
++bitcoin_send_tx_LDFLAGS =
+ 
+ inst_PROGRAMS += bitcoin-spv
+ bitcoin_spv_LDADD = libbtc.la
+@@ -220,10 +191,7 @@ bitcoin_spv_SOURCES = \
+     src/tools/bitcoin-spv.c
+ bitcoin_spv_CFLAGS = $(libbtc_la_CFLAGS)
+ bitcoin_spv_CPPFLAGS = -I$(top_srcdir)/src
+-bitcoin_spv_LDFLAGS = -static
++bitcoin_spv_LDFLAGS =
+ endif
+ 
+ endif
+-
+-clean-local:
+-	-$(MAKE) -C src/secp256k1 clean
+--- origsrc/libbtc/configure.ac	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/configure.ac	2024-10-09 21:54:47.744241000 +0900
+@@ -123,6 +123,9 @@ if test x$with_net = "xyes"; then
+   fi
+ fi
+ 
++PKG_CHECK_MODULES([LIBLOGDB], [liblogdb])
++PKG_CHECK_MODULES([LIBSECP256K1], [libsecp256k1])
++
+ AC_CONFIG_FILES([Makefile libbtc.pc])
+ AC_SUBST(LIBTOOL_APP_LDFLAGS)
+ AC_SUBST(BUILD_EXEEXT)
+@@ -134,9 +137,6 @@ AM_CONDITIONAL([WITH_WALLET], [test "x$w
+ AM_CONDITIONAL([WITH_NET], [test "x$with_net" = "xyes"])
+ AM_CONDITIONAL([WITH_LOGDB], [test "x$with_tools" = "xyes" -o "x$with_wallet" = "xyes"])
+ 
+-ac_configure_args="${ac_configure_args} --enable-module-recovery"
+-AC_CONFIG_SUBDIRS([src/secp256k1])
+-
+ dnl make sure nothing new is exported so that we don't break the cache
+ PKGCONFIG_PATH_TEMP="$PKG_CONFIG_PATH"
+ unset PKG_CONFIG_PATH
+--- origsrc/libbtc/include/btc/block.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/block.h	2024-10-09 21:58:15.587804200 +0900
+@@ -30,7 +30,7 @@
+ 
+ #include "btc.h"
+ #include "buffer.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "hash.h"
+ 
+ LIBBTC_BEGIN_DECL
+--- origsrc/libbtc/include/btc/hash.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/hash.h	2024-10-09 22:01:58.674759300 +0900
+@@ -28,9 +28,9 @@
+ #define __LIBBTC_HASH_H__
+ 
+ #include "btc.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "memory.h"
+-#include "sha2.h"
++#include <logdb/sha2.h>
+ #include "vector.h"
+ 
+ LIBBTC_BEGIN_DECL
+--- origsrc/libbtc/include/btc/hmac.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/hmac.h	2024-10-09 22:01:58.672805600 +0900
+@@ -30,7 +30,7 @@
+ LIBBTC_BEGIN_DECL
+ 
+ #include <stdint.h>
+-#include "sha2.h"
++#include <logdb/sha2.h>
+ 
+ typedef struct _HMAC_SHA256_CTX {
+   uint8_t o_key_pad[SHA256_BLOCK_LENGTH];
+--- origsrc/libbtc/include/btc/net.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/net.h	2024-10-09 21:58:15.585803900 +0900
+@@ -30,7 +30,7 @@
+ #include "btc.h"
+ #include "buffer.h"
+ #include "chainparams.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "protocol.h"
+ #include "vector.h"
+ 
+--- origsrc/libbtc/include/btc/protocol.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/protocol.h	2024-10-09 21:58:15.585803900 +0900
+@@ -29,7 +29,7 @@
+ 
+ #include "btc.h"
+ #include "buffer.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "vector.h"
+ 
+ LIBBTC_BEGIN_DECL
+--- origsrc/libbtc/include/btc/script.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/script.h	2024-10-09 21:58:15.585803900 +0900
+@@ -28,7 +28,7 @@
+ #define __LIBBTC_SCRIPT_H__
+ 
+ #include "btc.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "ecc_key.h"
+ #include "vector.h"
+ 
+--- origsrc/libbtc/include/btc/serialize.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/serialize.h	2024-10-09 21:58:15.585803900 +0900
+@@ -30,7 +30,7 @@
+ 
+ #include "btc.h"
+ #include "buffer.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "portable_endian.h"
+ 
+ LIBBTC_BEGIN_DECL
+--- origsrc/libbtc/include/btc/tx.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/tx.h	2024-10-09 21:58:15.572405900 +0900
+@@ -29,7 +29,7 @@
+ 
+ #include "btc.h"
+ #include "chainparams.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "hash.h"
+ #include "script.h"
+ #include "vector.h"
+--- origsrc/libbtc/include/btc/utils.h	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/include/btc/utils.h	2024-10-09 21:58:15.572405900 +0900
+@@ -29,7 +29,7 @@
+ #define __LIBBTC_UTILS_H__
+ 
+ #include "btc.h"
+-#include "cstr.h"
++#include <logdb/cstr.h>
+ #include "memory.h"
+ 
+ #define TO_UINT8_HEX_BUF_LEN 2048
+--- origsrc/libbtc/src/bip32.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/bip32.c	2024-10-09 21:59:23.809226500 +0900
+@@ -38,7 +38,7 @@
+ #include <btc/hmac.h>
+ #include <btc/memory.h>
+ #include <btc/ripemd160.h>
+-#include <btc/sha2.h>
++#include <logdb/sha2.h>
+ #include <btc/utils.h>
+ 
+ // write 4 big endian bytes
+--- origsrc/libbtc/src/block.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/block.c	2024-10-09 21:59:23.806224000 +0900
+@@ -33,7 +33,7 @@
+ #include <btc/block.h>
+ 
+ #include <btc/serialize.h>
+-#include <btc/sha2.h>
++#include <logdb/sha2.h>
+ #include <btc/utils.h>
+ 
+ btc_block_header* btc_block_header_new()
+--- origsrc/libbtc/src/cstr.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/cstr.c	2024-10-09 22:03:21.187191500 +0900
+@@ -3,7 +3,7 @@
+  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+  */
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/memory.h>
+ 
+ static int cstr_alloc_min_sz(cstring* s, size_t sz)
+@@ -81,11 +81,6 @@ cstring* cstr_new_buf(const void* buf, s
+     return s;
+ }
+ 
+-cstring* cstr_new_cstr(const cstring* copy_str)
+-{
+-    return cstr_new_buf(copy_str->str, copy_str->len);
+-}
+-
+ cstring* cstr_new(const char* init_str)
+ {
+     size_t slen;
+--- origsrc/libbtc/src/net.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/net.c	2024-10-09 22:00:55.017518500 +0900
+@@ -6,7 +6,7 @@
+ 
+ #include <btc/buffer.h>
+ #include <btc/chainparams.h>
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/hash.h>
+ #include <btc/protocol.h>
+ #include <btc/serialize.h>
+--- origsrc/libbtc/src/serialize.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/serialize.c	2024-10-09 22:00:55.015519200 +0900
+@@ -3,7 +3,7 @@
+  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+  */
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/serialize.h>
+ 
+ #include <string.h>
+--- origsrc/libbtc/src/tx.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/src/tx.c	2024-10-09 21:59:23.806224000 +0900
+@@ -35,7 +35,7 @@
+ #include <btc/memory.h>
+ #include <btc/segwit_addr.h>
+ #include <btc/serialize.h>
+-#include <btc/sha2.h>
++#include <logdb/sha2.h>
+ #include <btc/tx.h>
+ #include <btc/utils.h>
+ 
+--- origsrc/libbtc/test/block_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/block_tests.c	2024-10-09 22:01:12.923289300 +0900
+@@ -11,7 +11,7 @@
+ 
+ #include <btc/block.h>
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/ecc_key.h>
+ #include <btc/utils.h>
+ 
+--- origsrc/libbtc/test/cstr_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/cstr_tests.c	2024-10-09 22:01:12.919076600 +0900
+@@ -10,7 +10,7 @@
+ #include <string.h>
+ #include <assert.h>
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ 
+ void test_cstr()
+ {
+--- origsrc/libbtc/test/hash_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/hash_tests.c	2024-10-09 22:01:19.200254900 +0900
+@@ -11,7 +11,7 @@
+ 
+ #include <btc/hash.h>
+ 
+-#include <btc/sha2.h>
++#include <logdb/sha2.h>
+ #include <btc/utils.h>
+ 
+ void test_bitcoin_hash()
+--- origsrc/libbtc/test/serialize_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/serialize_tests.c	2024-10-09 22:01:12.937985300 +0900
+@@ -9,7 +9,7 @@
+ #include <string.h>
+ #include <assert.h>
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/serialize.h>
+ #include <btc/utils.h>
+ 
+--- origsrc/libbtc/test/sha2_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/sha2_tests.c	2024-10-09 22:01:19.204263500 +0900
+@@ -10,7 +10,7 @@
+ #include <assert.h>
+ 
+ #include <btc/hmac.h>
+-#include <btc/sha2.h>
++#include <logdb/sha2.h>
+ #include <btc/utils.h>
+ 
+ struct sha256_test_v_short {
+--- origsrc/libbtc/test/tx_tests.c	2024-10-09 21:32:39.000000000 +0900
++++ src/libbtc/test/tx_tests.c	2024-10-09 22:01:12.929655500 +0900
+@@ -11,7 +11,7 @@
+ 
+ #include <btc/tx.h>
+ 
+-#include <btc/cstr.h>
++#include <logdb/cstr.h>
+ #include <btc/ecc_key.h>
+ #include <btc/script.h>
+ #include "utest.h"
