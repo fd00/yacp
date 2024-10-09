@@ -1,0 +1,67 @@
+--- origsrc/libafdt/Makefile.am	2024-10-09 22:19:54.000000000 +0900
++++ src/libafdt/Makefile.am	2024-10-09 22:19:55.183683200 +0900
+@@ -20,6 +20,9 @@ libafdt_la_SOURCES += src/async.c
+ libafdt_la_LIBADD = $(LIBEVENT_LIBS)
+ endif
+ 
++libafdt_la_LDFLAGS = -no-undefined
++libafdt_la_LIBADD = $(LIBEVENT_LIBS)
++
+ include_HEADERS = \
+ 	src/afdt.h
+ 
+@@ -58,3 +61,6 @@ endif
+ 
+ 
+ EXTRA_DIST = bootstrap.sh cleanup.sh test/runtests.py Doxyfile
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libafdt/configure.ac	2024-10-09 22:19:54.000000000 +0900
++++ src/libafdt/configure.ac	2024-10-09 22:30:29.641409500 +0900
+@@ -38,18 +38,7 @@ AC_CHECK_FUNCS([strerror])
+ AC_CHECK_DECLS([AF_LOCAL], [], [], [[#include <sys/socket.h>]])
+ AC_CHECK_DECLS([PF_LOCAL], [], [], [[#include <sys/socket.h>]])
+ 
+-if test "x$ax_have_libevent" = "xyes" ; then : ; else
+-  AX_LIB_EVENT([2.0.9])
+-fi
+-if test "x$ax_have_libevent" = "xyes" ; then : ; else
+-  AX_LIB_EVENT([1.4.5])
+-fi
+-if test "x$ax_have_libevent" = "xyes" ; then : ; else
+-  AX_LIB_EVENT([1.4.3])
+-fi
+-if test "x$ax_have_libevent" = "xyes" ; then : ; else
+-  AX_LIB_EVENT
+-fi
++PKG_CHECK_MODULES([LIBEVENT], [libevent])
+ 
+ if test "x$ax_have_libevent_2_0_9" = "xyes" ; then
+   have_libevent_209="yes"
+@@ -64,10 +53,10 @@ fi
+ 
+ AM_CONDITIONAL([HAVE_LIBEVENT_143], [test "x$have_libevent_143" = "xyes"])
+ AM_CONDITIONAL([HAVE_LIBEVENT_209], [test "x$have_libevent_209" = "xyes"])
+-AM_CONDITIONAL([HAVE_LIBEVENT], [test "x$ax_have_libevent" = "xyes"])
++AM_CONDITIONAL([HAVE_LIBEVENT], [true])
+ 
+ AM_PATH_PYTHON([2.6],, [:])
+ AM_CONDITIONAL([HAVE_PYTHON], [test "x$PYTHON" != "x:"])
+ 
+-AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([libafdt.pc Makefile])
+ AC_OUTPUT
+--- origsrc/libafdt/libafdt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libafdt/libafdt.pc.in	2024-10-09 22:19:55.183683200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libafdt
++Description: Library for Asynchronous File Descriptor Transfer
++Version: @VERSION@
++Libs: -L${libdir} -lafdt
++Cflags: -I${includedir}
