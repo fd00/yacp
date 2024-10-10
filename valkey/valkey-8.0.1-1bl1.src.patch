@@ -1,0 +1,136 @@
+--- origsrc/valkey-8.0.1/deps/hiredis/Makefile	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/deps/hiredis/Makefile	2024-10-10 21:32:37.538407600 +0900
+@@ -39,7 +39,7 @@ export REDIS_TEST_CONFIG
+ CC:=$(shell sh -c 'type $${CC%% *} >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
+ CXX:=$(shell sh -c 'type $${CXX%% *} >/dev/null 2>/dev/null && echo $(CXX) || echo g++')
+ OPTIMIZATION?=-O3
+-WARNINGS=-Wall -Wextra -Werror -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers
++WARNINGS=-Wall -Wextra -Wstrict-prototypes -Wwrite-strings -Wno-missing-field-initializers
+ DEBUG_FLAGS?= -g -ggdb
+ REAL_CFLAGS=$(OPTIMIZATION) -fPIC $(CPPFLAGS) $(CFLAGS) $(WARNINGS) $(DEBUG_FLAGS) $(PLATFORM_FLAGS)
+ REAL_LDFLAGS=$(LDFLAGS)
+--- origsrc/valkey-8.0.1/src/Makefile	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/Makefile	2024-10-10 22:37:50.363249400 +0900
+@@ -31,7 +31,7 @@ endif
+ ifneq ($(OPTIMIZATION),-O0)
+ 	OPTIMIZATION+=-fno-omit-frame-pointer
+ endif
+-DEPENDENCY_TARGETS=hiredis linenoise lua hdr_histogram fpconv
++DEPENDENCY_TARGETS=hiredis lua fpconv
+ NODEPS:=clean distclean
+ 
+ # Default settings
+@@ -257,7 +257,7 @@ ifdef OPENSSL_PREFIX
+ endif
+ 
+ # Include paths to dependencies
+-FINAL_CFLAGS+= -I../deps/hiredis -I../deps/linenoise -I../deps/lua/src -I../deps/hdr_histogram -I../deps/fpconv
++FINAL_CFLAGS+= -I../deps/hiredis -I../deps/lua/src -I../deps/fpconv
+ 
+ # Determine systemd support and/or build preference (defaulting to auto-detection)
+ BUILD_WITH_SYSTEMD=no
+@@ -486,7 +486,7 @@ endif
+ 
+ # valkey-server
+ $(SERVER_NAME): $(ENGINE_SERVER_OBJ)
+-	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a ../deps/hdr_histogram/libhdrhistogram.a ../deps/fpconv/libfpconv.a $(FINAL_LIBS)
++	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a -lhdr_histogram ../deps/fpconv/libfpconv.a $(FINAL_LIBS)
+ 
+ # Valkey static library, used to compile against for unit testing
+ $(ENGINE_LIB_NAME): $(ENGINE_SERVER_OBJ)
+@@ -494,7 +494,7 @@ $(ENGINE_LIB_NAME): $(ENGINE_SERVER_OBJ)
+ 
+ # valkey-unit-tests
+ $(ENGINE_UNIT_TESTS): $(ENGINE_TEST_OBJ) $(ENGINE_LIB_NAME)
+-	$(SERVER_LD) $(ALLOW_DUPLICATE_FLAG) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a ../deps/hdr_histogram/libhdrhistogram.a ../deps/fpconv/libfpconv.a $(FINAL_LIBS)
++	$(SERVER_LD) $(ALLOW_DUPLICATE_FLAG) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a -lhdr_histogram ../deps/fpconv/libfpconv.a $(FINAL_LIBS)
+ 
+ # valkey-sentinel
+ $(ENGINE_SENTINEL_NAME): $(SERVER_NAME)
+@@ -518,11 +518,11 @@ $(RDMA_MODULE_NAME): $(SERVER_NAME)
+ 
+ # valkey-cli
+ $(ENGINE_CLI_NAME): $(ENGINE_CLI_OBJ)
+-	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/linenoise/linenoise.o $(FINAL_LIBS) $(TLS_CLIENT_LIBS)
++	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a -llinenoise $(FINAL_LIBS) $(TLS_CLIENT_LIBS)
+ 
+ # valkey-benchmark
+ $(ENGINE_BENCHMARK_NAME): $(ENGINE_BENCHMARK_OBJ)
+-	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/hdr_histogram/libhdrhistogram.a $(FINAL_LIBS) $(TLS_CLIENT_LIBS)
++	$(SERVER_LD) -o $@ $^ ../deps/hiredis/libhiredis.a -lhdr_histogram $(FINAL_LIBS) $(TLS_CLIENT_LIBS)
+ 
+ DEP = $(ENGINE_SERVER_OBJ:%.o=%.d) $(ENGINE_CLI_OBJ:%.o=%.d) $(ENGINE_BENCHMARK_OBJ:%.o=%.d)
+ -include $(DEP)
+--- origsrc/valkey-8.0.1/src/latency.c	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/latency.c	2024-10-10 22:17:40.559341900 +0900
+@@ -34,7 +34,7 @@
+  */
+ 
+ #include "server.h"
+-#include "hdr_histogram.h"
++#include <hdr/hdr_histogram.h>
+ 
+ /* Dictionary type for latency events. */
+ int dictStringKeyCompare(dict *d, const void *key1, const void *key2) {
+--- origsrc/valkey-8.0.1/src/module.c	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/module.c	2024-10-10 22:19:30.829540400 +0900
+@@ -58,7 +58,7 @@
+ #include "monotonic.h"
+ #include "script.h"
+ #include "call_reply.h"
+-#include "hdr_histogram.h"
++#include <hdr/hdr_histogram.h>
+ #include "crc16_slottable.h"
+ #include "valkeymodule.h"
+ #include "io_threads.h"
+--- origsrc/valkey-8.0.1/src/server.c	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/server.c	2024-10-10 22:15:11.539670100 +0900
+@@ -36,7 +36,7 @@
+ #include "latency.h"
+ #include "mt19937-64.h"
+ #include "functions.h"
+-#include "hdr_histogram.h"
++#include <hdr/hdr_histogram.h>
+ #include "syscheck.h"
+ #include "threads_mngr.h"
+ #include "fmtargs.h"
+--- origsrc/valkey-8.0.1/src/valkey-benchmark.c	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/valkey-benchmark.c	2024-10-10 22:28:08.478619100 +0900
+@@ -56,7 +56,7 @@
+ #include "dict.h"
+ #include "zmalloc.h"
+ #include "crc16_slottable.h"
+-#include "hdr_histogram.h"
++#include <hdr/hdr_histogram.h>
+ #include "cli_common.h"
+ #include "mt19937-64.h"
+ 
+@@ -886,7 +886,7 @@ static void showLatencyReport(void) {
+             /* After the 2 milliseconds latency to have percentages split
+              * by decimals will just add a lot of noise to the output. */
+             if (iter.highest_equivalent_value > 2000) {
+-                hdr_iter_linear_set_value_units_per_bucket(&iter, 1000);
++                //hdr_iter_linear_set_value_units_per_bucket(&iter, 1000);
+             }
+             previous_cumulative_count = cumulative_count;
+         }
+--- origsrc/valkey-8.0.1/src/valkey-cli.c	2024-10-03 06:09:21.000000000 +0900
++++ src/valkey-8.0.1/src/valkey-cli.c	2024-10-10 22:04:12.886873500 +0900
+@@ -3262,7 +3262,7 @@ static void repl(void) {
+             if (argv == NULL) {
+                 printf("Invalid argument(s)\n");
+                 fflush(stdout);
+-                if (history) linenoiseHistoryAdd(line, 0);
++                if (history) linenoiseHistoryAdd(line);
+                 if (historyfile) linenoiseHistorySave(historyfile);
+                 linenoiseFree(line);
+                 continue;
+@@ -3291,7 +3291,7 @@ static void repl(void) {
+             /* Always keep in-memory history. But for commands with sensitive information,
+              * avoid writing them to the history file. */
+             int is_sensitive = isSensitiveCommand(argc - skipargs, argv + skipargs);
+-            if (history) linenoiseHistoryAdd(line, is_sensitive);
++            if (history) linenoiseHistoryAdd(line);
+             if (!is_sensitive && historyfile) linenoiseHistorySave(historyfile);
+ 
+             if (strcasecmp(argv[0], "quit") == 0 || strcasecmp(argv[0], "exit") == 0) {

@@ -1,0 +1,39 @@
+HOMEPAGE="https://github.com/${PN}-io/${PN}"
+SRC_URI="https://github.com/${PN}-io/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Net"
+SUMMARY="Flexible distributed key-value datastore"
+DESCRIPTION="Valkey is a high-performance data structure server that primarily serves
+key/value workloads. It supports a wide range of native structures and an
+extensible plugin system for adding new data structures and access patterns."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libhdr_histogram-devel liblinenoise-devel"
+
+export CFLAGS="${CFLAGS} -D_GNU_SOURCE"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	pushd deps
+		pushd fpconv; cygmake; popd
+		pushd hiredis; cygmake; popd
+		pushd lua; cygmake posix; popd
+	popd
+	cygmake
+}
+
+DOCS="
+	00-RELEASENOTES
+	*.md
+"
+
+src_install()
+{
+	cd ${B}
+	cyginstall PREFIX=${D}/usr
+}
