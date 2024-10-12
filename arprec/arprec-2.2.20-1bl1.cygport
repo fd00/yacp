@@ -1,0 +1,79 @@
+HOMEPAGE="https://www.davidhbailey.com/dhbsoftware/"
+SRC_URI="https://www.davidhbailey.com/dhbsoftware/${P}.tar.gz"
+
+CATEGORY="Math"
+SUMMARY="C++/Fortran-90 arbitrary precision package"
+DESCRIPTION="ARPREC is a software package for performing arbitrary precision arithmetic. It
+consists of a revision and extension of Bailey's earlier MPFUN package,
+enhanced with special IEEE numerical techniques."
+
+LICENSE="BSD-3-Clause-LBNL"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause-LBNL"
+LICENSE_URI="BSD-LBNL-License.doc"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	rm config.status
+	find . -name '._*' | xargs rm
+}
+
+CYGCONF_ARGS="
+	--enable-qd
+"
+
+src_compile()
+{
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf
+	cygmake
+	cygmake toolkit
+	pushd toolkit
+		./mathinit
+	popd
+}
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	pushd toolkit
+	for exe in *.exe
+	do
+		newbin ${exe} ${PN}-${exe}
+	done
+	insinto /usr/share/arprec
+	doins *.dat
+	popd
+}
+
+DIFF_EXCLUDES="
+    Makefile
+    ${PN}-config
+    ${PN}_config.h
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}0
+	lib${PN}-devel
+"
+arprec_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libarprec0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libarprec_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+"
+arprec_SUMMARY="${SUMMARY} (utilities)"
+libarprec0_SUMMARY="${SUMMARY} (runtime)"
+libarprec_devel_SUMMARY="${SUMMARY} (development)"

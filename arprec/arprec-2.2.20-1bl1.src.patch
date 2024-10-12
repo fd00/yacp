@@ -1,0 +1,166 @@
+--- origsrc/arprec-2.2.20/Makefile.am	2021-02-03 08:50:40.124090300 +0900
++++ src/arprec-2.2.20/Makefile.am	2024-10-12 17:15:51.251127400 +0900
+@@ -38,3 +38,6 @@ changelog:
+ 
+ .PHONY: toolkit demo fortran-demo cpp-demo time changelog
+ 
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/arprec-2.2.20/arprec.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arprec-2.2.20/arprec.pc.in	2024-10-12 17:15:51.220160300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arprec
++Description: C++/Fortran-90 arbitrary precision package
++Version: @VERSION@
++Libs: -L${libdir} -larprec
++Cflags: -I${includedir}
+--- origsrc/arprec-2.2.20/configure.ac	2021-02-03 08:50:39.137249800 +0900
++++ src/arprec-2.2.20/configure.ac	2024-10-12 17:17:28.713022500 +0900
+@@ -12,14 +12,14 @@
+ #
+ #
+ # Process this file with autoconf to produce a configure script.
+-define([ARPREC_PATCHLEVEL], 1)
++define([ARPREC_PATCHLEVEL], 20)
+ AC_PREREQ(2.60)
+ AC_INIT(arprec, 2.2.ARPREC_PATCHLEVEL, dhbailey@lbl.gov)
+ AC_CONFIG_SRCDIR([src/init.cpp])
+ 
+ PACKAGE="arprec"
+ MAJOR_VERSION="2"
+-MINOR_VERSION="8"
++MINOR_VERSION="2"
+ PATCH_VERSION="ARPREC_PATCHLEVEL"
+ VERSION=$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
+ AC_DEFINE_UNQUOTED([MAJOR_VERSION],$MAJOR_VERSION,[arprec major version number])
+@@ -32,6 +32,7 @@ AM_INIT_AUTOMAKE([nostdinc])
+ AM_CONFIG_HEADER([config.h include/arprec/arprec_config.h])
+ 
+ AC_CANONICAL_HOST
++LT_INIT
+ 
+ # Checks for command-line options
+ # --enable-inline option.
+@@ -118,7 +119,7 @@ if test "x$enable_debug" = "xyes"; then
+ fi
+ 
+ # --enable-qd
+-AC_ARG_ENABLE(enable-qd, AC_HELP_STRING(--enable-qd, [Use quad-double (QD)
++AC_ARG_ENABLE(qd, AC_HELP_STRING(--enable-qd, [Use quad-double (QD)
+ library. [[default=no]]]))
+ if test "x$enable_qd" = "xyes"; then
+   AC_CHECK_QD([2.3], [CXXFLAGS="$CXXFLAGS $QD_CXXFLAGS"])
+@@ -128,7 +129,7 @@ else
+ fi
+ 
+ # --enable-fma
+-AC_ARG_ENABLE(enable_fma, AC_HELP_STRING(--enable-fma, [use fused multiply-add/subtract (auto,gnu,c99,ibm,compiler).  Use this option with care.  [[default=auto]]]))
++AC_ARG_ENABLE(fma, AC_HELP_STRING(--enable-fma, [use fused multiply-add/subtract (auto,gnu,c99,ibm,compiler).  Use this option with care.  [[default=auto]]]))
+ if test "x$enable_fma" = "x"; then
+   enable_fma="auto"
+ fi
+@@ -281,6 +282,7 @@ AC_CONFIG_FILES([Makefile src/Makefile t
+                  fortran/Makefile toolkit/Makefile arprec-config 
+                  fortran/second.f toolkit/second.f])
+ 
++AC_CONFIG_FILES([arprec.pc])
+ AC_OUTPUT
+ 
+ # Inform user of important options
+--- origsrc/arprec-2.2.20/fortran/Makefile.am	2021-02-03 08:50:40.333616100 +0900
++++ src/arprec-2.2.20/fortran/Makefile.am	2024-10-12 16:15:03.141452000 +0900
+@@ -1,10 +1,13 @@
+ if HAVE_FORTRAN
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+-LDADD = libarprec_f_main.a libarprecmod.a $(top_builddir)/src/libarprec.a $(FCLIBS)
++LDADD = libarprecmod.la $(top_builddir)/src/libarprec.la $(FCLIBS)
+ 
+-lib_LIBRARIES = libarprecmod.a libarprec_f_main.a
+-libarprecmod_a_SOURCES = f_mp.cpp mp_mod.f mp_modm.f mp_modx.f
+-libarprec_f_main_a_SOURCES = main.cpp
++lib_LTLIBRARIES = libarprecmod.la
++noinst_LTLIBRARIES = libarprec_f_main.la
++libarprecmod_la_SOURCES = f_mp.cpp mp_mod.f mp_modm.f mp_modx.f
++libarprecmod_la_LDFLAGS = -no-undefined
++libarprecmod_la_LIBADD = -lgfortran $(top_builddir)/src/libarprec.la
++libarprec_f_main_la_SOURCES = main.cpp
+ 
+ if UPCASE_MODULE
+ MPCOMPLEXMOD = MPCOMPLEXMOD.$(module_ext)
+@@ -37,7 +40,7 @@ $(MPMODULEM): mp_modm.o
+ mp_modx.o: mp_mod.o
+ $(MPMODULEX): mp_modx.o
+ 
+-pkglib_DATA = $(MODULES)
++pkginclude_DATA = $(MODULES)
+ 
+ DEMO = pslq1$(EXEEXT) pslq2$(EXEEXT) pslq3$(EXEEXT) pslqm1$(EXEEXT) \
+        pslqm2$(EXEEXT) pslqm3$(EXEEXT) quadgs$(EXEEXT) quaderf$(EXEEXT) \
+--- origsrc/arprec-2.2.20/src/Makefile.am	2021-02-03 08:50:41.243973500 +0900
++++ src/arprec-2.2.20/src/Makefile.am	2024-10-12 15:41:39.069129100 +0900
+@@ -13,9 +13,10 @@ SRC = add.cpp agmx.cpp ang.cpp angx.cpp
+       dble.cpp                                                         \
+       small_inline.h
+ 
+-lib_LIBRARIES = libarprec.a
++lib_LTLIBRARIES = libarprec.la
+ 
+-libarprec_a_SOURCES = $(SRC)
++libarprec_la_SOURCES = $(SRC)
++libarprec_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+--- origsrc/arprec-2.2.20/tests/Makefile.am	2021-02-03 08:50:39.703793200 +0900
++++ src/arprec-2.2.20/tests/Makefile.am	2024-10-12 16:24:10.118460300 +0900
+@@ -1,4 +1,4 @@
+-LDADD = $(top_builddir)/src/libarprec.a
++LDADD = $(top_builddir)/src/libarprec.la
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+ TESTS = mp_test c_mp_test io
+@@ -19,9 +19,9 @@ AM_FFLAGS = $(AM_FCFLAGS)
+ 
+ f_mp_test_SOURCES = f_mp_test.f
+ f_mp_test_LINK = $(CXXLINK)
+-f_mp_test_LDADD = $(top_builddir)/fortran/libarprecmod.a \
+-               $(top_builddir)/fortran/libarprec_f_main.a \
+-               $(LDADD) $(top_builddir)/src/libarprec.a $(FCLIBS)
++f_mp_test_LDADD = $(top_builddir)/fortran/libarprecmod.la \
++               $(top_builddir)/fortran/libarprec_f_main.la \
++               $(LDADD) $(top_builddir)/src/libarprec.la $(FCLIBS)
+ endif
+ 
+ mp_timer_SOURCES = mp_timer.cpp tictoc.cpp
+--- origsrc/arprec-2.2.20/toolkit/Makefile.am	2021-02-03 08:50:40.603440000 +0900
++++ src/arprec-2.2.20/toolkit/Makefile.am	2024-10-12 16:11:31.153980000 +0900
+@@ -1,9 +1,9 @@
+ if HAVE_FORTRAN
+ AM_CPPFLAGS=-I$(top_builddir)
+ AM_FFLAGS=@ax_f90_modflag@$(top_builddir)/fortran
+-LDADD = $(top_builddir)/fortran/libarprec_f_main.a \
+-        $(top_builddir)/fortran/libarprecmod.a \
+-        $(top_builddir)/src/libarprec.a $(FCLIBS)
++LDADD = $(top_builddir)/fortran/libarprec_f_main.la \
++        $(top_builddir)/fortran/libarprecmod.la \
++        $(top_builddir)/src/libarprec.la $(FCLIBS)
+ 
+ TOOLKIT = mathinit$(EXEEXT) mathtool$(EXEEXT)
+ EXTRA_PROGRAMS = $(TOOLKIT)
+--- origsrc/arprec-2.2.20/toolkit/mathinit.f	2021-02-03 08:50:40.630489300 +0900
++++ src/arprec-2.2.20/toolkit/mathinit.f	2024-10-12 16:33:57.284352000 +0900
+@@ -24,7 +24,7 @@ subroutine f_main
+ use mpmodule
+ use globdata
+ integer i, nq3, nquadopt
+-parameter (nquadopt = 1)
++parameter (nquadopt = 3)
+ real*8 second, tm0, tm1, tm2
+ type (mp_real) catalan, eulergamma, t1, t2
+ external catalan, eulergamma, second
