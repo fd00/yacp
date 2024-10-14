@@ -1,0 +1,47 @@
+--- origsrc/libflowtuple-1.0/CMakeLists.txt	2019-10-09 05:34:41.000000000 +0900
++++ src/libflowtuple-1.0/CMakeLists.txt	2024-10-14 13:26:11.925312900 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 3.1)
+-project(libflowtuple C)
++project(libflowtuple VERSION 1.0 LANGUAGES C)
+ 
+ set(CMAKE_C_STANDARD 99)
+ 
+@@ -56,6 +56,10 @@ add_library(flowtuple SHARED
+         lib/libflowtuple/error.c)
+ target_link_libraries(flowtuple wandio)
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(flowtuple PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ add_executable(flow2ascii tools/flow2ascii.c)
+ target_link_libraries(flow2ascii flowtuple)
+ 
+@@ -64,5 +68,12 @@ target_link_libraries(flowproto flowtupl
+ 
+ install(FILES lib/libflowtuple/flowtuple.h DESTINATION include)
+ install(TARGETS flowtuple flow2ascii flowproto
+-        LIBRARY DESTINATION lib
++        ARCHIVE DESTINATION lib
+         RUNTIME DESTINATION bin)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libflowtuple.pc.in ${CMAKE_BINARY_DIR}/libflowtuple.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libflowtuple.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libflowtuple-1.0/libflowtuple.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libflowtuple-1.0/libflowtuple.pc.in	2024-10-14 13:25:06.647315000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libflowtuple
++Description: C library to read corsaro v2 flowtuple files
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lflowtuple
++Cflags: -I${includedir}
