@@ -1,0 +1,81 @@
+--- origsrc/seqdb-0.2.1/configure.ac	2014-01-10 22:33:41.000000000 +0900
++++ src/seqdb-0.2.1/configure.ac	2024-10-14 16:50:06.749363000 +0900
+@@ -8,14 +8,6 @@ AM_SILENT_RULES([yes])
+ 
+ AC_CANONICAL_HOST
+ 
+-# Set default optimization to O3
+-if test -z $CFLAGS; then
+-    CFLAGS="-O3 -g3"
+-fi
+-if test -z $CXXFLAGS; then
+-    CXXFLAGS="-O3 -g3"
+-fi
+-
+ # Checks for programs.
+ AC_PROG_MAKE_SET
+ AC_PROG_INSTALL
+@@ -25,17 +17,15 @@ AC_LANG([C++])
+ AC_PROG_CXX
+ 
+ # Checks for libraries.
+-AX_LIB_HDF5
+-if test $with_hdf5 = "no"; then
+-	AC_MSG_ERROR([could not locate HDF5 library])
+-fi
++AC_CHECK_LIB([hdf5], [H5open])
++HDF5_CPPFLAGS=
++HDF5_LDFLAGS=-lhdf5
++AC_SUBST([HDF5_CPPFLAGS])
++AC_SUBST([HDF5_LDFLAGS])
++PKG_CHECK_MODULES([BLOSC], [blosc])
+ 
+ AC_OPENMP
+ 
+-CPPFLAGS="$HDF5_CPPFLAGS $CPPFLAGS"
+-CXXFLAGS="$OPENMP_CXXFLAGS $CXXFLAGS"
+-LDFLAGS="$HDF5_LDFLAGS $OPENMP_LDFLAGS $LDFLAGS"
+-
+ # Checks for header files.
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+--- origsrc/seqdb-0.2.1/src/Makefile.am	2014-01-10 10:11:02.000000000 +0900
++++ src/seqdb-0.2.1/src/Makefile.am	2024-10-14 16:41:49.042851300 +0900
+@@ -4,9 +4,13 @@ lib_LTLIBRARIES = libseqdb.la
+ 
+ libseqdb_la_SOURCES = \
+ 	seq.cpp seqpack.cpp seqdb.cpp h5seqdb.cpp fastq.cpp \
+-	blosc_filter.c blosc.c blosclz.c shuffle.c \
++	blosc_filter.c blosclz.c shuffle.c \
+ 	seq.h seqpack.h seqdb.h h5seqdb.h fastq.h util.h \
+-	blosc_filter.h blosc.h blosclz.h shuffle.h
++	blosc_filter.h blosclz.h shuffle.h
++libseqdb_la_CPPFLAGS = $(BLOSC_CFLAGS)
++libseqdb_la_CXXFLAGS = $(OPENMP_CXXFLAGS)
++libseqdb_la_LIBADD = $(BLOSC_LIBS)
++libseqdb_la_LDFLAGS = -no-undefined
+ 
+ # programs
+ 
+--- origsrc/seqdb-0.2.1/src/blosc_filter.c	2014-01-10 10:11:02.000000000 +0900
++++ src/seqdb-0.2.1/src/blosc_filter.c	2024-10-14 16:34:21.197776700 +0900
+@@ -16,7 +16,7 @@
+ #include <string.h>
+ #include <errno.h>
+ #include <hdf5.h>
+-#include "blosc.h"
++#include <blosc.h>
+ #include "blosc_filter.h"
+ 
+ #if H5Epush_vers == 2
+--- origsrc/seqdb-0.2.1/src/h5seqdb.cpp	2014-01-10 22:33:41.000000000 +0900
++++ src/seqdb-0.2.1/src/h5seqdb.cpp	2024-10-14 16:34:07.898681200 +0900
+@@ -28,7 +28,7 @@
+ #include <string.h>
+ #include <algorithm>
+ #include <omp.h>
+-#include "blosc.h"
++#include <blosc.h>
+ #include "blosc_filter.h"
+ #include "h5seqdb.h"
+ 
