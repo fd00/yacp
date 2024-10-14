@@ -1,0 +1,81 @@
+--- origsrc/libipmeta/Makefile.am	2024-10-14 11:56:30.000000000 +0900
++++ src/libipmeta/Makefile.am	2024-10-14 12:04:45.184578600 +0900
+@@ -49,3 +49,6 @@ clang-format:
+ 
+ .PHONY: clang-format
+ 
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libipmeta/common/Makefile.am	2024-10-14 11:56:33.000000000 +0900
++++ src/libipmeta/common/Makefile.am	2024-10-14 11:57:44.723390400 +0900
+@@ -24,13 +24,13 @@
+ # POSSIBILITY OF SUCH DAMAGE.
+ #
+ 
+-SUBDIRS = libpatricia libinterval3 libcsv libjsmn
++SUBDIRS = libpatricia libinterval3
+ 
+ AM_CPPFLAGS = -I$(top_srcdir) \
+ 	-I$(top_srcdir)/common/libpatricia \
+ 	-I$(top_srcdir)/common/libpinterval3 \
+-	-I$(top_srcdir)/common/libcsv \
+-	-I$(top_srcdir)/common/libjsmn
++	$(LIBCSV_CFLAGS) \
++	$(JSMN_CFLAGS)
+ 
+ noinst_LTLIBRARIES = libcccommon.la
+ 
+@@ -53,8 +53,8 @@ libcccommon_la_SOURCES = \
+ 
+ libcccommon_la_LIBADD = $(top_builddir)/common/libpatricia/libpatricia.la \
+ 			$(top_builddir)/common/libinterval3/libinterval3.la \
+-			$(top_builddir)/common/libcsv/libcsv.la \
+-			$(top_builddir)/common/libjsmn/libjsmn.la \
++			$(LIBCSV_LIBS) \
++			$(JSMN_LIBS) \
+ 			$(CONDITIONAL_LIBS)
+ 
+ ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libipmeta/configure.ac	2024-10-14 11:56:30.000000000 +0900
++++ src/libipmeta/configure.ac	2024-10-14 12:04:45.184578600 +0900
+@@ -106,6 +106,9 @@ AC_CHECK_HEADERS([arpa/inet.h inttypes.h
+ # we may want to come back later and add compile-time configuration for things
+ # like datastructure providers, but for now it will all get compiled
+ 
++PKG_CHECK_MODULES([JSMN], [jsmn])
++PKG_CHECK_MODULES([LIBCSV], [libcsv])
++
+ AC_HEADER_ASSERT
+ 
+ AC_SUBST(LIBIPMETA_LIBTOOL_VERSION)
+@@ -122,4 +125,5 @@ AC_CONFIG_FILES([Makefile
+ 		lib/providers/Makefile
+ 		tools/Makefile
+ 		])
++AC_CONFIG_FILES([libipmeta.pc])
+ AC_OUTPUT
+--- origsrc/libipmeta/lib/Makefile.am	2024-10-14 11:56:30.000000000 +0900
++++ src/libipmeta/lib/Makefile.am	2024-10-14 11:58:46.549091200 +0900
+@@ -56,7 +56,7 @@ libipmeta_la_LIBADD = $(top_builddir)/co
+ 	$(top_builddir)/lib/datastructures/libipmeta_datastructures.la \
+ 	$(top_builddir)/lib/providers/libipmeta_providers.la
+ 
+-libipmeta_la_LDFLAGS = -version-info @LIBIPMETA_LIBTOOL_VERSION@
++libipmeta_la_LDFLAGS = -no-undefined -version-info @LIBIPMETA_LIBTOOL_VERSION@
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+--- origsrc/libipmeta/libipmeta.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libipmeta/libipmeta.pc.in	2024-10-14 12:04:45.169856300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libipmeta
++Description: IP metadata lookup library
++Version: @VERSION@
++Libs: -L${libdir} -lipmeta
++Cflags: -I${includedir}
