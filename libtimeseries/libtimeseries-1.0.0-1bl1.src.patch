@@ -1,0 +1,98 @@
+--- origsrc/libtimeseries/Makefile.am	2024-10-14 12:27:33.000000000 +0900
++++ src/libtimeseries/Makefile.am	2024-10-14 12:38:16.705778300 +0900
+@@ -45,3 +45,6 @@ clang-format:
+ 		clang-format -style=file -i {} \;
+ 
+ .PHONY: clang-format
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libtimeseries/common/Makefile.am	2024-10-14 12:27:36.000000000 +0900
++++ src/libtimeseries/common/Makefile.am	2024-10-14 12:28:33.898053700 +0900
+@@ -24,13 +24,13 @@
+ # POSSIBILITY OF SUCH DAMAGE.
+ #
+ 
+-SUBDIRS = libpatricia libinterval3 libcsv libjsmn
++SUBDIRS = libpatricia libinterval3
+ 
+ AM_CPPFLAGS = -I$(top_srcdir) \
+ 	-I$(top_srcdir)/common/libpatricia \
+ 	-I$(top_srcdir)/common/libpinterval3 \
+-	-I$(top_srcdir)/common/libcsv \
+-	-I$(top_srcdir)/common/libjsmn
++	$(LIBCSV_CFLAGS) \
++	$(JSMN_CFLAGS)
+ 
+ noinst_LTLIBRARIES = libcccommon.la
+ 
+@@ -52,8 +52,8 @@ libcccommon_la_SOURCES = \
+ 
+ libcccommon_la_LIBADD = $(top_builddir)/common/libpatricia/libpatricia.la \
+ 			$(top_builddir)/common/libinterval3/libinterval3.la \
+-			$(top_builddir)/common/libcsv/libcsv.la \
+-			$(top_builddir)/common/libjsmn/libjsmn.la \
++			$(LIBCSV_LIBS) \
++			$(JSMN_LIBS) \
+ 			$(CONDITIONAL_LIBS)
+ 
+ ACLOCAL_AMFLAGS = -I m4
+--- origsrc/libtimeseries/configure.ac	2024-10-14 12:27:33.000000000 +0900
++++ src/libtimeseries/configure.ac	2024-10-14 12:38:16.721401000 +0900
+@@ -52,8 +52,6 @@ AC_DEFINE_UNQUOTED([LIBTIMESERIES_MINOR_
+ 
+ LT_INIT
+ 
+-AM_INIT_AUTOMAKE
+-
+ AC_CONFIG_MACRO_DIR([m4])
+ 
+ AC_CONFIG_SRCDIR([lib/timeseries.c])
+@@ -157,14 +155,15 @@ AC_CHECK_HEADERS([arpa/inet.h inttypes.h
+ # we may want to come back later and add compile-time configuration for things
+ # like timeseries backends, but for now it will all get compiled
+ 
++PKG_CHECK_MODULES([JSMN], [jsmn])
++PKG_CHECK_MODULES([LIBCSV], [libcsv])
++
+ AC_HEADER_ASSERT
+ 
+ AC_SUBST([LIBTIMESERIES_MAJOR_VERSION])
+ AC_SUBST([LIBTIMESERIES_MID_VERSION])
+ AC_SUBST([LIBTIMESERIES_MINOR_VERSION])
+ 
+-AC_HEADER_ASSERT
+-
+ AC_CONFIG_FILES([Makefile
+ 		common/Makefile
+ 		common/libpatricia/Makefile
+@@ -176,4 +175,5 @@ AC_CONFIG_FILES([Makefile
+ 		lib/backends/Makefile
+ 		tools/Makefile
+ 		])
++AC_CONFIG_FILES([libtimeseries.pc])
+ AC_OUTPUT
+--- origsrc/libtimeseries/lib/Makefile.am	2024-10-14 12:27:33.000000000 +0900
++++ src/libtimeseries/lib/Makefile.am	2024-10-14 12:29:35.644186700 +0900
+@@ -64,7 +64,7 @@ libtimeseries_la_LIBADD = 			\
+ 	$(top_builddir)/common/libcccommon.la 	\
+ 	$(top_builddir)/lib/backends/libtimeseries_backends.la
+ 
+-libtimeseries_la_LDFLAGS = -version-info @LIBTIMESERIES_MAJOR_VERSION@:@LIBTIMESERIES_MID_VERSION@:@LIBTIMESERIES_MINOR_VERSION@
++libtimeseries_la_LDFLAGS = -no-undefined -version-info @LIBTIMESERIES_MAJOR_VERSION@:@LIBTIMESERIES_MID_VERSION@:@LIBTIMESERIES_MINOR_VERSION@
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+--- origsrc/libtimeseries/libtimeseries.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtimeseries/libtimeseries.pc.in	2024-10-14 12:38:16.690692100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtimeseries
++Description: Time-series abstraction library
++Version: @VERSION@
++Libs: -L${libdir} -ltimeseries
++Cflags: -I${includedir}
