@@ -1,0 +1,58 @@
+--- origsrc/ambit-0.7.1/CMakeLists.txt	2023-08-22 00:23:17.000000000 +0900
++++ src/ambit-0.7.1/CMakeLists.txt	2024-10-15 13:00:28.918780600 +0900
+@@ -26,7 +26,7 @@ endif()
+ cmake_minimum_required(VERSION 3.16)
+ 
+ project(ambit
+-        VERSION 0.6.0  # SYNC WITH `project(pyambit VERSION <>)` in pyambit/CMakeLists.txt
++        VERSION 0.7.1  # SYNC WITH `project(pyambit VERSION <>)` in pyambit/CMakeLists.txt
+         LANGUAGES C CXX)
+ set(ambit_AUTHORS      "Justin M. Turney")
+ set(ambit_DESCRIPTION  "C++ library for the implementation of tensor product calculations")
+@@ -198,3 +198,10 @@ install(
+ 
+ # this has to be the very last CMake module to be included
+ #include(ConfigInfo)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ambit.pc.in ${CMAKE_BINARY_DIR}/ambit.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ambit.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ambit-0.7.1/ambit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ambit-0.7.1/ambit.pc.in	2024-10-15 13:04:22.404015800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ambit
++Description: C++ library for the implementation of tensor product calculations
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lambit
++Cflags: -I${includedir}
+--- origsrc/ambit-0.7.1/pyambit/CMakeLists.txt	2023-08-22 00:23:17.000000000 +0900
++++ src/ambit-0.7.1/pyambit/CMakeLists.txt	2024-10-15 13:00:39.235761900 +0900
+@@ -7,7 +7,7 @@ cmake_policy(SET CMP0079 NEW)
+ 
+ project(
+   pyambit
+-  VERSION 0.6.0  # SYNC WITH `project(ambit VERSION <>)` in <top_level>/CMakeLists.txt
++  VERSION 0.7.1  # SYNC WITH `project(ambit VERSION <>)` in <top_level>/CMakeLists.txt
+   )
+ 
+ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
+--- origsrc/ambit-0.7.1/src/CMakeLists.txt	2023-08-22 00:23:17.000000000 +0900
++++ src/ambit-0.7.1/src/CMakeLists.txt	2024-10-15 12:24:23.573153900 +0900
+@@ -128,6 +128,9 @@ if (NOT STATIC_ONLY)
+         ambit_VERSION ${ambit_VERSION}
+       )
+     set_property(TARGET ambit-shared APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
++    if (DEFINED SOVERSION)
++      set_target_properties(ambit-shared PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+ endif()
+ 
+ if (NOT SHARED_ONLY)
