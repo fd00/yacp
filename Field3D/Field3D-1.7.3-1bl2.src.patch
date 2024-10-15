@@ -1,0 +1,114 @@
+--- origsrc/Field3D-1.7.3/CMakeLists.txt	2020-03-12 00:54:36.000000000 +0900
++++ src/Field3D-1.7.3/CMakeLists.txt	2024-10-15 09:49:25.773433500 +0900
+@@ -51,6 +51,9 @@ ENDIF ()
+ 
+ FIND_PACKAGE (ILMBase)
+ 
++find_package(pkgconfig)
++pkg_check_modules(OPENEXR OpenEXR)
++
+ # Allow the developer to select if Dynamic or Static libraries are built
+ OPTION (BUILD_SHARED_LIBS "Build Shared Libraries" ON)
+ 
+@@ -75,7 +78,10 @@ LINK_DIRECTORIES ( ${HDF5_LIBRARY_DIRS}
+ LINK_DIRECTORIES ( ${ILMBASE_LIBRARY_DIRS} )
+ 
+ IF ( CMAKE_HOST_UNIX )
+-  ADD_DEFINITIONS ( -fPIC -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
++  ADD_DEFINITIONS ( -DREQUIRE_IOSTREAM -Wno-invalid-offsetof )
++  IF ( NOT CYGWIN )
++    ADD_DEFINITIONS ( -fPIC )
++  ENDIF ( )
+ ENDIF ( )
+ IF ( CMAKE_HOST_WIN32 )
+   ADD_DEFINITIONS (
+@@ -147,9 +153,10 @@ IF ( CMAKE_HOST_UNIX )
+              ${MPI_LIBRARIES} )
+   ENDIF ( MPI_FOUND )
+   LIST ( APPEND Field3D_Libraries_Shared
+-    Iex Half IlmThread Imath
++    ${OPENEXR_LIBRARIES}
+     pthread dl z )
+-  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared} )
++  SET ( Field3D_DSO_Libraries ${Field3D_Libraries_Shared}
++        ${Boost_LIBRARIES} )
+   SET ( Field3D_BIN_Libraries Field3D ${Field3D_Libraries_Shared}
+         ${Boost_LIBRARIES} )
+ ENDIF ( )
+@@ -242,23 +249,22 @@ ADD_EXECUTABLE ( create_and_write
+ 
+ TARGET_LINK_LIBRARIES ( create_and_write ${Field3D_BIN_Libraries} )
+ 
+-IF (DOXYGEN_FOUND)
++IF (INSTALL_DOCS AND DOXYGEN_FOUND)
+   ADD_CUSTOM_TARGET ( doc
+     ALL
+     ${DOXYGEN_EXECUTABLE} Field3D.doxyfile
+     WORKING_DIRECTORY ${CMAKE_HOME_DIRECTORY}
+     )
+-  IF (INSTALL_DOCS)
+     INSTALL (DIRECTORY 
+       ${CMAKE_HOME_DIRECTORY}/docs
+       DESTINATION ${CMAKE_INSTALL_PREFIX}
+     )
+-  ENDIF (INSTALL_DOCS)
+-ENDIF (DOXYGEN_FOUND)
++ENDIF (INSTALL_DOCS AND DOXYGEN_FOUND)
+ 
+ INSTALL ( TARGETS
+   Field3D
+-  DESTINATION lib${LIB_SUFFIX}
++  RUNTIME DESTINATION bin
++  ARCHIVE DESTINATION lib${LIB_SUFFIX}
+ )
+ 
+ FILE(GLOB Field3d_Includes  "${CMAKE_CURRENT_SOURCE_DIR}/export/*.h")
+@@ -272,3 +278,9 @@ INSTALL ( TARGETS f3dinfo
+   RUNTIME DESTINATION bin
+ )
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/Field3D.pc.in ${CMAKE_BINARY_DIR}/Field3D.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/Field3D.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Field3D-1.7.3/Field3D.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Field3D-1.7.3/Field3D.pc.in	2024-10-15 09:16:31.157106900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Field3D
++Description: Library for storing voxel data on disk and in memory
++Version: @FIELD3D_VERSION@
++Libs: -L${libdir} -lField3D
++Cflags: -I${includedir}
+--- origsrc/Field3D-1.7.3/src/Field3DFileHDF5.cpp	2020-03-12 00:54:36.000000000 +0900
++++ src/Field3D-1.7.3/src/Field3DFileHDF5.cpp	2024-10-15 09:33:40.824524800 +0900
+@@ -1133,9 +1133,9 @@ herr_t parsePartitions(hid_t loc_id, con
+   GlobalLock lock(g_hdf5Mutex);
+ 
+   herr_t          status;
+-  H5O_info_t      infobuf;
++  H5O_info1_t      infobuf;
+ 
+-  status = H5Oget_info_by_name(loc_id, itemName, &infobuf, H5P_DEFAULT);
++  status = H5Oget_info_by_name1(loc_id, itemName, &infobuf, H5P_DEFAULT);
+ 
+   if (status < 0) {
+     return -1;
+@@ -1173,9 +1173,9 @@ herr_t parseLayers(hid_t loc_id, const c
+   GlobalLock lock(g_hdf5Mutex);
+ 
+   herr_t          status;
+-  H5O_info_t      infobuf;
++  H5O_info1_t      infobuf;
+   
+-  status = H5Oget_info_by_name (loc_id, itemName, &infobuf, H5P_DEFAULT);
++  status = H5Oget_info_by_name1 (loc_id, itemName, &infobuf, H5P_DEFAULT);
+ 
+   if (infobuf.type == H5O_TYPE_GROUP) {
+ 
