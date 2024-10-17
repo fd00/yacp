@@ -1,0 +1,77 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Fast image processing library with low memory needs"
+DESCRIPTION="VIPS is a free image processing system. It is good with large images (images
+larger than the amount of RAM you have available), with many CPUs (see
+Benchmarks for examples of SMP scaling, VIPS is also part of the PARSEC
+suite), for working with colour, for scientific analysis and for general
+research & development. As well as JPEG, TIFF and PNG images, it also supports
+scientific formats like FITS, Matlab, Analyze, PFM, Radiance and OpenSlide."
+
+LICENSE="LGPL-2.1-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.1-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libarchive-devel libcairo-devel libcfitsio-devel libcgif-devel libexif-devel libexpat-devel libfftw3-devel libfontconfig-devel libglib2.0-devel libheif-devel libhwy-devel libimagequant-devel libintl-devel libjpeg-devel liblcms2-devel libMagick-devel libmatio-devel libnifti-devel libopenexr-devel libopenjp2-devel libopenslide-devel libpango1.0-devel libpoppler-glib-devel librsvg2-devel libspng-devel libtiff-devel libwebp-devel zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit meson
+
+CYGMESON_ARGS="
+	-Dnifti-prefix-dir=/usr
+	-Dpdfium=disabled
+"
+
+src_install()
+{
+	cd ${S}
+	meson_install
+
+	cd ${D}
+	rm -f usr/lib/vips-modules-8.15/vips-*.dll.a
+}
+
+PKG_NAMES="
+	${PN}
+	${PN}42
+	${PN}-devel
+	${PN}-cpp42.${PV}
+	${PN}-cpp-devel
+	girepository-Vips8.0
+"
+libvips_CONTENTS="
+	usr/bin/[blsv]*
+	usr/share/doc
+	usr/share/man
+"
+libvips42_CONTENTS="
+	usr/bin/cyg*-42.dll
+	usr/lib/vips-modules-*/*.dll
+	usr/share/locale
+"
+libvips_devel_CONTENTS="
+	usr/include/vips/[a-z]*
+	usr/lib/libvips.dll.a
+	usr/lib/pkgconfig/vips.pc
+"
+libvips_cpp42_8_15_4_CONTENTS="
+	usr/bin/cygvips-cpp-42.${PV}.dll
+"
+libvips_cpp_devel_CONTENTS="
+	usr/include/vips/V*
+	usr/lib/libvips-cpp.dll.a
+	usr/lib/pkgconfig/vips-cpp.pc
+"
+girepository_Vips8_0_CONTENTS="
+	usr/lib/girepository-1.0
+	usr/share/gir-1.0
+"
+libvips_SUMMARY="${SUMMARY} (utilities)"
+libvips42_SUMMARY="${SUMMARY} (runtime)"
+libvips_devel_SUMMARY="${SUMMARY} (development)"
+libvips_cpp42_8_15_4_SUMMARY="${SUMMARY} (runtime / c++)"
+libvips_cpp_devel_SUMMARY="${SUMMARY} (development / c++)"
+girepository_Vips8_0_SUMMARY="${SUMMARY} (GObject Introspection data)"
