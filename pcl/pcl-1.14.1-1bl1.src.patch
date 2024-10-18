@@ -1,0 +1,257 @@
+--- origsrc/pcl-pcl-1.14.1/CMakeLists.txt	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/CMakeLists.txt	2024-10-17 16:21:22.061118500 +0900
+@@ -101,7 +101,7 @@ endif()
+ 
+ # check for SSE flags
+ include("${PCL_SOURCE_DIR}/cmake/pcl_find_sse.cmake")
+-if(PCL_ENABLE_SSE AND "${CMAKE_CXX_FLAGS}" STREQUAL "${CMAKE_CXX_FLAGS_DEFAULT}")
++if(PCL_ENABLE_SSE)
+   PCL_CHECK_FOR_SSE()
+ endif()
+ 
+--- origsrc/pcl-pcl-1.14.1/cmake/pcl_targets.cmake	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/cmake/pcl_targets.cmake	2024-10-18 09:26:55.973713300 +0900
+@@ -419,6 +419,10 @@ macro(PCL_ADD_TEST _name _exename)
+ 
+   target_link_libraries(${_exename} Threads::Threads ${ATOMIC_LIBRARY})
+ 
++  if (GTEST_FOUND)
++    target_include_directories(${_exename} PUBLIC ${CMAKE_SOURCE_DIR}/test/include)
++  endif()
++
+   #Only applies to MSVC
+   if(MSVC)
+     #Requires CMAKE version 3.13.0
+--- origsrc/pcl-pcl-1.14.1/cmake/pcl_utils.cmake	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/cmake/pcl_utils.cmake	2024-10-17 16:34:32.799472600 +0900
+@@ -106,6 +106,8 @@ macro(SET_INSTALL_DIRS)
+     set(PKGCFG_INSTALL_DIR "${LIB_INSTALL_DIR}/pkgconfig")
+     if(WIN32 AND NOT MINGW)
+         set(PCLCONFIG_INSTALL_DIR "cmake")
++      elseif(CYGWIN)
++        set(PCLCONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
+       else()
+         set(PCLCONFIG_INSTALL_DIR "share/${PROJECT_NAME_LOWER}-${PCL_VERSION_MAJOR}.${PCL_VERSION_MINOR}")
+       endif()
+--- origsrc/pcl-pcl-1.14.1/common/include/pcl/pcl_exports.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/common/include/pcl/pcl_exports.h	2024-10-17 16:31:38.214952500 +0900
+@@ -38,7 +38,7 @@
+ // Header 'pcl_macros' is not suitable since it includes <Eigen/Core>,
+ // which can't be eaten by nvcc (it's too weak)
+ 
+-#if defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+--- origsrc/pcl-pcl-1.14.1/common/include/pcl/pcl_macros.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/common/include/pcl/pcl_macros.h	2024-10-17 16:31:55.899516500 +0900
+@@ -316,7 +316,7 @@ pcl_round (float number)
+     #endif
+ #endif
+ 
+-#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+--- origsrc/pcl-pcl-1.14.1/common/include/pcl/range_image/range_image.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/common/include/pcl/range_image/range_image.h	2024-10-17 21:42:23.680539800 +0900
+@@ -71,7 +71,7 @@ namespace pcl
+       /** Constructor */
+       PCL_EXPORTS RangeImage ();
+       /** Destructor */
+-      PCL_EXPORTS virtual ~RangeImage () = default;
++      PCL_EXPORTS virtual ~RangeImage ();
+ 
+       // =====STATIC VARIABLES=====
+       /** The maximum number of openmp threads that can be used in this class */
+@@ -782,10 +782,10 @@ namespace pcl
+ 
+ 
+       // =====STATIC PROTECTED=====
+-      static const int lookup_table_size;
+-      static std::vector<float> asin_lookup_table;
+-      static std::vector<float> atan_lookup_table;
+-      static std::vector<float> cos_lookup_table;
++      PCL_EXPORTS static const int lookup_table_size;
++      PCL_EXPORTS static std::vector<float> asin_lookup_table;
++      PCL_EXPORTS static std::vector<float> atan_lookup_table;
++      PCL_EXPORTS static std::vector<float> cos_lookup_table;
+       /** Create lookup tables for trigonometric functions */
+       static void
+       createLookupTables ();
+--- origsrc/pcl-pcl-1.14.1/common/src/range_image.cpp	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/common/src/range_image.cpp	2024-10-17 21:23:01.724018000 +0900
+@@ -1012,5 +1012,6 @@ RangeImage::copyTo (RangeImage& other) c
+   other = *this;
+ }
+ 
++RangeImage::~RangeImage() = default;
+ }  // namespace end
+ 
+--- origsrc/pcl-pcl-1.14.1/outofcore/CMakeLists.txt	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/outofcore/CMakeLists.txt	2024-10-17 16:33:10.223343200 +0900
+@@ -18,8 +18,9 @@ if(NOT build)
+   return()
+ endif()
+ 
++pkg_check_modules(LIBCJSON libcjson REQUIRED)
++
+ set(srcs
+-  src/cJSON.cpp
+   src/outofcore_node_data.cpp
+   src/outofcore_base_data.cpp
+ )
+@@ -32,7 +33,6 @@ set(incs
+   "include/pcl/${SUBSYS_NAME}/outofcore_breadth_first_iterator.h"
+   "include/pcl/${SUBSYS_NAME}/outofcore_depth_first_iterator.h"
+   "include/pcl/${SUBSYS_NAME}/boost.h"
+-  "include/pcl/${SUBSYS_NAME}/cJSON.h"
+   "include/pcl/${SUBSYS_NAME}/octree_base.h"
+   "include/pcl/${SUBSYS_NAME}/octree_base_node.h"
+   "include/pcl/${SUBSYS_NAME}/octree_abstract_node_container.h"
+@@ -69,7 +69,7 @@ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ 
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${impl_incs} ${visualization_incs})
+ #PCL_ADD_SSE_FLAGS("${LIB_NAME}")
+-target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization ${Boost_SYSTEM_LIBRARY})
++target_link_libraries("${LIB_NAME}" pcl_common pcl_visualization ${Boost_SYSTEM_LIBRARY} ${LIBCJSON_LIBRARIES})
+ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS})
+ 
+ # Install include files
+--- origsrc/pcl-pcl-1.14.1/registration/include/pcl/registration/icp.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/registration/include/pcl/registration/icp.h	2024-10-18 13:11:28.532936800 +0900
+@@ -95,7 +95,7 @@ namespace pcl {
+  * \ingroup registration
+  */
+ template <typename PointSource, typename PointTarget, typename Scalar = float>
+-class IterativeClosestPoint : public Registration<PointSource, PointTarget, Scalar> {
++class PCL_EXPORTS IterativeClosestPoint : public Registration<PointSource, PointTarget, Scalar> {
+ public:
+   using PointCloudSource =
+       typename Registration<PointSource, PointTarget, Scalar>::PointCloudSource;
+@@ -143,6 +143,7 @@ public:
+   using Matrix4 = typename Registration<PointSource, PointTarget, Scalar>::Matrix4;
+ 
+   /** \brief Empty constructor. */
++  inline PCL_EXPORTS
+   IterativeClosestPoint()
+   {
+     reg_name_ = "IterativeClosestPoint";
+@@ -195,6 +196,7 @@ public:
+    *
+    * \param[in] cloud the input point cloud source
+    */
++  inline PCL_EXPORTS
+   void
+   setInputSource(const PointCloudSourceConstPtr& cloud) override
+   {
+@@ -228,6 +230,7 @@ public:
+    *
+    * \param[in] cloud the input point cloud target
+    */
++  inline PCL_EXPORTS
+   void
+   setInputTarget(const PointCloudTargetConstPtr& cloud) override
+   {
+--- origsrc/pcl-pcl-1.14.1/registration/include/pcl/registration/transformation_estimation_svd.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/registration/include/pcl/registration/transformation_estimation_svd.h	2024-10-18 11:18:50.100939500 +0900
+@@ -43,6 +43,7 @@
+ #include <pcl/registration/transformation_estimation.h>
+ #include <pcl/cloud_iterator.h>
+ #include <pcl/pcl_config.h> // for PCL_NO_PRECOMPILE
++#include <pcl/pcl_exports.h>
+ 
+ namespace pcl {
+ namespace registration {
+@@ -76,6 +77,7 @@ public:
+    * \param[in] cloud_tgt the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::PointCloud<PointTarget>& cloud_tgt,
+@@ -88,6 +90,7 @@ public:
+    * \param[in] cloud_tgt the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::Indices& indices_src,
+@@ -103,6 +106,7 @@ public:
+    * interest points from \a indices_src
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::Indices& indices_src,
+@@ -128,6 +132,7 @@ protected:
+    * \param[in] target_it an iterator over the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   void
+   estimateRigidTransformation(ConstCloudIterator<PointSource>& source_it,
+                               ConstCloudIterator<PointTarget>& target_it,
+--- origsrc/pcl-pcl-1.14.1/test/CMakeLists.txt	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/test/CMakeLists.txt	2024-10-18 09:24:09.272897400 +0900
+@@ -8,11 +8,17 @@ if(NOT build)
+   return()
+ endif()
+ 
+-find_package(GTestSource REQUIRED)
+-include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
++find_package(GTest)
++if (GTEST_FOUND)
++  add_library(pcl_gtest INTERFACE)
++  target_link_libraries(pcl_gtest INTERFACE GTest::gtest GTest::gtest_main)
++else()
++  find_package(GTestSource REQUIRED)
++  include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
+ 
+-add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
+-target_include_directories(pcl_gtest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
++  add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
++  target_include_directories(pcl_gtest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
++endif()
+ 
+ enable_testing()
+ 
+--- origsrc/pcl-pcl-1.14.1/visualization/include/pcl/visualization/vtk/vtkFixedXRenderWindowInteractor.h	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/visualization/include/pcl/visualization/vtk/vtkFixedXRenderWindowInteractor.h	2024-10-18 09:43:06.896073400 +0900
+@@ -35,16 +35,17 @@
+ #include "vtkRenderWindowInteractor.h"
+ #include "vtkRenderingUIModule.h" // For export macro
+ #include <X11/Xlib.h>             // Needed for X types in the public interface
++#include <pcl/pcl_exports.h>
+ 
+ namespace pcl {
+ class vtkCallbackCommand;
+ class vtkXRenderWindowInteractorInternals;
+ 
+-class VTKRENDERINGUI_EXPORT vtkXRenderWindowInteractor : public vtkRenderWindowInteractor
++class PCL_EXPORTS vtkXRenderWindowInteractor : public vtkRenderWindowInteractor
+ {
+ public:
+-  vtkXRenderWindowInteractor(const vtkXRenderWindowInteractor&) = delete;
+-  void operator=(const vtkXRenderWindowInteractor&) = delete;
++  vtkXRenderWindowInteractor(const vtkXRenderWindowInteractor&);
++  void operator=(const vtkXRenderWindowInteractor&);
+ 
+   static vtkXRenderWindowInteractor* New();
+   vtkTypeMacro(vtkXRenderWindowInteractor, vtkRenderWindowInteractor);
+--- origsrc/pcl-pcl-1.14.1/visualization/src/vtk/vtkFixedXRenderWindowInteractor.cxx	2024-05-03 21:14:21.000000000 +0900
++++ src/pcl-pcl-1.14.1/visualization/src/vtk/vtkFixedXRenderWindowInteractor.cxx	2024-10-17 22:23:31.772407900 +0900
+@@ -974,4 +974,8 @@ void vtkXRenderWindowInteractor::GetMous
+ // {
+ //   vtkXRenderWindowInteractorCallback(w, client_data, event, ctd);
+ // }
++
++vtkXRenderWindowInteractor::vtkXRenderWindowInteractor(const vtkXRenderWindowInteractor&) = delete;
++void vtkXRenderWindowInteractor::operator=(const vtkXRenderWindowInteractor&) = delete;
++
+ } // namespace pcl
