@@ -1,0 +1,62 @@
+--- origsrc/SampleICC-1.6.11/Contrib/ICC_utils/Makefile.am	2007-05-30 12:37:18.000000000 +0900
++++ src/SampleICC-1.6.11/Contrib/ICC_utils/Makefile.am	2024-10-20 23:43:04.046241300 +0900
+@@ -9,7 +9,8 @@ libICC_utils_la_SOURCES = Stubs.cpp \
+ 	ICC_tool_exception.cpp \
+ 	Vetters.cpp
+ 
+-libICC_utils_la_LDFLAGS = -version-info @LIBTOOL_VERSION@
++libICC_utils_la_LDFLAGS = -no-undefined -version-info @LIBTOOL_VERSION@
++libICC_utils_la_LIBADD = $(top_builddir)/IccProfLib/libSampleICC.la
+ 
+ libICC_utils_includedir = $(includedir)/SampleICC
+ 
+@@ -23,5 +24,3 @@ libICC_utils_include_HEADERS = Stubs.h \
+ INCLUDES = -I$(top_builddir) -I$(top_srcdir)/IccProfLib \
+ 	-I$(top_srcdir)/Contrib/ICC_utils
+ 
+-LDADD = -L$(top_builddir)/IccProfLib -lSampleICC
+-
+--- origsrc/SampleICC-1.6.11/IccProfLib/IccUtil.cpp	2015-10-05 19:22:30.000000000 +0900
++++ src/SampleICC-1.6.11/IccProfLib/IccUtil.cpp	2024-10-20 23:43:04.061868600 +0900
+@@ -1971,9 +1971,9 @@ const wchar_t *CIccUTF16String::ToWStrin
+     buf += (wchar_t)0x20;
+   }
+   icUInt16Number *srcStr = m_str;
+-  UTF32 *dstStr = buf.c_str();
++  UTF32 *dstStr = reinterpret_cast<UTF32 *>(const_cast<wchar_t *>(buf.c_str()));
+ 
+-  icConvertUTF16toUTF32((UTF16**)&srcStr, &strStr[m_len], &dstStr, &dstStr[buf.size()], lenientConversion);
++  icConvertUTF16toUTF32((UTF16**)&srcStr, &srcStr[m_len], &dstStr, &dstStr[buf.size()], lenientConversion);
+ #else
+   size_t i;
+ 
+--- origsrc/SampleICC-1.6.11/IccProfLib/Makefile.am	2010-08-24 10:33:20.000000000 +0900
++++ src/SampleICC-1.6.11/IccProfLib/Makefile.am	2024-10-20 23:43:04.061868600 +0900
+@@ -23,7 +23,7 @@ libSampleICC_la_SOURCES = \
+ 	IccUtil.cpp \
+ 	md5.cpp
+ 
+-libSampleICC_la_LDFLAGS = -version-info @LIBTOOL_VERSION@
++libSampleICC_la_LDFLAGS = -no-undefined -version-info @LIBTOOL_VERSION@
+ 
+ libSampleICCincludedir = $(includedir)/SampleICC
+ 
+--- origsrc/SampleICC-1.6.11/configure.ac	2024-10-20 23:42:56.233746400 +0900
++++ src/SampleICC-1.6.11/configure.ac	2024-10-20 23:53:34.175847600 +0900
+@@ -6,7 +6,7 @@ AC_CANONICAL_TARGET
+ 
+ SAMPLEICC_MAJOR_VERSION=1
+ SAMPLEICC_MINOR_VERSION=6
+-SAMPLEICC_MICRO_VERSION=8
++SAMPLEICC_MICRO_VERSION=11
+ 
+ SAMPLEICC_VERSION=$SAMPLEICC_MAJOR_VERSION.$SAMPLEICC_MINOR_VERSION.${SAMPLEICC_MICRO_VERSION}
+ AC_SUBST(SAMPLEICC_VERSION)
+@@ -191,7 +191,6 @@ Tools/CmdLine/IccApplyNamedCmm/Makefile
+ Tools/CmdLine/IccApplyProfiles/Makefile
+ Tools/CmdLine/IccDumpProfile/Makefile
+ Tools/CmdLine/IccGamutMapGirdle/Makefile
+-Tools/CmdLine/IccGetBPCInfo/Makefile
+ Tools/CmdLine/IccProfLibTest/Makefile
+ Tools/CmdLine/IccRoundTrip/Makefile
+ Tools/CmdLine/IccStripUnknownTags/Makefile
