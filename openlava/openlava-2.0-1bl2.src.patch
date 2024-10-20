@@ -1,0 +1,677 @@
+--- origsrc/openlava-2.0/chkpnt/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/chkpnt/Makefile.am	2024-10-20 14:12:57.428715900 +0900
+@@ -6,7 +6,7 @@ INCLUDES = -I../lsf
+ sbin_PROGRAMS = echkpnt erestart
+ 
+ echkpnt_SOURCES = echkpnt.c echkpnt.env.c echkpnt.lib.c echkpnt.lib.h echkpnt.env.h
+-echkpnt_LDADD = ../lsf/lib/liblsf.a
++echkpnt_LDADD = ../lsf/lib/liblsf.la
+ 
+ erestart_SOURCES = erestart.c echkpnt.env.c echkpnt.lib.c echkpnt.lib.h echkpnt.env.h
+-erestart_LDADD = ../lsf/lib/liblsf.a
++erestart_LDADD = ../lsf/lib/liblsf.la
+--- origsrc/openlava-2.0/config/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/config/Makefile.am	2024-10-20 10:48:50.122719700 +0900
+@@ -7,7 +7,7 @@
+ 
+ # Install the shell profile scrips and the system startup 
+ # script in the etc directory.
+-etcdir = $(prefix)/etc
++etcdir = $(sysconfdir)/openlava
+ etc_DATA = openlava openlava.sh openlava.csh \
+ 	lsf.conf lsf.cluster.openlava lsf.shared lsf.task \
+ 	lsb.hosts lsb.params lsb.queues lsb.users 
+--- origsrc/openlava-2.0/configure.ac	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/configure.ac	2024-10-20 13:08:59.454181400 +0900
+@@ -35,7 +35,7 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RU
+ # Check for programs
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-AC_PROG_RANLIB
++LT_INIT
+ AC_PROG_YACC
+ AC_PROG_LEX
+ AC_PROG_LN_S
+--- origsrc/openlava-2.0/eauth/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/eauth/Makefile.am	2024-10-20 14:12:01.910975100 +0900
+@@ -5,4 +5,4 @@ INCLUDES = -I$(top_srcdir)/lsf
+ 
+ sbin_PROGRAMS = eauth
+ eauth_SOURCES = eauth.c
+-eauth_LDADD = ../lsf/lib/liblsf.a ../lsf/intlib/liblsfint.a
++eauth_LDADD = ../lsf/intlib/liblsfint.la ../lsf/lib/liblsf.la
+--- origsrc/openlava-2.0/lsbatch/bhist/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/bhist/Makefile.am	2024-10-20 14:10:25.892970900 +0900
+@@ -9,9 +9,9 @@ bhist_SOURCES  = bhist.c read.event.c bh
+ bhist_LDADD = ../cmd/cmd.job.o \
+ 	../cmd/cmd.misc.o ../cmd/cmd.jobid.o ../cmd/cmd.prt.o \
+ 	../cmd/cmd.err.o ../cmd/cmd.hist.o \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bhist_LDADD += -lnsl
+ endif
+--- origsrc/openlava-2.0/lsbatch/cmd/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/cmd/Makefile.am	2024-10-20 14:06:39.125281600 +0900
+@@ -12,18 +12,18 @@ badmin_SOURCES = badmin.c cmd.bqc.c cmd.
+ 	cmd.bhc.c cmd.misc.c cmd.job.c cmd.prt.c \
+ 	badmin.h cmd.h
+ badmin_LDADD = ../../lsf/lsadm/startup.o \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ badmin_LDADD += -lnsl
+ endif
+ 
+ bkill_SOURCES = bkill.c cmd.sig.c cmd.jobid.c cmd.err.c
+ bkill_LDADD = \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ 
+ if !CYGWIN
+ bkill_LDADD += -lnsl
+@@ -31,9 +31,9 @@ endif
+ 
+ bparams_SOURCES = bparams.c cmd.h
+ bparams_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bparams_LDADD += -lnsl
+ endif
+@@ -42,9 +42,9 @@ endif
+ brestart_SOURCES = brestart.c cmd.sub.c cmd.jobid.c \
+ 	cmd.err.c cmd.h
+ brestart_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ brestart_LDADD += -lnsl
+ endif
+@@ -53,9 +53,9 @@ endif
+ btop_SOURCES = btop.c cmd.move.c cmd.jobid.c cmd.misc.c \
+ 	 cmd.prt.c cmd.err.c cmd.h
+ btop_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ btop_LDADD += -lnsl
+ endif
+@@ -64,9 +64,9 @@ endif
+ bbot_SOURCES = bbot.c cmd.move.c cmd.jobid.c cmd.misc.c \
+ 	 cmd.prt.c cmd.err.c cmd.h
+ bbot_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bbot_LDADD += -lnsl
+ endif
+@@ -74,9 +74,9 @@ endif
+ 
+ bmgroup_SOURCES = bmgroup.c cmd.misc.c cmd.h
+ bmgroup_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bmgroup_LDADD += -lnsl
+ endif
+@@ -84,9 +84,9 @@ endif
+ 
+ bpeek_SOURCES = bpeek.c cmd.err.c cmd.jobid.c cmd.misc.c cmd.prt.c cmd.h
+ bpeek_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bpeek_LDADD += -lnsl
+ endif
+@@ -94,9 +94,9 @@ endif
+ 
+ brun_SOURCES = brun.c cmd.jobid.c cmd.err.c cmd.h
+ brun_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ brun_LDADD += -lnsl
+ endif
+@@ -104,9 +104,9 @@ endif
+ 
+ busers_SOURCES = busers.c cmd.misc.c
+ busers_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ busers_LDADD += -lnsl
+ endif
+@@ -114,36 +114,36 @@ endif
+ 
+ bhosts_SOURCES = bhosts.c cmd.prt.c cmd.misc.c cmd.h
+ bhosts_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bhosts_LDADD += -lnsl
+ endif
+ 
+ bmig_SOURCES = bmig.c cmd.jobid.c cmd.err.c cmd.h
+ bmig_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bmig_LDADD += -lnsl
+ endif
+ 
+ bqueues_SOURCES = bqueues.c cmd.prt.c cmd.misc.c cmd.h
+ bqueues_LDADD = \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bqueues_LDADD += -lnsl
+ endif
+ 
+ bsub_SOURCES = bsub.c cmd.sub.c cmd.jobid.c cmd.err.c cmd.h
+ bsub_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bsub_LDADD += -lnsl
+ endif
+@@ -151,36 +151,36 @@ endif
+ bjobs_SOURCES = bjobs.c cmd.prt.c cmd.err.c cmd.job.c \
+ 	cmd.jobid.c cmd.misc.c cmd.h
+ bjobs_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bjobs_LDADD += -lnsl
+ endif
+ 
+ bmod_SOURCES = bmod.c cmd.sub.c cmd.jobid.c cmd.err.c cmd.h
+ bmod_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bmod_LDADD += -lnsl
+ endif
+ 
+ brequeue_SOURCES = brequeue.c cmd.jobid.c cmd.err.c cmd.h
+ brequeue_LDADD =   \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ brequeue_LDADD += -lnsl
+ endif
+ 
+ bswitch_SOURCES = bswitch.c cmd.jobid.c cmd.err.c cmd.h
+ bswitch_LDADD =  \
+-	../lib/liblsbatch.a \
+-	../../lsf/lib/liblsf.a \
+-	../../lsf/intlib/liblsfint.a  -lm
++	../../lsf/intlib/liblsfint.la ../lib/liblsbatch.la  \
++	../../lsf/lib/liblsf.la \
++	-lm
+ if !CYGWIN
+ bswitch_LDADD += -lnsl
+ endif
+--- origsrc/openlava-2.0/lsbatch/cmd/bjobs.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/cmd/bjobs.c	2024-10-20 13:02:23.718465100 +0900
+@@ -671,17 +671,17 @@ displayJobs (struct jobInfoEnt *job, str
+ 
+ 
+     if ((options & PEND_JOB) &&  IS_PEND(job->status)) {
+-        printf(lsb_pendreason(job->numReasons, job->reasonTb, NULL,
++        printf("%s", lsb_pendreason(job->numReasons, job->reasonTb, NULL,
+                               loadIndex));
+     }
+ 
+ 
+     if ((options & SUSP_JOB) &&  IS_SUSP(job->status)) {
+         if (job->status & JOB_STAT_PSUSP && !(options & PEND_JOB))
+-            printf(lsb_pendreason(job->numReasons, job->reasonTb, NULL,
++            printf("%s", lsb_pendreason(job->numReasons, job->reasonTb, NULL,
+                                   loadIndex));
+         else if (!(job->status & JOB_STAT_PSUSP))
+-            printf(lsb_suspreason(job->reasons, job->subreasons, loadIndex));
++            printf("%s", lsb_suspreason(job->reasons, job->subreasons, loadIndex));
+     }
+ 
+ cleanup:
+--- origsrc/openlava-2.0/lsbatch/cmd/cmd.sub.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/cmd/cmd.sub.c	2024-10-20 13:01:17.057214200 +0900
+@@ -405,7 +405,7 @@ parseScript (FILE *from, int *embedArgc,
+         }
+         ttyin = isatty(fileno(from));
+         if (ttyin){
+-            printf(prompt);
++            printf("%s", prompt);
+             fflush(stdout);
+         }
+     }
+@@ -456,7 +456,7 @@ parseScript (FILE *from, int *embedArgc,
+ 
+ 
+             if (ttyin) {
+-                printf(prompt);
++                printf("%s", prompt);
+                 fflush(stdout);
+             }
+         }
+--- origsrc/openlava-2.0/lsbatch/daemons/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/daemons/Makefile.am	2024-10-20 13:57:13.424044400 +0900
+@@ -17,9 +17,10 @@ else
+ mbatchd_SOURCES += mbd.policy.c
+ endif
+ 
+-mbatchd_LDADD = ../lib/liblsbatch.a \
+-                ../../lsf/lib/liblsf.a \
+-                ../../lsf/intlib/liblsfint.a -lm
++mbatchd_LDADD = ../../lsf/intlib/liblsfint.la \
++                ../lib/liblsbatch.la \
++                ../../lsf/lib/liblsf.la \
++                -lm
+ if !CYGWIN
+ mbatchd_LDADD += -lnsl
+ endif
+@@ -29,9 +30,10 @@ sbatchd_SOURCES = sbd.comm.c sbd.file.c
+                   elock.c mail.c misc.c daemons.c daemons.xdr.c \
+                   sbd.h daemonout.h daemons.h 
+ 
+-sbatchd_LDADD = ../lib/liblsbatch.a \
+-                ../../lsf/lib/liblsf.a \
+-                ../../lsf/intlib/liblsfint.a -lm
++sbatchd_LDADD = ../../lsf/intlib/liblsfint.la \
++                ../lib/liblsbatch.la \
++                ../../lsf/lib/liblsf.la \
++                -lm
+ if !CYGWIN
+ sbatchd_LDADD += -lnsl
+ endif
+--- origsrc/openlava-2.0/lsbatch/daemons/mbd.job.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/daemons/mbd.job.c	2024-10-20 12:55:32.297732400 +0900
+@@ -2332,7 +2332,7 @@ packJobSpecs (struct jData *jDataPtr, st
+             *sp = '/';
+         }
+         else
+-            sprintf(jobSpecs->chkpntDir, jDataPtr->shared->jobBill.chkpntDir);
++            sprintf(jobSpecs->chkpntDir, "%s", jDataPtr->shared->jobBill.chkpntDir);
+ 
+     }
+     else
+--- origsrc/openlava-2.0/lsbatch/daemons/sbd.file.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/daemons/sbd.file.c	2024-10-20 12:58:06.159664900 +0900
+@@ -1709,7 +1709,7 @@ appendJobFile(struct jobCard *jobCard, c
+         return (-1);
+     }
+ 
+-    if ((fprintf(jobFile_fp, header) < 0) ||
++    if ((fprintf(jobFile_fp, "%s", header) < 0) ||
+         (fprintf(jobFile_fp, "\n%d\n", jobCard->w_status) < 0)) {
+         sprintf(errMsg, I18N_FUNC_S_S_FAIL_M, fname, "fprintf",
+                 jobCard->jobSpecs.jobFile, "STATUS");
+--- origsrc/openlava-2.0/lsbatch/daemons/sbd.job.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/daemons/sbd.job.c	2024-10-20 12:59:22.334637500 +0900
+@@ -1938,7 +1938,7 @@ Read file <%s> for stdout output of this
+                             }
+                         } else {
+ 
+-                            fprintf(notif, line);
++                            fprintf(notif, "%s", line);
+                         }
+ 
+ 
+--- origsrc/openlava-2.0/lsbatch/daemons/sbd.sig.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/daemons/sbd.sig.c	2024-10-20 13:00:08.459568700 +0900
+@@ -1838,7 +1838,7 @@ exeChkpnt(struct jobCard *jp, int chkFla
+ 		        "%s: job <%s> exited with the exit code %d with <%s>"), /* catgets 922 */
+ 		        fname, lsb_jobid2str(jp->jobSpecs.jobId),
+                         WEXITSTATUS(status), errMsg);
+-	        sprintf(errMsg, msg);
++	        sprintf(errMsg, "%s", msg);
+                 goto ChildError;
+ 	    }
+         }
+--- origsrc/openlava-2.0/lsbatch/lib/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/lib/Makefile.am	2024-10-20 13:52:39.025642600 +0900
+@@ -4,9 +4,9 @@
+ INCLUDES = -I$(top_srcdir)/lsf -I$(top_srcdir)/lsf/lib \
+            -I$(top_srcdir)/lsbatch -I./
+ 
+-lib_LIBRARIES = liblsbatch.a
++lib_LTLIBRARIES = liblsbatch.la
+ 
+-liblsbatch_a_SOURCES = \
++liblsbatch_la_SOURCES = \
+ lsb.comm.c lsb.groups.c lsb.jobs.c lsb.modify.c lsb.peek.c lsb.reconfig.c \
+ lsb.signals.c lsb.users.c lsb.conf.c lsb.hc.c lsb.log.c lsb.move.c \
+ lsb.qc.c lsb.resource.c lsb.spool.c lsb.xdr.c lsb.debug.c lsb.hosts.c \
+@@ -14,6 +14,8 @@ lsb.mig.c lsb.msg.c lsb.queues.c lsb.rex
+ lsb.sub.c lsb.err.c lsb.init.c lsb.misc.c lsb.params.c lsb.reason.c \
+ lsb.sig.c lsb.switch.c \
+ lsb.conf.h  lsb.h  lsb.log.h  lsb.sig.h  lsb.spool.h  lsb.xdr.h
++liblsbatch_la_LDFLAGS = -no-undefined
++liblsbatch_la_LIBADD = $(top_builddir)/lsf/lib/liblsf.la 
+ 
+ etags :
+ 	etags *.[hc] ../*.h ../lib/*.[hc] ../../lsf/*.h ../../lsf/intlib/*.[hc]
+--- origsrc/openlava-2.0/lsbatch/lib/lsb.rexecv.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/lib/lsb.rexecv.c	2024-10-20 12:45:38.163618400 +0900
+@@ -347,7 +347,7 @@ parseScript2(FILE *from, int *embedArgc,
+         }
+         ttyin = isatty(fileno(from));
+         if (ttyin){
+-            printf(prompt);
++            printf("%s", prompt);
+             fflush(stdout);
+         }
+     }
+@@ -391,7 +391,7 @@ parseScript2(FILE *from, int *embedArgc,
+ 
+             
+             if (ttyin) {
+-                printf(prompt);
++                printf("%s", prompt);
+                 fflush(stdout);
+             }
+         }
+--- origsrc/openlava-2.0/lsbatch/lib/lsb.sub.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsbatch/lib/lsb.sub.c	2024-10-20 12:49:26.692471700 +0900
+@@ -63,12 +63,12 @@
+ #define EMBED_RESTART      0x10
+ #define EMBED_QSUB         0x20
+ 
+-#define PRINT_ERRMSG0(errMsg, fmt)\
++#define PRINT_ERRMSG0(errMsg, msg0)\
+     {\
+ 	if (errMsg == NULL)\
+-	    fprintf(stderr, fmt);\
++	    fprintf(stderr, "%s", msg0);\
+         else\
+-	    sprintf(*errMsg, fmt);\
++	    sprintf(*errMsg, "%s", msg0);\
+     }
+ #define PRINT_ERRMSG1(errMsg, fmt, msg1)\
+     {\
+--- origsrc/openlava-2.0/lsf/intlib/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/intlib/Makefile.am	2024-10-20 13:26:50.502538100 +0900
+@@ -4,9 +4,9 @@
+ 
+ INCLUDES = -I../
+ 
+-noinst_LIBRARIES = liblsfint.a
++noinst_LTLIBRARIES = liblsfint.la
+ 
+-liblsfint_a_SOURCES = admin.c cmdtime.c jidx.c lsftcl.c \
++liblsfint_la_SOURCES = admin.c cmdtime.c jidx.c lsftcl.c \
+ 	resreq.c bitset.c conf.c list.c misc.c \
+ 	userok.c window.c callex.c daemon.c listset.c \
+ 	resourcecmd.c testbitset.c list2.c link.c \
+--- origsrc/openlava-2.0/lsf/lib/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lib/Makefile.am	2024-10-20 13:10:27.265400000 +0900
+@@ -3,9 +3,9 @@
+ #
+ INCLUDES = -I../
+ 
+-lib_LIBRARIES = liblsf.a
++lib_LTLIBRARIES = liblsf.la
+ 
+-liblsf_a_SOURCES = \
++liblsf_la_SOURCES = \
+ lib.channel.c lib.err.c lib.limits.c lib.rcp.c lib.so.c lib.xdr.c \
+ lib.comm.c lib.errno.c lib.load.c lib.rdwr.c lib.sock.c lib.xdrlim.c \
+ lib.conf.c lib.esub.c lib.lsf.c lib.res.c lib.syntax.c lib.xdrmisc.c \
+@@ -20,6 +20,7 @@ lib.eligible.c lib.lim.c lib.queue.c lib
+ lib.channel.h lib.h lib.osal.h lib.pim.h  lib.rcp.h lib.table.h \
+ lib.xdr.h lib.xdrres.h lsi18n.h lib.conf.h lib.hdr.h lib.osux.h lib.queue.h \
+ lib.rf.h lib.so.h lib.words.h lib.xdrlim.h lproto.h  mls.h
++liblsf_la_LDFLAGS = -no-undefined
+ 
+ etags:
+ 	etags ../*.h *.[hc] ../intlib/*.[hc] ../lim/*.[hc] \
+--- origsrc/openlava-2.0/lsf/lim/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lim/Makefile.am	2024-10-20 13:43:57.359799300 +0900
+@@ -11,7 +11,7 @@ lim_SOURCES  = \
+ lim.cluster.c lim.control.c lim.internal.c lim.main.c lim.policy.c \
+ lim.xdr.c lim.conf.c lim.info.c lim.load.c lim.misc.c  lim.rload.c  \
+ lim.common.h  lim.conf.h  lim.h  lim.linux.h  limout.h
+-lim_LDADD =  ../lib/liblsf.a ../intlib/liblsfint.a
++lim_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la 
+ 
+ etags:
+ 	etags ../*.h *.[hc] ../intlib/*.[hc] ../lib/*.[hc] \
+--- origsrc/openlava-2.0/lsf/lim/lim.conf.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lim/lim.conf.c	2024-10-20 11:51:24.750123700 +0900
+@@ -30,6 +30,8 @@ int sizeOfResTable = 0;
+ static int numofhosts = 0;
+ char mcServersSet = FALSE;
+ 
++int li_len;
++
+ extern int ELIMdebug, ELIMrestarts, ELIMblocktime;
+ 
+ #define M_THEN_A  1
+--- origsrc/openlava-2.0/lsf/lim/lim.h	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lim/lim.h	2024-10-20 11:52:31.330629500 +0900
+@@ -197,8 +197,7 @@ struct liStruct {
+     float satvalue;
+     float value;
+ };
+-int li_len;
+-struct liStruct *li;
++extern struct liStruct *li;
+ 
+ #define  SEND_NO_INFO       0x00
+ #define  SEND_CONF_INFO     0x01
+--- origsrc/openlava-2.0/lsf/lim/lim.main.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lim/lim.main.c	2024-10-20 11:54:32.394941000 +0900
+@@ -24,6 +24,8 @@
+ 
+ extern char *argvmsg_(int argc, char **argv);
+ 
++struct liStruct *li;
++
+ int    limSock = -1;
+ int    limTcpSock = -1;
+ ushort  lim_port;
+--- origsrc/openlava-2.0/lsf/lsadm/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lsadm/Makefile.am	2024-10-20 13:44:56.314105900 +0900
+@@ -7,5 +7,5 @@ bin_PROGRAMS = lsadmin
+ 
+ lsadmin_SOURCES = lsadmin.c startup.c cmd.limcontrol.c \
+                    cmd.rescontrol.c lsadmin.h
+-lsadmin_LDADD =  ../lib/liblsf.a ../intlib/liblsfint.a
++lsadmin_LDADD =   ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+--- origsrc/openlava-2.0/lsf/lsadm/lsadmin.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lsadm/lsadmin.c	2024-10-20 12:11:22.346217900 +0900
+@@ -527,7 +527,7 @@ limDebugReq(struct debugReq *pdebug, int
+ 	    }
+ 	    else {
+ 		sprintf(strBuf, "Host %s set LIM debug done\n",hosts[i]);
+-		fprintf(stderr, I18N(207, strBuf)); /* catgets 207 */
++		fprintf(stderr, "%s", I18N(207, strBuf)); /* catgets 207 */
+ 	    }
+ 	}
+     return ;
+@@ -572,7 +572,7 @@ resDebugReq(struct debugReq *pdebug, int
+                  }
+ 	        else {
+ 		    sprintf(strBuf, "Host %s set RES debug done\n",hosts[i]);
+-		    fprintf(stderr, I18N(205, strBuf)); /* catgets 205 */
++		    fprintf(stderr, "%s", I18N(205, strBuf)); /* catgets 205 */
+ 		}
+ 	    }
+ 	}
+--- origsrc/openlava-2.0/lsf/lstools/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lstools/Makefile.am	2024-10-20 13:44:56.314105900 +0900
+@@ -7,46 +7,46 @@ bin_PROGRAMS = lsacct lseligible lshosts
+  		lsload lsmon lsplace lsrcp lsrun lsaddhost lsrmhost
+ 
+ lsacct_SOURCES = lsacct.c  
+-lsacct_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsacct_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lseligible_SOURCES = lseligible.c  
+-lseligible_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lseligible_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lshosts_SOURCES = lshosts.c  
+-lshosts_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lshosts_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsid_SOURCES = lsid.c  
+-lsid_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsid_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsinfo_SOURCES = lsinfo.c  
+-lsinfo_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsinfo_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsloadadj_SOURCES = lsloadadj.c  
+-lsloadadj_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsloadadj_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsload_SOURCES = lsload.c load.c
+-lsload_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsload_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsmon_SOURCES = lsmon.c  
+-lsmon_LDADD = load.o ../lib/liblsf.a ../intlib/liblsfint.a -lncurses
++lsmon_LDADD = load.o  ../intlib/liblsfint.la ../lib/liblsf.la -lncurses
+ 
+ lsplace_SOURCES = lsplace.c  
+-lsplace_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++lsplace_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+ 
+ lsrcp_SOURCES = lsrcp.c
+-lsrcp_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a 
++lsrcp_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la 
+ if !CYGWIN
+ lsrcp_LDADD += -lnsl
+ endif
+ 
+ lsrun_SOURCES = lsrun.c
+-lsrun_LDADD = ../lib/liblsf.a 
++lsrun_LDADD = ../lib/liblsf.la 
+ 
+ lsaddhost_SOURCES = lsaddhost.c
+-lsaddhost_LDADD = ../lib/liblsf.a 
++lsaddhost_LDADD = ../lib/liblsf.la 
+ 
+ lsrmhost_SOURCES = lsrmhost.c
+-lsrmhost_LDADD = ../lib/liblsf.a 
++lsrmhost_LDADD = ../lib/liblsf.la 
+ 
+ etags :
+ 	etags *.[hc] ../*.h ../lib/*.[hc] 
+--- origsrc/openlava-2.0/lsf/lstools/lsmon.c	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/lstools/lsmon.c	2024-10-20 12:02:14.027457200 +0900
+@@ -122,7 +122,7 @@ getLoadInfo(void)
+     if (!hosts) {
+ 	numwanted=0;
+ 	if (!redirect) {
+-            mvprintw(3, 0, ls_sysmsg());
++            mvprintw(3, 0, "%s", ls_sysmsg());
+             clrtobot();
+             move(1,0);
+             refresh();
+--- origsrc/openlava-2.0/lsf/pim/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/pim/Makefile.am	2024-10-20 13:44:56.309739200 +0900
+@@ -6,4 +6,4 @@ INCLUDES = -I$(top_srcdir)/lsf
+ 
+ sbin_PROGRAMS = pim
+ pim_SOURCES  = pim.main.c pim.linux.h
+-pim_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a
++pim_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la
+--- origsrc/openlava-2.0/lsf/res/Makefile.am	2012-01-24 02:05:01.000000000 +0900
++++ src/openlava-2.0/lsf/res/Makefile.am	2024-10-20 13:44:56.314105900 +0900
+@@ -7,7 +7,7 @@ sbin_PROGRAMS = res nios
+ res_SOURCES  = \
+ res.c res.handler.c res.misc.c res.rf.c res.getproc.c res.init.c \
+ res.pty.c res.tasklog.c rescom.h res.h resout.h
+-res_LDADD = ../lib/liblsf.a ../intlib/liblsfint.a -lm
++res_LDADD =  ../intlib/liblsfint.la ../lib/liblsf.la -lm
+ if !CYGWIN
+ res_LDADD += -lnsl
+ endif
+@@ -16,8 +16,8 @@ nios_SOURCES = nios.c nios.handler.c nio
+ #
+ # yep.. true
+ #
+-nios_LDADD = ../../lsbatch/lib/liblsbatch.a \
+-	../lib/liblsf.a ../intlib/liblsfint.a -lm
++nios_LDADD = ../../lsbatch/lib/liblsbatch.la \
++	 ../intlib/liblsfint.la ../lib/liblsf.la -lm
+ if !CYGWIN
+ nios_LDADD += -lnsl
+ endif
