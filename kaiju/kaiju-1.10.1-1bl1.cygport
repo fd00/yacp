@@ -1,0 +1,42 @@
+HOMEPAGE="https://github.com/bioinformatics-centre/${PN}"
+SRC_URI="https://github.com/bioinformatics-centre/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Science"
+SUMMARY="Fast taxonomic classification of metagenomic sequencing reads using a protein reference database"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="zlib-devel"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake -C src
+
+	cd bin
+	sed -e 's:$SCRIPTDIR/kaiju-taxonlistEuk.tsv:/usr/share/kaiju/kaiju-taxonlistEuk.tsv:g' \
+	    -e 's:$SCRIPTDIR/kaiju-excluded-accessions.txt:/usr/share/kaiju/kaiju-excluded-accessions.txt:g' \
+	    -i kaiju-makedb
+}
+
+src_test()
+{
+	cd ${B}
+	./bin/kaiju.exe -h
+}
+
+src_install()
+{
+	cd ${B}/bin
+	dobin *.exe *.pl kaiju-makedb
+	insinto /usr/share/kaiju
+	doins *.tsv *.txt
+}
+
+DOCS="
+	Quickstart.md
+"
