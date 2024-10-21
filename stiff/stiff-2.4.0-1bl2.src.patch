@@ -1,0 +1,114 @@
+--- origsrc/stiff-2.4.0/src/Makefile.am	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/Makefile.am	2024-10-21 10:09:31.321495000 +0900
+@@ -33,6 +33,6 @@ stiff_SOURCES		= datamem.c field.c image
+ 			  datamem.h define.h field.h globals.h image.h \
+ 			  key.h prefs.h preflist.h threads.h tiff.h types.h \
+ 			  xml.h
+-stiff_LDADD		= $(srcdir)/fits/libfits.a
++stiff_LDADD		= $(builddir)/fits/libfits.a
+ DATE=`date +"%Y-%m-%d"`
+ 
+--- origsrc/stiff-2.4.0/src/field.c	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/field.c	2024-10-21 10:35:30.741920000 +0900
+@@ -41,6 +41,9 @@
+ #include "field.h"
+ #include "prefs.h"
+ 
++/*----------------------- miscellaneous variables ---------------------------*/
++char		gstr[MAXCHAR];
++
+ /****** load_field ***********************************************************
+ PROTO   fieldstruct *load_field(char *filename)
+ PURPOSE Load field infos.
+--- origsrc/stiff-2.4.0/src/fits/fitscat.c	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/fits/fitscat.c	2024-10-21 10:32:09.561384700 +0900
+@@ -42,6 +42,8 @@
+ #include	"fitscat_defs.h"
+ #include	"fitscat.h"
+ 
++int		bswapflag;
++
+ /****** about_cat **************************************************************
+ PROTO	int about_cat(catstruct *cat, FILE *stream)
+ PURPOSE	Print some info about a catalog.
+--- origsrc/stiff-2.4.0/src/fits/fitscat.h	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/fits/fitscat.h	2024-10-21 10:32:11.470640200 +0900
+@@ -332,7 +332,4 @@ extern  void	error(int, char *, char *),
+ 		swapbytes(void *ptr, int nb, int n),
+ 		warning(char *msg1, char *msg2);
+ 
+-
+-int		bswapflag;
+-
+ #endif
+--- origsrc/stiff-2.4.0/src/fits/fitscat_defs.h	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/fits/fitscat_defs.h	2024-10-21 10:34:40.869000100 +0900
+@@ -86,7 +86,7 @@ typedef	unsigned char	BYTE;			/* a byte
+ typedef	int		LONG;			/* for DEC-Alpha... */
+ 	
+ /*----------------------------- Internal constants --------------------------*/
+-char		gstr[MAXCHAR];
++extern char		gstr[MAXCHAR];
+ 
+ /*----------------------------- External constants --------------------------*/
+ 
+--- origsrc/stiff-2.4.0/src/globals.h	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/globals.h	2024-10-21 10:35:23.963674000 +0900
+@@ -28,9 +28,6 @@
+ 
+ #include	"types.h"
+ 
+-/*----------------------- miscellaneous variables ---------------------------*/
+-char		gstr[MAXCHAR];
+-
+ /*------------------------------- functions ---------------------------------*/
+ extern double	counter_seconds();
+ 
+--- origsrc/stiff-2.4.0/src/image.c	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/image.c	2024-10-21 10:40:09.356625500 +0900
+@@ -65,7 +65,7 @@
+ 			pthread_nbuflines, pthread_bufline, pthread_width,
+ 			pthread_nchan, pthread_bypp, pthread_fflag,
+ 			pthread_nproc, pthread_endflag;
+-
++   int nproc;
+ #endif
+ 
+ /****** image_convert_single **************************************************
+--- origsrc/stiff-2.4.0/src/prefs.c	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/prefs.c	2024-10-21 10:38:04.218376800 +0900
+@@ -47,9 +47,12 @@
+ #include	"define.h"
+ #include	"globals.h"
+ #include	"fits/fitscat.h"
++#include	"fits/fitscat_defs.h"
+ #include 	"prefs.h"
+ #include	"preflist.h"
+ 
++prefstruct	prefs;
++
+ /********************************* dumpprefs ********************************/
+ /*
+ Print the default preference parameters.
+--- origsrc/stiff-2.4.0/src/prefs.h	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/prefs.h	2024-10-21 10:38:01.191809400 +0900
+@@ -106,7 +106,7 @@ typedef struct
+   double	time_diff;		/* Execution time */
+   }	prefstruct;
+ 
+-prefstruct	prefs;
++extern prefstruct	prefs;
+ 
+ /*----------------------------- Internal constants --------------------------*/
+ 
+--- origsrc/stiff-2.4.0/src/threads.h	2014-03-19 22:29:54.000000000 +0900
++++ src/stiff-2.4.0/src/threads.h	2024-10-21 10:38:36.384858500 +0900
+@@ -129,7 +129,7 @@ typedef struct _threads_gate_t
+   } threads_gate_t;
+ 
+ /*----------------------------- Global variables ----------------------------*/
+- int		nproc;	/* Number of child threads */
++extern int		nproc;	/* Number of child threads */
+ 
+ /*--------------------------------- Functions -------------------------------*/
+ threads_gate_t	*threads_gate_init(int nthreads, void (*func)(void));
