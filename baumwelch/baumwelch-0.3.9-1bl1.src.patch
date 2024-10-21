@@ -1,0 +1,64 @@
+--- origsrc/baumwelch-0.3.9/Makefile.am	2024-06-06 01:34:36.000000000 +0900
++++ src/baumwelch-0.3.9/Makefile.am	2024-10-21 09:52:25.782835500 +0900
+@@ -2,3 +2,6 @@ SUBDIRS = doc src
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ EXTRA_DIST = AUTHORS CONTRIBUTING LICENSE NEWS README.md WORKSPACE.bazel BUILD.bazel .bazelrc
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = baumwelch.pc
+--- origsrc/baumwelch-0.3.9/baumwelch.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/baumwelch-0.3.9/baumwelch.pc.in	2024-10-21 09:56:13.453025200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: baumwelch
++Description: C++ library which allows the user to estimate the parameters of a discrete hidden Markov model using the Baum-Welch algorithm
++Version: @VERSION@
++Libs: -L${libdir} -lbaumwelchscript
++Cflags: -I${includedir}
+--- origsrc/baumwelch-0.3.9/configure.ac	2024-06-06 01:41:39.000000000 +0900
++++ src/baumwelch-0.3.9/configure.ac	2024-10-21 09:52:05.423236700 +0900
+@@ -23,18 +23,6 @@ AC_CONFIG_FILES([
+ AC_CONFIG_MACRO_DIR([m4])
+ AC_LANG([C++])
+ 
+-AC_CHECK_HEADER([fst/fstlib.h], [],
+-  [AC_MSG_ERROR([fst/fstlib.h header not found])]
+-)
+-
+-AC_CHECK_HEADER([fst/script/fstscript.h], [],
+-  [AC_MSG_ERROR([fst/script/fstscript.h header not found])]
+-)
+-
+-AC_CHECK_HEADER([fst/extensions/far/far.h], [],
+-  [AC_MSG_ERROR([fst/extensions/far/far.h header not found])]
+-)
+-
+ AC_CHECK_LIB([dl], dlopen, [DL_LIBS=-ldl])
+ AC_SUBST([DL_LIBS])
+ 
+@@ -47,4 +35,5 @@ AC_ARG_ENABLE([bin],
+ AM_CONDITIONAL([HAVE_BIN], [test "x$enable_bin" != xno])
+ AM_CONDITIONAL([HAVE_SCRIPT], [test "x$enable_bin" != xno])
+ 
++AC_CONFIG_FILES([baumwelch.pc])
+ AC_OUTPUT
+--- origsrc/baumwelch-0.3.9/src/script/Makefile.am	2024-06-06 01:34:36.000000000 +0900
++++ src/baumwelch-0.3.9/src/script/Makefile.am	2024-10-21 09:30:40.450956200 +0900
+@@ -1,10 +1,10 @@
+ AM_CPPFLAGS = -I$(srcdir)/../include
+-AM_LDFLAGS = -L/usr/local/lib/fst -lfstfar -lfst -lm -ldl
++AM_LDFLAGS = -L/usr/local/lib/fst -lfstfar -lfst -lm -ldl 
+ 
+ if HAVE_SCRIPT
+ lib_LTLIBRARIES  = libbaumwelchscript.la
+ libbaumwelchscript_la_SOURCES = decodescript.cc \
+                                 randomizescript.cc \
+ 								trainscript.cc
+-libbaumwelchscript_la_LDFLAGS  = -version-info 39:0:0
++libbaumwelchscript_la_LDFLAGS  = -no-undefined -version-info 39:0:0 $(AM_LDFLAGS)
+ endif
