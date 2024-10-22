@@ -1,0 +1,31 @@
+HOMEPAGE="https://github.com/BUStools/${PN}"
+SRC_URI="https://github.com/BUStools/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Science"
+SUMMARY="Tools for working with BUS files"
+DESCRIPTION="bustools is a program for manipulating BUS files for single cell RNA-Seq
+datasets. It can be used to error correct barcodes, collapse UMIs, produce
+gene count or transcript compatibility count matrices, and is useful for many
+other tasks. See the kallisto | bustools website for examples and instructions
+on how to use bustools as part of a single-cell RNA-seq workflow."
+
+LICENSE="BSD-2-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="zlib-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+src_test()
+{
+	cd ${B}
+	./src/${PN}.exe fromtext -o tc2mid.bus ${S}/test/test_cases/tc0002CollapseInput.txt
+	./src/${PN}.exe collapse -o tc2mid2 -t ${S}/test/test_cases/transcripts.txt \
+		-g ${S}/test/test_cases/transcripts_to_genes.txt \
+		-e ${S}/test/test_cases/matrix.ec tc2mid.bus
+	./src/${PN}.exe text -o tc0002output.txt tc2mid2.bus
+	cmp ${S}/test/test_cases/tc0002ExpResult.txt tc0002output.txt
+}
