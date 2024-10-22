@@ -1,0 +1,59 @@
+HOMEPAGE="https://github.com/FLIF-hub/${PN}"
+SRC_URI="https://github.com/FLIF-hub/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Free Lossless Image Format"
+DESCRIPTION="FLIF is a lossless image format based on MANIAC compression. MANIAC
+(Meta-Adaptive Near-zero Integer Arithmetic Coding) is a variant of CABAC
+(context-adaptive binary arithmetic coding), where the contexts are nodes of
+decision trees which are dynamically learned at encode time."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE_GPL"
+
+BUILD_REQUIRES="libgdk_pixbuf2.0-devel libglib2.0-devel libpng-devel libSDL2-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+"
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	CYGCMAKE_SOURCE="${S}/src"
+	cygcmake
+	cygninja
+}
+
+PKG_NAMES="
+	FLIF
+	libflif0
+	libflif-devel
+	gdk-pixbuf2.0-flif
+"
+FLIF_CONTENTS="
+	etc
+	usr/bin/*.exe
+	usr/bin/*2flif
+	usr/share
+"
+libflif0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libflif_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+"
+gdk_pixbuf2_0_flif_CONTENTS="
+	usr/lib/gdk-pixbuf-2.0
+"
+FLIF_SUMMARY="${SUMMARY} (licensing & readmes)"
+libflif0_SUMMARY="${SUMMARY} (runtime)"
+libflif_devel_SUMMARY="${SUMMARY} (development)"
+gdk_pixbuf2_0_flif_SUMMARY="${SUMMARY} (gdk-pixbuf2.0 loader)"
