@@ -1,0 +1,45 @@
+--- origsrc/geometry-central/CMakeLists.txt	2024-10-23 12:40:28.000000000 +0900
++++ src/geometry-central/CMakeLists.txt	2024-10-23 13:18:36.761549600 +0900
+@@ -49,3 +49,10 @@ SET(GC_HAVE_SUITESPARSE ${GC_HAVE_SUITES
+ 
+ ### Recurse to the source code
+ add_subdirectory(src)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/geometry-central.pc.in ${CMAKE_BINARY_DIR}/geometry-central.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/geometry-central.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geometry-central/geometry-central.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geometry-central/geometry-central.pc.in	2024-10-23 13:18:06.538070900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geometry-central
++Description: Applied 3D geometry in C++, with a focus on surface meshes
++Version: @VERSION@
++Libs: -L${libdir} -lgeometry-central
++Cflags: -I${includedir}
+--- origsrc/geometry-central/src/CMakeLists.txt	2024-10-23 12:40:29.000000000 +0900
++++ src/geometry-central/src/CMakeLists.txt	2024-10-23 13:16:41.514691600 +0900
+@@ -154,9 +154,16 @@ set_target_properties(geometry-central P
+ )
+ target_compile_definitions(geometry-central PUBLIC NOMINMAX _USE_MATH_DEFINES)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(geometry-central PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # Define CMAKE flag used in these sources (but should be kept OUT of headers)
+ if(GC_HAVE_SUITESPARSE)
+   target_compile_definitions(geometry-central PUBLIC GC_HAVE_SUITESPARSE)
+   target_include_directories(geometry-central PRIVATE ${SUITESPARSE_INCLUDE_DIRS})
+   target_link_libraries(geometry-central PRIVATE ${SUITESPARSE_LIBRARIES})
+ endif()
++
++install(TARGETS geometry-central RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(DIRECTORY ${INCLUDE_ROOT} DESTINATION include/geometrycentral)
