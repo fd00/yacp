@@ -1,5 +1,5 @@
 --- origsrc/kokkos-fortran-interop-0.99.0/CMakeLists.txt	2021-09-03 07:09:31.000000000 +0900
-+++ src/kokkos-fortran-interop-0.99.0/CMakeLists.txt	2021-10-03 16:25:12.227880400 +0900
++++ src/kokkos-fortran-interop-0.99.0/CMakeLists.txt	2024-10-25 17:37:41.321706300 +0900
 @@ -1,9 +1,8 @@
  cmake_minimum_required(VERSION 3.19)
  set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
@@ -44,8 +44,8 @@
 +    PUBLIC
 +        Kokkos::kokkos
  )
-+if (CYGWIN)
-+    set_target_properties(flcl PROPERTIES SOVERSION ${SOVERSION})
++if (DEFINED SOVERSION)
++    set_target_properties(flcl PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
  
  # add parallelism library link flags in kokkos > 3.1
@@ -58,21 +58,19 @@
      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
      PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
  )
-@@ -152,3 +158,12 @@ endif()
+@@ -152,3 +158,10 @@ endif()
  if(BUILD_EXAMPLES)
    add_subdirectory(examples)
  endif()
 +
-+if (CYGWIN)
-+  set(prefix ${CMAKE_INSTALL_PREFIX})
-+  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+  set(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+  configure_file(${CMAKE_SOURCE_DIR}/flcl.pc.in ${CMAKE_BINARY_DIR}/flcl.pc @ONLY)
-+  install(FILES ${CMAKE_BINARY_DIR}/flcl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
-+endif()
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/flcl.pc.in ${CMAKE_BINARY_DIR}/flcl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/flcl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/kokkos-fortran-interop-0.99.0/flcl.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/kokkos-fortran-interop-0.99.0/flcl.pc.in	2021-10-03 16:24:55.784529200 +0900
++++ src/kokkos-fortran-interop-0.99.0/flcl.pc.in	2024-10-25 17:37:09.613735300 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -84,3 +82,22 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -lflcl
 +Cflags: -I${includedir}
+--- origsrc/kokkos-fortran-interop-0.99.0/src/flcl-cxx.hpp	2021-09-03 07:09:31.000000000 +0900
++++ src/kokkos-fortran-interop-0.99.0/src/flcl-cxx.hpp	2024-10-25 17:54:12.377437800 +0900
+@@ -43,7 +43,9 @@
+ #include <iostream>
+ #include <type_traits>
+ #include <Kokkos_Core.hpp>
++#if defined(KOKKOS_IMPL_PUBLIC_INCLUDE)
+ #include <Kokkos_View.hpp>
++#endif
+ #include <Kokkos_DualView.hpp>
+ #include "flcl-types-cxx.hpp"
+ 
+@@ -216,4 +218,4 @@ namespace flcl {
+   
+ } // namespace flcl
+ 
+-#endif // FLCL_CXX_HPP
+\ No newline at end of file
++#endif // FLCL_CXX_HPP
