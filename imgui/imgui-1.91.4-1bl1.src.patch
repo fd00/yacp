@@ -1,0 +1,78 @@
+--- origsrc/imgui-1.91.4/CMakeLists.txt	2024-10-25 06:58:24.891017200 +0900
++++ src/imgui-1.91.4/CMakeLists.txt	2024-10-25 10:44:24.745828400 +0900
+@@ -32,7 +32,7 @@ target_compile_features(${PROJECT_NAME}
+ 
+ if(IMGUI_BUILD_ALLEGRO5_BINDING)
+     find_package(Allegro CONFIG REQUIRED)
+-    target_link_libraries(${PROJECT_NAME} PRIVATE Allegro::allegro Allegro::allegro_ttf Allegro::allegro_font Allegro::allegro_main)
++    target_link_libraries(${PROJECT_NAME} PRIVATE Allegro::allegro Allegro::allegro_ttf Allegro::allegro_font Allegro::allegro_main Allegro::allegro_primitives)
+     target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/backends/imgui_impl_allegro5.cpp)
+ endif()
+ 
+@@ -110,15 +110,18 @@ if(IMGUI_BUILD_WIN32_BINDING)
+ endif()
+ 
+ if(IMGUI_FREETYPE)
+-    find_package(freetype CONFIG REQUIRED)
++    find_package(freetype REQUIRED)
++    target_include_directories(${PROJECT_NAME} PUBLIC ${FREETYPE_INCLUDE_DIRS})
+     target_link_libraries(${PROJECT_NAME} PUBLIC freetype)
+     target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp)
+     target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_ENABLE_FREETYPE)
+ endif()
+ 
+ if(IMGUI_FREETYPE_LUNASVG)
+-    find_package(unofficial-lunasvg CONFIG REQUIRED)
+-    target_link_libraries(${PROJECT_NAME} PUBLIC unofficial::lunasvg::lunasvg)
++    find_package(pkgconfig)
++    pkg_check_modules(LUNASVG lunasvg)
++    target_include_directories(${PROJECT_NAME} PUBLIC ${LUNASVG_INCLUDE_DIRS})
++    target_link_libraries(${PROJECT_NAME} PUBLIC ${LUNASVG_LIBRARIES})
+     target_compile_definitions(${PROJECT_NAME} PUBLIC IMGUI_ENABLE_FREETYPE_LUNASVG)
+ endif()
+ 
+@@ -145,6 +148,10 @@ endif()
+ 
+ list(REMOVE_DUPLICATES BINDINGS_SOURCES)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(
+     TARGETS ${PROJECT_NAME}
+     EXPORT ${PROJECT_NAME}_target
+@@ -271,11 +278,18 @@ endif()
+ include(CMakePackageConfigHelpers)
+ configure_package_config_file(imgui-config.cmake.in imgui-config.cmake INSTALL_DESTINATION share/imgui)
+ 
+-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/imgui-config.cmake DESTINATION share/imgui)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/imgui-config.cmake DESTINATION lib/cmake/imgui)
+ 
+ install(
+     EXPORT ${PROJECT_NAME}_target
+     NAMESPACE ${PROJECT_NAME}::
+     FILE ${PROJECT_NAME}-targets.cmake
+-    DESTINATION share/${PROJECT_NAME}
++    DESTINATION lib/cmake/${PROJECT_NAME}
+ )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/imgui.pc.in ${CMAKE_BINARY_DIR}/imgui.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/imgui.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/imgui-1.91.4/imgui.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/imgui-1.91.4/imgui.pc.in	2024-10-25 10:44:34.936943900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: imgui
++Description: Bloat-free Graphical User interface for C++ with minimal dependencies
++Version: @VERSION@
++Libs: -L${libdir} -limgui
++Cflags: -I${includedir}
