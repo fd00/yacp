@@ -1,0 +1,54 @@
+HOMEPAGE="https://github.com/RGF-team/${PN}"
+SRC_URI="https://github.com/RGF-team/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Text"
+SUMMARY="Regularized Greedy Forest"
+DESCRIPTION="Regularized Greedy Forest (RGF) is a tree ensemble machine learning method
+described in this paper. RGF can deliver better results than gradient boosted
+decision trees (GBDT) on a number of datasets and it has been used to win a
+few Kaggle competitions. Unlike the traditional boosted decision tree
+approach, RGF works directly with the underlying forest structure. RGF
+integrates two ideas: one is to include tree-structured regularization into
+the learning formulation; and the other is to employ the fully-corrective
+regularized greedy algorithm."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="RGF/COPYING"
+
+inherit cmake
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	for d in FastRGF RGF
+	do
+		mkdir -p ${d}
+		CYGCMAKE_SOURCE=${S}/${d}
+		pushd ${d}
+			cygcmake
+			cygninja
+		popd
+	done
+}
+
+src_install()
+{
+	cd ${B}
+	for d in FastRGF RGF
+	do
+		pushd ${d}
+			ninja_install
+			docinto ${d}
+			for md in COPYING CHANGES.md LICENSE README.md rgf-guide.rst
+			do
+				dodoc ${S}/${d}/${md}
+			done
+		popd
+	done
+}
+
+DOCS="
+	AWESOME_RGF.md
+"
