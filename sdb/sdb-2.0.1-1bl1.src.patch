@@ -1,0 +1,63 @@
+--- origsrc/sdb-2.0.1/include/sdb/heap.h	2024-08-31 23:32:50.000000000 +0900
++++ src/sdb-2.0.1/include/sdb/heap.h	2024-10-30 08:43:07.723774200 +0900
+@@ -12,9 +12,9 @@ typedef struct sdb_global_heap_t {
+ 	void *data;
+ } SdbGlobalHeap;
+ 
+-extern SdbGlobalHeap Gheap;
+-extern const SdbGlobalHeap sdb_gh_custom; // custom heap allocator
+-extern const SdbGlobalHeap sdb_gh_libc; // use libc's heap
++SDB_API extern SdbGlobalHeap Gheap;
++SDB_API extern const SdbGlobalHeap sdb_gh_custom; // custom heap allocator
++SDB_API extern const SdbGlobalHeap sdb_gh_libc; // use libc's heap
+ 
+ static inline void sdb_gh_use(const SdbGlobalHeap *gh) {
+ 	if (gh) {
+--- origsrc/sdb-2.0.1/meson.build	2024-08-31 23:32:50.000000000 +0900
++++ src/sdb-2.0.1/meson.build	2024-10-30 08:51:08.395880700 +0900
+@@ -81,7 +81,7 @@ if get_option('local') and get_option('d
+   rpath_exe = '$ORIGIN/../' + get_option('libdir')
+ endif
+ 
+-libsdb = both_libraries(libsdb_name, libsdb_sources,
++libsdb = shared_library(libsdb_name, libsdb_sources,
+   include_directories: sdb_inc,
+   implicit_include_directories: false,
+   soversion: sdb_libversion,
+@@ -89,14 +89,10 @@ libsdb = both_libraries(libsdb_name, lib
+   install_rpath: rpath_lib
+ )
+ 
+-if is_windows
+-  link_with = libsdb.get_static_lib()
+-else
+-  link_with = libsdb.get_shared_lib()
+-endif
++link_with = libsdb
+ 
+ sdb_dep = declare_dependency(
+-  link_with: libsdb.get_static_lib(),
++  link_with: libsdb,
+   include_directories: sdb_inc
+ )
+ 
+@@ -153,7 +149,7 @@ endif
+ pkgconfig_mod.generate(
+   name: 'sdb',
+   filebase: 'sdb',
+-  libraries: [libsdb.get_shared_lib()],
++  libraries: libsdb,
+   description: 'Simple DataBase',
+   subdirs: ['sdb'],
+   version: sdb_version,
+--- origsrc/sdb-2.0.1/test/bench/meson.build	2024-08-31 23:32:50.000000000 +0900
++++ src/sdb-2.0.1/test/bench/meson.build	2024-10-30 08:50:32.130015900 +0900
+@@ -11,7 +11,7 @@ foreach test : tests
+   name = 'bench-' + test
+   exe = executable(name, name + '.c',
+     include_directories: sdb_inc,
+-    link_with: libsdb.get_static_lib()
++    link_with: libsdb
+   )
+   benchmark(name, exe)
+ endforeach
