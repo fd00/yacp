@@ -1,0 +1,92 @@
+--- origsrc/libmt_client-0.1.98/Makefile.am	2003-02-08 04:07:28.000000000 +0900
++++ src/libmt_client-0.1.98/Makefile.am	2024-10-29 11:45:39.999777900 +0900
+@@ -1,2 +1,5 @@
+ SUBDIRS=src
+ EXTRA_DIST=libmt_client.m4 BUGS libmt_client.spec.in libmt_client.spec
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libmt_client-0.1.98/configure.in	2003-02-08 08:28:38.000000000 +0900
++++ src/libmt_client-0.1.98/configure.in	2024-10-29 11:46:39.086974700 +0900
+@@ -1,8 +1,8 @@
+ # Process this file with autoconf to produce a configure script.
+-AC_INIT(src/mt_client.h)
++AC_INIT([libmt_client], [0.1.98])
+ AC_CANONICAL_SYSTEM
+ AC_PREREQ(2.5)
+-AM_INIT_AUTOMAKE(libmt_client, 0.1.98)
++AM_INIT_AUTOMAKE
+ AM_CONFIG_HEADER(config.h)
+ 
+ LIBMT_MAJOR=0
+@@ -35,10 +35,7 @@ AC_C_CONST
+ AC_CHECK_FUNCS([bzero gethostbyname gethostname socket])
+ 
+ # Checks for libmaitretarot
+-AM_LIB_MAITRETAROT(0,0,0,$GLIB_CFLAGS, $GLIB_LIBS)
+-AC_SUBST(LIBMT_CFLAGS)
+-AC_SUBST(LIBMT_LIBS)
+-
++PKG_CHECK_MODULES(LIBMAITRETAROT, libmaitretarot >= 0.1.98)
+ 
+ dnl Use -Wall if we have gcc.
+ changequote(,)dnl
+@@ -54,4 +51,5 @@ AC_OUTPUT([
+ 	Makefile
+ 	src/Makefile
+ 	libmt_client.spec
++	libmt_client.pc
+ ])
+--- origsrc/libmt_client-0.1.98/libmt_client.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmt_client-0.1.98/libmt_client.pc.in	2024-10-29 11:47:30.169301700 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmt_client
++Description: Backend library for the maitretarot clients
++Version: @VERSION@
++Libs: -L${libdir} -lmt_client
++Cflags: -I${includedir}
++Requires: glib-2.0 libmaitretarot
+--- origsrc/libmt_client-0.1.98/src/Makefile.am	2003-02-08 04:10:19.000000000 +0900
++++ src/libmt_client-0.1.98/src/Makefile.am	2024-10-29 11:39:48.135846100 +0900
+@@ -3,9 +3,10 @@ lib_LTLIBRARIES=libmt_client.la
+ headersdir=$(prefix)/include
+ headers_DATA=mt_client.h
+ 
+-INCLUDES=${GLIB_CFLAGS} -DLIBMT_MAJOR=$(LIBMT_MAJOR) -DLIBMT_MINOR=$(LIBMT_MINOR) -DLIBMT_MICRO=$(LIBMT_MICRO)
++INCLUDES=${GLIB_CFLAGS} ${LIBMAITRETAROR_CFLAGS} -DLIBMT_MAJOR=$(LIBMT_MAJOR) -DLIBMT_MINOR=$(LIBMT_MINOR) -DLIBMT_MICRO=$(LIBMT_MICRO)
+ libmt_client_la_SOURCES= \
+ 	$(headers_DATA) \
+ 	mt_client_game.c mt_client_player.c
+ 
+-libmt_client_la_LDFLAGS=${GLIB_LIBS} -version-info ${LIBMT_MAJOR}:${LIBMT_MICRO}:${LIBMT_MINOR}
++libmt_client_la_LDFLAGS = -no-undefined -version-info ${LIBMT_MAJOR}:${LIBMT_MICRO}:${LIBMT_MINOR}
++libmt_client_la_LIBADD = ${GLIB_LIBS} ${LIBMAITRETAROT_LIBS}
+--- origsrc/libmt_client-0.1.98/src/mt_client_game.c	2003-02-08 04:10:19.000000000 +0900
++++ src/libmt_client-0.1.98/src/mt_client_game.c	2024-10-29 11:41:57.832367600 +0900
+@@ -56,7 +56,7 @@ player_callback (libmt_client_player_t *
+ 	}
+       else
+ 	{
+-	  g_printerr (str_err_function[num]);
++	  g_printerr ("%s", str_err_function[num]);
+ 	  exit (-1);
+ 	}
+     }
+--- origsrc/libmt_client-0.1.98/src/mt_client_player.c	2003-02-08 04:10:19.000000000 +0900
++++ src/libmt_client-0.1.98/src/mt_client_player.c	2024-10-29 11:43:57.404094900 +0900
+@@ -26,6 +26,10 @@
+ 
+ #define player_set_type(t,a,b) (t)->type = (a); (t)->value=(b)
+ 
++#if defined(__error_t_defined)
++#define error_t mt_client_error_t
++#endif
++
+ /* ERR_NO:no error; ERR_CONNC:connexion error; ERR_OTH:other error */
+ typedef enum
+ { ERR_NO = 0, ERR_CONNC = -1, ERR_OTH = -2 }
