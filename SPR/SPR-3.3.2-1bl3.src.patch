@@ -1,0 +1,58 @@
+--- origsrc/SPR-3.3.2/Makefile.am	2009-04-16 05:03:42.000000000 +0900
++++ src/SPR-3.3.2/Makefile.am	2024-10-30 22:06:32.510077000 +0900
+@@ -1,2 +1,5 @@
+ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = math src include data
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = SPR.pc
+--- origsrc/SPR-3.3.2/SPR.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SPR-3.3.2/SPR.pc.in	2024-10-30 22:05:33.554815500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SPR
++Description: Library for categorization of data
++Version: @VERSION@
++Libs: -L${libdir} -lSPR
++Cflags: -I${includedir}
+--- origsrc/SPR-3.3.2/configure.ac	2009-05-29 03:30:56.000000000 +0900
++++ src/SPR-3.3.2/configure.ac	2024-10-30 22:05:33.586065500 +0900
+@@ -135,4 +135,5 @@ AC_CONFIG_FILES(include/Makefile)
+ AC_CONFIG_FILES(include/StatPatternRecognition/Makefile)
+ AC_CONFIG_FILES(data/Makefile)
+ 
++AC_CONFIG_FILES([SPR.pc])
+ AC_OUTPUT
+--- origsrc/SPR-3.3.2/src/Makefile.am	2009-04-16 05:03:46.000000000 +0900
++++ src/SPR-3.3.2/src/Makefile.am	2024-10-30 21:50:37.475741300 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libSPR.la
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)
+ AM_LDFLAGS  = -L/usr/lib -L$(top_srcdir)/src
+ AM_LIBS     = -lSPR 
+-APPLDADD    = -lSPR
++APPLDADD    = libSPR.la
+ if WITH_ROOT
+    AM_CXXFLAGS += $(ROOTCXXFLAGS) -O2
+    AM_CPPFLAGS += $(ROOTCPPFLAGS) -DSPRROOTTUPLE
+@@ -14,7 +14,7 @@ else
+    AM_CXXFLAGS += -O4
+ endif
+ 
+-libSPR_la_LIBADD = $(top_srcdir)/math/libSPRmath.la
++libSPR_la_LIBADD = $(top_builddir)/math/libSPRmath.la
+ libSPR_la_SOURCES  = \
+   SprDataMoments.cc                 SprDecisionTree.cc \
+   SprFisher.cc                      SprFomCalculator.cc \
+@@ -55,7 +55,7 @@ if WITH_ROOT
+    libSPR_la_SOURCES  += SprRootReader.cc SprRootWriter.cc SprAdapterDict.C SprRootAdapter.cc
+ endif
+ 
+-
++libSPR_la_LDFLAGS = -no-undefined
+ 
+ #####################################################################
+ 
