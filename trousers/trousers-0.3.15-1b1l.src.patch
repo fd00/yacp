@@ -1,0 +1,120 @@
+--- origsrc/trousers-0.3.15/Makefile.am	2020-05-28 15:01:45.000000000 +0900
++++ src/trousers-0.3.15/Makefile.am	2024-10-31 10:09:48.915771200 +0900
+@@ -4,3 +4,6 @@ EXTRA_DIST = AUTHORS LICENSE NEWS NICETO
+ 	doc/LTC-TSS_LLD_08_r2.pdf \
+ 	doc/LTC-TSS_LLD_08_r2.sxw \
+ 	doc/TSS_programming_SNAFUs.txt
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libtspi.pc
+--- origsrc/trousers-0.3.15/configure.ac	2020-11-03 21:26:47.000000000 +0900
++++ src/trousers-0.3.15/configure.ac	2024-10-31 10:09:28.474871400 +0900
+@@ -13,6 +13,8 @@ TSS_VER_MINOR=3
+ AC_CANONICAL_TARGET
+ AM_INIT_AUTOMAKE([foreign subdir-objects 1.6])
+ 
++AM_ICONV
++
+ # Debugging support
+ AC_ARG_ENABLE([debug],
+     [AC_HELP_STRING([--enable-debug], [turn on all trousers debugging flags [default=off]])],
+@@ -41,6 +43,8 @@ case $target in
+ 	*solaris*)
+ 		CFLAGS="$CFLAGS -DSOLARIS"
+ 		;;
++	*cygwin*)
++		;;
+         *)
+         	TCSD_LDFLAGS="-pie -Wl,-z,relro -Wl,-z,now"
+                 ;;
+@@ -406,7 +410,8 @@ AC_OUTPUT(dist/tcsd.conf \
+ 	  man/Makefile \
+ 	  man/man3/Makefile \
+ 	  man/man5/Makefile \
+-	  man/man8/Makefile)
++	  man/man8/Makefile \
++	  libtspi.pc)
+ 
+ echo "CFLAGS=$CFLAGS"
+ 
+--- origsrc/trousers-0.3.15/libtspi.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/trousers-0.3.15/libtspi.pc.in	2024-10-31 10:09:37.853510300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: trousers
++Description: TCG Software Stack implementation
++Version: @VERSION@
++Libs: -L${libdir} -ltspi
++Cflags: -I${includedir}
+--- origsrc/trousers-0.3.15/src/include/trousers_types.h	2020-05-28 15:01:45.000000000 +0900
++++ src/trousers-0.3.15/src/include/trousers_types.h	2024-10-31 09:43:06.376432200 +0900
+@@ -118,7 +118,7 @@ typedef struct tdTSS_KEY {
+ 	BYTE *encData;
+ } TSS_KEY;
+ 
+-#if (defined (__linux) || defined (linux) || defined (SOLARIS) || defined (__GLIBC__))
++#if (defined (__linux) || defined (linux) || defined (SOLARIS) || defined (__GLIBC__) || defined(__CYGWIN__))
+ #define BSD_CONST
+ #elif (defined (__OpenBSD__) || defined (__FreeBSD__)) || defined (__APPLE__)
+ #define BSD_CONST const
+--- origsrc/trousers-0.3.15/src/tcsd/platform.c	2020-05-28 15:01:45.000000000 +0900
++++ src/trousers-0.3.15/src/tcsd/platform.c	2024-10-31 10:05:38.399063200 +0900
+@@ -13,7 +13,7 @@
+ #include <sys/param.h>
+ #include <sys/sysctl.h>
+ #include <err.h>
+-#elif (defined (__linux) || defined (linux) || defined(__GLIBC__))
++#elif (defined (__linux) || defined (linux) || defined(__GLIBC__) || defined(__CYGWIN__))
+ #include <utmp.h>
+ #elif (defined (SOLARIS))
+ #include <utmpx.h>
+@@ -33,13 +33,16 @@
+ #include "tcslog.h"
+ 
+ 
+-#if (defined (__linux) || defined (linux) || defined(__GLIBC__))
++#if (defined (__linux) || defined (linux) || defined(__GLIBC__) || defined(__CYGWIN__))
+ MUTEX_DECLARE_INIT(utmp_lock);
+ 
+ char
+ platform_get_runlevel()
+ {
+ 	char runlevel;
++#if defined(__CYGWIN__)
++	runlevel = 'u';
++#else
+ 	struct utmp ut, save, *next = NULL;
+ 	struct timeval tv;
+ 	int flag = 0, counter = 0;
+@@ -79,7 +82,7 @@ platform_get_runlevel()
+ 	}
+ 
+ 	MUTEX_UNLOCK(utmp_lock);
+-
++#endif
+ 	return runlevel;
+ }
+ #elif (defined (__FreeBSD__) || defined (__OpenBSD__) || defined (__APPLE__))
+--- origsrc/trousers-0.3.15/src/tspi/Makefile.am	2020-05-28 15:01:45.000000000 +0900
++++ src/trousers-0.3.15/src/tspi/Makefile.am	2024-10-31 09:57:52.445467400 +0900
+@@ -1,6 +1,6 @@
+ lib_LTLIBRARIES=libtspi.la
+ 
+-libtspi_la_LIBADD=${top_builddir}/src/trspi/libtrousers.la
++libtspi_la_LIBADD=${top_builddir}/src/trspi/libtrousers.la $(LTLIBICONV)
+ 
+ # On setting -version-info, from the libtool manual:
+ #
+@@ -17,7 +17,7 @@ libtspi_la_LIBADD=${top_builddir}/src/tr
+ # 5. If any interfaces have been added since the last public release, then increment age.
+ # 6. If any interfaces have been removed since the last public release, then set age to 0.
+ 
+-libtspi_la_LDFLAGS=-version-info 3:0:2 -lpthread @CRYPTOLIB@
++libtspi_la_LDFLAGS=-no-undefined -version-info 3:0:2 -lpthread @CRYPTOLIB@
+ 
+ libtspi_la_CFLAGS=-I$(top_srcdir)/src/include -DAPPID=\"TSPI\" -DVAR_PREFIX=\"@localstatedir@\" -DETC_PREFIX=\"@sysconfdir@\"
+ 
