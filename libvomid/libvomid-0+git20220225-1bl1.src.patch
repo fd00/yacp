@@ -1,0 +1,40 @@
+--- origsrc/libvomid/CMakeLists.txt	2024-11-02 08:14:20.000000000 +0900
++++ src/libvomid/CMakeLists.txt	2024-11-02 08:17:27.214913300 +0900
+@@ -55,6 +55,10 @@ include_directories (${PROJECT_BINARY_DI
+ add_library (libvomid ${SOURCES} ${HEADERS})
+ set_target_properties (libvomid PROPERTIES OUTPUT_NAME vomid)
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(libvomid PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if (HAL_ALSA)
+ 	include_directories (${ALSA_INCLUDE_DIR})
+ 	target_link_libraries (libvomid ${ALSA_LIBRARY})
+@@ -70,3 +74,13 @@ target_link_libraries (play libvomid)
+ include (CTest)
+ enable_testing()
+ add_subdirectory (tests)
++
++install(FILES ${HEADERS} DESTINATION include/libvomid)
++install(TARGETS libvomid RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libvomid.pc.in ${CMAKE_BINARY_DIR}/libvomid.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libvomid.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libvomid/libvomid.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libvomid/libvomid.pc.in	2024-11-02 08:14:21.847625200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libvomid
++Description: Cross-platform MIDI files manipulation and I/O library featuring microtonal tunings support
++Version: @VERSION@
++Libs: -L${libdir} -lvomid
++Cflags: -I${includedir}
