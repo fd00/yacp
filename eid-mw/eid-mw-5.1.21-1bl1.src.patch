@@ -1,0 +1,68 @@
+--- origsrc/eid-mw-5.1.21/cardcomm/pkcs11/src/Makefile.am	2024-11-01 06:24:37.919557500 +0900
++++ src/eid-mw-5.1.21/cardcomm/pkcs11/src/Makefile.am	2024-11-01 07:19:08.219366800 +0900
+@@ -6,6 +6,7 @@ libbeidpkcs11_la_CFLAGS = $(AM_CFLAGS) -
+ libbeidpkcs11_la_CXXFLAGS = $(AM_CXXFLAGS) -DUSING_DL_OPEN -DEIDMW_CAL_EXPORT -DCAL_BEID -DCARDPLUGIN_IN_CAL -DBEID_35 -DNDEBUG -DBEID_OLD_PINPAD -DLTC_NO_ASM -fvisibility=hidden -I$(srcdir)/common -I$(srcdir)/fuzz -I$(srcdir)/cardlayer -I$(top_srcdir)/doc/sdk/include/v240 @PCSC_CFLAGS@
+ libbeidpkcs11_la_CPPFLAGS = -I$(srcdir)/common -I$(srcdir)/fuzz -I$(srcdir)/cardlayer -I$(top_srcdir)/doc/sdk/include/v240 @PCSC_CFLAGS@ -DLIBEXECDIR='"$(libexecdir)"' -fvisibility=hidden
+ libbeidpkcs11_la_LIBADD = @PCSC_LIBS@ @DL_LIBS@
++libbeidpkcs11_la_LDFLAGS = -no-undefined $(LTLIBINTL) $(GPG_ERROR_LIBS)
+ 
+ libbeidcommon_la_SOURCES = \
+ 	common/mw_util.cpp \
+@@ -178,9 +179,14 @@ if P11KIT
+ dist_p11kitcf_DATA = beid.module
+ install-exec-hook:
+ 	$(MKDIR_P) $(DESTDIR)$(p11kitsodir) && \
+-	cd $(DESTDIR)$(p11kitsodir) && \
++	if test -f $(DESTDIR)$(libdir)/libbeidpkcs11.so.0; then \
++		cd $(DESTDIR)$(p11kitsodir) && \
+ 		rm -f beidpkcs11.so && \
+-		$(LN_S) $(libdir)/libbeidpkcs11.so.0 beidpkcs11.so
++		$(LN_S) $(libdir)/libbeidpkcs11.so.0 beidpkcs11.so; fi
++	if test -f $(DESTDIR)$(bindir)/cygbeidpkcs11-0.dll; then \
++		cd $(DESTDIR)$(p11kitsodir) && \
++		rm -f beidpkcs11.so && \
++		$(LN_S) $(bindir)/cygbeidpkcs11-0.dll beidpkcs11.so; fi
+ endif
+ 
+ beid_askpin_SOURCES = dialogs/dialogsgtk/parent.c dialogs/dialogsgtk/beid-askpin.c
+--- origsrc/eid-mw-5.1.21/configure.ac	2024-11-01 06:24:37.575819200 +0900
++++ src/eid-mw-5.1.21/configure.ac	2024-11-01 06:45:20.284467500 +0900
+@@ -48,6 +48,11 @@ then
+ 	AC_MSG_ERROR([assuan-based dialogs requested, but libassuan could not be found])
+ fi
+ 
++if test x$ASSUAN = x"y"
++then
++	PKG_CHECK_MODULES([GPG_ERROR], [gpg-error])
++fi
++
+ AM_CONDITIONAL(ASSUAN,[test x"$ASSUAN" = x"y"])
+ 
+ ###### pcsc-lite ##########
+--- origsrc/eid-mw-5.1.21/plugins_tools/eid-viewer/Makefile.am	2024-11-01 06:24:37.919557500 +0900
++++ src/eid-mw-5.1.21/plugins_tools/eid-viewer/Makefile.am	2024-11-01 06:57:49.627789700 +0900
+@@ -136,7 +136,7 @@ if FUZZING
+ eid_viewer_LDADD += $(top_builddir)/cardcomm/pkcs11/src/libbeidpkcs11.la
+ endif
+ libeidviewer_la_LIBADD = $(top_builddir)/plugins_tools/util/liblabels.la $(top_builddir)/cardcomm/pkcs11/src/libbeidpkcs11.la @SSL_LIBS@ @XML2_LIBS@
+-libeidviewer_la_LDFLAGS = -version-info 1:0:1
++libeidviewer_la_LDFLAGS = -no-undefined -version-info 1:0:1
+ AM_CFLAGS = @GTK_CFLAGS@ -I. -I$(srcdir)/include -Igtk -DDATAROOTDIR='"$(datarootdir)"' -I$(top_srcdir)/doc/sdk/include/v240 -I$(top_srcdir)/cardcomm/pkcs11/src/fuzz -I$(top_srcdir)/plugins_tools/util @SSL_CFLAGS@ @GIO_CFLAGS@ @XML2_CFLAGS@ @CURL_CFLAGS@ @libproxy_CFLAGS@ -fvisibility=hidden @FUZZING@
+ AM_CXXFLAGS = $(AM_CFLAGS) -std=c++98
+ SUBDIRS = . gtk/po test
+--- origsrc/eid-mw-5.1.21/tests/unit/serial_linux.c	2024-10-25 16:29:19.000000000 +0900
++++ src/eid-mw-5.1.21/tests/unit/serial_linux.c	2024-11-01 06:52:28.431959500 +0900
+@@ -44,11 +44,13 @@ Serial* serial_open(char *portname) {
+ 		free(rv);
+ 		return NULL;
+ 	}
++#if defined(TIOCEXCL)
+ 	if(ioctl(rv->fd, TIOCEXCL) == -1) {
+ 		perror("ioctl TIOCEXCL");
+ 		free(rv);
+ 		return NULL;
+ 	}
++#endif
+ 	tcgetattr(rv->fd, &ios);
+ 	cfsetispeed(&ios, B9600);
+ 	cfsetospeed(&ios, B9600);
