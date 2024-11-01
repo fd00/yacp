@@ -1,19 +1,20 @@
 --- origsrc/libfly-0.3.0/CMakeLists.txt	2013-05-20 04:14:49.000000000 +0900
-+++ src/libfly-0.3.0/CMakeLists.txt	2015-03-27 00:03:47.859345800 +0900
-@@ -1,3 +1,11 @@
++++ src/libfly-0.3.0/CMakeLists.txt	2024-11-01 16:54:41.712766500 +0900
+@@ -1,3 +1,12 @@
  cmake_minimum_required(VERSION 2.6)
  
  add_subdirectory(src)
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+SET(VERSION "0.3.0")
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libfly.pc.in ${CMAKE_BINARY_DIR}/libfly.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/libfly.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++get_property(VERSION TARGET fly PROPERTY VERSION)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libfly.pc.in ${CMAKE_BINARY_DIR}/libfly.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libfly.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/libfly-0.3.0/libfly.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libfly-0.3.0/libfly.pc.in	2015-03-27 00:03:23.337695400 +0900
++++ src/libfly-0.3.0/libfly.pc.in	2024-11-01 16:47:52.849949100 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -26,8 +27,20 @@
 +Libs: -L${libdir} -lfly
 +Cflags: -I${includedir}
 --- origsrc/libfly-0.3.0/src/CMakeLists.txt	2013-05-20 04:14:49.000000000 +0900
-+++ src/libfly-0.3.0/src/CMakeLists.txt	2015-03-27 00:01:48.073051700 +0900
-@@ -53,7 +53,7 @@ else()
++++ src/libfly-0.3.0/src/CMakeLists.txt	2024-11-01 16:50:53.713001600 +0900
+@@ -13,11 +13,6 @@ set(fly_SRCS
+ # Public headers for installation
+ FILE(GLOB_RECURSE fly_pub_HEADERS "include/*")
+ 
+-# Compilation flags
+-if(CMAKE_COMPILER_IS_GNUCXX)
+-	set(CMAKE_C_FLAGS "-Wall -Werror")
+-endif()
+-
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+ 
+@@ -53,7 +48,7 @@ else()
  	set_target_properties(fly PROPERTIES VERSION 0.3.0 SOVERSION 0)
  	install(FILES ${fly_pub_HEADERS}
  			DESTINATION include/libfly COMPONENT Devel)
@@ -37,7 +50,7 @@
  target_link_libraries(fly pthread)
  
 --- origsrc/libfly-0.3.0/src/fly_thread.c	2013-05-20 04:14:49.000000000 +0900
-+++ src/libfly-0.3.0/src/fly_thread.c	2015-03-26 23:59:13.926736400 +0900
++++ src/libfly-0.3.0/src/fly_thread.c	2024-11-01 16:50:27.193479500 +0900
 @@ -23,7 +23,9 @@
  #include <libfly/fly_error.h>
  #include "fly_globals.h"
@@ -53,7 +66,7 @@
  	char path[512] = {0};
  
 +#if defined(__CYGWIN__)
-+	thread->tid = getpid();
++	thread->tid = (pid_t)pthread_self();
 +#else
  	thread->tid = syscall(SYS_gettid);
 +#endif
