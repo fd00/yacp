@@ -1,0 +1,61 @@
+--- origsrc/libtta-cpp-2.3/Makefile.am	2024-11-04 08:55:57.439328300 +0900
++++ src/libtta-cpp-2.3/Makefile.am	2024-11-04 09:10:53.786361900 +0900
+@@ -11,6 +11,8 @@ libtta___la_LIBADD = filter_arm.o
+ endif
+ endif
+ 
++libtta___la_LDFLAGS = -no-undefined
++
+ DOCLIST = COPYING README
+ 
+ .PHONY: console
+@@ -21,3 +23,6 @@ console:
+ 
+ SUBDIRS = . console
+ EXTRA_DIST = config.h Makefile.rm Makefile.mipsel libtta.sln libtta.vcxproj*
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libtta-cpp-2.3/configure.ac	2024-11-04 08:55:57.423702900 +0900
++++ src/libtta-cpp-2.3/configure.ac	2024-11-04 09:10:53.786361900 +0900
+@@ -69,4 +69,5 @@ AC_DEFINE(ENABLE_FRW,, [Define to enable
+ fi
+ 
+ AC_CONFIG_FILES(Makefile console/Makefile)
++AC_CONFIG_FILES([libtta-cpp.pc])
+ AC_OUTPUT
+--- origsrc/libtta-cpp-2.3/console/tta.h	2015-02-19 16:09:00.000000000 +0900
++++ src/libtta-cpp-2.3/console/tta.h	2024-11-04 08:57:36.837521000 +0900
+@@ -63,7 +63,7 @@ typedef RMfile (HANDLE);
+ typedef int (HANDLE);
+ #define INVALID_HANDLE_VALUE (-1)
+ #if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || \
+-	(defined(__APPLE__) && defined(__MACH__))
++	(defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #endif
+ #define tta_open_read(__name) open(__name,O_RDONLY|O_NONBLOCK)
+@@ -118,8 +118,10 @@ TTAuint32 GetTickCount() {
+ 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+ }
+ 
++#if !defined(__CYGWIN__)
+ extern TTAwchar *optarg;
+ extern int optind;
++#endif
+ 
+ #else // MSVC
+ 
+--- origsrc/libtta-cpp-2.3/libtta-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtta-cpp-2.3/libtta-cpp.pc.in	2024-11-04 09:15:53.476611900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtta-cpp
++Description: Lossless True Audio codec C++ library
++Version: @VERSION@
++Libs: -L${libdir} -ltta++
++Cflags: -I${includedir}
