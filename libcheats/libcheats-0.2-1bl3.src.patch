@@ -1,0 +1,67 @@
+--- origsrc/libcheats-0.2/CMakeLists.txt	2012-10-14 20:41:10.000000000 +0900
++++ src/libcheats-0.2/CMakeLists.txt	2024-11-05 07:37:04.339671300 +0900
+@@ -6,3 +6,10 @@ ENABLE_TESTING()
+ 
+ ADD_SUBDIRECTORY(src)
+ ADD_SUBDIRECTORY(test)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libcheats.pc.in ${CMAKE_BINARY_DIR}/libcheats.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libcheats.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcheats-0.2/libcheats.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcheats-0.2/libcheats.pc.in	2024-11-05 07:36:23.071292600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcheats
++Description: Portable C library to read, manipulate, and write cheat codes in text format
++Version: @VERSION@
++Libs: -L${libdir} -lcheats
++Cflags: -I${includedir}/libcheats
+--- origsrc/libcheats-0.2/src/CMakeLists.txt	2012-10-14 20:41:10.000000000 +0900
++++ src/libcheats-0.2/src/CMakeLists.txt	2024-11-05 07:39:30.425514800 +0900
+@@ -23,5 +23,9 @@ ADD_LIBRARY(cheats
+ 	parser.c
+ )
+ 
+-INSTALL(TARGETS cheats DESTINATION lib)
+-INSTALL(FILES ../include/cheatlist.h ../include/libcheats.h DESTINATION include)
++install(TARGETS cheats RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES ../include/cheatlist.h ../include/libcheats.h ../include/libcheats_compat.h ../include/queue.h DESTINATION include/libcheats)
++
++if (DEFINED SOVERSION)
++	set_target_properties(cheats PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+\ No newline at end of file
+--- origsrc/libcheats-0.2/src/parser.h	2012-10-14 20:41:10.000000000 +0900
++++ src/libcheats-0.2/src/parser.h	2024-11-05 07:51:50.012320400 +0900
+@@ -14,8 +14,8 @@
+ #include <stdio.h>
+ #include "cheatlist.h"
+ 
+-char parse_error_text[256];
+-int parse_error_line;
++extern char parse_error_text[256];
++extern int parse_error_line;
+ 
+ int parse_stream(gamelist_t *list, FILE *stream);
+ int parse_buf(gamelist_t *list, const char *buf);
+--- origsrc/libcheats-0.2/test/CMakeLists.txt	2012-10-14 20:41:10.000000000 +0900
++++ src/libcheats-0.2/test/CMakeLists.txt	2024-11-05 07:40:27.935906700 +0900
+@@ -1,3 +1,10 @@
++include(CheckIncludeFile)
++
++check_include_file(stdint.h HAVE_STDINT_H)
++if (HAVE_STDINT_H)
++  add_definitions(-DHAVE_STDINT_H)
++endif (HAVE_STDINT_H)
++
+ INCLUDE_DIRECTORIES(../include)
+ 
+ SET(TESTSUITES test1.c test2.c test3.c test4.c test5.c)
