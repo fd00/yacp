@@ -1,0 +1,44 @@
+HOMEPAGE="https://sourceforge.net/projects/${PN}/"
+SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+SRC_DIR="${PN}"
+
+CATEGORY="Net"
+SUMMARY="CIDR merging with white listing"
+DESCRIPTION="The program implements the CIDR merging with whitelisting (network exclusion).
+Output will be summarized to be as small as possible. The program has been
+widely used for blacklist merge and optimization."
+
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="COPYING"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	cygmake CC_FLAGS='${CFLAGS}' LINK_FLAG='${LDFLAGS}'
+}
+
+src_test()
+{
+	cd ${B}
+	cat <<EOS > $$.in
+10.1.1.0/24
+10.1.1.1/32
+192.1.4.5/32
+192.1.4.4/32
+EOS
+	cat <<EOS > $$.res
+10.1.1.0/24
+192.1.4.4/31
+EOS
+	./${PN}.exe < $$.in > $$.out
+	cmp $$.res $$.out
+	rm -f $$.in $$.out $$.res
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ${PN}.exe
+}
