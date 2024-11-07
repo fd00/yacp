@@ -1,0 +1,114 @@
+--- origsrc/stringencoders/configure.ac	2024-11-07 08:27:13.000000000 +0900
++++ src/stringencoders/configure.ac	2024-11-07 09:06:50.196748200 +0900
+@@ -1,4 +1,4 @@
+-AC_INIT(stringencoders, [v3.10.3], [nickg -at- client9 -dot- com])
++AC_INIT(stringencoders, [3.10.3], [nickg -at- client9 -dot- com])
+ AC_PREREQ(2.68)
+ AM_INIT_AUTOMAKE
+ AC_PROG_LIBTOOL
+@@ -19,7 +19,7 @@ B64WCHARS="-_."
+ AC_ARG_WITH([b64wchars], AC_HELP_STRING([--with-b64wchars=3CHARS],[change b64 web extra chars, default is '-_.']),
+           [B64WCHARS=$withval], [])
+ 
+-EXTRACFLAGS="-Isrc -Wall -Wextra -Werror -Wshadow -Wpointer-arith -Wcast-qual -Wconversion"
++EXTRACFLAGS="-Isrc -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wconversion"
+ # -Wstrict-prototypes
+ # -Wmissing-prototypes
+ 
+--- origsrc/stringencoders/src/Makefile.am	2024-11-07 08:27:13.000000000 +0900
++++ src/stringencoders/src/Makefile.am	2024-11-07 08:36:38.382564400 +0900
+@@ -23,6 +23,7 @@ libmodpbase64_la_SOURCES = \
+ 	modp_utf8.h modp_utf8.c \
+ 	modp_html.h modp_html.c \
+ 	modp_json.h modp_json.c 
++libmodpbase64_la_LDFLAGS = -no-undefined
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = stringencoders.pc
+@@ -57,10 +58,10 @@ modp_b16.c: modp_b16.h modp_b16_data.h
+ modp_b64.c: modp_b64.h modp_b64_data.h
+ 
+ modp_b64r.c: modp_b64.c modp_b64r.h modp_b64r_data.h
+-	perl -p -i -e 's/b64/b64r/g' < modp_b64.c > modp_b64r.c
++	perl -p -i -e 's/b64/b64r/g' < $(srcdir)/modp_b64.c > modp_b64r.c
+ 
+ modp_b64w.c: modp_b64.c modp_b64w.h modp_b64w_data.h
+-	perl -p -i -e 's/b64/b64w/g' < modp_b64.c > modp_b64w.c
++	perl -p -i -e 's/b64/b64w/g' < $(srcdir)/modp_b64.c > modp_b64w.c
+ 
+ modp_b85.c: modp_b85.h modp_b85_data.h
+ 
+@@ -76,37 +77,37 @@ modp_qsiter.c: modp_qsiter.h
+ 
+ modp_xml.c: modp_xml.h
+ 
+-modp_b2_data.h: modp_b2_gen
++modp_b2_data.h: modp_b2_gen$(EXEEXT)
+ 	./modp_b2_gen > modp_b2_data.h
+ 
+-modp_b16_data.h: modp_b16_gen
++modp_b16_data.h: modp_b16_gen$(EXEEXT)
+ 	./modp_b16_gen > modp_b16_data.h
+ 
+-modp_b64_data.h: modp_b64_gen
++modp_b64_data.h: modp_b64_gen$(EXEEXT)
+ 	./modp_b64_gen > modp_b64_data.h
+ 
+-modp_ascii_data.h: modp_ascii_gen
++modp_ascii_data.h: modp_ascii_gen$(EXEEXT)
+ 	./modp_ascii_gen > modp_ascii_data.h
+ 
+ #
+ # Recall B64WCHARS by default is "-_."
+ #
+-modp_b64w_data.h: modp_b64_gen
++modp_b64w_data.h: modp_b64_gen$(EXEEXT)
+ 	./modp_b64_gen $(B64WCHARS) > modp_b64w_data.h
+ 
+ #
+ # RFC 4648 alphabet is -_=
+ # http://www.ietf.org/rfc/rfc4648.txt
+-modp_b64r_data.h: modp_b64_gen
++modp_b64r_data.h: modp_b64_gen$(EXEEXT)
+ 	./modp_b64_gen "-_=" > modp_b64r_data.h
+ 
+-modp_b85_data.h: modp_b85_gen
++modp_b85_data.h: modp_b85_gen$(EXEEXT)
+ 	./modp_b85_gen > modp_b85_data.h
+ 
+-modp_burl_data.h: modp_burl_gen
++modp_burl_data.h: modp_burl_gen$(EXEEXT)
+ 	./modp_burl_gen > modp_burl_data.h
+ 
+-modp_bjavascript_data.h: modp_bjavascript_gen
++modp_bjavascript_data.h: modp_bjavascript_gen$(EXEEXT)
+ 	./modp_bjavascript_gen > modp_bjavascript_data.h
+ 
+ modp_json_data.h: modp_json_gen.py
+--- origsrc/stringencoders/test/Makefile.am	2024-11-07 08:27:13.000000000 +0900
++++ src/stringencoders/test/Makefile.am	2024-11-07 08:42:57.061434500 +0900
+@@ -1,6 +1,6 @@
+ 
+ STRINGENCODERS_INCLUDE = -I$(top_srcdir)/src
+-STRINGENCODERS_LTLIB = $(top_srcdir)/src/libmodpbase64.la
++STRINGENCODERS_LTLIB = $(top_builddir)/src/libmodpbase64.la
+ 
+ check_PROGRAMS = \
+ 	modp_ascii_test \
+@@ -52,14 +52,14 @@ modp_b64_test_CPPFLAGS = $(STRINGENCODER
+ modp_b64_test_LDADD = $(STRINGENCODERS_LTLIB)
+ 
+ modp_b64w_test.c: modp_b64_test.c
+-	perl -p -i -e 's/b64/b64w/g' < modp_b64_test.c > modp_b64w_test.c
++	perl -p -i -e 's/b64/b64w/g' < $(srcdir)/modp_b64_test.c > modp_b64w_test.c
+ 
+ modp_b64w_test_SOURCES = modp_b64w_test.c
+ modp_b64w_test_CPPFLAGS = $(STRINGENCODERS_INCLUDE)
+ modp_b64w_test_LDADD = $(STRINGENCODERS_LTLIB)
+ 
+ modp_b64r_test.c: modp_b64_test.c
+-	perl -p -i -e 's/b64/b64r/g' < modp_b64_test.c > modp_b64r_test.c
++	perl -p -i -e 's/b64/b64r/g' < $(srcdir)/modp_b64_test.c > modp_b64r_test.c
+ 
+ modp_b64r_test_SOURCES = modp_b64r_test.c
+ modp_b64r_test_CPPFLAGS = $(STRINGENCODERS_INCLUDE)
