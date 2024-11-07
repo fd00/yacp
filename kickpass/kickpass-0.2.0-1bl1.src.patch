@@ -1,0 +1,43 @@
+--- origsrc/kickpass-0.2.0/CMakeLists.txt	2017-05-10 17:40:22.000000000 +0900
++++ src/kickpass-0.2.0/CMakeLists.txt	2024-11-07 19:33:19.770244100 +0900
+@@ -131,6 +131,7 @@ set_target_properties(libkickpass PROPER
+ 	VERSION ${KickPass_VERSION_MAJOR}.${KickPass_VERSION_MINOR}.${KickPass_VERSION_PATCH}
+ 	SOVERSION ${KickPass_VERSION_MAJOR})
+ set_target_properties(libkickpass PROPERTIES OUTPUT_NAME kickpass)
++target_link_libraries(libkickpass ${LIBS})
+ 
+ target_link_libraries(kickpass libkickpass)
+ 
+@@ -150,7 +151,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS
+ 
+ # Configure install
+ 
+-install(TARGETS kickpass libkickpass RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
++install(TARGETS kickpass libkickpass RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES manual/kickpass.1 DESTINATION share/man/man1/)
+ install(FILES extra/completion/zsh/_kickpass DESTINATION share/zsh/site-functions/)
+ 
+@@ -160,3 +161,10 @@ add_subdirectory(test)
+ 
+ # Packaging
+ include(Package)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/kickpass.pc.in ${CMAKE_BINARY_DIR}/kickpass.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/kickpass.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/kickpass-0.2.0/kickpass.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/kickpass-0.2.0/kickpass.pc.in	2024-11-07 19:40:23.175947100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: kickpass
++Description: Stupid simple password safe
++Version: @CPACK_PACKAGE_VERSION@
++Libs: -L${libdir} -lkickpass
++Cflags: -I${includedir}
