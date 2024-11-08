@@ -1,0 +1,43 @@
+--- origsrc/mp3asm-0.1/configure.in	2024-11-08 10:39:25.375926300 +0900
++++ src/mp3asm-0.1/configure.in	2024-11-08 10:47:36.995463400 +0900
+@@ -17,6 +17,8 @@ dnl Checks for typedefs, structures, and
+ AC_C_CONST
+ AC_TYPE_SIZE_T
+ 
++AC_CHECK_FUNCS(getprogname)
++
+ dnl Checks for library functions.
+ 
+ AC_OUTPUT([
+--- origsrc/mp3asm-0.1/src/mp3asm.c	2001-04-12 13:16:24.000000000 +0900
++++ src/mp3asm-0.1/src/mp3asm.c	2024-11-08 10:50:37.837622500 +0900
+@@ -53,6 +53,7 @@ logfile_t log;
+ input_t **input;
+ output_t *output;
+ 
++#if !HAVE_GETPROGNAME
+ /*
+  * getprogname: sets me to be the name of the executable.
+  *
+@@ -65,6 +66,7 @@ getprogname(const char *argv0)
+   (string = strrchr(argv0, '/')) ? string++ : (string = (char *)argv0);
+   return(string);
+ }
++#endif
+ 
+ /*
+  * new_input: adds and inits a new input
+@@ -200,7 +202,12 @@ write_output (void)
+ int
+ main(int argc, char *argv[])
+ { 
+-  init_global (getprogname(argv[0]));
++#if HAVE_GETPROGNAME
++  char* progname = getprogname();
++#else
++  char* progname; = getprogname(argv[0]);
++#endif
++  init_global (progname);
+ 
+   parse_args (argc, argv);
+ 
