@@ -1,0 +1,48 @@
+--- origsrc/tree-sitter-bash-0.23.1/CMakeLists.txt	2024-11-09 22:00:50.011908800 +0900
++++ src/tree-sitter-bash-0.23.1/CMakeLists.txt	2024-11-09 22:01:29.530359200 +0900
+@@ -17,15 +17,17 @@ endif()
+ 
+ find_program(TREE_SITTER_CLI tree-sitter DOC "Tree-sitter CLI")
+ 
++if (NOT TREE_SITTER_CLI STREQUAL "TREE_SITTER_CLI-NOTFOUND")
+ add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                    COMMAND "${TREE_SITTER_CLI}" generate src/grammar.json
+                             --abi=${TREE_SITTER_ABI_VERSION}
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                    COMMENT "Generating parser.c")
++endif()
+ 
+ add_library(tree-sitter-bash src/parser.c)
+-if(EXISTS src/scanner.c)
++if(EXISTS ${PROJECT_SOURCE_DIR}/src/scanner.c)
+   target_sources(tree-sitter-bash PRIVATE src/scanner.c)
+ endif()
+ target_include_directories(tree-sitter-bash PRIVATE src)
+@@ -49,7 +51,7 @@ include(GNUInstallDirs)
+ install(FILES bindings/c/tree-sitter-bash.h
+         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/tree_sitter")
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-bash.pc"
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ install(TARGETS tree-sitter-bash
+         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+--- origsrc/tree-sitter-bash-0.23.1/bindings/c/tree-sitter-bash.pc.in	2024-09-02 17:04:42.000000000 +0900
++++ src/tree-sitter-bash-0.23.1/bindings/c/tree-sitter-bash.pc.in	2024-11-09 22:02:02.372219800 +0900
+@@ -1,11 +1,11 @@
+-prefix=@PREFIX@
+-libdir=@LIBDIR@
+-includedir=@INCLUDEDIR@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+ 
+ Name: tree-sitter-bash
+ Description: Bash grammar for tree-sitter
+ URL: @URL@
+-Version: @VERSION@
++Version: @PROJECT_VERSION@
+ Requires: @REQUIRES@
+ Libs: -L${libdir} @ADDITIONAL_LIBS@ -ltree-sitter-bash
+ Cflags: -I${includedir}
