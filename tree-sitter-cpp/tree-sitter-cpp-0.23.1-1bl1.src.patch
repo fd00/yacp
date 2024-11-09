@@ -1,0 +1,57 @@
+--- origsrc/tree-sitter-cpp-0.23.1/CMakeLists.txt	2024-11-09 21:32:04.170204300 +0900
++++ src/tree-sitter-cpp-0.23.1/CMakeLists.txt	2024-11-09 21:35:38.504392800 +0900
+@@ -1,7 +1,7 @@
+ cmake_minimum_required(VERSION 3.13)
+ 
+ project(tree-sitter-cpp
+-        VERSION "0.23.2"
++        VERSION "0.23.1"
+         DESCRIPTION "C++ grammar for tree-sitter"
+         HOMEPAGE_URL "https://github.com/tree-sitter/tree-sitter-cpp"
+         LANGUAGES C)
+@@ -17,15 +17,17 @@ endif()
+ 
+ find_program(TREE_SITTER_CLI tree-sitter DOC "Tree-sitter CLI")
+ 
++if (NOT TREE_SITTER_CLI STREQUAL "TREE_SITTER_CLI-NOTFOUND")
+ add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                    COMMAND "${TREE_SITTER_CLI}" generate src/grammar.json
+                             --abi=${TREE_SITTER_ABI_VERSION}
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                    COMMENT "Generating parser.c")
++endif()
+ 
+ add_library(tree-sitter-cpp src/parser.c)
+-if(EXISTS src/scanner.c)
++if(EXISTS ${PROJECT_SOURCE_DIR}/src/scanner.c)
+   target_sources(tree-sitter-cpp PRIVATE src/scanner.c)
+ endif()
+ target_include_directories(tree-sitter-cpp PRIVATE src)
+@@ -49,7 +51,7 @@ include(GNUInstallDirs)
+ install(FILES bindings/c/tree-sitter-cpp.h
+         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/tree_sitter")
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-cpp.pc"
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ install(TARGETS tree-sitter-cpp
+         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+--- origsrc/tree-sitter-cpp-0.23.1/bindings/c/tree-sitter-cpp.pc.in	2024-09-23 10:23:40.000000000 +0900
++++ src/tree-sitter-cpp-0.23.1/bindings/c/tree-sitter-cpp.pc.in	2024-11-09 21:33:37.735090700 +0900
+@@ -1,11 +1,11 @@
+-prefix=@PREFIX@
+-libdir=@LIBDIR@
+-includedir=@INCLUDEDIR@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+ 
+ Name: tree-sitter-cpp
+ Description: C++ grammar for tree-sitter
+ URL: @URL@
+-Version: @VERSION@
++Version: @PROJECT_VERSION@
+ Requires: @REQUIRES@
+ Libs: -L${libdir} @ADDITIONAL_LIBS@ -ltree-sitter-cpp
+ Cflags: -I${includedir}
