@@ -1,0 +1,36 @@
+--- origsrc/tree-sitter-ocaml-0.23.2/CMakeLists.txt	2024-11-11 13:21:59.000000000 +0900
++++ src/tree-sitter-ocaml-0.23.2/CMakeLists.txt	2024-11-12 11:07:38.526768500 +0900
+@@ -20,13 +20,14 @@ find_program(TREE_SITTER_CLI tree-sitter
+ include(GNUInstallDirs)
+ 
+ macro(add_parser name)
++if (NOT TREE_SITTER_CLI STREQUAL "TREE_SITTER_CLI-NOTFOUND")
+     add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                        COMMAND "${TREE_SITTER_CLI}" generate src/grammar.json
+                                 --abi=${TREE_SITTER_ABI_VERSION}
+                        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                        COMMENT "Generating parser.c")
+-
++endif()
+     add_library(tree-sitter-${name}
+                 "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                 "${CMAKE_CURRENT_SOURCE_DIR}/src/scanner.c")
+@@ -49,7 +50,7 @@ macro(add_parser name)
+     install(FILES "${CMAKE_SOURCE_DIR}/bindings/c/tree-sitter-${name}.h"
+             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/tree_sitter")
+     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-${name}.pc"
+-            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
++            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+     install(TARGETS tree-sitter-${name}
+             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ endmacro()
+--- origsrc/tree-sitter-ocaml-0.23.2/bindings/c/tree-sitter-ocaml-interface.pc.in	2024-11-11 13:21:59.000000000 +0900
++++ src/tree-sitter-ocaml-0.23.2/bindings/c/tree-sitter-ocaml-interface.pc.in	2024-11-12 11:12:35.926154700 +0900
+@@ -6,5 +6,5 @@ Name: tree-sitter-ocaml-interface
+ Description: @PROJECT_DESCRIPTION@
+ URL: @CMAKE_PROJECT_HOMEPAGE_URL@
+ Version: @CMAKE_PROJECT_VERSION@
+-Libs: -L${libdir} -tree-sitter-ocaml-interface
++Libs: -L${libdir} -ltree-sitter-ocaml-interface
+ Cflags: -I${includedir}
