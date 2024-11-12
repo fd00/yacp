@@ -1,0 +1,36 @@
+--- origsrc/tree-sitter-json-0.24.8/CMakeLists.txt	2024-11-11 15:00:59.000000000 +0900
++++ src/tree-sitter-json-0.24.8/CMakeLists.txt	2024-11-12 09:44:13.942576900 +0900
+@@ -17,12 +17,14 @@ endif()
+ 
+ find_program(TREE_SITTER_CLI tree-sitter DOC "Tree-sitter CLI")
+ 
++if (NOT TREE_SITTER_CLI STREQUAL "TREE_SITTER_CLI-NOTFOUND")
+ add_custom_command(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                    COMMAND "${TREE_SITTER_CLI}" generate src/grammar.json
+                             --abi=${TREE_SITTER_ABI_VERSION}
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                    COMMENT "Generating parser.c")
++endif()
+ 
+ add_library(tree-sitter-json src/parser.c)
+ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/scanner.c)
+@@ -41,15 +43,15 @@ set_target_properties(tree-sitter-json
+                       SOVERSION "${TREE_SITTER_ABI_VERSION}.${PROJECT_VERSION_MAJOR}"
+                       DEFINE_SYMBOL "")
+ 
++include(GNUInstallDirs)
++
+ configure_file(bindings/c/tree-sitter-json.pc.in
+                "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-json.pc" @ONLY)
+ 
+-include(GNUInstallDirs)
+-
+ install(FILES bindings/c/tree-sitter-json.h
+         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/tree_sitter")
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-json.pc"
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ install(TARGETS tree-sitter-json
+         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
