@@ -1,0 +1,56 @@
+--- origsrc/asyncplusplus-1.2/CMakeLists.txt	2022-08-20 08:17:31.000000000 +0900
++++ src/asyncplusplus-1.2/CMakeLists.txt	2024-11-13 11:25:56.027391300 +0900
+@@ -127,14 +127,18 @@ if ((MSVC) AND ((MSVC_VERSION GREATER 19
+     target_compile_options(Async++ PUBLIC /Zc:__cplusplus)
+ endif()
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(Async++ PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ include(CMakePackageConfigHelpers)
+ configure_package_config_file("${CMAKE_CURRENT_LIST_DIR}/Async++Config.cmake.in"
+ 	"${PROJECT_BINARY_DIR}/Async++Config.cmake"
+-	INSTALL_DESTINATION cmake
++	INSTALL_DESTINATION lib/cmake/async++
+ )
+ 
+ install(FILES "${PROJECT_BINARY_DIR}/Async++Config.cmake"
+-	DESTINATION cmake
++	DESTINATION lib/cmake/async++
+ )
+ 
+ # Install the library and produce a CMake export script
+@@ -147,7 +151,7 @@ install(TARGETS Async++
+ 	FRAMEWORK DESTINATION Frameworks
+ )
+ export(EXPORT Async++)
+-install(EXPORT Async++ DESTINATION cmake)
++install(EXPORT Async++ DESTINATION lib/cmake/async++)
+ if (APPLE AND BUILD_FRAMEWORK)
+ 	set_target_properties(Async++ PROPERTIES OUTPUT_NAME Async++ FRAMEWORK ON)
+ 	set_source_files_properties(${ASYNCXX_INCLUDE} PROPERTIES MACOSX_PACKAGE_LOCATION Headers/async++)
+@@ -163,3 +167,10 @@ SET(CPACK_GENERATOR "DEB")
+ SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "none") #required
+ 
+ INCLUDE(CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/async++.pc.in ${CMAKE_BINARY_DIR}/async++.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/async++.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/asyncplusplus-1.2/async++.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/asyncplusplus-1.2/async++.pc.in	2024-11-13 11:25:29.682528400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: async++
++Description: Async++ concurrency framework for C++11
++Version: @VERSION@
++Libs: -L${libdir} -lasync++
++Cflags: -I${includedir}
