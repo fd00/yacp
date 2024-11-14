@@ -1,0 +1,25 @@
+--- origsrc/leatherman-1.12.13/cmake/internal.cmake	2024-03-02 03:47:06.000000000 +0900
++++ src/leatherman-1.12.13/cmake/internal.cmake	2024-11-14 19:08:04.265121200 +0900
+@@ -101,6 +101,9 @@ macro(add_leatherman_library)
+         add_library(${libname} STATIC ${LIBRARY_ARGS})
+     endif()
+     set_target_properties(${libname} PROPERTIES COMPILE_FLAGS "${LEATHERMAN_CXX_FLAGS} ${LEATHERMAN_LIBRARY_FLAGS}" VERSION ${PROJECT_VERSION})
++    if (DEFINED SOVERSION)
++        set_target_properties(${libname} PROPERTIES SOVERSION "${SOVERSION}")
++    endif()
+     if(LEATHERMAN_INSTALL)
+         leatherman_install(${libname} EXPORT LeathermanLibraries)
+     endif()
+--- origsrc/leatherman-1.12.13/cmake/leatherman.cmake.in	2024-03-02 03:47:06.000000000 +0900
++++ src/leatherman-1.12.13/cmake/leatherman.cmake.in	2024-11-14 19:11:04.151660300 +0900
+@@ -85,7 +85,9 @@ macro(leatherman_install)
+         ARCHIVE DESTINATION lib${LIB_SUFFIX})
+     foreach(ARG ${ARGV})
+         if (TARGET ${ARG})
+-            set_target_properties(${ARG} PROPERTIES PREFIX "" IMPORT_PREFIX "")
++            if(NOT CYGWIN)
++                set_target_properties(${ARG} PROPERTIES PREFIX "" IMPORT_PREFIX "")
++            endif()
+         endif()
+     endforeach()
+ endmacro()
