@@ -1,0 +1,68 @@
+--- origsrc/gdsl-1.8/Makefile.am	2013-06-13 00:08:38.000000000 +0900
++++ src/gdsl-1.8/Makefile.am	2024-11-19 07:45:25.324173500 +0900
+@@ -22,4 +22,7 @@ rpm:	distcheck
+ 	cp $(RPM_DIR)/@PACKAGE@-@VERSION@-0.i586.rpm .
+ 	$(SIG_CMD) @PACKAGE@-@VERSION@-0.i586.rpm
+ 
+-.PHONY: doc
+\ No newline at end of file
++.PHONY: doc
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/gdsl-1.8/configure.ac	2015-02-13 00:10:49.000000000 +0900
++++ src/gdsl-1.8/configure.ac	2024-11-19 07:45:45.292270400 +0900
+@@ -125,6 +125,7 @@ AC_SUBST(GDSL_LIBS)
+ 
+ dnl Output files
+ AC_OUTPUT([                        \
++          gdsl.pc                  \
+           gdsl.spec                \
+           gdsl-config              \
+           src/Makefile             \
+--- origsrc/gdsl-1.8/gdsl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/gdsl-1.8/gdsl.pc.in	2024-11-19 07:44:53.414880700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: gdsl
++Description: Generic Data Structures Library
++Version: @VERSION@
++Libs: -L${libdir} -lgdsl
++Cflags: -I${includedir}
+--- origsrc/gdsl-1.8/src/Makefile.am	2012-08-21 19:48:05.000000000 +0900
++++ src/gdsl-1.8/src/Makefile.am	2024-11-18 23:52:00.964939900 +0900
+@@ -62,4 +62,4 @@ libgdsl_la_SOURCES	= \
+ 			gdsl.c \
+ 			gdsl.h
+ 
+-libgdsl_la_LDFLAGS 	= -version-info ${GDSL_LT_VERSION}
++libgdsl_la_LDFLAGS 	= -no-undefined -version-info ${GDSL_LT_VERSION}
+--- origsrc/gdsl-1.8/src/examples/main_hash.c	2006-03-05 01:49:25.000000000 +0900
++++ src/gdsl-1.8/src/examples/main_hash.c	2024-11-18 23:52:53.220092800 +0900
+@@ -29,8 +29,9 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#if defined(__GLIBC__)
+ #include <mcheck.h>
+-
++#endif
+ 
+ #include "gdsl_types.h"
+ #include "gdsl_hash.h"
+@@ -90,9 +91,9 @@ int main (void)
+ {
+     int         choice;
+     gdsl_hash_t ht;
+-    
++#if defined(__GLIBC__)
+     mtrace ();
+-
++#endif
+     ht = gdsl_hash_alloc ("MY HASH TABLE", my_struct_alloc, my_struct_free, my_struct_key, NULL, SIZE);
+     if (ht == NULL)
+ 	{
