@@ -1,0 +1,49 @@
+--- origsrc/glu3/configure.ac	2024-11-18 19:15:44.000000000 +0900
++++ src/glu3/configure.ac	2024-11-18 19:20:25.042564800 +0900
+@@ -2,7 +2,7 @@
+ # Process this file with autoconf to produce a configure script.
+ 
+ AC_PREREQ(2.61)
+-AC_INIT(GLU3, 0.9-20100721, idr@freedesktop.org, GLU3)
++AC_INIT(GLU3, 0.9.1, idr@freedesktop.org, GLU3)
+ AC_CONFIG_SRCDIR([Makefile.am])
+ AM_CONFIG_HEADER([config.h])
+ 
+@@ -14,7 +14,7 @@ AM_MAINTAINER_MODE
+ AC_PROG_CXX
+ AC_PROG_CC
+ AC_PROG_MAKE_SET
+-AC_PROG_RANLIB
++LT_INIT([disable-static])
+ 
+ # Checks for libraries.
+ 
+--- origsrc/glu3/src/Makefile.am	2024-11-18 19:15:44.000000000 +0900
++++ src/glu3/src/Makefile.am	2024-11-18 19:15:45.324306900 +0900
+@@ -23,10 +23,13 @@
+ AM_CXXFLAGS=-I../include
+ AM_CFLAGS=-I../include
+ 
+-lib_LIBRARIES = libGLU3.a
+-libGLU3_a_SOURCES = matrix.c load_text.c arcball.c revolve.c mesh.c \
+-	sphere.cpp cube.cpp shader.c mesh.h revolve.h system.h
++INCLUDES = -I$(top_srcdir)/include
+ 
++lib_LTLIBRARIES = libGLU3.la
++libGLU3_la_SOURCES = matrix.c load_text.c arcball.c revolve.c mesh.c \
++	sphere.cpp cube.cpp shader.c mesh.h revolve.h system.h
++libGLU3_la_LDFLAGS = -no-undefined
++libGLU3_la_LIBADD = -lGL
+ libGLU3includedir = ${includedir}
+ libGLU3include_HEADERS = ../include/glu3.h ../include/glu3_scalar.h
+ 
+--- origsrc/glu3/test/Makefile.am	2024-11-18 19:15:44.000000000 +0900
++++ src/glu3/test/Makefile.am	2024-11-18 19:15:45.324306900 +0900
+@@ -1,6 +1,6 @@
+ AM_CFLAGS = -I$(srcdir)/../include
+ AM_CPPFLAGS = -I$(srcdir)/../include
+-LDADD = ../src/libGLU3.a -lm
++LDADD = ../src/libGLU3.la -lm
+ 
+ sphere_SOURCES = sphere.cpp
+ 
