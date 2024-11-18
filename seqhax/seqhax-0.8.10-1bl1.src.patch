@@ -1,0 +1,43 @@
+--- origsrc/seqhax-0.8.10/src/CMakeLists.txt	2024-04-23 15:30:48.000000000 +0900
++++ src/seqhax-0.8.10/src/CMakeLists.txt	2024-11-18 21:53:18.481259000 +0900
+@@ -1,23 +1,36 @@
+ SET(LIBQES_AS_SUBMODULE True)
++
++pkg_check_modules(LIBQES libqes)
++if (NOT LIBQES_FOUND)
+ ADD_SUBDIRECTORY(lib/libqes)
++set(LIBQES_LIBRARIES qes_static)
++endif()
+ 
+ INCLUDE_DIRECTORIES(lib)
++pkg_check_modules(GZSTREAM gzstream)
++if (NOT GZSTREAM_FOUND)
+ INCLUDE_DIRECTORIES(lib/gzstream)
+ SET(EXT_SOURCES  lib/gzstream/gzstream.C)
+-
++endif()
+ 
+ # Targets
+ file(GLOB CMD_SOURCES seqhax/progs/*.c seqhax/progs/*.cc)
+ ADD_EXECUTABLE(seqhax seqhax/seqhax-main.cc ${CMD_SOURCES} ${EXT_SOURCES})
+-TARGET_LINK_LIBRARIES(seqhax qes_static ${SEQHAX_LIB_DEPENDS})
++if (LIBQES_FOUND)
++    target_include_directories(seqhax PRIVATE ${LIBQES_INCLUDE_DIRS})
++endif()
++TARGET_LINK_LIBRARIES(seqhax ${LIBQES_LIBRARIES} ${SEQHAX_LIB_DEPENDS})
++if (GZSTREAM_FOUND)
++    target_link_libraries(seqhax ${GZSTREAM_LIBRARIES})
++endif()
+ INSTALL(TARGETS seqhax DESTINATION "bin")
+ 
+ if (HTSHAX)
+ ADD_EXECUTABLE(htshax htshax/main.cc htshax/htshax_bcfhist.cc ${EXT_SOURCES})
+ if (STATIC_BUILD)
+-    TARGET_LINK_LIBRARIES(htshax qes_static ${SEQHAX_LIB_DEPENDS} ${HTSLIB_STATIC_LIBRARIES})
++    TARGET_LINK_LIBRARIES(htshax ${LIBQES_LIBRARIES} ${SEQHAX_LIB_DEPENDS} ${HTSLIB_STATIC_LIBRARIES})
+ else()
+-    TARGET_LINK_LIBRARIES(htshax qes_static ${SEQHAX_LIB_DEPENDS} ${HTSLIB_LIBRARIES})
++    TARGET_LINK_LIBRARIES(htshax ${LIBQES_LIBRARIES} ${SEQHAX_LIB_DEPENDS} ${HTSLIB_LIBRARIES})
+ endif()
+ 
+ INSTALL(TARGETS htshax DESTINATION "bin")
