@@ -1,5 +1,5 @@
---- origsrc/wabt/CMakeLists.txt	2024-06-23 02:46:07.000000000 +0900
-+++ src/wabt/CMakeLists.txt	2024-06-23 03:02:46.048432400 +0900
+--- origsrc/wabt/CMakeLists.txt	2024-11-19 16:19:09.000000000 +0900
++++ src/wabt/CMakeLists.txt	2024-11-19 16:49:36.619523500 +0900
 @@ -391,10 +391,14 @@ set(WABT_LIBRARY_H
  
  set(WABT_LIBRARY_SRC ${WABT_LIBRARY_CC} ${WABT_LIBRARY_H})
@@ -49,70 +49,41 @@
  endif ()
  
  if (CODE_COVERAGE)
-@@ -529,6 +541,8 @@ function(wabt_executable)
-   endif ()
- endfunction()
- 
-+find_package(pkgconfig)
-+
- if (BUILD_TOOLS)
-   # wat2wasm
-   wabt_executable(
-@@ -573,16 +587,22 @@ if (BUILD_TOOLS)
+@@ -572,22 +584,30 @@ if (BUILD_TOOLS)
+     INSTALL
    )
  
++  find_package(pkgconfig)
++
    if(WITH_WASI)
--    add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
--    include_directories(third_party/uvwasi/include)
-+    pkg_check_modules(UVWASI uvwasi)    
-     add_definitions(-DWITH_WASI)
--    set(INTERP_LIBS uvwasi_a)
-     set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
--
--    if (COMPILER_IS_GNU)
--      target_compile_options(uv_a PRIVATE "-Wno-sign-compare")
--    elseif (COMPILER_IS_CLANG)
--      target_compile_options(uv_a PRIVATE "-Wno-implicit-fallthrough")
++    add_definitions(-DWITH_WASI)
++    pkg_check_modules(UVWASI uvwasi)
++    set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
 +    if (UVWASI_FOUND)
 +      include_directories(${UVWASI_INCLUDEDIR})
 +      set(INTERP_LIBS ${UVWASI_LIBRARIES})
 +    else() 
-+      add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
-+      include_directories(third_party/uvwasi/include)
-+      set(INTERP_LIBS uvwasi_a)
-+
-+      if (COMPILER_IS_GNU)
-+        target_compile_options(uv_a PRIVATE "-Wno-sign-compare")
-+      elseif (COMPILER_IS_CLANG)
-+        target_compile_options(uv_a PRIVATE "-Wno-implicit-fallthrough")
-+      endif()
+     # uvwasi uses the deprecated FetchContent_Populate function, disable it to avoid build error
+     set(CMAKE_POLICY_DEFAULT_CMP0169_BACK ${CMAKE_POLICY_DEFAULT_CMP0169})
+     set(CMAKE_POLICY_DEFAULT_CMP0169 OLD)
+     add_subdirectory("third_party/uvwasi" EXCLUDE_FROM_ALL)
+     set(CMAKE_POLICY_DEFAULT_CMP0169 ${CMAKE_POLICY_DEFAULT_CMP0169_BACK})
+     include_directories(third_party/uvwasi/include)
+-    add_definitions(-DWITH_WASI)
+     set(INTERP_LIBS uvwasi_a)
+-    set(EXTRA_INTERP_SRC src/interp/interp-wasi.cc)
+ 
+     if (COMPILER_IS_GNU)
+       target_compile_options(uv_a PRIVATE "-Wno-sign-compare")
+     elseif (COMPILER_IS_CLANG)
+       target_compile_options(uv_a PRIVATE "-Wno-implicit-fallthrough")
      endif()
++    endif()
    endif()
  
---- origsrc/wabt/src/interp/interp-wasi.cc	2024-06-23 02:46:07.000000000 +0900
-+++ src/wabt/src/interp/interp-wasi.cc	2024-06-23 03:03:33.426260100 +0900
-@@ -33,7 +33,7 @@
- 
- #ifdef WITH_WASI
- 
--#include "uvwasi.h"
-+#include <uvwasi/uvwasi.h>
- 
- #include <cinttypes>
- #include <unordered_map>
---- origsrc/wabt/src/tools/wasm-interp.cc	2024-06-23 02:46:07.000000000 +0900
-+++ src/wabt/src/tools/wasm-interp.cc	2024-06-23 03:03:55.098708800 +0900
-@@ -34,7 +34,7 @@
- #include "wabt/stream.h"
- 
- #ifdef WITH_WASI
--#include "uvwasi.h"
-+#include <uvwasi/uvwasi.h>
- #endif
- 
- using namespace wabt;
---- origsrc/wabt/test/run-spec-wasm2c.py	2024-06-23 02:46:08.000000000 +0900
-+++ src/wabt/test/run-spec-wasm2c.py	2024-06-23 03:04:18.782878600 +0900
+   # wasm-interp
+--- origsrc/wabt/test/run-spec-wasm2c.py	2024-11-19 16:19:09.000000000 +0900
++++ src/wabt/test/run-spec-wasm2c.py	2024-11-19 16:52:22.807095700 +0900
 @@ -466,7 +466,7 @@ def Compile(cc, c_filename, out_dir, use
          else:
              args.append('-std=c99')
