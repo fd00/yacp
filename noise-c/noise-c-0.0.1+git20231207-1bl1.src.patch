@@ -1,0 +1,221 @@
+--- origsrc/noise-c/configure.ac	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/configure.ac	2024-11-22 09:10:56.177839100 +0900
+@@ -5,7 +5,7 @@ AC_CONFIG_MACRO_DIR([m4])
+ 
+ AC_PROG_CC
+ AC_PROG_CC_STDC
+-AC_PROG_RANLIB
++LT_INIT
+ AC_PROG_LEX
+ AC_PROG_YACC
+ AC_PATH_PROG(DOXYGEN, doxygen)
+--- origsrc/noise-c/examples/echo/echo-client/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/examples/echo/echo-client/Makefile.am	2024-11-22 11:11:13.462453900 +0900
+@@ -8,7 +8,7 @@ echo_client_SOURCES = echo-client.c
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../echo-server
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../../src/protocol/libnoiseprotocol.a
++LDADD = ../../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
+--- origsrc/noise-c/examples/echo/echo-keygen/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/examples/echo/echo-keygen/Makefile.am	2024-11-22 11:11:31.296991700 +0900
+@@ -6,7 +6,7 @@ echo_keygen_SOURCES = echo-keygen.c
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../../src/protocol/libnoiseprotocol.a
++LDADD = ../../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
+--- origsrc/noise-c/examples/echo/echo-server/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/examples/echo/echo-server/Makefile.am	2024-11-22 11:11:39.127318400 +0900
+@@ -8,7 +8,7 @@ echo_server_SOURCES = \
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../../src/protocol/libnoiseprotocol.a
++LDADD = ../../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
+--- origsrc/noise-c/src/keys/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/src/keys/Makefile.am	2024-11-22 10:56:26.985563000 +0900
+@@ -1,13 +1,18 @@
+ 
+-lib_LIBRARIES = libnoisekeys.a
++lib_LTLIBRARIES = libnoisekeys.la
+ 
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/noise/keys
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-libnoisekeys_a_SOURCES = \
++libnoisekeys_la_SOURCES = \
+ 	certificate.c \
+ 	loader.c
+ 
++libnoisekeys_la_LIBADD = \
++	$(top_builddir)/src/protobufs/libnoiseprotobufs.la \
++	$(top_builddir)/src/protocol/libnoiseprotocol.la
++libnoisekeys_la_LDFLAGS = -no-undefined
++
+ protos:
+ 	$(top_builddir)/tools/protoc/noise-protoc \
+ 		-c $(top_srcdir)/src/keys/certificate.c \
+--- origsrc/noise-c/src/protobufs/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/src/protobufs/Makefile.am	2024-11-22 09:12:56.936969700 +0900
+@@ -1,7 +1,9 @@
+ 
+-lib_LIBRARIES = libnoiseprotobufs.a
++lib_LTLIBRARIES = libnoiseprotobufs.la
+ 
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-libnoiseprotobufs_a_SOURCES = protobufs.c
++libnoiseprotobufs_la_SOURCES = protobufs.c
++
++libnoiseprotobufs_la_LDFLAGS = -no-undefined
+--- origsrc/noise-c/src/protocol/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/src/protocol/Makefile.am	2024-11-22 10:51:39.092930400 +0900
+@@ -1,7 +1,7 @@
+ 
+ AUTOMAKE_OPTIONS = subdir-objects
+ 
+-lib_LIBRARIES = libnoiseprotocol.a
++lib_LTLIBRARIES = libnoiseprotocol.la
+ 
+ # Definitions for Ed448-Goldilocks (Curve448 reference implementation)
+ GOLDILOCKS_SRCDIR = $(top_srcdir)/src/crypto/goldilocks/src
+@@ -13,6 +13,8 @@ GOLDILOCKS_CPPFLAGS = \
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src $(GOLDILOCKS_CPPFLAGS)
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
++libnoiseprotocol_la_LIBADD =
++
+ if USE_OPENSSL
+ AM_CPPFLAGS += -DUSE_OPENSSL=1
+ AM_CFLAGS += $(openssl_CFLAGS)
+@@ -27,7 +29,7 @@ ED25519_CPPFLAGS = -DED25519_CUSTOMHASH
+ AM_CPPFLAGS += $(ED25519_CPPFLAGS)
+ endif
+ 
+-libnoiseprotocol_a_SOURCES = \
++libnoiseprotocol_la_SOURCES = \
+ 	cipherstate.c \
+ 	dhstate.c \
+ 	errors.c \
+@@ -64,21 +66,21 @@ libnoiseprotocol_a_SOURCES = \
+ 	../crypto/newhope/reduce.h
+ 
+ if USE_OPENSSL
+-libnoiseprotocol_a_SOURCES += \
++libnoiseprotocol_la_SOURCES += \
+ 	../backend/openssl/cipher-aesgcm.c
+ else !USE_OPENSSL
+ if USE_LIBSODIUM
+-libnoiseprotocol_a_SOURCES += \
++libnoiseprotocol_la_SOURCES += \
+ 	../backend/sodium/cipher-aesgcm.c \
+ 	../backend/ref/cipher-aesgcm.c
+ else
+-libnoiseprotocol_a_SOURCES += \
++libnoiseprotocol_la_SOURCES += \
+ 	../backend/ref/cipher-aesgcm.c
+ endif
+ endif
+ 
+ if USE_LIBSODIUM
+-libnoiseprotocol_a_SOURCES += \
++libnoiseprotocol_la_SOURCES += \
+ 	rand_sodium.c \
+ 	../backend/sodium/cipher-aesgcm.c \
+ 	../backend/sodium/cipher-chachapoly.c \
+@@ -90,7 +92,7 @@ libnoiseprotocol_a_SOURCES += \
+ 	../crypto/aes/rijndael-alg-fst.c \
+ 	../crypto/ghash/ghash.c
+ else !USE_LIBSODIUM
+-libnoiseprotocol_a_SOURCES += \
++libnoiseprotocol_la_SOURCES += \
+ 	rand_os.c \
+ 	../backend/ref/cipher-aesgcm.c \
+ 	../backend/ref/cipher-chachapoly.c \
+@@ -110,3 +112,12 @@ libnoiseprotocol_a_SOURCES += \
+ 	../crypto/sha2/sha512.c \
+ 	../crypto/ed25519/ed25519.c
+ endif
++
++libnoiseprotocol_la_LDFLAGS = -no-undefined
++
++if USE_LIBSODIUM
++libnoiseprotocol_la_LIBADD += $(libsodium_LIBS)
++endif
++if USE_OPENSSL
++libnoiseprotocol_la_LIBADD += $(openssl_LIBS)
++endif
+--- origsrc/noise-c/tests/performance/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/tests/performance/Makefile.am	2024-11-22 11:10:42.341396500 +0900
+@@ -6,7 +6,7 @@ test_performance_SOURCES = test-performa
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../src/protocol/libnoiseprotocol.a
++LDADD = ../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
+--- origsrc/noise-c/tests/unit/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/tests/unit/Makefile.am	2024-11-22 10:58:49.453145100 +0900
+@@ -18,9 +18,9 @@ test_noise_SOURCES = \
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../src/keys/libnoisekeys.a \
+-        ../../src/protobufs/libnoiseprotobufs.a \
+-        ../../src/protocol/libnoiseprotocol.a
++LDADD = ../../src/keys/libnoisekeys.la \
++        ../../src/protobufs/libnoiseprotobufs.la \
++        ../../src/protocol/libnoiseprotocol.la
+ 
+ check-local:
+ 	./test-noise
+--- origsrc/noise-c/tests/vector/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/tests/vector/Makefile.am	2024-11-22 10:59:23.361679300 +0900
+@@ -6,7 +6,7 @@ test_vector_SOURCES = test-vector.c json
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../src/protocol/libnoiseprotocol.a
++LDADD = ../../src/protocol/libnoiseprotocol.la
+ 
+ VECTORS = \
+     $(srcdir)/cacophony.txt \
+--- origsrc/noise-c/tests/vector-gen/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/tests/vector-gen/Makefile.am	2024-11-22 10:59:59.062874600 +0900
+@@ -13,7 +13,7 @@ vector_gen_SOURCES = \
+ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/protocol
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../src/protocol/libnoiseprotocol.a
++LDADD = ../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
+--- origsrc/noise-c/tools/keytool/Makefile.am	2024-11-22 09:10:38.000000000 +0900
++++ src/noise-c/tools/keytool/Makefile.am	2024-11-22 10:57:02.396218500 +0900
+@@ -10,9 +10,9 @@ noise_keytool_SOURCES = \
+ AM_CPPFLAGS = -I$(top_srcdir)/include
+ AM_CFLAGS = @WARNING_FLAGS@
+ 
+-LDADD = ../../src/keys/libnoisekeys.a \
+-        ../../src/protobufs/libnoiseprotobufs.a \
+-        ../../src/protocol/libnoiseprotocol.a
++LDADD = ../../src/keys/libnoisekeys.la \
++        ../../src/protobufs/libnoiseprotobufs.la \
++        ../../src/protocol/libnoiseprotocol.la
+ 
+ if USE_LIBSODIUM
+ AM_CPPFLAGS += -DUSE_LIBSODIUM=1
