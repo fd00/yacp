@@ -1,0 +1,51 @@
+HOMEPAGE="https://www.arch.cs.titech.ac.jp/~kise/nq/"
+SRC_URI="https://www.arch.cs.titech.ac.jp/~kise/nq/package/${PN}-version${PV}.tgz"
+SRC_DIR="version${PV}"
+
+CATEGORY="Math"
+SUMMARY="N-queens problem benchmark"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="base/COPYING"
+
+src_compile()
+{
+	set -x
+	cd ${B}
+	lndirs
+
+	pushd base
+	${CC} ${CPPFLAGS} ${CFLAGS} queens.c -o qn24b_base.exe
+	popd
+
+	pushd mpi
+	mpicc ${CPPFLAGS} ${CFLAGS} main.c -o qn24b_mpi.exe
+	popd
+
+	pushd omp
+	${CC} -fopenmp ${CPPFLAGS} ${CFLAGS} main.c -o qn24b_omp.exe
+	popd
+}
+
+src_test()
+{
+	cd ${B}
+	./base/qn24b_base.exe --help
+}
+
+DOCS="
+	base/COPYING
+	base/README.txt
+"
+
+src_install()
+{
+	cd ${B}
+	dobin */*.exe
+
+	cd ${S}
+	newdoc mpi/README.txt README.mpi.txt
+	newdoc omp/README.txt README.omp.txt
+}
