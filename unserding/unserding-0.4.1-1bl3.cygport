@@ -1,24 +1,36 @@
 HOMEPAGE="https://github.com/hroptatyr/${PN}"
-SRC_URI="https://github.com/hroptatyr/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/hroptatyr/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Framework for ad-hoc networks for financial applications"
 DESCRIPTION="Unserding is a simple pub-sub messaging library, much like 0mq or nanomsg,
 without all the transports they support and without the reliability promise,
-made for heavy-duty realtime delivery of time series.
+made for heavy-duty realtime delivery of time series."
 
-Unserding uses udp6 multicast to span ad-hoc topologies (on ff0x::134) and
-uses a simple tag-length-value wire protocol to propagate messages."
+# LICENSE=""
+# LICENSE_SPDX="SPDX-License-Identifier: "
+# LICENSE_URI=""
 
-export CPPFLAGS="-D_GNU_SOURCE"
+BUILD_REQUIRES="libev-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 
 CYGCONF_ARGS="
 	--disable-static
 "
 
-DOCS="
-	README.md
-"
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	cd ${S}
+	insinto /etc/rc.d/init.d
+	newins contrib/rc.${PN} ${PN}
+	insinto /etc/sysconfig
+	newins contrib/sysconfig.${PN} ${PN}
+}
+
 DIFF_EXCLUDES="
 	${PN}.info
 	libltdl
@@ -32,11 +44,12 @@ PKG_NAMES="
 	lib${PN}-devel
 "
 unserding_CONTENTS="
+	etc
 	usr/bin/*.exe
 	usr/share/doc
 "
 libunserding2_CONTENTS="
-	usr/bin/*.dll
+	usr/bin/cyg*-2.dll
 "
 libunserding_devel_CONTENTS="
 	usr/include
