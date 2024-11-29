@@ -1,0 +1,124 @@
+--- origsrc/libfortuna/Makefile.am	1970-01-01 09:00:00.000000000 +0900
++++ src/libfortuna/Makefile.am	2024-11-29 14:57:59.215125500 +0900
+@@ -0,0 +1,12 @@
++
++pkginclude_HEADERS = src/c.h src/fortuna.h
++
++lib_LTLIBRARIES = libfortuna.la
++libfortuna_la_SOURCES = \
++src/blf.c     src/fortuna.c   src/internal.c  src/md5.c   src/px.c \
++src/random.c  src/rijndael.c  src/sha1.c      src/sha2.c
++
++libfortuna_la_LDFLAGS = -no-undefined -export-symbols-regex "^fortuna"
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libfortuna/configure.ac	1970-01-01 09:00:00.000000000 +0900
++++ src/libfortuna/configure.ac	2024-11-29 14:15:36.801065400 +0900
+@@ -0,0 +1,31 @@
++#                                               -*- Autoconf -*-
++# Process this file with autoconf to produce a configure script.
++
++AC_PREREQ([2.69])
++AC_INIT([libfortuna], [0])
++AC_CONFIG_SRCDIR([src/blf.c])
++AC_CONFIG_HEADERS([config.h])
++AM_INIT_AUTOMAKE([subdir-objects])
++
++# Checks for programs.
++AC_PROG_CC
++AC_PROG_INSTALL
++LT_INIT
++
++# Checks for libraries.
++
++# Checks for header files.
++AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/param.h sys/time.h unistd.h malloc_np.h])
++
++# Checks for typedefs, structures, and compiler characteristics.
++AC_TYPE_SIZE_T
++AC_TYPE_UINT32_T
++AC_TYPE_UINT64_T
++AC_TYPE_UINT8_T
++
++# Checks for library functions.
++AC_FUNC_MALLOC
++AC_CHECK_FUNCS([gettimeofday memmove memset strcasecmp strchr])
++
++AC_CONFIG_FILES([libfortuna.pc Makefile])
++AC_OUTPUT
+--- origsrc/libfortuna/libfortuna.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libfortuna/libfortuna.pc.in	2024-11-29 14:15:36.801065400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libfortuna
++Description: Fortuna PRNG Library
++Version: @VERSION@
++Libs: -L${libdir} -lfortuna
++Cflags: -I${includedir}/libfortuna
+--- origsrc/libfortuna/src/internal.h	2024-11-29 14:15:26.000000000 +0900
++++ src/libfortuna/src/internal.h	2024-11-29 14:15:36.801065400 +0900
+@@ -33,7 +33,9 @@
+ #define __INTERNAL_H
+ 
+ #include <stdlib.h>
++#if defined(HAVE_MALLOC_NP_H)
+ #include <malloc_np.h>
++#endif
+ #include <time.h>
+ 
+ #include "px.h"
+--- origsrc/libfortuna/src/px.h	2024-11-29 14:15:26.000000000 +0900
++++ src/libfortuna/src/px.h	2024-11-29 14:15:36.801065400 +0900
+@@ -35,7 +35,9 @@
+ #include <stdlib.h>
+ #include <sys/types.h>
+ #include <sys/param.h>
++#if defined(HAVE_MALLOC_NP_H)
+ #include <malloc_np.h>
++#endif
+ #include "c.h"
+ 
+ /* keep debug messages? */
+--- origsrc/libfortuna/src/sha2.c	2024-11-29 14:15:26.000000000 +0900
++++ src/libfortuna/src/sha2.c	2024-11-29 14:54:07.218506700 +0900
+@@ -560,7 +560,7 @@ SHA256_Last(SHA256_CTX *context)
+ }
+ 
+ void
+-SHA256_Final(uint8 digest[], SHA256_CTX *context)
++SHA256_Final(uint8 digest[SHA256_DIGEST_LENGTH], SHA256_CTX *context)
+ {
+ 	/* If no digest buffer is passed, we don't bother doing this: */
+ 	if (digest != NULL)
+@@ -888,7 +888,7 @@ SHA512_Last(SHA512_CTX *context)
+ }
+ 
+ void
+-SHA512_Final(uint8 digest[], SHA512_CTX *context)
++SHA512_Final(uint8 digest[SHA512_DIGEST_LENGTH], SHA512_CTX *context)
+ {
+ 	/* If no digest buffer is passed, we don't bother doing this: */
+ 	if (digest != NULL)
+@@ -933,7 +933,7 @@ SHA384_Update(SHA384_CTX *context, const
+ }
+ 
+ void
+-SHA384_Final(uint8 digest[], SHA384_CTX *context)
++SHA384_Final(uint8 digest[SHA384_DIGEST_LENGTH], SHA384_CTX *context)
+ {
+ 	/* If no digest buffer is passed, we don't bother doing this: */
+ 	if (digest != NULL)
+@@ -977,7 +977,7 @@ SHA224_Update(SHA224_CTX *context, const
+ }
+ 
+ void
+-SHA224_Final(uint8 digest[], SHA224_CTX *context)
++SHA224_Final(uint8 digest[SHA224_DIGEST_LENGTH], SHA224_CTX *context)
+ {
+ 	/* If no digest buffer is passed, we don't bother doing this: */
+ 	if (digest != NULL)
