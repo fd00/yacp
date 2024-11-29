@@ -1,0 +1,71 @@
+--- origsrc/gplaces-0.19.7/Makefile	2024-09-20 03:14:18.000000000 +0900
++++ src/gplaces-0.19.7/Makefile	2024-11-29 13:12:00.658271600 +0900
+@@ -1,15 +1,15 @@
+ # see LICENSE for copyright and license details
+-PREFIX = /usr/local
++PREFIX ?= /usr/local
+ CONFDIR ?= $(PREFIX)/etc
+-CC = cc
++CC ?= cc
+ CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-result
+ VERSION ?= $(shell git describe --tags 2>/dev/null | sed s/^v//)
+ ifeq ($(VERSION),)
+ 	VERSION = ?
+ endif
+-CFLAGS += -D_GNU_SOURCE  -DPREFIX=\"$(PREFIX)\" -DCONFDIR=\"$(CONFDIR)\" -DGPLACES_VERSION=\"$(VERSION)\" $(shell pkg-config --cflags libcurl libssl libcrypto)
++CFLAGS += -D_GNU_SOURCE  -DPREFIX=\"$(PREFIX)\" -DCONFDIR=\"$(CONFDIR)\" -DGPLACES_VERSION=\"$(VERSION)\" $(shell pkg-config --cflags libcurl libssl libcrypto bestline)
+ LDFLAGS ?=
+-LDFLAGS += $(shell pkg-config --libs libcurl libssl libcrypto)
++LDFLAGS += $(shell pkg-config --libs libcurl libssl libcrypto bestline)
+ MIMETYPES =
+ KEYWORDS =
+ WITH_TITAN ?= 1
+@@ -67,7 +67,7 @@ endif
+ ifeq ($(WITH_FLATPAK_SPAWN),1)
+ 	CFLAGS += -DGPLACES_USE_FLATPAK_SPAWN
+ endif
+-OBJ = bestline/bestline.o gplaces.o
++OBJ = gplaces.o
+ BIN = gplaces
+ 
+ all: $(BIN) gplacesrc gplaces.desktop
+--- origsrc/gplaces-0.19.7/gplaces.c	2024-09-20 03:14:18.000000000 +0900
++++ src/gplaces-0.19.7/gplaces.c	2024-11-29 13:14:08.700235400 +0900
+@@ -65,7 +65,7 @@
+ 	#include <magic.h>
+ #endif
+ 
+-#include "bestline/bestline.h"
++#include <bestline.h>
+ 
+ /*============================================================================*/
+ typedef struct Selector Selector;
+@@ -671,13 +671,13 @@ static void reap(const char *command, pi
+ }
+ 
+ 
+-static pid_t start_handler(const char *handler, const char *filename, char *command, size_t length, const Selector *sel, const URL *url, int stdin) {
++static pid_t start_handler(const char *handler, const char *filename, char *command, size_t length, const Selector *sel, const URL *url, int stdin_) {
+ 	static char buffer[sizeof("/proc/self/fd/2147483647")];
+ 	size_t i;
+ 	pid_t pid;
+ 
+-	if (stdin != -1) {
+-		sprintf(buffer, "/proc/self/fd/%d", stdin);
++	if (stdin_ != -1) {
++		sprintf(buffer, "/proc/self/fd/%d", stdin_);
+ 		filename = buffer;
+ 	}
+ 
+@@ -702,9 +702,9 @@ static pid_t start_handler(const char *h
+ 
+ 	if ((pid = fork()) == 0) {
+ #ifdef GPLACES_USE_FLATPAK_SPAWN
+-		if (stdin == -1) execl("/usr/bin/flatpak-spawn", "flatpak-spawn", "--host", "--", "sh", "-c", command, (char *)NULL);
++		if (stdin_ == -1) execl("/usr/bin/flatpak-spawn", "flatpak-spawn", "--host", "--", "sh", "-c", command, (char *)NULL);
+ 		else {
+-			sprintf(buffer, "--forward-fd=%d", stdin);
++			sprintf(buffer, "--forward-fd=%d", stdin_);
+ 			execl("/usr/bin/flatpak-spawn", "flatpak-spawn", "--host", buffer, "--", "sh", "-c", command, (char *)NULL);
+ 		}
+ #else
