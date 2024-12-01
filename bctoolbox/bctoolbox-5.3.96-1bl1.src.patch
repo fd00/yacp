@@ -1,0 +1,55 @@
+--- origsrc/bctoolbox-5.3.96/CMakeLists.txt	2024-09-19 04:36:16.000000000 +0900
++++ src/bctoolbox-5.3.96/CMakeLists.txt	2024-12-02 00:06:58.461772500 +0900
+@@ -22,7 +22,7 @@
+ 
+ cmake_minimum_required(VERSION 3.22)
+ 
+-project(BCToolbox VERSION 5.3.0)
++project(BCToolbox VERSION 5.3.96)
+ 
+ set(BCTOOLBOX_VERSION "${PROJECT_VERSION}")
+ set(BCTOOLBOX_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+@@ -59,7 +59,7 @@ if(NOT CPACK_GENERATOR AND NOT CMAKE_INS
+ 	message(STATUS "Setting install rpath to ${CMAKE_INSTALL_RPATH}")
+ endif()
+ 
+-if(APPLE)
++if(APPLE OR CYGWIN)
+ 	find_package(Iconv REQUIRED)
+ endif()
+ 
+@@ -145,7 +145,7 @@ if(ENABLE_PACKAGE_SOURCE)
+ endif()
+ 
+ include(CMakePackageConfigHelpers)
+-set(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
++option(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
+ configure_package_config_file("cmake/${PROJECT_NAME}Config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+ 	INSTALL_DESTINATION "${CMAKE_MODULES_INSTALL_DIR}"
+ 	PATH_VARS CMAKE_MODULES_INSTALL_DIR
+--- origsrc/bctoolbox-5.3.96/src/CMakeLists.txt	2024-09-19 04:36:16.000000000 +0900
++++ src/bctoolbox-5.3.96/src/CMakeLists.txt	2024-12-02 00:31:35.757550400 +0900
+@@ -136,6 +136,10 @@ if(APPLE)
+ 	)
+ endif()
+ 
++if (CYGWIN)
++	target_link_libraries(bctoolbox PRIVATE Iconv::Iconv)
++endif()
++
+ if(WIN32)
+ 	set_target_properties(bctoolbox PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+ 	if(NOT CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+--- origsrc/bctoolbox-5.3.96/src/utils/port.c	2024-09-19 04:36:16.000000000 +0900
++++ src/bctoolbox-5.3.96/src/utils/port.c	2024-12-02 00:17:33.909408600 +0900
+@@ -355,7 +355,9 @@ void bctbx_set_self_thread_name(const ch
+ 	prctl(PR_SET_NAME, name, NULL, NULL, NULL);
+ #elif TARGET_OS_MAC
+ 	pthread_setname_np(name);
+-#elif
++#elif defined(__CYGWIN__)
++	pthread_setname_np(pthread_self(), name);
++#else
+ 	bctbx_warning("bctbx_set_self_thread_name(): not implemented on this platform.");
+ #endif
+ }
