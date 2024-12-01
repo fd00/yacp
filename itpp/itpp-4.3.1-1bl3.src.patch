@@ -1,0 +1,64 @@
+--- origsrc/itpp-4.3.1/CMakeLists.txt	2024-12-01 01:18:13.010488400 +0900
++++ src/itpp-4.3.1/CMakeLists.txt	2024-12-01 13:52:05.635251600 +0900
+@@ -222,6 +222,7 @@ option(OLD_TESTS "Building old unit test
+ if (OLD_TESTS)
+   add_subdirectory ( tests )
+ endif()
+-if (GTEST_DIR)
++find_package(GTest)
++if (GTEST_DIR OR GTEST_FOUND)
+   add_subdirectory (gtests)
+ endif()
+--- origsrc/itpp-4.3.1/gtests/CMakeLists.txt	2013-07-06 18:11:56.000000000 +0900
++++ src/itpp-4.3.1/gtests/CMakeLists.txt	2024-12-01 14:23:37.387881300 +0900
+@@ -29,7 +29,12 @@ file ( GLOB ITPP_TEST_SRCS *.cpp )
+ 
+ include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${GTEST_DIR} ${GTEST_DIR}/include )
+ 
++if (GTEST_FOUND)
++add_executable(itpp_gtests ${ITPP_TEST_SRCS})
++target_link_libraries(itpp_gtests ${GTEST_BOTH_LIBRARIES})
++else()
+ add_executable ( itpp_gtests ${ITPP_TEST_SRCS} ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc )
++endif()
+ foreach (FILE ${ITPP_TEST_SRCS})
+   get_filename_component ( target ${FILE} NAME_WE )
+   if (target MATCHES "^fastica")
+--- origsrc/itpp-4.3.1/gtests/vec_test.cpp	2013-07-06 18:11:56.000000000 +0900
++++ src/itpp-4.3.1/gtests/vec_test.cpp	2024-12-01 14:19:21.596471100 +0900
+@@ -276,13 +276,13 @@ void common_operators(const bvec &a, con
+ 
+   a2 = a;
+   a2.zeros();
+-  ASSERT_FALSE(any(a2));
++  ASSERT_FALSE(itpp::any(a2));
+   a2 = a;
+   a2.ones();
+   ASSERT_TRUE(all(a2));
+   a2 = a;
+   a2 = c;
+-  ASSERT_FALSE(any(a2));
++  ASSERT_FALSE(itpp::any(a2));
+   a2 = a;
+   a2 = b(0, 4);
+   ref = "0 0 0 1 1";
+@@ -1135,7 +1135,7 @@ TEST(Vec, All)
+   cvec cv2 = randn_c(10);
+   complex<double> cx = randn_c();
+   common_operators(cv1, cv2, cx);
+-  ASSERT_FALSE(any(cv1 == cx));
++  ASSERT_FALSE(itpp::any(cv1 == cx));
+   ASSERT_TRUE(all(cv1 != cx));
+ 
+ 
+@@ -1183,8 +1183,8 @@ TEST(Vec, All)
+   bvec b2 = "0 0 0 0 0 0 0 0 0 0";
+   bvec b3 = "1 1 1 1 1 1 1 1 1 1 1 1 1";
+   bvec b4 = "1 1 1 1 1 1 1 1 1 1 1 0 1";
+-  ASSERT_TRUE(any(b1));
+-  ASSERT_FALSE(any(b2));
++  ASSERT_TRUE(itpp::any(b1));
++  ASSERT_FALSE(itpp::any(b2));
+   ASSERT_TRUE(all(b3));
+   ASSERT_FALSE(all(b4));
+ }
