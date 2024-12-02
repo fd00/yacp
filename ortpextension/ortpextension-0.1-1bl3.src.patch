@@ -1,0 +1,77 @@
+--- origsrc/ortpextension-0.1/configure.ac	2013-08-24 19:08:39.000000000 +0900
++++ src/ortpextension-0.1/configure.ac	2024-12-02 12:53:31.671507000 +0900
+@@ -2,7 +2,7 @@ dnl Process this file with autoconf to p
+ 
+ AC_PREREQ(2.59)
+ 
+-AC_INIT(ortpextension, 1.0)
++AC_INIT([ortpextension], [0.1])
+ AC_PROG_CC
+ AC_PROG_CXX
+ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([no])])
+@@ -31,6 +31,8 @@ AC_MSG_ERROR([
+ You must have ortp >= 0.22
+ ])])
+ 
++PKG_CHECK_MODULES([BCTOOLBOX], [bctoolbox])
++
+ AC_SUBST(libnotify_CFLAGS)
+ AC_SUBST(libnotify_LIBS)
+ 
+--- origsrc/ortpextension-0.1/example/Makefile.am	2013-08-24 19:08:39.000000000 +0900
++++ src/ortpextension-0.1/example/Makefile.am	2024-12-02 09:54:31.289577000 +0900
+@@ -21,9 +21,9 @@ rtpextsend_SOURCES= rtpextsend.c
+ rtpextrecv_SOURCES= rtpextrecv.c
+ 
+ # Linker options for a.out
+-rtpextsend_LDFLAGS = $(top_srcdir)/src/libortpextension.la \
++rtpextsend_LDFLAGS = $(top_builddir)/src/libortpextension.la \
+ 		@ortp_LIBS@
+-rtpextrecv_LDFLAGS = $(top_srcdir)/src/libortpextension.la\
++rtpextrecv_LDFLAGS = $(top_builddir)/src/libortpextension.la\
+ 		@ortp_LIBS@
+ 
+ # Compiler options for a.out
+--- origsrc/ortpextension-0.1/example/rtpextrecv.c	2013-08-24 19:08:39.000000000 +0900
++++ src/ortpextension-0.1/example/rtpextrecv.c	2024-12-02 12:36:48.047242600 +0900
+@@ -168,7 +168,7 @@ main(int argc, char *argv[])
+ 
+   ortp_init();
+   ortp_scheduler_init();
+-  ortp_set_log_level_mask(
++  ortp_set_log_level_mask(ORTP_LOG_DOMAIN,
+       ORTP_DEBUG | ORTP_MESSAGE | ORTP_WARNING | ORTP_ERROR);
+   signal(SIGINT, stop_handler);
+   session = rtp_session_new(RTP_SESSION_RECVONLY);
+--- origsrc/ortpextension-0.1/example/rtpextsend.c	2013-08-24 19:08:39.000000000 +0900
++++ src/ortpextension-0.1/example/rtpextsend.c	2024-12-02 12:35:52.925801600 +0900
+@@ -113,7 +113,7 @@ main(int argc, char *argv[])
+    */
+   ortp_init();
+   ortp_scheduler_init();
+-  ortp_set_log_level_mask(ORTP_MESSAGE | ORTP_WARNING | ORTP_ERROR);
++  ortp_set_log_level_mask(ORTP_LOG_DOMAIN, ORTP_MESSAGE | ORTP_WARNING | ORTP_ERROR);
+   session = rtp_session_new(RTP_SESSION_SENDONLY);
+ 
+   rtp_session_set_scheduling_mode(session, 1);
+--- origsrc/ortpextension-0.1/src/Makefile.am	2013-08-24 19:08:39.000000000 +0900
++++ src/ortpextension-0.1/src/Makefile.am	2024-12-02 09:58:42.429433800 +0900
+@@ -15,9 +15,11 @@ libortpextension_la_SOURCES = \
+ 
+ 
+ # Linker options libTestProgram
+-libortpextension_la_LDFLAGS = \
++libortpextension_la_LDFLAGS = -no-undefined \
+ 		@ortp_LIBS@
+ 
++libortpextension_la_LIBADD = $(BCTOOLBOX_LIBS)
++
+ # Compiler options. Here we are adding the include directory
+ # to be searched for headers included in the source code.
+ libortpextension_la_CFLAGS = \
+@@ -27,5 +29,3 @@ libortpextension_la_CFLAGS = \
+ libortpextension_la_CPPFLAGS = \
+ 		-I$(top_srcdir)/include \
+ 		@ortp_CFLAGS@
+-		
+-
