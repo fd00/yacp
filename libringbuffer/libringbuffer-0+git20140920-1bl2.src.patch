@@ -1,0 +1,59 @@
+--- origsrc/libringbuffer/CMakeLists.txt	2024-12-02 18:01:14.000000000 +0900
++++ src/libringbuffer/CMakeLists.txt	2024-12-02 18:08:30.652301500 +0900
+@@ -16,7 +16,9 @@ set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -p
+ 
+ include_directories(${LIBRINGBUFFER_SRC_ROOT})
+ add_subdirectory(src)
++if (BUILD_BENCHMARK)
+ add_subdirectory(bench)
++endif()
+ add_subdirectory(example)
+ 
+ find_package(GTest)
+@@ -37,4 +39,11 @@ configure_file(
+     IMMEDIATE @ONLY)
+ 
+ add_custom_target(uninstall
+-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+\ No newline at end of file
++    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libringbuffer.pc.in ${CMAKE_BINARY_DIR}/libringbuffer.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libringbuffer.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libringbuffer/libringbuffer.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libringbuffer/libringbuffer.pc.in	2024-12-02 18:08:53.209081200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libringbuffer
++Description: Non-blocking ring buffer in C
++Version: @VERSION@
++Libs: -L${libdir} -lringbuffer
++Cflags: -I${includedir}
+--- origsrc/libringbuffer/src/CMakeLists.txt	2024-12-02 18:01:14.000000000 +0900
++++ src/libringbuffer/src/CMakeLists.txt	2024-12-02 18:07:20.944461200 +0900
+@@ -6,8 +6,12 @@ set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3
+ set( SOURCES ringbuffer.c )
+ 
+ FILE( GLOB LIBCMDLINE_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h" )
+-INSTALL( FILES ${LIBCMDLINE_HEADERS} DESTINATION include)
++INSTALL( FILES ${LIBCMDLINE_HEADERS} DESTINATION include/libringbuffer)
+ 
+-add_library(${TITLE} STATIC ${SOURCES})
+-INSTALL( TARGETS ${TITLE} DESTINATION lib )
+-#target_link_libraries( ${TITLE} benchmark)
+\ No newline at end of file
++add_library(${TITLE} ${SOURCES})
++INSTALL( TARGETS ${TITLE} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++#target_link_libraries( ${TITLE} benchmark)
++
++if (DEFINED SOVERSION)
++    set_target_properties(${TITLE} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
