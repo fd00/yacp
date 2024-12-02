@@ -1,0 +1,188 @@
+--- origsrc/blackhole/CMakeLists.txt	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/CMakeLists.txt	2024-12-03 00:39:53.291868400 +0900
+@@ -127,7 +127,8 @@ target_link_libraries(${LIBRARY_NAME}
+ # So, adding e.g. functions is no problem, modifying argument lists or removing functions would
+ # required the SOVERSION to be incremented. Similar rules hold of course for non-opaque
+ # data-structures.
+-set_target_properties(${LIBRARY_NAME} PROPERTIES VERSION 1.9.0)
++set(VERSION 1.9.0)
++set_target_properties(${LIBRARY_NAME} PROPERTIES VERSION "${VERSION}")
+ set_target_properties(${LIBRARY_NAME} PROPERTIES SOVERSION 1)
+ 
+ if (ENABLE_TESTING_THREADSAFETY)
+@@ -346,6 +347,7 @@ endif (ENABLE_EXAMPLES)
+ install(
+     TARGETS
+         blackhole
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib COMPONENT runtime
+         ARCHIVE DESTINATION lib COMPONENT development)
+ 
+@@ -355,3 +357,10 @@ install(
+     DESTINATION include
+     COMPONENT development
+     PATTERN "detail" EXCLUDE)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/blackhole.pc.in ${CMAKE_BINARY_DIR}/blackhole.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/blackhole.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/blackhole/blackhole.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/blackhole/blackhole.pc.in	2024-12-03 00:39:59.777599000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: blackhole
++Description: Yet another C++ logging library
++Version: @VERSION@
++Libs: -L${libdir} -lblackhole
++Cflags: -I${includedir}
+--- origsrc/blackhole/include/blackhole/sink/console.hpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/include/blackhole/sink/console.hpp	2024-12-02 22:12:16.640651700 +0900
+@@ -37,10 +37,16 @@ public:
+     /// coloring.
+     builder();
+ 
++#if defined(stdout)
++#undef stdout
++#endif
+     /// Sets the destination stream to the standard output pipe.
+     auto stdout() & -> builder&;
+     auto stdout() && -> builder&&;
+ 
++#if defined(stderr)
++#undef stderr
++#endif
+     /// Sets the destination stream to the standard error pipe.
+     auto stderr() & -> builder&;
+     auto stderr() && -> builder&&;
+--- origsrc/blackhole/src/datetime/generator.linux.cpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/datetime/generator.linux.cpp	2024-12-02 23:51:49.389008300 +0900
+@@ -1,4 +1,4 @@
+-#ifdef __linux__
++#if defined(__linux__) || defined(__CYGWIN__)
+ 
+ #include "generator.linux.hpp"
+ 
+--- origsrc/blackhole/src/datetime/generator.other.hpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/datetime/generator.other.hpp	2024-12-02 22:24:34.890128100 +0900
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <ctime>
+ #include <string>
+ #include <vector>
+ 
+--- origsrc/blackhole/src/formatter/tskv.cpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/formatter/tskv.cpp	2024-12-02 22:26:53.027395300 +0900
+@@ -98,7 +98,7 @@ public:
+         wr.write("\ttid={:#x}",
+ #ifdef __linux__
+             record.tid()
+-#elif __APPLE__
++#else
+             reinterpret_cast<unsigned long>(record.tid())
+ #endif
+         );
+--- origsrc/blackhole/src/handler/dev.cpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/handler/dev.cpp	2024-12-02 22:27:57.684496900 +0900
+@@ -46,7 +46,7 @@ auto streamfd(const std::ostream& stream
+ 
+ auto isatty(const std::ostream& stream) -> bool {
+     if (auto file = streamfd(stream)) {
+-#if defined(__linux__) || defined(__APPLE__)
++#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
+         return ::isatty(::fileno(file));
+ #else
+ #error unsupported platform
+--- origsrc/blackhole/src/sink/console.cpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/sink/console.cpp	2024-12-02 22:53:55.136874300 +0900
+@@ -49,7 +49,7 @@ auto streamfd(const std::ostream& stream
+ 
+ auto isatty(const std::ostream& stream) -> bool {
+     if (auto file = streamfd(stream)) {
+-#if defined(__linux__) || defined(__APPLE__)
++#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
+         return ::isatty(::fileno(file));
+ #else
+ #error unsupported platform
+@@ -120,6 +120,10 @@ builder<sink::console_t>::builder() :
+     d(new inner_t{&std::cout, [](const record_t&) -> termcolor_t { return {}; }})
+ {}
+ 
++#if defined(stdout)
++#undef stdout
++#endif
++
+ auto builder<sink::console_t>::stdout() & -> builder& {
+     d->stream = &std::cout;
+     return *this;
+@@ -129,6 +133,10 @@ auto builder<sink::console_t>::stdout()
+     return std::move(stdout());
+ }
+ 
++#if defined(stderr)
++#undef stderr
++#endif
++
+ auto builder<sink::console_t>::stderr() & -> builder& {
+     d->stream = &std::cerr;
+     return *this;
+--- origsrc/blackhole/src/sink/socket/tcp.cpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/sink/socket/tcp.cpp	2024-12-02 23:47:00.537042000 +0900
+@@ -25,8 +25,8 @@ typedef protocol_type::endpoint endpoint
+ 
+ namespace {
+ 
+-template<typename Protocol, typename SocketService, typename Iterator>
+-auto do_connect(boost::asio::basic_socket<Protocol, SocketService>& s,
++template<typename Protocol, typename Iterator>
++auto do_connect(boost::asio::basic_socket<Protocol>& s,
+                 Iterator begin,
+                 Iterator end,
+                 boost::system::error_code& ec) -> Iterator
+@@ -50,8 +50,8 @@ auto do_connect(boost::asio::basic_socke
+     return end;
+ }
+ 
+-template <typename Protocol, typename SocketService, typename Iterator>
+-auto do_connect(boost::asio::basic_socket<Protocol, SocketService>& s, Iterator begin) -> Iterator {
++template <typename Protocol, typename Iterator>
++auto do_connect(boost::asio::basic_socket<Protocol>& s, Iterator begin) -> Iterator {
+     boost::system::error_code ec;
+     Iterator end = typename Protocol::resolver::iterator();
+     Iterator result = do_connect(s, begin, end, ec);
+--- origsrc/blackhole/src/sink/socket/tcp.hpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/sink/socket/tcp.hpp	2024-12-02 23:16:01.147760600 +0900
+@@ -2,6 +2,7 @@
+ 
+ #include <mutex>
+ 
++#include <boost/asio/io_service.hpp>
+ #include <boost/asio/ip/tcp.hpp>
+ 
+ #include "blackhole/sink.hpp"
+--- origsrc/blackhole/src/sink/socket/udp.hpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/sink/socket/udp.hpp	2024-12-02 23:15:23.199172200 +0900
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <boost/asio/io_service.hpp>
+ #include <boost/asio/ip/udp.hpp>
+ 
+ #include "blackhole/sink.hpp"
+--- origsrc/blackhole/src/spinlock.hpp	2024-12-02 22:03:23.000000000 +0900
++++ src/blackhole/src/spinlock.hpp	2024-12-02 22:56:40.424160700 +0900
+@@ -1,6 +1,6 @@
+ #pragma once
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(__CYGWIN__)
+ #   include "spinlock.linux.hpp"
+ #elif __APPLE__
+ #   include "spinlock.osx.hpp"
