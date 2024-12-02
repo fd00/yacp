@@ -5,17 +5,40 @@ CATEGORY="Libs"
 SUMMARY="C library implementing the RTP protocol (rfc3550)"
 DESCRIPTION="oRTP is a GPLv2 licensed C library implementing the RTP protocol (rfc3550)."
 
+LICENSE="AGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: AGPL-3.0-or-later"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="libbctoolbox-devel"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DCMAKE_MODULES_INSTALL_DIR:PATH=/usr/lib/cmake/${PN}
 	-DENABLE_DOC:BOOL=OFF
-	-DENABLE_STATIC:BOOL=OFF
 	-DENABLE_STRICT:BOOL=OFF
+	-DENABLE_TESTS:BOOL=ON
 "
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/src:${PATH} ./tester/ortp-tester.exe
+}
 
 DOCS="
 	CHANGELOG.md
 "
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -fr usr/share/doc/${P}
+}
 
 PKG_NAMES="
 	${PN}
@@ -23,10 +46,13 @@ PKG_NAMES="
 	lib${PN}-devel
 "
 ortp_CONTENTS="
-	usr/share
+	usr/bin/*.exe
+	usr/share/doc/Cygwin
+	usr/share/doc/${PN}
+	usr/share/ortp-tester
 "
 libortp15_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-15.dll
 "
 libortp_devel_CONTENTS="
 	usr/include
