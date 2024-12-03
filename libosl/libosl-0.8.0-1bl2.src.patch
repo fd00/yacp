@@ -1,0 +1,59 @@
+--- origsrc/libosl/CMakeLists.txt	2024-12-03 12:07:23.376380900 +0900
++++ src/libosl/CMakeLists.txt	2024-12-03 13:59:20.220928600 +0900
+@@ -72,6 +72,8 @@ include_directories ("${PROJECT_SOURCE_D
+ include_directories ("${PROJECT_SOURCE_DIR}/std")
+ include_directories ("${PROJECT_SOURCE_DIR}/full")
+ 
++find_package(iconv)
++
+ ## Pthreads
+ #find_package (Threads)
+ #if (Threads_FOUND)
+@@ -106,10 +108,7 @@ list(REMOVE_ITEM OSL_SRCS ${EXCLUDE_SRCS
+ #message (STATUS "Sources: ${OSL_SRCS}")
+ #set (SampleAleriUDF_ALL_SRCS ${SampleAleriUDF_HEADERS} ${SampleAleriUDF_SRCS})
+ 
+-add_library (osl-static STATIC ${OSL_SRCS})
+-SET_TARGET_PROPERTIES(osl-static PROPERTIES OUTPUT_NAME "osl")
+-SET_TARGET_PROPERTIES(osl-static PROPERTIES PREFIX "lib")
+-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
++if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR CYGWIN)
+   add_library (osl SHARED ${OSL_SRCS})
+   target_link_libraries (osl ${CMAKE_THREAD_LIBS_INIT})
+   set_target_properties(osl PROPERTIES
+@@ -121,9 +120,10 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Linux"
+   target_link_libraries (osl ${Boost_IOSTREAMS_LIBRARY})
+   target_link_libraries (osl ${Boost_SYSTEM_LIBRARY})
+   target_link_libraries (osl pthread)
++  target_link_libraries (osl ${Iconv_LIBRARY})
+ endif()
+ 
+-install(TARGETS osl osl-static
++install(TARGETS osl
+         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+@@ -139,4 +139,9 @@ install(DIRECTORY "full/osl"
+         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+         FILES_MATCHING PATTERN "*.h" PATTERN "*.tcc")
+ 
+-
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libosl.pc.in ${CMAKE_BINARY_DIR}/libosl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libosl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libosl/libosl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libosl/libosl.pc.in	2024-12-03 13:58:53.563647300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libosl
++Description: Library for Shogi playing programs
++Version: @VERSION@
++Libs: -L${libdir} -losl
++Cflags: -I${includedir}
