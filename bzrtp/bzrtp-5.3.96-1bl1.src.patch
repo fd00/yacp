@@ -1,0 +1,56 @@
+--- origsrc/bzrtp-5.3.96/CMakeLists.txt	2024-07-18 16:34:24.000000000 +0900
++++ src/bzrtp-5.3.96/CMakeLists.txt	2024-12-03 16:32:03.291062600 +0900
+@@ -22,7 +22,7 @@
+ 
+ cmake_minimum_required(VERSION 3.22)
+ 
+-project(BZRTP VERSION 5.3.0 LANGUAGES C CXX)
++project(BZRTP VERSION 5.3.96 LANGUAGES C CXX)
+ 
+ option(ENABLE_ZIDCACHE "Turn on compilation of ZID cache, request sqlite" YES)
+ option(ENABLE_STRICT "Build with strict compile options." YES)
+@@ -126,7 +126,7 @@ if(ENABLE_PACKAGE_SOURCE)
+ endif()
+ 
+ include(CMakePackageConfigHelpers)
+-set(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
++option(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
+ configure_package_config_file("cmake/${PROJECT_NAME}Config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+ 	INSTALL_DESTINATION "${CMAKE_MODULES_INSTALL_DIR}"
+ 	NO_SET_AND_CHECK_MACRO
+@@ -148,3 +148,10 @@ install(EXPORT ${PROJECT_NAME}Targets
+ 	FILE "${PROJECT_NAME}Targets.cmake"
+ 	DESTINATION ${CMAKE_MODULES_INSTALL_DIR}
+ )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include/bzrtp)
++configure_file(${CMAKE_SOURCE_DIR}/bzrtp.pc.in ${CMAKE_BINARY_DIR}/bzrtp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/bzrtp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/bzrtp-5.3.96/bzrtp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bzrtp-5.3.96/bzrtp.pc.in	2024-12-03 16:31:31.393896100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bzrtp
++Description: Opensource implementation of ZRTP keys exchange protocol
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lbzrtp
++Cflags: -I${includedir}
+--- origsrc/bzrtp-5.3.96/src/CMakeLists.txt	2024-07-18 16:34:24.000000000 +0900
++++ src/bzrtp-5.3.96/src/CMakeLists.txt	2024-12-03 16:28:23.691490800 +0900
+@@ -43,6 +43,9 @@ set(BZRTP_SOURCE_FILES ${BZRTP_C_SOURCE_
+ 
+ add_library(bzrtp ${BZRTP_SOURCE_FILES})
+ set_target_properties(bzrtp PROPERTIES VERSION 0)
++if (DEFINED SOVERSION)
++	set_target_properties(bzrtp PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ target_include_directories(bzrtp PUBLIC
+ 	$<INSTALL_INTERFACE:include>
+ 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

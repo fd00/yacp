@@ -5,19 +5,27 @@ CATEGORY="Libs"
 SUMMARY="Opensource implementation of ZRTP keys exchange protocol"
 DESCRIPTION="BZRTP is an opensource implementation of ZRTP keys exchange protocol."
 
-BUILD_REQUIRES="libbctoolbox-devel libsqlite3-devel libxml2-devel"
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="libbctoolbox-devel libpostquantumcryptoengine-devel libsqlite3-devel"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DENABLE_STATIC:BOOL=OFF
-	-DENABLE_TESTS:BOOL=ON
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DCMAKE_MODULES_INSTALL_DIR:PATH=/usr/lib/cmake/${PN}
+	-DENABLE_PQCRYPTO:BOOL=ON
+	-DENABLE_STRICT:BOOL=OFF
+	-DENABLE_UNIT_TESTS:BOOL=ON
+	-DSOVERSION:STRING=0
 "
 
 src_test()
 {
 	cd ${B}
-	PATH=${B}/src:${PATH} ninja_test
+	PATH=${B}/src:${PATH} ./test/bzrtp-tester.exe --resource-dir ${S}/test
 }
 
 DOCS="
@@ -30,15 +38,16 @@ PKG_NAMES="
 	libbzrtp-devel
 "
 bzrtp_CONTENTS="
+	usr/bin/*.exe
 	usr/share
 "
 libbzrtp0_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-0.dll
 "
 libbzrtp_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-bzrtp_SUMMARY="${SUMMARY} (licensing & readmes)"
+bzrtp_SUMMARY="${SUMMARY} (utilities)"
 libbzrtp0_SUMMARY="${SUMMARY} (runtime)"
 libbzrtp_devel_SUMMARY="${SUMMARY} (development)"
