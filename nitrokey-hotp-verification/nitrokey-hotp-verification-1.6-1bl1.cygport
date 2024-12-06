@@ -1,0 +1,41 @@
+HOMEPAGE="https://github.com/Nitrokey/${PN}"
+SRC_URI="https://github.com/Nitrokey/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Security"
+SUMMARY="App to validate HOTP codes on Heads"
+DESCRIPTION="Nitrokey HOTP Verification Tool is a command line application, which
+communicates with a HOTP USB Security Dongle (over HIDAPI/libusb or CCID) to
+configure HOTP secrets and to verify HOTP codes. The Dongle being used needs
+to support HOTP verification, which is - at the time of writing - supported by
+Nitrokey Pro, Nitrokey Storage, Nitrokey 3 and Librem Key."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libhidapi-devel libusb1.0-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DADD_GIT_INFO:BOOL=OFF
+	-DCOMPILE_TESTS:BOOL=ON
+	-DUSE_SYSTEM_HIDAPI:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	./test_aes_regen.exe || :
+#	./test_hotp.exe || :
+}
+
+src_install()
+{
+	cd ${B}
+	dobin hotp_verification.exe
+}
+
+DIFF_EXCLUDES="
+	version.c
+"

@@ -1,0 +1,122 @@
+--- origsrc/nitrokey-hotp-verification-1.6/CMakeLists.txt	2024-05-17 19:23:57.000000000 +0900
++++ src/nitrokey-hotp-verification-1.6/CMakeLists.txt	2024-12-06 17:17:51.735069200 +0900
+@@ -1,7 +1,8 @@
+ cmake_minimum_required(VERSION 3.7)
+-project(nitrokey_hotp_verification VERSION 1.4)
++project(nitrokey_hotp_verification VERSION 1.6)
+ 
+ set(CMAKE_C_STANDARD 11)
++if (NOT CYGWIN)
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-guess-branch-probability -Wdate-time -frandom-seed=device.c -O0")
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gno-record-gcc-switches ")
+@@ -10,6 +11,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsa
+ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fanalyzer")
+ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS}")
+ SET(CMAKE_EXE_LINKER_FLAGS  "-O1 -fsanitize=address")
++endif()
+ 
+ set(GIT_VERSION_PLACEHOLDER "no-git-version")
+ 
+@@ -43,10 +45,13 @@ add_library(nitrokey_hotp_verification_c
+ 
+ add_executable(hotp_verification src/main.c)
+ 
++find_package(PkgConfig)
++pkg_check_modules(LIBUSB libusb-1.0)
++target_include_directories(nitrokey_hotp_verification_core PUBLIC ${LIBUSB_INCLUDE_DIRS})
++target_link_libraries(nitrokey_hotp_verification_core PUBLIC ${LIBUSB_LIBRARIES})
+ 
+ OPTION(USE_SYSTEM_HIDAPI "Link application against system HIDAPI library" FALSE)
+ IF(USE_SYSTEM_HIDAPI)
+-    find_package(PkgConfig)
+     pkg_search_module(HIDAPI_LIBUSB REQUIRED hidapi)
+     target_compile_options(hotp_verification PRIVATE ${HIDAPI_LIBUSB_CFLAGS})
+     target_link_libraries(hotp_verification nitrokey_hotp_verification_core ${HIDAPI_LIBUSB_LDFLAGS})
+@@ -63,13 +68,23 @@ ENDIF()
+ 
+ OPTION(COMPILE_TESTS "Compile Catch tests" FALSE)
+ IF(COMPILE_TESTS)
+-    include_directories(tests/catch2)
+-    add_library(catch STATIC tests/catch_main.cpp )
+-    SET(TESTS tests/test_hotp.cpp tests/test_aes_regen.cpp test_ccid.cpp)
++    pkg_check_modules(CATCH2 catch2)
++    if (CATCH2_FOUND)
++        set(CATCH2_LIBRARIES ${CATCH2_LIBRARIES} Catch2Main)
++    else()
++        include_directories(tests/catch2)
++        add_library(catch STATIC tests/catch_main.cpp )
++        set(CATCH2_LIBRARIES catch)
++    endif()
++    SET(TESTS tests/test_hotp.cpp tests/test_aes_regen.cpp)
+     foreach(testsourcefile ${TESTS} )
+         get_filename_component(testname ${testsourcefile} NAME_WE )
+         add_executable(${testname} ${testsourcefile} )
+-        target_link_libraries(${testname} nitrokey_hotp_verification_core catch hidapi-libusb)
++        if (USE_SYSTEM_HIDAPI)
++            target_link_libraries(${testname} nitrokey_hotp_verification_core ${CATCH2_LIBRARIES} ${HIDAPI_LIBUSB_LIBRARIES})
++        else()
++            target_link_libraries(${testname} nitrokey_hotp_verification_core ${CATCH2_LIBRARIES} hidapi-libusb)
++        endif()
+     #    SET_TARGET_PROPERTIES(${testname} PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS} )
+     endforeach(testsourcefile)
+ ENDIF()
+--- origsrc/nitrokey-hotp-verification-1.6/src/min.h	2024-05-17 19:23:57.000000000 +0900
++++ src/nitrokey-hotp-verification-1.6/src/min.h	2024-12-06 16:54:00.646256100 +0900
+@@ -24,7 +24,9 @@
+ 
+ #include <stddef.h>
+ 
++#if !defined(min)
+ size_t min(size_t a, size_t b);
++#endif
+ //int min_i(int a, int b);
+ 
+ 
+--- origsrc/nitrokey-hotp-verification-1.6/src/utils.c	2024-05-17 19:23:57.000000000 +0900
++++ src/nitrokey-hotp-verification-1.6/src/utils.c	2024-12-06 17:00:56.606264300 +0900
+@@ -20,12 +20,22 @@
+ */
+ 
+ #include <inttypes.h>
++#if defined(__CYGWIN__)
++#include <sys/time.h>
++#else
+ #include <time.h>
++#endif
+ 
+ int64_t millis() {
++#if defined(__CYGWIN__)
++    struct timeval tv;
++    gettimeofday(&tv, NULL);
++    return ((int64_t)(tv.tv_sec) * 1000 + (int64_t)(tv.tv_usec) / 1000);
++#else
+     struct timespec now;
+     timespec_get(&now, TIME_UTC);
+     return ((int64_t) now.tv_sec) * 1000 + ((int64_t) now.tv_nsec) / 1000000;
++#endif
+ }
+ 
+ static int64_t g_milis = 0;
+--- origsrc/nitrokey-hotp-verification-1.6/tests/test_aes_regen.cpp	2024-05-17 19:23:57.000000000 +0900
++++ src/nitrokey-hotp-verification-1.6/tests/test_aes_regen.cpp	2024-12-06 17:09:12.491554600 +0900
+@@ -19,7 +19,7 @@
+  * SPDX-License-Identifier: GPL-3.0
+  */
+ 
+-#include "catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ extern "C" {
+ #include "../src/operations.h"
+--- origsrc/nitrokey-hotp-verification-1.6/tests/test_hotp.cpp	2024-05-17 19:23:57.000000000 +0900
++++ src/nitrokey-hotp-verification-1.6/tests/test_hotp.cpp	2024-12-06 17:09:28.147563800 +0900
+@@ -19,7 +19,7 @@
+  * SPDX-License-Identifier: GPL-3.0
+  */
+ 
+-#include "catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ extern "C" {
+ #include "../src/device.h"
