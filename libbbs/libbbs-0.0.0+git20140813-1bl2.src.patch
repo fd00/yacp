@@ -1,0 +1,76 @@
+--- origsrc/libbbs/CMakeLists.txt	2024-12-06 08:58:15.000000000 +0900
++++ src/libbbs/CMakeLists.txt	2024-12-06 09:15:26.452594900 +0900
+@@ -11,8 +11,6 @@ include(FindPkgConfig)
+ include(GNUInstallDirs)
+ 
+ if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+-    set(CMAKE_C_FLAGS "-g -O2 -Wall -Werror -fPIC -std=c99 ${CMAKE_C_FLAGS}")
+-
+     set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--version-script=${PROJECT_SOURCE_DIR}/libbbs.ver ${CMAKE_SHARED_LINKER_FLAGS}")
+ 
+     option(ENABLE_GCOV "Coverage support" false)
+@@ -36,7 +34,7 @@ endif()
+ 
+ set(pkgconfig_src ${PROJECT_SOURCE_DIR}/bbs.pc.in)
+ set(pkgconfig ${PROJECT_BINARY_DIR}/bbs.pc)
+-configure_file(${pkgconfig_src} ${pkgconfig})
++configure_file(${pkgconfig_src} ${pkgconfig} @ONLY)
+ 
+ # libbbs
+ include_directories(${PROJECT_SOURCE_DIR}/include)
+@@ -68,7 +66,9 @@ if ("${CHECK_FOUND}")
+     enable_testing()
+     option(USE_VALGRIND "Use valgrind when testing" true)
+ 
+-    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
++    if (NOT CYGWIN)
++        add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
++    endif()
+ 
+     if (USE_VALGRIND)
+         find_program(VALGRIND valgrind)
+@@ -79,7 +79,9 @@ if ("${CHECK_FOUND}")
+     foreach(test_src ${test_api_src})
+         get_filename_component(test_name ${test_src} NAME_WE)
+         add_executable(${test_name} ${test_src})
+-        add_dependencies(check ${test_name})
++        if (NOT CYGWIN)
++            add_dependencies(check ${test_name})
++        endif()
+         target_link_libraries(${test_name} bbs_shared ${CHECK_LIBRARIES} pthread)
+ 
+         add_test(${test_name} ${test_name})
+@@ -92,7 +94,9 @@ if ("${CHECK_FOUND}")
+     foreach(test_src ${test_private_src})
+         get_filename_component(test_name ${test_src} NAME_WE)
+         add_executable(${test_name} ${test_src} $<TARGET_OBJECTS:bbs>)
+-        add_dependencies(check ${test_name})
++        if (NOT CYGWIN)
++            add_dependencies(check ${test_name})
++        endif()
+         target_link_libraries(${test_name} ${CHECK_LIBRARIES} pthread)
+ 
+         add_test(${test_name} ${test_name})
+@@ -106,7 +110,7 @@ endif()
+ # install
+ install(FILES ${bbs_inc} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/bbs)
+ install(FILES ${pkgconfig} DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-install(TARGETS bbs_shared DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS bbs_shared RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ # package
+ set(CPACK_SOURCE_GENERATOR TGZ)
+--- origsrc/libbbs/bbs.pc.in	2024-12-06 08:58:15.000000000 +0900
++++ src/libbbs/bbs.pc.in	2024-12-06 09:14:00.135211700 +0900
+@@ -1,8 +1,9 @@
+-includedir=@CMAKE_INSTALL_INCLUDEDIR@
+-libdir=@CMAKE_INSTALL_LIBDIR@
++includedir=@CMAKE_INSTALL_PREFIX@/include
++libdir=@CMAKE_INSTALL_PREFIX@/lib
+ 
+ Name: libbbs
+ Description: A telnet Bulletin Board System (BBS) helper library
+ Requires:
+ Libs: -L${libdir} -lbbs
+ Cflags: -I${includedir}/bbs
++Version: @PROJECT_VERSION@
