@@ -1,0 +1,185 @@
+--- origsrc/libnitrokey/CMakeLists.txt	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/CMakeLists.txt	2024-12-06 16:33:03.890316000 +0900
+@@ -21,7 +21,7 @@ IF (UNIX)
+     ENDIF()
+ ENDIF()
+ 
+-project(libnitrokey LANGUAGES C CXX VERSION 3.7.0)
++project(libnitrokey LANGUAGES C CXX VERSION 3.8.0)
+ set(CMAKE_CXX_STANDARD 14)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_EXTENSIONS OFF)
+@@ -83,7 +83,7 @@ IF(APPLE)
+ ELSEIF(UNIX)
+ #    add_library(hidapi-libusb STATIC hidapi/libusb/hid.c )
+     find_package(PkgConfig)
+-    IF(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
++    IF(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" OR CYGWIN)
+         pkg_search_module(HIDAPI_LIBUSB REQUIRED hidapi)
+         set(HIDAPI_LIBUSB_NAME hidapi)
+     ELSE()
+@@ -152,9 +152,9 @@ configure_file("version.cc.in" "version.
+ 
+ file(GLOB LIB_INCLUDES "libnitrokey/*.h" "NK_C_API.h")
+ install (FILES ${LIB_INCLUDES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+-install (TARGETS nitrokey DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install (TARGETS nitrokey RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+-IF(NOT WIN32)
++IF(NOT WIN32 AND NOT CYGWIN)
+     # Install Nitrokey udev rules
+     IF(NOT DEFINED CMAKE_INSTALL_UDEVRULESDIR)
+         set(PKG_GET_UDEV_DIR ${PKG_CONFIG_EXECUTABLE} --variable=udevdir udev)
+@@ -196,12 +196,12 @@ IF(COMPILE_OFFLINE_TESTS OR COMPILE_TEST
+         include_directories(unittest/Catch/single_include)
+     ENDIF()
+ 
+-    add_library(catch STATIC unittest/catch_main.cpp )
++    # add_library(catch STATIC unittest/catch_main.cpp )
+ ENDIF()
+ 
+ IF(COMPILE_OFFLINE_TESTS)
+     add_executable (test_offline unittest/test_offline.cc)
+-    target_link_libraries (test_offline ${EXTRA_LIBS} nitrokey catch)
++    target_link_libraries (test_offline ${EXTRA_LIBS} nitrokey ${CATCH2_LIBRARIES} Catch2Main)
+     SET_TARGET_PROPERTIES(test_offline PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS} )
+     #run with 'make test' or 'ctest'
+     include (CTest)
+@@ -232,7 +232,7 @@ IF (COMPILE_TESTS)
+     foreach(testsourcefile ${TESTS} )
+         get_filename_component(testname ${testsourcefile} NAME_WE )
+         add_executable(${testname} ${testsourcefile} )
+-        target_link_libraries(${testname} ${EXTRA_LIBS} nitrokey catch )
++        target_link_libraries(${testname} ${EXTRA_LIBS} nitrokey ${CATCH2_LIBRARIES} Catch2Main)
+         SET_TARGET_PROPERTIES(${testname} PROPERTIES COMPILE_FLAGS ${COMPILE_FLAGS} )
+     endforeach(testsourcefile)
+ 
+@@ -252,7 +252,7 @@ include (CPack)
+ 
+ # Build Doxygen documentation for the C API
+ find_package(Doxygen)
+-if (DOXYGEN_FOUND)
++if (BUILD_DOCS AND DOXYGEN_FOUND)
+     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+     add_custom_target(doc ${DOXYGEN_EXECUTABLE} Doxyfile
+         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+--- origsrc/libnitrokey/unittest/catch_main.cpp	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/catch_main.cpp	2024-12-06 15:28:05.019622400 +0900
+@@ -20,4 +20,4 @@
+  */
+ 
+ #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
+-#include "catch2/catch.hpp"
+\ No newline at end of file
++#include "catch2/catch_all.hpp"
+\ No newline at end of file
+--- origsrc/libnitrokey/unittest/test1.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test1.cc	2024-12-06 15:28:05.033639200 +0900
+@@ -19,7 +19,7 @@
+  * SPDX-License-Identifier: LGPL-3.0
+  */
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <string.h>
+--- origsrc/libnitrokey/unittest/test2.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test2.cc	2024-12-06 15:28:05.032629600 +0900
+@@ -23,7 +23,7 @@
+ static const char *const default_admin_pin = "12345678";
+ static const char *const default_user_pin = "123456";
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <string.h>
+--- origsrc/libnitrokey/unittest/test3.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test3.cc	2024-12-06 15:28:05.030633000 +0900
+@@ -25,7 +25,7 @@ static const char *const default_user_pi
+ const char * temporary_password = "123456789012345678901234";
+ const char * RFC_SECRET = "12345678901234567890";
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <string.h>
+--- origsrc/libnitrokey/unittest/test_C_API.cpp	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_C_API.cpp	2024-12-06 15:28:05.030633000 +0900
+@@ -21,7 +21,7 @@
+ 
+ static const int TOO_LONG_STRING = 200;
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <string>
+--- origsrc/libnitrokey/unittest/test_HOTP.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_HOTP.cc	2024-12-06 15:28:05.030633000 +0900
+@@ -20,7 +20,7 @@
+  */
+ 
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ #include <iostream>
+ #include "device_proto.h"
+ #include "log.h"
+--- origsrc/libnitrokey/unittest/test_issues.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_issues.cc	2024-12-06 15:28:05.027903000 +0900
+@@ -26,7 +26,7 @@ const char * const temporary_password =
+ const char * const RFC_SECRET = "12345678901234567890";
+ const char * const hidden_volume_pass = "123456789012345";
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <NitrokeyManager.h>
+ 
+--- origsrc/libnitrokey/unittest/test_multiple_devices.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_multiple_devices.cc	2024-12-06 15:28:05.027903000 +0900
+@@ -24,7 +24,7 @@ static const char *const default_user_pi
+ const char * temporary_password = "123456789012345678901234";
+ const char * RFC_SECRET = "12345678901234567890";
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <NitrokeyManager.h>
+--- origsrc/libnitrokey/unittest/test_offline.cc	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_offline.cc	2024-12-06 15:28:05.026931600 +0900
+@@ -19,7 +19,7 @@
+  * SPDX-License-Identifier: LGPL-3.0
+  */
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ #include <NitrokeyManager.h>
+ #include <memory>
+ #include <string>
+--- origsrc/libnitrokey/unittest/test_safe.cpp	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_safe.cpp	2024-12-06 15:28:05.019622400 +0900
+@@ -19,7 +19,7 @@
+  * SPDX-License-Identifier: LGPL-3.0
+  */
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <iostream>
+ #include <cstring>
+--- origsrc/libnitrokey/unittest/test_strdup.cpp	2024-12-06 14:55:13.000000000 +0900
++++ src/libnitrokey/unittest/test_strdup.cpp	2024-12-06 15:28:05.023917300 +0900
+@@ -26,7 +26,7 @@
+ #include <cstdio>
+ #include <memory.h>
+ #include "../NK_C_API.h"
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ 
+ static const int SHORT_STRING_LENGTH = 10;
