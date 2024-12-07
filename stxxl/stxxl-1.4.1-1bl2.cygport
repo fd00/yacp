@@ -1,5 +1,10 @@
-HOMEPAGE="http://${PN}.sf.net/"
+HOMEPAGE="https://${PN}.org/"
 SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
+PATCH_URI="
+	https://src.fedoraproject.org/rpms/${PN}/raw/f33/f/${PN}_${PV}-build_shared.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/f33/f/${PN}_${PV}-ctime_conflict.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/f33/f/${PN}_${PV}-6cf18ce60f-fix-noexcept.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="Standard Template Library for Extra Large Data Sets"
@@ -10,30 +15,45 @@ on disks. While the closeness to the STL supports ease of use and
 compatibility with existing applications, another design priority is high
 performance."
 
+LICENSE="BSL-1.0"
+LICENSE_SPDX="SPDX-License-Identifier: BSL-1.0"
+LICENSE_URI="LICENSE_1_0.txt"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
+	-DBUILD_TESTS:BOOL=ON
 	-DUSE_GNU_PARALLEL:BOOL=OFF
-	-DBUILD_SHARED_LIBS:BOOL=ON
-	-DBUILD_STATIC_LIBS:BOOL=OFF
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/lib:${PATH} ninja_test
+}
+
+DOCS="
+	CHANGELOG
+	LICENSE_1_0.txt
 "
 
 PKG_NAMES="
 	${PN}
-	lib${PN}0
+	lib${PN}1
 	lib${PN}-devel
 "
 stxxl_CONTENTS="
 	usr/bin/*.exe
 	usr/share
 "
-libstxxl0_CONTENTS="
-	usr/bin/*.dll
+libstxxl1_CONTENTS="
+	usr/bin/cyg*-1.dll
 "
 libstxxl_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
 stxxl_SUMMARY="${SUMMARY} (utilities)"
-libstxxl0_SUMMARY="${SUMMARY} (runtime)"
+libstxxl1_SUMMARY="${SUMMARY} (runtime)"
 libstxxl_devel_SUMMARY="${SUMMARY} (development)"
