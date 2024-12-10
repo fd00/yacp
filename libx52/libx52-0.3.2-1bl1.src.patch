@@ -1,0 +1,144 @@
+--- origsrc/libx52-0.3.2/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/Makefile.am	2024-12-10 13:01:55.115050700 +0900
+@@ -7,7 +7,7 @@
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ # Build any support libraries first
+-SUBDIRS = lib
++SUBDIRS =
+ 
+ if USE_NLS
+ SUBDIRS += po
+--- origsrc/libx52-0.3.2/configure.ac	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/configure.ac	2024-12-10 15:20:07.346847600 +0900
+@@ -45,6 +45,10 @@ AM_CONDITIONAL([USE_NLS], [test "x${USE_
+ PKG_CHECK_MODULES([LIBUSB], [libusb-1.0])
+ AC_SUBST([LIBUSB_PC], [libusb-1.0])
+ 
++PKG_CHECK_MODULES([PINELOG], [pinelog])
++AC_SUBST([INI_CFLAGS], [])
++AC_SUBST([INI_LIBS], [-linih])
++
+ # systemd support
+ PKG_CHECK_MODULES([SYSTEMD], [systemd], [have_systemd=yes], [have_systemd=no])
+ AC_ARG_ENABLE([systemd],
+@@ -110,8 +114,11 @@ AC_ARG_WITH([input-group],
+ AC_SUBST([input_group], [$input_group])
+ 
+ # Doxygen Support
++AC_ARG_ENABLE([doc],
++    [AS_HELP_STRING([--disable-doc], [Disable doc])]
++)
+ AC_CHECK_PROGS([DOXYGEN], [doxygen])
+-AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
++AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN" -a "x$enable_doc" != "xno"])
+ AM_COND_IF([HAVE_DOXYGEN],
+     [AC_CONFIG_FILES([Doxyfile])],
+     [AC_MSG_WARN(["Doxygen not found; continuing without doxygen support"])])
+--- origsrc/libx52-0.3.2/daemon/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/daemon/Makefile.am	2024-12-10 15:51:37.049111800 +0900
+@@ -35,9 +35,7 @@ x52d_CFLAGS = \
+ 	@PTHREAD_CFLAGS@ $(WARN_CFLAGS)
+ 
+ x52d_LDFLAGS = @PTHREAD_LIBS@ $(WARN_LDFLAGS)
+-x52d_LDADD = \
+-	lib/pinelog/libpinelog.la \
+-	lib/inih/libinih.la \
++x52d_LDADD = $(INI_LIBS) $(PINELOG_LIBS) \
+ 	libx52.la \
+ 	@LTLIBINTL@
+ 
+@@ -64,7 +62,7 @@ libx52dcomm_la_CFLAGS = \
+ 	-DLOGDIR=\"$(localstatedir)/log\" \
+ 	-DRUNDIR=\"$(localstatedir)/run\" \
+ 	$(WARN_CFLAGS)
+-libx52dcomm_la_LDFLAGS = $(WARN_LDFLAGS)
++libx52dcomm_la_LDFLAGS = -no-undefined $(WARN_LDFLAGS)
+ 
+ x52include_HEADERS += daemon/x52dcomm.h
+ 
+@@ -129,7 +127,7 @@ x52d_mouse_test_CFLAGS = \
+ 	$(WARN_CFLAGS) @CMOCKA_CFLAGS@
+ x52d_mouse_test_LDFLAGS = @CMOCKA_LIBS@ $(WARN_LDFLAGS)
+ x52d_mouse_test_LDADD = \
+-	lib/pinelog/libpinelog.la \
++	$(PINELOG_LIBS) \
+ 	@LTLIBINTL@
+ 
+ TESTS += x52d-mouse-test
+--- origsrc/libx52-0.3.2/libusbx52/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libusbx52/Makefile.am	2024-12-10 14:45:25.136177400 +0900
+@@ -9,7 +9,7 @@ check_LTLIBRARIES += libusbx52.la
+ 
+ libusbx52_la_SOURCES = libusbx52/usb_x52_stub.c libusbx52/fopen_env.c
+ libusbx52_la_CFLAGS = -I $(top_srcdir)/libusbx52 @LIBUSB_CFLAGS@ $(WARN_CFLAGS)
+-libusbx52_la_LDFLAGS = -rpath /nowhere -module $(WARN_LDFLAGS)
++libusbx52_la_LDFLAGS = -no-undefined -rpath /nowhere -module $(WARN_LDFLAGS)
+ 
+ # Utility programs for use by tests
+ check_PROGRAMS += x52test_create_device_list x52test_log_actions
+--- origsrc/libx52-0.3.2/libx52/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52/Makefile.am	2024-12-10 13:07:32.195726400 +0900
+@@ -25,7 +25,7 @@ libx52_la_CFLAGS = \
+ 	-DLOCALEDIR=\"$(localedir)\" \
+ 	-I $(top_srcdir) \
+ 	$(WARN_CFLAGS)
+-libx52_la_LDFLAGS = \
++libx52_la_LDFLAGS = -no-undefined \
+ 	-export-symbols-regex '^libx52_' \
+ 	-version-info $(libx52_v_CUR):$(libx52_v_REV):$(libx52_v_AGE) @LIBUSB_LIBS@ \
+ 	$(WARN_LDFLAGS)
+--- origsrc/libx52-0.3.2/libx52/libx52.pc.in	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52/libx52.pc.in	2024-12-10 18:11:02.971435600 +0900
+@@ -5,7 +5,7 @@ includedir=@includedir@
+ 
+ Name: libx52
+ Description: Linux/Unix library to control Saitek X52/X52Pro joystick extended functionality.
+-Version: 2.4.0
++Version: @VERSION@
+ Libs: -L${libdir} -lx52
+ Cflags: -I${includedir}/libx52
+ Requires.private: @LIBUSB_PC@
+--- origsrc/libx52-0.3.2/libx52io/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52io/Makefile.am	2024-12-10 13:12:41.507348800 +0900
+@@ -20,7 +20,7 @@ libx52io_la_SOURCES = \
+ 	libx52io/io_strings.c \
+ 	libx52io/io_device.c
+ libx52io_la_CFLAGS = @HIDAPI_CFLAGS@ -DLOCALEDIR=\"$(localedir)\" -I $(top_srcdir) $(WARN_CFLAGS)
+-libx52io_la_LDFLAGS = \
++libx52io_la_LDFLAGS = -no-undefined \
+ 	-export-symbols-regex '^libx52io_' \
+ 	-version-info $(libx52io_v_CUR):$(libx52io_v_REV):$(libx52io_v_AGE) @HIDAPI_LIBS@ \
+ 	$(WARN_LDFLAGS)
+--- origsrc/libx52-0.3.2/libx52io/libx52io.pc.in	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52io/libx52io.pc.in	2024-12-10 18:11:11.626129600 +0900
+@@ -5,7 +5,7 @@ includedir=@includedir@
+ 
+ Name: libx52io
+ Description: Linux/Unix library to read and parse X52 input
+-Version: 1.0.0
++Version: @VERSION@
+ Libs: -L${libdir} -lx52io
+ Cflags: -I${includedir}/libx52
+ Requires.private: @HIDAPI_PC@
+--- origsrc/libx52-0.3.2/libx52util/Makefile.am	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52util/Makefile.am	2024-12-10 13:24:06.186812100 +0900
+@@ -11,7 +11,7 @@ lib_LTLIBRARIES += libx52util.la
+ nodist_libx52util_la_SOURCES = libx52util/util_char_map.c
+ libx52util_la_SOURCES = libx52util/x52_char_map_lookup.c
+ libx52util_la_CFLAGS = -I $(top_srcdir)/libx52util $(WARN_CFLAGS)
+-libx52util_la_LDFLAGS = -version-info 1:0:0 $(WARN_LDFLAGS)
++libx52util_la_LDFLAGS = -no-undefined -version-info 1:0:0 $(WARN_LDFLAGS)
+ 
+ # Header files that need to be copied
+ x52include_HEADERS += libx52util/libx52util.h
+--- origsrc/libx52-0.3.2/libx52util/libx52util.pc.in	2024-06-10 12:24:45.000000000 +0900
++++ src/libx52-0.3.2/libx52util/libx52util.pc.in	2024-12-10 18:11:20.719190100 +0900
+@@ -5,6 +5,6 @@ includedir=@includedir@
+ 
+ Name: libx52util
+ Description: Extra utility functions to manage X52 extended functionality
+-Version: 1.0.0
++Version: @VERSION@
+ Libs: -L${libdir} -lx52util
+ Cflags: -I${includedir}/libx52
