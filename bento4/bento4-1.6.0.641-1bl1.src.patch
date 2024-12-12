@@ -1,0 +1,46 @@
+--- origsrc/bento4-1.6.0.641/CMakeLists.txt	2023-11-26 02:51:52.000000000 +0900
++++ src/bento4-1.6.0.641/CMakeLists.txt	2024-12-12 17:05:09.479900700 +0900
+@@ -71,11 +71,18 @@ file(GLOB AP4_HEADERS
+   ${SOURCE_METADATA}/*.h
+ )
+ 
+-add_library(ap4 STATIC ${AP4_SOURCES})
++add_library(ap4 SHARED ${AP4_SOURCES})
+ target_include_directories(ap4 PUBLIC
+   ${AP4_INCLUDE_DIRS}
+ )
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(ap4 PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++if (CYGWIN)
++  install(TARGETS ap4 RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++endif()
++
+ # Use the statically linked C runtime library
+ if(MSVC)
+   set_property(TARGET ap4 PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+@@ -143,3 +150,10 @@ install(
+     NAMESPACE "${namespace}"
+     DESTINATION "${config_install_dir}"
+ )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/bento4.pc.in ${CMAKE_BINARY_DIR}/bento4.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/bento4.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/bento4-1.6.0.641/bento4.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bento4-1.6.0.641/bento4.pc.in	2024-12-12 17:05:57.015548900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bento4
++Description: Full-featured MP4 format and MPEG DASH library and tools
++Version: @VERSION@
++Libs: -L${libdir} -lap4
++Cflags: -I${includedir}/bento4
