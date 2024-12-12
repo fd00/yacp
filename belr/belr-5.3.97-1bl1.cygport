@@ -1,10 +1,17 @@
 HOMEPAGE="https://gitlab.linphone.org/BC/public/${PN}"
 SRC_URI="https://gitlab.linphone.org/BC/public/${PN}/-/archive/${PV}/${P}.tar.bz2"
+PATCH_URI="
+	https://src.fedoraproject.org/rpms/${PN}/raw/f38/f/0002_belr_actually_give_pkgconfig_file_an_install_location.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="Belledonne Communications' language recognition library"
 DESCRIPTION="Belr is Belledonne Communications' language recognition library, written in
 C++11."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE.txt"
 
 BUILD_REQUIRES="libbctoolbox-devel"
 
@@ -13,13 +20,15 @@ export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DENABLE_STATIC:BOOL=OFF
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DCMAKE_MODULES_INSTALL_DIR:PATH=/usr/lib/cmake/${PN}
+	-DENABLE_STRICT:BOOL=OFF
 "
 
 src_test()
 {
 	cd ${B}
-	PATH=${B}/src:${PATH} ./tester/belr_tester.exe
+	PATH=${B}/src:${PATH} ./tester/belr-tester.exe
 }
 
 DOCS="
@@ -36,7 +45,7 @@ belr_CONTENTS="
 	usr/share
 "
 libbelr1_CONTENTS="
-	usr/bin/*.dll
+	usr/bin/cyg*-1.dll
 "
 libbelr_devel_CONTENTS="
 	usr/include
