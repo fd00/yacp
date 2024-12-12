@@ -1,0 +1,84 @@
+--- origsrc/bifrost-1.3.5/CMakeLists.txt	2024-03-16 00:20:17.000000000 +0900
++++ src/bifrost-1.3.5/CMakeLists.txt	2024-12-12 23:27:06.559171200 +0900
+@@ -11,10 +11,6 @@ SET(COMPILATION_ARCH "native" CACHE STRI
+ # Enable AVX2 instructions
+ SET(ENABLE_AVX2 "ON" CACHE STRING "ENABLE_AVX2")
+ 
+-# Set some default compile flags
+-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-
+ set(CMAKE_MACOSX_RPATH 1)
+ 
+ set_property(SOURCE BlockedBloomFilter.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -funroll-loops")
+@@ -45,21 +41,6 @@ if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE "Release")
+ endif(NOT CMAKE_BUILD_TYPE)
+ 
+-if(CMAKE_BUILD_TYPE MATCHES Debug)
+-	message("Build type: Debug")
+-	add_compile_options(-g)
+-else(CMAKE_BUILD_TYPE MATCHES Debug)
+-	if(CMAKE_BUILD_TYPE MATCHES Profile)
+-		message("Build type: Profiling")
+-		add_compile_options(-pg)
+-		set(CMAKE_SHARED_LINKER_FLAGS "-pg")
+-		set(CMAKE_EXE_LINKER_FLAGS "-pg")
+-	else(CMAKE_BUILD_TYPE MATCHES Profile)
+-		message("Build type: Release")
+-		add_compile_options(-O3)
+-	endif(CMAKE_BUILD_TYPE MATCHES Profile)
+-endif(CMAKE_BUILD_TYPE MATCHES Debug)
+-
+ MATH(EXPR PRINT_MAX_KMER_SIZE "${MAX_KMER_SIZE}-1")
+ message("Maximum k-mer size: " ${PRINT_MAX_KMER_SIZE})
+ 
+--- origsrc/bifrost-1.3.5/src/CMakeLists.txt	2024-03-16 00:20:17.000000000 +0900
++++ src/bifrost-1.3.5/src/CMakeLists.txt	2024-12-12 23:32:12.154737600 +0900
+@@ -6,23 +6,22 @@ list(REMOVE_ITEM sources Bifrost.cpp)
+ add_definitions(-DMAX_KMER_SIZE=${MAX_KMER_SIZE})
+ add_definitions(-DMAX_GMER_SIZE=${MAX_GMER_SIZE})
+ 
+-add_library(bifrost_static STATIC ${sources} ${headers})
+ add_library(bifrost_dynamic SHARED ${sources} ${headers})
+ 
+-set_target_properties(bifrost_static PROPERTIES OUTPUT_NAME "bifrost")
+ set_target_properties(bifrost_dynamic PROPERTIES OUTPUT_NAME "bifrost")
+ 
+-target_include_directories(bifrost_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
++if (DEFINED SOVERSION)
++    set_target_properties(bifrost_dynamic PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_include_directories(bifrost_dynamic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ add_executable(Bifrost Bifrost.cpp)
+ 
+ find_package(Threads REQUIRED)
+-target_link_libraries(bifrost_static ${CMAKE_THREAD_LIBS_INIT})
+ target_link_libraries(bifrost_dynamic ${CMAKE_THREAD_LIBS_INIT})
+ 
+ find_package(ZLIB REQUIRED)
+-target_link_libraries(bifrost_static ${ZLIB_LIBRARIES})
+ target_link_libraries(bifrost_dynamic ${ZLIB_LIBRARIES})
+ 
+ if (ZLIB_FOUND)
+@@ -31,9 +30,16 @@ else()
+     message(FATAL_ERROR "zlib not found. Required for to output files")
+ endif(ZLIB_FOUND)
+ 
++find_package(pkgconfig)
++pkg_check_modules(ROARING roaring)
++if (ROARING_FOUND)
++    list(REMOVE_ITEM sources ${CMAKE_CURRENT_SOURCE_DIR}/roaring.c)
++    list(REMOVE_ITEM headers ${CMAKE_CURRENT_SOURCE_DIR}/roaring.h ${CMAKE_CURRENT_SOURCE_DIR}/roaring.hh)
++    target_link_libraries(bifrost_dynamic ${ROARING_LIBRARIES})
++endif()
++
+ target_link_libraries(Bifrost bifrost_dynamic)
+ 
+ install(TARGETS Bifrost DESTINATION bin)
+-install(TARGETS bifrost_dynamic DESTINATION lib)
+-install(TARGETS bifrost_static DESTINATION lib)
++install(TARGETS bifrost_dynamic RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES ${headers} DESTINATION include/bifrost)
