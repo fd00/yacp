@@ -1,0 +1,46 @@
+--- origsrc/blasfeo-0.1.4.1/CMakeLists.txt	2024-11-20 18:13:21.000000000 +0900
++++ src/blasfeo-0.1.4.1/CMakeLists.txt	2024-12-13 08:24:51.983907900 +0900
+@@ -1248,6 +1248,10 @@ endif()
+ # add library
+ add_library(blasfeo ${BLASFEO_SRC})
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(blasfeo PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # 1) *XILINX_NONE_ELF*:
+ #		Xilinx standalone (any core, e.g. A53,R5,..; *untested*)
+ # 2) *XILINX_ULTRASCALE_NONE_ELF_JAILHOUSE*:
+@@ -1288,7 +1292,7 @@ install(TARGETS blasfeo EXPORT blasfeoCo
+ 	RUNTIME DESTINATION bin)
+ 
+ 
+-install(EXPORT blasfeoConfig DESTINATION cmake)
++install(EXPORT blasfeoConfig DESTINATION lib/cmake/blasfeo)
+ 
+ file(GLOB_RECURSE BLASFEO_HEADERS "include/*.h")
+ install(FILES ${BLASFEO_HEADERS} DESTINATION ${BLASFEO_HEADERS_INSTALLATION_DIRECTORY})
+@@ -1330,3 +1334,10 @@ endif()
+ if(BLASFEO_EXAMPLES MATCHES ON)
+ 	add_subdirectory(examples)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/blasfeo.pc.in ${CMAKE_BINARY_DIR}/blasfeo.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/blasfeo.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/blasfeo-0.1.4.1/blasfeo.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/blasfeo-0.1.4.1/blasfeo.pc.in	2024-12-13 08:22:33.822476900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: blasfeo
++Description: Basic linear algebra subroutines for embedded optimization
++Version: @VERSION@
++Libs: -L${libdir} -lblasfeo
++Cflags: -I${includedir}
