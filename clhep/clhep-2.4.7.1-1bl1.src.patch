@@ -1,6 +1,28 @@
---- origsrc/2.4.1.3/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Modules/ClhepBuildLibrary.cmake	2020-02-28 18:43:34.340253400 +0900
-@@ -31,24 +31,18 @@ macro(clhep_build_library package)
+--- origsrc/CLHEP-CLHEP_2_4_7_1/clhep-config.in	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/clhep-config.in	2024-12-13 10:59:19.174204800 +0900
+@@ -89,7 +89,7 @@ while test $# -gt 0; do
+        	;;
+ 
+     --libs)
+-       	echo -L\"${libdir}\" -lCLHEP-@VERSION@ @LIBS@
++       	echo -L\"${libdir}\" -lCLHEP @LIBS@
+        	;;
+ 
+     *)
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepBuildLibrary.cmake	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepBuildLibrary.cmake	2024-12-13 10:40:58.029352500 +0900
+@@ -20,39 +20,34 @@ macro(clhep_build_library package)
+ 
+   # check for dependencies
+   set( package_library_list )
+-  set(package_library_list_static)
+   if( ${PACKAGE}_DEPS )
+      foreach ( dep ${${PACKAGE}_DEPS} )
+         ##message( STATUS "clhep_build_library ${package} will use ${dep}")
+ 	list(APPEND package_library_list ${dep})
+-	list(APPEND package_library_list_static ${dep}S)
+      endforeach()
+   endif()
  
    # Add the libraries and set properties
    ADD_LIBRARY(${package}  SHARED ${CLHEP_${package}_SOURCES})
@@ -8,13 +30,24 @@
    SET_TARGET_PROPERTIES (${package}
        PROPERTIES 
 -        OUTPUT_NAME CLHEP-${package}-${VERSION}
--      )
++        OUTPUT_NAME CLHEP-${package}
+       )
 -  SET_TARGET_PROPERTIES(${package}S
 -      PROPERTIES 
 -        OUTPUT_NAME CLHEP-${package}-${VERSION}
-+        OUTPUT_NAME CLHEP-${package}
-+        SOVERSION 0
-       )
+-      )
+-
++  
++  if (DEFINED SOVERSION)
++    set_target_properties(${package} PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
++  
+   # Do not add -Dname_EXPORTS to the command-line when building files in this
+   # target. Doing so is actively harmful for the modules build because it
+   # creates extra module variants, and not useful because we don't use these
+   # macros.
+   SET_TARGET_PROPERTIES(${package} PROPERTIES DEFINE_SYMBOL "")
+-  SET_TARGET_PROPERTIES(${package}S PROPERTIES DEFINE_SYMBOL "")
  
    target_link_libraries(${package}  ${package_library_list} )
 -  target_link_libraries(${package}S ${package_library_list_static} )
@@ -24,11 +57,8 @@
 +  INSTALL (TARGETS ${package}
        EXPORT CLHEPLibraryDepends
        RUNTIME DESTINATION bin
--      LIBRARY DESTINATION lib${LIB_SUFFIX}
-       ARCHIVE DESTINATION lib${LIB_SUFFIX}
-       INCLUDES DESTINATION include
-       ) 
-@@ -63,41 +57,19 @@ macro(clhep_build_libclhep )
+       LIBRARY DESTINATION lib${LIB_SUFFIX}
+@@ -70,25 +65,24 @@ macro(clhep_build_libclhep )
    ##message( STATUS "clheplib source list ${clhep_sources}" )
  
    ADD_LIBRARY (CLHEP  SHARED ${clhep_sources})
@@ -42,16 +72,26 @@
 -      PROPERTIES 
 -        OUTPUT_NAME CLHEP-${VERSION}
 +        OUTPUT_NAME CLHEP
-+        SOVERSION 0
        )
++  
++  if (DEFINED SOVERSION)
++    set_target_properties(CLHEP PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
++  
+   # Do not add -Dname_EXPORTS to the command-line when building files in this
+   # target. Doing so is actively harmful for the modules build because it
+   # creates extra module variants, and not useful because we don't use these
+   # macros.
+   SET_TARGET_PROPERTIES(CLHEP PROPERTIES DEFINE_SYMBOL "")
+-  SET_TARGET_PROPERTIES(CLHEPS PROPERTIES DEFINE_SYMBOL "")
  
    # export creates library dependency files for CLHEPConfig.cmake
 -  INSTALL(TARGETS CLHEP CLHEPS
 +  INSTALL(TARGETS CLHEP
        EXPORT CLHEPLibraryDepends
        RUNTIME DESTINATION bin
--      LIBRARY DESTINATION lib${LIB_SUFFIX}
-       ARCHIVE DESTINATION lib${LIB_SUFFIX}
+       LIBRARY DESTINATION lib${LIB_SUFFIX}
+@@ -96,21 +90,4 @@ macro(clhep_build_libclhep )
        INCLUDES DESTINATION include
        ) 
  
@@ -73,8 +113,8 @@
 -  INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/clhep_shared_symlink )
 -
  endmacro(clhep_build_libclhep )
---- origsrc/2.4.1.3/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Modules/ClhepBuildTest.cmake	2020-02-28 18:43:34.340253400 +0900
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepBuildTest.cmake	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepBuildTest.cmake	2024-12-13 10:12:26.346251000 +0900
 @@ -26,14 +26,14 @@ macro( clhep_test testname )
    if( CTST_NOLIB )
      set(package_library_list)
@@ -92,22 +132,45 @@
  	#list(APPEND package_library_list  ${PROJECT_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}CLHEP-${dep}-${VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX} )
       endforeach()
    endif()
---- origsrc/2.4.1.3/CLHEP/cmake/Modules/ClhepToolchain.cmake	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Modules/ClhepToolchain.cmake	2020-02-28 18:43:34.355882000 +0900
-@@ -53,11 +53,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cma
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepToolchain.cmake	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepToolchain.cmake	2024-12-13 10:57:53.090520600 +0900
+@@ -56,11 +56,8 @@ configure_package_config_file(${PROJECT_
  # This file is include()d by CLHEPConfig.cmake
  # First build up list of all modular targets, static and shared
  set(CLHEP_libraries_all ${CLHEP_libraries})
 -foreach(_lib ${CLHEP_libraries})
 -  list(APPEND CLHEP_libraries_all "${_lib}S")
 -endforeach()
--
+ 
 -export(TARGETS CLHEP CLHEPS ${CLHEP_libraries_all}
 +export(TARGETS CLHEP ${CLHEP_libraries_all}
    NAMESPACE "CLHEP::"
    FILE ${PROJECT_BINARY_DIR}/CLHEPLibraryDepends.cmake
    )
-@@ -166,12 +162,12 @@ endforeach()
+@@ -73,9 +70,9 @@ export(TARGETS CLHEP CLHEPS ${CLHEP_libr
+ # In the build tree we hardcode all paths, as we never need to relocate
+ # a build tree
+ #
+-set(CLHEP_PKGCONFIG_PREFIX ${PROJECT_BINARY_DIR})
+-set(CLHEP_PKGCONFIG_INCLUDEDIR ${CLHEP_INCLUDE_DIR})
+-set(CLHEP_PKGCONFIG_LIBDIR ${PROJECT_BINARY_DIR}/lib${LIB_SUFFIX})
++set(CLHEP_PKGCONFIG_PREFIX ${CMAKE_INSTALL_PREFIX})
++set(CLHEP_PKGCONFIG_INCLUDEDIR ${CMAKE_INSTALL_PREFIX}/include)
++set(CLHEP_PKGCONFIG_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
+ 
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/clhep.pc.in
+   ${PROJECT_BINARY_DIR}/clhep.pc
+@@ -130,9 +127,6 @@ configure_package_config_file(${PROJECT_
+ # to the include and lib dirs.... This make the pc file fully relocatable!!
+ # If you later use GNUInstallDirs.cmake, this would need more work to
+ # ensure accurate calculation of the relative path.
+-set(CLHEP_PKGCONFIG_PREFIX "\${pcfiledir}/../..")
+-set(CLHEP_PKGCONFIG_LIBDIR "\${prefix}/lib${LIB_SUFFIX}")
+-set(CLHEP_PKGCONFIG_INCLUDEDIR "\${prefix}/include")
+ 
+ configure_file(${PROJECT_SOURCE_DIR}/cmake/Templates/clhep.pc.in
+   ${PROJECT_BINARY_DIR}/InstallTreeFiles/clhep.pc
+@@ -161,12 +155,12 @@ endforeach()
  install(FILES
    ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfigVersion.cmake 
    ${PROJECT_BINARY_DIR}/InstallTreeFiles/CLHEPConfig.cmake 
@@ -118,22 +181,22 @@
  install(EXPORT CLHEPLibraryDepends 
          NAMESPACE "CLHEP::"
 -        DESTINATION lib${LIB_SUFFIX}/CLHEP-${VERSION})
-+      DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP)
++        DESTINATION lib${LIB_SUFFIX}/cmake/CLHEP)
  
  # Install the pkg-config file. The choice of 'lib${LIB_SUFFIX}/pkgconfig' for the 
  # installation seems fairly standard.
---- origsrc/2.4.1.3/CLHEP/cmake/Modules/ClhepVariables.cmake	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Modules/ClhepVariables.cmake	2020-02-28 18:43:34.355882000 +0900
-@@ -391,7 +391,7 @@ macro( clhep_package_config_no_lib )
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepVariables.cmake	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Modules/ClhepVariables.cmake	2024-12-13 11:05:11.763864700 +0900
+@@ -455,7 +455,7 @@ macro( clhep_package_config_no_lib )
    ## don't install <package>-config on Windows
    if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
      install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
 -              DESTINATION bin
-+              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
++              DESTINATION bin RENAME clhep-${PACKAGE}-config
  	    )
    endif()
  endmacro( clhep_package_config_no_lib )
-@@ -399,11 +399,11 @@ endmacro( clhep_package_config_no_lib )
+@@ -463,11 +463,11 @@ endmacro( clhep_package_config_no_lib )
  macro( clhep_package_config )
    set( ${PACKAGE}_CPPFLAGS "-I${includedir}" )
    set( ${PACKAGE}_LDFLAGS  "-L\${exec_prefix}/lib${LIB_SUFFIX}" )
@@ -147,32 +210,32 @@
       endforeach()
    endif()
    configure_file ( ${CLHEP_SOURCE_DIR}/${PACKAGE}/${PACKAGE}-config.in
-@@ -413,7 +413,7 @@ macro( clhep_package_config )
+@@ -477,7 +477,7 @@ macro( clhep_package_config )
    ## don't install <package>-config on Windows
    if( NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
      install ( PROGRAMS ${CLHEP_BINARY_DIR}/${PACKAGE}/${PACKAGE}-config
 -              DESTINATION bin
-+              DESTINATION bin RENAME CLHEP-${PACKAGE}-config
++              DESTINATION bin RENAME clhep-${PACKAGE}-config
  	    )
    endif()
  endmacro( clhep_package_config )
---- origsrc/2.4.1.3/CLHEP/cmake/Templates/clhep-component.pc.in	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Templates/clhep-component.pc.in	2020-02-28 18:43:34.387122000 +0900
-@@ -9,6 +9,5 @@ Name: CLHEP-@CLHEP_PC_COMPONENT@
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Templates/clhep-component.pc.in	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Templates/clhep-component.pc.in	2024-12-13 10:15:32.246878300 +0900
+@@ -9,6 +9,6 @@ Name: CLHEP-@CLHEP_PC_COMPONENT@
  Description: Class Library for High Energy Physics, @CLHEP_PC_COMPONENT@ Component
  Version: @CLHEP_VERSION@
  Requires: @CLHEP_PC_COMPONENT_REQUIRES@
 -Libs: -L${libdir} -lCLHEP-@CLHEP_PC_COMPONENT@-@CLHEP_VERSION@
 +Libs: -L${libdir} -lCLHEP-@CLHEP_PC_COMPONENT@
  Cflags: -I${includedir}
--
---- origsrc/2.4.1.3/CLHEP/cmake/Templates/clhep.pc.in	2019-10-22 03:00:38.000000000 +0900
-+++ src/2.4.1.3/CLHEP/cmake/Templates/clhep.pc.in	2020-02-28 18:43:34.387122000 +0900
-@@ -8,6 +8,5 @@ includedir=@CLHEP_PKGCONFIG_INCLUDEDIR@
+ 
+--- origsrc/CLHEP-CLHEP_2_4_7_1/cmake/Templates/clhep.pc.in	2023-10-13 03:36:02.000000000 +0900
++++ src/CLHEP-CLHEP_2_4_7_1/cmake/Templates/clhep.pc.in	2024-12-13 10:15:35.954447600 +0900
+@@ -8,6 +8,6 @@ includedir=@CLHEP_PKGCONFIG_INCLUDEDIR@
  Name: CLHEP
  Description: Class Library for High Energy Physics
  Version: @CLHEP_VERSION@
 -Libs: -L${libdir} -lCLHEP-@CLHEP_VERSION@
 +Libs: -L${libdir} -lCLHEP
  Cflags: -I${includedir}
--
+ 
