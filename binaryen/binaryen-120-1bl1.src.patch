@@ -1,0 +1,36 @@
+--- origsrc/binaryen-version_120/CMakeLists.txt	2024-10-26 04:51:07.000000000 +0900
++++ src/binaryen-version_120/CMakeLists.txt	2024-12-13 04:50:45.984243700 +0900
+@@ -457,6 +457,9 @@ if(BUILD_STATIC_LIB)
+ else()
+   message(STATUS "Building libbinaryen as shared library.")
+   add_library(binaryen SHARED ${binaryen_SOURCES} ${binaryen_objs})
++  if (DEFINED SOVERSION)
++    set_target_properties(binaryen PROPERTIES SOVERSION "${SOVERSION}")
++  endif()
+ endif()
+ target_link_libraries(binaryen ${CMAKE_THREAD_LIBS_INIT})
+ if(INSTALL_LIBS OR NOT BUILD_STATIC_LIB)
+@@ -561,3 +564,10 @@ if(EMSCRIPTEN)
+ endif()
+ 
+ configure_file(scripts/binaryen-lit.in ${CMAKE_BINARY_DIR}/bin/binaryen-lit @ONLY)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/binaryen.pc.in ${CMAKE_BINARY_DIR}/binaryen.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/binaryen.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/binaryen-version_120/binaryen.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/binaryen-version_120/binaryen.pc.in	2024-12-13 04:50:49.950785600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: binaryen
++Description: Compiler infrastructure and toolchain library for WebAssembly
++Version: @VERSION@
++Libs: -L${libdir} -lbinaryen
++Cflags: -I${includedir}
