@@ -1,0 +1,37 @@
+--- origsrc/calceph-4.0.3/CMakeLists.txt	2024-12-06 21:14:57.000000000 +0900
++++ src/calceph-4.0.3/CMakeLists.txt	2024-12-13 09:42:24.122720800 +0900
+@@ -369,3 +369,10 @@ export(PACKAGE calceph)
+ # create the developpment package file ...cmake
+ #####################################################################
+ include(toolchain/devconfig.cmake)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/calceph.pc.in ${CMAKE_BINARY_DIR}/calceph.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/calceph.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/calceph-4.0.3/calceph.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/calceph-4.0.3/calceph.pc.in	2024-12-13 09:42:09.606810900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: calceph
++Description: C library to access the binary planetary ephemeris files
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcalceph
++Cflags: -I${includedir}
+--- origsrc/calceph-4.0.3/src/CMakeLists.txt	2024-09-25 19:43:34.000000000 +0900
++++ src/calceph-4.0.3/src/CMakeLists.txt	2024-12-13 09:20:03.829587900 +0900
+@@ -104,7 +104,7 @@ if (CALCEPH_INSTALL)
+         install(FILES "${CMAKE_CURRENT_BINARY_DIR}/calceph.mod" COMPONENT dev DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+     endif()
+     install(TARGETS  calceph EXPORT calcephTargets ARCHIVE COMPONENT dev  DESTINATION "${CMAKE_INSTALL_LIBDIR}" LIBRARY COMPONENT lib  DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+-    if (WIN32)
++    if (WIN32 OR CYGWIN)
+ 	    if (BUILD_SHARED_LIBS)
+ 	        install(TARGETS calceph RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+ 	    endif()
