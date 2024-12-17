@@ -1,0 +1,71 @@
+--- origsrc/opensmile-3.0.2/CMakeLists.txt	2023-10-19 19:36:03.000000000 +0900
++++ src/opensmile-3.0.2/CMakeLists.txt	2024-12-17 17:43:43.149645200 +0900
+@@ -280,6 +280,10 @@ else()
+     add_library(opensmile SHARED ${opensmile_SOURCES})
+ endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(opensmile PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_include_directories(opensmile
+     PUBLIC
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
+@@ -428,8 +432,9 @@ if(WITH_OPENCV)
+ endif(WITH_OPENCV)
+ 
+ install(TARGETS opensmile
+-    DESTINATION lib
+-    EXPORT opensmile-targets)
++    EXPORT opensmile-targets
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib)
+ install(EXPORT opensmile-targets
+     FILE opensmile-config.cmake
+     DESTINATION lib/cmake/opensmile)
+--- origsrc/opensmile-3.0.2/progsrc/smileapi/CMakeLists.txt	2023-10-19 19:36:03.000000000 +0900
++++ src/opensmile-3.0.2/progsrc/smileapi/CMakeLists.txt	2024-12-17 17:42:55.227819900 +0900
+@@ -12,6 +12,10 @@ else()
+         SMILEapi.def)
+ endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(SMILEapi PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # allow linking of SMILEapi into shared libraries
+ set_property(TARGET SMILEapi PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
+--- origsrc/opensmile-3.0.2/src/ffmpeg/ffmpegSource.cpp	2023-10-19 19:36:03.000000000 +0900
++++ src/opensmile-3.0.2/src/ffmpeg/ffmpegSource.cpp	2024-12-17 17:34:37.951055100 +0900
+@@ -172,7 +172,7 @@ int cFFmpegSource::configureWriter(sDmLe
+ 
+   // set config parameters
+   c.T = 1.0/avCodecContext->sample_rate;
+-  c.N = avCodecContext->channels;
++  c.N = avCodecContext->ch_layout.nb_channels;
+   c.noTimeMeta = true;
+ 
+   return 1;
+@@ -184,7 +184,7 @@ int cFFmpegSource::setupNewNames(long nE
+   if (monoMixdown) {
+     writer_->addField(outFieldName,1);
+   } else {
+-    writer_->addField(outFieldName,avCodecContext->channels);
++    writer_->addField(outFieldName,avCodecContext->ch_layout.nb_channels);
+   }
+ 
+   namesAreSet_ = 1;
+@@ -357,10 +357,10 @@ void cFFmpegSource::convertAndCopyFrameS
+     COMP_ERR("parameter 'numSamples' out of range");
+ 
+   if (mat_ == NULL) {
+-    allocMat(monoMixdown ? 1 : avCodecContext->channels, blocksizeW_);
++    allocMat(monoMixdown ? 1 : avCodecContext->ch_layout.nb_channels, blocksizeW_);
+   }
+ 
+-  int nChan = avCodecContext->channels;
++  int nChan = avCodecContext->ch_layout.nb_channels;
+ 
+   if (!monoMixdown) {
+     switch (avCodecContext->sample_fmt) {
