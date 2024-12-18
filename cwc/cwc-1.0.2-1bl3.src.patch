@@ -1,0 +1,50 @@
+--- origsrc/cwc-1.0.2/src/Makefile	2008-06-18 01:52:59.000000000 +0900
++++ src/cwc-1.0.2/src/Makefile	2024-12-18 09:06:09.146203900 +0900
+@@ -10,7 +10,7 @@ OPTIMIZE=-O3
+ #PROFILE=-pg
+ #DEBUG=-ggdb
+ 
+-CPPFLAGS=-Wall $(OPTIMIZE) $(PROFILE) $(DEBUG)
++CPPFLAGS?=-Wall $(OPTIMIZE) $(PROFILE) $(DEBUG)
+ 
+ OBJS=timer.o letterdict.o symbol.o dict.o grid.o cwc.o wordlist.o
+ HEADER_FILES=\
+@@ -33,7 +33,7 @@ SOURCE_FILES=\
+ 	wordlist.cc
+ 
+ cwc: $(OBJS) $(HEADER_FILES) $(SOURCE_FILES)
+-	g++ -o cwc $(OBJS) $(CPPFLAGS)
++	g++ -o cwc $(OBJS) $(LDFLAGS)
+ 
+ remake: clean cwc
+ 
+@@ -43,7 +43,7 @@ depend:
+ 	g++ -MM *.cc > depend
+ 
+ $(OBJS): %.o: %.cc %.hh
+-	$(CPP) $(CPPFLAGS) -c $< -o $@
++	$(CPP) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+ 
+ clean:
+ 	rm -f *~ *.o cwc depend
+--- origsrc/cwc-1.0.2/src/cwc.cc	2008-06-18 02:43:28.000000000 +0900
++++ src/cwc-1.0.2/src/cwc.cc	2024-12-18 09:07:32.055545700 +0900
+@@ -463,7 +463,7 @@ int parseparameters(int argc, char *argv
+         case 's': setup.showsteps = true; break;
+         case 'S': setup.showallsteps = true; break;
+         case '?':
+-        case 'h': printf(usage); return -1;
++        case 'h': printf("%s", usage); return -1;
+         }
+     }
+     return 0;
+--- origsrc/cwc-1.0.2/src/dict.cc	2008-06-18 02:43:28.000000000 +0900
++++ src/cwc-1.0.2/src/dict.cc	2024-12-18 09:07:04.723053400 +0900
+@@ -22,6 +22,7 @@
+ #include <string>
+ #include <fstream>
+ #include <iostream>
++#include <cstring>
+ 
+ #include "symbol.hh"
+ #include "dict.hh"
