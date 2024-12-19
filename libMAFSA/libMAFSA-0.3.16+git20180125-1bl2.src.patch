@@ -1,0 +1,62 @@
+--- origsrc/libMAFSA/CMakeLists.txt	2024-12-19 20:47:14.000000000 +0900
++++ src/libMAFSA/CMakeLists.txt	2024-12-19 21:26:18.344095500 +0900
+@@ -4,14 +4,6 @@ PROJECT (libMAFSA)
+ SET (LIBMAFSA_VERSION 0.3.16)
+ SET (LIBMAFSA_RPM_RELEASE 16)
+ 
+-SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -pipe -O3 -fomit-frame-pointer -funroll-loops -DNDEBUG -Wall")
+-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -Wno-deprecated")
+-
+-IF (NOT CYGWIN)
+-  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-ENDIF ()
+-
+ SET (FIND_LIBRARY_USE_LIB64_PATHS TRUE)
+ SET (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+ SET (CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_STATIC_LIBRARY_PREFIX})
+@@ -21,7 +13,11 @@ INCLUDE_DIRECTORIES (include)
+ SET (SMAFSA src/MAFSA/automaton.c)
+ AUX_SOURCE_DIRECTORY (src/MAFSA/adapter SMAFSA_ADAPTER)
+ 
+-ADD_LIBRARY (MAFSA STATIC ${SMAFSA} ${SMAFSA_ADAPTER})
++ADD_LIBRARY (MAFSA SHARED ${SMAFSA} ${SMAFSA_ADAPTER})
++
++if (DEFINED SOVERSION)
++  set_target_properties(MAFSA PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ SET (SMAFSA_EXLS src/test/exls_test.cpp)
+ SET (SMAFSA_UNIT src/test/unit_test.cpp src/test/unit_adapter.c)
+@@ -37,7 +33,7 @@ SET (LIBDIR lib)
+ #  SET (LIBDIR lib64)
+ #ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+ 
+-INSTALL (TARGETS MAFSA DESTINATION ${LIBDIR})
++INSTALL (TARGETS MAFSA RUNTIME DESTINATION bin ARCHIVE DESTINATION ${LIBDIR})
+ INSTALL (DIRECTORY include/MAFSA DESTINATION include PATTERN ".*" EXCLUDE)
+ 
+ # test from coda (TODO make this more general)
+@@ -46,3 +42,9 @@ TARGET_LINK_LIBRARIES (dic_compiler MAFS
+ ADD_EXECUTABLE (dic_finder test/dic_finder.c test/dic_adapter.c)
+ TARGET_LINK_LIBRARIES (dic_finder MAFSA)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libMAFSA.pc.in ${CMAKE_BINARY_DIR}/libMAFSA.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libMAFSA.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libMAFSA/libMAFSA.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libMAFSA/libMAFSA.pc.in	2024-12-19 21:26:29.080710600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libMAFSA
++Description: Minimal Acyclic Finite-State Automata
++Version: @LIBMAFSA_VERSION@
++Libs: -L${libdir} -lMAFSA
++Cflags: -I${includedir}
