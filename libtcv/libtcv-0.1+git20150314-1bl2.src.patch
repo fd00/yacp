@@ -1,0 +1,44 @@
+--- origsrc/libtcv/CMakeLists.txt	2024-12-19 10:01:05.000000000 +0900
++++ src/libtcv/CMakeLists.txt	2024-12-19 10:05:37.783856100 +0900
+@@ -216,7 +216,9 @@ SET_TARGET_PROPERTIES(${LIBRARY_NAME}  P
+ #    LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR})
+ #SET_TARGET_PROPERTIES(${LIBRARY_NAME}  PROPERTIES
+ #    ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR})
+-
++if (DEFINED SOVERSION)
++  set_target_properties(${LIBRARY_NAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ #-------------------------------------------------------------------------------
+ # Unit Test using gtest
+@@ -273,9 +275,16 @@ INSTALL(DIRECTORY
+    DESTINATION include/${TARGET_SUBDIR_NAME})
+ 
+ # library
+-INSTALL(TARGETS ${LIBRARY_NAME} LIBRARY DESTINATION  lib)
++INSTALL(TARGETS ${LIBRARY_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ #Demo binary
+ if(BUILD_DEMO)
+     INSTALL(TARGETS ${BINARY_NAME} RUNTIME DESTINATION  bin )
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libtcv.pc.in ${CMAKE_BINARY_DIR}/libtcv.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libtcv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libtcv/libtcv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libtcv/libtcv.pc.in	2024-12-19 10:05:29.424215600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libtcv
++Description: Library Transceiver
++Version: @VERSION@
++Libs: -L${libdir} -ltcv
++Cflags: -I${includedir}
