@@ -1,28 +1,20 @@
---- origsrc/libturglem/CMakeLists.txt	2016-03-31 20:41:12.000000000 +0900
-+++ src/libturglem/CMakeLists.txt	2016-03-31 20:53:22.686957500 +0900
-@@ -4,41 +4,48 @@ PROJECT (libturglem)
+--- origsrc/libturglem/CMakeLists.txt	2024-12-19 21:36:56.000000000 +0900
++++ src/libturglem/CMakeLists.txt	2024-12-19 21:41:01.924498100 +0900
+@@ -4,41 +4,38 @@ PROJECT (libturglem)
  SET (LIBTURGLEM_VERSION 0.2.30)
  SET (LIBTURGLEM_RPM_RELEASE 30)
  
 -SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -pipe -O3 -fomit-frame-pointer -funroll-loops -DNDEBUG -Wall -Werror")
-+SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe -O3 -fomit-frame-pointer -funroll-loops -DNDEBUG -Wall -Werror")
- SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -Wno-deprecated")
- 
+-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -Wno-deprecated")
+-
 -SET (FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 -SET (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX})
 -SET (CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_STATIC_LIBRARY_PREFIX} ${CMAKE_SHARED_LIBRARY_PREFIX})
-+IF (NOT CYGWIN)
-+    SET (FIND_LIBRARY_USE_LIB64_PATHS TRUE)
-+    SET (CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_SUFFIX})
-+    SET (CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_STATIC_LIBRARY_PREFIX} ${CMAKE_SHARED_LIBRARY_PREFIX})
-+ENDIF ()
- 
+-
  SET (LIBDIR lib)
 -IF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-+IF (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND NOT CYGWIN)
-     SET (LIBDIR lib64)
+-    SET (LIBDIR lib64)
 -ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-+ENDIF (${CMAKE_SIZEOF_VOID_P} EQUAL 8 AND NOT CYGWIN)
  
  ADD_DEFINITIONS (-D__STDC_FORMAT_MACROS) # for PRIdPTR support
  
@@ -32,10 +24,10 @@
 -FIND_LIBRARY (LMAFSA MAFSA)
 -FIND_PATH    (IEXPAT expat.h)
 -FIND_LIBRARY (LEXPAT expat)
-+FIND_PACKAGE(PkgConfig)
-+PKG_CHECK_MODULES(CODA coda)
-+PKG_CHECK_MODULES(EXPAT expat)
-+PKG_CHECK_MODULES(MAFSA libMAFSA)
++find_package(PkgConfig REQUIRED)
++pkg_check_modules(CODA REQUIRED coda)
++pkg_check_modules(EXPAT REQUIRED expat)
++pkg_check_modules(MAFSA REQUIRED libMAFSA)
  
  CONFIGURE_FILE (include/config.h.in ${CMAKE_BINARY_DIR}/auto/config.h)
  
@@ -57,16 +49,18 @@
 +ADD_LIBRARY (turglem-english SHARED ${SRC_TURGENG})
 +ADD_LIBRARY (turglem-russian SHARED ${SRC_TURGRUS})
 +
-+TARGET_LINK_LIBRARIES(turglem ${MAFSA_LIBRARIES})
++target_link_libraries(turglem ${MAFSA_LIBRARIES})
 +
-+SET_TARGET_PROPERTIES(turglem         PROPERTIES SOVERSION 0)
-+SET_TARGET_PROPERTIES(turglem-default PROPERTIES SOVERSION 0)
-+SET_TARGET_PROPERTIES(turglem-english PROPERTIES SOVERSION 0)
-+SET_TARGET_PROPERTIES(turglem-russian PROPERTIES SOVERSION 0)
++if (DEFINED SOVERSION)
++    set_target_properties(turglem PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(turglem-default PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(turglem-english PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(turglem-russian PROPERTIES SOVERSION ${SOVERSION})
++endif()
  
  ADD_EXECUTABLE (lemc_english src/utils/english/lemc.cpp)
  ADD_EXECUTABLE (lemq_english src/utils/english/lemq.c)
-@@ -46,11 +53,11 @@ ADD_EXECUTABLE (lemc_russian src/utils/r
+@@ -46,11 +43,11 @@ ADD_EXECUTABLE (lemc_russian src/utils/r
  ADD_EXECUTABLE (lemq_russian src/utils/russian/lemq.c)
  ADD_EXECUTABLE (auto_utility src/utils/auto.c)
  
@@ -83,7 +77,7 @@
  
  LIST (APPEND MC_OUAENG ${CMAKE_BINARY_DIR}/dict_english.auto)
  LIST (APPEND MC_OUAENG ${CMAKE_BINARY_DIR}/paradigms_english.bin)
-@@ -68,10 +75,10 @@ ADD_CUSTOM_COMMAND (TARGET lemc_english
+@@ -68,10 +65,10 @@ ADD_CUSTOM_COMMAND (TARGET lemc_english
  ADD_CUSTOM_COMMAND (TARGET lemc_russian POST_BUILD COMMAND echo "Compiling russian dictionaries...")
  ADD_CUSTOM_COMMAND (TARGET lemc_russian POST_BUILD COMMAND ${CMAKE_BINARY_DIR}/lemc_russian ${MC_INARUS} ${MC_OUARUS})
  
@@ -98,8 +92,3 @@
  
  INSTALL (TARGETS lemc_english DESTINATION bin)
  INSTALL (TARGETS lemq_english DESTINATION bin)
-@@ -88,4 +95,3 @@ INSTALL (FILES ${CMAKE_BINARY_DIR}/predi
- INSTALL (FILES ${CMAKE_BINARY_DIR}/dict_russian.auto       DESTINATION share/turglem/russian)
- INSTALL (FILES ${CMAKE_BINARY_DIR}/paradigms_russian.bin   DESTINATION share/turglem/russian)
- INSTALL (FILES ${CMAKE_BINARY_DIR}/prediction_russian.auto DESTINATION share/turglem/russian)
--
