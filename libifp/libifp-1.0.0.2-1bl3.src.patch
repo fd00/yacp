@@ -1,0 +1,106 @@
+--- origsrc/libifp-1.0.0.2/Makefile.am	2004-12-02 13:39:18.000000000 +0900
++++ src/libifp-1.0.0.2/Makefile.am	2024-12-19 23:57:37.022901900 +0900
+@@ -2,7 +2,7 @@
+ # not a GNU package. You can remove this line, if
+ # have all needed files, that a GNU package needs
+ AUTOMAKE_OPTIONS = foreign 1.4
+-INCLUDES = -I$(top_srcdir)/include
++AM_CPPFLAGS = -I$(top_srcdir)/include
+ #SUBDIRS = src examples
+ EXTRA_DIST = src/ifp_os.h  src/prim.h  src/ifp_os_linux.c src/main.c docs/man/man3/ifp.h.3 docs/doxygen.in  dpkg/Makefile.in docs/Makefile.in kbuild/Makefile.in
+ man3_MANS = docs/man/man3/ifp.h.3
+@@ -29,3 +29,5 @@ test: check
+ 
+ .PHONY: docs deb test
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libifp-1.0.0.2/configure.in	2024-12-19 23:45:49.823721300 +0900
++++ src/libifp-1.0.0.2/configure.in	2024-12-19 23:57:04.192462800 +0900
+@@ -1,4 +1,4 @@
+-AC_INIT(configure.in)
++AC_INIT([libifp], [1.0.0.2])
+ 
+ #The automake documentation says this is a no-no, but I don't understand
+ #what the alternative is.
+@@ -6,7 +6,7 @@ AC_INIT(configure.in)
+ #CFLAGS="-g -O2 -Wall -W -Wno-unused-parameter"
+ ##CFLAGS="-g -O2 -Wall -W"
+ 
+-AM_INIT_AUTOMAKE(libifp, 1.0.0.2)
++AM_INIT_AUTOMAKE
+ AC_PROG_CC
+ AC_PROG_INSTALL
+ AC_PROG_LIBTOOL
+@@ -15,6 +15,8 @@ AC_SUBST(LIBTOOL_DEPS)
+ 
+ dnl AC_DEFINE(IFP_AUTOCONF)
+ 
++AM_ICONV
++
+ #-----------------------------------------------------------------------
+ build_userland=no
+ dnl --with-libusb=PATH
+@@ -130,12 +132,9 @@ AC_SUBST(LIBUSB)
+ AC_SUBST(CCFLAGS)
+ AC_SUBST(KERNEL_SOURCE)
+ AC_CONFIG_FILES(Makefile)
+-AC_CONFIG_FILES(docs/Makefile)
+-AC_CONFIG_FILES(dpkg/Makefile)
+-AC_CONFIG_FILES([docs/doxygen.cfg:docs/doxygen.in])
+ AC_CONFIG_FILES(examples/Makefile)
+-AC_CONFIG_FILES(kbuild/Makefile)
+ AC_CONFIG_FILES(src/Makefile)
++AC_CONFIG_FILES([libifp.pc])
+ AC_OUTPUT
+ 
+ echo ""
+--- origsrc/libifp-1.0.0.2/examples/Makefile.am	2004-11-26 06:11:56.000000000 +0900
++++ src/libifp-1.0.0.2/examples/Makefile.am	2024-12-19 23:47:55.462611000 +0900
+@@ -25,6 +25,6 @@ selftest_LDADD = $(top_builddir)/src/lib
+ 
+ # set the include path found by configure
+ 
+-INCLUDES = $(all_includes) -I$(top_srcdir)/include
++AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
+ 
+ 
+--- origsrc/libifp-1.0.0.2/examples/ifpline.c	2024-12-19 23:45:50.026872300 +0900
++++ src/libifp-1.0.0.2/examples/ifpline.c	2024-12-19 23:55:27.873024400 +0900
+@@ -19,6 +19,7 @@ static const char rcsid[] = "$Id: ifplin
+ #include <fts.h>
+ #include <unistd.h>
+ #include <usb.h>
++#include <limits.h>
+ 
+ #include "ifp.h"
+ 
+--- origsrc/libifp-1.0.0.2/libifp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libifp-1.0.0.2/libifp.pc.in	2024-12-19 23:57:04.161211600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libifp
++Description: General-purpose library-driver for iRiver iFP portable audio players
++Version: @VERSION@
++Libs: -L${libdir} -lifp
++Cflags: -I${includedir}
+--- origsrc/libifp-1.0.0.2/src/Makefile.am	2005-02-21 05:28:53.000000000 +0900
++++ src/libifp-1.0.0.2/src/Makefile.am	2024-12-19 23:53:56.474666900 +0900
+@@ -1,11 +1,12 @@
+ lib_LTLIBRARIES = libifp.la
+ libifp_la_SOURCES = prim.c comp.c readwrite.c userfile.c ifp_os_libusb.c error_strings.c tuner.c
+ libifp_la_LDFLAGS = -version-info 5:4:1 -no-undefined $(LIBUSB)
++libifp_la_LIBADD = $(LTLIBICONV)
+ 
+ include_HEADERS = $(top_srcdir)/include/ifp.h
+ 
+ # set the include path found by configure
+ 
+-INCLUDES = $(all_includes) -I$(top_srcdir)/include
++AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include
+ 
+ 
