@@ -1,0 +1,131 @@
+--- origsrc/cineform-sdk-10.1.1/CMakeLists.txt	2022-02-19 03:36:15.000000000 +0900
++++ src/cineform-sdk-10.1.1/CMakeLists.txt	2024-12-21 08:51:48.000344500 +0900
+@@ -44,6 +44,8 @@ file(GLOB PUBLIC_HEADERS "Common/*.h")
+ 
+ # Build CFHDCodec library (static and shared rules)
+ if (BUILD_LIBS)
++	find_package(pkgconfig)
++	pkg_check_modules(UUID REQUIRED uuid)
+ 	if (BUILD_STATIC)
+ 		if (BUILD_SEPARATED)
+ 			add_library(CFHDEncoderStatic STATIC ${CODEC_SOURCES} ${ENCODER_SOURCES})
+@@ -77,9 +79,12 @@ if (BUILD_LIBS)
+ 			add_library(CFHDCodecShared SHARED ${CODEC_SOURCES} ${ENCODER_SOURCES} ${DECODER_SOURCES})
+ 			target_compile_options(CFHDCodecShared PUBLIC ${COMPILER_FLAGS})
+ 			target_compile_definitions(CFHDCodecShared PUBLIC -DDYNAMICLIB=1 -DCODECCOMBINED=1)
+-			target_link_libraries(CFHDCodecShared)
++			target_link_libraries(CFHDCodecShared ${UUID_LIBRARIES})
+ 			set_target_properties(CFHDCodecShared PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ 			set_target_properties(CFHDCodecShared PROPERTIES OUTPUT_NAME CFHDCodec)
++			if (DEFINED SOVERSION)
++				set_target_properties(CFHDCodecShared PROPERTIES SOVERSION ${SOVERSION})
++			endif()
+ 		endif (BUILD_SEPARATED)
+ 	endif (BUILD_STATIC)
+ endif (BUILD_LIBS)
+@@ -114,7 +119,7 @@ endif (BUILD_TOOLS)
+ 
+ 
+ # pkg-config integration
+-set(PROJECT_VERSION "10.0.2")
++set(PROJECT_VERSION "10.1.1")
+ set(LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)")
+ set(EXEC_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation prefix for executables and object code libraries" FORCE)
+ set(BIN_INSTALL_DIR ${EXEC_INSTALL_PREFIX}/bin CACHE PATH "Installation prefix for user executables" FORCE)
+@@ -136,10 +141,11 @@ else (BUILD_STATIC)
+ 	endif (BUILD_SEPARATED)
+ endif (BUILD_STATIC)
+ foreach(TARGET_NAME ${TARGET_NAMES})
+-    set(LIB_INSTALL_NAMES ${LIB_INSTALL_NAMES} -l${TARGET_NAME})
++	get_target_property(LIBNAME ${TARGET_NAME} OUTPUT_NAME)
++    set(LIB_INSTALL_NAMES ${LIB_INSTALL_NAMES} -l${LIBNAME})
+ endforeach()
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcineformsdk.pc.cmake ${CMAKE_CURRENT_BINARY_DIR}/libcineformsdk.pc)
+ 
+-install(TARGETS ${TARGET_NAMES} DESTINATION lib/)
++install(TARGETS ${TARGET_NAMES} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib/)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcineformsdk.pc DESTINATION lib/pkgconfig)
+ install(FILES ${PUBLIC_HEADERS} DESTINATION ${INCLUDE_INSTALL_DIR})
+--- origsrc/cineform-sdk-10.1.1/Example/TestCFHD.cpp	2022-02-19 03:36:15.000000000 +0900
++++ src/cineform-sdk-10.1.1/Example/TestCFHD.cpp	2024-12-20 15:19:40.419361000 +0900
+@@ -23,7 +23,7 @@
+ #include <stdlib.h>
+ #include <memory.h>
+ #include <emmintrin.h>		// SSE2 intrinsics, _mm_malloc
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ #include <sys/time.h>
+ #else
+ #include <time.h>
+@@ -173,7 +173,7 @@ CFHD_PixelFormat TestDecodeOnlyPixelForm
+ 
+ double gettime(void)
+ {
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 	timeval ts;
+ 	gettimeofday(&ts, NULL);
+ 	return (double)ts.tv_sec + (double)ts.tv_usec / 1000000.0;
+@@ -303,7 +303,7 @@ CFHD_Error DecodeFrame(void **frameDecBu
+ 			videoselect, stereo3Dtype, &actualOutputBufSize);
+ 		if (error) return error;
+ 
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 		if (allocSize < actualOutputBufSize && *frameDecBuffer) free(*frameDecBuffer);
+ 		if (allocSize < actualOutputBufSize || *frameDecBuffer == NULL)
+ 		{
+@@ -550,7 +550,7 @@ CFHD_Error DecodeMOVIE(char *filename, c
+ 
+ cleanup:
+ 	if (payload) FreePayload(payload); payload = NULL;
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 	if (frameDecBuffer) free(frameDecBuffer); frameDecBuffer = NULL;
+ #else
+ 	if (frameDecBuffer) _mm_free(frameDecBuffer); frameDecBuffer = NULL;
+@@ -765,7 +765,7 @@ CFHD_Error FuzzMOVIE(char* filename, cha
+ 
+ cleanup:
+ 	if (payload) FreePayload(payload); payload = NULL;
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 	if (frameDecBuffer) free(frameDecBuffer); frameDecBuffer = NULL;
+ #else
+ 	if (frameDecBuffer) _mm_free(frameDecBuffer); frameDecBuffer = NULL;
+@@ -868,7 +868,7 @@ CFHD_Error EncodeSpeedTest()
+ 
+ 				if (frameBuffer == NULL)
+ 				{
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 					frameBuffer = malloc(frameWidth * frameHeight * 4 * 2);
+ #else
+ 					frameBuffer = _mm_malloc(frameWidth * frameHeight * 4 * 2, 16); //Enough sapce for a 64-bit RGBA pixel
+@@ -1034,7 +1034,7 @@ CFHD_Error EncodeSpeedTest()
+ cleanup:
+ 	if (error)
+ 	{
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 		if (frameBuffer) free(frameBuffer), frameBuffer = NULL;
+ #else
+ 		if (frameBuffer) _mm_free(frameBuffer), frameBuffer = NULL;
+@@ -1172,7 +1172,7 @@ CFHD_Error EncodeDecodeQualityTest()
+ 
+ 				if (frameBuffer == NULL)
+ 				{
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 					frameBuffer = malloc(frameWidth * frameHeight * 4 * 2);
+ #else
+ 					frameBuffer = _mm_malloc(frameWidth * frameHeight * 4 * 2, 16); //Enough sapce for a 64-bit RGBA pixel
+@@ -1312,7 +1312,7 @@ cleanup:
+ 	if (error)
+ 	{
+ 
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(__CYGWIN__)
+ 		if (frameBuffer) free(frameBuffer), frameBuffer = NULL;
+ 		if (frameDecBuffer) free(frameDecBuffer), frameDecBuffer = NULL;
+ #else
