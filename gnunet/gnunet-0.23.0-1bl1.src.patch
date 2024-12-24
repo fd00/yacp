@@ -1,0 +1,69 @@
+--- origsrc/gnunet-0.23.0/configure.ac	2024-11-14 21:27:08.000000000 +0900
++++ src/gnunet-0.23.0/configure.ac	2024-12-24 10:21:19.041832600 +0900
+@@ -1054,7 +1054,12 @@ AC_TYPE_UID_T
+ # check for library functions
+ AC_FUNC_FORK
+ AC_FUNC_CHOWN
+-AC_CHECK_FUNCS([atoll stat64 strnlen mremap getrlimit setrlimit sysconf initgroups strndup gethostbyname2 getpeerucred getpeereid setresuid getifaddrs freeifaddrs getresgid mallinfo2 malloc_size malloc_usable_size getrusage random srandom stat statfs statvfs wait4 timegm pipe2 renameat2])
++AC_CHECK_FUNCS([atoll stat64 strnlen mremap getrlimit setrlimit sysconf initgroups strndup gethostbyname2 getpeerucred getpeereid setresuid getifaddrs freeifaddrs getresgid mallinfo2 malloc_size malloc_usable_size getrusage random srandom stat statfs statvfs wait4 timegm pipe2])
++
++# In cygwin, renameat2 is implemented but RENAME_EXCHANGE is not defined
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_FUNCS([renameat2])
++fi
+ 
+ GN_INTLINCL=""
+ GN_LIBINTL="$LTLIBINTL"
+--- origsrc/gnunet-0.23.0/pkgconfig/gnunetnat.pc.in	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.23.0/pkgconfig/gnunetnat.pc.in	2024-12-24 11:42:38.429312200 +0900
+@@ -8,5 +8,5 @@ Description: library for NAT traversal
+ URL: https://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunetnat
++Libs: -L${libdir} -lgnunetnatauto -lgnunetnatnew
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.23.0/pkgconfig/gnunettransport.pc.in	2022-05-24 23:46:51.000000000 +0900
++++ src/gnunet-0.23.0/pkgconfig/gnunettransport.pc.in	2024-12-24 11:43:48.333208300 +0900
+@@ -8,5 +8,5 @@ Description: Library to access the low-l
+ URL: http://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunettransport
++Libs: -L${libdir} -lgnunettransportapplication -lgnunettransportcore -lgnunettransportcommunicator -lgnunettransportmonitor
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.23.0/src/cli/reclaim/Makefile.am	2024-03-02 22:26:36.000000000 +0900
++++ src/gnunet-0.23.0/src/cli/reclaim/Makefile.am	2024-12-24 11:13:59.366928900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_srcdir)/src/service/reclaim
+ 
+  plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.23.0/src/service/arm/Makefile.am	2024-09-30 20:44:37.000000000 +0900
++++ src/gnunet-0.23.0/src/service/arm/Makefile.am	2024-12-24 10:53:42.807168100 +0900
+@@ -113,3 +113,4 @@ libgnunet_test_arm_plugin_probnat_la_LIB
+   libgnunetarm.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la \
+   $(LTLIBINTL)
++libgnunet_test_arm_plugin_probnat_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+--- origsrc/gnunet-0.23.0/src/service/testbed/Makefile.am	2024-09-30 20:44:37.000000000 +0900
++++ src/gnunet-0.23.0/src/service/testbed/Makefile.am	2024-12-24 10:48:30.728839100 +0900
+@@ -18,6 +18,7 @@ libgnunettestbed_la_SOURCES = \
+   testbed.c
+ libgnunettestbed_la_LIBADD = \
+  $(top_builddir)/src/lib/util/libgnunetutil.la
++libgnunettestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ libgnunettestingtestbed_la_SOURCES = \
+   testbed_api_cmd_system_create.c \
+@@ -26,7 +27,7 @@ libgnunettestingtestbed_la_LIBADD = \
+   libgnunettestbed.la \
+   $(top_builddir)/src/lib/testing/libgnunettesting.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la
+-
++libgnunettestingtestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ bin_PROGRAMS = \
+  gnunet-testbed
