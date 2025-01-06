@@ -1,0 +1,94 @@
+--- origsrc/libmdbx-0.13.2/CMakeLists.txt	2024-12-12 04:25:18.000000000 +0900
++++ src/libmdbx-0.13.2/CMakeLists.txt	2025-01-06 20:20:33.292763000 +0900
+@@ -1042,6 +1042,9 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+   add_library(mdbx SHARED ${LIBMDBX_SOURCES})
+   set_target_properties(mdbx PROPERTIES PUBLIC_HEADER
+                                         "${LIBMDBX_PUBLIC_HEADERS}")
++  if (CYGWIN)
++    set_target_properties(mdbx PROPERTIES SOVERSION "${MDBX_VERSION_MAJOR}")
++  endif()
+   target_compile_definitions(
+     mdbx
+     PRIVATE LIBMDBX_EXPORTS MDBX_BUILD_SHARED_LIBRARY=1
+@@ -1139,7 +1142,7 @@ endif()
+ 
+ # mdbx-shared-lib installation
+ if(NOT DEFINED MDBX_DLL_INSTALL_DESTINATION)
+-  if(WIN32)
++  if(WIN32 OR CYGWIN)
+     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_BINDIR})
+   else()
+     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
+@@ -1150,6 +1153,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+     install(
+       TARGETS mdbx
+       EXPORT libmdbx
++      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
+       LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel
+@@ -1160,6 +1164,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+     install(
+       TARGETS mdbx
+       EXPORT libmdbx
++      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
+       LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION}
+               COMPONENT runtime
+               NAMELINK_COMPONENT devel
+@@ -1388,3 +1393,10 @@ if(NOT SUBPROJECT)
+ endif()
+ 
+ cmake_policy(POP)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libmdbx.pc.in ${CMAKE_BINARY_DIR}/libmdbx.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libmdbx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libmdbx-0.13.2/libmdbx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmdbx-0.13.2/libmdbx.pc.in	2025-01-06 20:25:02.736817900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmdbx
++Description: One of the fastest embeddable key-value ACID database
++Version: @MDBX_VERSION@
++Libs: -L${libdir} -lmdbx
++Cflags: -I${includedir}
+--- origsrc/libmdbx-0.13.2/mdbx.c	2024-12-12 04:25:18.000000000 +0900
++++ src/libmdbx-0.13.2/mdbx.c	2025-01-06 17:34:51.566486000 +0900
+@@ -191,6 +191,10 @@
+ #include <string.h>
+ #include <time.h>
+ 
++#if defined(__CYGWIN__)
++#include <sys/vfs.h>
++#endif
++
+ /*----------------------------------------------------------------------------*/
+ /* feature testing */
+ 
+@@ -1185,7 +1189,7 @@ typedef struct osal_mmap {
+ } osal_mmap_t;
+ 
+ #ifndef MDBX_HAVE_PWRITEV
+-#if defined(_WIN32) || defined(_WIN64)
++#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+ 
+ #define MDBX_HAVE_PWRITEV 0
+ 
+@@ -26413,6 +26417,10 @@ __extern_C void __assert(const char *fun
+     ;
+ #define __assert_fail(assertion, file, line, function) __assert(function, file, line, assertion)
+ 
++#elif defined(__CYGWIN__)
++#define __assert_fail(assertion, file, line, function)                         \
++  __assert_func(file, line, function, assertion)
++
+ #endif /* __assert_fail */
+ 
+ __cold void mdbx_assert_fail(const MDBX_env *env, const char *msg, const char *func, unsigned line) {
