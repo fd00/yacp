@@ -1,0 +1,48 @@
+--- origsrc/rogg/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/rogg/CMakeLists.txt	2025-01-10 16:13:36.773140100 +0900
+@@ -0,0 +1,32 @@
++cmake_minimum_required(VERSION 3.28)
++project(rogg
++  VERSION 0.4
++  DESCRIPTION "Small library for manipulating Ogg streams in memory"
++  HOMEPAGE_URL "https://gitlab.xiph.org/xiph/rogg")
++
++include(GNUInstallDirs)
++
++add_library(rogg SHARED rogg.c)
++set_target_properties(rogg PROPERTIES SOVERSION 0)
++install(TARGETS rogg
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++file(GLOB_RECURSE BIN_SOURCES "rogg_*.c")
++foreach(BIN_SOURCE ${BIN_SOURCES})
++  cmake_path(GET BIN_SOURCE FILENAME BIN_SOURCE_BASENAME)
++  string(REPLACE ".c" "" BIN_NAME ${BIN_SOURCE_BASENAME})
++  add_executable(${BIN_NAME} ${BIN_SOURCE})
++  target_include_directories(${BIN_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
++  target_link_libraries(${BIN_NAME} rogg)
++  install(TARGETS ${BIN_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++endforeach()
++
++install(FILES rogg.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/rogg.pc.in ${CMAKE_BINARY_DIR}/rogg.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/rogg.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/rogg/rogg.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/rogg/rogg.pc.in	2025-01-10 16:13:45.827080900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: rogg
++Description: Small library for manipulating Ogg streams in memory
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lrogg
++Cflags: -I${includedir}
