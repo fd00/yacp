@@ -1,0 +1,91 @@
+--- origsrc/jsonnet-0.20.0/CMakeLists.txt	2023-04-18 04:02:16.000000000 +0900
++++ src/jsonnet-0.20.0/CMakeLists.txt	2025-01-12 06:53:08.330972600 +0900
+@@ -118,6 +118,11 @@ if (BUILD_TESTS)
+     file(TO_NATIVE_PATH ${GLOBAL_OUTPUT_PATH}/jsonnet JSONNET_BIN)
+ endif()
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++
+ add_subdirectory(include)
+ add_subdirectory(stdlib)
+ add_subdirectory(third_party/md5)
+@@ -136,5 +141,3 @@ if (BUILD_TESTS)
+     )
+ 
+ endif()
+-
+-
+--- origsrc/jsonnet-0.20.0/core/CMakeLists.txt	2023-04-18 04:02:16.000000000 +0900
++++ src/jsonnet-0.20.0/core/CMakeLists.txt	2025-01-12 06:54:59.696716200 +0900
+@@ -45,7 +45,7 @@ set_target_properties(libjsonnet PROPERT
+ 	SOVERSION   "0"
+ 	PUBLIC_HEADER "${LIB_HEADER}")
+ install(TARGETS libjsonnet
+-	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+ 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ 	PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+ target_include_directories(libjsonnet INTERFACE
+@@ -106,3 +106,6 @@ if (BUILD_TESTS)
+     add_test(jsonnet_test_snippet
+         ${GLOBAL_OUTPUT_PATH}/jsonnet -e ${TEST_SNIPPET})
+ endif()
++
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/jsonnet.pc.in ${CMAKE_BINARY_DIR}/jsonnet.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/jsonnet.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/jsonnet-0.20.0/core/jsonnet.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/jsonnet-0.20.0/core/jsonnet.pc.in	2025-01-12 06:53:00.858784000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: jsonnet
++Description: Data templating language
++Version: @VERSION@
++Libs: -L${libdir} -ljsonnet
++Cflags: -I${includedir}
+--- origsrc/jsonnet-0.20.0/cpp/CMakeLists.txt	2023-04-18 04:02:16.000000000 +0900
++++ src/jsonnet-0.20.0/cpp/CMakeLists.txt	2025-01-12 06:54:53.030375400 +0900
+@@ -10,7 +10,7 @@ set(LIBJSONNETPP_SOURCE
+ 
+ add_library(libjsonnet++ SHARED ${LIBJSONNETPP_HEADERS} ${LIBJSONNETPP_SOURCE})
+ add_dependencies(libjsonnet++ jsonnet)
+-# target_link_libraries(libjsonnet libjsonnet)
++target_link_libraries(libjsonnet++ libjsonnet)
+ 
+ # CMake prepends CMAKE_SHARED_LIBRARY_PREFIX to shared libraries, so without
+ # this step the output would be |liblibjsonnet|.
+@@ -19,7 +19,7 @@ set_target_properties(libjsonnet++ PROPE
+ 	SOVERSION   "0"
+ 	PUBLIC_HEADER "${LIB_HEADER}")
+ install(TARGETS libjsonnet++
+-	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+ 	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+ 	PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+ target_include_directories(libjsonnet++ INTERFACE
+@@ -61,3 +61,6 @@ if (BUILD_TESTS)
+     # Run this in the source tree because it needs to access testdata files.
+     add_test(NAME libjsonnet++_test COMMAND ${GLOBAL_OUTPUT_PATH}/libjsonnet++_test WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/..")
+ endif()
++
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/jsonnet++.pc.in ${CMAKE_BINARY_DIR}/jsonnet++.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/jsonnet++.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/jsonnet-0.20.0/cpp/jsonnet++.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/jsonnet-0.20.0/cpp/jsonnet++.pc.in	2025-01-12 06:54:06.035569100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: jsonnet++
++Description: Data templating language (c++)
++Version: @VERSION@
++Libs: -L${libdir} -ljsonnet++
++Cflags: -I${includedir}

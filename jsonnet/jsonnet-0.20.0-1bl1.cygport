@@ -1,0 +1,73 @@
+HOMEPAGE="https://github.com/google/${PN}"
+SRC_URI="https://github.com/google/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Data templating language"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libgtest-devel nlohmann_json"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -I/usr/include/nlohmann"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+	-DBUILD_SHARED_BINARIES:BOOL=ON
+	-DUSE_SYSTEM_GTEST:BOOL=ON
+	-DUSE_SYSTEM_JSON:BOOL=ON
+	-DVERSION:STRING=${PV}
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -fr usr/include/c4
+	rm -fr usr/lib/cmake/c4core
+	rm -fr usr/lib/libc4core.a
+}
+
+DIFF_EXCLUDES="
+	std.jsonnet.h
+"
+
+PKG_NAMES="
+	jsonnet
+	libjsonnet0
+	libjsonnet-devel
+	libjsonnet++0
+	libjsonnet++-devel
+"
+jsonnet_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libjsonnet0_CONTENTS="
+	usr/bin/cygjsonnet-0.dll
+"
+libjsonnet_devel_CONTENTS="
+	usr/include/libjsonnet.h
+	usr/include/libjsonnet_fmt.h
+	usr/lib/libjsonnet.dll.a
+	usr/lib/pkgconfig/jsonnet.pc
+"
+libjsonnet__0_CONTENTS="
+	usr/bin/cygjsonnet++-0.dll
+"
+libjsonnet___devel_CONTENTS="
+	usr/include/libjsonnet++.h
+	usr/lib/libjsonnet++.dll.a
+	usr/lib/pkgconfig/jsonnet++.pc
+"
+jsonnet_SUMMARY="${SUMMARY} (utilities)"
+libjsonnet0_SUMMARY="${SUMMARY} (runtime)"
+libjsonnet_devel_SUMMARY="${SUMMARY} (development)"
+libjsonnet__0_SUMMARY="${SUMMARY} (runtime / c++)"
+libjsonnet___devel_SUMMARY="${SUMMARY} (development / c++)"
