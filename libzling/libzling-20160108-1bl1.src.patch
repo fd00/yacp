@@ -1,0 +1,66 @@
+--- origsrc/libzling-20160108/build/CMakeLists.txt	2015-12-25 23:28:51.000000000 +0900
++++ src/libzling-20160108/build/CMakeLists.txt	2025-01-12 10:04:08.069751800 +0900
+@@ -3,25 +3,40 @@ project(libzling)
+ cmake_minimum_required(VERSION 2.8)
+ 
+ # source path
+-aux_source_directory("../src" DIR_SRC)
+-aux_source_directory("../demo" DIR_DEMO)
++aux_source_directory("${CMAKE_SOURCE_DIR}/../src" DIR_SRC)
++aux_source_directory("${CMAKE_SOURCE_DIR}/../demo" DIR_DEMO)
+ 
+ file(COPY "../src/libzling.h"       DESTINATION "./include/libzling")
+ file(COPY "../src/libzling_utils.h" DESTINATION "./include/libzling")
+ file(COPY "../src/libzling_inc.h"   DESTINATION "./include/libzling")
+-file(COPY "../src/msinttypes"       DESTINATION "./include/libzling")
++if (MSVC)
++    file(COPY "../src/msinttypes"       DESTINATION "./include/libzling")
++endif()
+ 
+-include_directories("./include")
++include_directories(${CMAKE_BINARY_DIR}/include)
+ 
+ add_library(zling SHARED  ${DIR_SRC})
+ add_executable(zling_demo ${DIR_DEMO})
+ 
+ target_link_libraries(zling_demo zling)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(zling PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # install
+-install(FILES     "../src/libzling.h"       DESTINATION "./include/libzling")
+-install(FILES     "../src/libzling_utils.h" DESTINATION "./include/libzling")
+-install(FILES     "../src/libzling_inc.h"   DESTINATION "./include/libzling")
+-install(DIRECTORY "../src/msinttypes"       DESTINATION "./include/libzling")
+-install(TARGETS zling                       DESTINATION "./lib")
+-install(TARGETS zling_demo                  DESTINATION "./bin")
++install(FILES     "../src/libzling.h"       DESTINATION include/libzling)
++install(FILES     "../src/libzling_utils.h" DESTINATION include/libzling)
++install(FILES     "../src/libzling_inc.h"   DESTINATION include/libzling)
++if (MSVC)
++    install(DIRECTORY "../src/msinttypes"       DESTINATION include/libzling)
++endif()
++install(TARGETS zling                       RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(TARGETS zling_demo                  DESTINATION bin)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libzling.pc.in ${CMAKE_BINARY_DIR}/libzling.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libzling.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libzling-20160108/build/libzling.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libzling-20160108/build/libzling.pc.in	2025-01-12 10:02:29.444040600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libzling
++Description: Fast and niubility compression library
++Version: @VERSION@
++Libs: -L${libdir} -lzling
++Cflags: -I${includedir}
