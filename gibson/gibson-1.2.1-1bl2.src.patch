@@ -1,0 +1,51 @@
+--- origsrc/gibson-1.2.1/CMakeLists.txt	2015-05-17 23:24:26.000000000 +0900
++++ src/gibson-1.2.1/CMakeLists.txt	2025-01-15 13:26:52.191709400 +0900
+@@ -5,6 +5,7 @@ project(gibson)
+ OPTION( WITH_DEBUG "enable debug module" OFF )
+ 
+ # cmake needed modules
++include_directories("${PROJECT_BINARY_DIR}/src")
+ include_directories("${PROJECT_SOURCE_DIR}/src")
+ include(CheckIncludeFiles)
+ include(CheckLibraryExists)
+@@ -93,6 +94,9 @@ endif ( HAVE_JEMALLOC EQUAL 1 )
+ 
+ install( TARGETS ${PROJECT} DESTINATION ${PREFIX}/bin )
+ install( FILES debian/etc/${PROJECT}/${PROJECT}.conf DESTINATION /etc/${PROJECT}/ )
++if ( CYGWIN )
++	install( FILES debian/etc/init.d/${PROJECT} DESTINATION /etc/rc.d/init.d/)
++else ()
+ install( FILES debian/etc/init.d/${PROJECT} DESTINATION /etc/init.d/
+ 		 PERMISSIONS
+ 		 OWNER_READ
+@@ -103,6 +107,7 @@ install( FILES debian/etc/init.d/${PROJE
+ 		 WORLD_READ
+ 		 WORLD_EXECUTE
+ )
++endif()
+ 
+ ## tests
+ 
+--- origsrc/gibson-1.2.1/src/config.h	2015-05-17 23:24:26.000000000 +0900
++++ src/gibson-1.2.1/src/config.h	2025-01-15 13:30:40.296798600 +0900
+@@ -31,6 +31,7 @@
+ 
+ #include "trie.h"
+ #include <getopt.h>
++#include <time.h>
+ 
+ void 		  gbConfigLoad( trie_t *config, char *filename );
+ void          gbConfigMerge( trie_t *config, char *skip, struct option *options, int argc, char **argv );
+--- origsrc/gibson-1.2.1/src/gibson.c	2015-05-17 23:24:26.000000000 +0900
++++ src/gibson-1.2.1/src/gibson.c	2025-01-15 13:33:13.010077000 +0900
+@@ -119,8 +119,8 @@ void gbHelpMenu( char **argv, int exitco
+ 
+     printf("\n");
+ 
+-    printf( "To report issues : <http://github.com/evilsocket/gibson/issues>\n" );
+-    printf( "Documentation    : <http://gibson-db.in>\n" );
++    printf( "To report issues : <https://github.com/evilsocket/gibson/issues>\n" );
++    printf( "Documentation    : <https://github.com/evilsocket/gibson>\n" );
+ 
+ 	exit(exitcode);
+ }
