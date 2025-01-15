@@ -1,0 +1,94 @@
+--- origsrc/cppdb-0.3.1/CMakeLists.txt	2012-06-23 18:06:14.000000000 +0900
++++ src/cppdb-0.3.1/CMakeLists.txt	2025-01-16 00:23:53.961267400 +0900
+@@ -147,7 +147,6 @@ if(NOT DISABLE_ODBC)
+ 		else()
+ 			add_library(cppdb_odbc SHARED drivers/odbc_backend.cpp)
+ 			target_link_libraries(cppdb_odbc ${ODBC_LIB})
+-			add_library(cppdb_odbc-static STATIC drivers/odbc_backend.cpp)
+ 			set(BACKEND_LIBRARIES ${BACKEND_LIBRARIES} cppdb_odbc)
+ 		endif()
+ 	else()
+@@ -167,7 +166,6 @@ if(NOT DISABLE_SQLITE)
+ 		else()
+ 			add_library(cppdb_sqlite3 SHARED drivers/sqlite3_backend.cpp)
+ 			target_link_libraries(cppdb_sqlite3 ${SQLITE3_LIB})
+-			add_library(cppdb_sqlite3-static STATIC drivers/sqlite3_backend.cpp)
+ 			set(BACKEND_LIBRARIES ${BACKEND_LIBRARIES} cppdb_sqlite3)
+ 		endif()
+ 	else()
+@@ -186,7 +184,6 @@ if(NOT DISABLE_PQ)
+ 			add_definitions(-DCPPDB_WITH_PQ)
+ 		else()
+ 			add_library(cppdb_postgresql SHARED drivers/postgres_backend.cpp)
+-			add_library(cppdb_postgresql-static STATIC drivers/postgres_backend.cpp)
+ 			target_link_libraries(cppdb_postgresql ${PQ_LIB})
+ 			set(BACKEND_LIBRARIES ${BACKEND_LIBRARIES} cppdb_postgresql)
+ 		endif()
+@@ -206,7 +203,6 @@ if(NOT DISABLE_MYSQL)
+ 			add_definitions(-DCPPDB_WITH_MYSQL)
+ 		else()
+ 			add_library(cppdb_mysql SHARED drivers/mysql_backend.cpp)
+-			add_library(cppdb_mysql-static STATIC drivers/mysql_backend.cpp)
+ 			target_link_libraries(cppdb_mysql ${MYSQL_LIB})
+ 			set(BACKEND_LIBRARIES ${BACKEND_LIBRARIES} cppdb_mysql)
+ 		endif()
+@@ -232,7 +228,6 @@ set(CPPDB_SRC
+ 	)
+ 
+ add_library(cppdb SHARED ${CPPDB_SRC})
+-add_library(cppdb-static STATIC ${CPPDB_SRC})
+ set_target_properties(cppdb PROPERTIES COMPILE_DEFINITIONS CPPDB_EXPORTS)
+ 
+ if(NOT WIN32)
+@@ -250,7 +245,7 @@ set(INST_LIBS)
+ 
+ foreach(LIB ${BACKEND_LIBRARIES} cppdb)
+ 	
+-	set(INST_LIBS ${INST_LIBS} ${LIB} ${LIB}-static)
++	set(INST_LIBS ${INST_LIBS} ${LIB})
+ 
+ 	if(WIN32)
+ 		set_target_properties(${LIB} PROPERTIES VERSION ${CPPDB_SOVERSION} SOVERSION ${CPPDB_SOVERSION})
+@@ -261,9 +256,6 @@ foreach(LIB ${BACKEND_LIBRARIES} cppdb)
+     
+ 	set_target_properties(${LIB} PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ 	set_target_properties(${LIB} PROPERTIES OUTPUT_NAME "${LIB}")
+-	set_target_properties(${LIB}-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+-	set_target_properties(${LIB}-static PROPERTIES OUTPUT_NAME "${LIB}")
+-	set_target_properties(${LIB}-static PROPERTIES PREFIX "lib") # Make sure import and normal library do not collide
+ 
+  endforeach()
+ 
+--- origsrc/cppdb-0.3.1/drivers/odbc_backend.cpp	2012-04-01 16:36:50.000000000 +0900
++++ src/cppdb-0.3.1/drivers/odbc_backend.cpp	2025-01-16 00:24:44.469395400 +0900
+@@ -30,7 +30,7 @@
+ #include <iomanip>
+ #include <string.h>
+ 
+-#if defined(_WIN32) || defined(__WIN32) || defined(WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32) || defined(__WIN32) || defined(WIN32)
+ #include <windows.h>
+ #endif
+ #include <sqlext.h>
+--- origsrc/cppdb-0.3.1/src/atomic_counter.cpp	2011-01-08 06:09:13.000000000 +0900
++++ src/cppdb-0.3.1/src/atomic_counter.cpp	2025-01-16 00:25:04.595283000 +0900
+@@ -19,7 +19,7 @@
+ #include <cppdb/atomic_counter.h>
+ #include <string.h>
+ 
+-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) || defined(__CYGWIN__)
++#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+ 
+ #   include <windows.h>
+ #   define cppdb_atomic_set(p,v) ((p)->l=v)
+--- origsrc/cppdb-0.3.1/test/test_perf.cpp	2011-06-06 20:31:25.000000000 +0900
++++ src/cppdb-0.3.1/test/test_perf.cpp	2025-01-16 00:25:16.382066200 +0900
+@@ -19,7 +19,7 @@
+ #include <iostream>
+ #include <stdlib.h>
+ 
+-#if defined WIN32  || defined _WIN32 || defined __WIN32 || defined(__CYGWIN__)
++#if defined WIN32  || defined _WIN32 || defined __WIN32
+ 
+ #ifndef NOMINMAX
+ #define NOMINMAX
