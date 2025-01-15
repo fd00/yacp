@@ -1,0 +1,97 @@
+--- origsrc/libchaos-1.0/CMakeLists.txt	2016-12-29 10:26:13.000000000 +0900
++++ src/libchaos-1.0/CMakeLists.txt	2025-01-15 17:00:26.773682500 +0900
+@@ -9,8 +9,7 @@ IF(POLICY CMP0050)
+ 	CMAKE_POLICY(SET CMP0050 OLD)
+ ENDIF()
+ 
+-# Setting C++11 standard as default.
+-SET(CMAKE_CXX_STANDARD 11)
++# Setting C++ standard as default.
+ SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+ SET(CMAKE_DISABLE_SOURCE_CHANGES ON)
+ SET(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+@@ -27,7 +26,7 @@ PROJECT(libchaos C CXX ASM)
+ 
+ # Package information.
+ SET(PACKAGE_NAME      "libchaos")
+-SET(PACKAGE_VERSION   "1.0-dev")
++SET(PACKAGE_VERSION   "1.0")
+ SET(PACKAGE_STRING    "${PACKAGE_NAME} ${PACKAGE_VERSION}")
+ SET(PACKAGE_TARNAME   "${PACKAGE_NAME}-${PACKAGE_VERSION}")
+ SET(PACKAGE_BUGREPORT "https://github.com/maciejczyzewski/libchaos/issues")
+@@ -73,7 +72,6 @@ ADD_CUSTOM_TARGET(dist COMMAND ${CMAKE_M
+ # == FLAGS =====================================================================
+ 
+ ADD_COMPILE_OPTIONS(
+-	-std=c++11
+ 	-Wall -Wextra
+ 	-Wstrict-aliasing
+ 	-Wunreachable-code
+@@ -158,6 +156,10 @@ TARGET_COMPILE_FEATURES(chaos
+ 	PUBLIC cxx_auto_type
+ 	PRIVATE cxx_variadic_templates)
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(chaos PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ # Installation 'make install' to the correct location.
+ INSTALL(TARGETS chaos
+ 	ARCHIVE DESTINATION lib
+@@ -192,9 +194,12 @@ IF(LIBCHAOS_ENABLE_TESTING) ############
+ 	SET(GMOCK_BUILD_TESTS OFF CACHE BOOL
+ 		"Enable testing of the testing library.")
+ 
+-	# External package for testing.
+-	ADD_SUBDIRECTORY(deps/googletest EXCLUDE_FROM_ALL)
+-	INCLUDE_DIRECTORIES(${GTEST_SOURCE_DIR}/include ${GTEST_SOURCE_DIR})
++	find_package(gtest)
++	if (NOT GTEST_FOUND)
++		# External package for testing.
++		ADD_SUBDIRECTORY(deps/googletest EXCLUDE_FROM_ALL)
++		INCLUDE_DIRECTORIES(${GTEST_SOURCE_DIR}/include ${GTEST_SOURCE_DIR})
++	endif()
+ 
+ 	# All files containing tests should be listed here.
+ 	FILE(GLOB FILES tests/t_*.cc)
+@@ -215,9 +220,13 @@ IF(LIBCHAOS_ENABLE_TESTING) ############
+ 	SET(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL
+ 		"Enable testing of the benchmarking library.")
+ 
+-	# External package for benchmarking.
+-	ADD_SUBDIRECTORY(deps/benchmark EXCLUDE_FROM_ALL)
+-	INCLUDE_DIRECTORIES(${BENCH_SOURCE_DIR}/include ${BENCH_SOURCE_DIR})
++	find_package(pkgconfig)
++	pkg_check_modules(BENCHMARK benchmark)
++	if (NOT BENCHMARK_FOUND)
++		# External package for benchmarking.
++		ADD_SUBDIRECTORY(deps/benchmark EXCLUDE_FROM_ALL)
++		INCLUDE_DIRECTORIES(${BENCH_SOURCE_DIR}/include ${BENCH_SOURCE_DIR})
++	endif()
+ 
+ 	# All files containing tests should be listed here.
+ 	FILE(GLOB FILES tests/b_*.cc)
+@@ -231,3 +240,10 @@ IF(LIBCHAOS_ENABLE_TESTING) ############
+ 	ADD_TEST(bchaos bchaos)
+ 
+ ENDIF() ############################################################# TESTING ##
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libchaos.pc.in ${CMAKE_BINARY_DIR}/libchaos.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libchaos.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libchaos-1.0/libchaos.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libchaos-1.0/libchaos.pc.in	2025-01-15 17:01:19.263618500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libchaos
++Description: Advanced library for randomization, hashing and statistical analysis
++Version: @PACKAGE_VERSION@
++Libs: -L${libdir} -lchaos
++Cflags: -I${includedir}
