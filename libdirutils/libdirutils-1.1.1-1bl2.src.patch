@@ -1,0 +1,76 @@
+--- origsrc/libdirutils-1.1.1/Makefile.am	2015-09-09 15:36:48.000000000 +0900
++++ src/libdirutils-1.1.1/Makefile.am	2025-01-15 18:05:35.856788600 +0900
+@@ -8,3 +8,6 @@ dist_noinst_DATA = LICENSE
+                    autobuild.sh
+ 
+ test: check
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdirutils-1.1.1/configure.ac	2015-09-09 15:36:48.000000000 +0900
++++ src/libdirutils-1.1.1/configure.ac	2025-01-15 18:05:35.856788600 +0900
+@@ -3,12 +3,12 @@ AC_INIT([dirutils], [1.1.1], [kyle@tyrfi
+         [libdirutils], [https://github.com/kisom/dirutils])
+ AM_INIT_AUTOMAKE([1.11 foreign no-define subdir-objects])
+ AC_CONFIG_SRCDIR([src/dirutils.h])
+-AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile docs/Makefile])
++AC_CONFIG_FILES([libdirutils.pc Makefile src/Makefile tests/Makefile docs/Makefile])
+ AC_CHECK_HEADERS
+ 
+ AC_PROG_CC
+ AC_PROG_INSTALL
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ NO_CUNIT_MSG="
+     ==============================================
+--- origsrc/libdirutils-1.1.1/libdirutils.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdirutils-1.1.1/libdirutils.pc.in	2025-01-15 18:05:35.856788600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdirutils
++Description: Some useful directory-oriented functions in C
++Version: @VERSION@
++Libs: -L${libdir} -ldirutils
++Cflags: -I${includedir}
+--- origsrc/libdirutils-1.1.1/src/Makefile.am	2015-09-09 15:36:48.000000000 +0900
++++ src/libdirutils-1.1.1/src/Makefile.am	2025-01-15 18:05:35.856788600 +0900
+@@ -1,12 +1,11 @@
+ CFLAGS := -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align
+ CFLAGS += -Wwrite-strings -Wmissing-prototypes -Wmissing-declarations
+ CFLAGS += -Wredundant-decls -Wnested-externs -Winline -Wno-long-long
+-CFLAGS += -Wconversion -Wstrict-prototypes -Wall -Werror -std=c99
+-CFLAGS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_XOPEN_SOURCE -static -g -O0
++CFLAGS += -Wconversion -Wstrict-prototypes -Wall -Werror
++CFLAGS += -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_XOPEN_SOURCE
+ 
+-lib_LIBRARIES = libdirutils.a
++lib_LTLIBRARIES = libdirutils.la
+ include_HEADERS = dirutils.h
+ dist_noinst_HEADERS = dirlist.h
+-libdirutils_a_SOURCES = dirutils.c dirlist.c dirwalk.c dirlist.h
+-
+-
++libdirutils_la_SOURCES = dirutils.c dirlist.c dirwalk.c dirlist.h
++libdirutils_la_LDFLAGS = -no-undefined
+--- origsrc/libdirutils-1.1.1/tests/Makefile.am	2015-09-09 15:36:48.000000000 +0900
++++ src/libdirutils-1.1.1/tests/Makefile.am	2025-01-15 18:05:35.856788600 +0900
+@@ -1,9 +1,10 @@
+ AM_LDFLAGS = -L/usr/local/include -lcunit
+-AM_CFLAGS = -Wall -g -I/usr/local/include -I../src -O0 
+-DIRLISTSRC = ../src/dirlist.c ../src/dirutils.c
++AM_CFLAGS = -Wall -g -I/usr/local/include -I$(top_srcdir)/src -O0
+ 
+ check_PROGRAMS = dirlist_test dirutils_test
+ dirlist_test_CFLAGS = $(AM_CFLAGS) -DTEST_SUITE="\"dirlist_test\""
+-dirlist_test_SOURCES = ../src/dirlist.c dirlist_test.c 
++dirlist_test_SOURCES = dirlist_test.c
++dirlist_test_LDADD = $(top_builddir)/src/libdirutils.la
+ dirutils_test_CFLAGS = $(AM_CFLAGS) -DTEST_SUITE="\"dirutils_test\""
+-dirutils_test_SOURCES = $(DIRLISTSRC) dirutils_test.c
++dirutils_test_SOURCES = dirutils_test.c
++dirutils_test_LDADD = $(top_builddir)/src/libdirutils.la
