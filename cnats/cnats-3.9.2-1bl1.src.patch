@@ -1,6 +1,6 @@
---- origsrc/nats.c-3.8.3/CMakeLists.txt	2024-10-02 02:49:13.000000000 +0900
-+++ src/nats.c-3.8.3/CMakeLists.txt	2024-10-02 23:49:49.949181200 +0900
-@@ -113,7 +113,7 @@ if(NATS_BUILD_USE_SODIUM)
+--- origsrc/nats.c-3.9.2/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
++++ src/nats.c-3.9.2/CMakeLists.txt	2025-01-16 11:34:33.030478800 +0900
+@@ -120,7 +120,7 @@ if(NATS_BUILD_USE_SODIUM)
        ${NATS_SODIUM_DIR}
    )
    FIND_LIBRARY(NATS_SODIUM_LIBRARY
@@ -9,9 +9,9 @@
      HINTS ${NATS_SODIUM_DIR}
    )
    FIND_PACKAGE_HANDLE_STANDARD_ARGS(libsodium DEFAULT_MSG
---- origsrc/nats.c-3.8.3/src/CMakeLists.txt	2024-10-02 02:49:13.000000000 +0900
-+++ src/nats.c-3.8.3/src/CMakeLists.txt	2024-10-02 23:49:49.964808700 +0900
-@@ -60,7 +60,7 @@ if(NATS_BUILD_LIB_SHARED)
+--- origsrc/nats.c-3.9.2/src/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
++++ src/nats.c-3.9.2/src/CMakeLists.txt	2025-01-16 11:25:28.898201600 +0900
+@@ -62,7 +62,7 @@ if(NATS_BUILD_LIB_SHARED)
    target_include_directories(nats PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
          $<INSTALL_INTERFACE:include>)
@@ -20,8 +20,8 @@
    install(EXPORT cnats-targets
          NAMESPACE cnats::
          FILE cnats-config.cmake
---- origsrc/nats.c-3.8.3/src/libnats.pc.in	2024-10-02 02:49:13.000000000 +0900
-+++ src/nats.c-3.8.3/src/libnats.pc.in	2024-10-02 23:49:49.964808700 +0900
+--- origsrc/nats.c-3.9.2/src/libnats.pc.in	2024-12-10 01:50:23.000000000 +0900
++++ src/nats.c-3.9.2/src/libnats.pc.in	2025-01-16 11:26:05.659247400 +0900
 @@ -1,12 +1,12 @@
 -prefix="@CMAKE_INSTALL_PREFIX@"
 -exec_prefix="${prefix}"
@@ -42,20 +42,20 @@
 +Cflags: -I${includedir}
 +Libs: -L${libdir} -lnats
 +Libs.private: -L${libdir} -lnats @PKGCONF_LIBS_PRIV@
---- origsrc/nats.c-3.8.3/test/CMakeLists.txt	2024-10-02 02:49:13.000000000 +0900
-+++ src/nats.c-3.8.3/test/CMakeLists.txt	2024-10-02 23:49:49.964808700 +0900
-@@ -1,7 +1,7 @@
- if(NOT BUILD_TESTING)
+--- origsrc/nats.c-3.9.2/test/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
++++ src/nats.c-3.9.2/test/CMakeLists.txt	2025-01-16 11:27:03.053147200 +0900
+@@ -6,7 +6,7 @@ if(NOT BUILD_TESTING)
    return()
  endif()
+ 
 -if(NOT NATS_BUILD_LIB_STATIC)
 +if(NOT NATS_BUILD_LIB_STATIC AND NOT CYGWIN)
-    MESSAGE(FATAL_ERROR
-      "Building tests require static library, or run CMake with -DBUILD_TESTING=OFF")
+   MESSAGE(FATAL_ERROR
+     "Building tests require static library, or run CMake with -DBUILD_TESTING=OFF")
    return()
-@@ -20,8 +20,16 @@ endif(NATS_BUILD_STREAMING)
+@@ -31,8 +31,15 @@ endif(NATS_BUILD_STREAMING)
  # Build the test program
- add_executable(testsuite test.c)
+ add_executable(testsuite test.c bench_sub_async.c)
  
 -# Link statically with the library
 -target_link_libraries(testsuite nats_static ${NATS_EXTRA_LIB})
@@ -68,7 +68,37 @@
 +  message("Building tests require shared or static library")
 +  return()
 +endif()
-+
  
- # Set the test index to 0
- set(testIndex 0)
+ set(BENCH_LIST ${PROJECT_SOURCE_DIR}/test/list_bench.txt)
+ set(STAN_LIST ${PROJECT_SOURCE_DIR}/test/list_stan.txt)
+--- origsrc/nats.c-3.9.2/test/test.c	2024-12-10 01:50:23.000000000 +0900
++++ src/nats.c-3.9.2/test/test.c	2025-01-16 11:44:32.658884500 +0900
+@@ -20,8 +20,10 @@
+ #else
+ #include <dirent.h>
+ #include <sys/stat.h>
++#if !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
++#endif
+ 
+ #include "buf.h"
+ #include "timer.h"
+@@ -37012,7 +37014,7 @@ void test_StanSubTimeout(void)
+ 
+ #endif
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__CYGWIN__)
+ static void _sigsegv_handler(int sig) {
+   void *array[20];
+   int size = backtrace(array, 20);
+@@ -37037,7 +37039,7 @@ int main(int argc, char **argv)
+     }
+     testName = argv[1];
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__CYGWIN__)
+     signal(SIGSEGV, _sigsegv_handler);
+ #endif // _WIN32
+ 
