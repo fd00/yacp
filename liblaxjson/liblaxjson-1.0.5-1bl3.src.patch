@@ -1,0 +1,58 @@
+--- origsrc/liblaxjson-1.0.5/CMakeLists.txt	2025-01-20 13:56:59.580678900 +0900
++++ src/liblaxjson-1.0.5/CMakeLists.txt	2025-01-20 14:01:24.561348700 +0900
+@@ -12,33 +12,28 @@ message("Configuring laxjson version ${V
+ file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.c)
+ file(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
+ 
+-set(LIB_CFLAGS "-pedantic -Werror -Wall -Werror=strict-prototypes -Werror=old-style-definition -Werror=missing-prototypes")
+-set(EXAMPLE_CFLAGS "-pedantic -Werror -Wall")
+ include_directories("${PROJECT_SOURCE_DIR}/include")
+ 
+-add_library(laxjson_static STATIC ${SOURCES} ${HEADERS})
+-set_target_properties(laxjson_static PROPERTIES
+-  OUTPUT_NAME laxjson
+-  COMPILE_FLAGS ${LIB_CFLAGS})
+-
+ add_library(laxjson SHARED ${SOURCES} ${HEADERS})
+ set_target_properties(laxjson PROPERTIES
+   SOVERSION ${VERSION_MAJOR}
+-  VERSION ${VERSION}
+-  COMPILE_FLAGS ${LIB_CFLAGS})
++  VERSION ${VERSION})
+ 
+ add_executable(token_list example/token_list.c)
+-set_target_properties(token_list PROPERTIES
+-  COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+ target_link_libraries(token_list laxjson)
+ 
+ 
+ enable_testing()
+ add_executable(primitives_test test/primitives.c)
+-set_target_properties(primitives_test PROPERTIES
+-  COMPILE_FLAGS ${EXAMPLE_CFLAGS})
+ target_link_libraries(primitives_test laxjson)
+ add_test(DetectPrimitives primitives_test)
+ 
+ install(FILES "include/laxjson.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+-install(TARGETS laxjson laxjson_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS laxjson RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/liblaxjson.pc.in ${CMAKE_BINARY_DIR}/liblaxjson.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/liblaxjson.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/liblaxjson-1.0.5/liblaxjson.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liblaxjson-1.0.5/liblaxjson.pc.in	2025-01-20 14:01:17.412689900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liblaxjson
++Description: Relaxed Streaming JSON Parser C Library
++Version: @VERSION@
++Libs: -L${libdir} -llaxjson
++Cflags: -I${includedir}
