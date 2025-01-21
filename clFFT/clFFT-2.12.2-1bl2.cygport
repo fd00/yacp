@@ -1,5 +1,8 @@
 HOMEPAGE="https://github.com/clMathLibraries/${PN}"
-SRC_URI="https://github.com/clMathLibraries/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/clMathLibraries/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/c/clfft/2.12.2-5/debian/patches/disable-multilib-cflags.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="Software library containing FFT functions written in OpenCL"
@@ -7,15 +10,44 @@ DESCRIPTION="clFFT is a software library containing FFT functions written in Ope
 addition to GPU devices, the library also supports running on CPU devices to
 facilitate debugging and heterogeneous programming."
 
-CYGCMAKE_SOURCE="${top}/${PF}.${ARCH}/src/${P}/src"
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libboost-devel libfftw3-devel libOpenCL-devel"
+
+export CXXFLAGS="${CXXFLAGS} -fpermissive"
+
+inherit cmake
 
 CYGCMAKE_ARGS="
+	-DBUILD_CALLBACK_CLIENT:BOOL=ON
+	-DBUILD_CLIENT:BOOL=ON
 	-DBUILD_TEST:BOOL=ON
 	-DBoost_USE_STATIC_LIBS:BOOL=OFF
 	-DUSE_SYSTEM_GTEST:BOOL=ON
 "
 
-inherit cmake
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	CYGCMAKE_SOURCE="${S}/src"
+	cygcmake
+	cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	./staging/Test.exe
+}
+
+DOCS="
+	CHANGELOG
+	CONTRIBUTING.md
+	ReleaseNotes.txt
+"
 
 PKG_NAMES="
 	${PN}
@@ -23,10 +55,11 @@ PKG_NAMES="
 	lib${PN}-devel
 "
 clFFT_CONTENTS="
+	usr/bin/${PN}*
 	usr/share/doc
 "
 libclFFT2_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-2.dll
 "
 libclFFT_devel_CONTENTS="
 	usr/include

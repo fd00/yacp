@@ -1,0 +1,104 @@
+--- origsrc/clFFT-2.12.2/src/CMakeLists.txt	2025-01-20 18:10:51.677746500 +0900
++++ src/clFFT-2.12.2/src/CMakeLists.txt	2025-01-21 09:53:07.168867300 +0900
+@@ -51,6 +51,9 @@ set( CLFFT_VERSION "${CLFFT_VERSION_MAJO
+ 
+ # This is incremented when the ABI to the library changes
+ set( CLFFT_SOVERSION 2 )
++if (CYGWIN)
++	add_definitions( -DCLFFT_SOVERSION="${CLFFT_SOVERSION}" )
++endif()
+ 
+ set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR} )
+ 
+@@ -116,7 +119,7 @@ set( SUFFIX_BIN_DEFAULT "" )
+ if( BUILD64 )
+ 	set_property( GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE )
+ 	message( STATUS "64bit build - FIND_LIBRARY_USE_LIB64_PATHS TRUE" )
+-	if( NOT APPLE )
++	if( NOT APPLE AND NOT CYGWIN )
+ 		set( SUFFIX_LIB_DEFAULT "64" )
+ 	endif()
+ else( )
+--- origsrc/clFFT-2.12.2/src/include/sharedLibrary.h	2016-09-01 06:46:51.000000000 +0900
++++ src/clFFT-2.12.2/src/include/sharedLibrary.h	2025-01-21 09:58:31.914116800 +0900
+@@ -60,6 +60,16 @@ inline void* LoadSharedLibrary( std::str
+         {
+                 std::cerr << ::dlerror( ) << std::endl;
+         }
++#elif defined(__CYGWIN__)
++	tstring cygwinName = "cyg";
++	tstring hyphen = "-";
++	tstring soversion = CLFFT_SOVERSION;
++	cygwinName += libraryName += hyphen += soversion += ".dll";
++	void* fileHandle = ::dlopen( cygwinName.c_str( ), RTLD_NOW );
++	if( !quiet && !fileHandle )
++	{
++		std::cerr << ::dlerror( ) << std::endl;
++	}
+ #else
+         #error "unsupported platform"
+ #endif
+--- origsrc/clFFT-2.12.2/src/library/CMakeLists.txt	2016-09-01 06:46:51.000000000 +0900
++++ src/clFFT-2.12.2/src/library/CMakeLists.txt	2025-01-20 18:14:48.555487900 +0900
+@@ -104,5 +104,5 @@ install( TARGETS clFFT
+         EXPORT Library
+         RUNTIME DESTINATION bin${SUFFIX_BIN}
+         LIBRARY DESTINATION lib${SUFFIX_LIB}
+-        ARCHIVE DESTINATION lib${SUFFIX_LIB}/import
++        ARCHIVE DESTINATION lib${SUFFIX_LIB}
+         )
+--- origsrc/clFFT-2.12.2/src/statTimer/CMakeLists.txt	2016-09-01 06:46:51.000000000 +0900
++++ src/clFFT-2.12.2/src/statTimer/CMakeLists.txt	2025-01-20 18:15:05.360831200 +0900
+@@ -79,5 +79,5 @@ install( TARGETS StatTimer
+         EXPORT Library
+         RUNTIME DESTINATION bin${SUFFIX_BIN}
+         LIBRARY DESTINATION lib${SUFFIX_LIB}
+-        ARCHIVE DESTINATION lib${SUFFIX_LIB}/import
++        ARCHIVE DESTINATION lib${SUFFIX_LIB}
+         )
+--- origsrc/clFFT-2.12.2/src/tests/CMakeLists.txt	2016-09-01 06:46:51.000000000 +0900
++++ src/clFFT-2.12.2/src/tests/CMakeLists.txt	2025-01-21 09:40:21.433945300 +0900
+@@ -58,6 +58,7 @@ set( clFFT.Test.Headers
+ set( clFFT.Test.Files ${clFFT.Test.Source} ${clFFT.Test.Headers} )
+ 
+ set( LD_PTHREAD "" )
++if (NOT CYGWIN)
+ if( MINGW )
+     # -std=c++0x causes g++ to go into strict ANSI mode, which doesn't declare non-standard functions
+     # Googletest for mingw appears to have a dependency on _stricmp and off64_t
+@@ -69,15 +70,18 @@ elseif( APPLE )
+ 	set( CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++ ${CMAKE_CXX_FLAGS}" )
+ 	add_definitions( -DGTEST_USE_OWN_TR1_TUPLE )
+ endif( )
+-
++endif()
+ # Include standard OpenCL headers
+ include_directories( ${Boost_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS} ${FFTW_INCLUDE_DIRS} ${OPENCL_INCLUDE_DIRS}  ${PROJECT_BINARY_DIR}/include ${PROJECT_SOURCE_DIR}/include )
+ 
+ add_executable( Test ${clFFT.Test.Files} )
+ 
++
++
+ # If the runtime is being built by the project, use it, otherwise link to a runtime library specified in the install prefix
+ if( BUILD_RUNTIME )
+-	target_link_libraries( Test clFFT ${Boost_LIBRARIES} ${GTEST_LIBRARIES} ${FFTW_LIBRARIES} ${OPENCL_LIBRARIES} ${LD_PTHREAD} ${CMAKE_DL_LIBS})
++	# https://discourse.cmake.org/t/findgtest-always-links-threads-threads-to-target-gtest-gtest/8703
++	target_link_libraries( Test clFFT ${Boost_LIBRARIES} gtest ${FFTW_LIBRARIES} ${OPENCL_LIBRARIES} ${LD_PTHREAD} ${CMAKE_DL_LIBS})
+ else( )
+ 	# Search for 64bit libs if FIND_LIBRARY_USE_LIB64_PATHS is set to true in the global environment, 32bit libs else
+ 	get_property( LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS )
+@@ -105,4 +109,3 @@ ENDIF( )
+ 
+ set_target_properties( Test PROPERTIES VERSION ${CLFFT_VERSION} )
+ set_target_properties( Test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/staging" )
+-
+--- origsrc/clFFT-2.12.2/src/tests/gtest_main.cpp	2016-09-01 06:46:51.000000000 +0900
++++ src/clFFT-2.12.2/src/tests/gtest_main.cpp	2025-01-21 08:29:58.450578100 +0900
+@@ -15,6 +15,7 @@
+  * ************************************************************************/
+ 
+ #include <cstring>
++#include <iomanip> 
+ #include <gtest/gtest.h>
+ #include <boost/program_options.hpp>
+ #include "clFFT.h"
