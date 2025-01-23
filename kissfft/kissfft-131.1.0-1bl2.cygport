@@ -1,0 +1,85 @@
+HOMEPAGE="https://github.com/mborgerding/${PN}"
+SRC_URI="https://github.com/mborgerding/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Fast Fourier Transform library that tries to Keep it Simple, Stupid"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSES/BSD-3-Clause"
+
+BUILD_REQUIRES="libpng-devel"
+
+export CPPFLAGS="${CPPFLAGS} -DM_PIl=3.141592653589793238462643383279502884L"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DKISSFFT_OPENMP:BOOL=ON
+"
+
+BUILD_TYPES="double float int16_t int32_t simd"
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	for b in ${BUILD_TYPES}
+	do
+		mkdir -p build-${b}
+		pushd build-${b}
+			cygcmake -DKISSFFT_DATATYPE=${b}
+			cygninja
+		popd
+	done
+}
+
+src_test()
+{
+	cd ${B}
+	for b in ${BUILD_TYPES}
+	do
+		pushd build-${b}
+			ninja_test
+		popd
+	done
+}
+
+src_install()
+{
+	cd ${B}
+	for b in ${BUILD_TYPES}
+	do
+		pushd build-${b}
+			ninja_install
+		popd
+	done
+}
+
+DOCS="
+	CHANGELOG
+	LICENSES/*
+	README.simd
+	TIPS
+"
+
+PKG_NAMES="
+	kissfft
+	libkissfft${PV[1]}
+	libkissfft-devel
+"
+kissfft_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libkissfft131_CONTENTS="
+	usr/bin/cyg*-131.dll
+"
+libkissfft_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+kissfft_SUMMARY="${SUMMARY} (utilities)"
+libkissfft131_SUMMARY="${SUMMARY} (runtime)"
+libkissfft_devel_SUMMARY="${SUMMARY} (development)"
