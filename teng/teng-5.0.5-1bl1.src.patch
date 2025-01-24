@@ -1,0 +1,51 @@
+--- origsrc/teng-5.0.5/src/Makefile.am	2023-07-19 02:58:52.000000000 +0900
++++ src/teng-5.0.5/src/Makefile.am	2025-01-24 15:22:41.965879800 +0900
+@@ -35,7 +35,7 @@
+ #
+ 
+ # extra compiler options
+-AM_CPPFLAGS = -D_ISOC99_SOURCE -fPIC ${DEPENS_CFLAGS}                          \
++AM_CPPFLAGS = ${DEPENS_CFLAGS}                          \
+               -DGIT_REVISION="\"@GIT_REVISION@\""                              \
+ 			  -DSRC_DIR="\"$(realpath @abs_top_srcdir@)\""                     \
+ 			  -I$(top_srcdir)/include -I$(top_builddir)/include                \
+@@ -85,19 +85,19 @@ lib_LTLIBRARIES = libteng.la
+ libteng_la_SOURCES = ${SOURCES}
+ 
+ # with these flags (version info etc.)
+-libteng_la_LDFLAGS = @VERSION_INFO@
++libteng_la_LDFLAGS = -no-undefined @VERSION_INFO@
+ libteng_la_LIBADD = $(LTLIBOBJS) @TENG_DEPS_LIBS@
+ 
+ # test program
+ EXTRA_PROGRAMS = teng-example teng-cache test-teng
+-teng_example_LDFLAGS = -static
++teng_example_LDFLAGS = 
+ teng_example_SOURCES = example/example.cc
+ teng_example_LDADD = libteng.la
+-teng_cache_LDFLAGS = -static
++teng_cache_LDFLAGS = 
+ teng_cache_SOURCES = example/cache.cc
+ teng_cache_LDADD = libteng.la
+ 
+-test_teng_LDFLAGS = -static
++test_teng_LDFLAGS = 
+ test_teng_LDADD = libteng.la
+ test_teng_SOURCES = tests/main.cc tests/old.cc tests/fun-escaping.cc           \
+ 					tests/frag.cc tests/vars.cc tests/simple.cc tests/incl.cc  \
+--- origsrc/teng-5.0.5/src/instruction.cc	2023-07-19 02:58:52.000000000 +0900
++++ src/teng-5.0.5/src/instruction.cc	2025-01-24 15:36:15.685167000 +0900
+@@ -599,11 +599,13 @@ InstrBox_t::InstrBox_t(ImplArg_t &&other
+     : Instruction_t(nullptr)
+ {
+     using Impl_t = std::decay_t<ImplArg_t>;
++#if !defined(__CYGWIN__)
+     static_assert(
+         sizeof(Impl_t) <= sizeof(InstrBox_t),
+         "The size of InstrBox_t padding has to be updated because used "
+         "Instruction_t is bigger than current padding!"
+     );
++#endif
+     static_assert(
+         std::is_base_of<Instruction_t, Impl_t>::value,
+         "The given instruction is not inherited from Instruction_t "
