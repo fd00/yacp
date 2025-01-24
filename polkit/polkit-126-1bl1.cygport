@@ -1,5 +1,5 @@
-HOMEPAGE="http://www.freedesktop.org/wiki/Software/${PN}"
-SRC_URI="http://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
+HOMEPAGE="https://github.com/polkit-org/${PN}"
+SRC_URI="https://github.com/polkit-org/${PN}/archive/refs/tags/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="PolicyKit Authorization Framework"
@@ -11,28 +11,21 @@ PolicyKit is specifically targeting applications in rich desktop environments
 on multi-user UNIX-like operating systems. It does not imply or rely on any
 exotic kernel features."
 
-CYGPORT_USE_UNSTABLE_API=1
-src_patch_hook()
-{
-	cd ${origsrcdir}/${SRC_DIR}
-	ln -fs /usr/share/gtk-doc/data/gtk-doc.make .
-}
+LICENSE="LGPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.0-or-later"
+LICENSE_URI="COPYING"
 
-CYGCONF_ARGS="
-	--enable-maintainer-mode
-	--disable-gtk-doc
-	--enable-examples
+BUILD_REQUIRES="libduktape-devel libexpat-devel libglib2.0-devel libintl-devel"
+
+inherit meson
+
+CYGMESON_ARGS="
+	-Dauthfw=none
+	-Dexamples=true
+	-Dman=true
+	-Dsession_tracking=ConsoleKit
+	-Dtests=true
 "
-
-src_compile()
-{
-	cd ${S}
-	cygautoreconf
-	intltoolize
-	cd ${B}
-	cygconf
-	cygmake
-}
 
 PKG_NAMES="
 	${PN}
@@ -44,11 +37,13 @@ PKG_NAMES="
 	girepository-PolkitAgent1.0
 "
 polkit_CONTENTS="
-	etc
 	usr/bin/*.exe
 	usr/lib/polkit*/*.exe
+	usr/lib/systemd
+	usr/lib/*.d
 	usr/share/dbus*
 	usr/share/doc
+	usr/share/gettext
 	usr/share/locale
 	usr/share/man
 	usr/share/${PN}*
