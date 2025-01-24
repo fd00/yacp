@@ -1,0 +1,39 @@
+--- origsrc/NoLifeNx-1.0.0/CMakeLists.txt	2014-01-03 05:38:42.000000000 +0900
++++ src/NoLifeNx-1.0.0/CMakeLists.txt	2025-01-24 13:53:32.705677000 +0900
+@@ -5,8 +5,11 @@ if("${CMAKE_CXX_COMPILER_ID}" MATCHES "C
+ endif()
+ aux_source_directory(. NOLIFENX_SOURCES)
+ add_library(NoLifeNx ${NOLIFENX_SOURCES})
++if(DEFINED SOVERSION)
++    set_target_properties(NoLifeNx PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ if(${BUILD_SHARED_LIBS})
+-    install(TARGETS NoLifeNx LIBRARY DESTINATION lib)
++    install(TARGETS NoLifeNx RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ else()
+     install(TARGETS NoLifeNx LIBRARY ARCHIVE DESTINATION lib)
+ endif()
+@@ -20,3 +23,10 @@ nxfwd.hpp
+ nx.hpp
+ DESTINATION include/nx)
+ target_link_libraries(NoLifeNx lz4)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/NoLifeNx.pc.in ${CMAKE_BINARY_DIR}/NoLifeNx.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/NoLifeNx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/NoLifeNx-1.0.0/NoLifeNx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/NoLifeNx-1.0.0/NoLifeNx.pc.in	2025-01-24 13:52:41.662274800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: NoLifeNx
++Description: Library to read NX files
++Version: @VERSION@
++Libs: -L${libdir} -lNoLifeNx
++Cflags: -I${includedir}
