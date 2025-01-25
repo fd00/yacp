@@ -1,0 +1,59 @@
+HOMEPAGE="https://fmv.jku.at/${PN}/"
+SRC_URI="
+	https://fmv.jku.at/${PN}/${P}.tar.gz
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/picosat.1
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/picomus.1
+"
+PATCH_URI="
+	https://sources.debian.org/data/main/p/picosat/965-2/debian/patches/verbose_output.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="SAT solver"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+inherit cmake
+
+export CPPFLAGS=""
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	echo "#define PICOSAT_CC \"${CC}\"" > config.h
+	echo "#define PICOSAT_CFLAGS \"${CFLAGS}\"" >> config.h
+	echo "#define PICOSAT_VERSION \"${PV}\"" >> config.h
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${S}
+	doman *.1
+}
+
+PKG_NAMES="
+	picosat
+	libpicosat1
+	libpicosat-devel
+"
+picosat_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libpicosat1_CONTENTS="
+	usr/bin/cyg*-1.dll
+"
+libpicosat_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+picosat_SUMMARY="${SUMMARY} (utilities)"
+libpicosat1_SUMMARY="${SUMMARY} (runtime)"
+libpicosat_devel_SUMMARY="${SUMMARY} (development)"
