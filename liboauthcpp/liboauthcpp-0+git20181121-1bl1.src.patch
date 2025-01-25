@@ -1,0 +1,43 @@
+--- origsrc/liboauthcpp/build/CMakeLists.txt	2025-01-25 18:19:28.000000000 +0900
++++ src/liboauthcpp/build/CMakeLists.txt	2025-01-25 18:28:25.774116700 +0900
+@@ -79,11 +79,14 @@ SET(LIBOAUTHCPP_LIB_SOURCES
+   ${LIBOAUTHCPP_SRC}/SHA1.cpp
+   ${LIBOAUTHCPP_SRC}/urlencode.cpp
+   )
+-ADD_LIBRARY(oauthcpp STATIC ${LIBOAUTHCPP_LIB_SOURCES})
++ADD_LIBRARY(oauthcpp SHARED ${LIBOAUTHCPP_LIB_SOURCES})
++if (DEFINED SOVERSION)
++  set_target_properties(oauthcpp PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ INSTALL(TARGETS oauthcpp
+   ARCHIVE DESTINATION lib
+   LIBRARY DESTINATION lib
+-  RUNTIME DESTINATION lib
++  RUNTIME DESTINATION bin
+ )
+ INSTALL(DIRECTORY
+   ${LIBOAUTHCPP_INCLUDE}/ DESTINATION include
+@@ -142,3 +145,10 @@ IF(LIBOAUTHCPP_BUILD_DEMOS)
+   TARGET_LINK_LIBRARIES(simple_request oauthcpp)
+ 
+ ENDIF() #LIBOAUTHCPP_BUILD_DEMOS
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/liboauthcpp.pc.in ${CMAKE_BINARY_DIR}/liboauthcpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/liboauthcpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/liboauthcpp/build/liboauthcpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liboauthcpp/build/liboauthcpp.pc.in	2025-01-25 18:28:17.782146300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liboauthcpp
++Description: Pure C++ OAuth library
++Version: @VERSION@
++Libs: -L${libdir} -loauthcpp
++Cflags: -I${includedir}
