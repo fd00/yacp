@@ -1,5 +1,8 @@
 HOMEPAGE="https://github.com/${PN}-engine/${PN}"
-SRC_URI="https://github.com/${PN}-engine/${PN}/archive/refs/tags/${PV}.tar.gz"
+SRC_URI="
+	https://github.com/${PN}-engine/${PN}/archive/refs/tags/${PV}.tar.gz
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/cstool.1
+"
 
 CATEGORY="Libs"
 SUMMARY="Ultimate Disassembler"
@@ -10,10 +13,14 @@ LICENSE="BSD-3-Clause"
 LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
 LICENSE_URI="LICENSE.TXT"
 
+BUILD_REQUIRES="libcmocka-devel"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
 	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DBUILD_STATIC_LIBS:BOOL=OFF
+	-DCAPSTONE_BUILD_CSTEST:BOOL=ON
 "
 
 DOCS="
@@ -25,6 +32,14 @@ DOCS="
 	docs/*.pdf
 	docs/*.png
 "
+
+src_install() {
+	cd ${B}
+	ninja_install
+
+	cd ${S}
+	doman cstool.1
+}
 
 PKG_NAMES="
 	capstone
