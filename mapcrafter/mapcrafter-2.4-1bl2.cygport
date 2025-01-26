@@ -1,0 +1,57 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v.${PV}.tar.gz"
+SRC_DIR="${PN}-v.${PV}"
+
+CATEGORY="Games"
+SUMMARY="High Performance Minecraft Map Renderer"
+DESCRIPTION="Mapcrafter is a high performance Minecraft map renderer written in C++ which
+renders your Minecraft worlds to fancy maps viewable in any webbrowser."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libboost-devel libjpeg-devel libpng-devel"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=${PV[1]}
+	-DVERSION:STRING=${PV}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/src/mapcraftercore:${PATH} cygninja runtests
+}
+
+DIFF_EXCLUDES="
+	config.h
+	test
+	version.cpp
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}core${PV[1]}
+	lib${PN}core-devel
+"
+mapcrafter_CONTENTS="
+	etc
+	usr/bin/*.exe
+	usr/bin/*.py
+	usr/share
+"
+libmapcraftercore2_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
+"
+libmapcraftercore_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+mapcrafter_SUMMARY="${SUMMARY} (utilities)"
+libmapcraftercore2_SUMMARY="${SUMMARY} (runtime)"
+libmapcraftercore_devel_SUMMARY="${SUMMARY} (development)"

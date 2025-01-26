@@ -1,0 +1,68 @@
+--- origsrc/mapcrafter-v.2.4/CMakeLists.txt	2017-06-21 18:38:58.000000000 +0900
++++ src/mapcrafter-v.2.4/CMakeLists.txt	2025-01-26 09:44:28.225880600 +0900
+@@ -75,3 +75,10 @@ find_package(JPEG REQUIRED)
+ include_directories(${JPEG_INCLUDE_DIR})
+ 
+ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/mapcrafter.pc.in ${CMAKE_BINARY_DIR}/mapcrafter.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/mapcrafter.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/mapcrafter-v.2.4/mapcrafter.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mapcrafter-v.2.4/mapcrafter.pc.in	2025-01-26 09:47:07.375784000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mapcrafter
++Description: High Performance Minecraft Map Renderer
++Version: @VERSION@
++Libs: -L${libdir} -lmapcraftercore
++Cflags: -I${includedir}
+--- origsrc/mapcrafter-v.2.4/src/CMakeLists.txt	2017-06-21 18:38:58.000000000 +0900
++++ src/mapcrafter-v.2.4/src/CMakeLists.txt	2025-01-26 05:34:00.875322900 +0900
+@@ -3,7 +3,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE
+ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tools")
+ 
+ add_custom_target(runtests
+-    ./test_all --log_level=test_suite
++    ${CMAKE_CURRENT_BINARY_DIR}/test/test_all --log_level=test_suite
+     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" VERBATIM
+ )
+ 
+--- origsrc/mapcrafter-v.2.4/src/mapcraftercore/CMakeLists.txt	2017-06-21 18:38:58.000000000 +0900
++++ src/mapcrafter-v.2.4/src/mapcraftercore/CMakeLists.txt	2025-01-26 05:12:00.310628400 +0900
+@@ -88,7 +88,11 @@ if(OPT_LINK_BOOST_STATICALLY)
+     endif()
+ endif()
+ 
+-install(TARGETS mapcraftercore DESTINATION lib)
++if (DEFINED SOVERSION)
++    set_target_properties(mapcraftercore PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
++install(TARGETS mapcraftercore RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ if(OPT_INSTALL_HEADERS)
+     foreach(HEADER ${HEADERS})
+--- origsrc/mapcrafter-v.2.4/src/tools/gen_texture_code.py	2017-06-21 18:38:58.000000000 +0900
++++ src/mapcrafter-v.2.4/src/tools/gen_texture_code.py	2025-01-26 09:41:05.652526300 +0900
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python2
++#!/usr/bin/env python
+ 
+ # developer stuff:
+ # lists the block textures in the 'blocks' dir and generates the c++ texture code
+--- origsrc/mapcrafter-v.2.4/src/tools/mapcrafter_png-it.py	2017-06-21 18:38:58.000000000 +0900
++++ src/mapcrafter-v.2.4/src/tools/mapcrafter_png-it.py	2025-01-26 09:41:11.158764600 +0900
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python2
++#!/usr/bin/env python
+ 
+ # From Minecraft Overviewer (https://github.com/overviewer/Minecraft-Overviewer)
+ # png-it.py script -- modified version which works with mapcrafter maps
