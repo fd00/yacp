@@ -1,0 +1,50 @@
+--- origsrc/mapcode-cpp-2.5.5/CMakeLists.txt	2017-10-04 21:53:33.000000000 +0900
++++ src/mapcode-cpp-2.5.5/CMakeLists.txt	2025-01-26 13:17:49.977440200 +0900
+@@ -27,7 +27,7 @@ project(mapcode_cpp)
+ # NO_FAST_ENCODE        - Drop fast encoding support - only for internal use.
+ 
+ set(MAPCODE_OPTIONS "")
+-set(MAPCODE_WARNING_OPTIONS "-Wall -Werror -Wextra")
++set(MAPCODE_WARNING_OPTIONS "-Wall -Wextra")
+ set(MAPCODE_SANITIZER_COMPILER_OPTIONS "-fsanitize=address -fno-common -fno-optimize-sibling-calls -fno-omit-frame-pointer")
+ set(MAPCODE_SANITIZER_LINKER_OPTIONS "-fsanitize=address")
+ 
+@@ -99,6 +99,9 @@ add_library(mapcodelib ${SOURCE_FILES_MA
+ target_include_directories(mapcodelib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ target_link_libraries(mapcodelib Threads::Threads)
+ target_link_libraries(mapcodelib ${M_LIB})
++if (DEFINED SOVERSION)
++        set_target_properties(mapcodelib PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ add_executable(unittest ${SOURCE_FILES_TEST})
+ target_link_libraries(unittest LINK_PUBLIC mapcodelib)
+@@ -110,4 +113,13 @@ target_link_libraries(mapcode LINK_PUBLI
+ target_link_libraries(mapcode LINK_PUBLIC Threads::Threads)
+ target_link_libraries(mapcode LINK_PUBLIC ${M_LIB})
+ 
+-install(TARGETS mapcode DESTINATION /usr/local/bin)
+\ No newline at end of file
++install(TARGETS mapcode DESTINATION bin)
++install(TARGETS mapcodelib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES mapcodelib/mapcode_alphabets.h mapcodelib/mapcode_legacy.h mapcodelib/mapcode_territories.h mapcodelib/mapcoder.h DESTINATION include/mapcodelib)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/mapcode-cpp.pc.in ${CMAKE_BINARY_DIR}/mapcode-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/mapcode-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/mapcode-cpp-2.5.5/mapcode-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/mapcode-cpp-2.5.5/mapcode-cpp.pc.in	2025-01-26 13:17:59.281395900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: mapcode-cpp
++Description: Mapcode Library for C/C++
++Version: @VERSION@
++Libs: -L${libdir} -lmapcodelib
++Cflags: -I${includedir}
