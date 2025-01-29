@@ -1,0 +1,163 @@
+--- origsrc/liboop-1.0.1/Makefile.am	2016-11-15 05:20:35.000000000 +0900
++++ src/liboop-1.0.1/Makefile.am	2025-01-29 17:47:40.255068200 +0900
+@@ -11,41 +11,43 @@ lib_LTLIBRARIES = liboop.la @LIBOOP_LIBS
+ EXTRA_LTLIBRARIES = liboop-adns.la liboop-glib2.la liboop-glib.la liboop-tcl.la liboop-www.la liboop-rl.la
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = liboop.pc liboop-glib2.pc
++pkgconfig_DATA = liboop.pc @LIBOOP_DATA@
++EXTRA_DATA = liboop-glib2.pc liboop-rl.pc liboop-tcl.pc
+ 
+ # versions updated as of 1.0
+-liboop_la_LDFLAGS = -version-info 5:0:1 # version:revision:age
++liboop_la_LDFLAGS = -no-undefined -version-info 5:0:1 # version:revision:age
+ liboop_la_SOURCES = sys.c select.c signal.c alloc.c read.c read-fd.c read-mem.c
+ 
+-liboop_adns_la_LDFLAGS = -version-info 3:0:0 -rpath '$(libdir)'
++liboop_adns_la_LDFLAGS = -no-undefined -version-info 3:0:0 -rpath '$(libdir)'
+ liboop_adns_la_LIBADD = $(ADNS_LIBS)
+ liboop_adns_la_SOURCES = adns.c
+ 
+-liboop_glib_la_LDFLAGS = -version-info 1:0:1 -rpath '$(libdir)'
++liboop_glib_la_LDFLAGS = -no-undefined -version-info 1:0:1 -rpath '$(libdir)'
+ liboop_glib_la_LIBADD = $(GLIB_LIBS)
+ liboop_glib_la_CFLAGS = $(GLIB_INCLUDES)
+ liboop_glib_la_SOURCES = glib.c
+ 
+-liboop_glib2_la_LDFLAGS = -version-info 0:0:0 -rpath '$(libdir)'
+-liboop_glib2_la_LIBADD = $(GLIB2_LIBS)
++liboop_glib2_la_LDFLAGS = -no-undefined -version-info 0:0:0 -rpath '$(libdir)'
++liboop_glib2_la_LIBADD = $(GLIB2_LIBS) liboop.la
+ liboop_glib2_la_CFLAGS = $(GLIB2_CFLAGS)
+ liboop_glib2_la_SOURCES = glib.c
+ 
+-liboop_tcl_la_LDFLAGS = -version-info 0:0:0 -rpath '$(libdir)'
+-liboop_tcl_la_LIBADD = $(TCL_LIBS)
++liboop_tcl_la_LDFLAGS = -no-undefined -version-info 0:0:0 -rpath '$(libdir)'
++liboop_tcl_la_LIBADD = $(TCL_LIBS) liboop.la
+ liboop_tcl_la_CFLAGS = $(TCL_INCLUDES)
+ liboop_tcl_la_SOURCES = tcl.c
+ 
+-liboop_www_la_LDFLAGS = -version-info 0:0:0 -rpath '$(libdir)'
++liboop_www_la_LDFLAGS = -no-undefined -version-info 0:0:0 -rpath '$(libdir)'
+ liboop_www_la_LIBADD = $(WWW_LIBS)
+ liboop_www_la_CFLAGS = $(WWW_INCLUDES)
+ liboop_www_la_SOURCES = www.c
+ 
+-liboop_rl_la_LDFLAGS = -version-info 0:0:0 -rpath '$(libdir)'
+-liboop_rl_la_LIBADD = $(READLINE_LIBS)
++liboop_rl_la_LDFLAGS = -no-undefined -version-info 0:0:0 -rpath '$(libdir)'
++liboop_rl_la_LIBADD = $(READLINE_LIBS) liboop.la
+ liboop_rl_la_SOURCES = readline.c
+ 
+-include_HEADERS = oop.h oop-adns.h oop-glib.h oop-tcl.h oop-www.h oop-rl.h oop-read.h
++include_HEADERS = oop.h oop-read.h @LIBOOP_HEADERS@
++EXTRA_HEADERS = oop-adns.h oop-glib.h oop-tcl.h oop-www.h oop-rl.h
+ 
+ noinst_PROGRAMS = test-oop
+ 
+--- origsrc/liboop-1.0.1/configure.ac	2016-11-15 05:20:35.000000000 +0900
++++ src/liboop-1.0.1/configure.ac	2025-01-29 18:23:01.226139900 +0900
+@@ -31,6 +31,7 @@ AC_CHECK_HEADERS(poll.h sys/select.h sys
+ 
+ if test xno != x$with_adns; then
+   AC_CHECK_LIB(adns,adns_init,[
++    LIBOOP_HEADERS="oop-adns.h ${LIBOOP_HEADERS}"
+     LIBOOP_LIBS="liboop-adns.la $LIBOOP_LIBS"
+     ADNS_LIBS="-ladns"
+     AC_DEFINE(HAVE_ADNS)
+@@ -40,7 +41,9 @@ fi
+ if test xno != x$with_readline; then
+   AC_CHECK_LIB(readline,rl_callback_handler_install,[
+   AC_CHECK_HEADER(readline/readline.h,[
++    LIBOOP_HEADERS="oop-rl.h ${LIBOOP_HEADERS}"
+     LIBOOP_LIBS="liboop-rl.la $LIBOOP_LIBS"
++    LIBOOP_DATA="liboop-rl.pc ${LIBOOP_DATA}"
+     READLINE_LIBS="-lreadline"
+     AC_DEFINE(HAVE_READLINE)
+   ])])
+@@ -57,6 +60,7 @@ if test xno != x$with_glib; then
+     CPPFLAGS="$save_cppflags $GLIB_INCLUDES"
+     AC_CHECK_FUNC(g_main_set_poll_func,[
+     AC_CHECK_HEADER(glib.h,[
++      LIBOOP_HEADERS="oop-glib.h ${LIBOOP_HEADERS}"
+       LIBOOP_LIBS="liboop-glib.la $LIBOOP_LIBS"
+       AC_DEFINE(HAVE_GLIB)
+     ])])
+@@ -65,17 +69,21 @@ if test xno != x$with_glib; then
+   CPPFLAGS="$save_cppflags"
+ 
+   PKG_CHECK_MODULES(GLIB2,glib-2.0 >= 2.0,[
++    LIBOOP_HEADERS="oop-glib.h ${LIBOOP_HEADERS}"
+     LIBOOP_LIBS="liboop-glib2.la $LIBOOP_LIBS"
++    LIBOOP_DATA="liboop-glib2.pc ${LIBOOP_DATA}"
+     AC_DEFINE(HAVE_GLIB)
+     ],[:])
+ fi
+ 
+ if test xno != x$with_tcl; then
+-  for version in 8.4 8.3 8.2 8.1 8.0 ; do
++  for version in 8.6 8.4 8.3 8.2 8.1 8.0 ; do
+     CPPFLAGS="$save_cppflags -I/usr/include/tcl$version"
+     AC_CHECK_LIB(tcl$version,Tcl_Main,[
+     AC_CHECK_HEADER(tcl.h,[
++      LIBOOP_HEADERS="oop-tcl.h ${LIBOOP_HEADERS}"
+       LIBOOP_LIBS="liboop-tcl.la $LIBOOP_LIBS"
++      LIBOOP_DATA="liboop-tcl.pc ${LIBOOP_DATA}"
+       AC_DEFINE(HAVE_TCL)
+       TCL_INCLUDES="-I/usr/include/tcl$version"
+       TCL_LIBS="-ltcl$version"
+@@ -95,6 +103,7 @@ if test xyes = x$with_libwww; then
+     LIBS="$save_libs $WWW_LIBS"
+     CPPFLAGS="$save_cppflags $WWW_INCLUDES"
+     AC_CHECK_FUNC(HTEvent_setRegisterCallback,[
++      LIBOOP_HEADERS="oop-www.h ${LIBOOP_HEADERS}"
+       LIBOOP_LIBS="liboop-www.la $LIBOOP_LIBS"
+       AC_DEFINE(HAVE_WWW)
+     ])
+@@ -110,7 +119,7 @@ if test -z "$no_wacky_libs" ; then
+ fi
+ 
+ test yes = "$GCC" && 
+-CFLAGS="-Wall -Wno-comment -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wwrite-strings $CFLAGS"' $(EXTRA_CFLAGS)'
++CFLAGS="-Wall -Wno-comment -Wmissing-prototypes -Wstrict-prototypes -Wpointer-arith -Wwrite-strings $CFLAGS"
+ 
+ AC_SUBST(PROG_LDCONFIG)
+ AC_SUBST(GLIB_INCLUDES)
+@@ -123,5 +132,7 @@ AC_SUBST(ADNS_LIBS)
+ AC_SUBST(WWW_INCLUDES)
+ AC_SUBST(WWW_LIBS)
+ AC_SUBST(READLINE_LIBS)
++AC_SUBST(LIBOOP_HEADERS)
+ AC_SUBST(LIBOOP_LIBS)
+-AC_OUTPUT([Makefile liboop.pc liboop-glib2.pc])
++AC_SUBST(LIBOOP_DATA)
++AC_OUTPUT([Makefile liboop.pc liboop-glib2.pc liboop-rl.pc liboop-tcl.pc])
+--- origsrc/liboop-1.0.1/liboop-rl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liboop-1.0.1/liboop-rl.pc.in	2025-01-29 17:13:45.684502200 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liboop-rl
++Description: Event loop management library (readline support)
++Version: @VERSION@
++Requires: liboop = @VERSION@ readline
++Libs: -L${libdir} -loop-rl
++Cflags: -I${includedir}
+--- origsrc/liboop-1.0.1/liboop-tcl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/liboop-1.0.1/liboop-tcl.pc.in	2025-01-29 17:15:04.571612500 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: liboop-tcl
++Description: Event loop management library (tcl support)
++Version: @VERSION@
++Requires: liboop = @VERSION@
++Libs: -L${libdir} -loop-tcl -ltcl
++Cflags: -I${includedir}
