@@ -1,0 +1,60 @@
+HOMEPAGE="https://${PN}.com/"
+SRC_URI="https://github.com/scottdraves/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/001-manpage_whatis_fix.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/002-libxml.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/003-ljpeg.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/004-flam3.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/005-readme.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/006-icu67.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/007-autoconf.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/008-stringop-truncation.patch
+	https://sources.debian.org/data/main/f/flam3/3.1.1%2Bds2-2/debian/patches/009-defaults.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="The Flame renderer, the basis for the Electric Sheep"
+DESCRIPTION="Command-line tools and API to manipulate and render genomes for the Electric
+Sheep. Basically it reads XML parameter sets and writes PNG images. It can
+also run the genetic algorithm including mutation and crossover."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libjpeg-devel libpng-devel libxml2-devel"
+
+CYGCONF_ARGS="
+	--includedir=/usr/include/${PN}
+"
+
+src_test()
+{
+	cd ${B}
+	env flam3_palettes=${S}/flam3-palettes.xml \
+		template=${S}/vidres.flam3 repeat=10 ./flam3-genome > new.flam3
+	./flam3-render < new.flam3
+	env flam3_palettes=${S}/flam3-palettes.xml \
+		sequence=${S}/test.flam3 nframes=20 ./flam3-genome > seq.flam3
+	./flam3-animate < seq.flam3
+}
+
+PKG_NAMES="
+	${PN}
+	lib${PN}_0
+	lib${PN}-devel
+"
+flam3_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libflam3_0_CONTENTS="
+	usr/bin/cyg*-0.dll
+"
+libflam3_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+flam3_SUMMARY="${SUMMARY} (utilities)"
+libflam3_0_SUMMARY="${SUMMARY} (runtime)"
+libflam3_devel_SUMMARY="${SUMMARY} (development)"
