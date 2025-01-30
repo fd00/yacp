@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/microsoft/${PN}"
+GIT_URI="https://github.com/microsoft/${PN}.git"
+GIT_TAG="v${PV}"
+
+CATEGORY="Libs"
+SUMMARY="C++ GraphQL schema service generator"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="PEGTL libboost-devel libgtest-devel"
+
+inherit cmake
+inherit git
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}/src:${PATH} ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	pushd usr/bin/${PN}
+		for i in *.exe
+		do
+			mv $i ../${PN}-$i
+		done
+	popd
+}
+
+PKG_NAMES="
+	cppgraphqlgen
+	libgraphql4
+	libgraphql-devel
+"
+cppgraphqlgen_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libgraphql4_CONTENTS="
+	usr/bin/cyg*-4.dll
+"
+libgraphql_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+cppgraphqlgen_SUMMARY="${SUMMARY} (utilities)"
+libcppgraphqlgen0_SUMMARY="${SUMMARY} (runtime)"
+libcppgraphqlgen_devel_SUMMARY="${SUMMARY} (development)"
