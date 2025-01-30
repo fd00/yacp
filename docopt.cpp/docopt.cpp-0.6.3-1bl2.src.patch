@@ -1,35 +1,44 @@
---- origsrc/docopt.cpp-0.6.3/CMakeLists.txt	2020-05-12 02:23:10.000000000 +0900
-+++ src/docopt.cpp-0.6.3/CMakeLists.txt	2020-08-07 11:19:45.564866000 +0900
-@@ -54,11 +54,15 @@ else()
+--- origsrc/docopt.cpp-0.6.3/CMakeLists.txt	2025-01-30 21:05:21.761506600 +0900
++++ src/docopt.cpp-0.6.3/CMakeLists.txt	2025-01-30 21:07:16.925753900 +0900
+@@ -42,7 +42,6 @@ if(MSVC OR XCODE)
+     # Xcode does not support libraries with only object files as sources.
+     # See https://cmake.org/cmake/help/v3.0/command/add_library.html?highlight=add_library
+     add_library(docopt SHARED ${docopt_SOURCES} ${docopt_HEADERS})
+-    add_library(docopt_s STATIC ${docopt_SOURCES} ${docopt_HEADERS})
+ else()
+     # If not using MSVC or Xcode, we will create an intermediate object target
+     # to avoid compiling the source code twice.
+@@ -54,11 +53,9 @@ else()
  			VERSION ${PROJECT_VERSION}
  			SOVERSION ${PROJECT_VERSION_MAJOR}
  			)
 -    add_library(docopt_s STATIC $<TARGET_OBJECTS:docopt_o>)
-+	if(NOT CYGWIN)
-+		add_library(docopt_s STATIC $<TARGET_OBJECTS:docopt_o>)
-+	endif()
  endif()
  
  target_include_directories(docopt PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/docopt>)
 -target_include_directories(docopt_s PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/docopt>)
-+if(NOT CYGWIN)
-+	target_include_directories(docopt_s PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> $<INSTALL_INTERFACE:include/docopt>)
-+endif()
  
  if(MSVC)
      # DOCOPT_DLL: Must be specified when building *and* when using the DLL.
-@@ -71,7 +75,9 @@ endif()
+@@ -71,7 +68,6 @@ endif()
  
  if(NOT MSVC)
  	set_target_properties(docopt PROPERTIES OUTPUT_NAME docopt)
 -	set_target_properties(docopt_s PROPERTIES OUTPUT_NAME docopt)
-+	if(NOT CYGWIN)
-+		set_target_properties(docopt_s PROPERTIES OUTPUT_NAME docopt)
-+	endif()
  endif()
  
  if(USE_BOOST_REGEX)
-@@ -117,10 +123,12 @@ endif()
+@@ -82,9 +78,6 @@ if(USE_BOOST_REGEX)
+     find_package(Boost 1.53 REQUIRED COMPONENTS regex)
+     include_directories(${Boost_INCLUDE_DIRS})
+     target_link_libraries(docopt ${Boost_LIBRARIES})
+-	if(WITH_STATIC)
+-		target_link_libraries(docopt_s ${Boost_LIBRARIES})
+-	endif()
+ endif()
+ 
+ #============================================================================
+@@ -117,10 +110,9 @@ endif()
  set(export_name "docopt-targets")
  
  # Runtime package
@@ -38,9 +47,6 @@
  
  # Development package
 -install(TARGETS docopt_s EXPORT ${export_name} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-+if(NOT CYGWIN)
-+	install(TARGETS docopt_s EXPORT ${export_name} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-+endif()
  install(FILES ${docopt_HEADERS} DESTINATION include/docopt)
  
  # CMake Package
