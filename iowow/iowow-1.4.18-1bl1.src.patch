@@ -1,0 +1,72 @@
+--- origsrc/iowow-1.4.18/src/CMakeLists.txt	2024-04-16 13:02:51.000000000 +0900
++++ src/iowow-1.4.18/src/CMakeLists.txt	2025-01-31 17:58:06.052445800 +0900
+@@ -256,16 +256,12 @@ endforeach(MODULE)
+ if (NOT BUILD_SHARED_LIBS)
+     add_definitions(-DIW_NODLL)
+     add_library(iowow STATIC ${ALL_SRC})
+-    add_library(iowow_s ALIAS iowow)
+ else()
+     add_library(iowow SHARED ${ALL_SRC})
+-    add_library(iowow_s STATIC ${ALL_SRC})
+ endif()
++add_library(iowow_s ALIAS iowow)
+ 
+ target_link_libraries(iowow ${PROJECT_LLIBRARIES})
+-if (BUILD_SHARED_LIBS)
+-    target_link_libraries(iowow_s ${PROJECT_LLIBRARIES})
+-endif()
+ 
+ if (BUILD_SHARED_LIBS)
+     if (WIN32)
+@@ -284,11 +280,6 @@ if (BUILD_SHARED_LIBS)
+                           SOVERSION ${PROJECT_VERSION_MAJOR}
+                           PUBLIC_HEADER "${PUB_HDRS}"
+                           DEFINE_SYMBOL IW_API_EXPORTS)
+-
+-    set_target_properties(iowow_s PROPERTIES
+-                          VERSION ${PROJECT_VERSION}
+-                          COMPILE_FLAGS "-DIW_NODLL"
+-                          OUTPUT_NAME iowow-${PROJECT_VERSION_MAJOR})
+ else()
+ 
+     set_target_properties(iowow PROPERTIES
+@@ -307,21 +298,7 @@ install(TARGETS iowow
+         PUBLIC_HEADER DESTINATION ${IW_PUBLIC_HEADER_DESTINATION})
+ 
+ install(EXPORT iowow-exports
+-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME})
+-
+-if (BUILD_SHARED_LIBS)
+-    install(TARGETS iowow_s
+-        EXPORT iowow-static-exports
+-        FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR}
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-        PUBLIC_HEADER DESTINATION ${IW_PUBLIC_HEADER_DESTINATION})
+-
+-    install(EXPORT iowow-static-exports
+-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME})
+-endif()
+-
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+ 
+ install(FILES
+         ${CMAKE_SOURCE_DIR}/LICENSE
+@@ -333,15 +310,9 @@ install(FILES
+         DESTINATION ${CMAKE_INSTALL_DOCDIR})
+ 
+ if (CMAKE_VERSION VERSION_GREATER 3.0)
+-    export(EXPORT iowow-exports)
+-  if (BUILD_SHARED_LIBS)
+-    export(EXPORT iowow-static-exports)
+-  endif(BUILD_SHARED_LIBS)
++  export(EXPORT iowow-exports)
+ else()
+   export(TARGETS iowow FILE iowow-exports.cmake)
+-  if (BUILD_SHARED_LIBS)
+-    export(TARGETS iowow_s FILE iowow-static-exports.cmake)
+-  endif(BUILD_SHARED_LIBS)
+ endif()
+ 
+ include(InstallRequiredSystemLibraries)
