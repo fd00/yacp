@@ -1,0 +1,56 @@
+--- origsrc/libresample-0.1.3/CMakeLists.txt	2025-01-31 19:21:05.478302600 +0900
++++ src/libresample-0.1.3/CMakeLists.txt	2025-01-31 19:33:06.782568400 +0900
+@@ -6,15 +6,7 @@ include(CheckIncludeFiles)
+ include(CheckTypeSize)
+ include(FindPkgConfig)
+ 
+-check_type_size("void *" POINTER_SIZE)
+-
+-if(${POINTER_SIZE} EQUAL 8)
+-    set(LIBDIR lib64)
+-elseif(${POINTER_SIZE} EQUAL 4)
+-    set(LIBDIR lib)
+-else(${POINTER_SIZE} EQUAL 8)
+-    message(FATAL_ERROR "pointer size is not 4 bytes or 8 bytes")
+-endif(${POINTER_SIZE} EQUAL 8)
++set(LIBDIR lib)
+ 
+ check_include_files(inttypes.h HAVE_INTTYPES_H)
+ 
+@@ -39,22 +31,24 @@ add_test(testresample testresample)
+ 
+ if(SNDFILE_FOUND)
+    add_executable(resample-sndfile tests/resample-sndfile.c)
++   target_include_directories(resample-sndfile PRIVATE ${SNDFILE_INCLUDE_DIRS})
++   target_link_libraries(resample-sndfile ${SNDFILE_LDFLAGS})
+    target_link_libraries(resample-sndfile resample m)
+-   set_target_properties(resample-sndfile PROPERTIES COMPILE_FLAGS "${SNDFILE_CFLAGS}" LINK_FLAGS "${SNDFILE_LDFLAGS}")
+    install(TARGETS resample-sndfile RUNTIME DESTINATION bin)
+ endif(SNDFILE_FOUND)
+ 
+ if(SAMPLERATE_FOUND)
+    add_executable(compareresample tests/compareresample.c)
++   target_include_directories(compareresample PRIVATE ${SAMPLERATE_INCLUDE_DIRS})
++   target_link_libraries(compareresample ${SAMPLERATE_LDFLAGS})
+    target_link_libraries(compareresample resample m)
+-   set_target_properties(compareresample PROPERTIES COMPILE_FLAGS "${SAMPLERATE_CFLAGS}" LINK_FLAGS "${SAMPLERATE_LDFLAGS}")
+    add_test(compareresample compareresample)
+ endif(SAMPLERATE_FOUND)
+ 
+ install(FILES libresample.pc DESTINATION ${LIBDIR}/pkgconfig)
+ 
+-if(DOXYGEN)
++if(BUILD_DOC AND DOXYGEN)
+    add_custom_command(OUTPUT docs/html/index.html COMMAND ${DOXYGEN} docs/Doxyfile DEPENDS include/libresample.h)
+    add_custom_target(docs ALL DEPENDS docs/html/index.html)
+-endif(DOXYGEN)
++endif(BUILD_DOC AND DOXYGEN)
+ 
+--- origsrc/libresample-0.1.3/libresample.pc	2025-01-31 19:21:05.085816000 +0900
++++ src/libresample-0.1.3/libresample.pc	2025-01-31 19:21:45.290520700 +0900
+@@ -4,4 +4,4 @@ Name: libresample
+ Description: A real-time library for audio sampling rate conversion
+ Version: 0.1.3
+ Cflags:
+-Libs: -Wl,-z,relro   -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -lresample -lm
++Libs: -lresample -lm
