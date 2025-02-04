@@ -1,0 +1,50 @@
+--- origsrc/minitrace/CMakeLists.txt	2025-02-04 15:49:16.000000000 +0900
++++ src/minitrace/CMakeLists.txt	2025-02-04 15:55:14.153484700 +0900
+@@ -10,6 +10,10 @@ endif()
+ add_library(${PROJECT_NAME} ${MTR_LIB_TYPE} minitrace.c)
+ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_compile_definitions(${PROJECT_NAME} PUBLIC "MTR_BUILDING_WITH_CMAKE")
+ 
+ option(MTR_ENABLED "Enable minitrace" ON)
+@@ -35,13 +39,20 @@ target_include_directories(${PROJECT_NAM
+ 
+ install(TARGETS ${PROJECT_NAME} EXPORT minitrace)
+ install(FILES minitrace.h "${CMAKE_CURRENT_BINARY_DIR}/minitrace_export.h" DESTINATION include)
+-install(EXPORT minitrace NAMESPACE minitrace:: FILE "${PROJECT_NAME}Targets.cmake" DESTINATION "share/${PROJECT_NAME}")
++install(EXPORT minitrace NAMESPACE minitrace:: FILE "${PROJECT_NAME}Targets.cmake" DESTINATION "lib/cmake/${PROJECT_NAME}")
+ 
+ include(CMakePackageConfigHelpers)
+ configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
+         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+-        INSTALL_DESTINATION "share/${PROJECT_NAME}"
++        INSTALL_DESTINATION "lib/cmake/${PROJECT_NAME}"
+         NO_SET_AND_CHECK_MACRO
+         NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+ 
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" DESTINATION "share/${PROJECT_NAME}")
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake" DESTINATION "lib/cmake/${PROJECT_NAME}")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/minitrace.pc.in ${CMAKE_BINARY_DIR}/minitrace.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/minitrace.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/minitrace/minitrace.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/minitrace/minitrace.pc.in	2025-02-04 15:55:17.617254400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: minitrace
++Description: Simple C/C++ library for producing JSON traces suitable for Chrome's built-in trace viewer
++Version: @VERSION@
++Libs: -L${libdir} -lminitrace
++Cflags: -I${includedir}
