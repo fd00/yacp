@@ -1,0 +1,148 @@
+--- origsrc/libit-0.2.3/Makefile.am	2005-04-02 01:28:41.000000000 +0900
++++ src/libit-0.2.3/Makefile.am	2025-02-05 10:04:11.663330500 +0900
+@@ -39,7 +39,7 @@ deb:
+ 	dpkg-buildpackage -rfakeroot -us -uc
+ 
+ # Run ldconfig after installing the library:
+-install-hook:
++install-exec-hook:
+ 	-ldconfig
+ 
+ # Grab the test programs, debian package and Visual C project files for the distribution:
+@@ -51,3 +51,5 @@ dist-hook:
+ 	cp -rp $(srcdir)/VC $(distdir)
+ 	rm -rf `find $(distdir) -type d -name CVS -print`
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libit-0.2.3/configure.in	2008-04-28 17:15:02.000000000 +0900
++++ src/libit-0.2.3/configure.in	2025-02-05 10:04:23.199072000 +0900
+@@ -160,6 +160,7 @@ AC_OUTPUT([
+ libit-config
+ libit.spec
+ libit.m4
++libit.pc
+ Makefile
+ src/Makefile
+ doc/Makefile
+--- origsrc/libit-0.2.3/doc/Makefile.am	2006-08-01 22:38:50.000000000 +0900
++++ src/libit-0.2.3/doc/Makefile.am	2025-02-05 08:47:02.757107300 +0900
+@@ -2,7 +2,7 @@
+ # This is partially taken from the Linux kernel Documentation
+ 
+ # The directory where to install the documentation
+-docdir = ${prefix}/doc/$(PACKAGE)
++# docdir = ${prefix}/doc/$(PACKAGE)
+ 
+ # Include these in the distribution
+ EXTRA_DIST = *.sgml libit.pdf libit.ps
+@@ -50,9 +50,9 @@ eq-%.png: eq-%.eps
+ 
+ # Install the HTML pages in the documentation directory
+ install-data-hook:
+-	$(mkinstalldirs) $(docdir) $(mandir)/man3
+-	$(INSTALL) html/*.html html/*.png $(docdir)
+-	$(INSTALL) man3/*.3 $(mandir)/man3
++	$(mkinstalldirs) $(DESTDIR)$(docdir) $(DESTDIR)$(mandir)/man3
++	$(INSTALL) $(srcdir)/html/*.html $(srcdir)/html/*.png $(DESTDIR)$(docdir)
++	$(INSTALL) $(srcdir)/man3/*.3 $(DESTDIR)$(mandir)/man3
+ 
+ ###
+ # Temporary files left by various tools
+--- origsrc/libit-0.2.3/include/it/math.h	2008-04-28 17:01:50.000000000 +0900
++++ src/libit-0.2.3/include/it/math.h	2025-02-05 08:32:13.337170800 +0900
+@@ -49,7 +49,9 @@
+ /* logarithm in base 2 */
+ #define LOG2    0.69314718055994529
+ #define INVLOG2 1.44269504088896339
++#if !defined(log2)
+ #define log2(x) (INVLOG2 * log(x))
++#endif
+ 
+ /* some small constant */
+ #define IT_EPSILON (1e-10)
+--- origsrc/libit-0.2.3/libit.m4	2008-04-28 17:15:33.000000000 +0900
++++ src/libit-0.2.3/libit.m4	2025-02-05 10:05:03.186357900 +0900
+@@ -3,7 +3,7 @@ dnl Test for libit, and define LIBIT_CFL
+ dnl Vivien Chappelier 12/11/00
+ dnl stolen from ORBit autoconf
+ dnl
+-AC_DEFUN(AM_PATH_LIBIT,
++AC_DEFUN([AM_PATH_LIBIT],
+ [dnl 
+ dnl Get the cflags and libraries from the libit-config script
+ dnl
+--- origsrc/libit-0.2.3/libit.m4.in	2005-03-01 18:33:21.000000000 +0900
++++ src/libit-0.2.3/libit.m4.in	2025-02-05 08:26:08.280276200 +0900
+@@ -3,7 +3,7 @@ dnl Test for libit, and define LIBIT_CFL
+ dnl Vivien Chappelier 12/11/00
+ dnl stolen from ORBit autoconf
+ dnl
+-AC_DEFUN(AM_PATH_LIBIT,
++AC_DEFUN([AM_PATH_LIBIT],
+ [dnl 
+ dnl Get the cflags and libraries from the libit-config script
+ dnl
+--- origsrc/libit-0.2.3/libit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libit-0.2.3/libit.pc.in	2025-02-05 09:53:58.964011000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libit
++Description: Information Theory and Signal Processing Library
++Version: @VERSION@
++Libs: -L${libdir} -lit
++Cflags: -I${includedir}
+--- origsrc/libit-0.2.3/src/Makefile.am	2007-10-09 16:29:03.000000000 +0900
++++ src/libit-0.2.3/src/Makefile.am	2025-02-05 08:26:36.158284100 +0900
+@@ -31,6 +31,6 @@ libit_la_SOURCES =    \
+ 	separable2D.c \
+ 	wavelet2D.c
+ 
+-libit_la_LDFLAGS = \
++libit_la_LDFLAGS = -no-undefined \
+         -release $(LT_RELEASE) \
+         -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+--- origsrc/libit-0.2.3/src/convcode.c	2006-07-16 08:25:50.000000000 +0900
++++ src/libit-0.2.3/src/convcode.c	2025-02-05 08:31:09.238018500 +0900
+@@ -22,6 +22,8 @@
+   Copyright (C) 2005 Vivien Chappelier
+ */
+ 
++#include <strings.h>
++
+ #include <it/types.h>
+ #include <it/vec.h>
+ #include <it/convcode.h>
+@@ -50,7 +52,6 @@ DECLARE_CONV_CODE (conv_code_6, 1, 2) =
+ 0133, 0171};
+ 
+ /* local helper functions */
+-static int fls (int c);
+ static int encode_conv (it_convolutional_code_t * cc, int *state, int input,
+ 			imat G, int Q, int k, int n);
+ 
+@@ -254,20 +255,6 @@ static int encode_conv (it_convolutional
+   return (c);
+ }
+ 
+-
+-/* find last set bit */
+-static int fls (int c)
+-{
+-  int  l = 0;
+-
+-  while (c) {
+-    l++;
+-    c >>= 1;
+-  }
+-  return (l);
+-}
+-
+-
+ ivec it_viterbi_decode_symbolic (it_convolutional_code_t * cc, mat metrics)
+ {
+   ivec branches;
