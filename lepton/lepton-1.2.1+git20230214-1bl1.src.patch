@@ -1,0 +1,129 @@
+--- origsrc/lepton/CMakeLists.txt	2025-02-07 16:13:59.000000000 +0900
++++ src/lepton/CMakeLists.txt	2025-02-07 17:23:25.078233600 +0900
+@@ -60,22 +60,18 @@ else()
+   set(VECTOR_FLAGS "")
+ endif()
+ if(EMSCRIPTEN)
+-    set(CMAKE_CXX_FLAGS "-std=c++11 -fno-exceptions -fno-rtti -s DEMANGLE_SUPPORT=1 -s TOTAL_MEMORY=184549376 --pre-js pre.js --post-js post.js -O2")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti -s DEMANGLE_SUPPORT=1 -s TOTAL_MEMORY=184549376 --pre-js pre.js --post-js post.js -O2")
+ else()
+-    set(CMAKE_CXX_FLAGS "-std=c++11 -fno-exceptions -fno-rtti")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
+ endif()
+-set(CMAKE_C_FLAGS "-std=c99 -DHAVE_CONFIG_H")
++set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CONFIG_H")
+ 
+ if(WIN32)
+-SET(CMAKE_CXX_FLAGS "-D_HAS_EXCEPTIONS=0 -GR-")
++SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_HAS_EXCEPTIONS=0 -GR-")
+ else()
+-SET(CMAKE_CXX_FLAGS "-std=c++11 -fno-exceptions -fno-rtti")
+-endif()
+-if(WIN32)
+-SET(CMAKE_C_FLAGS "-DHAVE_CONFIG_H")
+-else()
+-SET(CMAKE_C_FLAGS "-std=c99 -DHAVE_CONFIG_H ")
++SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
+ endif()
++SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHAVE_CONFIG_H")
+ if(NOT USE_SYSTEM_DEPENDENCIES)
+     add_library(localmd5 dependencies/md5/md5.c)
+     add_library(localzlib
+@@ -102,7 +98,6 @@ if(NOT USE_SYSTEM_DEPENDENCIES)
+     dependencies/zlib/inffast.c
+     dependencies/zlib/uncompr.c
+     dependencies/zlib/deflate.h)
+-endif()
+ add_library(localbrotli
+     dependencies/brotli/c/include/brotli/encode.h
+     dependencies/brotli/c/include/brotli/types.h
+@@ -180,15 +175,19 @@ add_library(localbrotli
+     dependencies/brotli/c/dec/prefix.h
+     dependencies/brotli/c/dec/port.h
+     dependencies/brotli/c/dec/decode.c)
++endif()
+ 
+ include_directories(
+     ${CMAKE_BINARY_DIR}
+     ${PROJECT_SOURCE_DIR}/src/vp8/util
+-    ${PROJECT_SOURCE_DIR}/dependencies/brotli/c/include
+     ${PROJECT_SOURCE_DIR}/src/vp8/model
+     ${PROJECT_SOURCE_DIR}/src/vp8/encoder
+     ${PROJECT_SOURCE_DIR}/src/vp8/decoder)
+ 
++if (NOT USE_SYSTEM_DEPENDENCIES)
++    include_directories(${PROJECT_SOURCE_DIR}/dependencies/brotli/c/include)
++endif()
++
+ set(LEPTON_SOURCES
+    src/lepton/base_coders.hh
+    src/lepton/simple_encoder.hh
+@@ -371,12 +370,14 @@ if(USE_SYSTEM_DEPENDENCIES)
+     include_directories(${ZLIB_INCLUDE_DIRS})
+     find_package(OpenSSL)
+     include_directories(${OPENSSL_INCLUDE_DIRS})
++    find_package(pkgconfig)
++    pkg_check_modules(BROTLI REQUIRED libbrotlicommon libbrotlidec libbrotlienc)
+     if(SSE_VECTORIZATION)
+-      target_link_libraries(lepton localbrotli ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
+-      target_link_libraries(lepton-slow-best-ratio localbrotli ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
+-      target_link_libraries(lepton-avx localbrotli ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
++      target_link_libraries(lepton ${BROTLI_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
++      target_link_libraries(lepton-slow-best-ratio ${BROTLI_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
++      target_link_libraries(lepton-avx ${BROTLI_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
+     endif()
+-    target_link_libraries(lepton-scalar localbrotli ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
++    target_link_libraries(lepton-scalar ${BROTLI_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${ADDITIONAL_FLAGS})
+ else()
+     if(SSE_VECTORIZATION)
+       target_link_libraries(lepton localzlib localbrotli localmd5 ${ADDITIONAL_FLAGS})
+@@ -399,7 +400,9 @@ set_target_properties(lepton-avx PROPERT
+ endif()
+ set_target_properties(lepton-scalar PROPERTIES COMPILE_FLAGS "${ADDITIONAL_COMPILE_FLAGS} ${ADDITIONAL_DEFINES} ${ALLOCATOR_FLAGS} ${ANS_FLAGS} ${BILLING_FLAGS} -DUSE_SCALAR")
+ 
++if (NOT USE_SYSTEM_DEPENDENCIES)
+ set_target_properties(localzlib PROPERTIES COMPILE_FLAGS "${ARCH_SSE2_FLAGS} ${ZLIB_EXTRA_INCLUDE_DIRS} ${ADDITIONAL_COMPILE_FLAGS} ${ADDITIONAL_DEFINES} ${ALLOCATOR_FLAGS} ${ANS_FLAGS} ${BILLING_FLAGS}")
++endif()
+ 
+ #add_executable(print-model
+ #   src/vp8/util/debug.cc
+--- origsrc/lepton/src/lepton/bitops.hh	2025-02-07 16:13:59.000000000 +0900
++++ src/lepton/src/lepton/bitops.hh	2025-02-07 17:05:01.381447100 +0900
+@@ -51,6 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBI
+ #define BTST_BUFF			1024 * 1024
+ 
+ #include <stdio.h>
++#include <sys/endian.h>
+ #include <functional>
+ #include "../io/Reader.hh"
+ #include "../io/ioutil.hh"
+--- origsrc/lepton/src/vp8/decoder/boolreader.hh	2025-02-07 16:13:59.000000000 +0900
++++ src/lepton/src/vp8/decoder/boolreader.hh	2025-02-07 17:04:01.171107200 +0900
+@@ -28,6 +28,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIG
+ #include <assert.h>
+ #include <limits.h>
+ #include <stdint.h>
++#include <sys/endian.h>
+ #include "vpx_config.hh"
+ #include "billing.hh"
+ #include "../model/numeric.hh"
+--- origsrc/lepton/src/vp8/util/memory.cc	2025-02-07 16:13:59.000000000 +0900
++++ src/lepton/src/vp8/util/memory.cc	2025-02-07 17:17:02.676488100 +0900
+@@ -169,7 +169,7 @@ bool g_use_seccomp =
+     true
+ #endif
+     ;
+-void* operator new (size_t size) throw(std::bad_alloc){
++void* operator new (size_t size) {
+  void* ptr = custom_malloc(size); 
+  if (ptr == 0) {// did malloc succeed?
+      if (!g_use_seccomp) {
+@@ -180,7 +180,7 @@ void* operator new (size_t size) throw(s
+  return ptr;
+ }
+ 
+-void* operator new[] (size_t size) throw(std::bad_alloc){
++void* operator new[] (size_t size) {
+  void* ptr = custom_malloc(size); 
+  if (ptr == 0) {// did malloc succeed?
+      if (!g_use_seccomp) {
