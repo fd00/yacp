@@ -1,0 +1,43 @@
+--- origsrc/libomron/BuildSysCMakeLib.cmake	2025-02-09 09:46:56.000000000 +0900
++++ src/libomron/BuildSysCMakeLib.cmake	2025-02-09 09:53:01.347348000 +0900
+@@ -327,7 +327,7 @@ FUNCTION(BUILDSYS_BUILD_LIB)
+ 
+     # Installation commands
+     IF(BUILDSYS_LIB_SHOULD_INSTALL AND NOT BUILDSYS_LIB_EXCLUDE_FROM_ALL)
+-      INSTALL(TARGETS ${CURRENT_LIB} LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR})
++      INSTALL(TARGETS ${CURRENT_LIB} RUNTIME DESTINATION bin LIBRARY DESTINATION ${LIBRARY_INSTALL_DIR} ARCHIVE DESTINATION ${LIBRARY_INSTALL_DIR} FRAMEWORK DESTINATION ${FRAMEWORK_INSTALL_DIR})
+     ELSEIF(BUILDSYS_LIB_SHOULD_INSTALL AND BUILDSYS_LIB_EXCLUDE_FROM_ALL)
+       # Only install the output file if it exists. This doesn't work for targets under exclude from all, but we may build them anyways
+       MESSAGE(STATUS "NOTE: Target ${BUILDSYS_LIB_NAME} will only be installed after target is specifically built (not build using all target)")
+--- origsrc/libomron/CMakeLists.txt	2025-02-09 09:46:56.000000000 +0900
++++ src/libomron/CMakeLists.txt	2025-02-09 09:57:43.669659500 +0900
+@@ -99,5 +99,16 @@ ENDIF()
+ 
+ ADD_SUBDIRECTORY(src)
+ ADD_SUBDIRECTORY(examples)
++if (BUILD_SWIG)
+ ADD_SUBDIRECTORY(swig)
++endif()
++if (BUILD_PYTHON)
+ ADD_SUBDIRECTORY(python)
++endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libomron.pc.in ${CMAKE_BINARY_DIR}/libomron.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libomron.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libomron/libomron.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libomron/libomron.pc.in	2025-02-09 09:57:54.482905600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libomron
++Description: Libraries for accessing data from Omron medical devices
++Version: @LIBOMRON_VERSION@
++Libs: -L${libdir} -lomron
++Cflags: -I${includedir}
