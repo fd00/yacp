@@ -1,0 +1,50 @@
+--- origsrc/emokit-c/CMakeLists.txt	2025-02-09 10:09:40.000000000 +0900
++++ src/emokit-c/CMakeLists.txt	2025-02-09 10:58:56.201334700 +0900
+@@ -38,9 +38,12 @@ ADD_SUBDIRECTORY(examples/emokit_osc)
+ ##       PKGCONFIG file                ###
+ ##########################################
+ 
+-IF(LINUX)
+ IF   (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/emokit.pc.in")
+   MESSAGE(STATUS "configured ${CMAKE_CURRENT_SOURCE_DIR}/emokit.pc.in --> ${CMAKE_CURRENT_BINARY_DIR}/emokit.pc")
++  set(prefix ${CMAKE_INSTALL_PREFIX})
++  set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++  set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++  set(includedir ${CMAKE_INSTALL_PREFIX}/include)  
+   CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/emokit.pc.in 
+     ${CMAKE_CURRENT_BINARY_DIR}/emokit.pc
+     @ONLY )
+@@ -50,4 +53,3 @@ IF   (EXISTS "${CMAKE_CURRENT_SOURCE_DIR
+ 		DESTINATION lib/pkgconfig
+ 		)
+ ENDIF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/emokit.pc.in")
+-ENDIF()
+--- origsrc/emokit-c/emokit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/emokit-c/emokit.pc.in	2025-02-09 11:09:55.095592300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: emokit-c
++Description: C library for accessing the emotiv epoc headset
++Version: @VERSION@
++Libs: -L${libdir} -lemokit
++Cflags: -I${includedir}
+--- origsrc/emokit-c/src/CMakeLists.txt	2025-02-09 10:09:40.000000000 +0900
++++ src/emokit-c/src/CMakeLists.txt	2025-02-09 10:12:38.624158200 +0900
+@@ -6,8 +6,12 @@
+ ADD_LIBRARY (emokit emokit.c) 
+ target_link_libraries (emokit ${LIBS}) 
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(emokit PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ INSTALL (TARGETS emokit
+-  LIBRARY DESTINATION lib
++  RUNTIME DESTINATION bin
+   ARCHIVE DESTINATION lib
+   )
+ 
