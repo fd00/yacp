@@ -1,0 +1,55 @@
+--- origsrc/levmar-2.6/CMakeLists.txt	2025-02-10 22:34:38.235070700 +0900
++++ src/levmar-2.6/CMakeLists.txt	2025-02-10 22:43:30.047075500 +0900
+@@ -8,7 +8,7 @@ SET(PROJECT_VERSION 2.6)
+ SET(HAVE_LAPACK 1 CACHE BOOL "Do we have LAPACK/BLAS?")
+ # the directory where the lapack/blas/f2c libraries reside
+ SET(LAPACKBLAS_DIR "/usr/lib" CACHE PATH "Path to lapack/blas libraries")
+-SET(NEED_F2C 1 CACHE BOOL "Do we need either f2c or F77/I77?")
++SET(NEED_F2C 0 CACHE BOOL "Do we need either f2c or F77/I77?")
+ SET(HAVE_PLASMA 0 CACHE BOOL "Do we have PLASMA parallel linear algebra library?")
+ IF(HAVE_PLASMA)
+  SET(PLASMA_DIR "/usr/local/PLASMA" CACHE PATH "Path to PLASMA root")
+@@ -68,6 +68,12 @@ ADD_LIBRARY(levmar SHARED
+ TARGET_LINK_LIBRARIES(levmar m ${LAPACKBLAS_LIB_NAMES})
+ SET_TARGET_PROPERTIES(levmar PROPERTIES VERSION ${PROJECT_VERSION})
+ 
++if (DEFINED SOVERSION)
++  SET_TARGET_PROPERTIES(levmar PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
++install(TARGETS levmar RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
+ # demo program
+ IF(BUILD_DEMO)
+   SET(LIBS levmar)
+@@ -95,6 +101,17 @@ IF(BUILD_DEMO)
+ 
+ # make sure that the library is built before the demo
+   ADD_DEPENDENCIES(lmdemo levmar)
++
++  install(TARGETS lmdemo RUNTIME DESTINATION bin)
+ ENDIF(BUILD_DEMO)
+ 
++install(FILES levmar.h DESTINATION include)
++
+ #SUBDIRS(matlab)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/levmar.pc.in ${CMAKE_BINARY_DIR}/levmar.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/levmar.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/levmar-2.6/levmar.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/levmar-2.6/levmar.pc.in	2025-02-10 22:43:33.461939200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: levmar
++Description: Levenberg-Marquardt nonlinear least squares algorithms
++Version: @VERSION@
++Libs: -L${libdir} -llevmar
++Cflags: -I${includedir}
