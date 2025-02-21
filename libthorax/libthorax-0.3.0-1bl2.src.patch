@@ -1,0 +1,48 @@
+--- origsrc/libthorax-0.3.0/CMakeLists.txt	2015-11-20 07:55:56.000000000 +0900
++++ src/libthorax-0.3.0/CMakeLists.txt	2025-02-21 16:40:52.611994200 +0900
+@@ -38,6 +38,10 @@ set (LIBTHORAX_SOURCEFILES
+ add_library (thorax ${LIBTHORAX_SOURCEFILES})
+ target_link_libraries (thorax ${EXTERNAL_LIBRARIES})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties (thorax PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ add_executable (thorax_test ${CMAKE_CURRENT_SOURCE_DIR}/thorax_test.c)
+ target_link_libraries (thorax_test thorax ${EXTERNAL_LIBRARIES})
+ 
+@@ -50,3 +54,10 @@ pbuilder_install_executables (thorax_tes
+ 
+ message(STATUS "calling variables for parents from libthorax")
+ pbuilder_variables_for_parent()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libthorax.pc.in ${CMAKE_BINARY_DIR}/libthorax.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libthorax.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libthorax-0.3.0/PackageBuilder.cmake	2015-11-20 07:55:56.000000000 +0900
++++ src/libthorax-0.3.0/PackageBuilder.cmake	2025-02-21 16:37:02.803581200 +0900
+@@ -99,7 +99,7 @@ macro (pbuilder_add_submodule_libraries)
+ endmacro ()
+ 
+ macro (pbuilder_install_libraries)
+-    install (TARGETS ${ARGN} EXPORT ${PROJECT_NAME}Targets DESTINATION ${LIB_INSTALL_DIR})
++    install (TARGETS ${ARGN} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${BIN_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR})
+     #list (APPEND ${PROJECT_NAME}_LIBRARIES ${ARGN})
+     set_property (GLOBAL APPEND PROPERTY ${PROJECT_NAME}_LIBRARIES ${ARGN})
+     set_target_properties (${ARGN} PROPERTIES INSTALL_NAME_DIR ${LIB_INSTALL_DIR})
+--- origsrc/libthorax-0.3.0/libthorax.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libthorax-0.3.0/libthorax.pc.in	2025-02-21 16:41:05.698128500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libthorax
++Description: place for common simple routines that get used in analysis
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lthorax
++Cflags: -I${includedir}
