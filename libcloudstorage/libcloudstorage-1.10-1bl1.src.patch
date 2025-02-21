@@ -1,0 +1,79 @@
+--- origsrc/libcloudstorage-1.10/CMakeLists.txt	2020-06-28 02:45:19.000000000 +0900
++++ src/libcloudstorage-1.10/CMakeLists.txt	2025-02-21 15:57:35.714922300 +0900
+@@ -113,3 +113,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_N
+         add_subdirectory(test)
+     endif()
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libcloudstorage.pc.in ${CMAKE_BINARY_DIR}/libcloudstorage.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libcloudstorage.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcloudstorage-1.10/bin/CMakeLists.txt	2020-06-28 02:45:19.000000000 +0900
++++ src/libcloudstorage-1.10/bin/CMakeLists.txt	2025-02-21 14:57:00.898439800 +0900
+@@ -21,6 +21,6 @@ cloudstorage_find_library(fuse INCLUDE_P
+ cloudstorage_find_library(fuse-legacy INCLUDE_PATH_SUFFIXES osxfuse/fuse fuse INCLUDE fuse.h NAMES fuse ${osxfuse_LIBRARY_NAME})
+ cloudstorage_find_library(dokan2 INCLUDE_PATH_SUFFIXES dokan INCLUDE dokan.h NAMES dokan2)
+ cloudstorage_find_library(winfsp INCLUDE winfsp/winfsp.h NAMES winfsp)
+-if(fuse_LIBRARY OR fuse-legacy_LIBRARY OR dokan2_LIBRARY OR winfsp_LIBRARY)
++if(BUILD_FUSE AND (fuse_LIBRARY OR fuse-legacy_LIBRARY OR dokan2_LIBRARY OR winfsp_LIBRARY))
+     add_subdirectory(fuse)
+ endif()
+\ No newline at end of file
+--- origsrc/libcloudstorage-1.10/libcloudstorage.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcloudstorage-1.10/libcloudstorage.pc.in	2025-02-21 15:57:19.116761700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcloudstorage
++Description: C++ library providing access to files located in various cloud services
++Version: @VERSION@
++Libs: -L${libdir} -lcloudstorage
++Cflags: -I${includedir}
+--- origsrc/libcloudstorage-1.10/src/CMakeLists.txt	2020-06-28 02:45:19.000000000 +0900
++++ src/libcloudstorage-1.10/src/CMakeLists.txt	2025-02-21 15:05:08.919627500 +0900
+@@ -90,6 +90,10 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE
+ 
+ add_library(cloudstorage)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(cloudstorage PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ set(cloudstorage_PUBLIC_HEADERS
+     IAuth.h
+     ICloudAccess.h
+--- origsrc/libcloudstorage-1.10/test/CMakeLists.txt	2020-06-28 02:45:19.000000000 +0900
++++ src/libcloudstorage-1.10/test/CMakeLists.txt	2025-02-21 15:03:08.740612900 +0900
+@@ -1,9 +1,12 @@
+-include(GoogleTest)
++find_package(GTest)
+ 
+-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++if (NOT GTEST_FOUND)
++    include(GoogleTest)
+ 
+-add_subdirectory(googletest EXCLUDE_FROM_ALL)
++    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+ 
++    add_subdirectory(googletest EXCLUDE_FROM_ALL)
++endif()
+ add_executable(cloudstorage-test)
+ 
+ target_sources(cloudstorage-test PRIVATE
+@@ -21,7 +24,9 @@ target_include_directories(cloudstorage-
+ target_link_libraries(cloudstorage-test PRIVATE gtest gmock gtest_main cloudstorage)
+ cloudstorage_target_link_library(cloudstorage-test jsoncpp)
+ 
+-gtest_discover_tests(cloudstorage-test)
++if (NOT GTEST_FOUND)
++    gtest_discover_tests(cloudstorage-test)
++endif()
+ 
+ if(TOKEN_FILE)
+     target_compile_definitions(cloudstorage-test PRIVATE TOKEN_FILE=${TOKEN_FILE})
