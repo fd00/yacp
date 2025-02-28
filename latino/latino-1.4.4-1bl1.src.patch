@@ -1,0 +1,125 @@
+--- origsrc/latino/CMakeLists.txt	2025-02-28 18:58:23.000000000 +0900
++++ src/latino/CMakeLists.txt	2025-02-28 19:50:18.340813800 +0900
+@@ -87,3 +87,10 @@ add_custom_target(coverage
+   COMMAND genhtml coverage.info --output-directory ./coverage
+   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+   VERBATIM)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/latino.pc.in ${CMAKE_BINARY_DIR}/latino.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/latino.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/latino/latino-core/include/latcompat.h	2025-02-28 18:58:27.000000000 +0900
++++ src/latino/latino-core/include/latcompat.h	2025-02-28 19:01:45.762974100 +0900
+@@ -105,6 +105,7 @@ THE SOFTWARE.
+ #include <regex.h>
+ #include <time.h>
+ #include <unistd.h>
++#include <sys/utsname.h>
+ #define PATH_SEP "/"
+ #define LAT_FUNC __attribute__((visibility("hidden"))) extern
+ #define malloc_size(ptr) malloc_usable_size(ptr)
+--- origsrc/latino/latino-core/include/latino.h	2025-02-28 18:58:27.000000000 +0900
++++ src/latino/latino-core/include/latino.h	2025-02-28 19:52:09.525162200 +0900
+@@ -67,7 +67,7 @@ THE SOFTWARE.
+ /** Version de correcion de errores */
+ #define LAT_VERSION_PARCHE  4
+ /** Version de Latino */
+-#define LAT_CURRENT_YEAR    2024
++#define LAT_CURRENT_YEAR    2025
+ #define LAT_VERSION                                                            \
+     "Latino " LAT_stringize(LAT_VERSION_MAYOR) "." LAT_stringize(              \
+         LAT_VERSION_MENOR) "." LAT_stringize(LAT_VERSION_PARCHE)
+--- origsrc/latino/latino-core/src/CMakeLists.txt	2025-02-28 18:58:27.000000000 +0900
++++ src/latino/latino-core/src/CMakeLists.txt	2025-02-28 19:14:17.916937800 +0900
+@@ -68,7 +68,11 @@ message(STATUS "TARGET_ARCH: ...........
+ #
+ # librerias
+ add_definitions(-D_DEBUG -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS)
+-add_subdirectory(linenoise)
++find_package(pkgconfig)
++pkg_check_modules(LINENOISE REQUIRED linenoise)
++if (NOT LINENOISE_FOUND)
++    add_subdirectory(linenoise)
++endif()
+ 
+ if(WIN32)
+     message(STATUS "CURRENT PATH WIN32....... ${CMAKE_CURRENT_SOURCE_DIR}")
+@@ -76,16 +80,22 @@ if(WIN32)
+     add_subdirectory(latino-regex)
+ endif()
+ 
+-include_directories(linenoise)
++if (LINENOISE_FOUND)
++    include_directories(${LINENOISE_INCLUDE_DIRS})
++else()
++    include_directories(linenoise)
++endif()
+ include_directories(../include)
+ 
+ set(SRC_LIB latino.c latlex.c latparse.c latast.c latmem.c
+ latdic.c latdo.c latlist.c latmv.c latobj.c latpaqlib.c latrepl.c latgc.c
+ #librerias
+ latbaselib.c latstrlib.c latlistlib.c latdiclib.c latfilelib.c
+-latmathlib.c latsyslib.c latpaqlib.c latdevlib.c latuilib.c
+-#extra
+-linenoise/utf8.c linenoise/linenoise.c)
++latmathlib.c latsyslib.c latpaqlib.c latdevlib.c latuilib.c)
++
++if (NOT LINENOISE_FOUND)
++    set(SRC_LIB ${SRC_LIB} linenoise/utf8.c linenoise/linenoise.c)
++endif()
+ 
+ if(MSVC)
+     add_executable(${PROJECT_NAME} ${SRC_LIB} vs_resources/latino.rc)
+@@ -93,6 +103,10 @@ else()
+     add_executable(${PROJECT_NAME} ${SRC_LIB})
+ endif(MSVC)
+ 
++if (LINENOISE_FOUND)
++    target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${LINENOISE_LIBRARIES})
++endif()
++
+ target_link_libraries(${PROJECT_NAME} LINK_PUBLIC ${CMAKE_DL_LIBS})
+ 
+ if(MSVC)
+@@ -120,17 +134,19 @@ if(LATINO_BUILD_AS_DLL)
+     set_target_properties (liblatino PROPERTIES COMPILE_DEFINITIONS LATINO_BUILD_AS_DLL)
+ endif ()
+ 
+-#Create static library
+-add_library(liblatino_static STATIC ${SRC_LIB})
+-target_link_libraries(liblatino_static ${LIBS})
++if (LINENOISE_FOUND)
++    target_link_libraries(liblatino LINK_PUBLIC ${LINENOISE_LIBRARIES})
++endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(liblatino PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ #
+ # Ubicacion de archivos en UNIX
+ if(UNIX)
+     install(TARGETS     latino                          DESTINATION     ${INSTALL_BIN}                      )
+-    install(TARGETS     liblatino                       DESTINATION     ${INSTALL_LIB}                      )
+-    install(TARGETS     liblatino_static                DESTINATION     ${INSTALL_LIB}                      )
++    install(TARGETS     liblatino                       RUNTIME DESTINATION ${INSTALL_BIN} ARCHIVE DESTINATION ${INSTALL_LIB}                      )
+     install(FILES       man/latino.1.gz                 DESTINATION     ${INSTALL_SHARE}/man/man1           )
+     install(FILES       gnu-utilities/latino.nanorc     DESTINATION     ${INSTALL_SHARE}/nano               )
+     install(FILES       gnu-utilities/latino.desktop    DESTINATION     ${INSTALL_SHARE}/applications       )
+--- origsrc/latino/latino.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/latino/latino.pc.in	2025-02-28 19:52:05.140366900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: latino
++Description: Lenguaje de programación de código abierto para latinos y de habla hispana
++Version: @LAT_VER_MAYOR@.@LAT_VER_MENOR@.@LAT_VER_PARCHE@
++Libs: -L${libdir} -llatino
++Cflags: -I${includedir}
