@@ -1,0 +1,121 @@
+--- origsrc/lcm-1.5.1/lcm/CMakeLists.txt	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/lcm/CMakeLists.txt	2025-02-28 20:16:12.259244900 +0900
+@@ -39,10 +39,9 @@ endif()
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+ add_library(lcm-coretypes INTERFACE)
+-add_library(lcm-static STATIC ${lcm_sources})
+ add_library(lcm SHARED ${lcm_sources})
+ 
+-foreach(lcm_lib lcm lcm-static)
++foreach(lcm_lib lcm)
+   target_compile_definitions(${lcm_lib} PRIVATE
+     _FILE_OFFSET_BITS=64
+     _LARGEFILE_SOURCE
+@@ -72,16 +71,11 @@ endforeach()
+ 
+ generate_export_header(lcm STATIC_DEFINE LCM_STATIC)
+ 
+-target_compile_definitions(lcm-static PUBLIC LCM_STATIC)
+-if(NOT WIN32)
+-  set_target_properties(lcm-static PROPERTIES OUTPUT_NAME lcm)
+-endif()
+-
+ target_include_directories(lcm-coretypes INTERFACE
+   $<BUILD_INTERFACE:${lcm_SOURCE_DIR}>
+ )
+ 
+-install(TARGETS lcm-coretypes lcm-static lcm
++install(TARGETS lcm-coretypes lcm
+   EXPORT lcmTargets
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib${LIB_SUFFIX}
+--- origsrc/lcm-1.5.1/lcm-cmake/install.cmake	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/lcm-cmake/install.cmake	2025-02-28 20:17:13.170308800 +0900
+@@ -1,10 +1,12 @@
+ include(CMakePackageConfigHelpers)
+ 
++if (NOT DEFINED CONFIG_INSTALL_DIR)
+ if(WIN32)
+   set(CONFIG_INSTALL_DIR CMake)
+ else()
+   set(CONFIG_INSTALL_DIR lib${LIB_SUFFIX}/${PROJECT_NAME}/cmake)
+ endif()
++endif()
+ 
+ # Java exported targets (note: must precede configure_package_config_file)
+ if(LCM_ENABLE_JAVA)
+--- origsrc/lcm-1.5.1/lcm-logger/CMakeLists.txt	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/lcm-logger/CMakeLists.txt	2025-02-28 20:29:38.784343600 +0900
+@@ -1,8 +1,8 @@
+ add_executable(lcm-logger lcm_logger.c glib_util.c)
+-target_link_libraries(lcm-logger lcm-static GLib2::glib)
++target_link_libraries(lcm-logger lcm GLib2::glib)
+ 
+ add_executable(lcm-logplayer lcm_logplayer.c)
+-target_link_libraries(lcm-logplayer lcm-static GLib2::glib)
++target_link_libraries(lcm-logplayer lcm GLib2::glib)
+ 
+ install(TARGETS
+   lcm-logger
+--- origsrc/lcm-1.5.1/lcm-python/CMakeLists.txt	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/lcm-python/CMakeLists.txt	2025-02-28 20:35:08.134923800 +0900
+@@ -52,7 +52,7 @@ else ()
+ endif ()
+ 
+ target_link_libraries(lcm-python PRIVATE
+-  lcm-static
++  lcm ${Python3_LIBRARIES}
+ )
+ 
+ if(APPLE)
+--- origsrc/lcm-1.5.1/liblcm-test/CMakeLists.txt	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/liblcm-test/CMakeLists.txt	2025-02-28 20:30:36.963238100 +0900
+@@ -1,29 +1,29 @@
+ add_executable(lcm-sink lcm-sink.c)
+-target_link_libraries(lcm-sink lcm-static)
++target_link_libraries(lcm-sink lcm)
+ 
+ add_executable(lcm-source lcm-source.c)
+-target_link_libraries(lcm-source lcm-static)
++target_link_libraries(lcm-source lcm)
+ 
+ add_executable(lcm-tester lcm-tester.c)
+-target_link_libraries(lcm-tester lcm-static GLib2::glib)
++target_link_libraries(lcm-tester lcm GLib2::glib)
+ if(WIN32)
+   target_link_libraries(lcm-tester wsock32 ws2_32)
+ endif()
+ 
+ add_executable(lcm-example lcm-example.c)
+-target_link_libraries(lcm-example lcm-static)
++target_link_libraries(lcm-example lcm)
+ if(WIN32)
+   target_link_libraries(lcm-example ws2_32)
+ endif()
+ 
+ add_executable(lcm-logfilter lcm-logfilter.c)
+-target_link_libraries(lcm-logfilter lcm-static GLib2::glib)
++target_link_libraries(lcm-logfilter lcm GLib2::glib)
+ 
+ add_executable(lcm-buftest-receiver buftest-receiver.c)
+-target_link_libraries(lcm-buftest-receiver lcm-static GLib2::glib)
++target_link_libraries(lcm-buftest-receiver lcm GLib2::glib)
+ 
+ add_executable(lcm-buftest-sender buftest-sender.c)
+-target_link_libraries(lcm-buftest-sender lcm-static GLib2::glib)
++target_link_libraries(lcm-buftest-sender lcm GLib2::glib)
+ 
+ install(TARGETS
+   lcm-sink
+--- origsrc/lcm-1.5.1/test/CMakeLists.txt	2024-12-24 03:03:38.000000000 +0900
++++ src/lcm-1.5.1/test/CMakeLists.txt	2025-02-28 20:18:47.727961400 +0900
+@@ -1,4 +1,7 @@
+-add_subdirectory(gtest)
++find_package(gtest)
++if (NOT GTEST_FOUND)
++  add_subdirectory(gtest)
++endif()
+ 
+ add_subdirectory(types)
+ 
