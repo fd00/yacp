@@ -1,0 +1,103 @@
+--- origsrc/level-zero-1.20.6/CMakeLists.txt	2025-02-19 08:43:13.000000000 +0900
++++ src/level-zero-1.20.6/CMakeLists.txt	2025-02-28 21:46:24.198379100 +0900
+@@ -53,6 +53,8 @@ endif()
+ include(FetchContent)
+ 
+ if(BUILD_L0_LOADER_TESTS)
++    find_package(GTest)
++    if (NOT GTEST_FOUND)
+ 	FetchContent_Declare(
+ 		googletest
+ 		URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+@@ -62,7 +64,7 @@ if(BUILD_L0_LOADER_TESTS)
+ 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+ 
+ 	FetchContent_MakeAvailable(googletest)
+-
++    endif()
+ 	enable_testing()
+ endif()
+ 
+@@ -116,7 +118,7 @@ if(NOT MSVC)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+     endif()
+     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL IntelLLVM)
+-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wnon-virtual-dtor")
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor")
+     endif()
+ endif()
+ 
+--- origsrc/level-zero-1.20.6/source/CMakeLists.txt	2025-02-19 08:43:13.000000000 +0900
++++ src/level-zero-1.20.6/source/CMakeLists.txt	2025-02-28 22:11:37.447812700 +0900
+@@ -49,9 +49,15 @@ install(TARGETS ze_loader
+     NAMELINK_COMPONENT level-zero-devel
+ )
+ 
+-file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
+-file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+-file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++if (NOT DEFINED pkgconfig_prefix)
++    file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
++endif()
++if (NOT DEFINED pkgconfig_include_dir)
++    file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
++endif()
++if (NOT DEFINED pkgconfig_lib_dir)
++    file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++endif()
+ 
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libze_loader.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libze_loader.pc @ONLY)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/level-zero.pc.in ${CMAKE_CURRENT_BINARY_DIR}/level-zero.pc @ONLY)
+--- origsrc/level-zero-1.20.6/source/inc/ze_util.h	2025-02-19 08:43:13.000000000 +0900
++++ src/level-zero-1.20.6/source/inc/ze_util.h	2025-02-28 21:03:57.000797300 +0900
+@@ -39,10 +39,16 @@ inline void getLastErrorString(std::stri
+ #  define GET_FUNCTION_PTR(LIB, FUNC_NAME) reinterpret_cast<void *>(GetProcAddress(LIB, FUNC_NAME))
+ #  define string_copy_s strncpy_s
+ #else
+-#  include <link.h>
++#  if defined(__GLIBC__)
++#    include <link.h>
++#  endif
+ #  include <dlfcn.h>
+ #  define HMODULE void*
+-#  define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so." VERSION
++#  if defined(__CYGWIN__)
++#    define MAKE_LIBRARY_NAME(NAME, VERSION)    "cyg" NAME "-" L0_VALIDATION_LAYER_SUPPORTED_VERSION ".dll"
++#  else
++#    define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so." VERSION
++#  endif
+ #  define MAKE_LAYER_NAME(NAME)    "lib" NAME ".so." L0_VALIDATION_LAYER_SUPPORTED_VERSION
+ #  define LOAD_DRIVER_LIBRARY(NAME) dlopen(NAME, RTLD_LAZY|RTLD_LOCAL)
+ #  define GET_LIBRARY_ERROR(ERROR_STRING) ERROR_STRING.assign(dlerror())
+--- origsrc/level-zero-1.20.6/source/loader/ze_loader.cpp	2025-02-19 08:43:13.000000000 +0900
++++ src/level-zero-1.20.6/source/loader/ze_loader.cpp	2025-02-28 21:18:30.751442400 +0900
+@@ -459,12 +459,14 @@ namespace loader
+                 if (debugTraceEnabled) {
+                     std::string message = "Loading Driver " + name + " succeeded";
+ #ifndef _WIN32
++#if defined(RTLD_DI_LINKMAP)
+                     // TODO: implement same message for windows, move dlinfo to ze_util.h as a macro
+                     struct link_map *dlinfo_map;
+                     if (dlinfo(handle, RTLD_DI_LINKMAP, &dlinfo_map) == 0) {
+                         message += " from: " + std::string(dlinfo_map->l_name);
+                     }
+ #endif
++#endif
+                     debug_trace_message(message, "");
+                 }
+                 allDrivers.emplace_back();
+--- origsrc/level-zero-1.20.6/source/utils/logging.h	2025-02-19 08:43:13.000000000 +0900
++++ src/level-zero-1.20.6/source/utils/logging.h	2025-02-28 21:05:53.940076500 +0900
+@@ -191,10 +191,12 @@ inline std::shared_ptr<Logger> createLog
+ #else
+       home_dir = getenv_string("HOME");
+ 
++#if !defined(__CYGWIN__)
+       if (home_dir == "") {
+           auto pwdir = getpwuid(getuid())->pw_dir;
+           home_dir = (pwdir == NULL) ? "." : std::string(pwdir);
+       }
++#endif
+       log_directory = home_dir + "/" + LOADER_LOG_FILE_DIRECTORY;
+ #endif
+   }
