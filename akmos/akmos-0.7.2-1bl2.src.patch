@@ -1,0 +1,174 @@
+--- origsrc/akmos-0.7.2/CMakeLists.txt	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/CMakeLists.txt	2025-03-02 15:09:21.803408800 +0900
+@@ -20,3 +20,10 @@ endif()
+ if(AKMOS_ENABLE_BENCH)
+     add_subdirectory(bench)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/akmos.pc.in ${CMAKE_BINARY_DIR}/akmos.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/akmos.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/akmos-0.7.2/akmos.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/akmos-0.7.2/akmos.pc.in	2025-03-02 15:08:41.759621700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: akmos
++Description: Cryptography toolkit
++Version: @VERSION@
++Libs: -L${libdir} -lakmos
++Cflags: -I${includedir}
+--- origsrc/akmos-0.7.2/cmake/Flags.txt	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/cmake/Flags.txt	2025-03-02 13:11:10.401376200 +0900
+@@ -1,7 +1,7 @@
+ 
+ set(C_DEFINE "AKMOS_BUFSZ=8192;_GNU_SOURCE;_POSIX_SOURCE;_POSIX_C_SOURCE=200809L")
+ 
+-set(C_WARN_FLAGS -Wall -Wextra -Werror -Wmissing-prototypes -Wconversion)
++set(C_WARN_FLAGS -Wall -Wextra -Wmissing-prototypes -Wconversion)
+ set(C_CGO_FLAGS -fPIC)
+ set(C_DIALECT_FLAGS -ansi -std=c11 -pedantic)
+ 
+--- origsrc/akmos-0.7.2/src/CMakeLists.txt	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/CMakeLists.txt	2025-03-02 10:37:18.778308600 +0900
+@@ -112,14 +112,11 @@ target_compile_options(akmos_obj PUBLIC
+ 
+ if(TARGET akmos_obj_asm)
+     add_library(akmos_shared SHARED $<TARGET_OBJECTS:akmos_obj> $<TARGET_OBJECTS:akmos_obj_asm>)
+-    add_library(akmos_static STATIC $<TARGET_OBJECTS:akmos_obj> $<TARGET_OBJECTS:akmos_obj_asm>)
+ else()
+     add_library(akmos_shared SHARED $<TARGET_OBJECTS:akmos_obj>)
+-    add_library(akmos_static STATIC $<TARGET_OBJECTS:akmos_obj>)
+ endif()
+ 
+ set_target_properties(akmos_shared PROPERTIES VERSION 0.7 SOVERSION 7 OUTPUT_NAME akmos)
+-set_target_properties(akmos_static PROPERTIES OUTPUT_NAME akmos)
+ 
+ add_executable(akmos ${src_cli})
+ target_compile_options(akmos PUBLIC ${C_FLAGS})
+@@ -127,7 +124,7 @@ target_link_libraries(akmos akmos_shared
+ 
+ set(BINDIR bin)
+ 
+-install(TARGETS akmos_shared akmos_static akmos
++install(TARGETS akmos_shared akmos
+         LIBRARY DESTINATION lib
+         ARCHIVE DESTINATION lib
+         RUNTIME DESTINATION bin)
+--- origsrc/akmos-0.7.2/src/algo/anubis.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/anubis.h	2025-03-02 13:17:56.439620800 +0900
+@@ -37,7 +37,7 @@
+ #define AKMOS_ANUBIS_MAX_N      10
+ #define AKMOS_ANUBIS_MAX_R      (AKMOS_ANUBIS_MAX_N + 8)
+ 
+-const uint32_t akmos_anubis_sbox[6][256];
++extern const uint32_t akmos_anubis_sbox[6][256];
+ 
+ typedef struct {
+     int r;
+--- origsrc/akmos-0.7.2/src/algo/blowfish.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/blowfish.h	2025-03-02 13:18:03.751988800 +0900
+@@ -34,8 +34,8 @@
+ #define AKMOS_BLOWFISH_KEYMAX   56
+ #define AKMOS_BLOWFISH_KEYSTEP  4
+ 
+-const uint32_t akmos_blowfish_p[18];
+-const uint32_t akmos_blowfish_sbox[4][256];
++extern const uint32_t akmos_blowfish_p[18];
++extern const uint32_t akmos_blowfish_sbox[4][256];
+ 
+ typedef struct {
+     uint32_t p[18];
+--- origsrc/akmos-0.7.2/src/algo/camellia.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/camellia.h	2025-03-02 13:16:19.709557000 +0900
+@@ -34,7 +34,7 @@
+ #define AKMOS_CAMELLIA_KEYMAX   32
+ #define AKMOS_CAMELLIA_KEYSTEP  8
+ 
+-const uint64_t akmos_camellia_sbox[8][256];
++extern const uint64_t akmos_camellia_sbox[8][256];
+ 
+ typedef struct {
+     uint64_t k[24];
+--- origsrc/akmos-0.7.2/src/algo/cast6.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/cast6.h	2025-03-02 13:18:09.668299000 +0900
+@@ -34,7 +34,7 @@
+ #define AKMOS_CAST6_KEYMAX  32
+ #define AKMOS_CAST6_KEYSTEP 8
+ 
+-const uint32_t akmos_cast6_sbox[4][256];
++extern const uint32_t akmos_cast6_sbox[4][256];
+ 
+ typedef struct {
+     uint32_t l_key[96];
+--- origsrc/akmos-0.7.2/src/algo/rijndael.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/rijndael.h	2025-03-02 13:18:22.757408300 +0900
+@@ -34,9 +34,9 @@
+ #define AKMOS_RIJNDAEL_KEYMAX   32
+ #define AKMOS_RIJNDAEL_KEYSTEP  8
+ 
+-const uint32_t akmos_rijndael_s   [256];
+-const uint32_t akmos_rijndael_sbox[5][256];
+-const uint32_t akmos_rijndael_si  [5][256];
++extern const uint32_t akmos_rijndael_s   [256];
++extern const uint32_t akmos_rijndael_sbox[5][256];
++extern const uint32_t akmos_rijndael_si  [5][256];
+ 
+ typedef struct {
+     uint32_t ke[4*(14+1)];
+--- origsrc/akmos-0.7.2/src/algo/seed.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/seed.h	2025-03-02 13:18:32.491943600 +0900
+@@ -34,8 +34,8 @@
+ #define AKMOS_SEED_KEYMAX   AKMOS_SEED_KEYMIN
+ #define AKMOS_SEED_KEYSTEP  AKMOS_SEED_KEYMIN
+ 
+-const uint32_t akmos_seed_sbox[4][256];
+-const uint32_t akmos_seed_kc[16];
++extern const uint32_t akmos_seed_sbox[4][256];
++extern const uint32_t akmos_seed_kc[16];
+ 
+ typedef struct {
+     uint32_t key[32];
+--- origsrc/akmos-0.7.2/src/algo/tiger.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/tiger.h	2025-03-02 13:16:51.850463000 +0900
+@@ -32,7 +32,7 @@
+ #define AKMOS_TIGER_DIGLEN      24
+ #define AKMOS_TIGER_BLKLEN      64
+ 
+-const uint64_t akmos_tiger_sbox[4][256];
++extern const uint64_t akmos_tiger_sbox[4][256];
+ 
+ typedef struct {
+     uint64_t h[3+8];
+--- origsrc/akmos-0.7.2/src/algo/twofish.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/twofish.h	2025-03-02 13:17:13.290413000 +0900
+@@ -35,9 +35,9 @@
+ #define AKMOS_TWOFISH_KEYMAX    32
+ #define AKMOS_TWOFISH_KEYSTEP   8
+ 
+-const uint8_t  akmos_twofish_q0[256];
+-const uint8_t  akmos_twofish_q1[256];
+-const uint32_t akmos_twofish_sbox[4][256];
++extern const uint8_t  akmos_twofish_q0[256];
++extern const uint8_t  akmos_twofish_q1[256];
++extern const uint32_t akmos_twofish_sbox[4][256];
+ 
+ typedef struct {
+     uint32_t l_key[40];
+--- origsrc/akmos-0.7.2/src/algo/whirlpool.h	2018-04-04 04:45:03.000000000 +0900
++++ src/akmos-0.7.2/src/algo/whirlpool.h	2025-03-02 13:17:00.787722400 +0900
+@@ -34,7 +34,7 @@
+ 
+ #define AKMOS_WHIRLPOOL_ROUNDS  10
+ 
+-const uint64_t akmos_whirlpool_sbox[8][256];
++extern const uint64_t akmos_whirlpool_sbox[8][256];
+ 
+ typedef struct {
+     uint64_t h[8+24];
