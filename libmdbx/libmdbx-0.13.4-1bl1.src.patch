@@ -1,41 +1,36 @@
---- origsrc/libmdbx-0.13.2/CMakeLists.txt	2024-12-12 04:25:18.000000000 +0900
-+++ src/libmdbx-0.13.2/CMakeLists.txt	2025-01-06 20:20:33.292763000 +0900
-@@ -1042,6 +1042,9 @@ if(MDBX_BUILD_SHARED_LIBRARY)
-   add_library(mdbx SHARED ${LIBMDBX_SOURCES})
-   set_target_properties(mdbx PROPERTIES PUBLIC_HEADER
-                                         "${LIBMDBX_PUBLIC_HEADERS}")
+--- origsrc/libmdbx-0.13.4/CMakeLists.txt	2025-02-14 19:58:49.000000000 +0900
++++ src/libmdbx-0.13.4/CMakeLists.txt	2025-03-09 11:13:19.363686600 +0900
+@@ -967,6 +967,9 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+   endif()
+   list(APPEND MDBX_BUILD_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+   target_include_directories(mdbx INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 +  if (CYGWIN)
 +    set_target_properties(mdbx PROPERTIES SOVERSION "${MDBX_VERSION_MAJOR}")
 +  endif()
-   target_compile_definitions(
-     mdbx
-     PRIVATE LIBMDBX_EXPORTS MDBX_BUILD_SHARED_LIBRARY=1
-@@ -1139,7 +1142,7 @@ endif()
+ endif()
  
- # mdbx-shared-lib installation
- if(NOT DEFINED MDBX_DLL_INSTALL_DESTINATION)
--  if(WIN32)
-+  if(WIN32 OR CYGWIN)
-     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_BINDIR})
-   else()
-     set(MDBX_DLL_INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR})
-@@ -1150,6 +1153,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+ if(MDBX_BUILD_SHARED_LIBRARY AND MDBX_LINK_TOOLS_NONSTATIC)
+@@ -1047,7 +1050,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
      install(
        TARGETS mdbx
        EXPORT libmdbx
+-      LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
 +      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
-       LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel
-@@ -1160,6 +1164,7 @@ if(MDBX_BUILD_SHARED_LIBRARY)
+       INCLUDES
+@@ -1057,9 +1060,8 @@ if(MDBX_BUILD_SHARED_LIBRARY)
      install(
        TARGETS mdbx
        EXPORT libmdbx
-+      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION} COMPONENT runtime
-       LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION}
+-      LIBRARY DESTINATION ${MDBX_DLL_INSTALL_DESTINATION}
++      RUNTIME DESTINATION ${MDBX_DLL_INSTALL_DESTINATION}
                COMPONENT runtime
-               NAMELINK_COMPONENT devel
-@@ -1388,3 +1393,10 @@ if(NOT SUBPROJECT)
+-              NAMELINK_COMPONENT devel
+       OBJECTS DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
+       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT devel
+@@ -1267,3 +1269,10 @@ if(NOT SUBPROJECT)
  endif()
  
  cmake_policy(POP)
@@ -46,8 +41,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/libmdbx.pc.in ${CMAKE_BINARY_DIR}/libmdbx.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/libmdbx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/libmdbx-0.13.2/libmdbx.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libmdbx-0.13.2/libmdbx.pc.in	2025-01-06 20:25:02.736817900 +0900
+--- origsrc/libmdbx-0.13.4/libmdbx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmdbx-0.13.4/libmdbx.pc.in	2025-03-09 11:13:24.721642400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -59,8 +54,8 @@
 +Version: @MDBX_VERSION@
 +Libs: -L${libdir} -lmdbx
 +Cflags: -I${includedir}
---- origsrc/libmdbx-0.13.2/mdbx.c	2024-12-12 04:25:18.000000000 +0900
-+++ src/libmdbx-0.13.2/mdbx.c	2025-01-06 17:34:51.566486000 +0900
+--- origsrc/libmdbx-0.13.4/mdbx.c	2025-02-14 20:11:56.000000000 +0900
++++ src/libmdbx-0.13.4/mdbx.c	2025-03-09 11:02:59.465003900 +0900
 @@ -191,6 +191,10 @@
  #include <string.h>
  #include <time.h>
@@ -81,7 +76,7 @@
  
  #define MDBX_HAVE_PWRITEV 0
  
-@@ -26413,6 +26417,10 @@ __extern_C void __assert(const char *fun
+@@ -27679,6 +27683,10 @@ __extern_C void __assert(const char *fun
      ;
  #define __assert_fail(assertion, file, line, function) __assert(function, file, line, assertion)
  
