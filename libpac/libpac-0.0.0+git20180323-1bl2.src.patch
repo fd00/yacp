@@ -1,0 +1,156 @@
+--- origsrc/libpac/Makefile.am	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/Makefile.am	2025-03-10 05:16:46.564236300 +0900
+@@ -15,8 +15,13 @@ pkgconfigdir=$(libdir)/pkgconfig
+ 
+ LIBRARY_VERSION = 0:0:0
+ 
+-SOURCES = duktape.c pac.c threadpool.c util.c
++SOURCES = pac.c threadpool.c util.c
+ 
+ lib_LTLIBRARIES = libpac.la
++libpac_la_CFLAGS = $(DUKTAPE_CFLAGS)
+ libpac_la_SOURCES = $(SOURCES)
+-libpac_la_LDFLAGS = -version-info $(LIBRARY_VERSION)
++libpac_la_LDFLAGS = -no-undefined -version-info $(LIBRARY_VERSION)
++libpac_la_LIBADD = $(DUKTAPE_LIBS)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libpac/configure.ac	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/configure.ac	2025-03-10 05:16:03.414201700 +0900
+@@ -59,8 +59,10 @@ if test "$bwin32" = true; then
+     AC_CHECK_LIB(dbghelp, main)
+ fi
+ 
++PKG_CHECK_MODULES([DUKTAPE], [duktape])
++
+ AC_SUBST(LOCAL_CPPFLAGS)
+ AC_SUBST(LOCAL_LDFLAGS)
+ 
+-AC_CONFIG_FILES([Makefile tests/Makefile])
++AC_CONFIG_FILES([libpac.pc Makefile tests/Makefile])
+ AC_OUTPUT
+--- origsrc/libpac/libpac.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpac/libpac.pc.in	2025-03-10 05:14:27.001921600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpac
++Description: C library for handling proxy autoconfiguration (PAC) files
++Version: @VERSION@
++Libs: -L${libdir} -lpac
++Cflags: -I${includedir}
+--- origsrc/libpac/pac.c	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/pac.c	2025-03-10 05:14:27.001921600 +0900
+@@ -4,7 +4,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <pthread.h>
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <winsock2.h>
+ #else
+ #include <sys/types.h>
+--- origsrc/libpac/tests/test_helper.h	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/tests/test_helper.h	2025-03-10 05:14:27.001921600 +0900
+@@ -1,4 +1,4 @@
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 
+ #include <winsock2.h>
+ #include <windows.h>
+--- origsrc/libpac/tests/test_pac.c	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/tests/test_pac.c	2025-03-10 05:14:27.001921600 +0900
+@@ -8,7 +8,7 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <pthread.h>
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <winsock2.h>
+ #else
+ #include <sys/types.h>
+@@ -22,13 +22,13 @@
+ 
+ struct pac *pac;
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #define ERR() WSAGetLastError()
+ #else
+ #define ERR() errno
+ #endif
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ typedef SOCKET notifier_t;
+ #else
+ typedef int notifier_t;
+@@ -38,7 +38,7 @@ void do_notify(notifier_t n)
+ {
+     int ret;
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     ret = send(n, "x", 1, 0);
+ #else
+     ret = write(n, "x", 1);
+@@ -54,7 +54,7 @@ int is_notified(notifier_t n, struct tim
+     FD_ZERO(&fds);
+     FD_SET(n, &fds);
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     char buf[64];
+     if (select(100000, &fds, NULL, NULL, timeout) > 0) {
+         recv(n, buf, sizeof(buf), 0);
+@@ -80,7 +80,7 @@ int is_notified(notifier_t n, struct tim
+  */
+ int create_notifier(notifier_t not[2])
+ {
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     SOCKET listener = -1, connector = -1, acceptor = -1;
+     struct sockaddr_in listen_addr, connect_addr;
+     int size;
+@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
+     struct timeval tv;
+     notifier_t n[2];
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     WSADATA wsaData;
+     if (WSAStartup(0x202, &wsaData)) {
+         fprintf(stderr, "Failed to initialize WSA\n");
+--- origsrc/libpac/util.c	2025-03-10 05:14:25.000000000 +0900
++++ src/libpac/util.c	2025-03-10 05:14:27.001921600 +0900
+@@ -4,7 +4,7 @@
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/time.h>
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #include <winsock2.h>
+ #include <ws2tcpip.h>
+ #include <iphlpapi.h>
+@@ -49,7 +49,7 @@ static int util_inet_ntop(int family, st
+ {
+     struct sockaddr_in *sin;
+     struct sockaddr_in6 *sin6;
+-#if defined(_WIN32) || defined (__CYGWIN__)
++#if defined(_WIN32)
+     void *src;
+ #else
+     const void *src;
+@@ -78,7 +78,7 @@ int util_my_ip_address(char *buf, size_t
+ {
+     int ret = -1;
+     char tmp[INET6_ADDRSTRLEN + 1];
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+     PIP_ADAPTER_ADDRESSES pAdapterAddresses = NULL, pInfo = NULL;
+     ULONG ulBufferLength = 0;
+     DWORD dwRet;
