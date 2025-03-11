@@ -1,0 +1,136 @@
+--- origsrc/tomsolver-1.0.1/CMakeLists.txt	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/CMakeLists.txt	2025-03-11 16:20:38.515910500 +0900
+@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ if(MSVC)
+ 	add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+ else()
+-	add_compile_options(-Wall -Wextra -pedantic -Werror)
++	add_compile_options(-Wall -Wextra -pedantic)
+ endif()
+ 
+ # =====================================
+@@ -23,6 +23,8 @@ message(STATUS "Option: BUILD_EXAMPLES=$
+ 
+ # =====================================
+ if(BUILD_TESTS)
++	find_package(gtest)
++	if (NOT GTEST_FOUND)
+ 	# 添加参数：是否从镜像站下载googletest
+ 	option(USE_MIRROR_GTEST_REPO "Use mirror google test repository at gitcode.net" OFF)
+ 
+@@ -44,6 +46,7 @@ if(BUILD_TESTS)
+ 	# For Windows: Prevent overriding the parent project's compiler/linker settings
+ 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+ 	FetchContent_MakeAvailable(googletest)
++	endif()
+ 
+ 	enable_testing()
+ 
+@@ -57,7 +60,11 @@ file(GLOB_RECURSE SOURCE_CODE
+ 	src/*.h
+ )
+ 
+-add_library(tomsolver STATIC ${SOURCE_CODE})
++add_library(tomsolver ${SOURCE_CODE})
++
++if (DEFINED SOVERSION)
++	set_target_properties(tomsolver PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ target_include_directories(tomsolver PUBLIC
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>  
+@@ -90,7 +97,7 @@ install(DIRECTORY src/
+ install(EXPORT tomsolver_targets
+         FILE tomsolver-targets.cmake
+         NAMESPACE tomsolver::
+-        DESTINATION share/tomsolver)
++        DESTINATION lib/cmake/tomsolver)
+ 
+ # Generate the config file in the current binary dir (this ensures it's not placed directly in source)
+ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/tomsolver-config.cmake"
+@@ -100,4 +107,10 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/
+ 
+ # Install the generated config file
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tomsolver-config.cmake"
+-        DESTINATION share/tomsolver)
++        DESTINATION lib/cmake/tomsolver)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/tomsolver.pc.in ${CMAKE_BINARY_DIR}/tomsolver.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/tomsolver.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tomsolver-1.0.1/single/test/CMakeLists.txt	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/single/test/CMakeLists.txt	2025-03-11 16:12:53.432311300 +0900
+@@ -12,7 +12,9 @@ target_include_directories(TomSolverSing
+ 
+ target_link_libraries(TomSolverSingleTest PUBLIC
+ 	gtest_main
++	${GTEST_LIBRARIES}
+ )
+ 
+ include(GoogleTest)
+-gtest_discover_tests(TomSolverSingleTest)
+\ No newline at end of file
++# gtest_discover_tests(TomSolverSingleTest)
++add_test(NAME TomSolverSingleTest COMMAND TomSolverSingleTest)
+--- origsrc/tomsolver-1.0.1/tests/CMakeLists.txt	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/tests/CMakeLists.txt	2025-03-11 16:12:11.344369500 +0900
+@@ -13,7 +13,9 @@ target_include_directories(tomsolver_tes
+ target_link_libraries(tomsolver_tests PUBLIC
+     tomsolver
+     gtest_main
++    ${GTEST_LIBRARIES}
+ )
+ 
+ include(GoogleTest)
+-gtest_discover_tests(tomsolver_tests)
+\ No newline at end of file
++# gtest_discover_tests(tomsolver_tests)
++add_test(NAME tomsolver_tests COMMAND tomsolver_tests)
+--- origsrc/tomsolver-1.0.1/tests/functions_test.cpp	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/tests/functions_test.cpp	2025-03-11 15:55:47.999541400 +0900
+@@ -9,6 +9,8 @@
+ 
+ #include <random>
+ 
++#include <chrono>
++
+ #undef max
+ #undef min
+ 
+--- origsrc/tomsolver-1.0.1/tests/parse_test.cpp	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/tests/parse_test.cpp	2025-03-11 15:58:26.001672000 +0900
+@@ -8,6 +8,8 @@
+ 
+ #include <random>
+ 
++#include <chrono>
++
+ using namespace tomsolver;
+ 
+ using std::cout;
+--- origsrc/tomsolver-1.0.1/tests/random_test.cpp	2024-12-15 14:49:39.000000000 +0900
++++ src/tomsolver-1.0.1/tests/random_test.cpp	2025-03-11 15:56:36.102458200 +0900
+@@ -8,6 +8,8 @@
+ 
+ #include <random>
+ 
++#include <chrono>
++
+ using namespace tomsolver;
+ 
+ using std::cout;
+--- origsrc/tomsolver-1.0.1/tomsolver.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tomsolver-1.0.1/tomsolver.pc.in	2025-03-11 16:23:40.622714700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tomsolver
++Description: Simplest, Well-tested, Non-linear equations solver library
++Version: @VERSION@
++Libs: -L${libdir} -ltomsolver
++Cflags: -I${includedir}
