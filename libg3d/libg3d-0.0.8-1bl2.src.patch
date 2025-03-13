@@ -1,0 +1,33 @@
+--- origsrc/libg3d-0.0.8/plugins/import/imp_vrml/Makefile.am	2008-11-25 17:45:45.000000000 +0900
++++ src/libg3d-0.0.8/plugins/import/imp_vrml/Makefile.am	2025-03-13 13:44:42.970434500 +0900
+@@ -21,6 +21,6 @@ AM_LFLAGS = -o${LEX_OUTPUT_ROOT}.c --hea
+ LIBTOOL += --quiet
+ 
+ imp_vrml_la_SOURCES = imp_vrml_v1.l imp_vrml_v1.h imp_vrml.c
+-imp_vrml_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ ${LEXLIB}
++imp_vrml_la_LIBADD = $(top_builddir)/src/libg3d.la @GLIB_LIBS@ # ${LEXLIB}
+ 
+ EXTRA_DIST = imp_vrml_v1.c imp_vrml_v1.h
+--- origsrc/libg3d-0.0.8/src/plugins.c	2025-03-13 12:39:26.299687500 +0900
++++ src/libg3d-0.0.8/src/plugins.c	2025-03-13 12:42:27.612011400 +0900
+@@ -85,7 +85,7 @@ static gboolean plugins_loaddirectory(G3
+ 	g_strfreev(dirnames);
+ 
+ 	while((filename = g_dir_read_name(plugindir)) != NULL) {
+-#ifdef G_OS_WIN32
++#if defined(G_OS_WIN32) || defined(__CYGWIN__)
+ 		if(g_strcasecmp(filename + strlen(filename) - 4, ".dll") == 0) {
+ #else
+ 		if(g_strcasecmp(filename + strlen(filename) - 3, ".so") == 0) {
+@@ -213,7 +213,11 @@ static G3DPlugin *plugins_magic_lookup(G
+ 	if((type == NULL) || (strlen(type) == 0))
+ 		return NULL;
+ 
++#if defined(__CYGWIN__)
++	name = g_strdup_printf("imp_%s.dll", type);
++#else
+ 	name = g_strdup_printf("imp_%s.so", type);
++#endif
+ 	for(item = context->plugins; item != NULL; item = item->next) {
+ 		tp = (G3DPlugin *)item->data;
+ 		if(tp->type != G3D_PLUGIN_IMPORT)
