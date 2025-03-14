@@ -1,0 +1,81 @@
+--- origsrc/libktomgirl/CMakeLists.txt	2025-03-14 10:49:03.000000000 +0900
++++ src/libktomgirl/CMakeLists.txt	2025-03-14 11:06:53.056929000 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required(VERSION 2.8)
+-project(libtomgirl)
++project(libktomgirl)
+ 
+ find_package(PkgConfig REQUIRED)
+ pkg_check_modules(SIGC2 REQUIRED sigc++-2.0)
+@@ -81,6 +81,11 @@ utils.cpp
+ )
+ 
+ add_library(ktomgirl SHARED ${ktomgirl_SRCS})
++
++if (DEFINED SOVERSION)
++  set_target_properties(ktomgirl PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ target_link_libraries(ktomgirl ${CXX_LIBS})
+ # this might be a bug bug if we use project in dir such as include/{project}
+ # this will fail so I have to hard code it
+@@ -88,3 +93,10 @@ install(FILES ${ktomgirl_HEADERS} DESTIN
+ # stupid bug means we can't glob subdirs so we need to so this one separately
+ install(FILES base/singleton.hpp DESTINATION include/libktomgirl/base)
+ INSTALL( TARGETS ktomgirl LIBRARY DESTINATION lib COMPONENT library)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++#set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++#set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++#set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ktomgirl.pc.in ${CMAKE_BINARY_DIR}/ktomgirl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ktomgirl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libktomgirl/ktomgirl.pc.in	2025-03-14 10:49:03.000000000 +0900
++++ src/libktomgirl/ktomgirl.pc.in	2025-03-14 11:09:30.245326100 +0900
+@@ -1,11 +1,11 @@
+-prefix=@DEST_DIR@
++prefix=@prefix@
+ exec_prefix=${prefix}
+ libdir=${prefix}/lib
+ includedir=${prefix}/include
+ 
+ Name: libktomgirl
+-Description: Reads Note Files
+-Version: 1.0
++Description: Library the provides Tomboy like capabilities into an application
++Version: @VERSION@
+ 
+-Libs: -L${libdir} @PRIVATE_LIBS@
+-Cflags: -I${includedir}
+\ No newline at end of file
++Libs: -L${libdir} @PRIVATE_LIBS@ -lktomgirl
++Cflags: -I${includedir}
+--- origsrc/libktomgirl/notetag.cpp	2025-03-14 10:49:03.000000000 +0900
++++ src/libktomgirl/notetag.cpp	2025-03-14 10:54:55.410109600 +0900
+@@ -28,7 +28,7 @@
+ #include "notetag.hpp"
+ 
+ namespace gnote {
+-  NoteTag::NoteTag(const std::string & tag_name, int flags) throw(sharp::Exception) 
++  NoteTag::NoteTag(const std::string & tag_name, int flags)
+   {
+     if (tag_name.empty()) {
+       throw sharp::Exception ("NoteTags must have a tag name.  Use "
+--- origsrc/libktomgirl/notetag.hpp	2025-03-14 10:49:03.000000000 +0900
++++ src/libktomgirl/notetag.hpp	2025-03-14 10:54:26.343158100 +0900
+@@ -50,13 +50,13 @@ public:
+     CAN_SPLIT     = 32
+   };
+ 
+-  static Ptr create(const std::string & tag_name, int flags) throw(sharp::Exception)
++  static Ptr create(const std::string & tag_name, int flags)
+     {
+       return Ptr(new NoteTag(tag_name, flags));
+     }
+ 
+ protected:
+-  NoteTag(const std::string & tag_name, int flags = 0) throw(sharp::Exception);
++  NoteTag(const std::string & tag_name, int flags = 0);
+   NoteTag();
+   virtual void initialize(const std::string & element_name);
+ 
