@@ -1,0 +1,48 @@
+--- origsrc/luabind/CMakeLists.txt	2025-03-14 15:23:11.000000000 +0900
++++ src/luabind/CMakeLists.txt	2025-03-14 18:01:24.923171300 +0900
+@@ -24,7 +24,7 @@ if(NOT Boost_FOUND)
+ endif()
+ 
+ if(NOT LUA_FOUND AND NOT LUA51_FOUND)
+-	find_package(Lua51 REQUIRED)
++	find_package(Lua REQUIRED)
+ 	set(LUA_INCLUDE_DIRS "${LUA_INCLUDE_DIR}")
+ endif()
+ 
+@@ -52,3 +52,10 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMA
+ 	endif()
+ 	add_subdirectory(doc)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/luabind.pc.in ${CMAKE_BINARY_DIR}/luabind.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/luabind.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/luabind/luabind.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/luabind/luabind.pc.in	2025-03-14 18:01:42.665704900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: luabind
++Description: Library that helps you create bindings between C++ and Lua
++Version: @CPACK_PACKAGE_VERSION@
++Libs: -L${libdir} -lluabind
++Cflags: -I${includedir}
+--- origsrc/luabind/src/CMakeLists.txt	2025-03-14 15:23:11.000000000 +0900
++++ src/luabind/src/CMakeLists.txt	2025-03-14 15:29:07.497057900 +0900
+@@ -132,6 +132,10 @@ set_property(TARGET
+ 	PROJECT_LABEL
+ 	"LuaBind Library")
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(luabind PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ set(ALLHEADERS ${LUABIND_API} ${LUABIND_DETAIL_API} PARENT_SCOPE)
+ set(APIHEADERS ${LUABIND_API} PARENT_SCOPE)
+ 
