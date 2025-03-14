@@ -1,0 +1,129 @@
+--- origsrc/gearbox-10.11/cmake/SetupDirectories.cmake	2025-03-14 12:11:25.425246100 +0900
++++ src/gearbox-10.11/cmake/SetupDirectories.cmake	2025-03-14 13:57:10.604213400 +0900
+@@ -72,7 +72,6 @@ message( STATUS "Installation directory
+ set( GBX_BIN_INSTALL_SUFFIX bin )
+ set( GBX_INCLUDE_INSTALL_SUFFIX include/${PROJECT_NAME} )
+ set( GBX_SHARE_INSTALL_SUFFIX share/${PROJECT_NAME} )
+-set( GBX_CMAKE_INSTALL_SUFFIX ${GBX_SHARE_INSTALL_SUFFIX}/cmake )
+ 
+ if( GBX_PROC_64BIT )
+     set( GBX_LIB_INSTALL_SUFFIX lib64 )
+@@ -82,8 +81,10 @@ else()
+     set( GBX_PKGCONFIG_INSTALL_SUFFIX lib/pkgconfig )
+ endif()
+ 
++set( GBX_CMAKE_INSTALL_SUFFIX ${GBX_LIB_INSTALL_SUFFIX}/cmake/gearbox/Modules )
++
+ # by convention, we install cmake package-config files with the libraries
+-set( GBX_CMAKE_PKGCONFIG_INSTALL_SUFFIX ${GBX_LIB_INSTALL_SUFFIX}/gearbox )
++set( GBX_CMAKE_PKGCONFIG_INSTALL_SUFFIX ${GBX_LIB_INSTALL_SUFFIX}/cmake/gearbox )
+ 
+ # now the acutal install directories
+ set( GBX_BIN_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${GBX_BIN_INSTALL_SUFFIX} )
+--- origsrc/gearbox-10.11/cmake/TargetUtils.cmake	2010-02-01 12:55:11.000000000 +0900
++++ src/gearbox-10.11/cmake/TargetUtils.cmake	2025-03-14 12:13:51.341979600 +0900
+@@ -95,8 +95,9 @@ macro( GBX_ADD_LIBRARY name type soversi
+ #         BUILD_WITH_INSTALL_RPATH TRUE )
+ 
+     install( TARGETS ${name}
+-             DESTINATION ${GBX_LIB_INSTALL_SUFFIX}
+-             EXPORT ${PROJECT_NAME}-targets )
++             EXPORT ${PROJECT_NAME}-targets
++             RUNTIME DESTINATION ${GBX_BIN_INSTALL_SUFFIX}
++             ARCHIVE DESTINATION ${GBX_LIB_INSTALL_SUFFIX} )
+ 
+     set( templist ${LIB_LIST} )
+     list( APPEND templist ${name}-${soversion} )
+--- origsrc/gearbox-10.11/src/flexiport/python/CMakeLists.txt	2010-05-13 17:08:36.000000000 +0900
++++ src/gearbox-10.11/src/flexiport/python/CMakeLists.txt	2025-03-14 12:21:47.121092500 +0900
+@@ -1,8 +1,13 @@
+ # Find the Python libraries and headers
+-FIND_PACKAGE (PythonLibs)
++FIND_PACKAGE (PythonLibs 3)
+ if(NOT PYTHON_LIBRARIES)
+ 	MESSAGE (STATUS "Python libaries not found. Cannot build Python bindings for Flexiport.")
+ endif(NOT PYTHON_LIBRARIES)
++STRING(REPLACE "." ";" PYTHONLIBS_VERSION_LIST ${PYTHONLIBS_VERSION_STRING})
++LIST(GET PYTHONLIBS_VERSION_LIST 0 PYTHONLIBS_VERSION_MAJOR)
++LIST(GET PYTHONLIBS_VERSION_LIST 1 PYTHONLIBS_VERSION_MINOR)
++LIST(GET PYTHONLIBS_VERSION_LIST 2 PYTHONLIBS_VERSION_PATCH)
++SET(PYTHONLIBS_VERSION_SUFFIX "${PYTHONLIBS_VERSION_MAJOR}.${PYTHONLIBS_VERSION_MINOR}")
+ 
+ # Find Boost::Python
+ # There is a new, much better, FindBoost.cmake since 2.6
+@@ -41,7 +46,7 @@ else(CMAKE_MAJOR_VERSION EQUAL 2 AND CMA
+ 		endif(Boost_USE_MULTITHREAD)
+ 		MARK_AS_ADVANCED (BOOST_LIB_SUFFIX)
+ 
+-		SET (boostPythonLib boost_python${BOOST_LIB_SUFFIX})
++		SET (boostPythonLib boost_python3${BOOST_LIB_SUFFIX})
+ 		INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
+ 		LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
+ 	else(Boost_FOUND)
+@@ -60,7 +65,7 @@ if(PYTHON_LIBRARIES AND Boost_FOUND AND
+ 	add_library(${pyModuleTarget} MODULE ${srcs})
+ 	TARGET_LINK_LIBRARIES (${pyModuleTarget} flexiport ${boostPythonLib} ${PYTHON_LIBRARIES})
+ 	SET_TARGET_PROPERTIES (${pyModuleTarget} PROPERTIES PREFIX "" OUTPUT_NAME "flexiport")
+-	install(TARGETS ${pyModuleTarget} LIBRARY DESTINATION lib/python/site-packages)
++	install(TARGETS ${pyModuleTarget} LIBRARY DESTINATION "lib/python${PYTHONLIBS_VERSION_SUFFIX}/site-packages")
+ 
+ 	ADD_SUBDIRECTORY (test)
+ ELSEIF(NOT GBX_DEFAULT_LIB_TYPE STREQUAL SHARED)
+--- origsrc/gearbox-10.11/src/gbxutilacfr/tracer.cpp	2010-09-05 14:23:13.000000000 +0900
++++ src/gearbox-10.11/src/gbxutilacfr/tracer.cpp	2025-03-14 12:26:07.676378600 +0900
+@@ -31,6 +31,7 @@ std::string toString( TraceType type )
+         return "number_of_trace_types";
+     default:
+         assert( !"gbxutilacfr::Tracer::toString() should never get to default" );
++        return "unknown";
+     }
+ }
+ 
+--- origsrc/gearbox-10.11/src/hokuyo_aist/getid/getid.cpp	2010-08-16 11:22:54.000000000 +0900
++++ src/gearbox-10.11/src/hokuyo_aist/getid/getid.cpp	2025-03-14 13:39:44.966819300 +0900
+@@ -21,6 +21,8 @@
+ #include <cmath>
+ #include <iostream>
+ 
++#include <getopt.h>
++
+ #include <hokuyo_aist/hokuyo_aist.h>
+ #include <hokuyo_aist/hokuyo_errors.h>
+ 
+--- origsrc/gearbox-10.11/src/hokuyo_aist/python/CMakeLists.txt	2010-05-13 17:08:36.000000000 +0900
++++ src/gearbox-10.11/src/hokuyo_aist/python/CMakeLists.txt	2025-03-14 12:21:38.192941600 +0900
+@@ -1,8 +1,13 @@
+ # Find the Python libraries and headers
+-FIND_PACKAGE (PythonLibs)
++FIND_PACKAGE (PythonLibs 3)
+ if(NOT PYTHON_LIBRARIES)
+ 	MESSAGE (STATUS "Python libaries not found. Cannot build Python bindings for Hokuyo_aist.")
+ endif(NOT PYTHON_LIBRARIES)
++STRING(REPLACE "." ";" PYTHONLIBS_VERSION_LIST ${PYTHONLIBS_VERSION_STRING})
++LIST(GET PYTHONLIBS_VERSION_LIST 0 PYTHONLIBS_VERSION_MAJOR)
++LIST(GET PYTHONLIBS_VERSION_LIST 1 PYTHONLIBS_VERSION_MINOR)
++LIST(GET PYTHONLIBS_VERSION_LIST 2 PYTHONLIBS_VERSION_PATCH)
++SET(PYTHONLIBS_VERSION_SUFFIX "${PYTHONLIBS_VERSION_MAJOR}.${PYTHONLIBS_VERSION_MINOR}")
+ 
+ # Find Boost::Python
+ # There is a new, much better, FindBoost.cmake since 2.6
+@@ -59,7 +64,7 @@ if(PYTHON_LIBRARIES AND Boost_FOUND AND
+ 	add_library(${pyModuleTarget} MODULE ${srcs})
+ 	TARGET_LINK_LIBRARIES (${pyModuleTarget} hokuyo_aist ${boostPythonLib} ${PYTHON_LIBRARIES})
+ 	SET_TARGET_PROPERTIES (${pyModuleTarget} PROPERTIES PREFIX "" OUTPUT_NAME "hokuyo_aist")
+-	install(TARGETS ${pyModuleTarget} LIBRARY DESTINATION lib/python/site-packages)
++	install(TARGETS ${pyModuleTarget} LIBRARY DESTINATION "lib/python${PYTHONLIBS_VERSION_SUFFIX}/site-packages")
+ 
+ 	ADD_SUBDIRECTORY (test)
+ ELSEIF(NOT GBX_DEFAULT_LIB_TYPE STREQUAL SHARED)
+--- origsrc/gearbox-10.11/src/hokuyo_aist/test/example.cpp	2010-09-24 15:13:23.000000000 +0900
++++ src/gearbox-10.11/src/hokuyo_aist/test/example.cpp	2025-03-14 13:39:19.930780000 +0900
+@@ -21,6 +21,8 @@
+ #include <math.h>
+ #include <iostream>
+ 
++#include <getopt.h>
++
+ #include <hokuyo_aist/hokuyo_aist.h>
+ #include <hokuyo_aist/hokuyo_errors.h>
+ #include <flexiport/flexiport.h>

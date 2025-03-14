@@ -1,9 +1,11 @@
-HOMEPAGE="http://${PN}.sf.net/"
+HOMEPAGE="https://sourceforge.net/projects/${PN}/"
 SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
 PATCH_URI="
-	https://src.fedoraproject.org/rpms/${PN}/raw/master/f/${PN}-9.11.fixinstallpaths.patch
-	https://src.fedoraproject.org/rpms/${PN}/raw/master/f/${PN}-9.11.gcc47.patch
-	https://src.fedoraproject.org/rpms/${PN}/raw/master/f/${PN}-64bit.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-9.11.fixinstallpaths.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-9.11.fixdso.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-9.11.gcc47.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-64bit.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-10.11-gcc10.patch
 "
 
 CATEGORY="Libs"
@@ -15,10 +17,17 @@ existing frameworks.  Gearbox includes cross-platform libraries to communicate
 over TCP, UDP, and serial, and implements the communication protocols of many
 popular sensors."
 
+LICENSE="EPL-1.0 AND GPL-2.0-or-later AND LGPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: EPL-1.0 AND GPL-2.0-or-later AND LGPL-2.0-or-later"
+LICENSE_URI="LICENSE"
+
+export CPPFLAGS="${CPPFLAGS} -DFIONREAD=TIOCINQ"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DFLEXIPORT_BUILD_BINDINGS:BOOL=ON
+	-DBoost_USE_MULTITHREAD:BOOL=OFF
+	-DHOKUYO_AIST_BUILD_BINDINGS:BOOL=OFF
 "
 
 src_test()
@@ -35,15 +44,13 @@ PKG_NAMES="
 	libflexiport-devel
 	libhokuyo_aist2.0.0
 	libhokuyo_aist-devel
-	python3-flexiport
-	python3-hokuyo_aist
 "
 gearbox_CONTENTS="
 	usr/bin/*.exe
 	usr/share/doc
 "
 libGbxUtilAcfr1_0_0_CONTENTS="
-	usr/bin/cygGbxUtilAcfr*.dll
+	usr/bin/cygGbxUtilAcfr-1.0.0.dll
 "
 libGbxUtilAcfr_devel_CONTENTS="
 	usr/include/gearbox/gbxutilacfr
@@ -52,7 +59,7 @@ libGbxUtilAcfr_devel_CONTENTS="
 	usr/lib/pkgconfig/GbxUtilAcfr.pc
 "
 libflexiport1_0_0_CONTENTS="
-	usr/bin/cygflexiport*.dll
+	usr/bin/cygflexiport-1.0.0.dll
 "
 libflexiport_devel_CONTENTS="
 	usr/include/gearbox/flexiport
@@ -61,19 +68,13 @@ libflexiport_devel_CONTENTS="
 	usr/share/gearbox/flexiport
 "
 libhokuyo_aist2_0_0_CONTENTS="
-	usr/bin/cyghokuyo_aist*.dll
+	usr/bin/cyghokuyo_aist-2.0.0.dll
 "
 libhokuyo_aist_devel_CONTENTS="
 	usr/include/gearbox/hokuyo_aist
 	usr/lib/libhokuyo_aist.dll.a
 	usr/lib/pkgconfig/hokuyo_aist.pc
 	usr/share/gearbox/hokuyo_aist
-"
-python3_flexiport_CONTENTS="
-	usr/lib/python3*/site-packages/flexiport.dll
-"
-python3_hokuyo_aist_CONTENTS="
-	usr/lib/python3*/site-packages/hokuyo_aist.dll
 "
 gearbox_SUMMARY="${SUMMARY} (utilities)"
 libGbxUtilAcfr1_0_0_SUMMARY="${SUMMARY} (runtime / Garmin GPS driver)"
@@ -82,5 +83,3 @@ libflexiport1_0_0_SUMMARY="${SUMMARY} (runtime / FlexiPort generic comms library
 libflexiport_devel_SUMMARY="${SUMMARY} (develop / FlexiPort generic comms library)"
 libhokuyo_aist2_0_0_SUMMARY="${SUMMARY} (runtime / Hokuyo laser scanner driver)"
 libhokuyo_aist_devel_SUMMARY="${SUMMARY} (develop / Hokuyo laser scanner driver)"
-python3_flexiport_SUMMARY="${SUMMARY} (python3 bindings / FlexiPort generic comms library)"
-python3_hokuyo_aist_SUMMARY="${SUMMARY} (python3 bindings / Hokuyo laser scanner driver)"
