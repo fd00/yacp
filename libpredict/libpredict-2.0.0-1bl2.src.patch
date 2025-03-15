@@ -1,26 +1,37 @@
-diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x config.cache -x config.guess -x config.log -x config.status -x config.sub -x '*SlackBuild*' -x '*.egg-info' -x '*.dll' -x '*.exe' -x '*.o' -x '*.gch' -x '*.gem' -x .gitignore -x '*.jpg' -x '*.png' -x '*.qm' -x '*.svgz' -x '*.tif' -x '*.class' -x '*.jlc' -x '*.pyc' -x '*.pyo' -x '*.mo' -x '*.gmo' -x '*.orig' -x '*.rej' -x '*.spec' -x '*.temp' -x '*~' -x '*.stackdump' -x x86_64-pc-cygwin -x omf.make -x xmldocs.make -x gnome-doc-utils.make -x gnome-doc-utils.m4 -x mate-doc-utils.make -x mate-doc-utils.m4 origsrc/libpredict-2.0.0/src/CMakeLists.txt src/libpredict-2.0.0/src/CMakeLists.txt
+--- origsrc/libpredict-2.0.0/CMakeLists.txt	2017-12-09 22:54:50.000000000 +0900
++++ src/libpredict-2.0.0/CMakeLists.txt	2025-03-15 09:21:51.811628700 +0900
+@@ -12,7 +12,6 @@ cmake_policy(SET CMP0048 NEW)
+ # patch = bump on any change
+ # (tweak is not used by libpredict)
+ project(libpredict VERSION 2.0.0 LANGUAGES C CXX)
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x") #for tests written in C++
+ 
+ include(GNUInstallDirs)
+ 
+@@ -25,9 +24,6 @@ set(LIBPREDICT_LIBRARY_DIR ${CMAKE_CURRE
+ # Testdata location
+ set(LIBPREDICT_TEST_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data)
+ 
+-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+-
+ add_subdirectory(include)
+ add_subdirectory(src)
+ 
 --- origsrc/libpredict-2.0.0/src/CMakeLists.txt	2017-12-09 22:54:50.000000000 +0900
-+++ src/libpredict-2.0.0/src/CMakeLists.txt	2018-04-25 23:24:56.823999800 +0900
-@@ -1,21 +1,28 @@
++++ src/libpredict-2.0.0/src/CMakeLists.txt	2025-03-15 09:22:59.846453000 +0900
+@@ -1,21 +1,15 @@
  add_library(predict SHARED orbit.c sun.c observer.c sdp4.c sgp4.c refraction.c unsorted.c julian_date.c version.c moon.c)
  
 -add_library(predict_static STATIC orbit.c sun.c observer.c sdp4.c sgp4.c refraction.c unsorted.c julian_date.c moon.c)
-+option(ENABLE_STATIC "enable static" OFF)
- 
+-
 -set_target_properties(predict_static PROPERTIES OUTPUT_NAME predict)
-+if (ENABLE_STATIC)
-+  add_library(predict_static STATIC orbit.c sun.c observer.c sdp4.c sgp4.c refraction.c unsorted.c julian_date.c moon.c)
-+  set_target_properties(predict_static PROPERTIES OUTPUT_NAME predict)
-+endif()
- 
+-
  # The VERSION is the version number in the file name:
  # libpredict.so.<VERSION>. This should be the full major.minor.patch
  # version number.
  set_target_properties(predict PROPERTIES VERSION ${PROJECT_VERSION})
 -set_target_properties(predict_static PROPERTIES VERSION ${PROJECT_VERSION})
-+if (ENABLE_STATIC)
-+  set_target_properties(predict_static PROPERTIES VERSION ${PROJECT_VERSION})
-+endif()
  
  # The SOVERSION is the version number in the soname:
  # libpredict.so.<SOVERSION>. This should be only the major version
@@ -28,20 +39,14 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
  # ABI version compatible with the library at build time.
  set_target_properties(predict PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
 -set_target_properties(predict_static PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
-+if (ENABLE_STATIC)
-+  set_target_properties(predict_static PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
-+endif()
  
  # Header files needed to compile an application using libpredict
  set(predict_public_header)
-@@ -27,18 +34,27 @@ set_target_properties(predict PROPERTIES
+@@ -27,15 +21,14 @@ set_target_properties(predict PROPERTIES
  #set_target_properties(predict PROPERTIES FRAMEWORK TRUE)
  
  target_link_libraries(predict m)
 -target_link_libraries(predict_static m)
-+if (ENABLE_STATIC)
-+  target_link_libraries(predict_static m)
-+endif()
  
  # Tell the linker to use the symbol version script
  get_property(predict_link_flags TARGET predict PROPERTY LINK_FLAGS)
@@ -49,18 +54,9 @@ diff -buprN -x CYGWIN-PATCHES -x aclocal.m4~ -x aclocal.m4t -x autom4te.cache -x
  set_target_properties(predict PROPERTIES LINK_FLAGS ${predict_link_flags})
  
 -install(TARGETS predict predict_static
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 +install(TARGETS predict
 +  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/predict
-+)
-+if (ENABLE_STATIC)
-+install(TARGETS predict_static
-   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/predict
  )
-+endif()
- 
- # pkg-config file
- configure_file(predict.pc.in predict.pc @ONLY)
