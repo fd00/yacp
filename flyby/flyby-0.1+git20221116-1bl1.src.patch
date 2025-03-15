@@ -1,0 +1,84 @@
+--- origsrc/flyby/CMakeLists.txt	2025-03-15 09:53:15.000000000 +0900
++++ src/flyby/CMakeLists.txt	2025-03-15 09:53:17.344146500 +0900
+@@ -35,7 +35,8 @@ link_directories(${PREDICT_LIBRARY_DIRS}
+ add_executable(flyby src/ui.c src/hamlib.c src/main.c src/string_array.c src/xdg_basedirs.c src/xdg_basedir_extras.c src/tle_db.c src/transponder_db.c src/qth_config.c src/filtered_menu.c src/transponder_editor.c src/multitrack.c src/locator.c src/option_help.c src/singletrack.c src/prediction_schedules.c src/hamlib_status.c src/field_helpers.c src/track_astronomical_bodies.c)
+ install(TARGETS flyby RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+-target_link_libraries(flyby m ncurses menu form ${PREDICT_LIBRARIES})
++pkg_check_modules(NCURSES ncurses menu form REQUIRED)
++target_link_libraries(flyby m ${NCURSES_LIBRARIES} ${PREDICT_LIBRARIES})
+ 
+ #transponder database utility
+ set(TRANSPONDER_UTILITY_NAME "flyby-transponder-dbutil") #name of transponder utility executable
+--- origsrc/flyby/src/multitrack.c	2025-03-15 09:53:15.000000000 +0900
++++ src/flyby/src/multitrack.c	2025-03-15 09:57:51.455275900 +0900
+@@ -821,7 +821,7 @@ void multitrack_display_listing(multitra
+ 	wbkgd(listing->header_window, HEADER_STYLE);
+ 	wattrset(listing->header_window, HEADER_STYLE);
+ 	char header_text[] = "  Satellite  Azim   Elev Lat Long   Alt   Range     Next AOS/LOS    ";
+-	mvwprintw(listing->header_window, 0, 0, header_text);
++	mvwprintw(listing->header_window, 0, 0, "%s", header_text);
+ 
+ 	//show UTC clock in header
+ 	time_t epoch = time(NULL);
+--- origsrc/flyby/src/prediction_schedules.c	2025-03-15 09:53:15.000000000 +0900
++++ src/flyby/src/prediction_schedules.c	2025-03-15 10:02:34.830194800 +0900
+@@ -235,7 +235,7 @@ int schedule_print(const char *title, co
+ 			int title_col = 79-strlen(title);
+ 			mvprintw(1,title_col, "%s", title);
+ 			attrset(COLOR_PAIR(2)|A_REVERSE|A_BOLD);
+-			mvprintw(3,0,head2);
++			mvprintw(3,0,"%s",head2);
+ 
+ 			attrset(COLOR_PAIR(2)|A_BOLD);
+ 	                mvprintw(4,0,"\n");
+--- origsrc/flyby/src/singletrack.c	2025-03-15 09:53:15.000000000 +0900
++++ src/flyby/src/singletrack.c	2025-03-15 09:56:55.940687600 +0900
+@@ -244,7 +244,7 @@ void singletrack_print_main_menu(WINDOW
+ void singletrack_help_print_keyhint(WINDOW *window, int *row, const char *key_str, const char *desc_str)
+ {
+ 	wattrset(window, COLOR_PAIR(3)|A_BOLD);
+-	mvwprintw(window, *row, SINGLETRACK_HELP_KEY_COL, key_str);
++	mvwprintw(window, *row, SINGLETRACK_HELP_KEY_COL, "%s", key_str);
+ 	mvwprintw(window, *row, SINGLETRACK_HELP_DESC_COL-2, ":");
+ 
+ 	wattrset(window, COLOR_PAIR(1));
+@@ -258,7 +258,7 @@ void singletrack_help_print_keyhint(WIND
+ 		if (strlen(temp_str) > desc_length) {
+ 			temp_str[desc_length] = '\0';
+ 		}
+-		mvwprintw(window, *row, SINGLETRACK_HELP_DESC_COL, temp_str);
++		mvwprintw(window, *row, SINGLETRACK_HELP_DESC_COL, "%s", temp_str);
+ 		free(temp_str);
+ 		start_pos += desc_length;
+ 		print_length -= desc_length;
+@@ -367,7 +367,7 @@ void singletrack_print_satellite_propert
+ 	mvprintw(6,42,"%0.f ",orbit->footprint);
+ 
+ 	attrset(COLOR_PAIR(1)|A_BOLD);
+-	mvprintw(SUNLIGHT_STATUS_ROW,1,sunlight_status_string(orbit, obs));
++	mvprintw(SUNLIGHT_STATUS_ROW,1,"%s",sunlight_status_string(orbit, obs));
+ }
+ 
+ /**
+@@ -571,7 +571,7 @@ void singletrack_print_link_information(
+ 	if (link_status->in_range) {
+ 		//current satellite status: approaching, receding, ...
+ 		attrset(COLOR_PAIR(4)|A_BOLD);
+-		mvprintw(TRANSPONDER_GENERAL_ROW, TRANSPONDER_STATUS_COL, sat_status_string(link_status->satellite_status));
++		mvprintw(TRANSPONDER_GENERAL_ROW, TRANSPONDER_STATUS_COL, "%s", sat_status_string(link_status->satellite_status));
+ 
+ 		//downlink information
+ 		attrset(COLOR_PAIR(2)|A_BOLD);
+--- origsrc/flyby/tests/CMakeLists.txt	2025-03-15 09:53:15.000000000 +0900
++++ src/flyby/tests/CMakeLists.txt	2025-03-15 09:53:17.344146500 +0900
+@@ -1,7 +1,8 @@
+ add_executable(dummy-t dummy-t.c)
+ add_test(NAME dummy COMMAND dummy-t)
+ 
+-find_package(CMocka REQUIRED)
++pkg_check_modules(CMOCKA cmocka REQUIRED)
++set(CMOCKA_LIBRARY ${CMOCKA_LIBRARIES})
+ 
+ #xdg basedir tests
+ add_executable(xdg-dirs-t xdg-dirs-t.c ${CMAKE_SOURCE_DIR}/src/xdg_basedirs.c ${CMAKE_SOURCE_DIR}/src/string_array.c)
