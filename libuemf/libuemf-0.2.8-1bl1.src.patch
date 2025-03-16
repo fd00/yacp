@@ -1,0 +1,50 @@
+--- origsrc/libUEMF-0.2.8/CMakeLists.txt	2025-03-16 09:16:46.185296400 +0900
++++ src/libUEMF-0.2.8/CMakeLists.txt	2025-03-16 09:24:38.774440200 +0900
+@@ -1,5 +1,5 @@
+ cmake_minimum_required (VERSION 3.0)
+-project(libUEMF VERSION 0.2.7 LANGUAGES C)
++project(libUEMF VERSION 0.2.8 LANGUAGES C)
+ # Note - library version is 0.0.3 for now, even for small bug fixes to
+ # the project which increment the final version number.
+ 
+@@ -31,6 +31,7 @@ set_target_properties(uemf PROPERTIES VE
+ set_target_properties(uemf PROPERTIES SOVERSION 0)
+ target_compile_options(uemf PRIVATE ${FS8})
+ target_link_libraries(uemf PRIVATE m)
++target_link_libraries(uemf PRIVATE iconv)
+ 
+ add_executable(cutemf            cutemf.c            )
+ add_executable(pmfdual2single    pmfdual2single.c    )
+@@ -64,7 +65,7 @@ INSTALL(TARGETS uemf
+                 cutemf  pmfdual2single reademf readwmf 
+                 testbed_emf testbed_pmf testbed_wmf test_mapmodes_emf
+         RUNTIME DESTINATION bin
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++        ARCHIVE DESTINATION lib)
+ 
+ FILE(GLOB hfiles "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+ INSTALL(FILES ${hfiles} DESTINATION include)
+@@ -78,3 +79,10 @@ INSTALL(FILES ${hfiles} DESTINATION incl
+ ##install html pages
+ #FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
+ #INSTALL(FILES ${files} DESTINATION "${CMAKE_INSTALL_PREFIX}/doc/html" )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libuemf.pc.in ${CMAKE_BINARY_DIR}/libuemf.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libuemf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libUEMF-0.2.8/libuemf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libUEMF-0.2.8/libuemf.pc.in	2025-03-16 09:24:46.622351100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libuemf
++Description: Library for working with WFM, EMF and EMF+ images
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -luemf
++Cflags: -I${includedir}
