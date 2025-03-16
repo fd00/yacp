@@ -1,0 +1,72 @@
+--- origsrc/libnpengine-0.5.3/CMakeLists.txt	2018-05-24 21:15:19.000000000 +0900
++++ src/libnpengine-0.5.3/CMakeLists.txt	2025-03-16 17:59:08.689782100 +0900
+@@ -23,15 +23,11 @@ message(STATUS "Configuring libnpengine
+ # project name and language
+ project (libnpengine CXX)
+ 
+-set(CMAKE_BUILD_TYPE Debug)
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2 -Wall")
+-
+ # include version number in header
+ configure_file(${PROJECT_SOURCE_DIR}/include/npengineversion.hpp.in
+     ${PROJECT_SOURCE_DIR}/include/npengineversion.hpp)
+ 
+ find_package(NPA REQUIRED)
+-find_package(GLEW REQUIRED)
+ find_package(JPEG REQUIRED)
+ find_package(GStreamer REQUIRED)
+ find_package(FLEX REQUIRED)
+@@ -44,6 +40,7 @@ include(FindPkgConfig)
+ PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
+ PKG_SEARCH_MODULE(libpng REQUIRED libpng)
+ PKG_SEARCH_MODULE(PANGOCAIRO REQUIRED pangocairo)
++PKG_CHECK_MODULES(GLEW glew REQUIRED)
+ 
+ string(REPLACE "." ";" VERSION_LIST ${FLEX_VERSION})
+ list(GET VERSION_LIST 0 FLEX_VERSION_MAJOR)
+@@ -96,18 +93,29 @@ target_link_libraries(npengine
+ 	${GSTREAMER_VIDEO_LIBRARIES}
+ 	${PANGOCAIRO_LIBRARIES} 
+ 	${JPEG_LIBRARY} 
+-	${GLEW_LIBRARY} 
++	${GLEW_LIBRARIES} 
+ 	${X11_LIBRARIES} 
+ 	${PNG_LIBRARIES}
+-	-lGL)
++	GL)
++
++if (DEFINED SOVERSION)
++    set_target_properties(npengine PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ # install headers and library
+ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+     DESTINATION include/libnpengine
+     FILES_MATCHING PATTERN "*.hpp")
+-install(TARGETS npengine DESTINATION lib)
++install(TARGETS npengine RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ # create packages
+ set(CPACK_GENERATOR "TBZ2")
+ set(CPACK_PACKAGE_VERSION ${LIBNPENGINE_VERSION})
+ include(CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnpengine.pc.in ${CMAKE_BINARY_DIR}/libnpengine.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnpengine.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libnpengine-0.5.3/libnpengine.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnpengine-0.5.3/libnpengine.pc.in	2025-03-16 17:39:13.596009700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnpengine
++Description: Free implementation of Nitroplus/5pb
++Version: @LIBNPENGINE_VERSION@
++Libs: -L${libdir} -lnpengine
++Cflags: -I${includedir}/libnpengine
