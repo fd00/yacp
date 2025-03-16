@@ -1,0 +1,48 @@
+--- origsrc/libmimeapps/CMakeLists.txt	2025-03-16 14:18:50.000000000 +0900
++++ src/libmimeapps/CMakeLists.txt	2025-03-16 14:19:39.898709000 +0900
+@@ -5,12 +5,15 @@ project(mimeapps)
+ set(mimeapps_VERSION_MAJOR 0)
+ set(mimeapps_VERSION_MINOR 3)
+ 
+-add_library(mimeapps
++add_library(mimeapps SHARED
+ 	ConfigReader.cpp
+ 	DesktopEntry.cpp
+ 	Index.cpp
+ 	Tools.cpp
+ )
++if (DEFINED SOVERSION)
++	set_target_properties(mimeapps PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ add_executable(test
+ 	main.cpp
+@@ -19,3 +22,15 @@ add_executable(test
+ target_link_libraries (test mimeapps)
+ 
+ set_property(TARGET test PROPERTY CXX_STANDARD 11)
++
++file(GLOB headers "*.h")
++install(FILES ${headers} DESTINATION include/libmimeapps)
++
++install(TARGETS mimeapps RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libmimeapps.pc.in ${CMAKE_BINARY_DIR}/libmimeapps.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libmimeapps.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libmimeapps/libmimeapps.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmimeapps/libmimeapps.pc.in	2025-03-16 14:24:51.228708000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmimeapps
++Description: Library of Association between MIME types and applications
++Version: @mimeapps_VERSION_MAJOR@.@mimeapps_VERSION_MINOR@
++Libs: -L${libdir} -lmimeapps
++Cflags: -I${includedir}
