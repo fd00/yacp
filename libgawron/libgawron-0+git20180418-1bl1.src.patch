@@ -1,0 +1,46 @@
+--- origsrc/libgawron/CMakeLists.txt	2025-03-16 14:48:04.000000000 +0900
++++ src/libgawron/CMakeLists.txt	2025-03-16 14:59:25.306158700 +0900
+@@ -27,6 +27,10 @@ include_directories(SYSTEM thirdparty)
+ add_library(${project_name} SHARED ${project_src})
+ set_property(TARGET ${project_name} PROPERTY CXX_STANDARD 11)
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(${project_name} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ set(external_headers
+ 	src/Loader.h
+ 	src/JsonLoader.h
+@@ -34,7 +38,16 @@ set(external_headers
+ 	src/Translator.h
+ )
+ 
+-install(TARGETS ${project_name} DESTINATION lib)
+-install(FILES ${external_headers} DESTINATION include)
++install(TARGETS ${project_name} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES ${external_headers} DESTINATION include/libgawron)
++
++if (BUILD_EXAMPLES)
++	add_subdirectory(examples)
++endif()
+ 
+-add_subdirectory(examples)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libgawron.pc.in ${CMAKE_BINARY_DIR}/libgawron.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libgawron.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgawron/libgawron.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgawron/libgawron.pc.in	2025-03-16 14:59:16.797132700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libgawron
++Description: Inflection aware translation library
++Version: @VERSION@
++Libs: -L${libdir} -lgawron
++Cflags: -I${includedir}
