@@ -1,0 +1,191 @@
+--- origsrc/nptools-0.5.2/CMakeLists.txt	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/CMakeLists.txt	2025-03-16 15:38:59.772227400 +0900
+@@ -21,10 +21,13 @@ message(STATUS "Configuring nptools vers
+ find_package(Boost REQUIRED COMPONENTS system filesystem)
+ find_package(ZLIB REQUIRED)
+ 
++find_package(PkgConfig)
++pkg_check_modules(NPA libnpa REQUIRED)
++
+ # libunshield doesn't work in MSVC, not a big deal,
+ # npinstall isn't needed on Windows anyway.
+ if (NOT WIN32)
+-	find_package(LIBUNSHIELD)
++	pkg_check_modules(LIBUNSHIELD libunshield REQUIRED)
+ 	if (NOT LIBUNSHIELD_FOUND)
+ 		message(FATAL_ERROR "Could not find libunshield")
+ 	endif()
+@@ -35,13 +38,12 @@ set(CMAKE_BUILD_TYPE Debug)
+ add_definitions(-std=c++11)
+ 
+ include_directories(
+-${CMAKE_SOURCE_DIR}/../libnpa/include
+ ${CMAKE_SOURCE_DIR}/src
+ ${Boost_INCLUDE_DIRS}
++${NPA_INCLUDE_DIRS}
+ )
+ link_directories(
+ ${Boost_LIBRARY_DIRS}
+-${CMAKE_SOURCE_DIR}/../libnpa/
+ )
+ 
+ add_executable(npaextract src/npaextract.cpp)
+@@ -57,15 +59,24 @@ if (NOT WIN32)
+ 	add_executable(npinstall src/npinstall.cpp)
+ endif()
+ 
+-target_link_libraries(npaextract npa ${ZLIB_LIBRARIES})
+-target_link_libraries(npapack ${Boost_LIBRARIES} npa)
+-target_link_libraries(nsbparse npa)
+-target_link_libraries(nsbcompile2 npa)
+-target_link_libraries(nsbparse2 npa)
+-target_link_libraries(npcrypt npa)
+-target_link_libraries(npfparse npa)
++target_link_libraries(npaextract ${NPA_LIBRARIES} ${ZLIB_LIBRARIES})
++target_link_libraries(npapack ${Boost_LIBRARIES} ${NPA_LIBRARIES})
++target_link_libraries(nsbparse ${NPA_LIBRARIES})
++target_link_libraries(nsbcompile2 ${NPA_LIBRARIES})
++target_link_libraries(nsbparse2 ${NPA_LIBRARIES})
++target_link_libraries(npcrypt ${NPA_LIBRARIES})
++target_link_libraries(npfparse ${NPA_LIBRARIES})
++
++install(TARGETS npaextract DESTINATION bin)
++install(TARGETS npapack DESTINATION bin)
++install(TARGETS nsbparse DESTINATION bin)
++install(TARGETS nsbcompile2 DESTINATION bin)
++install(TARGETS nsbparse2 DESTINATION bin)
++install(TARGETS npcrypt DESTINATION bin)
++install(TARGETS npfparse DESTINATION bin)
+ 
+ # We don't need npinstall on Windows
+ if (NOT WIN32)
+-	target_link_libraries(npinstall npa -lunshield)
++	target_link_libraries(npinstall ${NPA_LIBRARIES} ${LIBUNSHIELD_LIBRARIES})
++	install(TARGETS npinstall DESTINATION bin)
+ endif()
+--- origsrc/nptools-0.5.2/src/npaextract.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/npaextract.cpp	2025-03-16 15:48:44.277903400 +0900
+@@ -15,9 +15,9 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+-#include "inipafile.hpp"
+-#include "isgfile.hpp"
+-#include "fscommon.hpp"
++#include <libnpa/inipafile.hpp>
++#include <libnpa/isgfile.hpp>
++#include <libnpa/fscommon.hpp>
+ using namespace std;
+ 
+ int PrintArguments(char** argv)
+--- origsrc/nptools-0.5.2/src/npapack.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/npapack.cpp	2025-03-16 15:47:13.221878700 +0900
+@@ -15,7 +15,7 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+-#include "onpafile.hpp"
++#include <libnpa/onpafile.hpp>
+ #include <boost/filesystem.hpp>
+ using namespace boost::filesystem;
+ 
+--- origsrc/nptools-0.5.2/src/npcrypt.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/npcrypt.cpp	2025-03-16 15:46:55.595092700 +0900
+@@ -15,8 +15,8 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+-#include "npafile.hpp"
+-#include "fscommon.hpp"
++#include <libnpa/npafile.hpp>
++#include <libnpa/fscommon.hpp>
+ 
+ int main(int argc, char** argv)
+ {
+--- origsrc/nptools-0.5.2/src/npfparse.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/npfparse.cpp	2025-03-16 15:47:28.545838400 +0900
+@@ -16,9 +16,9 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+ 
+-#include "npafile.hpp"
+-#include "fscommon.hpp"
+-#include "buffer.hpp"
++#include <libnpa/npafile.hpp>
++#include <libnpa/fscommon.hpp>
++#include <libnpa/buffer.hpp>
+ using namespace std;
+ 
+ int main(int argc, char** argv)
+--- origsrc/nptools-0.5.2/src/npinstall.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/npinstall.cpp	2025-03-16 15:48:21.423596300 +0900
+@@ -16,8 +16,8 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+ #include <libunshield.h>
+-#include "fscommon.hpp"
+-#include "npafile.hpp"
++#include <libnpa/fscommon.hpp>
++#include <libnpa/npafile.hpp>
+ 
+ const char* Directories[2] =
+ {
+--- origsrc/nptools-0.5.2/src/nsbcompile2.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/nsbcompile2.cpp	2025-03-16 15:46:00.765002500 +0900
+@@ -16,10 +16,10 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+ #include <fstream>
+-#include "scriptfile.hpp"
+-#include "npafile.hpp"
+-#include "fscommon.hpp"
+-#include "buffer.hpp"
++#include <libnpa/scriptfile.hpp>
++#include <libnpa/npafile.hpp>
++#include <libnpa/fscommon.hpp>
++#include <libnpa/buffer.hpp>
+ 
+ int main(int argc, char** argv)
+ {
+--- origsrc/nptools-0.5.2/src/nsbparse.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/nsbparse.cpp	2025-03-16 15:46:42.620528600 +0900
+@@ -15,9 +15,9 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+-#include "scriptfile.hpp"
+-#include "nsbmagic.hpp"
+-#include "npafile.hpp"
++#include <libnpa/scriptfile.hpp>
++#include <libnpa/nsbmagic.hpp>
++#include <libnpa/npafile.hpp>
+ 
+ #include <fstream>
+ #include <iomanip>
+--- origsrc/nptools-0.5.2/src/nsbparse2.cpp	2018-05-02 06:59:16.000000000 +0900
++++ src/nptools-0.5.2/src/nsbparse2.cpp	2025-03-16 15:49:58.184261600 +0900
+@@ -16,10 +16,10 @@
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * */
+ #include <fstream>
+-#include "scriptfile.hpp"
+-#include "npafile.hpp"
+-#include "nsbmagic.hpp"
+-#include "nsbconstants.hpp"
++#include <libnpa/scriptfile.hpp>
++#include <libnpa/npafile.hpp>
++#include <libnpa/nsbmagic.hpp>
++#include <libnpa/nsbconstants.hpp>
+ 
+ struct Ofstream
+ {
+@@ -295,7 +295,9 @@ int main(int argc, char** argv)
+             case MAGIC_STRING:
+             case MAGIC_UNK140:
+             case MAGIC_READ_FILE:
++#if defined(MAGIC_UNK184)
+             case MAGIC_UNK184:
++#endif
+             case MAGIC_TIME:
+             case MAGIC_REMAIN_TIME:
+             case MAGIC_DURATION_TIME:
