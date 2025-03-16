@@ -1,26 +1,23 @@
 --- origsrc/libnpa-0.5.3/CMakeLists.txt	2018-05-24 21:13:47.000000000 +0900
-+++ src/libnpa-0.5.3/CMakeLists.txt	2019-01-18 14:21:09.228046500 +0900
-@@ -25,8 +25,10 @@ message(STATUS "Configuring libnpa versi
++++ src/libnpa-0.5.3/CMakeLists.txt	2025-03-16 15:10:18.802445600 +0900
+@@ -25,9 +25,6 @@ message(STATUS "Configuring libnpa versi
  # project name and language
  project (libnpa CXX)
  
 -set(CMAKE_BUILD_TYPE Debug)
 -set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
-+if(NOT CYGWIN)
-+    set(CMAKE_BUILD_TYPE Debug)
-+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O2")
-+endif()
- 
+-
  # include version number in header
  configure_file(${PROJECT_SOURCE_DIR}/include/npaversion.hpp.in
-@@ -79,14 +81,24 @@ add_library(npa SHARED
-     src/nsbconstants.cpp
+     ${PROJECT_SOURCE_DIR}/include/npaversion.hpp)
+@@ -80,13 +77,24 @@ add_library(npa SHARED
  )
  target_link_libraries(npa ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
-+if(CYGWIN)
-+    set_target_properties(npa PROPERTIES SOVERSION 0)
-+endif()
  
++if (DEFINED SOVERSION)
++    set_target_properties(npa PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
  # install headers and library
  install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
      DESTINATION include/libnpa
@@ -33,14 +30,14 @@
  set(CPACK_PACKAGE_VERSION ${LIBNPA_VERSION})
  include(CPack)
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libnpa.pc.in ${CMAKE_BINARY_DIR}/libnpa.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/libnpa.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnpa.pc.in ${CMAKE_BINARY_DIR}/libnpa.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnpa.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/libnpa-0.5.3/libnpa.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libnpa-0.5.3/libnpa.pc.in	2019-01-18 14:26:34.290336700 +0900
++++ src/libnpa-0.5.3/libnpa.pc.in	2025-03-16 15:08:58.054072300 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
