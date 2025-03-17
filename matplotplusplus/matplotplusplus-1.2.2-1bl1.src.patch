@@ -1,0 +1,79 @@
+--- origsrc/matplotplusplus-1.2.2/CMakeLists.txt	2025-02-08 05:31:15.000000000 +0900
++++ src/matplotplusplus-1.2.2/CMakeLists.txt	2025-03-17 22:52:17.533588400 +0900
+@@ -4,7 +4,7 @@
+ # Project information
+ cmake_minimum_required(VERSION 3.15)
+ include(cmake/functions/ensure_build_type.cmake)
+-project(Matplot++ VERSION 1.2.0)
++project(Matplot++ VERSION 1.2.2)
+ set(MATPLOT_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+ set(MATPLOT_VERSION ${CMAKE_PROJECT_VERSION})
+ 
+@@ -177,3 +177,10 @@ if (MATPLOTPP_BUILD_INSTALLER AND MATPLO
+     # Always include CPack at last
+     include(CPack)
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/matplotplusplus.pc.in ${CMAKE_BINARY_DIR}/matplotplusplus.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/matplotplusplus.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/matplotplusplus-1.2.2/matplotplusplus.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/matplotplusplus-1.2.2/matplotplusplus.pc.in	2025-03-17 22:38:20.045906300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: matplotplusplus
++Description: C++ Graphics Library for Data Visualization
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lmatplot
++Cflags: -I${includedir}
+--- origsrc/matplotplusplus-1.2.2/source/3rd_party/CMakeLists.txt	2025-02-08 05:31:15.000000000 +0900
++++ src/matplotplusplus-1.2.2/source/3rd_party/CMakeLists.txt	2025-03-17 16:17:33.571590400 +0900
+@@ -2,7 +2,7 @@
+ ### NodeSoup                                        ###
+ #######################################################
+ if(MATPLOTPP_WITH_SYSTEM_NODESOUP)
+-  find_path(NODESOUP_INCLUDE_DIR nodesoup.hpp REQUIRED)
++  find_path(NODESOUP_INCLUDE_DIR nodesoup.hpp PATHS /usr/include/nodesoup REQUIRED)
+   find_library(NODESOUP_LIB nodesoup REQUIRED)
+ 
+   add_library(nodesoup INTERFACE)
+--- origsrc/matplotplusplus-1.2.2/source/matplot/axes_objects/network.cpp	2025-02-08 05:31:15.000000000 +0900
++++ src/matplotplusplus-1.2.2/source/matplot/axes_objects/network.cpp	2025-03-17 15:26:03.776746500 +0900
+@@ -7,7 +7,7 @@
+ #include <matplot/axes_objects/network.h>
+ #include <matplot/core/axes_type.h>
+ #include <matplot/util/common.h>
+-#include <nodesoup.hpp>
++#include <nodesoup/nodesoup.hpp>
+ #include <random>
+ #include <regex>
+ #include <sstream>
+--- origsrc/matplotplusplus-1.2.2/source/matplot/util/popen.cpp	2025-02-08 05:31:15.000000000 +0900
++++ src/matplotplusplus-1.2.2/source/matplot/util/popen.cpp	2025-03-17 15:36:27.667967800 +0900
+@@ -121,7 +121,7 @@ int common_pipe::close(int *exit_code)
+ }
+ #endif // _WIN32 implementtion
+ 
+-#if defined(__linux) || defined(__APPLE__)
++#if defined(__linux) || defined(__APPLE__) || defined(__CYGWIN__)
+ 
+ #include <cerrno>
+ #include <sys/wait.h> // waitpid
+--- origsrc/matplotplusplus-1.2.2/source/matplot/util/popen.h	2025-02-08 05:31:15.000000000 +0900
++++ src/matplotplusplus-1.2.2/source/matplot/util/popen.h	2025-03-17 15:03:20.635605900 +0900
+@@ -23,7 +23,7 @@ protected:
+     FILE *file_ = nullptr; ///< C file handle for I/O (not both)
+ };
+ 
+-#elif defined(__linux) || defined(__APPLE__)
++#elif defined(__linux) || defined(__APPLE__) || defined(__CYGWIN__)
+ 
+ #include <unistd.h> // pid_t
+ 
