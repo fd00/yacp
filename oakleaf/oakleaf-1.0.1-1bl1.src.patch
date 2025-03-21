@@ -1,0 +1,71 @@
+--- origsrc/oakleaf-1.0.1/Makefile.am	2025-01-22 04:35:02.000000000 +0900
++++ src/oakleaf-1.0.1/Makefile.am	2025-03-21 12:19:37.474623800 +0900
+@@ -22,3 +22,6 @@ ACLOCAL_AMFLAGS = -I m4
+ SUBDIRS = src test doc
+ 
+ dist_doc_DATA = README COPYING ChangeLog INSTALL AUTHORS
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/oakleaf-1.0.1/configure.ac	2025-02-10 17:51:58.000000000 +0900
++++ src/oakleaf-1.0.1/configure.ac	2025-03-21 12:19:37.490266500 +0900
+@@ -23,7 +23,7 @@ dnl
+ # Process this file with autoconf to produce a configure script.
+ 
+ AC_PREREQ([2.69])
+-AC_INIT([Oakleaf], [1.0.1], [hroch@physics.muni.cz],
++AC_INIT([oakleaf], [1.0.1], [hroch@physics.muni.cz],
+         [oakleaf],[https://integral.physics.muni.cz/oakleaf])
+ AM_INIT_AUTOMAKE
+ LT_INIT
+@@ -77,4 +77,5 @@ AC_CONFIG_MACRO_DIRS([m4])
+ 
+ AC_CONFIG_FILES([src/minpack/Makefile src/fmm/Makefile src/simplex/Makefile
+                  src/Makefile test/Makefile doc/Makefile Makefile])
++AC_CONFIG_FILES([oakleaf.pc])
+ AC_OUTPUT
+--- origsrc/oakleaf-1.0.1/doc/Makefile.am	2025-02-10 06:43:47.000000000 +0900
++++ src/oakleaf-1.0.1/doc/Makefile.am	2025-03-21 11:52:55.234387100 +0900
+@@ -32,6 +32,6 @@ SUPPLEMENT = oakleaf.css favicon.ico
+ dist_html_DATA = $(PAGES) $(SUPPLEMENT)
+ 
+ .shtml.html:
+-	$(AWK) -f render.awk $< > $@
++	$(AWK) -f $(srcdir)/render.awk $< > $@
+ 
+ CLEANFILES = $(PAGES)
+--- origsrc/oakleaf-1.0.1/oakleaf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/oakleaf-1.0.1/oakleaf.pc.in	2025-03-21 12:19:37.443337000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: oakleaf
++Description: Library which implements robust statistical estimates
++Version: @VERSION@
++Libs: -L${libdir} -loakleaf
++Cflags: -I${includedir}
+--- origsrc/oakleaf-1.0.1/src/Makefile.am	2025-02-13 17:12:01.000000000 +0900
++++ src/oakleaf-1.0.1/src/Makefile.am	2025-03-21 11:53:23.889731100 +0900
+@@ -138,7 +138,7 @@ liboakleaf_la_LIBADD = fmm/libfmm.la sim
+                        minpack/libminpack90.la $(LIBS)
+ 
+ # https://autotools.info/libtool/version.html
+-liboakleaf_la_LDFLAGS = -version-info 1:1:0
++liboakleaf_la_LDFLAGS = -no-undefined -version-info 1:1:0
+ 
+ #  cholesky.f08 trust_step.f08 sr1.f08 rmean_rfun.f08 trmean.f08 rmean2.f08
+ #   rmean.f08 rwmean.f08 zeroin.f08 madmean.f08
+--- origsrc/oakleaf-1.0.1/test/Makefile.am	2025-02-10 07:10:06.000000000 +0900
++++ src/oakleaf-1.0.1/test/Makefile.am	2025-03-21 11:53:40.980434900 +0900
+@@ -18,7 +18,7 @@
+ #
+ 
+ AM_FCFLAGS = $(FC_MODINC)../src $(FC_MODINC)../src/fmm
+-LDADD = -L../src -loakleaf
++LDADD = $(top_builddir)/src/liboakleaf.la
+ 
+ #SUBDIRS = qr
+ 
