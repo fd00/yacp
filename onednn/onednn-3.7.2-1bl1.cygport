@@ -1,5 +1,10 @@
-HOMEPAGE="https://github.com/oneapi-src/${PN}"
-SRC_URI="https://github.com/oneapi-src/${PN}/archive/refs/tags/v${PV}.tar.gz"
+HOMEPAGE="https://github.com/uxlfoundation/oneDNN"
+SRC_URI="https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v${PV}.tar.gz"
+SRC_DIR="oneDNN-${PV}"
+PATCH_URI="
+	https://sources.debian.org/data/main/o/onednn/3.7.1%2Bds-1/debian/patches/system-spdlog.patch
+	https://sources.debian.org/data/main/o/onednn/3.7.1%2Bds-1/debian/patches/system-gtest.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="Deep Neural Network Library"
@@ -15,11 +20,12 @@ LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
 LICENSE_URI="LICENSE"
 
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
-export CXXFLAGS="`echo ${CXXFLAGS} | sed -e 's/-ggdb//'` -Wa,-mbig-obj"
+export CXXFLAGS="${CXXFLAGS//-ggdb/} -Wa,-mbig-obj"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
+	-DDNNL_BUILD_TESTS:BOOL=OFF
 	-DDoxygen_cmake_included:BOOL=ON
 "
 
@@ -27,6 +33,7 @@ src_install()
 {
 	cd ${B}
 	ninja_install
+
 	dodoc README
 }
 
@@ -41,13 +48,20 @@ DOCS="
 	THIRD-PARTY-PROGRAMS
 "
 
+PKG_IGNORE="
+	usr/share/doc/dnnl/LICENSE
+	usr/share/doc/dnnl/README
+	usr/share/doc/dnnl/THIRD-PARTY-PROGRAMS
+"
+
 PKG_NAMES="
 	${PN}
 	libdnnl${PV[1]}
 	libdnnl-devel
 "
-oneDNN_CONTENTS="
-	usr/share
+onednn_CONTENTS="
+	usr/share/doc/Cygwin
+	usr/share/doc/${PN}
 "
 libdnnl3_CONTENTS="
 	usr/bin
@@ -56,6 +70,6 @@ libdnnl_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
-oneDNN_SUMMARY="${SUMMARY} (licensing & readmes)"
+onednn_SUMMARY="${SUMMARY} (licensing & readmes)"
 libdnnl3_SUMMARY="${SUMMARY} (runtime)"
 libdnnl_devel_SUMMARY="${SUMMARY} (development)"
