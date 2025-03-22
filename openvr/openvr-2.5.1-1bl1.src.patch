@@ -1,0 +1,38 @@
+--- origsrc/openvr-2.5.1/CMakeLists.txt	2025-03-23 03:48:39.442541100 +0900
++++ src/openvr-2.5.1/CMakeLists.txt	2025-03-23 03:48:49.902552600 +0900
+@@ -47,7 +47,7 @@ if(WIN32)
+     add_definitions(-DOPENVR_BUILD_STATIC)
+   endif()
+ elseif(UNIX AND NOT APPLE)
+-  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
++  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux" OR CYGWIN)
+     set(PLATFORM_NAME "linux")
+     add_definitions(-DLINUX -DPOSIX)
+     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+--- origsrc/openvr-2.5.1/headers/openvr_capi.h	2024-03-27 08:53:57.000000000 +0900
++++ src/openvr-2.5.1/headers/openvr_capi.h	2025-03-23 03:48:49.902552600 +0900
+@@ -24,7 +24,7 @@
+ #endif
+ 
+ // OPENVR API export macro
+-#if defined( _WIN32 )
++#if defined( _WIN32 ) || defined(__CYGWIN__)
+ 	#if defined( OPENVR_API_EXPORTS )
+ 	#define S_API EXTERN_C __declspec( dllexport )
+ 	#elif defined( OPENVR_API_NODLL )
+--- origsrc/openvr-2.5.1/src/CMakeLists.txt	2025-03-23 03:48:39.693958700 +0900
++++ src/openvr-2.5.1/src/CMakeLists.txt	2025-03-23 03:51:17.909503700 +0900
+@@ -114,11 +114,11 @@ endif()
+ target_link_libraries(${LIBNAME} ${EXTRA_LIBS} ${CMAKE_DL_LIBS})
+ target_include_directories(${LIBNAME} PUBLIC ${OPENVR_HEADER_DIR})
+ 
+-install(TARGETS ${LIBNAME} DESTINATION lib)
++install(TARGETS ${LIBNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES ${PUBLIC_HEADER_FILES} DESTINATION include/openvr)
+ 
+ # Generate a .pc file for linux environments
+-if(PLATFORM_NAME MATCHES "linux")
++if(PLATFORM_NAME MATCHES "linux" OR CYGWIN)
+     set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
+     CONFIGURE_FILE("openvr.pc.in" "openvr.pc" @ONLY)
+ 
