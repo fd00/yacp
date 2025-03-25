@@ -1,0 +1,52 @@
+--- origsrc/fgt-0.4.11/CMakeLists.txt	2024-04-17 03:26:03.000000000 +0900
++++ src/fgt-0.4.11/CMakeLists.txt	2025-03-25 04:01:49.981622600 +0900
+@@ -128,8 +128,9 @@ install(FILES
+     DESTINATION include
+     )
+ install(TARGETS Library-C++
+-    DESTINATION lib
+     EXPORT fgt-targets
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
+     )
+ 
+ configure_file(Doxyfile.in ${PROJECT_BINARY_DIR}/Doxyfile)
+@@ -143,9 +144,11 @@ endif()
+ 
+ if(WITH_TESTS)
+     enable_testing()
+-    set(GOOGLETEST_VERSION 1.10.0)
+-    add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/googletest-release-1.10.0/googletest")
+-
++    find_package(GTest)
++    if (NOT GTEST_FOUND)
++        set(GOOGLETEST_VERSION 1.10.0)
++        add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/googletest-release-1.10.0/googletest")
++    endif()
+     add_subdirectory(test)
+ endif()
+ 
+@@ -171,3 +174,10 @@ install(EXPORT fgt-targets
+     DESTINATION lib/cmake/fgt
+     NAMESPACE Fgt::
+     )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/fgt.pc.in ${CMAKE_BINARY_DIR}/fgt.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/fgt.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/fgt-0.4.11/fgt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/fgt-0.4.11/fgt.pc.in	2025-03-25 04:03:24.658015500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: fgt
++Description: C++ library for fast Gauss transforms
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lfgt
++Cflags: -I${includedir}
