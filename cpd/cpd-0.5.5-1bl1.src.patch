@@ -1,0 +1,109 @@
+--- origsrc/cpd-0.5.5/CMakeLists.txt	2024-04-18 01:57:13.000000000 +0900
++++ src/cpd-0.5.5/CMakeLists.txt	2025-03-25 04:40:40.638040300 +0900
+@@ -49,7 +49,7 @@ else()
+     list(APPEND library-src src/gauss_transform_make_default.cpp)
+ endif()
+ 
+-add_library(Library-C++ STATIC ${library-src})
++add_library(Library-C++ SHARED ${library-src})
+ set_target_properties(Library-C++ PROPERTIES
+     OUTPUT_NAME cpd
+     VERSION ${CPD_VERSION}
+@@ -78,14 +78,17 @@ endif()
+ option(WITH_TESTS "Build test suite" ON)
+ if(WITH_TESTS)
+     enable_testing()
+-    set(GOOGLETEST_VERSION 1.14.0)
+-    add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/googletest-1.14.0/googletest")
++    find_package(GTest)
++    if (NOT GTEST_FOUND)
++        set(GOOGLETEST_VERSION 1.14.0)
++        add_subdirectory("${PROJECT_SOURCE_DIR}/vendor/googletest-1.14.0/googletest")
++    endif()
+     add_subdirectory(tests)
+ endif()
+ 
+ 
+ # Install
+-install(TARGETS Library-C++ DESTINATION lib EXPORT cpd-targets)
++install(TARGETS Library-C++ EXPORT cpd-targets RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ install(DIRECTORY include/cpd DESTINATION include)
+ install(EXPORT cpd-targets NAMESPACE Cpd:: DESTINATION lib/cmake/cpd)
+ 
+@@ -99,6 +102,10 @@ if(WITH_DOCS)
+     add_custom_target(doc COMMAND ${DOXYGEN_EXECUTABLE} "${PROJECT_BINARY_DIR}/docs/Doxyfile")
+ endif()
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
+ 
+ # Components
+ find_package(jsoncpp QUIET)
+@@ -107,3 +114,6 @@ if(WITH_JSONCPP)
+     find_package(jsoncpp REQUIRED)
+     add_subdirectory(components/jsoncpp)
+ endif()
++
++configure_file(${CMAKE_SOURCE_DIR}/cpd.pc.in ${CMAKE_BINARY_DIR}/cpd.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cpd.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpd-0.5.5/cmake/cpd_test.cmake	2024-04-18 01:57:13.000000000 +0900
++++ src/cpd-0.5.5/cmake/cpd_test.cmake	2025-03-25 04:33:35.012830200 +0900
+@@ -4,6 +4,6 @@ function(cpd_test name)
+     add_executable(${target} ${src})
+     set_target_properties(${target} PROPERTIES OUTPUT_NAME ${name})
+     add_test(NAME ${name} COMMAND ${target})
+-    target_link_libraries(${target} PRIVATE Library-C++ ${ARGN} gtest_main)
++    target_link_libraries(${target} PRIVATE Library-C++ ${ARGN} gtest gtest_main)
+     target_include_directories(${target} PRIVATE "${PROJECT_BINARY_DIR}")
+ endfunction()
+--- origsrc/cpd-0.5.5/components/jsoncpp/CMakeLists.txt	2024-04-18 01:57:13.000000000 +0900
++++ src/cpd-0.5.5/components/jsoncpp/CMakeLists.txt	2025-03-25 04:43:22.084698600 +0900
+@@ -1,4 +1,4 @@
+-add_library(Jsoncpp STATIC src/jsoncpp.cpp)
++add_library(Jsoncpp SHARED src/jsoncpp.cpp)
+ if(${BUILD_SHARED_LIBS})
+ 	if(NOT TARGET jsoncpp_lib)
+ 		message(FATAL_ERROR "Target jsoncpp_lib is not defined, but is required because cpd is building shared libs. Make sure `BUILD_SHARED_LIBS` is enabled in your jsoncpp installation.")
+@@ -25,10 +25,13 @@ target_include_directories(Jsoncpp
+     )
+ target_compile_definitions(Jsoncpp PUBLIC CPD_WITH_JSONCPP)
+ 
+-install(TARGETS Jsoncpp DESTINATION lib EXPORT cpd-jsoncpp-targets)
++install(TARGETS Jsoncpp EXPORT cpd-jsoncpp-targets RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ install(DIRECTORY include/cpd DESTINATION include)
+ install(EXPORT cpd-jsoncpp-targets NAMESPACE Cpd:: DESTINATION lib/cmake/cpd)
+ 
+ if(WITH_TESTS)
+     add_subdirectory(tests)
+ endif()
++
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cpd-jsoncpp.pc.in ${CMAKE_BINARY_DIR}/cpd-jsoncpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cpd-jsoncpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpd-0.5.5/components/jsoncpp/cpd-jsoncpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpd-0.5.5/components/jsoncpp/cpd-jsoncpp.pc.in	2025-03-25 04:42:12.680093700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpd-jsoncpp
++Description: C++ implementation of the Coherent Point Drift point set registration algorithm (jsoncpp)
++Version: @CPD_VERSION@
++Libs: -L${libdir} -lcpd-jsoncpp
++Cflags: -I${includedir}
+--- origsrc/cpd-0.5.5/cpd.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpd-0.5.5/cpd.pc.in	2025-03-25 04:42:03.201927600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpd
++Description: C++ implementation of the Coherent Point Drift point set registration algorithm
++Version: @CPD_VERSION@
++Libs: -L${libdir} -lcpd
++Cflags: -I${includedir}
