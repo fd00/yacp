@@ -1,0 +1,58 @@
+--- origsrc/sdb-2.1.0/meson.build	2025-02-12 03:01:42.000000000 +0900
++++ src/sdb-2.1.0/meson.build	2025-04-01 16:37:35.518708800 +0900
+@@ -53,7 +53,7 @@ if get_option('local') and get_option('d
+   rpath_exe = '$ORIGIN/../' + get_option('libdir')
+ endif
+ 
+-libsdb = both_libraries(libsdb_name, libsdb_sources,
++libsdb = shared_library(libsdb_name, libsdb_sources,
+   include_directories: sdb_inc,
+   implicit_include_directories: false,
+   soversion: sdb_libversion,
+@@ -61,25 +61,12 @@ libsdb = both_libraries(libsdb_name, lib
+   install_rpath: rpath_lib
+ )
+ 
+-libsdb_static = static_library('libsdb_static', libsdb_sources,
+-  include_directories: sdb_inc,
+-  implicit_include_directories: false,
+-  install: not meson.is_subproject(),
+-  install_rpath: rpath_lib
+-)
+-
+ #if is_windows
+ #  link_with = libsdb.get_static_lib()
+ #else
+ #  link_with = libsdb.get_shared_lib()
+ #endif
+-default_library_type = get_option('default_library')
+-
+-if default_library_type == 'shared'
+-  link_with = libsdb.get_shared_lib()
+-else
+-  link_with = libsdb.get_static_lib()
+-endif
++link_with = libsdb
+ 
+ sdb_dep = declare_dependency(
+   link_with: [link_with],
+@@ -153,7 +140,7 @@ endif
+ pkgconfig_mod.generate(
+   name: 'sdb',
+   filebase: 'sdb',
+-  libraries: [libsdb.get_shared_lib()],
++  libraries: [libsdb],
+   description: 'Simple DataBase',
+   subdirs: ['sdb'],
+   version: sdb_version,
+--- origsrc/sdb-2.1.0/test/bench/meson.build	2025-02-12 03:01:42.000000000 +0900
++++ src/sdb-2.1.0/test/bench/meson.build	2025-04-01 15:21:56.828609800 +0900
+@@ -11,7 +11,7 @@ foreach test : tests
+   name = 'bench-' + test
+   exe = executable(name, name + '.c',
+     include_directories: sdb_inc,
+-    link_with: libsdb.get_static_lib()
++    link_with: [link_with]
+   )
+   benchmark(name, exe)
+ endforeach
