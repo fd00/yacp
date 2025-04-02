@@ -1,0 +1,77 @@
+--- origsrc/tommyds-2.2/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/tommyds-2.2/CMakeLists.txt	2025-04-02 20:04:20.995763300 +0900
+@@ -0,0 +1,36 @@
++cmake_minimum_required(VERSION 3.28)
++project(tommyds
++  VERSION 2.2
++  DESCRIPTION "C library of hashtables and tries designed to store objects with high performance"
++  HOMEPAGE_URL "https://github.com/amadvance/tommyds")
++
++include(GNUInstallDirs)
++include(CTest)
++
++file(GLOB_RECURSE LIB_SOURCES )
++add_library(tommyds SHARED "tommyds/tommy.c")
++if (DEFINED SOVERSION)
++  set_target_properties(tommyds PROPERTIES SOVERSION ${SOVERSION})
++endif()
++install(TARGETS tommyds
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(tommycheck check.c)
++target_link_libraries(tommycheck tommyds)
++add_executable(tommybench benchmark.cc)
++target_link_libraries(tommybench tommyds)
++
++add_test(NAME tommycheck
++  COMMAND tommycheck
++  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
++
++file(GLOB_RECURSE HEADERS "tommyds/*.h")
++install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/tommyds.pc.in ${CMAKE_BINARY_DIR}/tommyds.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/tommyds.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tommyds-2.2/benchmark.cc	2018-02-25 17:37:52.000000000 +0900
++++ src/tommyds-2.2/benchmark.cc	2025-04-02 19:36:33.983199500 +0900
+@@ -50,8 +50,8 @@
+ #if defined(__linux)
+ #include <stdint.h>
+ #include <unistd.h>
+-#include <sys/time.h>
+ #endif
++#include <sys/time.h>
+ 
+ #if defined(__MACH__)
+ #include <mach/mach_time.h>
+@@ -122,9 +122,9 @@
+ /* Google BTree */
+ /* https://code.google.com/p/cpp-btree/ */
+ #ifdef USE_GOOGLEBTREE
+-#if defined(_MSC_VER) /* Allow compilation in MSVC 2010 */
+-#include <stdint.h>
+-typedef size_t ssize_t;
++#if defined(_MSC_VER) /* Allow compilation in MSVC 2010 */
++#include <stdint.h>
++typedef size_t ssize_t;
+ #endif
+ #undef min
+ #undef max
+--- origsrc/tommyds-2.2/tommyds.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tommyds-2.2/tommyds.pc.in	2025-04-02 20:04:34.876863100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tommyds
++Description: C library of hashtables and tries designed to store objects with high performance
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ltommyds
++Cflags: -I${includedir}
