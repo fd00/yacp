@@ -1,0 +1,46 @@
+--- origsrc/subnetcalc-2.6.2/CMakeLists.txt	2025-01-06 17:44:09.000000000 +0900
++++ src/subnetcalc-2.6.2/CMakeLists.txt	2025-04-04 17:06:23.175069700 +0900
+@@ -108,6 +108,10 @@ ELSEIF (${CMAKE_SYSTEM_NAME} MATCHES "Ne
+     SET(CMAKE_LIBRARY_PATH "/usr/local/lib")
+     INCLUDE_DIRECTORIES("/usr/pkg/include" "/usr/local/include")
+ 
++ELSEIF (CYGWIN)
++    MESSAGE(STATUS ${CMAKE_SYSTEM_NAME} " supported")
++    ADD_DEFINITIONS("-DLINUX")
++
+ ELSE()
+     MESSAGE(FATAL_ERROR ${CMAKE_SYSTEM_NAME} " not supported (yet?)")
+ 
+@@ -149,18 +153,16 @@ ENDIF()
+ 
+ INCLUDE(FindPackageHandleStandardArgs)
+ 
++find_package(pkgconfig)
+ # ###### GeoIP ##############################################################
+-FIND_LIBRARY(GeoIP_LIBRARY NAMES GeoIP)
+-FIND_PATH(GeoIP_INCLUDE_DIR NAMES GeoIP.h GeoIPCity.h)
++pkg_check_modules(GEOIP geoip)
+ IF (GEOIP_FOUND)
+-   INCLUDE_DIRECTORIES(${GeoIP_INCLUDE_DIR})
++   INCLUDE_DIRECTORIES(${GEOIP_INCLUDE_DIR})
+    ADD_DEFINITIONS(-DHAVE_GEOIP -DHAVE_GEOIP_IPV6)
+    MESSAGE(STATUS "GeoIP found.")
+ ELSE()
+    MESSAGE(STATUS "GeoIP not found!")
+ ENDIF()
+-FIND_PACKAGE_HANDLE_STANDARD_ARGS(GeoIP DEFAULT_MSG GeoIP_LIBRARY GeoIP_INCLUDE_DIR)
+-
+ 
+ #############################################################################
+ #### INTERNATIONALISATION (I18N)                                         ####
+--- origsrc/subnetcalc-2.6.2/src/CMakeLists.txt	2024-11-14 02:42:45.000000000 +0900
++++ src/subnetcalc-2.6.2/src/CMakeLists.txt	2025-04-04 17:07:52.514814100 +0900
+@@ -46,7 +46,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINA
+ ADD_EXECUTABLE(subnetcalc subnetcalc.cc tools.cc)
+ TARGET_LINK_LIBRARIES(subnetcalc ${Intl_LIBRARIES})
+ IF (GEOIP_FOUND)
+-   TARGET_LINK_LIBRARIES(subnetcalc ${GeoIP_LIBRARY})
++   TARGET_LINK_LIBRARIES(subnetcalc ${GEOIP_LIBRARIES})
+ ENDIF()
+ INSTALL(TARGETS     subnetcalc   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ INSTALL(FILES       subnetcalc.1 DESTINATION         ${CMAKE_INSTALL_MANDIR}/man1)
