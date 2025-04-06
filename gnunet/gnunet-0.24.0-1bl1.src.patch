@@ -1,0 +1,877 @@
+--- origsrc/gnunet-0.24.0/configure.ac	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/configure.ac	2025-04-06 11:14:51.319226400 +0900
+@@ -1077,7 +1077,12 @@ AC_TYPE_UID_T
+ # check for library functions
+ AC_FUNC_FORK
+ AC_FUNC_CHOWN
+-AC_CHECK_FUNCS([atoll stat64 strnlen mremap getrlimit setrlimit sysconf initgroups strndup gethostbyname2 getpeerucred getpeereid setresuid getifaddrs freeifaddrs getresgid mallinfo2 malloc_size malloc_usable_size getrusage random srandom stat statfs statvfs wait4 timegm pipe2 renameat2])
++AC_CHECK_FUNCS([atoll stat64 strnlen mremap getrlimit setrlimit sysconf initgroups strndup gethostbyname2 getpeerucred getpeereid setresuid getifaddrs freeifaddrs getresgid mallinfo2 malloc_size malloc_usable_size getrusage random srandom stat statfs statvfs wait4 timegm pipe2])
++
++# In cygwin, renameat2 is implemented but RENAME_EXCHANGE is not defined
++if test "$host_os" != "cygwin"; then
++  AC_CHECK_FUNCS([renameat2])
++fi
+ 
+ GN_INTLINCL=""
+ GN_LIBINTL="$LTLIBINTL"
+--- origsrc/gnunet-0.24.0/pkgconfig/gnunetnat.pc.in	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/pkgconfig/gnunetnat.pc.in	2025-04-06 11:14:51.334240100 +0900
+@@ -8,5 +8,5 @@ Description: library for NAT traversal
+ URL: https://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunetnat
++Libs: -L${libdir} -lgnunetnatauto -lgnunetnatnew
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.24.0/pkgconfig/gnunettransport.pc.in	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/pkgconfig/gnunettransport.pc.in	2025-04-06 11:14:51.335256300 +0900
+@@ -8,5 +8,5 @@ Description: Library to access the low-l
+ URL: http://gnunet.org
+ Version: @VERSION@
+ Requires:
+-Libs: -L${libdir} -lgnunettransport
++Libs: -L${libdir} -lgnunettransportapplication -lgnunettransportcore -lgnunettransportcommunicator -lgnunettransportmonitor
+ Cflags: -I${includedir}
+--- origsrc/gnunet-0.24.0/src/cli/arm/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/arm/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/cli/cadet/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/cadet/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/cli/core/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/core/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/cli/datastore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/datastore/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/dht/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/dht/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/fs/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/fs/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/cli/gns/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/gns/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgdata_DATA = \
+   gnunet-gns-proxy-ca.template
+--- origsrc/gnunet-0.24.0/src/cli/hello/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/hello/Makefile.am	2025-04-06 13:10:37.282926600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/cli/identity/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/identity/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/messenger/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/messenger/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/cli/namecache/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/namecache/Makefile.am	2025-04-06 13:10:37.269427900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/namestore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/namestore/Makefile.am	2025-04-06 13:10:37.269427900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/nat/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/nat/Makefile.am	2025-04-06 13:10:37.269427900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ libexecdir= $(pkglibdir)/libexec/
+ 
+--- origsrc/gnunet-0.24.0/src/cli/nat-auto/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/nat-auto/Makefile.am	2025-04-06 13:10:37.269427900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ libexecdir= $(pkglibdir)/libexec/
+ 
+--- origsrc/gnunet-0.24.0/src/cli/nse/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/nse/Makefile.am	2025-04-06 13:10:37.282926600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/cli/reclaim/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/reclaim/Makefile.am	2025-04-06 13:10:37.283927100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_srcdir)/src/service/reclaim
+ 
+  plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/revocation/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/revocation/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/statistics/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/statistics/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/cli/util/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/util/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/cli/vpn/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/cli/vpn/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/contrib/cli/template/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/cli/template/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/abd/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/abd/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ EXTRA_DIST = \
+   test_abd_defaults.conf \
+--- origsrc/gnunet-0.24.0/src/contrib/service/auction/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/auction/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir = $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/consensus/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/consensus/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/conversation/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/conversation/Makefile.am	2025-04-06 13:50:26.121167600 +0900
+@@ -5,6 +5,7 @@ plugindir = $(libdir)/gnunet
+ 
+ AM_CPPFLAGS = \
+   $(GNUNET_CPPFLAGS) \
++  -I$(top_builddir)/src/include \
+   -I$(top_srcdir)/src/include \
+   -I$(top_srcdir)
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/rps/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/rps/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/contrib/service/scalarproduct/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/scalarproduct/Makefile.am	2025-04-06 13:10:37.264428000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/secretsharing/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/secretsharing/Makefile.am	2025-04-06 13:10:37.264428000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/set/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/set/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/contrib/service/template/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/contrib/service/template/Makefile.am	2025-04-06 13:10:37.268501500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/lib/block/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/block/Makefile.am	2025-04-06 11:57:29.044323300 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/lib/curl/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/curl/Makefile.am	2025-04-06 11:46:11.335644100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/lib/gnsrecord/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/gnsrecord/Makefile.am	2025-04-06 12:11:39.770028100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include ${MHD_CFLAGS}
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include ${MHD_CFLAGS}
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/lib/hello/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/hello/Makefile.am	2025-04-06 11:51:56.720428300 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/lib/json/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/json/Makefile.am	2025-04-06 11:47:10.973360900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/lib/mhd/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/mhd/Makefile.am	2025-04-06 11:50:07.550053900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/lib/pq/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/pq/Makefile.am	2025-04-06 11:51:11.367756300 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage
+--- origsrc/gnunet-0.24.0/src/lib/sq/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/sq/Makefile.am	2025-04-06 11:50:35.849340900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage
+--- origsrc/gnunet-0.24.0/src/lib/testing/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/testing/Makefile.am	2025-04-06 12:13:20.874205400 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/lib/util/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/lib/util/Makefile.am	2025-04-06 11:33:13.947892900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/block/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/block/Makefile.am	2025-04-06 12:15:39.011640100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/datacache/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/datacache/Makefile.am	2025-04-06 12:20:08.008375600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/datastore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/datastore/Makefile.am	2025-04-06 12:21:04.648108500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/dht/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/dht/Makefile.am	2025-04-06 12:59:10.826257600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/dns/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/dns/Makefile.am	2025-04-06 12:16:50.273138100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/plugin/fs/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/fs/Makefile.am	2025-04-06 13:05:45.240835000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/plugin/gns/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/gns/Makefile.am	2025-04-06 13:03:23.750712600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if HAVE_LIBIDN
+   LIBIDN= -lidn
+--- origsrc/gnunet-0.24.0/src/plugin/gnsrecord/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/gnsrecord/Makefile.am	2025-04-06 12:19:02.569975700 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include ${MHD_CFLAGS}
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include ${MHD_CFLAGS}
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/messenger/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/messenger/Makefile.am	2025-04-06 13:08:21.546780400 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/plugin/namecache/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/namecache/Makefile.am	2025-04-06 12:25:29.451276600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/namestore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/namestore/Makefile.am	2025-04-06 12:56:45.224196600 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/peerstore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/peerstore/Makefile.am	2025-04-06 12:19:33.303514700 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/reclaim/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/reclaim/Makefile.am	2025-04-06 13:06:54.815304400 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+  plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/regex/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/regex/Makefile.am	2025-04-06 13:01:34.553187700 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage
+--- origsrc/gnunet-0.24.0/src/plugin/revocation/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/revocation/Makefile.am	2025-04-06 13:01:01.270193900 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/seti/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/seti/Makefile.am	2025-04-06 13:00:22.178585100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/plugin/setu/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/plugin/setu/Makefile.am	2025-04-06 12:59:42.599992700 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/service/arm/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/arm/Makefile.am	2025-04-06 13:15:17.827866100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+@@ -113,3 +113,4 @@ libgnunet_plugin_testing_arm_probnat_la_
+   libgnunetarm.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la \
+   $(LTLIBINTL)
++libgnunet_plugin_testing_arm_probnat_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+--- origsrc/gnunet-0.24.0/src/service/cadet/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/cadet/Makefile.am	2025-04-06 13:10:37.233950000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/core/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/core/Makefile.am	2025-04-06 13:10:37.264428000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/service/datacache/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/datacache/Makefile.am	2025-04-06 13:10:37.264428000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/datastore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/datastore/Makefile.am	2025-04-06 13:10:37.263509200 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/dht/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/dht/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/dns/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/dns/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/exit/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/exit/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/fs/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/fs/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/gns/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/gns/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if HAVE_GLIBCNSS
+ NSS_SUBDIR = nss
+--- origsrc/gnunet-0.24.0/src/service/hostlist/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/hostlist/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/service/identity/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/identity/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/messenger/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/messenger/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/namecache/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/namecache/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/namestore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/namestore/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include $(POSTGRESQL_CPPFLAGS)
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/nat/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/nat/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ libexecdir= $(pkglibdir)/libexec/
+ 
+--- origsrc/gnunet-0.24.0/src/service/nat-auto/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/nat-auto/Makefile.am	2025-04-06 13:10:37.254214100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ libexecdir= $(pkglibdir)/libexec/
+ 
+--- origsrc/gnunet-0.24.0/src/service/nse/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/nse/Makefile.am	2025-04-06 13:10:37.250194100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/peerstore/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/peerstore/Makefile.am	2025-04-06 13:10:37.242512000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/pt/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/pt/Makefile.am	2025-04-06 13:10:37.242512000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/reclaim/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/reclaim/Makefile.am	2025-04-06 13:10:37.250194100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+  plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/regex/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/regex/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage
+--- origsrc/gnunet-0.24.0/src/service/rest/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/rest/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/revocation/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/revocation/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/seti/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/seti/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/service/setu/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/setu/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ pkgcfgdir= $(pkgdatadir)/config.d/
+ 
+--- origsrc/gnunet-0.24.0/src/service/statistics/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/statistics/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/testbed/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/testbed/Makefile.am	2025-04-06 13:10:37.237969500 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+@@ -18,6 +18,7 @@ libgnunettestbed_la_SOURCES = \
+   testbed.c
+ libgnunettestbed_la_LIBADD = \
+  $(top_builddir)/src/lib/util/libgnunetutil.la
++libgnunettestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ libgnunettestingtestbed_la_SOURCES = \
+   testbed_api_cmd_system_create.c \
+@@ -26,7 +27,7 @@ libgnunettestingtestbed_la_LIBADD = \
+   libgnunettestbed.la \
+   $(top_builddir)/src/lib/testing/libgnunettesting.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la
+-
++libgnunettestingtestbed_la_LDFLAGS = $(GN_LIB_LDFLAGS)
+ 
+ bin_PROGRAMS = \
+  gnunet-testbed
+--- origsrc/gnunet-0.24.0/src/service/topology/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/topology/Makefile.am	2025-04-06 13:10:37.250194100 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/transport/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/transport/Makefile.am	2025-04-06 13:21:14.254956300 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+@@ -38,6 +38,9 @@ libgnunet_plugin_testing_transport_simpl
+   $(top_builddir)/src/service/arm/libgnunetarm.la \
+   $(top_builddir)/src/lib/util/libgnunetutil.la \
+   $(LTLIBINTL)
++libgnunet_plugin_testing_transport_simple_send_la_LDFLAGS = \
++  $(GN_LIB_LDFLAGS) \
++  -version-info 0:0:0
+ 
+ libgnunettestingtransport_la_SOURCES = \
+   testing_transport_traits.c transport-testing-cmds.h \
+--- origsrc/gnunet-0.24.0/src/service/util/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/util/Makefile.am	2025-04-06 13:10:38.444369400 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
+--- origsrc/gnunet-0.24.0/src/service/vpn/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/vpn/Makefile.am	2025-04-06 13:10:37.233950000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include -I$(top_builddir)/src/include
+ 
+ if USE_COVERAGE
+   AM_CFLAGS = --coverage -O0
+--- origsrc/gnunet-0.24.0/src/service/zonemaster/Makefile.am	2025-03-14 22:37:56.000000000 +0900
++++ src/gnunet-0.24.0/src/service/zonemaster/Makefile.am	2025-04-06 13:10:37.233950000 +0900
+@@ -1,5 +1,5 @@
+ # This Makefile.am is in the public domain
+-AM_CPPFLAGS = -I$(top_srcdir)/src/include
++AM_CPPFLAGS = -I$(top_builddir)/src/include -I$(top_srcdir)/src/include
+ 
+ plugindir = $(libdir)/gnunet
+ 
