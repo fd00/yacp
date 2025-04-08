@@ -1,6 +1,6 @@
---- origsrc/aws-checksums-0.1.17/CMakeLists.txt	2023-07-15 03:08:45.000000000 +0900
-+++ src/aws-checksums-0.1.17/CMakeLists.txt	2023-09-12 17:39:10.324340200 +0900
-@@ -124,6 +124,10 @@ aws_add_sanitizers(${PROJECT_NAME})
+--- origsrc/aws-checksums-0.2.5/CMakeLists.txt	2025-03-28 03:22:55.000000000 +0900
++++ src/aws-checksums-0.2.5/CMakeLists.txt	2025-04-08 17:47:01.499871700 +0900
+@@ -57,6 +57,10 @@ aws_add_sanitizers(${PROJECT_NAME})
  # We are not ABI stable yet
  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
  
@@ -8,29 +8,21 @@
 +    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
 +
- target_include_directories(${PROJECT_NAME} PUBLIC
-         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:include>)
-@@ -142,7 +146,7 @@ else()
+ if (USE_CPU_EXTENSIONS)
+     if (AWS_ARCH_INTEL)
+         file (GLOB AWS_ARCH_INTEL_SRC
+@@ -132,7 +136,7 @@ else()
  endif()
  
  install(EXPORT "${PROJECT_NAME}-targets"
--        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/${TARGET_DIR}"
-+        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
+-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/${TARGET_DIR}"
++        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
          NAMESPACE AWS::
          COMPONENT Development)
  
-@@ -151,10 +155,17 @@ configure_file("cmake/${PROJECT_NAME}-co
-         @ONLY)
- 
- install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
--        DESTINATION "${LIBRARY_DIRECTORY}/${PROJECT_NAME}/cmake/"
-+        DESTINATION "${LIBRARY_DIRECTORY}/cmake/${PROJECT_NAME}"
-         COMPONENT Development)
- 
- include(CTest)
- if (BUILD_TESTING)
+@@ -149,3 +153,10 @@ if (BUILD_TESTING)
      add_subdirectory(tests)
+     add_subdirectory(bin/benchmark)
  endif ()
 +
 +set(prefix ${CMAKE_INSTALL_PREFIX})
@@ -39,8 +31,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/aws-checksums.pc.in ${CMAKE_BINARY_DIR}/aws-checksums.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/aws-checksums.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-checksums-0.1.17/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-checksums-0.1.17/aws-checksums.pc.in	2023-09-12 17:33:30.827571400 +0900
+--- origsrc/aws-checksums-0.2.5/aws-checksums.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-checksums-0.2.5/aws-checksums.pc.in	2025-04-08 17:47:04.611703700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -52,8 +44,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-checksums
 +Cflags: -I${includedir}
---- origsrc/aws-checksums-0.1.17/cmake/aws-checksums-config.cmake	2023-07-15 03:08:45.000000000 +0900
-+++ src/aws-checksums-0.1.17/cmake/aws-checksums-config.cmake	2023-09-12 17:25:15.394773800 +0900
+--- origsrc/aws-checksums-0.2.5/cmake/aws-checksums-config.cmake	2025-03-28 03:22:55.000000000 +0900
++++ src/aws-checksums-0.2.5/cmake/aws-checksums-config.cmake	2025-04-08 17:41:36.553542700 +0900
 @@ -1,18 +1 @@
 -macro(aws_load_targets type)
 -    include(${CMAKE_CURRENT_LIST_DIR}/${type}/@PROJECT_NAME@-targets.cmake)
