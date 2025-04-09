@@ -1,6 +1,6 @@
---- origsrc/nats.c-3.9.2/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
-+++ src/nats.c-3.9.2/CMakeLists.txt	2025-01-16 11:34:33.030478800 +0900
-@@ -120,7 +120,7 @@ if(NATS_BUILD_USE_SODIUM)
+--- origsrc/nats.c-3.10.1/CMakeLists.txt	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/CMakeLists.txt	2025-04-09 18:47:25.597709000 +0900
+@@ -121,7 +121,7 @@ if(NATS_BUILD_USE_SODIUM)
        ${NATS_SODIUM_DIR}
    )
    FIND_LIBRARY(NATS_SODIUM_LIBRARY
@@ -9,8 +9,8 @@
      HINTS ${NATS_SODIUM_DIR}
    )
    FIND_PACKAGE_HANDLE_STANDARD_ARGS(libsodium DEFAULT_MSG
---- origsrc/nats.c-3.9.2/src/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
-+++ src/nats.c-3.9.2/src/CMakeLists.txt	2025-01-16 11:25:28.898201600 +0900
+--- origsrc/nats.c-3.10.1/src/CMakeLists.txt	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/src/CMakeLists.txt	2025-04-09 18:47:25.597709000 +0900
 @@ -62,7 +62,7 @@ if(NATS_BUILD_LIB_SHARED)
    target_include_directories(nats PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -20,8 +20,8 @@
    install(EXPORT cnats-targets
          NAMESPACE cnats::
          FILE cnats-config.cmake
---- origsrc/nats.c-3.9.2/src/libnats.pc.in	2024-12-10 01:50:23.000000000 +0900
-+++ src/nats.c-3.9.2/src/libnats.pc.in	2025-01-16 11:26:05.659247400 +0900
+--- origsrc/nats.c-3.10.1/src/libnats.pc.in	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/src/libnats.pc.in	2025-04-09 18:47:25.597709000 +0900
 @@ -1,12 +1,12 @@
 -prefix="@CMAKE_INSTALL_PREFIX@"
 -exec_prefix="${prefix}"
@@ -42,8 +42,8 @@
 +Cflags: -I${includedir}
 +Libs: -L${libdir} -lnats
 +Libs.private: -L${libdir} -lnats @PKGCONF_LIBS_PRIV@
---- origsrc/nats.c-3.9.2/test/CMakeLists.txt	2024-12-10 01:50:23.000000000 +0900
-+++ src/nats.c-3.9.2/test/CMakeLists.txt	2025-01-16 11:27:03.053147200 +0900
+--- origsrc/nats.c-3.10.1/test/CMakeLists.txt	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/test/CMakeLists.txt	2025-04-09 18:47:25.613329000 +0900
 @@ -6,7 +6,7 @@ if(NOT BUILD_TESTING)
    return()
  endif()
@@ -71,8 +71,29 @@
  
  set(BENCH_LIST ${PROJECT_SOURCE_DIR}/test/list_bench.txt)
  set(STAN_LIST ${PROJECT_SOURCE_DIR}/test/list_stan.txt)
---- origsrc/nats.c-3.9.2/test/test.c	2024-12-10 01:50:23.000000000 +0900
-+++ src/nats.c-3.9.2/test/test.c	2025-01-16 11:44:32.658884500 +0900
+--- origsrc/nats.c-3.10.1/test/check_cpp/CMakeLists.txt	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/test/check_cpp/CMakeLists.txt	2025-04-09 18:51:12.444502800 +0900
+@@ -2,12 +2,6 @@ if(NOT BUILD_TESTING)
+   return()
+ endif()
+ 
+-if(NOT NATS_BUILD_LIB_STATIC)
+-  MESSAGE(FATAL_ERROR
+-          "Building tests require static library, or run CMake with -DBUILD_TESTING=OFF")
+-  return()
+-endif()
+-
+ if(MSVC)
+   set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS "/w")
+ endif()
+@@ -22,4 +16,4 @@ endif(NATS_BUILD_WITH_TLS)
+ # Build the test program
+ add_executable(check_cpp check_cpp.cpp)
+ 
+-target_link_libraries(check_cpp nats_static ${NATS_EXTRA_LIB})
++target_link_libraries(check_cpp nats ${NATS_EXTRA_LIB})
+--- origsrc/nats.c-3.10.1/test/test.c	2025-03-15 01:45:20.000000000 +0900
++++ src/nats.c-3.10.1/test/test.c	2025-04-09 18:47:25.613329000 +0900
 @@ -20,8 +20,10 @@
  #else
  #include <dirent.h>
@@ -84,16 +105,16 @@
  
  #include "buf.h"
  #include "timer.h"
-@@ -37012,7 +37014,7 @@ void test_StanSubTimeout(void)
+@@ -37298,7 +37300,7 @@ void test_StanSubTimeout(void)
  
  #endif
  
 -#ifndef _WIN32
 +#if !defined(_WIN32) && !defined(__CYGWIN__)
  static void _sigsegv_handler(int sig) {
-   void *array[20];
-   int size = backtrace(array, 20);
-@@ -37037,7 +37039,7 @@ int main(int argc, char **argv)
+ 
+ // Android doesn't support backtrace before API Level 33.
+@@ -37333,7 +37335,7 @@ int main(int argc, char **argv)
      }
      testName = argv[1];
  
