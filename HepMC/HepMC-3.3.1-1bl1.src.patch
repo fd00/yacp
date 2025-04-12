@@ -1,6 +1,6 @@
---- origsrc/HepMC3-3.3.0/CMakeLists.txt	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/CMakeLists.txt	2024-10-03 21:49:04.387149900 +0900
-@@ -244,7 +244,8 @@ target_link_libraries(HepMC3 PRIVATE ${C
+--- origsrc/HepMC3-3.3.1/CMakeLists.txt	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/CMakeLists.txt	2025-04-12 09:20:39.571785700 +0900
+@@ -254,7 +254,8 @@ target_link_libraries(HepMC3 PRIVATE ${C
  #---Install build products---------------------------------------------------
  install(TARGETS HepMC3
    EXPORT HepMC3Targets
@@ -10,7 +10,7 @@
    COMPONENT libs)
  
  if (HEPMC3_BUILD_STATIC_LIBS)
-@@ -276,7 +277,7 @@ install(DIRECTORY include/ DESTINATION $
+@@ -286,7 +287,7 @@ install(DIRECTORY include/ DESTINATION $
  ########################################################################
  ## Optional packages
  ########################################################################
@@ -19,7 +19,7 @@
  
  #Search engine
  if(HEPMC3_ENABLE_SEARCH)
-@@ -350,7 +351,7 @@ STRING(REPLACE ";" " " HEPMC3_FEATURES "
+@@ -366,7 +367,7 @@ STRING(REPLACE ";" " " HEPMC3_FEATURES "
  
  include(CMakePackageConfigHelpers)
  
@@ -28,47 +28,76 @@
  
  configure_package_config_file(cmake/Templates/HepMC3Config.cmake.in
    ${CMAKE_CURRENT_BINARY_DIR}/outputs/share/HepMC3/cmake/HepMC3Config.cmake
---- origsrc/HepMC3-3.3.0/HepMC3-config.in	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/HepMC3-config.in	2024-10-03 23:16:52.118822200 +0900
-@@ -45,16 +45,16 @@ tmp=$( echo "$*" | egrep -- '--\<prefix\
+--- origsrc/HepMC3-3.3.1/HepMC3-config.in	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/HepMC3-config.in	2025-04-12 09:21:48.091552700 +0900
+@@ -53,16 +53,16 @@ tmp=$( echo "$*" | grep -E -- '--\<prefi
  test -n "$tmp" && OUT="$OUT ${PACKAGE_PREFIX_DIR}"
  
- tmp=$( echo "$*" | egrep -- '--\<includedir\>')
+ tmp=$( echo "$*" | grep -E -- '--\<includedir\>')
 -test -n "$tmp" && OUT="$OUT @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@"
 +test -n "$tmp" && OUT="$OUT @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@"
  
- tmp=$( echo "$*" | egrep -- '--\<libdir\>')
+ tmp=$( echo "$*" | grep -E -- '--\<libdir\>')
 -test -n "$tmp" && OUT="$OUT @PACKAGE_CMAKE_INSTALL_LIBDIR@"
 +test -n "$tmp" && OUT="$OUT @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@"
  
- tmp=$( echo "$*" | egrep -- '--\<interfacesdir\>')
+ tmp=$( echo "$*" | grep -E -- '--\<interfacesdir\>')
  test -n "$tmp" && OUT="$OUT @PACKAGE_INTERFACES_INSTALL_DIR@"
  
- tmp=$( echo "$*" | egrep -- '--\<cflags|cppflags|cxxflags\>')
+ tmp=$( echo "$*" | grep -E -- '--\<cflags|cppflags|cxxflags\>')
 -test -n "$tmp" && OUT="$OUT -I@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@"
 +test -n "$tmp" && OUT="$OUT -I@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@"
  
  
- tmp=$( echo "$*" | egrep -- '--\<static\>')
-@@ -72,13 +72,13 @@ test -n "$tmp" && OUT="$OUT @PACKAGE_CMA
+ tmp=$( echo "$*" | grep -E -- '--\<static\>')
+@@ -71,19 +71,19 @@ if test -n "$tmp"; then
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'lib_static')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<ldflags|libs\>')
+-        OUT="$OUT @PACKAGE_CMAKE_INSTALL_LIBDIR@/libHepMC3-static.a"
++        OUT="$OUT @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/libHepMC3-static.a"
+     fi
+ 
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'search_static')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<search\>')
+-        test -n "$tmp" && OUT="$OUT @PACKAGE_CMAKE_INSTALL_LIBDIR@/libHepMC3search-static.a"
++        test -n "$tmp" && OUT="$OUT @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/libHepMC3search-static.a"
+     fi
+ 
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'protobufIO_static')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<protobufIO\>')
+-        test -n "$tmp" && OUT="$OUT @PACKAGE_CMAKE_INSTALL_LIBDIR@/libHepMC3protobufIO_static.a"
++        test -n "$tmp" && OUT="$OUT @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/libHepMC3protobufIO_static.a"
+     fi
+ 
  else
+@@ -91,19 +91,19 @@ else
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'lib')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<ldflags|libs\>')
+-        test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3"
++        test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3"
+     fi
  
- tmp=$( echo "$*" | egrep -- '--\<ldflags|libs\>')
--test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3"
-+test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3"
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'search')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<search\>')
+-        test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3search"
++        test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3search"
+     fi
  
- tmp=$( echo "$*" | egrep -- '--\<search\>')
--test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3search"
-+test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3search"
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'protobufIO')
+     if test -n "$st"; then
+         tmp=$( echo "$*" | grep -E -- '--\<protobufIO\>')
+-        test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3protobufIO"
++        test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3protobufIO"
+     fi
  
- tmp=$( echo "$*" | egrep -- '--\<protobufIO\>')
--test -n "$tmp" && OUT="$OUT -L@PACKAGE_CMAKE_INSTALL_LIBDIR@ -lHepMC3protobufIO"
-+test -n "$tmp" && OUT="$OUT -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lHepMC3protobufIO"
- 
- fi
- 
---- origsrc/HepMC3-3.3.0/include/HepMC3/Version.h	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/include/HepMC3/Version.h	2024-10-03 22:09:33.023989400 +0900
+     st=$( echo "@HEPMC3_FEATURES@" | grep -E -w -- 'rootIO')
+--- origsrc/HepMC3-3.3.1/include/HepMC3/Version.h	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/include/HepMC3/Version.h	2025-04-12 09:23:03.992396200 +0900
 @@ -35,7 +35,7 @@ inline std::string version() {
  #define HEPMC3_DECLARE_WRITER_STREAM(classname)    extern "C" {  __declspec(dllexport) classname * __stdcall new ## classname ## stream (std::ostream & stream, std::shared_ptr<GenRunInfo> run) { return new classname (stream,run);  } }
  #define HEPMC3_DECLARE_WRITER_SPSTREAM(classname)  extern "C" {  __declspec(dllexport) classname * __stdcall new ## classname ## spstream (std::shared_ptr<std::ostream> stream, std::shared_ptr<GenRunInfo> run) { return new classname (stream, run);  } }
@@ -78,8 +107,8 @@
  #define HEPMC3_DECLARE_READER_FILE(classname)      extern "C" { classname * new ## classname ## file (const std::string &filename ) { return new classname (filename);  } }
  #define HEPMC3_DECLARE_READER_STREAM(classname)    extern "C" { classname * new ## classname ## stream (std::istream & stream) { return new classname (stream);  } }
  #define HEPMC3_DECLARE_READER_SPSTREAM(classname)  extern "C" { classname * new ## classname ## spstream (std::shared_ptr<std::istream> stream) { return new classname (stream);  } }
---- origsrc/HepMC3-3.3.0/protobufIO/CMakeLists.txt	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/protobufIO/CMakeLists.txt	2024-10-03 22:19:40.021017700 +0900
+--- origsrc/HepMC3-3.3.1/protobufIO/CMakeLists.txt	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/protobufIO/CMakeLists.txt	2025-04-12 09:41:21.443246400 +0900
 @@ -38,7 +38,8 @@ set_target_properties(HepMC3protobufIO
  #---Install shared build products---------------------------------------------------
  install(TARGETS HepMC3protobufIO
@@ -99,8 +128,8 @@
  install(EXPORT HepMC3protobufIOTargets
    DESTINATION ${CONFIG_INSTALL_DIR}
    COMPONENT protobufIOlibs)
---- origsrc/HepMC3-3.3.0/search/CMakeLists.txt	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/search/CMakeLists.txt	2024-10-03 22:20:10.959217500 +0900
+--- origsrc/HepMC3-3.3.1/search/CMakeLists.txt	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/search/CMakeLists.txt	2025-04-12 09:40:51.215997500 +0900
 @@ -23,7 +23,8 @@ target_include_directories(HepMC3search
  # installs
  install(TARGETS HepMC3search
@@ -120,42 +149,9 @@
  install(EXPORT HepMC3searchTargets
    DESTINATION ${CONFIG_INSTALL_DIR}
    COMPONENT searchdevel)
---- origsrc/HepMC3-3.3.0/test/CMakeLists.txt	2024-06-03 01:17:02.000000000 +0900
-+++ src/HepMC3-3.3.0/test/CMakeLists.txt	2024-10-03 22:45:16.157397400 +0900
-@@ -18,7 +18,9 @@ macro( hepmc_test testname )
-   set(srcdir ${CMAKE_CURRENT_SOURCE_DIR} )
-   set(builddir ${CMAKE_CURRENT_BINARY_DIR} )
-   add_test( ${testname} ${CMAKE_CURRENT_BINARY_DIR}/${testname} )
-+  if (NOT CYGWIN)
-   SET_TESTS_PROPERTIES( ${testname} PROPERTIES ENVIRONMENT "PATH=${PROJECT_BINARY_DIR}/outputs/${CMAKE_INSTALL_LIBDIR}/;$ENV{PATH}")
-+  endif()
-   file(GLOB INPUT${testname}  "${CMAKE_CURRENT_SOURCE_DIR}/input${testname}*" )
-   file(COPY ${INPUT${testname}} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-   string(REPLACE "test" "" ${testname} name)
-@@ -38,10 +40,12 @@ macro( hepmc_root_test testname )
-   set(srcdir ${CMAKE_CURRENT_SOURCE_DIR} )
-   set(builddir ${CMAKE_CURRENT_BINARY_DIR} )
-   add_test( ${testname} ${testname} )
-+  if (NOt CYGWIN)
-   SET_TESTS_PROPERTIES( ${testname} PROPERTIES ENVIRONMENT "PATH=${PROJECT_BINARY_DIR}/outputs/${CMAKE_INSTALL_LIBDIR}/;$ENV{PATH}"
-   ENVIRONMENT "LD_LIBRARY_PATH=${PROJECT_BINARY_DIR}/outputs/${CMAKE_INSTALL_LIBDIR}/;$ENV{LD_LIBRARY_PATH}"
-   ENVIRONMENT "DYLD_LIBRARY_PATH=${PROJECT_BINARY_DIR}/outputs/${CMAKE_INSTALL_LIBDIR}/;$ENV{DYLD_LIBRARY_PATH}"
-   )
-+  endif()
-   file(GLOB INPUT${testname}  "${CMAKE_CURRENT_SOURCE_DIR}/input${testname}*" )
-   file(COPY ${INPUT${testname}} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-   string(REPLACE "test" "" ${testname} name)
-@@ -62,7 +66,9 @@ macro( hepmc_protobuf_test testname )
-   set(srcdir ${CMAKE_CURRENT_SOURCE_DIR} )
-   set(builddir ${CMAKE_CURRENT_BINARY_DIR} )
-   add_test( ${testname} ${testname} )
-+  if (NOT CYGWIN)
-   SET_TESTS_PROPERTIES( ${testname} PROPERTIES ENVIRONMENT "PATH=${PROJECT_BINARY_DIR}/outputs/${CMAKE_INSTALL_LIBDIR}/;$ENV{PATH}")
-+  endif()
-   file(GLOB INPUT${testname}  "${CMAKE_CURRENT_SOURCE_DIR}/input${testname}*" )
-   file(COPY ${INPUT${testname}} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-   string(REPLACE "test" "" ${testname} name)
-@@ -297,7 +303,7 @@ foreach ( ctest ${compress_tests} )
+--- origsrc/HepMC3-3.3.1/test/CMakeLists.txt	2025-03-19 05:12:25.000000000 +0900
++++ src/HepMC3-3.3.1/test/CMakeLists.txt	2025-04-12 09:29:51.931138000 +0900
+@@ -330,7 +330,7 @@ foreach ( ctest ${compress_tests} )
    if ("zstd" IN_LIST HEPMC3_TEST_PACKAGES_LIST AND zstd_FOUND)
      target_compile_options(${ctest} PUBLIC "-DHEPMC3_USE_COMPRESSION")
      target_compile_options(${ctest} PUBLIC "-DHEPMC3_ZSTD_SUPPORT=1")
