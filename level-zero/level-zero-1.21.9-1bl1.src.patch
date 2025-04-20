@@ -1,0 +1,145 @@
+--- origsrc/level-zero-1.21.9/CMakeLists.txt	2025-04-11 05:05:03.000000000 +0900
++++ src/level-zero-1.21.9/CMakeLists.txt	2025-04-20 15:59:14.394740200 +0900
+@@ -18,7 +18,7 @@ project(level-zero VERSION 1.21.9)
+ include(GNUInstallDirs)
+ 
+ find_package(Git)
+-if(Git_FOUND)
++if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+ 	if(MSVC)
+ 		execute_process(
+ 			COMMAND CMD /c ${GIT_EXECUTABLE} rev-parse HEAD
+@@ -53,21 +53,23 @@ endif()
+ include(FetchContent)
+ 
+ if(BUILD_L0_LOADER_TESTS AND (NOT MSVC OR (MSVC AND NOT BUILD_STATIC)))
+-    FetchContent_Declare(
+-        googletest
+-        GIT_REPOSITORY https://github.com/google/googletest.git
+-        GIT_TAG        v1.14.0
+-    )
+-    add_library(GTest::GTest INTERFACE IMPORTED)
+-    target_link_libraries(GTest::GTest INTERFACE gtest_main)
+-
+-	# For Windows: Prevent overriding the parent project's compiler/linker settings
+-    if(MSVC)
+-        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+-    endif()
+-
+-	FetchContent_MakeAvailable(googletest)
++    find_package(GTest)
++    if (NOT GTEST_FOUND)
++        FetchContent_Declare(
++            googletest
++            GIT_REPOSITORY https://github.com/google/googletest.git
++            GIT_TAG        v1.14.0
++        )
++        add_library(GTest::GTest INTERFACE IMPORTED)
++        target_link_libraries(GTest::GTest INTERFACE gtest_main)
++
++        # For Windows: Prevent overriding the parent project's compiler/linker settings
++        if(MSVC)
++            set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++        endif()
+ 
++        FetchContent_MakeAvailable(googletest)
++    endif()
+ 	enable_testing()
+ endif()
+ 
+@@ -191,14 +193,16 @@ endif()
+ 
+ # Enable -Werror only if not building as a subproject. For subprojects, leave
+ # this up to the parent project.
+-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+-  if(CMAKE_VERSION VERSION_LESS 3.24)
+-    if(NOT MSVC)
+-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
++if (NOT CYGWIN)
++    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
++        if(CMAKE_VERSION VERSION_LESS 3.24)
++            if(NOT MSVC)
++                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
++            endif()
++        else()
++            set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
++        endif()
+     endif()
+-  else()
+-    set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+-  endif()
+ endif()
+ 
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+--- origsrc/level-zero-1.21.9/source/CMakeLists.txt	2025-04-11 05:05:03.000000000 +0900
++++ src/level-zero-1.21.9/source/CMakeLists.txt	2025-04-20 15:32:08.933936500 +0900
+@@ -75,9 +75,15 @@ install(TARGETS ze_loader
+ )
+ 
+ if(NOT BUILD_INSTALLER)
+-file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
+-file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+-file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++if (NOT DEFINED pkgconfig_prefix)
++    file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
++endif()
++if (NOT DEFINED pkgconfig_include_dir)
++    file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
++endif()
++if (NOT DEFINED pkgconfig_lib_dir)
++    file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++endif()
+ 
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libze_loader.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libze_loader.pc @ONLY)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/level-zero.pc.in ${CMAKE_CURRENT_BINARY_DIR}/level-zero.pc @ONLY)
+--- origsrc/level-zero-1.21.9/source/inc/ze_util.h	2025-04-11 05:05:03.000000000 +0900
++++ src/level-zero-1.21.9/source/inc/ze_util.h	2025-04-20 15:34:38.206908800 +0900
+@@ -39,11 +39,18 @@ inline void getLastErrorString(std::stri
+ #  define GET_FUNCTION_PTR(LIB, FUNC_NAME) reinterpret_cast<void *>(GetProcAddress(LIB, FUNC_NAME))
+ #  define string_copy_s strncpy_s
+ #else
+-#  include <link.h>
++#  if defined(__GLIBC__)
++#   include <link.h>
++#  endif
+ #  include <dlfcn.h>
+ #  define HMODULE void*
+-#  define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so." VERSION
+-#  define MAKE_LAYER_NAME(NAME)    "lib" NAME ".so." L0_VALIDATION_LAYER_SUPPORTED_VERSION
++#  if defined(__CYGWIN__)
++#    define MAKE_LIBRARY_NAME(NAME, VERSION)    "cyg" NAME "-" L0_VALIDATION_LAYER_SUPPORTED_VERSION ".dll"
++#    define MAKE_LAYER_NAME(NAME)    "cyg" NAME "-" L0_VALIDATION_LAYER_SUPPORTED_VERSION ".dll"
++#  else
++#    define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so." VERSION
++#    define MAKE_LAYER_NAME(NAME)    "lib" NAME ".so." L0_VALIDATION_LAYER_SUPPORTED_VERSION
++#  endif
+ #  define LOAD_DRIVER_LIBRARY(NAME) dlopen(NAME, RTLD_LAZY|RTLD_LOCAL)
+ #  define GET_LIBRARY_ERROR(ERROR_STRING) ERROR_STRING.assign(dlerror())
+ #  define FREE_DRIVER_LIBRARY(LIB)  dlclose(LIB)
+--- origsrc/level-zero-1.21.9/source/loader/ze_loader.cpp	2025-04-11 05:05:03.000000000 +0900
++++ src/level-zero-1.21.9/source/loader/ze_loader.cpp	2025-04-20 15:58:41.989719800 +0900
+@@ -518,7 +518,7 @@ namespace loader
+             {
+                 if (debugTraceEnabled) {
+                     std::string message = "Loading Driver " + name + " succeeded";
+-#if !defined(_WIN32) && !defined(ANDROID)
++#if !defined(_WIN32) && !defined(ANDROID) && !defined(__CYGWIN__)
+                     // TODO: implement same message for windows, move dlinfo to ze_util.h as a macro
+                     struct link_map *dlinfo_map;
+                     if (dlinfo(handle, RTLD_DI_LINKMAP, &dlinfo_map) == 0) {
+--- origsrc/level-zero-1.21.9/source/utils/logging.h	2025-04-11 05:05:03.000000000 +0900
++++ src/level-zero-1.21.9/source/utils/logging.h	2025-04-20 15:37:32.229136400 +0900
+@@ -190,11 +190,12 @@ inline std::shared_ptr<Logger> createLog
+       log_directory = home_dir + "\\" + LOADER_LOG_FILE_DIRECTORY;
+ #else
+       home_dir = getenv_string("HOME");
+-
++#if !defined(__CYGWIN__)
+       if (home_dir == "") {
+           auto pwdir = getpwuid(getuid())->pw_dir;
+           home_dir = (pwdir == NULL) ? "." : std::string(pwdir);
+       }
++#endif
+       log_directory = home_dir + "/" + LOADER_LOG_FILE_DIRECTORY;
+ #endif
+   }
