@@ -1,0 +1,131 @@
+--- origsrc/nsd-4.12.0/Makefile.in	2025-04-24 17:28:28.000000000 +0900
++++ src/nsd-4.12.0/Makefile.in	2025-04-26 10:56:10.277199600 +0900
+@@ -37,10 +37,10 @@ DNSTAP_OBJ=@DNSTAP_OBJ@
+ U=
+ 
+ CC		= @CC@
+-CPPFLAGS	= @CPPFLAGS@ -Isimdzone/include -I@srcdir@/simdzone/include
+-CFLAGS		= @CFLAGS@
++CPPFLAGS	= @CPPFLAGS@
++CFLAGS		= @CFLAGS@ @SIMDZONE_CFLAGS@
+ LDFLAGS		= @LDFLAGS@
+-LIBS		= @LIBS@
++LIBS		= @LIBS@ @SIMDZONE_LIBS@
+ SSL_LIBS	= @SSL_LIBS@
+ LIBOBJS		= @LIBOBJS@
+ INSTALL		= $(srcdir)/install-sh -c
+@@ -196,31 +196,26 @@ uninstall:
+ 
+ test: 
+ 
+-simdzone/libzone.a:
+-	$(MAKE) -C simdzone
++nsd:	 $(NSD_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_OBJ) $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+-simdzone/include/zone/export.h: simdzone/libzone.a
++nsd-checkconf:	 $(NSD_CHECKCONF_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CHECKCONF_OBJ) $(SIMDZONE_LIBS) $(LIBOBJS) $(SSL_LIBS) $(LIBS)
+ 
+-nsd:	simdzone/libzone.a $(NSD_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++nsd-checkzone:	 $(NSD_CHECKZONE_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CHECKZONE_OBJ) $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+-nsd-checkconf:	simdzone/libzone.a $(NSD_CHECKCONF_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CHECKCONF_OBJ) simdzone/libzone.a $(LIBOBJS) $(SSL_LIBS) $(LIBS)
++nsd-control:	 $(NSD_CONTROL_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_CONTROL_OBJ) $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+-nsd-checkzone:	simdzone/libzone.a $(NSD_CHECKZONE_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CHECKZONE_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++nsd-mem:	 $(NSD_MEM_OBJ) $(LIBOBJS)
++	$(LINK) -o $@ $(NSD_MEM_OBJ) $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+-nsd-control:	simdzone/libzone.a $(NSD_CONTROL_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_CONTROL_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++cutest:	 $(CUTEST_OBJ) $(LIBOBJS) popen3_echo
++	$(LINK) -o $@ $(CUTEST_OBJ) $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+-nsd-mem:	simdzone/libzone.a $(NSD_MEM_OBJ) $(LIBOBJS)
+-	$(LINK) -o $@ $(NSD_MEM_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
+-
+-cutest:	simdzone/libzone.a $(CUTEST_OBJ) $(LIBOBJS) popen3_echo
+-	$(LINK) -o $@ $(CUTEST_OBJ) $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
+-
+-xfr-inspect:	simdzone/libzone.a xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS)
+-	$(LINK) -o $@ xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS) simdzone/libzone.a $(SSL_LIBS) $(LIBS)
++xfr-inspect:	 xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS)
++	$(LINK) -o $@ xfr-inspect.o $(COMMON_OBJ) zonec.o $(LIBOBJS) $(SIMDZONE_LIBS) $(SSL_LIBS) $(LIBS)
+ 
+ popen3_echo: popen3.o popen3_echo.o
+ 	$(LINK) -o $@ popen3.o popen3_echo.o
+@@ -249,19 +244,15 @@ audit: nsd nsd-checkconf nsd-checkzone n
+ 	rm -f configlexer.c configparser.h configparser.c configparser.stamp
+ 
+ clean: .clean
+-	$(MAKE) -C simdzone clean
+ 
+ distclean: .distclean
+-	$(MAKE) -C simdzone distclean
+ 
+ realclean: .realclean
+-	$(MAKE) -C simdzone realclean
+ 
+ maintainer-clean: realclean
+ 
+ devclean: .realclean
+ 	rm -f config.h.in configure
+-	$(MAKE) -C simdzone devclean
+ 
+ 
+ basename.o:	$(srcdir)/compat/basename.c
+@@ -510,8 +501,7 @@ iterated_hash.o: $(srcdir)/iterated_hash
+ ixfr.o: $(srcdir)/ixfr.c config.h $(srcdir)/compat/cpuset.h $(srcdir)/ixfr.h $(srcdir)/query.h $(srcdir)/namedb.h $(srcdir)/dname.h \
+  $(srcdir)/buffer.h $(srcdir)/region-allocator.h $(srcdir)/util.h $(srcdir)/dns.h $(srcdir)/radtree.h $(srcdir)/rbtree.h $(srcdir)/nsd.h $(srcdir)/edns.h \
+  $(srcdir)/bitset.h $(srcdir)/packet.h $(srcdir)/tsig.h $(srcdir)/rdata.h $(srcdir)/axfr.h $(srcdir)/options.h $(srcdir)/zonec.h \
+- $(srcdir)/simdzone/include/zone.h $(srcdir)/simdzone/include/zone/attributes.h \
+- simdzone/include/zone/export.h
++ $(srcdir)/simdzone/include/zone.h $(srcdir)/simdzone/include/zone/attributes.h
+ ixfrcreate.o: $(srcdir)/ixfrcreate.c config.h $(srcdir)/compat/cpuset.h $(srcdir)/ixfrcreate.h $(srcdir)/dns.h \
+  $(srcdir)/namedb.h $(srcdir)/dname.h $(srcdir)/buffer.h $(srcdir)/region-allocator.h $(srcdir)/util.h $(srcdir)/radtree.h $(srcdir)/rbtree.h \
+  $(srcdir)/ixfr.h $(srcdir)/query.h $(srcdir)/nsd.h $(srcdir)/edns.h $(srcdir)/bitset.h $(srcdir)/packet.h $(srcdir)/tsig.h $(srcdir)/options.h
+@@ -609,7 +599,7 @@ xfr-inspect.o: $(srcdir)/xfr-inspect.c c
+ zonec.o: $(srcdir)/zonec.c config.h $(srcdir)/compat/cpuset.h $(srcdir)/zonec.h $(srcdir)/namedb.h $(srcdir)/dname.h \
+  $(srcdir)/buffer.h $(srcdir)/region-allocator.h $(srcdir)/util.h $(srcdir)/dns.h $(srcdir)/radtree.h $(srcdir)/rbtree.h $(srcdir)/rdata.h \
+  $(srcdir)/options.h $(srcdir)/nsec3.h $(srcdir)/simdzone/include/zone.h \
+- $(srcdir)/simdzone/include/zone/attributes.h simdzone/include/zone/export.h
++ $(srcdir)/simdzone/include/zone/attributes.h
+ b64_ntop.o: $(srcdir)/compat/b64_ntop.c config.h $(srcdir)/compat/cpuset.h
+ b64_pton.o: $(srcdir)/compat/b64_pton.c config.h $(srcdir)/compat/cpuset.h
+ basename.o: $(srcdir)/compat/basename.c
+@@ -652,8 +642,7 @@ cutest_namedb.o: $(srcdir)/tpkg/cutest/c
+  $(srcdir)/tpkg/cutest/cutest.h $(srcdir)/region-allocator.h $(srcdir)/options.h $(srcdir)/region-allocator.h \
+  $(srcdir)/rbtree.h $(srcdir)/namedb.h $(srcdir)/dname.h $(srcdir)/buffer.h $(srcdir)/util.h $(srcdir)/dns.h $(srcdir)/radtree.h $(srcdir)/nsec3.h $(srcdir)/udb.h \
+  $(srcdir)/difffile.h $(srcdir)/namedb.h $(srcdir)/options.h $(srcdir)/udb.h $(srcdir)/zonec.h $(srcdir)/nsd.h $(srcdir)/edns.h $(srcdir)/bitset.h \
+- $(srcdir)/simdzone/include/zone.h $(srcdir)/simdzone/include/zone/attributes.h \
+- simdzone/include/zone/export.h
++ $(srcdir)/simdzone/include/zone.h $(srcdir)/simdzone/include/zone/attributes.h
+ cutest_options.o: $(srcdir)/tpkg/cutest/cutest_options.c config.h $(srcdir)/compat/cpuset.h \
+  $(srcdir)/tpkg/cutest/cutest.h $(srcdir)/region-allocator.h $(srcdir)/options.h $(srcdir)/region-allocator.h \
+  $(srcdir)/rbtree.h $(srcdir)/util.h $(srcdir)/dname.h $(srcdir)/buffer.h $(srcdir)/util.h $(srcdir)/dns.h $(srcdir)/nsd.h $(srcdir)/edns.h $(srcdir)/bitset.h
+--- origsrc/nsd-4.12.0/configure.ac	2025-04-24 17:28:28.000000000 +0900
++++ src/nsd-4.12.0/configure.ac	2025-04-26 10:53:21.125906800 +0900
+@@ -504,6 +504,8 @@ else
+ 	AC_MSG_NOTICE([Prometheus metrics are disabled with the builtin libevent alternative])
+ fi
+ 
++PKG_CHECK_MODULES([SIMDZONE], [simdzone])
++
+ # Checks for header files.
+ AC_HEADER_SYS_WAIT
+ AC_CHECK_HEADERS([time.h arpa/inet.h signal.h string.h strings.h fcntl.h limits.h netinet/in.h netinet/tcp.h stddef.h sys/param.h sys/socket.h sys/un.h syslog.h unistd.h sys/select.h stdarg.h stdint.h netdb.h sys/bitypes.h tcpd.h glob.h grp.h endian.h sys/random.h ifaddrs.h],,, [AC_INCLUDES_DEFAULT])
+@@ -1421,8 +1423,4 @@ fi
+ 
+ AC_CONFIG_FILES([Makefile $dnstap_config])
+ 
+-# Arguments introduced specifically for simdzone.
+-AC_ARG_ENABLE(westmere, AS_HELP_STRING([--disable-westmere], [Disable Westmere (SSE4.2) parser kernel]))
+-AC_ARG_ENABLE(haswell, AS_HELP_STRING([--disable-haswell], [Disable Haswell (AVX2) parser kernel]))
+-AC_CONFIG_SUBDIRS([simdzone])
+ AC_OUTPUT
