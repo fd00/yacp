@@ -1,0 +1,136 @@
+--- origsrc/libcork-0.15.0/CMakeLists.txt	2015-09-04 00:25:39.000000000 +0900
++++ src/libcork-0.15.0/CMakeLists.txt	2025-04-30 23:13:30.121222300 +0900
+@@ -20,17 +20,24 @@ find_package(CTargets)
+ #-----------------------------------------------------------------------
+ # Retrieve the current version number
+ 
+-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/version.sh
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE VERSION_RESULT
+-    OUTPUT_VARIABLE VERSION
+-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+-if(VERSION_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine version number: " ${VERSION_RESULT})
+-endif(VERSION_RESULT)
+-# This causes an annoying extra prompt in ccmake.
+-# message("Current version: " ${VERSION})
++if (NOT DEFINED VERSION)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/version.sh")
++        execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/version.sh
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE VERSION_RESULT
++            OUTPUT_VARIABLE VERSION
++            OUTPUT_STRIP_TRAILING_WHITESPACE)
++        if(VERSION_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine version number: " ${VERSION_RESULT})
++        endif(VERSION_RESULT)
++    else()
++        message(FATAL_ERROR
++                "VERSION must be defined unless .git exists")
++    endif()
++endif()
++# This causes an annoying extra prompt in cmake.
++message("Current version: " ${VERSION})
+ 
+ string(REGEX REPLACE "-dev.*" "-dev" BASE_VERSION "${VERSION}")
+ 
+@@ -42,17 +49,25 @@ else(BASE_VERSION MATCHES "^([0-9]+)\\.(
+     message(FATAL_ERROR "Invalid version number: ${VERSION}")
+ endif(BASE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-dev)?$")
+ 
+-execute_process(
+-    COMMAND git rev-parse HEAD
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE GIT_SHA1_RESULT
+-    OUTPUT_VARIABLE GIT_SHA1
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
+-if(GIT_SHA1_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine git commit: " ${GIT_SHA1_RESULT})
+-endif(GIT_SHA1_RESULT)
++if (NOT DEFINED GIT_SHA1_VERSION)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(
++            COMMAND git rev-parse HEAD
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE GIT_SHA1_RESULT
++            OUTPUT_VARIABLE GIT_SHA1
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++        )
++        if(GIT_SHA1_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine git commit: " ${GIT_SHA1_RESULT})
++        endif(GIT_SHA1_RESULT)
++    else()
++        message(FATAL_ERROR
++                "GIT_SHA1_VERSION must be defined unless .git exists")
++    endif()
++endif()
++message("Current sha1: " ${GIT_SHA1_VERSION})
+ 
+ #-----------------------------------------------------------------------
+ # Check for building on Tilera
+@@ -98,16 +113,7 @@ set(ENABLE_SHARED_EXECUTABLES NO CACHE B
+     "Whether to link executables using shared libraries")
+ set(ENABLE_STATIC YES CACHE BOOL "Whether to build a static library")
+ 
+-set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
+-    "The base name of the installation directory for libraries")
+-
+-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+-    add_definitions(-Wall -Werror)
+-endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
++include(GNUInstallDirs)
+ 
+ #-----------------------------------------------------------------------
+ # Check for prerequisite libraries
+@@ -123,4 +129,6 @@ add_subdirectory(include)
+ add_subdirectory(share)
+ add_subdirectory(src)
+ add_subdirectory(tests)
+-add_subdirectory(docs/old)
++if (BUILD_DOCS)
++    add_subdirectory(docs/old)
++endif()
+--- origsrc/libcork-0.15.0/cmake/FindCTargets.cmake	2015-09-04 00:25:39.000000000 +0900
++++ src/libcork-0.15.0/cmake/FindCTargets.cmake	2025-04-30 23:12:00.035839000 +0900
+@@ -101,7 +101,8 @@ function(add_c_library __TARGET_NAME)
+         # We have to install the shared library if the user asked us to, or if
+         # the user asked us to link our programs with the shared library.
+         install(TARGETS ${__TARGET_NAME}-shared
+-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     endif (ENABLE_SHARED OR ENABLE_SHARED_EXECUTABLES)
+ 
+     if (ENABLE_STATIC OR NOT ENABLE_SHARED_EXECUTABLES)
+--- origsrc/libcork-0.15.0/include/libcork/config/config.h	2015-09-04 00:25:39.000000000 +0900
++++ src/libcork-0.15.0/include/libcork/config/config.h	2025-04-30 22:32:04.932594900 +0900
+@@ -44,7 +44,7 @@
+ #include <sys/param.h>
+ #endif
+ 
+-#if defined(__linux)
++#if defined(__linux) || defined(__CYGWIN__)
+ /* Do some Linux-specific autodetection. */
+ #include <libcork/config/linux.h>
+ 
+--- origsrc/libcork-0.15.0/src/libcork/posix/subprocess.c	2015-09-04 00:25:39.000000000 +0900
++++ src/libcork-0.15.0/src/libcork/posix/subprocess.c	2025-04-30 22:33:04.526611200 +0900
+@@ -500,6 +500,9 @@ cork_subprocess_is_finished(struct cork_
+ #elif defined(__linux__) || defined(BSD)
+ #include <sched.h>
+ #define THREAD_YIELD   sched_yield
++#elif defined(__CYGWIN__)
++#include <pthread.h>
++#define THREAD_YIELD   pthread_yield
+ #else
+ #error "Unknown thread yield implementation"
+ #endif
