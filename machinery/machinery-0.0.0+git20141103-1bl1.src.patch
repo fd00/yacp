@@ -1,0 +1,54 @@
+--- origsrc/machinery/Makefile.am	2025-04-30 09:21:34.000000000 +0900
++++ src/machinery/Makefile.am	2025-04-30 09:46:03.878027100 +0900
+@@ -1,3 +1,6 @@
+ SUBDIRS         = src test #doc
+ EXTRA_DIST      = AUTHORS CREDITS README UNLICENSE VERSION
+ ACLOCAL_AMFLAGS = -I etc/aclocal
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/machinery/configure.ac	2025-04-30 09:21:34.000000000 +0900
++++ src/machinery/configure.ac	2025-04-30 09:46:03.892894500 +0900
+@@ -124,4 +124,5 @@ AC_SUBST([PACKAGE_VERSION_MAJOR], ["VERS
+ AC_SUBST([PACKAGE_VERSION_MINOR], ["VERSION_MINOR"])
+ AC_SUBST([PACKAGE_VERSION_PATCH], ["VERSION_PATCH"])
+ AC_CONFIG_FILES([src/machinery/version.h ffi/lisp/machinery.asd])
++AC_CONFIG_FILES([machinery.pc])
+ AC_OUTPUT
+--- origsrc/machinery/machinery.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/machinery/machinery.pc.in	2025-04-30 10:19:23.756793900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: machinery
++Description: Toolchain machinery for compilers, code generators, assemblers, linkers, and emulators
++Version: @PACKAGE_VERSION_MAJOR@.@PACKAGE_VERSION_MINOR@.@PACKAGE_VERSION_PATCH@
++Libs: -L${libdir} -lmachinery
++Cflags: -I${includedir}
+--- origsrc/machinery/src/machinery/Makefile.am	2025-04-30 09:21:34.000000000 +0900
++++ src/machinery/src/machinery/Makefile.am	2025-04-30 09:32:17.050975400 +0900
+@@ -1,5 +1,8 @@
+ lib_LTLIBRARIES = libmachinery.la
+ 
++libmachinery_la_CPPFLAGS = -I$(top_builddir)/src -I$(top_builddir)/src/machinery
++libmachinery_la_LDFLAGS = -no-undefined
++
+ libmachinery_la_SOURCES = \
+   extern.cc               \
+   feature.cc              \
+--- origsrc/machinery/test/Makefile.am	2025-04-30 09:21:34.000000000 +0900
++++ src/machinery/test/Makefile.am	2025-04-30 09:36:31.126261800 +0900
+@@ -1,8 +1,8 @@
+-AM_CPPFLAGS += $(TEST_CPPFLAGS)
++AM_CPPFLAGS += $(TEST_CPPFLAGS) -I$(top_builddir)/src -I$(top_builddir)/src/machinery
+ AM_CXXFLAGS += $(TEST_CXXFLAGS)
+ AM_LDFLAGS  += $(TEST_LDFLAGS)
+ 
+-LDADD = $(top_srcdir)/src/machinery/libmachinery.la
++LDADD = $(top_builddir)/src/machinery/libmachinery.la
+ 
+ check_PROGRAMS = \
+   check_util_buffer
