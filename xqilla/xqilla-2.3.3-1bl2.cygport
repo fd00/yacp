@@ -1,0 +1,69 @@
+HOMEPAGE="https://sourceforge.net/projects/${PN}/"
+SRC_URI="
+	mirror://sourceforge/${PN}/XQilla-${PV}.tar.gz
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}.1
+"
+SRC_DIR="XQilla-${PV}"
+PATCH_URI="
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-2.2.4-use-system-xqc.h.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/0002-Fix-library-s-libtool-version.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/0004-xerces-3.2.0-casts.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/0005-xqilla-gcc11.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="XQuery and XPath 2.0 library, built on top of Xerces-C"
+DESCRIPTION="XQilla is an XQuery and XPath 2 library and command line utility written in
+C++, implemented on top of the Xerces-C library."
+
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libfaxpp-devel
+	libtidy-devel
+	libxerces-c-devel
+	xqc
+"
+
+CYGPORT_USE_UNSTABLE_API=1
+src_unpack_hook()
+{
+	rm -f ${origsrcdir}/${SRC_DIR}/include/xqc.h
+}
+
+CYGCONF_ARGS="
+	--enable-maintainer-mode
+	--with-xerces=/usr
+	--with-faxpp=/usr
+"
+
+src_install()
+{
+	cd ${B}
+	cyginstall
+
+	cd ${S}
+	doman ${PN}.1
+}
+
+PKG_NAMES="
+	xqilla
+	libxqilla6
+	libxqilla-devel
+"
+xqilla_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libxqilla6_CONTENTS="
+	usr/bin/cyg*-6.dll
+"
+libxqilla_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+xqilla_SUMMARY="${SUMMARY} (utilities)"
+libxqilla6_SUMMARY="${SUMMARY} (runtime)"
+libxqilla_devel_SUMMARY="${SUMMARY} (development)"
