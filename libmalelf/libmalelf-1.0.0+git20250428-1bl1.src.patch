@@ -1,0 +1,85 @@
+--- origsrc/libmalelf/Makefile.am	2025-05-01 16:45:58.000000000 +0900
++++ src/libmalelf/Makefile.am	2025-05-01 23:03:42.872768200 +0900
+@@ -1,3 +1,6 @@
+ ACLOCAL_AMFLAGS=-I m4
+ 
+-SUBDIRS = src examples $(INCLUDE_TESTS)
+\ No newline at end of file
++SUBDIRS = src examples $(INCLUDE_TESTS)
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libmalelf/configure.ac	2025-05-01 16:45:58.000000000 +0900
++++ src/libmalelf/configure.ac	2025-05-01 23:03:56.781716800 +0900
+@@ -187,7 +187,7 @@ AC_CONFIG_FILES([     Makefile \
+                       test/malwares/Makefile \
+ 		      examples/Makefile])
+ 
+-
++AC_CONFIG_FILES([libmalelf.pc])
+ AC_OUTPUT
+ 
+ AC_MSG_RESULT([
+--- origsrc/libmalelf/examples/Makefile.am	2025-05-01 16:45:58.000000000 +0900
++++ src/libmalelf/examples/Makefile.am	2025-05-01 17:01:53.588050800 +0900
+@@ -27,5 +27,5 @@ show_ehdr_members_SOURCES = show_ehdr_me
+ text_section_SOURCES = text_section.asm
+ infect_SOURCES = infect.c
+ 
+-AM_CFLAGS = -ggdb -Wall -Wextra -Werror -I../src/include
+-LDADD = -L../src/.libs -lmalelf
++AM_CFLAGS = -Wall -Wextra -I$(top_srcdir)/src/include
++LDADD = $(top_builddir)/src/libmalelf.la
+--- origsrc/libmalelf/libmalelf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmalelf/libmalelf.pc.in	2025-05-01 17:06:39.231757300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmalelf
++Description: Library for Dissect and Infect ELF Binaries
++Version: @VERSION@
++Libs: -L${libdir} -lmalelf
++Cflags: -I${includedir}
+--- origsrc/libmalelf/src/Makefile.am	2025-05-01 16:45:58.000000000 +0900
++++ src/libmalelf/src/Makefile.am	2025-05-01 16:49:52.637370100 +0900
+@@ -1,9 +1,9 @@
+ CFLAGS_LANGUAGE=-std=c99 -pedantic -D_POSIX_C_SOURCE \
+ 		-D_DEFAULT_SOURCE
+-CFLAGS_WARNS=-Wall -Wextra -Werror
+-CFLAGS_INCLUDES=-Iinclude -I$(LIBXML_INCLUDES) -I$(LIBUDIS_INCLUDES)
++CFLAGS_WARNS=-Wall -Wextra
++CFLAGS_INCLUDES=-I$(srcdir)/include -I$(LIBXML_INCLUDES) -I$(LIBUDIS_INCLUDES)
+ 
+-AM_CFLAGS=	-ggdb -fPIC -O2 $(CFLAGS_LANGUAGE) \
++AM_CFLAGS=	$(CFLAGS_LANGUAGE) \
+ 		$(CFLAGS_WARNS) \
+ 		$(CFLAGS_INCLUDES)
+ 
+@@ -24,7 +24,7 @@ libmalelf_la_SOURCES =  binary.c \
+ 			infect.c
+ 
+ 
+-libmalelf_la_LDFLAGS = -version-info 1:0:0
++libmalelf_la_LDFLAGS = -no-undefined -version-info 1:0:0
+ libmalelf_la_LIBADD=-L$(LIBXML_LIBPATH) -L$(LIBUDIS_LIBPATH) -lxml2 -ludis86
+ 
+ library_includedir=$(includedir)/malelf
+--- origsrc/libmalelf/test/Makefile.am	2025-05-01 16:45:58.000000000 +0900
++++ src/libmalelf/test/Makefile.am	2025-05-01 16:50:36.746068800 +0900
+@@ -6,10 +6,10 @@ check_PROGRAMS = main_test
+ 
+ bin_PROGRAMS = main_test
+ 
+-AM_CFLAGS = 	-Wall -Werror -ggdb \
+-		-I../src/include
++AM_CFLAGS = 	-Wall \
++		-I$(top_srcdir)/src/include
+ 
+-LDADD=-L../src/.libs -lmalelf -lcunit
++LDADD=$(top_builddir)/src/libmalelf.la -lcunit
+ 
+ main_test_SOURCES = 	ehdr_test.c \
+ 			binary_test.c \
