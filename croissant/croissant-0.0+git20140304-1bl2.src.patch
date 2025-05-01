@@ -1,0 +1,71 @@
+--- origsrc/croissant/CMakeLists.txt	2025-05-01 10:37:57.000000000 +0900
++++ src/croissant/CMakeLists.txt	2025-05-01 10:40:46.045106100 +0900
+@@ -16,19 +16,26 @@ enable_testing()
+ #-----------------------------------------------------------------------
+ # Retrieve the current version number
+ 
+-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/version.sh
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE VERSION_RESULT
+-    OUTPUT_VARIABLE VERSION
+-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+-if(VERSION_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine version number: " ${VERSION_RESULT})
+-endif(VERSION_RESULT)
+-# This causes an annoying extra prompt in ccmake.
+-# message("Current version: " ${VERSION})
+-
+-string(REGEX REPLACE "-dev.*" "-dev" BASE_VERSION "${VERSION}")
++if (NOT DEFINED VERSION)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/version.sh
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE VERSION_RESULT
++            OUTPUT_VARIABLE VERSION
++            OUTPUT_STRIP_TRAILING_WHITESPACE)
++        if(VERSION_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine version number: " ${VERSION_RESULT})
++        endif(VERSION_RESULT)
++        # This causes an annoying extra prompt in ccmake.
++        # message("Current version: " ${VERSION})
++
++        string(REGEX REPLACE "-dev.*" "-dev" BASE_VERSION "${VERSION}")
++    else()
++        message(FATAL_ERROR
++                "VERSION must be defined unless .git exists")
++    endif()
++endif()
+ 
+ find_package(PkgConfig)
+ 
+@@ -84,16 +91,7 @@ if(NOT CMAKE_BUILD_TYPE)
+         FORCE)
+ endif(NOT CMAKE_BUILD_TYPE)
+ 
+-set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
+-    "The base name of the installation directory for libraries")
+-
+-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+-    add_definitions(-Wall -Werror)
+-endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
++include(GNUInstallDirs)
+ 
+ #-----------------------------------------------------------------------
+ # Include our subdirectories
+--- origsrc/croissant/src/CMakeLists.txt	2025-05-01 10:37:57.000000000 +0900
++++ src/croissant/src/CMakeLists.txt	2025-05-01 10:43:54.902950800 +0900
+@@ -62,7 +62,7 @@ target_link_libraries(libcroissant
+     ${CLOG_LIBRARIES}
+ )
+ 
+-install(TARGETS libcroissant DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS libcroissant RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ 
+ #-----------------------------------------------------------------------
+ # Generate the pkg-config file
