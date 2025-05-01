@@ -1,6 +1,6 @@
 --- origsrc/buzzy-0.6.0/CMakeLists.txt	2017-11-08 21:27:55.000000000 +0900
-+++ src/buzzy-0.6.0/CMakeLists.txt	2018-06-07 16:10:42.512008200 +0900
-@@ -20,17 +20,19 @@ find_package(CTargets)
++++ src/buzzy-0.6.0/CMakeLists.txt	2025-05-01 08:29:25.495368600 +0900
+@@ -20,17 +20,24 @@ find_package(CTargets)
  #-----------------------------------------------------------------------
  # Retrieve the current version number
  
@@ -16,22 +16,27 @@
 -            "Cannot determine version number: " ${VERSION_RESULT})
 -endif(VERSION_RESULT)
 +if (NOT DEFINED VERSION)
-+    execute_process(
-+        COMMAND git describe
-+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-+        RESULT_VARIABLE VERSION_RESULT
-+        OUTPUT_VARIABLE VERSION
-+        OUTPUT_STRIP_TRAILING_WHITESPACE
-+    )
-+    if(VERSION_RESULT)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(
++            COMMAND git describe
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE VERSION_RESULT
++            OUTPUT_VARIABLE VERSION
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++        )
++        if(VERSION_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine version number: " ${VERSION_RESULT})
++        endif(VERSION_RESULT)
++    else()
 +        message(FATAL_ERROR
-+                "Cannot determine version number: " ${VERSION_RESULT})
-+    endif(VERSION_RESULT)
++                "VERSION must be defined unless .git exists")
++    endif()
 +endif()
  message(STATUS "Current version: " ${VERSION})
  
  string(REGEX REPLACE "-.*" "-dev" BASE_VERSION "${VERSION}")
-@@ -43,18 +45,20 @@ else(BASE_VERSION MATCHES "^([0-9]+)\\.(
+@@ -43,17 +50,24 @@ else(BASE_VERSION MATCHES "^([0-9]+)\\.(
      message(FATAL_ERROR "Invalid version number: ${VERSION}")
  endif(BASE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-dev)?$")
  
@@ -46,28 +51,34 @@
 -    message(FATAL_ERROR
 -            "Cannot determine git commit: " ${GIT_SHA1_RESULT})
 -endif(GIT_SHA1_RESULT)
--message(STATUS "Current revision: " ${GIT_SHA1})
-+if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
-+    execute_process(
-+        COMMAND git rev-parse HEAD
-+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-+        RESULT_VARIABLE GIT_SHA1_RESULT
-+        OUTPUT_VARIABLE GIT_SHA1
-+        OUTPUT_STRIP_TRAILING_WHITESPACE
-+    )
-+    if(GIT_SHA1_RESULT)
++if (NOT DEFINED GIT_SHA1)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(
++            COMMAND git rev-parse HEAD
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE GIT_SHA1_RESULT
++            OUTPUT_VARIABLE GIT_SHA1
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++        )
++        if(GIT_SHA1_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine git commit: " ${GIT_SHA1_RESULT})
++        endif(GIT_SHA1_RESULT)
++    else()
 +        message(FATAL_ERROR
-+                "Cannot determine git commit: " ${GIT_SHA1_RESULT})
-+    endif(GIT_SHA1_RESULT)
-+    message(STATUS "Current revision: " ${GIT_SHA1})
++                "GIT_SHA1 must be defined unless .git exists")
++    endif()
 +endif()
+ message(STATUS "Current revision: " ${GIT_SHA1})
  
  #-----------------------------------------------------------------------
- # Set some options
-@@ -74,13 +78,15 @@ endif(NOT CMAKE_BUILD_TYPE)
- set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
-     "The base name of the installation directory for libraries")
+@@ -71,16 +85,7 @@ if(NOT CMAKE_BUILD_TYPE)
+         FORCE)
+ endif(NOT CMAKE_BUILD_TYPE)
  
+-set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
+-    "The base name of the installation directory for libraries")
+-
 -if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 -    add_definitions(-Wall -Werror)
 -elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
@@ -75,32 +86,24 @@
 -elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
 -    add_definitions(-Wall -Werror)
 -endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-+if(NOT CYGWIN)
-+    if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-+        add_definitions(-Wall -Werror)
-+    elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-+        add_definitions(-Wall -Werror)
-+    elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
-+        add_definitions(-Wall -Werror)
-+    endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-+endif()
++include(GNUInstallDirs)
  
  #-----------------------------------------------------------------------
  # Check for prerequisite libraries
 --- origsrc/buzzy-0.6.0/cmake/FindCTargets.cmake	2017-11-08 21:27:55.000000000 +0900
-+++ src/buzzy-0.6.0/cmake/FindCTargets.cmake	2018-06-07 15:56:01.529507000 +0900
++++ src/buzzy-0.6.0/cmake/FindCTargets.cmake	2025-05-01 08:29:59.965071700 +0900
 @@ -105,7 +105,8 @@ function(add_c_library __TARGET_NAME)
          # We have to install the shared library if the user asked us to, or if
          # the user asked us to link our programs with the shared library.
          install(TARGETS ${__TARGET_NAME}-shared
 -                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-+                RUNTIME DESTINATION bin
++                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 +                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
      endif (ENABLE_SHARED OR ENABLE_SHARED_EXECUTABLES)
  
      if (ENABLE_STATIC OR NOT ENABLE_SHARED_EXECUTABLES)
 --- origsrc/buzzy-0.6.0/include/buzzy/commands.h	2017-11-08 21:27:55.000000000 +0900
-+++ src/buzzy-0.6.0/include/buzzy/commands.h	2018-06-07 16:08:26.939903600 +0900
++++ src/buzzy-0.6.0/include/buzzy/commands.h	2025-05-01 08:35:02.440958300 +0900
 @@ -57,7 +57,7 @@ CORK_LOCAL extern struct cork_command  b
   * Resetting getopt
   */
@@ -111,10 +114,15 @@
  /* For glibc getopt, you reset just by setting optind to 1. */
  CORK_ATTR_UNUSED
 --- origsrc/buzzy-0.6.0/src/CMakeLists.txt	2017-11-08 21:27:55.000000000 +0900
-+++ src/buzzy-0.6.0/src/CMakeLists.txt	2018-06-07 16:03:44.346194500 +0900
-@@ -7,14 +7,10 @@
++++ src/buzzy-0.6.0/src/CMakeLists.txt	2025-05-01 08:31:27.881045100 +0900
+@@ -6,15 +6,11 @@
+ # Please see the COPYING file in this distribution for license details.
  # ----------------------------------------------------------------------
  
++pkg_check_modules(CLOGGER REQUIRED clogger)
++pkg_check_modules(LIBCORK REQUIRED libcork)
++pkg_check_modules(LIBYAML REQUIRED yaml-0.1)
++
  include_directories(${CMAKE_SOURCE_DIR}/include)
 -include_directories(${CMAKE_SOURCE_DIR}/lib/clogger/include)
 -include_directories(${CMAKE_SOURCE_DIR}/lib/libcork/include)
@@ -124,10 +132,6 @@
 -add_subdirectory(clogger)
 -add_subdirectory(libcork)
 -add_subdirectory(libyaml)
-+
-+pkg_check_modules(CLOGGER REQUIRED clogger)
-+pkg_check_modules(LIBCORK REQUIRED libcork)
-+pkg_check_modules(LIBYAML REQUIRED yaml-0.1)
  
  #-----------------------------------------------------------------------
  # libbuzzy
@@ -154,7 +158,7 @@
  
  #-----------------------------------------------------------------------
 --- origsrc/buzzy-0.6.0/tests/CMakeLists.txt	2017-11-08 21:27:55.000000000 +0900
-+++ src/buzzy-0.6.0/tests/CMakeLists.txt	2018-06-07 16:07:18.709828800 +0900
++++ src/buzzy-0.6.0/tests/CMakeLists.txt	2025-05-01 08:32:11.852480800 +0900
 @@ -7,10 +7,6 @@
  # ----------------------------------------------------------------------
  
