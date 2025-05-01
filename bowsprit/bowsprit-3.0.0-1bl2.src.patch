@@ -1,0 +1,106 @@
+--- origsrc/bowsprit-3.0.0/CMakeLists.txt	2017-11-10 23:34:13.000000000 +0900
++++ src/bowsprit-3.0.0/CMakeLists.txt	2025-05-01 09:30:29.090465000 +0900
+@@ -21,17 +21,24 @@ include(GNUInstallDirs)
+ #-----------------------------------------------------------------------
+ # Retrieve the current version number
+ 
+-execute_process(
+-    COMMAND git describe
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE VERSION_RESULT
+-    OUTPUT_VARIABLE VERSION
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
+-if(VERSION_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine version number: " ${VERSION_RESULT})
+-endif(VERSION_RESULT)
++if (NOT DEFINED VERSION)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(
++            COMMAND git describe
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE VERSION_RESULT
++            OUTPUT_VARIABLE VERSION
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++        )
++        if(VERSION_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine version number: " ${VERSION_RESULT})
++        endif(VERSION_RESULT)
++    else()
++        message(FATAL_ERROR
++                "VERSION must be defined unless .git exists")
++    endif()
++endif()
+ message(STATUS "Current version: " ${VERSION})
+ 
+ string(REGEX REPLACE "-.*" "-dev" BASE_VERSION "${VERSION}")
+@@ -44,17 +51,24 @@ else(BASE_VERSION MATCHES "^([0-9]+)\\.(
+     message(FATAL_ERROR "Invalid version number: ${VERSION}")
+ endif(BASE_VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-dev)?$")
+ 
+-execute_process(
+-    COMMAND git rev-parse HEAD
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE GIT_SHA1_RESULT
+-    OUTPUT_VARIABLE GIT_SHA1
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
+-if(GIT_SHA1_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine git commit: " ${GIT_SHA1_RESULT})
+-endif(GIT_SHA1_RESULT)
++if (NOT DEFINED GIT_SHA1)
++    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        execute_process(
++            COMMAND git rev-parse HEAD
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            RESULT_VARIABLE GIT_SHA1_RESULT
++            OUTPUT_VARIABLE GIT_SHA1
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++        )
++        if(GIT_SHA1_RESULT)
++            message(FATAL_ERROR
++                    "Cannot determine git commit: " ${GIT_SHA1_RESULT})
++        endif(GIT_SHA1_RESULT)
++    else()
++        message(FATAL_ERROR
++                "GIT_SHA1 must be defined unless .git exists")
++    endif()
++endif()
+ message(STATUS "Current revision: " ${GIT_SHA1})
+ 
+ #-----------------------------------------------------------------------
+@@ -72,18 +86,7 @@ if(NOT CMAKE_BUILD_TYPE)
+         FORCE)
+ endif(NOT CMAKE_BUILD_TYPE)
+ 
+-if(NOT CMAKE_INSTALL_LIBDIR)
+-    set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
+-        "The base name of the installation directory for libraries")
+-endif(NOT CMAKE_INSTALL_LIBDIR)
+-
+-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+-    add_definitions(-Wall -Werror)
+-elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+-    add_definitions(-Wall -Werror)
+-endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
++include(GNUInstallDirs)
+ 
+ #-----------------------------------------------------------------------
+ # Check for prerequisite libraries
+--- origsrc/bowsprit-3.0.0/cmake/FindCTargets.cmake	2017-11-10 23:34:13.000000000 +0900
++++ src/bowsprit-3.0.0/cmake/FindCTargets.cmake	2025-05-01 09:28:35.895816900 +0900
+@@ -105,7 +105,8 @@ function(add_c_library __TARGET_NAME)
+         # We have to install the shared library if the user asked us to, or if
+         # the user asked us to link our programs with the shared library.
+         install(TARGETS ${__TARGET_NAME}-shared
+-                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     endif (ENABLE_SHARED OR ENABLE_SHARED_EXECUTABLES)
+ 
+     if (ENABLE_STATIC OR NOT ENABLE_SHARED_EXECUTABLES)
