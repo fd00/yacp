@@ -1,0 +1,48 @@
+--- origsrc/libam7xxx/doc/CMakeLists.txt	2025-05-02 16:38:34.000000000 +0900
++++ src/libam7xxx/doc/CMakeLists.txt	2025-05-02 16:40:15.173160500 +0900
+@@ -1,6 +1,6 @@
+ # add a target to generate API documentation with Doxygen
+ find_package(Doxygen)
+-if(DOXYGEN_FOUND)
++if(BUILD_DOCS AND DOXYGEN_FOUND)
+   configure_file("Doxyfile.in" "Doxyfile" @ONLY IMMEDIATE)
+ 
+   add_custom_target(doc
+--- origsrc/libam7xxx/examples/CMakeLists.txt	2025-05-02 16:38:34.000000000 +0900
++++ src/libam7xxx/examples/CMakeLists.txt	2025-05-02 16:39:48.565899900 +0900
+@@ -55,6 +55,7 @@ if(BUILD_AM7XXX-PLAY)
+ 
+   target_link_libraries(am7xxx-play am7xxx
+     ${FFMPEG_LIBRARIES}
++    ${FFMPEG_LIBAVCODEC_LIBRARIES}
+     ${FFMPEG_LIBSWSCALE_LIBRARIES}
+     ${OPTIONAL_LIBRARIES})
+   install(TARGETS am7xxx-play
+--- origsrc/libam7xxx/src/CMakeLists.txt	2025-05-02 16:38:34.000000000 +0900
++++ src/libam7xxx/src/CMakeLists.txt	2025-05-02 16:39:17.849203000 +0900
+@@ -17,15 +17,8 @@ set_target_properties(am7xxx PROPERTIES
+   VERSION ${PROJECT_VER}
+   SOVERSION ${PROJECT_APIVER})
+ install(TARGETS am7xxx
+-  DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+-
+-add_library(am7xxx-static STATIC ${SRC})
+-set_target_properties(am7xxx-static PROPERTIES OUTPUT_NAME am7xxx)
+-if(UNIX AND NOT APPLE)
+-  set_target_properties(am7xxx-static PROPERTIES COMPILE_FLAGS "-fPIC")
+-endif()
+-install(TARGETS am7xxx-static
+-  DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+ if(NOT WIN32)
+   find_library(MATH_LIB m)
+@@ -35,7 +28,6 @@ else()
+ endif()
+ 
+ target_link_libraries(am7xxx ${MATH_LIB} ${LIBUSB_1_LIBRARIES})
+-target_link_libraries(am7xxx-static ${MATH_LIB} ${LIBUSB_1_LIBRARIES})
+ 
+ # Install the header files
+ install(FILES "am7xxx.h"
