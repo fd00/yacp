@@ -1,5 +1,5 @@
 --- origsrc/synfig-1.5.3/cmake/SynfigFindGit.cmake	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/cmake/SynfigFindGit.cmake	2024-10-16 17:10:17.322876300 +0900
++++ src/synfig-1.5.3/cmake/SynfigFindGit.cmake	2025-05-04 06:26:32.677466600 +0900
 @@ -7,7 +7,7 @@ for future use.
  
  find_package(Git)
@@ -10,7 +10,7 @@
          COMMAND ${GIT_EXECUTABLE} show -s --format=%ad --date=format:%Y-%m-%d HEAD
          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 --- origsrc/synfig-1.5.3/synfig-core/src/synfig/CMakeLists.txt	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-core/src/synfig/CMakeLists.txt	2024-10-17 00:02:54.707087700 +0900
++++ src/synfig-1.5.3/synfig-core/src/synfig/CMakeLists.txt	2025-05-04 06:26:32.677466600 +0900
 @@ -5,7 +5,15 @@
  ## Main target: libsynfig
  ## TODO: optional static linking?
@@ -38,7 +38,7 @@
  )
  
 --- origsrc/synfig-1.5.3/synfig-core/src/synfig/module.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-core/src/synfig/module.cpp	2024-10-16 17:13:31.789466100 +0900
++++ src/synfig-1.5.3/synfig-core/src/synfig/module.cpp	2025-05-04 06:26:32.677466600 +0900
 @@ -143,7 +143,11 @@ synfig::Module::Register(const String &m
  
  	if(callback)callback->task(strprintf(_("Attempting to register \"%s\""),module_name.c_str()));
@@ -51,8 +51,27 @@
  	if(!module)module=lt_dlopenext(module_name.c_str());
  	Type::initialize_all();
  
+--- origsrc/synfig-1.5.3/synfig-studio/CMakeLists.txt	2024-08-23 12:39:47.000000000 +0900
++++ src/synfig-1.5.3/synfig-studio/CMakeLists.txt	2025-05-04 06:28:16.417834400 +0900
+@@ -20,14 +20,14 @@ if (${ENABLE_TESTS})
+     add_subdirectory(test)
+ endif()
+ 
+-file(MAKE_DIRECTORY "${SYNFIG_BUILD_ROOT}/share/appdata")
++file(MAKE_DIRECTORY "${SYNFIG_BUILD_ROOT}/share/metainfo")
+ file(MAKE_DIRECTORY "${SYNFIG_BUILD_ROOT}/share/applications")
+ 
+ STUDIO_INTLTOOL_MERGE(
+     TARGET_NAME appdata_xml
+     INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/org.synfig.SynfigStudio.appdata.xml.in
+     OUTPUT_FILE "org.synfig.SynfigStudio.appdata.xml"
+-    INSTALL_DESTINATION "share/appdata"
++    INSTALL_DESTINATION "share/metainfo"
+ )
+ 
+ if(NOT WIN32) # desktop file needs to be build only for nix systems
 --- origsrc/synfig-1.5.3/synfig-studio/src/gui/canvasview.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/gui/canvasview.cpp	2024-10-16 22:35:24.336714300 +0900
++++ src/synfig-1.5.3/synfig-studio/src/gui/canvasview.cpp	2025-05-04 06:26:32.677466600 +0900
 @@ -107,7 +107,7 @@ using namespace studio;
  static Gtk::Image*
  create_image_from_icon(const std::string& icon_name, Gtk::IconSize icon_size)
@@ -63,7 +82,7 @@
  #else
  	Gtk::Image* image = new Gtk::Image();
 --- origsrc/synfig-1.5.3/synfig-studio/src/gui/docks/dockable.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/gui/docks/dockable.cpp	2024-10-16 23:06:53.813381400 +0900
++++ src/synfig-1.5.3/synfig-studio/src/gui/docks/dockable.cpp	2025-05-04 06:26:32.677466600 +0900
 @@ -298,7 +298,7 @@ Dockable::create_tab_label()
  		// add icon
  		Gtk::IconSize iconsize = Gtk::IconSize::from_name("synfig-small_icon_16x16");
@@ -74,7 +93,7 @@
  #else
  		Gtk::Image* icon(manage(new Gtk::Image()));
 --- origsrc/synfig-1.5.3/synfig-studio/src/gui/docks/dockbook.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/gui/docks/dockbook.cpp	2024-10-16 23:04:57.116021100 +0900
++++ src/synfig-1.5.3/synfig-studio/src/gui/docks/dockbook.cpp	2025-05-04 06:26:32.677466600 +0900
 @@ -63,7 +63,7 @@ using namespace studio;
  static Gtk::Image*
  create_image_from_icon(const std::string& icon_name, Gtk::IconSize icon_size)
@@ -85,7 +104,7 @@
  #else
  	Gtk::Image* image = new Gtk::Image();
 --- origsrc/synfig-1.5.3/synfig-studio/src/gui/instance.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/gui/instance.cpp	2024-10-16 22:40:03.788097100 +0900
++++ src/synfig-1.5.3/synfig-studio/src/gui/instance.cpp	2025-05-04 06:26:32.693087600 +0900
 @@ -97,7 +97,7 @@ create_image_from_icon(const std::string
  	if (icon_name == "image-missing")
  		return new Gtk::Image();
@@ -96,7 +115,7 @@
  #else
  	Gtk::Image* image = new Gtk::Image();
 --- origsrc/synfig-1.5.3/synfig-studio/src/gui/states/state_bline.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/gui/states/state_bline.cpp	2024-10-16 23:14:13.169039400 +0900
++++ src/synfig-1.5.3/synfig-studio/src/gui/states/state_bline.cpp	2025-05-04 06:26:32.693087600 +0900
 @@ -288,7 +288,7 @@ public:
  static Gtk::Image*
  create_image_from_icon(const std::string& icon_name, Gtk::IconSize icon_size)
@@ -107,7 +126,7 @@
  #else
  	Gtk::Image* image = new Gtk::Image();
 --- origsrc/synfig-1.5.3/synfig-studio/src/synfigapp/CMakeLists.txt	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/synfigapp/CMakeLists.txt	2024-10-16 23:47:01.925766900 +0900
++++ src/synfig-1.5.3/synfig-studio/src/synfigapp/CMakeLists.txt	2025-05-04 06:26:32.693087600 +0900
 @@ -24,11 +24,21 @@ target_link_libraries(synfigapp libsynfi
  include(actions/CMakeLists.txt)
  include(vectorizer/CMakeLists.txt)
@@ -131,7 +150,7 @@
      install(
          TARGETS synfigapp
 --- origsrc/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinepolygonizer.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinepolygonizer.cpp	2024-10-16 22:08:21.135861400 +0900
++++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinepolygonizer.cpp	2025-05-04 06:26:32.693087600 +0900
 @@ -821,7 +821,7 @@ inline void reduceBorder(RawBorder &bord
      int k;
      for (k = b[j]; k >= 0 && longestArcFrom[k] >= a; --k) 
@@ -142,7 +161,7 @@
        {
          double newPenalty = penaltyToEnd[i] + penalty(border, k, i);
 --- origsrc/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlineskeletonizer.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlineskeletonizer.cpp	2024-10-16 18:50:23.313110100 +0900
++++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlineskeletonizer.cpp	2025-05-04 06:26:32.693087600 +0900
 @@ -660,8 +660,8 @@ void Timeline::build(ContourFamily &poly
  
  // Calculates event generated by input node
@@ -155,7 +174,7 @@
      , m_type(failure)
      , m_algorithmicTime(context->m_algorithmicTime)
 --- origsrc/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinetostrokes.cpp	2024-08-23 12:39:47.000000000 +0900
-+++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinetostrokes.cpp	2024-10-16 18:47:44.405982400 +0900
++++ src/synfig-1.5.3/synfig-studio/src/synfigapp/vectorizer/centerlinetostrokes.cpp	2025-05-04 06:26:32.693087600 +0900
 @@ -53,7 +53,7 @@ using namespace studio;
  /* === G L O B A L S ======================================================= */
  const double Polyg_eps_max = 1;     // Sequence simplification max error
