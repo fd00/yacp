@@ -1,0 +1,60 @@
+--- origsrc/minmea/CMakeLists.txt	2025-05-05 12:49:25.000000000 +0900
++++ src/minmea/CMakeLists.txt	2025-05-06 06:32:24.261153400 +0900
+@@ -10,6 +10,10 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_P
+ set(minmea_SRCS minmea.c minmea.h)
+ add_library(minmea ${minmea_SRCS})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(minmea PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ add_executable(example example.c)
+ target_link_libraries(example minmea)
+ 
+@@ -26,11 +30,14 @@ if (MINMEA_ENABLE_TESTING)
+     target_compile_options(tests PUBLIC ${CHECK_CFLAGS_OTHER})
+ 
+     add_test(NAME tests COMMAND $<TARGET_FILE:tests>)
+-    add_test(
+-        NAME clang_static_analysis
+-        COMMAND scan-build make
+-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+-    )
++    find_program(SCAN_BUILD_EXECUTABLE scan-build)
++    if (SCAN_BUILD_EXECUTABLE)
++        add_test(
++            NAME clang_static_analysis
++            COMMAND scan-build make
++            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
++        )
++    endif()
+     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+ endif()
+ 
+@@ -45,4 +52,11 @@ if(MSVC)
+     install(FILES compat/minmea_compat_windows.h
+         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+         RENAME minmea_compat.h)
+-endif()
+\ No newline at end of file
++endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/minmea.pc.in ${CMAKE_BINARY_DIR}/minmea.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/minmea.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/minmea/minmea.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/minmea/minmea.pc.in	2025-05-06 06:32:27.465805100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: minmea
++Description: lightweight GPS NMEA 0183 parser library in pure C
++Version: @VERSION@
++Libs: -L${libdir} -lminmea
++Cflags: -I${includedir}
