@@ -1,0 +1,45 @@
+--- origsrc/neural-fortran-0.21.0/CMakeLists.txt	2025-03-27 07:28:11.000000000 +0900
++++ src/neural-fortran-0.21.0/CMakeLists.txt	2025-05-06 14:18:02.341162900 +0900
+@@ -78,13 +78,17 @@ add_library(neural-fortran
+ target_link_libraries(neural-fortran PRIVATE)
+ set_target_properties(neural-fortran PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(neural-fortran PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ install(TARGETS neural-fortran)
+ 
+ # Install the module files
+ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/ DESTINATION include)
+ 
+ # Also install the cmake/Findneural-fortran.cmake file
+-install(FILES cmake/Findneural-fortran.cmake DESTINATION include/cmake/neural-fortran)
++install(FILES cmake/Findneural-fortran.cmake DESTINATION lib/cmake/neural-fortran)
+ 
+ # Remove leading or trailing whitespace
+ string(REGEX REPLACE "^ | $" "" LIBS "${LIBS}")
+@@ -98,3 +102,10 @@ if(${PROJECT_NAME}_BUILD_EXAMPLES)
+   message(STATUS "Building examples")
+   add_subdirectory(example)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/neural-fortran.pc.in ${CMAKE_BINARY_DIR}/neural-fortran.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/neural-fortran.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/neural-fortran-0.21.0/neural-fortran.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/neural-fortran-0.21.0/neural-fortran.pc.in	2025-05-06 14:18:08.390463400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: neural-fortran
++Description: Parallel framework for deep learning
++Version: @VERSION@
++Libs: -L${libdir} -lneural-fortran
++Cflags: -I${includedir}
