@@ -1,0 +1,62 @@
+--- origsrc/statsd-cpp-1.1.1/CMakeLists.txt	2024-08-06 04:22:38.000000000 +0900
++++ src/statsd-cpp-1.1.1/CMakeLists.txt	2025-05-06 16:20:13.460947300 +0900
+@@ -16,9 +16,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PRO
+ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+ 
+ # get git tag
+-execute_process(COMMAND git describe --always --tag OUTPUT_VARIABLE tag_version OUTPUT_STRIP_TRAILING_WHITESPACE)
+-string(SUBSTRING ${tag_version} 1 -1 tag_version)
+-set(STATSD_VERSION ${tag_version})
++if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++    execute_process(COMMAND git describe --always --tag OUTPUT_VARIABLE tag_version OUTPUT_STRIP_TRAILING_WHITESPACE)
++    string(SUBSTRING ${tag_version} 1 -1 tag_version)
++    set(STATSD_VERSION ${tag_version})
++endif()
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/version.hpp @ONLY)
+ 
+ # enable valgrind
+@@ -36,7 +38,10 @@ add_definitions(
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+ 
+ add_library(statsd SHARED src/statsd.cpp include/statsd.hpp include/version.hpp)
+-add_library(statsd_static STATIC src/statsd.cpp include/statsd.hpp include/version.hpp)
++
++if (DEFINED SOVERSION)
++    set_target_properties(statsd PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ add_executable(
+     statsd-test
+@@ -65,7 +70,8 @@ add_memcheck_test(StatsD statsd-test)
+ 
+ install(FILES include/statsd.hpp DESTINATION include)
+ 
+-install(TARGETS statsd_static statsd
++install(TARGETS statsd
++    RUNTIME DESTINATION bin
+     LIBRARY DESTINATION lib
+     ARCHIVE DESTINATION lib
+ )
+--- origsrc/statsd-cpp-1.1.1/include/version.hpp	1970-01-01 09:00:00.000000000 +0900
++++ src/statsd-cpp-1.1.1/include/version.hpp	2025-05-06 16:21:03.082274600 +0900
+@@ -0,0 +1,11 @@
++/**
++ * StatsD Client
++ *
++ * Copyright (c) 2012-2014 Axel Etcheverry
++ *
++ * For the full copyright and license information, please view the LICENSE
++ * file that was distributed with this source code.
++ */
++#pragma once
++
++#define STATSD_VERSION "1.1.1"
+--- origsrc/statsd-cpp-1.1.1/statsd-cpp.pc.in	2024-08-06 04:22:38.000000000 +0900
++++ src/statsd-cpp-1.1.1/statsd-cpp.pc.in	2025-05-06 16:33:41.797817100 +0900
+@@ -7,5 +7,5 @@ Name: statsd-cpp
+ Description: statsd-cpp
+ Version: @STATSD_VERSION@
+ 
+-Libs: -L${libdir} -lstatsd_static @ADDITIONAL_LIBS@
++Libs: -L${libdir} -lstatsd @ADDITIONAL_LIBS@
+ Cflags: -I${includedir}
