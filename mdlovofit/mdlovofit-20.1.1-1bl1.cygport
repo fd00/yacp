@@ -1,0 +1,49 @@
+HOMEPAGE="https://github.com/m3g/MDLovoFit"
+SRC_URI="https://github.com/m3g/MDLovoFit/archive/refs/tags/v${PV}.tar.gz"
+SRC_DIR="MDLovoFit-${PV}"
+
+CATEGORY="Science"
+SUMMARY="Package for the analysis of the mobility and structural fluctuation in Molecular Dynamics simulations"
+DESCRIPTION="MDLovoFit is a package for the analysis of the mobility and structural
+fluctuation in Molecular Dynamics simulations. It allows the automatic
+identification of rigid and mobile regions of protein structures."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="gcc-fortran"
+
+inherit cmake
+
+src_test()
+{
+	cd ${B}
+
+	./bin/mdlovofit -f 0.7 -t output.pdb ${S}/tests/data/trajectory.pdb > rmsd.dat
+	if [ ! -z "`diff -IVersion -Itrajectory.pdb rmsd.dat ${S}/tests/results/TEST1.dat`" ]; then
+		echo "ERROR in TEST1"
+    	exit
+	else
+		echo "TEST1 passed!"
+	fi
+
+	./bin/mdlovofit -iref 13 -f 0.7 -t output.pdb ${S}/tests/data/trajectory.pdb > rmsd.dat
+	if [ ! -z "`diff -IVersion -Itrajectory.pdb rmsd.dat ${S}/tests/results/TEST2.dat`" ]; then
+		echo "ERROR in TEST2"
+		exit
+	else
+		echo "TEST2 passed!"
+	fi
+
+	split --lines 8784 ${S}/tests/data/trajectory.pdb split
+	./bin/mdlovofit -iref 13 -f 0.7 -t output.pdb splitaa splitab splitac splitad > rmsd.dat
+	if [ ! -z "`diff -IVersion -Itrajectory.pdb rmsd.dat ${S}/tests/results/TEST3.dat`" ]; then
+		echo "ERROR in TEST3"
+		exit
+	else
+		echo "TEST3 passed!"
+	fi
+
+	rm output.pdb rmsd.dat splitaa splitab splitac splitad
+}
