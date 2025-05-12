@@ -18,26 +18,35 @@ BUILD_REQUIRES="libhwloc-devel"
 
 export CPPFLAGS="${CPPFLAGS} -DBUILDING_DLL"
 
-src_compile()
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=19
+	-DQTHREADS_TOPOLOGY:STRING=hwloc
+"
+
+src_test()
 {
-	cd ${S}
-	./autogen.sh
 	cd ${B}
-	cygconf
-	cygmake
+	PATH=${B}/src:${PATH} ninja_test
 }
 
-CYGCONF_ARGS="
-	--disable-static
+DOCS="
+	README.affinity
+	SCHEDULING
 "
 
-DIFF_EXCLUDES="
-	.autogen-version
-	aclocal.m4
-	config
-	configure
-	*.in
-"
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${S}
+	doman man/man3/*.3
+
+	cd ${D}
+	rm -f usr/include/qthread/.gitignore
+}
 
 PKG_NAMES="
 	qthreads
@@ -48,7 +57,7 @@ qthreads_CONTENTS="
 	usr/share/doc
 "
 libqthread19_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-19.dll
 "
 libqthread_devel_CONTENTS="
 	usr/include
