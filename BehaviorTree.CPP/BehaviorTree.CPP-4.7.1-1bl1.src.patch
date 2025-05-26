@@ -1,6 +1,6 @@
---- origsrc/BehaviorTree.CPP-4.6.2/CMakeLists.txt	2024-06-26 18:40:09.000000000 +0900
-+++ src/BehaviorTree.CPP-4.6.2/CMakeLists.txt	2025-02-04 23:43:12.014291500 +0900
-@@ -80,9 +80,17 @@ endif()
+--- origsrc/BehaviorTree.CPP-4.7.1/CMakeLists.txt	2025-05-14 02:33:20.000000000 +0900
++++ src/BehaviorTree.CPP-4.7.1/CMakeLists.txt	2025-05-26 21:36:09.530525000 +0900
+@@ -94,9 +94,16 @@ endif()
  
  add_subdirectory(3rdparty/lexy)
  
@@ -14,14 +14,13 @@
 +    add_library(minitrace STATIC 3rdparty/minitrace/minitrace.cpp)
 +    target_compile_definitions(minitrace PRIVATE MTR_ENABLED=True)
 +    set_property(TARGET minitrace PROPERTY POSITION_INDEPENDENT_CODE ON)
-+    set(MINITRACE_LIBRARIES minitrace)
 +endif()
 +
 +pkg_check_modules(TINYXML2 tinyxml2)
  
  list(APPEND BT_SOURCE
      src/action_node.cpp
-@@ -126,10 +134,11 @@ list(APPEND BT_SOURCE
+@@ -140,10 +147,11 @@ list(APPEND BT_SOURCE
      src/loggers/bt_file_logger_v2.cpp
      src/loggers/bt_minitrace_logger.cpp
      src/loggers/bt_observer.cpp
@@ -35,13 +34,7 @@
  
  if(BTCPP_GROOT_INTERFACE)
      # should be found already, at this stage
-@@ -166,11 +175,15 @@ target_link_libraries(${BTCPP_LIBRARY}
-         Threads::Threads
-         ${CMAKE_DL_LIBS}
-         $<BUILD_INTERFACE:foonathan::lexy>
--        minitrace
-+        ${MINITRACE_LIBRARIES}
-     PUBLIC
+@@ -185,6 +193,10 @@ target_link_libraries(${BTCPP_LIBRARY}
          ${BTCPP_EXTRA_LIBRARIES}
  )
  
@@ -52,7 +45,7 @@
  target_include_directories(${BTCPP_LIBRARY}
      PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-@@ -193,6 +206,10 @@ endif()
+@@ -212,6 +224,10 @@ endif()
  
  add_library(BT::${BTCPP_LIBRARY} ALIAS ${BTCPP_LIBRARY})
  
@@ -60,10 +53,10 @@
 +    set_target_properties(${BTCPP_LIBRARY} PROPERTIES SOVERSION "${SOVERSION}")
 +endif()
 +
- #############################################################
- message( STATUS "BTCPP_LIB_DESTINATION:   ${BTCPP_LIB_DESTINATION} " )
- message( STATUS "BTCPP_INCLUDE_DESTINATION: ${BTCPP_INCLUDE_DESTINATION} " )
-@@ -232,3 +249,10 @@ INSTALL( DIRECTORY ${CMAKE_CURRENT_SOURC
+ # Add fuzzing targets
+ if(ENABLE_FUZZING)
+     add_fuzzing_targets()
+@@ -257,3 +273,10 @@ INSTALL( DIRECTORY ${CMAKE_CURRENT_SOURC
      FILES_MATCHING PATTERN "*.h*")
  
  export_btcpp_package()
@@ -74,9 +67,9 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/behaviortree_cpp.pc.in ${CMAKE_BINARY_DIR}/behaviortree_cpp.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/behaviortree_cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/BehaviorTree.CPP-4.6.2/behaviortree_cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/BehaviorTree.CPP-4.6.2/behaviortree_cpp.pc.in	2025-02-04 23:43:57.224702900 +0900
-@@ -0,0 +1,10 @@
+--- origsrc/BehaviorTree.CPP-4.7.1/behaviortree_cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/BehaviorTree.CPP-4.7.1/behaviortree_cpp.pc.in	2025-05-26 21:35:46.693479000 +0900
+@@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
 +libdir=@libdir@
@@ -87,3 +80,4 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -lbehaviortree_cpp
 +Cflags: -I${includedir}
++
