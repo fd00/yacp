@@ -1,0 +1,93 @@
+--- origsrc/BLAKE3-1.8.2/c/CMakeLists.txt	2025-04-21 08:42:32.000000000 +0900
++++ src/BLAKE3-1.8.2/c/CMakeLists.txt	2025-05-27 09:46:14.868674400 +0900
+@@ -53,7 +53,7 @@ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU
+   set(BLAKE3_CFLAGS_AVX2 "-mavx2" CACHE STRING "the compiler flags to enable AVX2")
+   set(BLAKE3_CFLAGS_AVX512 "-mavx512f -mavx512vl" CACHE STRING "the compiler flags to enable AVX512")
+ 
+-  if (WIN32 OR CYGWIN)
++  if (WIN32)
+     set(BLAKE3_AMD64_ASM_SOURCES
+       blake3_avx2_x86-64_windows_gnu.S
+       blake3_avx512_x86-64_windows_gnu.S
+--- origsrc/BLAKE3-1.8.2/c/cmake/BLAKE3/ContinuousIntegration.cmake	2025-04-21 08:42:32.000000000 +0900
++++ src/BLAKE3-1.8.2/c/cmake/BLAKE3/ContinuousIntegration.cmake	2025-05-27 09:56:22.071095200 +0900
+@@ -1,9 +1,5 @@
+ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+ 
+-if(BUILD_SHARED_LIBS)
+-  message(FATAL_ERROR "BUILD_SHARED_LIBS is incompatible with BLAKE3_TESTING_CI")
+-endif()
+-
+ include(CTest)
+ 
+ # Declare a testing specific variant of the `blake3` library target.
+@@ -157,7 +153,6 @@ if(BLAKE3_COMPILE_OPTIONS)
+     -D_FORTIFY_SOURCE=2
+     -fPIE
+     -fvisibility=hidden
+-    -fsanitize=address,undefined
+   )
+ endif()
+ 
+@@ -178,9 +173,7 @@ get_target_property(BLAKE3_LINK_OPTIONS
+ if(BLAKE3_LINK_OPTIONS)
+   target_link_options(blake3-testing PRIVATE
+     ${BLAKE3_LINK_OPTIONS}
+-    -fsanitize=address,undefined
+     -pie
+-    -Wl,-z,relro,-z,now
+   )
+ endif()
+ 
+@@ -202,12 +195,9 @@ target_compile_options(blake3-asm-test P
+   -D_FORTIFY_SOURCE=2
+   -fPIE
+   -fvisibility=hidden
+-  -fsanitize=address,undefined
+ )
+ target_link_options(blake3-asm-test PRIVATE
+-  -fsanitize=address,undefined
+   -pie
+-  -Wl,-z,relro,-z,now
+ )
+ 
+ add_test(NAME blake3-testing
+--- origsrc/BLAKE3-1.8.2/c/libblake3.pc.in	2025-04-21 08:42:32.000000000 +0900
++++ src/BLAKE3-1.8.2/c/libblake3.pc.in	2025-05-27 09:41:38.213748900 +0900
+@@ -1,12 +1,12 @@
+-prefix="@CMAKE_INSTALL_PREFIX@"
+-exec_prefix="${prefix}"
+-libdir="@PKG_CONFIG_INSTALL_LIBDIR@"
+-includedir="@PKG_CONFIG_INSTALL_INCLUDEDIR@"
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=@PKG_CONFIG_INSTALL_LIBDIR@
++includedir=@PKG_CONFIG_INSTALL_INCLUDEDIR@
+ 
+ Name: @PROJECT_NAME@
+ Description: @PROJECT_DESCRIPTION@
+ Version: @PROJECT_VERSION@
+ 
+ Requires: @PKG_CONFIG_REQUIRES@
+-Libs: -L"${libdir}" -lblake3 @PKG_CONFIG_LIBS@
+-Cflags: -I"${includedir}" @PKG_CONFIG_CFLAGS@
++Libs: -L${libdir} -lblake3 @PKG_CONFIG_LIBS@
++Cflags: -I${includedir} @PKG_CONFIG_CFLAGS@
+--- origsrc/BLAKE3-1.8.2/c/main.c	2025-04-21 08:42:32.000000000 +0900
++++ src/BLAKE3-1.8.2/c/main.c	2025-05-27 09:59:02.178560900 +0900
+@@ -125,6 +125,7 @@ int main(int argc, char **argv) {
+     assert(buf_len < buf_capacity);
+   }
+ 
++#if defined(__GLIBC__)
+   const int mask = get_cpu_features();
+   int feature = 0;
+   do {
+@@ -161,6 +162,7 @@ int main(int argc, char **argv) {
+     free(out);
+     feature = (feature - mask) & mask;
+   } while (feature != 0);
++#endif
+   free(buf);
+   return 0;
+ }
