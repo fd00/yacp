@@ -1,0 +1,108 @@
+--- origsrc/libtwiddle-1.1.0/tests/CMakeLists.txt	2018-10-05 21:18:35.000000000 +0900
++++ src/libtwiddle-1.1.0/tests/CMakeLists.txt	2025-05-27 14:22:45.804282100 +0900
+@@ -1,4 +1,8 @@
+-add_subdirectory(check)
++find_package(pkgconfig)
++pkg_check_modules(CHECK check)
++if (NOT CHECK_FOUND)
++    add_subdirectory(check)
++endif()
+ 
+ add_c_test(test-bitmap)
+ add_c_test(test-bitmap-rle)
+--- origsrc/libtwiddle-1.1.0/tools/cmake/FindCTargets.cmake	2018-10-05 21:18:35.000000000 +0900
++++ src/libtwiddle-1.1.0/tools/cmake/FindCTargets.cmake	2025-05-27 14:26:06.290251300 +0900
+@@ -12,7 +12,12 @@ set(ENABLE_STATIC YES CACHE BOOL "Whethe
+ 
+ function(target_add_shared_libraries TARGET_NAME LIBRARIES LOCAL_LIBRARIES)
+     foreach(lib ${LOCAL_LIBRARIES})
+-        target_link_libraries(${TARGET_NAME} ${lib}-shared)
++        if (lib STREQUAL "check" AND CHECK_FOUND)
++            message(STATUS "Linking with check library (${lib})")
++            target_link_libraries(${TARGET_NAME} ${lib})
++        else()
++            target_link_libraries(${TARGET_NAME} ${lib}-shared)
++        endif (lib STREQUAL "check" AND CHECK_FOUND)
+     endforeach(lib)
+     foreach(lib ${LIBRARIES})
+         string(REPLACE "-" "_" lib ${lib})
+--- origsrc/libtwiddle-1.1.0/tools/cmake/FindOptions.cmake	2018-10-05 21:18:35.000000000 +0900
++++ src/libtwiddle-1.1.0/tools/cmake/FindOptions.cmake	2025-05-27 11:55:45.289145800 +0900
+@@ -50,5 +50,5 @@ else()
+ endif()
+ 
+ # strict compile options
+-add_definitions(-Wall -Werror -pedantic -Wextra -Wshadow -Wfloat-equal -Wundef
++add_definitions(-Wall -pedantic -Wextra -Wshadow -Wfloat-equal -Wundef
+                 -Wwrite-strings -Wunreachable-code -Wformat=2 -Winit-self)
+--- origsrc/libtwiddle-1.1.0/tools/cmake/FindVersion.cmake	2018-10-05 21:18:35.000000000 +0900
++++ src/libtwiddle-1.1.0/tools/cmake/FindVersion.cmake	2025-05-27 11:54:23.705860500 +0900
+@@ -1,17 +1,24 @@
+ #-----------------------------------------------------------------------
+ # Retrieve the current version number
+ 
+-execute_process(
+-    COMMAND git describe
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE VERSION_RESULT
+-    OUTPUT_VARIABLE VERSION
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
+-if(VERSION_RESULT)
+-    set(VERSION "0.0.0")
+-    message(STATUS "Cannot determine version number reverting to: " ${VERSION})
+-endif(VERSION_RESULT)
++if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
++    execute_process(
++        COMMAND git describe
++        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++        RESULT_VARIABLE VERSION_RESULT
++        OUTPUT_VARIABLE VERSION
++        OUTPUT_STRIP_TRAILING_WHITESPACE
++    )
++    if(VERSION_RESULT)
++        set(VERSION "0.0.0")
++        message(STATUS "Cannot determine version number reverting to: " ${VERSION})
++    endif(VERSION_RESULT)
++else()
++    if (NOT DEFINED VERSION)
++        message(FATAL_ERROR "Cannot determine version number, please set VERSION variable")
++    endif(NOT DEFINED VERSION)
++endif (EXISTS "${CMAKE_SOURCE_DIR}/.git")
++
+ message(STATUS "Current version: " ${VERSION})
+ 
+ if(VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-.*)?$")
+@@ -23,15 +30,21 @@ else(VERSION MATCHES "^([0-9]+)\\.([0-9]
+     message(FATAL_ERROR "Invalid version number: ${VERSION}")
+ endif(VERSION MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-.*)?$")
+ 
+-execute_process(
+-    COMMAND git rev-parse HEAD
+-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-    RESULT_VARIABLE GIT_SHA1_RESULT
+-    OUTPUT_VARIABLE GIT_SHA1
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
+-if(GIT_SHA1_RESULT)
+-    message(FATAL_ERROR
+-            "Cannot determine git commit: " ${GIT_SHA1_RESULT})
+-endif(GIT_SHA1_RESULT)
++if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
++    execute_process(
++        COMMAND git rev-parse HEAD
++        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++        RESULT_VARIABLE GIT_SHA1_RESULT
++        OUTPUT_VARIABLE GIT_SHA1
++        OUTPUT_STRIP_TRAILING_WHITESPACE
++    )
++    if(GIT_SHA1_RESULT)
++        message(FATAL_ERROR
++                "Cannot determine git commit: " ${GIT_SHA1_RESULT})
++    endif(GIT_SHA1_RESULT)
++else()
++    if (NOT DEFINED GIT_SHA1)
++        message(FATAL_ERROR "Cannot determine git commit, please set GIT_SHA1 variable")
++    endif(NOT DEFINED GIT_SHA1)
++endif()
+ message(STATUS "Current revision: " ${GIT_SHA1})
