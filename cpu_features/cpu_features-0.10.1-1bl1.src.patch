@@ -1,0 +1,175 @@
+--- origsrc/cpu_features-0.10.1/CMakeLists.txt	2025-05-13 18:53:21.000000000 +0900
++++ src/cpu_features-0.10.1/CMakeLists.txt	2025-06-01 22:56:30.804315800 +0900
+@@ -178,6 +178,10 @@ target_include_directories(cpu_features
+   PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cpu_features>
+ )
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(cpu_features PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
+ if(APPLE)
+   target_compile_definitions(cpu_features PRIVATE HAVE_SYSCTLBYNAME)
+ endif()
+@@ -211,40 +215,43 @@ if(BUILD_TESTING)
+   # found.
+   enable_language(CXX)
+ 
+-  if(NOT TARGET gtest OR NOT TARGET gmock_main)
+-    # Download and unpack googletest at configure time.
+-    configure_file(
+-      cmake/googletest.CMakeLists.txt.in
+-      googletest-download/CMakeLists.txt
+-    )
+-
+-    execute_process(
+-      COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+-      RESULT_VARIABLE result
+-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+-
+-    if(result)
+-      message(FATAL_ERROR "CMake step for googletest failed: ${result}")
++  find_package(gtest)
++  if (NOT GTEST_FOUND)
++    if(NOT TARGET gtest OR NOT TARGET gmock_main)
++      # Download and unpack googletest at configure time.
++      configure_file(
++        cmake/googletest.CMakeLists.txt.in
++        googletest-download/CMakeLists.txt
++      )
++
++      execute_process(
++        COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
++        RESULT_VARIABLE result
++        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
++
++      if(result)
++        message(FATAL_ERROR "CMake step for googletest failed: ${result}")
++      endif()
++
++      execute_process(
++        COMMAND ${CMAKE_COMMAND} --build .
++        RESULT_VARIABLE result
++        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
++
++      if(result)
++        message(FATAL_ERROR "Build step for googletest failed: ${result}")
++      endif()
++
++      # Prevent overriding the parent project's compiler/linker settings on
++      # Windows.
++      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
++
++      # Add googletest directly to our build. This defines the gtest and
++      # gtest_main targets.
++      add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
++                      ${CMAKE_BINARY_DIR}/googletest-build
++                      EXCLUDE_FROM_ALL)
+     endif()
+-
+-    execute_process(
+-      COMMAND ${CMAKE_COMMAND} --build .
+-      RESULT_VARIABLE result
+-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+-
+-    if(result)
+-      message(FATAL_ERROR "Build step for googletest failed: ${result}")
+-    endif()
+-
+-    # Prevent overriding the parent project's compiler/linker settings on
+-    # Windows.
+-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+-
+-    # Add googletest directly to our build. This defines the gtest and
+-    # gtest_main targets.
+-    add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+-                     ${CMAKE_BINARY_DIR}/googletest-build
+-                     EXCLUDE_FROM_ALL)
+   endif()
+ 
+   add_subdirectory(test)
+@@ -297,3 +304,10 @@ if(ENABLE_INSTALL)
+     COMPONENT Devel
+   )
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cpu_features.pc.in ${CMAKE_BINARY_DIR}/cpu_features.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cpu_features.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpu_features-0.10.1/cpu_features.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpu_features-0.10.1/cpu_features.pc.in	2025-06-01 22:56:43.933305800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpu_features
++Description: Cross platform C99 library to get cpu features at runtime
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcpu_features
++Cflags: -I${includedir}
+--- origsrc/cpu_features-0.10.1/src/impl_x86_linux_or_android.c	2025-05-13 18:53:21.000000000 +0900
++++ src/cpu_features-0.10.1/src/impl_x86_linux_or_android.c	2025-06-01 22:48:59.150217100 +0900
+@@ -15,7 +15,7 @@
+ #include "cpu_features_macros.h"
+ 
+ #ifdef CPU_FEATURES_ARCH_X86
+-#if defined(CPU_FEATURES_OS_LINUX) || defined(CPU_FEATURES_OS_ANDROID)
++#if defined(CPU_FEATURES_OS_LINUX) || defined(CPU_FEATURES_OS_ANDROID) || defined(__CYGWIN__)
+ 
+ #include "impl_x86__base_implementation.inl"
+ 
+--- origsrc/cpu_features-0.10.1/test/CMakeLists.txt	2025-05-13 18:53:21.000000000 +0900
++++ src/cpu_features-0.10.1/test/CMakeLists.txt	2025-06-01 22:52:48.982604900 +0900
+@@ -19,7 +19,7 @@ target_compile_features(hwcaps_for_testi
+ ##------------------------------------------------------------------------------
+ add_library(stack_line_reader ../src/stack_line_reader.c)
+ target_compile_definitions(stack_line_reader PUBLIC STACK_LINE_READER_BUFFER_SIZE=1024)
+-target_link_libraries(stack_line_reader string_view)
++target_link_libraries(stack_line_reader string_view filesystem_for_testing)
+ target_compile_features(stack_line_reader PUBLIC cxx_std_14)
+ ##------------------------------------------------------------------------------
+ add_library(stack_line_reader_for_test ../src/stack_line_reader.c)
+@@ -38,23 +38,25 @@ target_compile_features(all_libraries PU
+ #
+ # tests
+ #
+-link_libraries(gtest gmock_main)
++if (NOT GTEST_FOUND)
++  link_libraries(gtest gmock_main)
++endif()
+ 
+ ## bit_utils_test
+ add_executable(bit_utils_test bit_utils_test.cc)
+-target_link_libraries(bit_utils_test)
++target_link_libraries(bit_utils_test gtest gtest_main)
+ target_compile_features(bit_utils_test PUBLIC cxx_std_14)
+ add_test(NAME bit_utils_test COMMAND bit_utils_test)
+ ##------------------------------------------------------------------------------
+ ## string_view_test
+ add_executable(string_view_test string_view_test.cc ../src/string_view.c)
+-target_link_libraries(string_view_test string_view)
++target_link_libraries(string_view_test string_view gtest gtest_main)
+ target_compile_features(string_view_test PUBLIC cxx_std_14)
+ add_test(NAME string_view_test COMMAND string_view_test)
+ ##------------------------------------------------------------------------------
+ ## stack_line_reader_test
+ add_executable(stack_line_reader_test stack_line_reader_test.cc)
+-target_link_libraries(stack_line_reader_test stack_line_reader_for_test)
++target_link_libraries(stack_line_reader_test stack_line_reader_for_test gtest gtest_main)
+ target_compile_features(stack_line_reader_test PUBLIC cxx_std_14)
+ add_test(NAME stack_line_reader_test COMMAND stack_line_reader_test)
+ ##------------------------------------------------------------------------------
+@@ -72,7 +74,7 @@ if(PROCESSOR_IS_X86)
+   if(APPLE)
+     target_compile_definitions(cpuinfo_x86_test PRIVATE HAVE_SYSCTLBYNAME)
+   endif()
+-  target_link_libraries(cpuinfo_x86_test all_libraries)
++  target_link_libraries(cpuinfo_x86_test gtest gtest_main all_libraries)
+   add_test(NAME cpuinfo_x86_test COMMAND cpuinfo_x86_test)
+ endif()
+ ##------------------------------------------------------------------------------
