@@ -1,5 +1,5 @@
 --- origsrc/libelektra-0.10.0/scripts/cmake/ElektraPackaging.cmake	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/scripts/cmake/ElektraPackaging.cmake	2024-10-08 11:44:56.755890200 +0900
++++ src/libelektra-0.10.0/scripts/cmake/ElektraPackaging.cmake	2025-06-01 23:16:52.850890100 +0900
 @@ -118,7 +118,7 @@ if (UNIX)
  	execute_process (COMMAND uname -m OUTPUT_VARIABLE CPACK_PACKAGE_ARCHITECTURE)
  	string (STRIP "${CPACK_PACKAGE_ARCHITECTURE}" CPACK_PACKAGE_ARCHITECTURE)
@@ -9,8 +9,26 @@
  		# Try to find distro name and distro-specific arch
  		execute_process (COMMAND bash "-c" "grep \"^NAME=\" /etc/os-release | awk -F= {' print $2'} | sed 's/\"//g'"
  				 OUTPUT_VARIABLE OS_NAME)
+--- origsrc/libelektra-0.10.0/scripts/cmake/Modules/FindLibGpgme.cmake	2023-05-23 14:52:32.000000000 +0900
++++ src/libelektra-0.10.0/scripts/cmake/Modules/FindLibGpgme.cmake	2025-06-05 06:27:45.003455200 +0900
+@@ -44,6 +44,15 @@ if (GPGME_EXECUTABLE)
+ 		set (LIBGPGME_FOUND TRUE)
+ 	endif (LIBGPGME_LIBRARIES AND LIBGPGME_CFLAGS)
+ 
++else (GPGME_EXECUTABLE)
++
++	find_package (pkgconfig QUIET)
++	if (PKG_CONFIG_FOUND)
++		pkg_check_modules (LIBGPGME QUIET gpgme)
++	else (PKG_CONFIG_FOUND)
++		message (STATUS "Could not find gpgme-config or pkg-config")
++	endif (PKG_CONFIG_FOUND)
++
+ endif (GPGME_EXECUTABLE)
+ 
+ if (LIBGPGME_FOUND)
 --- origsrc/libelektra-0.10.0/scripts/cmake/Modules/LibAddLib.cmake	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/scripts/cmake/Modules/LibAddLib.cmake	2024-10-08 09:25:04.730762600 +0900
++++ src/libelektra-0.10.0/scripts/cmake/Modules/LibAddLib.cmake	2025-06-01 23:16:52.866525700 +0900
 @@ -61,11 +61,14 @@ function (add_lib name)
  									  "-Wl,--version-script='${CMAKE_BINARY_DIR}/src/libs/symbols.map'")
  		endif ()
@@ -30,7 +48,7 @@
  
  endfunction ()
 --- origsrc/libelektra-0.10.0/src/bindings/glib/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/bindings/glib/CMakeLists.txt	2024-10-08 09:30:41.196718900 +0900
++++ src/libelektra-0.10.0/src/bindings/glib/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -42,6 +42,8 @@ target_compile_options (${GELEKTRA_LIBRA
  target_link_libraries (${GELEKTRA_LIBRARY} PUBLIC elektra-core elektra-kdb)
  target_link_libraries (${GELEKTRA_LIBRARY} PUBLIC ${GOBJECT_LDFLAGS})
@@ -41,7 +59,7 @@
  
  install (
 --- origsrc/libelektra-0.10.0/src/bindings/gsettings/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/bindings/gsettings/CMakeLists.txt	2024-10-08 11:01:59.149840100 +0900
++++ src/libelektra-0.10.0/src/bindings/gsettings/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -57,7 +57,7 @@ if (GELEKTRA_LIBRARY)
  	include_directories (${CMAKE_BINARY_DIR}/src/include/)
  	target_link_libraries (elektrasettings ${GLIB_LIBRARIES} ${GMODULE_LIBRARIES} ${GIO_LIBRARIES} ${GELEKTRA_LIBRARY} elektra-core)
@@ -61,7 +79,7 @@
  
  if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 --- origsrc/libelektra-0.10.0/src/include/kdbendian.h	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/include/kdbendian.h	2024-10-07 14:07:26.773009700 +0900
++++ src/libelektra-0.10.0/src/include/kdbendian.h	2025-06-01 23:16:52.866525700 +0900
 @@ -67,7 +67,7 @@
  #endif
  
@@ -72,7 +90,7 @@
  #include <endian.h>
  #define __ENDIAN_DEFINED 1
 --- origsrc/libelektra-0.10.0/src/libs/elektra/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/libs/elektra/CMakeLists.txt	2024-10-07 23:12:55.355579300 +0900
++++ src/libelektra-0.10.0/src/libs/elektra/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -112,8 +112,9 @@ if (BUILD_SHARED)
  
  	install (
@@ -85,7 +103,7 @@
  
  	list (APPEND targets_built ${elektra-all_LIBRARIES})
 --- origsrc/libelektra-0.10.0/src/libs/tools/src/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/libs/tools/src/CMakeLists.txt	2024-10-07 23:04:06.630544100 +0900
++++ src/libelektra-0.10.0/src/libs/tools/src/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -39,7 +39,8 @@ if (BUILD_SHARED)
  
  	install (
@@ -97,7 +115,7 @@
  endif (BUILD_SHARED)
  
 --- origsrc/libelektra-0.10.0/src/plugins/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/plugins/CMakeLists.txt	2024-10-07 23:19:29.329249200 +0900
++++ src/libelektra-0.10.0/src/plugins/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -92,7 +92,7 @@ if (output EQUAL -1
  	message (SEND_ERROR "The required plugin `spec` is not selected in PLUGINS but needed for testing, please add `spec` to PLUGINS")
  endif ()
@@ -108,7 +126,7 @@
  	create_lib_symlink (libelektra-plugin-${KDB_DEFAULT_STORAGE}.so libelektra-plugin-storage.so libelektra${SO_VERSION} PLUGIN)
  
 --- origsrc/libelektra-0.10.0/src/plugins/fstab/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/plugins/fstab/CMakeLists.txt	2024-10-07 14:42:04.353675200 +0900
++++ src/libelektra-0.10.0/src/plugins/fstab/CMakeLists.txt	2025-06-01 23:16:52.866525700 +0900
 @@ -1,5 +1,9 @@
  if (DEPENDENCY_PHASE)
 -	safe_check_symbol_exists (setmntent "mntent.h" HAS_MNTENT)
@@ -121,7 +139,7 @@
  	if (NOT HAS_MNTENT)
  		remove_plugin (fstab "function mntent is missing")
 --- origsrc/libelektra-0.10.0/src/plugins/resolver/resolver.h	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/plugins/resolver/resolver.h	2024-10-08 10:17:37.420652600 +0900
++++ src/libelektra-0.10.0/src/plugins/resolver/resolver.h	2025-06-01 23:16:52.882144600 +0900
 @@ -9,7 +9,9 @@
  #ifndef PLUGIN_RESOLVER_H
  #define PLUGIN_RESOLVER_H
@@ -133,7 +151,7 @@
  #include "shared.h"
  
 --- origsrc/libelektra-0.10.0/src/plugins/ruby/ruby.cpp	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/plugins/ruby/ruby.cpp	2024-10-07 14:26:17.172328000 +0900
++++ src/libelektra-0.10.0/src/plugins/ruby/ruby.cpp	2025-06-01 23:16:52.882144600 +0900
 @@ -19,6 +19,8 @@
  
  #include <kdbmacros.h>
@@ -144,7 +162,7 @@
  #include "ruby.hpp"
  
 --- origsrc/libelektra-0.10.0/src/plugins/spec/CMakeLists.txt	2023-05-23 14:52:32.000000000 +0900
-+++ src/libelektra-0.10.0/src/plugins/spec/CMakeLists.txt	2024-10-07 15:04:27.183963200 +0900
++++ src/libelektra-0.10.0/src/plugins/spec/CMakeLists.txt	2025-06-01 23:16:52.882144600 +0900
 @@ -3,5 +3,5 @@ include (LibAddMacros)
  add_plugin (
  	spec
