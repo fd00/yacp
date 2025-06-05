@@ -1,0 +1,137 @@
+--- origsrc/geohash-int/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/geohash-int/CMakeLists.txt	2025-06-05 21:06:01.517350300 +0900
+@@ -0,0 +1,28 @@
++cmake_minimum_required(VERSION 3.28)
++project(geohash-int
++  VERSION 0.0.0
++  DESCRIPTION "Fast C99 GeoHash library"
++  HOMEPAGE_URL "https://github.com/yinqiwen/geohash-int")
++
++include(GNUInstallDirs)
++include(CTest)
++
++add_library(geohash-int SHARED geohash.c)
++set_target_properties(geohash-int PROPERTIES SOVERSION 0)
++
++install(TARGETS geohash-int
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(test-geohash test-geohash.c)
++target_link_libraries(test-geohash geohash-int)
++add_test(NAME test-geohash COMMAND test-geohash)
++
++install(FILES geohash.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME geohash-int.h)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/geohash-int.pc.in ${CMAKE_BINARY_DIR}/geohash-int.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/geohash-int.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geohash-int/geohash-int.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geohash-int/geohash-int.pc.in	2025-06-05 21:06:13.378056000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geohash-int
++Description: Fast C99 GeoHash library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lgeohash-int
++Cflags: -I${includedir}
+--- origsrc/geohash-int/test-geohash.c	2025-06-05 20:54:31.000000000 +0900
++++ src/geohash-int/test-geohash.c	2025-06-05 21:00:02.212915500 +0900
+@@ -34,7 +34,7 @@ int test_1()
+     }
+ 
+     uint64_t end = get_current_epoch_millis();
+-    printf("Cost %llums to encode\n", end - start);
++    printf("Cost %lums to encode\n", end - start);
+ 
+     start = get_current_epoch_millis();
+     for (i = 0; i < loop; i++)
+@@ -42,7 +42,7 @@ int test_1()
+         geohash_fast_encode(lat_range, lon_range, latitude, longitude, 24, &fast_hash);
+     }
+     end = get_current_epoch_millis();
+-    printf("Cost %llums to fast encode\n", end - start);
++    printf("Cost %lums to fast encode\n", end - start);
+ 
+     GeoHashArea area, area1;
+     start = get_current_epoch_millis();
+@@ -51,7 +51,7 @@ int test_1()
+         geohash_decode(lat_range, lon_range, hash, &area);
+     }
+     end = get_current_epoch_millis();
+-    printf("Cost %llums to  decode\n", end - start);
++    printf("Cost %lums to  decode\n", end - start);
+ 
+     start = get_current_epoch_millis();
+     for (i = 0; i < loop; i++)
+@@ -59,7 +59,7 @@ int test_1()
+         geohash_fast_decode(lat_range, lon_range, hash, &area1);
+     }
+     end = get_current_epoch_millis();
+-    printf("Cost %llums to fast decode\n", end - start);
++    printf("Cost %lums to fast decode\n", end - start);
+ 
+     return 0;
+ }
+@@ -85,26 +85,26 @@ int test_2()
+     geohash_encode(lat_range, lon_range, latitude + radius, longitude - radius, 13, &hash_lt);
+     geohash_encode(lat_range, lon_range, latitude - radius, longitude + radius, 13, &hash_gr);
+ 
+-    printf("## %lld\n", hash.bits);
+-    printf("## %lld\n", fast_hash.bits);
++    printf("## %ld\n", hash.bits);
++    printf("## %ld\n", fast_hash.bits);
+     geohash_get_neighbors(hash, &neighbors);
+-    printf("%lld\n", hash.bits);
+-    printf("%lld\n", neighbors.east.bits);
+-    printf("%lld\n", neighbors.west.bits);
+-    printf("%lld\n", neighbors.south.bits);
+-    printf("%lld\n", neighbors.north.bits);
+-    printf("%lld\n", neighbors.north_west.bits);
+-    printf("%lld\n", neighbors.north_east.bits);
+-    printf("%lld\n", neighbors.south_east.bits);
+-    printf("%lld\n", neighbors.south_west.bits);
+-
+-    printf("##%lld\n", hash_min.bits);
+-    printf("##%lld\n", hash_max.bits);
+-    printf("##%lld\n", hash_lt.bits);
+-    printf("##%lld\n", hash_gr.bits);
++    printf("%ld\n", hash.bits);
++    printf("%ld\n", neighbors.east.bits);
++    printf("%ld\n", neighbors.west.bits);
++    printf("%ld\n", neighbors.south.bits);
++    printf("%ld\n", neighbors.north.bits);
++    printf("%ld\n", neighbors.north_west.bits);
++    printf("%ld\n", neighbors.north_east.bits);
++    printf("%ld\n", neighbors.south_east.bits);
++    printf("%ld\n", neighbors.south_west.bits);
++
++    printf("##%ld\n", hash_min.bits);
++    printf("##%ld\n", hash_max.bits);
++    printf("##%ld\n", hash_lt.bits);
++    printf("##%ld\n", hash_gr.bits);
+ 
+     //    geohash_encode(&lat_range, &lon_range, 9741705.20, 5417390.90, 13, &hash);
+-    //    printf("from %lld to %lld \n", hash.bits << 2, (hash.bits+1) << 2);
++    //    printf("from %ld to %ld \n", hash.bits << 2, (hash.bits+1) << 2);
+ 
+     GeoHashArea area, area1;
+     geohash_decode(lat_range, lon_range, hash, &area);
+@@ -135,8 +135,8 @@ void test_3()
+         geohash_encode(lat_range, lon_range, latitude, longitude, step, &hash);
+         geohash_fast_encode(lat_range, lon_range, latitude, longitude, step, &fast_hash);
+ 
+-        printf("normal encode (%d): %llu\n", step, hash.bits);
+-        printf("fast encode   (%d): %llu\n", step, fast_hash.bits);
++        printf("normal encode (%d): %lu\n", step, hash.bits);
++        printf("fast encode   (%d): %lu\n", step, fast_hash.bits);
+         printf("\n");
+     }
+ }
