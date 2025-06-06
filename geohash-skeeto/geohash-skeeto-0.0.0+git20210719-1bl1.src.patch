@@ -1,0 +1,52 @@
+--- origsrc/geohash/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/geohash/CMakeLists.txt	2025-06-06 16:37:36.608052500 +0900
+@@ -0,0 +1,36 @@
++cmake_minimum_required(VERSION 3.28)
++project(geohash-skeeto
++  VERSION 0.0.0
++  DESCRIPTION "Fast, lean, efficient geohash C library"
++  HOMEPAGE_URL "https://github.com/skeeto/geohash")
++
++include(GNUInstallDirs)
++include(CTest)
++
++add_library(geohash-skeeto SHARED geohash.c)
++set_target_properties(geohash-skeeto PROPERTIES SOVERSION 0)
++
++install(TARGETS geohash-skeeto
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(geohash etc/example.c)
++target_link_libraries(geohash geohash-skeeto)
++set_target_properties(geohash PROPERTIES OUTPUT_NAME geohash-skeeto)
++install(TARGETS geohash RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++
++add_executable(geohash-test tests/tests.c)
++target_link_libraries(geohash-test geohash-skeeto)
++add_test(NAME geohash-test COMMAND geohash-test)
++add_executable(geohash-benchmark tests/benchmark.c)
++target_link_libraries(geohash-benchmark geohash-skeeto)
++add_test(NAME geohash-benchmark COMMAND geohash-benchmark)
++
++install(FILES geohash.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} RENAME geohash-skeeto.h)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/geohash-skeeto.pc.in ${CMAKE_BINARY_DIR}/geohash-skeeto.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/geohash-skeeto.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geohash/geohash-skeeto.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geohash/geohash-skeeto.pc.in	2025-06-06 16:37:43.417793300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geohash-skeeto
++Description: Fast, lean, efficient geohash C library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lgeohash-skeeto
++Cflags: -I${includedir}
