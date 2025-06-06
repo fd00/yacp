@@ -1,0 +1,106 @@
+--- origsrc/libgeohash/CMakeLists.txt	2025-06-06 20:24:30.000000000 +0900
++++ src/libgeohash/CMakeLists.txt	2025-06-06 20:35:51.112513300 +0900
+@@ -39,7 +39,7 @@ ADD_CUSTOM_TARGET(quiet
+ #
+ # Include paths
+ include_directories(
+-	${CMAKE_BINARY_DIR}/include
++	${CMAKE_SOURCE_DIR}/include
+ 	)
+ 
+ #
+@@ -67,7 +67,6 @@ add_definitions(
+ 	-pedantic-errors
+ 	-Wall
+ 	-Wextra
+-	-Werror
+ 	-Wno-missing-field-initializers
+ 	)
+ 
+@@ -94,3 +93,9 @@ enable_testing()
+ # Add test directory
+ add_subdirectory(tests)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/geohash-lyokato.pc.in ${CMAKE_BINARY_DIR}/geohash-lyokato.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/geohash-lyokato.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgeohash/geohash-lyokato.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgeohash/geohash-lyokato.pc.in	2025-06-06 20:42:14.879572900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geohash-lyokato
++Description: GeoHash C Library
++Version: @VERSION@
++Libs: -L${libdir} -lgeohash-lyokato
++Cflags: -I${includedir}
+--- origsrc/libgeohash/src/CMakeLists.txt	2025-06-06 20:24:30.000000000 +0900
++++ src/libgeohash/src/CMakeLists.txt	2025-06-06 20:31:32.240485200 +0900
+@@ -11,39 +11,28 @@ target_link_libraries( geohash_dynamic )
+ 
+ set_target_properties(geohash_dynamic
+    PROPERTIES
+-   OUTPUT_NAME geohash
++   OUTPUT_NAME geohash-lyokato
+    PUBLIC_HEADER ${LIBRARY_HEADERS}
+    )
+ 
+-install( TARGETS geohash_dynamic
+-   LIBRARY DESTINATION lib
+-   PUBLIC_HEADER DESTINATION include
+-   )
+-
+-# Static library
+-add_library( geohash_static
+-   geohash
+-   )
+-
+-target_link_libraries( geohash_static )
++if (DEFINED SOVERSION)
++   set_target_properties(geohash_dynamic
++      PROPERTIES
++      SOVERSION ${SOVERSION}
++      )
++endif()
+ 
+-set_target_properties(geohash_static
+-   PROPERTIES
+-   OUTPUT_NAME geohash
+-   PUBLIC_HEADER ${LIBRARY_HEADERS}
+-   )
+-
+-install( TARGETS geohash_static
++install( TARGETS geohash_dynamic
++   RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
+-   LIBRARY DESTINATION lib
+    PUBLIC_HEADER DESTINATION include
+    )
+ 
+ # Executable
+ add_executable( geohash
+-   main
++   main.c
+    )
+ 
+ target_link_libraries( geohash
+-   geohash_static
++   geohash_dynamic
+    )
+--- origsrc/libgeohash/tests/CMakeLists.txt	2025-06-06 20:24:30.000000000 +0900
++++ src/libgeohash/tests/CMakeLists.txt	2025-06-06 20:25:59.925567400 +0900
+@@ -14,7 +14,7 @@ foreach(filename ${test_files})
+ 		)
+ 
+ 	target_link_libraries("${testname}"
+-		cunit geohash_static
++		cunit geohash_dynamic
+ 		)
+ 
+ 	add_test(${testname}
