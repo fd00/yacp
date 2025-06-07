@@ -1,45 +1,6 @@
---- origsrc/hyphy-2.5.71/CMakeLists.txt	2025-03-20 08:47:04.000000000 +0900
-+++ src/hyphy-2.5.71/CMakeLists.txt	2025-04-12 11:28:23.214440800 +0900
-@@ -155,8 +155,12 @@ file(GLOB SRC_CORE src/core/*.cpp)
- file(GLOB SRC_NEW src/new/*.cpp)
- file(GLOB SRC_CONTRIB src/contrib/*.cpp)
- 
-+find_package(sqlite3)
-+
- set(SRC_LINK src/lib/link/THyPhy.cpp)
--set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
-+if (NOT SQLite3_FOUND)
-+    set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
-+endif()
- set(SRC_UNIXMAIN src/mains/unix.cpp)
- set(SRC_UTILS src/utils/hyphyunixutils.cpp)
- 
-@@ -431,9 +435,12 @@ include_directories(
-     src/core/include
-     src/contrib
-     src/lib/Link src/new/include
--    contrib/SQLite-3.8.2 # SQLite
- )
- 
-+if (NOT SQLite3_FOUND)
-+    include_directories(contrib/SQLite-3.8.2) # SQLite
-+endif()
-+
- if (${BLAS_FOUND} AND NOT NOBLAS) 
- 	add_definitions (-D_SLKP_USE_APPLE_BLAS)
- 	set(DEFAULT_LIBRARIES "${DEFAULT_LIBRARIES}")
-@@ -462,6 +469,10 @@ if(${BLAS_FOUND} AND NOT NOBLAS)
-     target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
- endif ()
- 
-+if (SQLite3_FOUND)
-+    target_link_libraries(hyphy PRIVATE ${SQLite3_LIBRARIES})
-+endif()
-+
- add_custom_target(MP DEPENDS hyphy)
- 
- install(
-@@ -685,31 +696,31 @@ makeLink(HYPHYMP hyphy hyphy)
+--- origsrc/hyphy-2.5.73/CMakeLists.txt	2025-05-14 04:11:21.000000000 +0900
++++ src/hyphy-2.5.73/CMakeLists.txt	2025-06-08 00:30:17.314656600 +0900
+@@ -679,31 +679,31 @@ makeLink(HYPHYMP hyphy hyphy)
  set(HYPHY_ENV_ARG "ENV=TOLERATE_NUMERICAL_ERRORS=1;")
  
  
@@ -82,7 +43,7 @@
 +add_test (FADE HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" tests/hbltests/libv3/FADE.wbf)
  add_test (NAME GARD 
 -          COMMAND HYPHYMP 
-+          COMMAND HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}" 
++          COMMAND HYPHYMP "BASEPATH=${PROJECT_SOURCE_DIR}"
            tests/hbltests/libv3/GARD.wbf 
            ${HYPHY_ENV_ARG}
            )
@@ -91,8 +52,8 @@
  #add_test (FMM HYPHYMP tests/hbltests/libv3/FMM.wbf)
  #add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)
  
---- origsrc/hyphy-2.5.71/run_unit_tests.sh	2025-03-20 08:47:04.000000000 +0900
-+++ src/hyphy-2.5.71/run_unit_tests.sh	2025-04-12 11:28:40.714873800 +0900
+--- origsrc/hyphy-2.5.73/run_unit_tests.sh	2025-05-14 04:11:21.000000000 +0900
++++ src/hyphy-2.5.73/run_unit_tests.sh	2025-06-08 00:27:13.195580400 +0900
 @@ -13,7 +13,7 @@ testsRun=0
  testsFailed=0
  failedTests=()
@@ -102,8 +63,8 @@
    echo $filename
  
    # Run the test checking to see if it faield
---- origsrc/hyphy-2.5.71/src/core/avllist.cpp	2025-03-20 08:47:04.000000000 +0900
-+++ src/hyphy-2.5.71/src/core/avllist.cpp	2025-04-12 11:30:16.808307700 +0900
+--- origsrc/hyphy-2.5.73/src/core/avllist.cpp	2025-05-14 04:11:21.000000000 +0900
++++ src/hyphy-2.5.73/src/core/avllist.cpp	2025-06-08 00:28:04.682430500 +0900
 @@ -43,6 +43,7 @@
  #include <ctype.h>
  #include <math.h>
@@ -112,8 +73,8 @@
  
  #include "avllist.h"
  #include "hy_strings.h"
---- origsrc/hyphy-2.5.71/src/core/include/dataset_filter.h	2025-03-20 08:47:04.000000000 +0900
-+++ src/hyphy-2.5.71/src/core/include/dataset_filter.h	2025-04-12 11:30:35.791261600 +0900
+--- origsrc/hyphy-2.5.73/src/core/include/dataset_filter.h	2025-05-14 04:11:21.000000000 +0900
++++ src/hyphy-2.5.73/src/core/include/dataset_filter.h	2025-06-08 00:28:24.446421200 +0900
 @@ -39,6 +39,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN
  
  #pragma once
@@ -123,8 +84,8 @@
  #include "list.h"
  #include "stdlib.h"
  #include "dataset.h"
---- origsrc/hyphy-2.5.71/src/core/simplelist.cpp	2025-03-20 08:47:04.000000000 +0900
-+++ src/hyphy-2.5.71/src/core/simplelist.cpp	2025-04-12 11:31:05.574274800 +0900
+--- origsrc/hyphy-2.5.73/src/core/simplelist.cpp	2025-05-14 04:11:21.000000000 +0900
++++ src/hyphy-2.5.73/src/core/simplelist.cpp	2025-06-08 00:28:43.637656400 +0900
 @@ -43,6 +43,7 @@
  #include <math.h>
  #include <limits.h>
