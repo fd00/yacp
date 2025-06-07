@@ -1,0 +1,53 @@
+--- origsrc/geohash-cpp/CMakeLists.txt	2025-06-07 09:07:45.000000000 +0900
++++ src/geohash-cpp/CMakeLists.txt	2025-06-07 09:15:02.519222100 +0900
+@@ -1,10 +1,24 @@
+ cmake_minimum_required(VERSION 2.8)
+ project(geohash)
+ 
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
++add_library(geohash-cpp SHARED geohash.cpp)
++if (DEFINED SOVERSION)
++    set_target_properties(geohash-cpp PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
++install(TARGETS geohash-cpp RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++
++install(FILES geohash.hpp DESTINATION include RENAME geohash.hpp)
+ 
+ enable_testing()
+ 
+-add_executable(test_geohash geohash.cpp test_geohash.cpp)
++add_executable(test_geohash test_geohash.cpp)
++target_link_libraries(test_geohash geohash-cpp)
++add_test(NAME test_geohash COMMAND test_geohash)
+ 
+-add_test(geohash test_geohash)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/geohash-cpp.pc.in ${CMAKE_BINARY_DIR}/geohash-cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/geohash-cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geohash-cpp/geohash-cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geohash-cpp/geohash-cpp.pc.in	2025-06-07 09:15:07.162008100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geohash-cpp
++Description: GeoHash library
++Version: @VERSION@
++Libs: -L${libdir} -lgeohash-cpp
++Cflags: -I${includedir}
+--- origsrc/geohash-cpp/geohash.cpp	2025-06-07 09:07:45.000000000 +0900
++++ src/geohash-cpp/geohash.cpp	2025-06-07 09:11:16.284545800 +0900
+@@ -7,6 +7,7 @@
+ 
+ #include <cmath>
+ #include <algorithm>
++#include <stdexcept>
+ #include "geohash.hpp"
+ 
+ ////////////////////////////////////////////////////////////////////////////////
