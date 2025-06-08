@@ -1,0 +1,107 @@
+--- origsrc/libdrizzle-5.1.4/Makefile.am	2013-04-03 15:13:15.000000000 +0900
++++ src/libdrizzle-5.1.4/Makefile.am	2025-06-08 18:56:22.469037600 +0900
+@@ -71,3 +71,6 @@ maintainer-clean-local:
+ 	-rm -f @PACKAGE@-*.rpm
+ 
+ dist_bin_SCRIPTS+= @GENERIC_CONFIG@ 
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdrizzle-5.1.4/configure.ac	2013-04-25 19:25:56.000000000 +0900
++++ src/libdrizzle-5.1.4/configure.ac	2025-06-08 18:56:22.476710500 +0900
+@@ -109,6 +109,7 @@ AC_CONFIG_FILES([Makefile
+                  libdrizzle-5.1/version.h
+                  ])
+ 
++AC_CONFIG_FILES([libdrizzle.pc])
+ AC_OUTPUT
+ 
+ echo "---"
+--- origsrc/libdrizzle-5.1.4/libdrizzle/conn.cc	2013-04-25 17:25:59.000000000 +0900
++++ src/libdrizzle-5.1.4/libdrizzle/conn.cc	2025-06-08 18:37:39.541352300 +0900
+@@ -966,9 +966,9 @@ drizzle_return_t drizzle_state_connect(d
+ 
+   if (con->socket_type == DRIZZLE_CON_SOCKET_UDS)
+   {
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+     return DRIZZLE_RETURN_COULD_NOT_CONNECT;
+-#else // defined _WIN32 || defined __CYGWIN__
++#else // defined _WIN32
+     if ((con->fd= socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+     {
+       con->last_errno= errno;
+@@ -1006,7 +1006,7 @@ drizzle_return_t drizzle_state_connect(d
+     con->pop_state();
+ 
+     return DRIZZLE_RETURN_OK;
+-#endif // defined _WIN32 || defined __CYGWIN__
++#endif // defined _WIN32
+   }
+   else
+   {
+@@ -1053,7 +1053,7 @@ drizzle_return_t drizzle_state_connect(d
+     {
+       int ret= connect(con->fd, con->addrinfo_next->ai_addr, con->addrinfo_next->ai_addrlen);
+ 
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+       errno= translate_windows_error();
+ #endif /* _WIN32 */
+ 
+@@ -1244,9 +1244,9 @@ drizzle_return_t drizzle_state_read(driz
+       read_size= recv(con->fd, (char *)con->buffer_ptr + con->buffer_size, available_buffer, MSG_NOSIGNAL);
+     }
+ 
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+     errno= translate_windows_error();
+-#endif // defined _WIN32 || defined __CYGWIN__
++#endif // defined _WIN32
+ 
+     drizzle_log_debug(con, "read fd=%d avail= %zd recv=%zd ssl= %d errno=%s",
+                       con->fd, available_buffer, read_size, 
+@@ -1367,9 +1367,9 @@ drizzle_return_t drizzle_state_write(dri
+       write_size= send(con->fd,(char *) con->buffer_ptr, con->buffer_size, MSG_NOSIGNAL);
+     }
+ 
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+     errno= translate_windows_error();
+-#endif // defined _WIN32 || defined __CYGWIN__
++#endif // defined _WIN32
+ 
+     drizzle_log_debug(con, "write fd=%d return=%zd ssl=%d errno=%s",
+                       con->fd, write_size,
+--- origsrc/libdrizzle-5.1.4/libdrizzle/include.am	2013-01-28 06:25:19.000000000 +0900
++++ src/libdrizzle-5.1.4/libdrizzle/include.am	2025-06-08 18:21:46.466389600 +0900
+@@ -65,4 +65,4 @@ libdrizzle_libdrizzle_la_SOURCES+= libdr
+ libdrizzle_libdrizzle_la_SOURCES+= libdrizzle/statement.cc
+ libdrizzle_libdrizzle_la_SOURCES+= libdrizzle/statement_param.cc
+ 
+-libdrizzle_libdrizzle_la_LDFLAGS+= -version-info ${LIBDRIZZLE_LIBRARY_VERSION}
++libdrizzle_libdrizzle_la_LDFLAGS+= -no-undefined -version-info ${LIBDRIZZLE_LIBRARY_VERSION}
+--- origsrc/libdrizzle-5.1.4/libdrizzle/structs.h	2013-04-03 15:13:15.000000000 +0900
++++ src/libdrizzle-5.1.4/libdrizzle/structs.h	2025-06-08 18:36:24.614453300 +0900
+@@ -66,7 +66,7 @@ extern "C" {
+ #include "libdrizzle/datetime.h"
+ #include "libdrizzle/packet.h"
+ 
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+ typedef SOCKET socket_t;
+ #else
+ typedef int socket_t;
+--- origsrc/libdrizzle-5.1.4/libdrizzle.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdrizzle-5.1.4/libdrizzle.pc.in	2025-06-08 18:56:22.413782900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdrizzle
++Description: Client and protocol library for the Drizzle database
++Version: @VERSION@
++Libs: -L${libdir} -ldrizzle
++Cflags: -I${includedir}
