@@ -1,0 +1,92 @@
+--- origsrc/redis-ipc-0.2.1/src/Makefile.am	2023-10-08 03:04:06.000000000 +0900
++++ src/redis-ipc-0.2.1/src/Makefile.am	2025-06-08 23:28:39.834648200 +0900
+@@ -12,3 +12,4 @@ include_HEADERS = redis_ipc.h
+ libredis_ipc_la_CPPFLAGS = -I$(includedir)
+ libredis_ipc_la_CFLAGS = -Wall -std=gnu99 $(HIREDIS_CFLAGS) $(JSONC_CFLAGS)
+ libredis_ipc_la_LIBADD = $(HIREDIS_LIBS) $(JSONC_LIBS)
++libredis_ipc_la_LDFLAGS = -no-undefined
+--- origsrc/redis-ipc-0.2.1/src/redis_ipc.c	2023-10-08 03:04:06.000000000 +0900
++++ src/redis-ipc-0.2.1/src/redis_ipc.c	2025-06-08 23:31:19.121565600 +0900
+@@ -13,7 +13,9 @@
+ #include <stdarg.h>
+ #include <string.h>
+ #include <sys/types.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <sys/time.h>
+ #include <json-c/json.h>
+ #include <hiredis/hiredis.h>
+@@ -63,7 +65,11 @@ static __thread struct redis_ipc_per_thr
+ #if (__GLIBC_MINOR__ < 30)
+ pid_t gettid()
+ {
++#if defined(__CYGWIN__)
++    return getpid();
++#else
+     return syscall(SYS_gettid);
++#endif
+ }
+ #endif
+ 
+--- origsrc/redis-ipc-0.2.1/test/Makefile.am	2023-10-08 03:04:06.000000000 +0900
++++ src/redis-ipc-0.2.1/test/Makefile.am	2025-06-08 23:53:39.289670100 +0900
+@@ -4,7 +4,7 @@ endif
+ 
+ AM_CPPFLAGS    = -I$(top_srcdir)/inc -I$(top_srcdir)/src -I$(includedir) $(PATH_FLAG)
+ 
+-LIBREDISIPC = $(top_srcdir)/src/.libs/libredis_ipc.la
++LIBREDISIPC = $(top_builddir)/src/.libs/libredis_ipc.la
+ 
+ BUILT_TESTS = command_result_test \
+               json_test \
+@@ -19,20 +19,20 @@ include_HEADERS = $(top_srcdir)/inc/json
+ 
+ command_result_test_SOURCES = command_result_test.c
+ command_result_test_LDADD = -lhiredis -ljson-c $(LIBREDISIPC) -lpthread
+-command_result_test_LDFLAGS = -Wl,--hash-style=gnu -no-install
++command_result_test_LDFLAGS = # -Wl,--hash-style=gnu -no-install
+ 
+ json_test_SOURCES = json_test.cpp
+ json_test_LDADD = -lhiredis -ljson-c $(LIBREDISIPC) -lpthread
+-json_test_LDFLAGS = -Wl,--hash-style=gnu -no-install
++json_test_LDFLAGS = # -Wl,--hash-style=gnu -no-install
+ 
+ multithread_test_SOURCES = multithread_test.c
+ multithread_test_LDADD = -lhiredis -ljson-c $(LIBREDISIPC) -lpthread
+-multithread_test_LDFLAGS = -Wl,--hash-style=gnu -no-install
++multithread_test_LDFLAGS = # -Wl,--hash-style=gnu -no-install
+ 
+ pub_sub_test_SOURCES = pub_sub_test.c
+ pub_sub_test_LDADD = -lhiredis -ljson-c $(LIBREDISIPC) -lpthread
+-pub_sub_test_LDFLAGS = -Wl,--hash-style=gnu -no-install
++pub_sub_test_LDFLAGS = # -Wl,--hash-style=gnu -no-install
+ 
+ settings_status_test_SOURCES = settings_status_test.c
+ settings_status_test_LDADD = -lhiredis -ljson-c $(LIBREDISIPC) -lpthread
+-settings_status_test_LDFLAGS = -Wl,--hash-style=gnu -no-install
++settings_status_test_LDFLAGS = # -Wl,--hash-style=gnu -no-install
+--- origsrc/redis-ipc-0.2.1/test/multithread_test.c	2023-10-08 03:04:06.000000000 +0900
++++ src/redis-ipc-0.2.1/test/multithread_test.c	2025-06-08 23:53:05.974144300 +0900
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE // for gettid()
+ #include <sys/types.h>
+ #include <unistd.h>
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <pthread.h>
+ #include "redis_ipc.h"
+ 
+@@ -10,7 +12,11 @@
+ #if (__GLIBC_MINOR__ < 30)
+ pid_t gettid()
+ {
++#if defined(__CYGWIN__)
++  return getpid();
++#else
+   return syscall(SYS_gettid);
++#endif
+ }
+ #endif
+ 
