@@ -1,0 +1,158 @@
+--- origsrc/loguru/CMakeLists.txt	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/CMakeLists.txt	2025-06-09 09:46:24.627750400 +0900
+@@ -61,7 +61,7 @@ endif()
+ if (PROJECT_IS_TOP_LEVEL)
+   # enable ALL warnings for all subsequently defined targets
+   add_compile_options(
+-    "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-Werror;-pedantic>"
++    "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-pedantic>"
+     "$<$<CXX_COMPILER_ID:Clang>:-Weverything;-Wno-c++98-compat;-Wno-c++98-compat-pedantic>"
+     "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
+   )
+@@ -172,15 +172,15 @@ set_property(DIRECTORY ${PROJECT_SOURCE_
+ 
+ # TODO: make the examples work with this cmake paradigm
+ if (LOGURU_BUILD_EXAMPLES)
+-  message(STATUS "!!! the examples don't work with this cmake build yet")
+-  # message(STATUS "building examples")
++  # message(STATUS "!!! the examples don't work with this cmake build yet")
++  message(STATUS "building examples")
+ 
+   # add_subdirectory(glog_bench)
+   # add_subdirectory(glog_example)
+-  # add_subdirectory(loguru_bench)
+-  # add_subdirectory(loguru_example)
++  add_subdirectory(loguru_bench)
++  add_subdirectory(loguru_example)
+ 
+-  # message(STATUS "building examples - done")
++  message(STATUS "building examples - done")
+ endif()
+ 
+ # --- setup tests
+@@ -188,10 +188,11 @@ endif()
+ 
+ # TODO: make the tests work with this cmake paradigm
+ if (LOGURU_BUILD_TESTS)
+-  message(STATUS "!!! the tests don't work with this cmake build yet")
+-  # message(STATUS "building tests")
+-  # add_subdirectory(test)
+-  # message(STATUS "building tests - done")
++  # message(STATUS "!!! the tests don't work with this cmake build yet")
++  message(STATUS "building tests")
++  enable_testing()
++  add_subdirectory(test)
++  message(STATUS "building tests - done")
+ endif()
+ 
+ # --- setup install rules
+--- origsrc/loguru/loguru.cpp	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/loguru.cpp	2025-06-09 09:19:13.830864000 +0900
+@@ -76,7 +76,7 @@
+ 
+ // TODO: use defined(_POSIX_VERSION) for some of these things?
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 	#define LOGURU_PTHREADS    0
+ 	#define LOGURU_WINTHREADS  1
+ 	#ifndef LOGURU_STACKTRACES
+--- origsrc/loguru/loguru_bench/CMakeLists.txt	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/loguru_bench/CMakeLists.txt	2025-06-09 09:46:42.655367900 +0900
+@@ -9,7 +9,7 @@ endif(NOT CMAKE_BUILD_TYPE)
+ 
+ MESSAGE(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+ 
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -Wextra")
++set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra")
+ 
+ file(GLOB source
+     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+@@ -18,5 +18,5 @@ file(GLOB source
+ add_executable(loguru_bench ${source})
+ 
+ find_package(Threads)
+-target_link_libraries(loguru_bench ${CMAKE_THREAD_LIBS_INIT}) # For pthreads
++target_link_libraries(loguru_bench ${CMAKE_THREAD_LIBS_INIT} loguru) # For pthreads
+ target_link_libraries(loguru_bench dl) # For ldl
+--- origsrc/loguru/loguru_bench/loguru_bench.cpp	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/loguru_bench/loguru_bench.cpp	2025-06-09 09:46:48.073093400 +0900
+@@ -6,7 +6,7 @@
+ 
+ #define LOGURU_WITH_STREAMS 1
+ #define LOGURU_REDEFINE_ASSERT 1
+-#include "../loguru.cpp"
++#include "../loguru.hpp"
+ 
+ const size_t kNumRuns = 10;
+ const double kPi = 3.1415926535897932384626433;
+--- origsrc/loguru/loguru_example/CMakeLists.txt	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/loguru_example/CMakeLists.txt	2025-06-09 09:44:12.374339900 +0900
+@@ -12,7 +12,7 @@ MESSAGE(STATUS "CMAKE_BUILD_TYPE: ${CMAK
+ if(MSVC)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall")
+ else()
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -Wextra -pedantic")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic")
+ endif()
+ 
+ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+@@ -33,7 +33,7 @@ file(GLOB source
+ add_executable(loguru_example ${source})
+ 
+ find_package(Threads)
+-target_link_libraries(loguru_example ${CMAKE_THREAD_LIBS_INIT}) # For pthreads
++target_link_libraries(loguru_example ${CMAKE_THREAD_LIBS_INIT} loguru) # For pthreads
+ if(NOT WIN32)
+     target_link_libraries(loguru_example dl) # For ldl
+ endif()
+--- origsrc/loguru/loguru_example/main.cpp	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/loguru_example/main.cpp	2025-06-09 09:44:17.888132500 +0900
+@@ -2,7 +2,7 @@
+ 
+ #include "loguru_example.hpp"
+ 
+-#include "../loguru.cpp"
++#include "../loguru.hpp"
+ 
+ int main(int argc, char* argv[])
+ {
+--- origsrc/loguru/test/CMakeLists.txt	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/test/CMakeLists.txt	2025-06-09 09:35:12.559987200 +0900
+@@ -12,7 +12,7 @@ MESSAGE(STATUS "CMAKE_BUILD_TYPE: ${CMAK
+ if(MSVC)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall")
+ else()
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror -Wall -Wextra -pedantic -fsanitize=address -fno-omit-frame-pointer")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pedantic -fno-omit-frame-pointer")
+ endif()
+ 
+ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+@@ -27,7 +27,7 @@ endif() # Clang
+ add_executable(loguru_test loguru_test.cpp)
+ 
+ find_package(Threads)
+-target_link_libraries(loguru_test ${CMAKE_THREAD_LIBS_INIT}) # For pthreads
++target_link_libraries(loguru_test ${CMAKE_THREAD_LIBS_INIT} loguru) # For pthreads
+ if(NOT WIN32)
+     target_link_libraries(loguru_test dl) # For ldl
+ endif()
+--- origsrc/loguru/test/loguru_test.cpp	2025-06-09 09:17:17.000000000 +0900
++++ src/loguru/test/loguru_test.cpp	2025-06-09 09:34:48.188459200 +0900
+@@ -6,13 +6,14 @@
+ #define LOGURU_WITH_FILEABS     0
+ // #define LOGURU_STACKTRACES      1
+ // #define LOGURU_RTTI             1
+-#include "../loguru.cpp"
++#include "../loguru.hpp"
+ 
+ #include <chrono>
+ #include <string>
+ #include <thread>
+-
++#include <vector>
+ #include <fstream>
++#include <cstring>
+ 
+ void the_one_where_the_problem_is(const std::vector<std::string>& v) {
+ 	ABORT_F("Abort deep in stack trace, msg: %s", v[0].c_str());
