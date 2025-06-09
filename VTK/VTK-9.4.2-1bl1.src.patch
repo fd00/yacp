@@ -1,0 +1,120 @@
+--- origsrc/VTK-9.4.2/CMake/FindCGNS.cmake	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/CMake/FindCGNS.cmake	2025-06-09 08:19:35.967156600 +0900
+@@ -16,7 +16,7 @@ mark_as_advanced(CGNS_INCLUDE_DIR)
+ 
+ find_library(CGNS_LIBRARY
+   NAMES
+-    cgns
++    cgns cgnsdll
+   DOC "CGNS library")
+ mark_as_advanced(CGNS_LIBRARY)
+ 
+--- origsrc/VTK-9.4.2/Rendering/GL2PSOpenGL2/CMakeLists.txt	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/Rendering/GL2PSOpenGL2/CMakeLists.txt	2025-06-09 22:10:49.330425000 +0900
+@@ -14,3 +14,4 @@ vtk_module_add_module(VTK::RenderingGL2P
+   SOURCES ${vtk_object_factory_source}
+   PRIVATE_HEADERS ${vtk_object_factory_header})
+ vtk_add_test_mangling(VTK::RenderingGL2PSOpenGL2)
++vtk_module_link(VTK::RenderingGL2PSOpenGL2 PRIVATE GL)
+--- origsrc/VTK-9.4.2/ThirdParty/exodusII/vtkexodusII/src/ex_put_prop.c	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/exodusII/vtkexodusII/src/ex_put_prop.c	2025-06-09 18:23:02.515671900 +0900
+@@ -243,7 +243,7 @@ int ex_put_prop(int exoid, ex_entity_typ
+     vals[0] = 0; /* fill value */
+     /*   create attribute to cause variable to fill with zeros per routine spec
+      */
+-    if ((status = nc_put_att_longlong(exoid, propid, _FillValue, int_type, 1, vals)) != NC_NOERR) {
++    if ((status = nc_put_att_longlong(exoid, propid, NC_FillValue, int_type, 1, vals)) != NC_NOERR) {
+       snprintf(errmsg, MAX_ERR_LENGTH,
+                "ERROR: failed to create property name fill attribute in file id %d", exoid);
+       ex_err_fn(exoid, __func__, errmsg, status);
+--- origsrc/VTK-9.4.2/ThirdParty/exodusII/vtkexodusII/src/ex_put_prop_names.c	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/exodusII/vtkexodusII/src/ex_put_prop_names.c	2025-06-09 18:23:06.815932300 +0900
+@@ -172,7 +172,7 @@ int ex_put_prop_names(int exoid, ex_enti
+ 
+     /*   create attribute to cause variable to fill with zeros per routine spec
+      */
+-    if ((status = nc_put_att_longlong(exoid, propid, _FillValue, int_type, 1, vals)) != NC_NOERR) {
++    if ((status = nc_put_att_longlong(exoid, propid, NC_FillValue, int_type, 1, vals)) != NC_NOERR) {
+       snprintf(errmsg, MAX_ERR_LENGTH,
+                "ERROR: failed to create property name fill attribute in file id %d", exoid);
+       ex_err_fn(exoid, __func__, errmsg, status);
+--- origsrc/VTK-9.4.2/ThirdParty/fast_float/CMakeLists.txt	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/fast_float/CMakeLists.txt	2025-06-09 08:39:30.164396800 +0900
+@@ -13,7 +13,7 @@ vtk_module_third_party(
+     STANDARD_INCLUDE_DIRS
+     HEADER_ONLY
+   EXTERNAL
+-    VERSION "3.9.0"
++    # VERSION "3.9.0"
+     PACKAGE FastFloat
+     TARGETS FastFloat::fast_float
+     STANDARD_INCLUDE_DIRS
+--- origsrc/VTK-9.4.2/ThirdParty/ioss/vtkioss/Ioss_Field.C	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/ioss/vtkioss/Ioss_Field.C	2025-06-09 20:49:10.821209400 +0900
+@@ -12,6 +12,7 @@
+ #include <cstdint>
+ #include "vtk_fmt.h"
+ #include VTK_FMT(fmt/ostream.h)
++#include VTK_FMT(fmt/ranges.h)
+ #include <iostream>
+ #include <string>
+ #include <vector>
+--- origsrc/VTK-9.4.2/ThirdParty/ioss/vtkioss/Ioss_VariableType.C	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/ioss/vtkioss/Ioss_VariableType.C	2025-06-09 20:52:39.648967400 +0900
+@@ -19,6 +19,7 @@
+ #include VTK_FMT(fmt/core.h)
+ #include VTK_FMT(fmt/format.h)
+ #include VTK_FMT(fmt/ostream.h)
++#include VTK_FMT(fmt/ranges.h)
+ #include <map>
+ #include <sstream>
+ #include <string>
+--- origsrc/VTK-9.4.2/ThirdParty/ioss/vtkioss/cgns/Iocgns_Utils.C	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/ioss/vtkioss/cgns/Iocgns_Utils.C	2025-06-09 21:07:45.005817200 +0900
+@@ -99,7 +99,7 @@
+   } while (0)
+ 
+ namespace {
+-#if defined(__IOSS_WINDOWS__) || defined(__CYGWIN__)
++#if defined(__IOSS_WINDOWS__)
+   const char *strcasestr(const char *haystack, const char *needle)
+   {
+     std::string lneedle(Ioss::Utils::lowercase(needle));
+--- origsrc/VTK-9.4.2/ThirdParty/loguru/vtkloguru/loguru.cpp	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/loguru/vtkloguru/loguru.cpp	2025-06-09 10:50:42.220059700 +0900
+@@ -74,13 +74,13 @@
+ 
+ // TODO: use defined(_POSIX_VERSION) for some of these things?
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ 	#define LOGURU_PTHREADS    0
+ 	#define LOGURU_WINTHREADS  1
+ 	#ifndef LOGURU_STACKTRACES
+ 		#define LOGURU_STACKTRACES 0
+ 	#endif
+-#elif defined(__rtems__) || defined(__ANDROID__)
++#elif defined(__rtems__) || defined(__ANDROID__) || defined(__CYGWIN__)
+ 	#define LOGURU_PTHREADS    1
+ 	#define LOGURU_WINTHREADS  0
+ 	#ifndef LOGURU_STACKTRACES
+@@ -993,7 +993,7 @@ namespace loguru
+ 				pid_t thread_id = getthrid();
+ 			#elif LOGURU_PTHREADS
+ 				// Here we rely on the opaque pthread_t being of integer type, which is the case on linux, but not other platforms.
+-				uint64_t thread_id = static_cast<uint64_t>(pthread_self());
++				uint64_t thread_id = pthread_self();
+ 			#else
+ 				// This ID does not correllate to anything we can get from the OS,
+ 				// so this is the worst way to get the ID.
+--- origsrc/VTK-9.4.2/ThirdParty/verdict/CMakeLists.txt	2025-03-28 15:59:55.000000000 +0900
++++ src/VTK-9.4.2/ThirdParty/verdict/CMakeLists.txt	2025-06-09 08:41:01.664354800 +0900
+@@ -14,7 +14,7 @@ vtk_module_third_party(
+   EXTERNAL
+     PACKAGE Verdict
+     TARGETS Verdict::verdict
+-    VERSION       "1.4.0"
++    # VERSION       "1.4.0"
+     STANDARD_INCLUDE_DIRS)
+ 
+ configure_file(
