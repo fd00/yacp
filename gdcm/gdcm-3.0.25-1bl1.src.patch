@@ -1,0 +1,76 @@
+--- origsrc/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmDirectionCosines.cxx	2025-06-09 23:15:23.509626500 +0900
++++ src/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmDirectionCosines.cxx	2025-02-07 19:59:05.000000000 +0900
+@@ -40,8 +40,6 @@ DirectionCosines::DirectionCosines(const
+   Values[5] = dircos[5];
+ }
+ 
+-DirectionCosines::~DirectionCosines() = default;
+-
+ void DirectionCosines::Print(std::ostream &os) const
+ {
+   os << Values[0] << ",";
+--- origsrc/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmDirectionCosines.h	2025-06-09 23:15:23.509626500 +0900
++++ src/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmDirectionCosines.h	2025-02-07 19:59:05.000000000 +0900
+@@ -29,7 +29,7 @@ public:
+   DirectionCosines(const double dircos[6]);
+   // Cannot get the following signature to be wrapped with swig...
+   //DirectionCosines(const double *dircos = 0 );
+-  ~DirectionCosines();
++  ~DirectionCosines() = default;
+ 
+   /// Print
+   void Print(std::ostream &) const;
+--- origsrc/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmFileStreamer.cxx	2025-02-07 19:59:05.000000000 +0900
++++ src/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmFileStreamer.cxx	2025-06-10 01:24:07.467616800 +0900
+@@ -35,7 +35,7 @@
+ #include <io.h>
+ typedef int64_t off64_t;
+ #else
+-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__EMSCRIPTEN__)
++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__EMSCRIPTEN__) || defined(__CYGWIN__)
+ #  define off64_t off_t
+ #endif
+ #include <unistd.h> // ftruncate
+--- origsrc/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmUIDGenerator.cxx	2025-02-07 19:59:05.000000000 +0900
++++ src/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmUIDGenerator.cxx	2025-06-10 02:12:39.174692000 +0900
+@@ -19,7 +19,7 @@
+ #include <cstring>
+ 
+ // FIXME...
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #define HAVE_UUIDCREATE
+ #else
+ #define HAVE_UUID_GENERATE
+@@ -160,6 +160,9 @@ const char* UIDGenerator::Generate()
+   return Unique.c_str();
+ }
+ 
++#if defined(uuid_t)
++#undef uuid_t
++#endif
+ 
+ /* return true on success */
+ bool UIDGenerator::GenerateUUID(unsigned char *uuid_data)
+--- origsrc/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmUUIDGenerator.cxx	2025-02-07 19:59:05.000000000 +0900
++++ src/GDCM-3.0.25/Source/MediaStorageAndFileFormat/gdcmUUIDGenerator.cxx	2025-06-10 02:08:10.226158600 +0900
+@@ -18,7 +18,7 @@
+ #include <cstring> // memcpy
+ 
+ // FIXME...
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(_WIN32)
+ #define HAVE_UUIDCREATE
+ #else
+ #define HAVE_UUID_GENERATE
+@@ -32,6 +32,10 @@
+ #include <rpc.h>
+ #endif
+ 
++#if defined(uuid_t)
++#undef uuid_t
++#endif
++
+ namespace gdcm
+ {
+ 
