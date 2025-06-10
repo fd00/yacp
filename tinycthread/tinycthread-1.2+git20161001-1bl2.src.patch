@@ -1,7 +1,11 @@
---- origsrc/tinycthread/CMakeLists.txt	2019-12-27 20:14:07.000000000 +0900
-+++ src/tinycthread/CMakeLists.txt	2019-12-27 20:19:17.851316400 +0900
-@@ -4,11 +4,14 @@ enable_testing()
+--- origsrc/tinycthread/CMakeLists.txt	2025-06-10 14:42:10.000000000 +0900
++++ src/tinycthread/CMakeLists.txt	2025-06-10 15:00:01.459530000 +0900
+@@ -2,14 +2,20 @@ cmake_minimum_required(VERSION 2.8.4)
+ project(TinyCThread)
+ enable_testing()
  
++include(GNUInstallDirs)
++
  find_package(Threads REQUIRED)
  
 -add_library(tinycthread STATIC source/tinycthread.c)
@@ -10,37 +14,51 @@
  set_property(TARGET tinycthread APPEND PROPERTY INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/source")
  set_property(TARGET tinycthread APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/source")
  set_property(TARGET tinycthread PROPERTY POSITION_INDEPENDENT_CODE True)
-+if(CYGWIN)
-+  set_target_properties(tinycthread PROPERTIES SOVERSION 0)
-+endif()
  
++if (DEFINED SOVERSION)
++  set_target_properties(tinycthread PROPERTIES SOVERSION "${SOVERSION}")
++endif()
++
  option(TINYCTHREAD_DISABLE_TESTS "Disable TinyCThread unit tests")
  option(TINYCTHREAD_INSTALL "Install a static library for TinyCThread")
-@@ -23,9 +26,9 @@ endif(NOT TINYCTHREAD_DISABLE_TESTS)
+ 
+@@ -23,9 +29,9 @@ endif(NOT TINYCTHREAD_DISABLE_TESTS)
  
  if(TINYCTHREAD_INSTALL)
    if(CMAKE_INSTALL_LIBDIR)
 -    install(TARGETS tinycthread ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-+    install(TARGETS tinycthread RUNTIME DESTINATION bin ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
++    install(TARGETS tinycthread RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
    else()
 -    install(TARGETS tinycthread ARCHIVE DESTINATION lib)
 +    install(TARGETS tinycthread RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
    endif()
  
    if(CMAKE_INSTALL_INCLUDEDIR)
-@@ -34,3 +37,10 @@ if(TINYCTHREAD_INSTALL)
+@@ -34,3 +40,9 @@ if(TINYCTHREAD_INSTALL)
      install(FILES source/tinycthread.h DESTINATION include)
    endif()
  endif(TINYCTHREAD_INSTALL)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/tinycthread.pc.in ${CMAKE_BINARY_DIR}/tinycthread.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/tinycthread.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tinycthread/test/test.c	2025-06-10 14:42:10.000000000 +0900
++++ src/tinycthread/test/test.c	2025-06-10 14:58:27.887321100 +0900
+@@ -22,6 +22,10 @@ freely, subject to the following restric
+     distribution.
+ */
+ 
++#if defined(NDEBUG)
++#undef NDEBUG
++#endif
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/tinycthread.pc.in ${CMAKE_BINARY_DIR}/tinycthread.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/tinycthread.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+ #include <stdio.h>
+ #include <tinycthread.h>
+ #include <assert.h>
 --- origsrc/tinycthread/tinycthread.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/tinycthread/tinycthread.pc.in	2019-12-27 20:19:17.600588000 +0900
++++ src/tinycthread/tinycthread.pc.in	2025-06-10 15:00:50.985684800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
