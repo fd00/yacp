@@ -1,0 +1,73 @@
+--- origsrc/VerthashMiner-0.7.2/CMakeLists.txt	2021-03-15 03:58:42.000000000 +0900
++++ src/VerthashMiner-0.7.2/CMakeLists.txt	2025-06-10 17:35:17.046788300 +0900
+@@ -239,34 +239,39 @@ if(USE_OPENSSL)
+ 
+ endif()
+ 
++file(GLOB_RECURSE SRC_FILES src/vhCore/*.cpp src/vhDevice/*.cpp main.cpp)
++
++find_package(pkgconfig)
++pkg_check_modules(TINY_SHA3 tiny_sha3)
++pkg_check_modules(TINYCTHREAD tinycthread)
++
++if (NOT TINY_SHA3_FOUND)
++    list(APPEND SRC_FILES src/external/tiny_sha3/sha3.c)
++endif()
++if (NOT TINYCTHREAD_FOUND)
++    list(APPEND SRC_FILES src/external/tinycthread/tinycthread.c)
++endif()
++
+ # -----------------------------------------------------------------------------
+ if(CUDA_FOUND AND USE_CUDA)
+ CUDA_ADD_EXECUTABLE(VerthashMiner
+     src/vhCuda/verthash.cu
+-    src/external/tiny_sha3/sha3.c
+-    src/external/tinycthread/tinycthread.c
+-    src/vhCore/ConfigFile.cpp
+-    src/vhCore/Util.cpp
+-    src/vhCore/Verthash.cpp
+-    src/vhDevice/ADLUtils.cpp
+-    src/vhDevice/NVMLUtils.cpp
+-    src/vhDevice/SYSFSUtils.cpp
+-    src/main.cpp
++    ${SRC_FILES}
+ )
+ else()
+ add_executable(VerthashMiner
+-    src/external/tiny_sha3/sha3.c
+-    src/external/tinycthread/tinycthread.c
+-    src/vhCore/ConfigFile.cpp
+-    src/vhCore/Util.cpp
+-    src/vhCore/Verthash.cpp
+-    src/vhDevice/ADLUtils.cpp
+-    src/vhDevice/NVMLUtils.cpp
+-    src/vhDevice/SYSFSUtils.cpp
+-    src/main.cpp
++    ${SRC_FILES}
+ )
+ endif()
+ 
++if (TINY_SHA3_FOUND)
++    target_include_directories(VerthashMiner PRIVATE ${TINY_SHA3_INCLUDE_DIRS})
++    target_link_libraries(VerthashMiner ${TINY_SHA3_LIBRARIES})
++endif()
++if (TINYCTHREAD_FOUND)
++    target_include_directories(VerthashMiner PRIVATE ${TINYCTHREAD_INCLUDE_DIRS})
++    target_link_libraries(VerthashMiner ${TINYCTHREAD_LIBRARIES})
++endif()
+ 
+ # -----------------------------------------------------------------------------
+ 
+@@ -306,8 +311,9 @@ endif()
+ # -----------------------------------------------------------------------------
+ install(
+     TARGETS VerthashMiner
+-    DESTINATION ${CMAKE_INSTALL_PREFIX}
++    DESTINATION ${CMAKE_INSTALL_BINDIR}
+ )
+ 
+-INSTALL(DIRECTORY "${CMAKE_SOURCE_DIR}/src/kernels/" DESTINATION "${CMAKE_INSTALL_PREFIX}/kernels")
+-
++if (CUDA_FOUND AND USE_CUDA)
++    INSTALL(DIRECTORY "${CMAKE_SOURCE_DIR}/src/kernels/" DESTINATION "${CMAKE_INSTALL_PREFIX}/kernels")
++endif()
