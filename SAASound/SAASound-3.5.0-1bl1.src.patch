@@ -1,0 +1,48 @@
+--- origsrc/SAASound-3.5.0/CMakeLists.txt	2025-05-25 01:29:16.000000000 +0900
++++ src/SAASound-3.5.0/CMakeLists.txt	2025-06-12 00:42:46.991493700 +0900
+@@ -106,3 +106,10 @@ install(TARGETS SAASound
+ if (NOT APPLE OR NOT BUILD_FRAMEWORK)
+   install(FILES ${API_HEADERS} DESTINATION include)
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/SAASound.pc.in ${CMAKE_BINARY_DIR}/SAASound.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/SAASound.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/SAASound-3.5.0/SAASound.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/SAASound-3.5.0/SAASound.pc.in	2025-06-12 00:42:39.791725400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: SAASound
++Description: Software implementation of the SAA-1099 soundchip
++Version: @VERSION@
++Libs: -L${libdir} -lSAASound
++Cflags: -I${includedir}
+--- origsrc/SAASound-3.5.0/src/minIni/minIni.c	2025-05-25 01:29:16.000000000 +0900
++++ src/SAASound-3.5.0/src/minIni/minIni.c	2025-06-12 00:40:00.595813600 +0900
+@@ -39,7 +39,7 @@
+   #pragma warning(disable: 4996)	/* for Microsoft Visual C/C++ */
+ #endif
+ #if !defined strnicmp && !defined PORTABLE_STRNICMP
+-  #if defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __APPLE__
++  #if defined __LINUX__ || defined __FreeBSD__ || defined __OpenBSD__ || defined __APPLE__ || defined(__CYGWIN__)
+     #define strnicmp  strncasecmp
+   #endif
+ #endif
+--- origsrc/SAASound-3.5.0/src/types.h	2025-05-25 01:29:16.000000000 +0900
++++ src/SAASound-3.5.0/src/types.h	2025-06-12 00:37:42.988143400 +0900
+@@ -7,7 +7,7 @@
+ #ifndef TYPES_H_INCLUDED
+ #define TYPES_H_INCLUDED
+ 
+-#if  defined(__i386__) || defined(WIN32) || \
++#if  defined(__i386__) || defined(WIN32) || defined(__CYGWIN__) || \
+     (defined(__alpha__) || defined(__alpha)) || \
+      defined(__arm__) || \
+     (defined(__mips__) && defined(__MIPSEL__))
