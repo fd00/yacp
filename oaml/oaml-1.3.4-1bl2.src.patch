@@ -1,0 +1,83 @@
+--- origsrc/oaml-1.3.4/CMakeLists.txt	2018-07-25 22:07:28.000000000 +0900
++++ src/oaml-1.3.4/CMakeLists.txt	2025-06-13 04:43:33.325039200 +0900
+@@ -82,6 +82,8 @@ else()
+ 	message("Build oamlTest executable: No  (Enable by param -DENABLE_TEST=ON)")
+ endif()
+ 
++include(FindPkgConfig)
++pkg_check_modules(TINYXML2 tinyxml2)
+ 
+ ##
+ # Set CXX_FLAGS depending on compiler
+@@ -227,9 +229,12 @@ set(SOURCES
+ 	src/oamlStudioApi.cpp
+ 	src/oamlTrack.cpp
+ 	src/oamlUtil.cpp
+-	src/tinyxml2.cpp
+ 	src/wav.cpp)
+ 
++if (NOT TINYXML2_FOUND)
++	list(APPEND SOURCES src/tinyxml2.cpp)
++endif()
++
+ if (ENABLE_OGG)
+ 	list(APPEND SOURCES src/ogg.cpp)
+ endif()
+@@ -245,6 +250,9 @@ endif()
+ if (ENABLE_SHARED)
+ 	add_library(oaml_shared SHARED ${SOURCES} src/oamlC.cpp)
+ 	target_link_libraries(oaml_shared ${OAML_LIBS})
++	if (TINYXML2_FOUND)
++		target_link_libraries(oaml_shared ${TINYXML2_LIBRARIES})
++	endif()
+ 	set_target_properties(oaml_shared
+ 		PROPERTIES
+ 			OUTPUT_NAME oaml
+@@ -256,6 +264,9 @@ endif()
+ if (ENABLE_TEST)
+ 	add_executable(oamlTest ${SOURCES} src/test.cpp)
+ 	target_link_libraries(oamlTest ${OAML_LIBS})
++	if (TINYXML2_FOUND)
++		target_link_libraries(oamlTest ${TINYXML2_LIBRARIES})
++	endif()
+ endif()
+ 
+ ##
+@@ -282,9 +293,17 @@ if (ENABLE_STATIC)
+ endif()
+ 
+ if (ENABLE_SHARED)
+-	install(TARGETS oaml_shared DESTINATION lib${LIB_SUFFIX})
++	install(TARGETS oaml_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ endif()
+ 
++# string(JOIN " " OAML_LIBS_STR ${OAML_LIBS})
++set(OAML_LIBS_FOR_PKGCONFIG "")
++foreach (libname IN LISTS OAML_LIBS)
++	string(REGEX REPLACE "^/usr/lib/lib" "" libname ${libname})
++	string(REGEX REPLACE "\\.dll.a$" "" libname ${libname})
++	set(OAML_LIBS_FOR_PKGCONFIG "${OAML_LIBS_FOR_PKGCONFIG} -l${libname}")
++endforeach()
++
+ configure_file("oaml.cmake.in" "oaml.cmake" @ONLY)
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/oaml.cmake" DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/oaml/)
+ 
+--- origsrc/oaml-1.3.4/oaml.cmake.in	2018-07-25 22:07:28.000000000 +0900
++++ src/oaml-1.3.4/oaml.cmake.in	2025-06-13 04:44:06.805894800 +0900
+@@ -1,3 +1,3 @@
+ find_path(OAML_INCLUDE_DIRS NAMES oaml.h PATHS "@CMAKE_INSTALL_PREFIX@/include")
+ find_library(OAML_LIBRARIES NAMES oaml PATHS "@CMAKE_INSTALL_PREFIX@/lib")
+-set(OAML_VERSION "@OAML_VERSION@")
++set(OAML_VERSION "@OAML_VERSION_MAJOR@.@OAML_VERSION_MINOR@.@OAML_VERSION_PATCH@")
+--- origsrc/oaml-1.3.4/oaml.pc.in	2018-07-25 22:07:28.000000000 +0900
++++ src/oaml-1.3.4/oaml.pc.in	2025-06-13 04:43:19.786916900 +0900
+@@ -7,7 +7,7 @@ includedir=${prefix}/include
+ 
+ Name: oaml
+ Description: OAML is a library the makes it easy to implement adaptive music in games.
+-Version: @OAML_VERSION@
++Version: @OAML_VERSION_MAJOR@.@OAML_VERSION_MINOR@.@OAML_VERSION_PATCH@
+ Requires: ogg vorbis
+ Conflicts:
+-Libs: -L${libdir} @OAML_LIBS@
++Libs: -L${libdir} @OAML_LIBS_FOR_PKGCONFIG@
