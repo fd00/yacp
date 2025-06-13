@@ -1,0 +1,208 @@
+--- origsrc/advancescan-1.18/Makefile.am	2025-06-13 18:34:11.846064200 +0900
++++ src/advancescan-1.18/Makefile.am	2025-06-13 20:57:26.836386900 +0900
+@@ -76,7 +76,9 @@ noinst_HEADERS = \
+ 	lib/endianrw.h \
+ 	lib/extra.h
+ 
++if HAVE_ADVD2
+ man_MANS = doc/advscan.1 doc/advdiff.1
++endif
+ 
+ clean-local:
+ 	rm -f advscan.exe advscan.rc advdiff.exe
+@@ -97,16 +99,17 @@ check-local:
+ # Docs
+ 
+ %.1 : %.d
+-	advd2 man < $(srcdir)/$< > $@
++	mkdir -p `dirname $@`
++	advd2 man < $< > $@
+ 
+ %.txt : %.d
+-	advd2 txt < $(srcdir)/$< | todos > $@
++	advd2 txt < $< | todos > $@
+ 
+ %.html : %.d
+-	advd2 html < $(srcdir)/$< > $@
++	advd2 html < $< > $@
+ 
+ %.hh : %.d
+-	advd2 frame < $(srcdir)/$< > $@
++	advd2 frame < $< > $@
+ 
+ # Archives
+ 
+--- origsrc/advancescan-1.18/conf.cc	2015-08-12 15:35:05.000000000 +0900
++++ src/advancescan-1.18/conf.cc	2025-06-13 18:40:31.905359100 +0900
+@@ -28,7 +28,7 @@
+ 
+ using namespace std;
+ 
+-static void expand_tree(const string& path, filepath_container& ds) throw (error)
++static void expand_tree(const string& path, filepath_container& ds)
+ {
+ 	DIR* dir = opendir(path.c_str());
+ 	if (!dir)
+--- origsrc/advancescan-1.18/configure.ac	2025-06-13 18:34:11.830438200 +0900
++++ src/advancescan-1.18/configure.ac	2025-06-13 20:40:48.521724600 +0900
+@@ -15,6 +15,8 @@ AC_CHECK_PROGS(TAR, tar)
+ AC_CHECK_PROGS(GZIP, gzip)
+ AC_CHECK_PROGS(GROFF, groff)
+ AC_CHECK_PROGS(COL, col)
++AC_CHECK_PROG([ADVD2],[advd2],[advd2],[])
++AM_CONDITIONAL(HAVE_ADVD2, [test x"$ADVD2" != x])
+ 
+ dnl Checks for architecture
+ AC_C_BIGENDIAN(
+--- origsrc/advancescan-1.18/file.cc	2015-08-12 15:35:05.000000000 +0900
++++ src/advancescan-1.18/file.cc	2025-06-13 20:29:46.097145100 +0900
+@@ -98,7 +98,7 @@ void infopath::readonly_set(bool Areadon
+ /**
+  * Check if a file exists.
+  */
+-bool file_exists(const string& path) throw (error)
++bool file_exists(const string& path)
+ {
+ 	struct stat s;
+ 	if (stat(path.c_str(), &s) != 0) {
+@@ -114,7 +114,7 @@ bool file_exists(const string& path) thr
+ /**
+  * Write a whole file.
+  */
+-void file_write(const string& path, const char* data, unsigned size) throw (error)
++void file_write(const string& path, const char* data, unsigned size)
+ {
+ 	FILE* f = fopen(path.c_str(), "wb");
+ 	if (!f)
+@@ -134,7 +134,7 @@ void file_write(const string& path, cons
+ /**
+  * Read a whole file.
+  */
+-void file_read(const string& path, char* data, unsigned size) throw (error)
++void file_read(const string& path, char* data, unsigned size)
+ {
+ 	file_read(path, data, 0, size);
+ }
+@@ -142,7 +142,7 @@ void file_read(const string& path, char*
+ /**
+  * Read a whole file.
+  */
+-void file_read(const string& path, char* data, unsigned offset, unsigned size) throw (error)
++void file_read(const string& path, char* data, unsigned offset, unsigned size)
+ {
+ 	FILE* f = fopen(path.c_str(), "rb");
+ 	if (!f)
+@@ -166,7 +166,7 @@ void file_read(const string& path, char*
+ /**
+  * Get the time of a file.
+  */
+-time_t file_time(const string& path) throw (error)
++time_t file_time(const string& path)
+ {
+ 	struct stat s;
+ 	if (stat(path.c_str(), &s)!=0)
+@@ -178,7 +178,7 @@ time_t file_time(const string& path) thr
+ /**
+  * Set the time of a file.
+  */
+-void file_utime(const string& path, time_t tod) throw (error)
++void file_utime(const string& path, time_t tod)
+ {
+ 	struct utimbuf u;
+ 
+@@ -192,7 +192,7 @@ void file_utime(const string& path, time
+ /**
+  * Get the size of a file.
+  */
+-unsigned file_size(const string& path) throw (error)
++unsigned file_size(const string& path)
+ {
+ 	struct stat s;
+ 	if (stat(path.c_str(), &s)!=0)
+@@ -204,7 +204,7 @@ unsigned file_size(const string& path) t
+ /**
+  * Get the crc of a file.
+  */
+-crc_t file_crc(const string& path) throw (error)
++crc_t file_crc(const string& path)
+ {
+ 	unsigned size = file_size(path);
+ 
+@@ -227,7 +227,7 @@ crc_t file_crc(const string& path) throw
+ /**
+  * Copy a file.
+  */
+-void file_copy(const string& path1, const string& path2) throw (error)
++void file_copy(const string& path1, const string& path2)
+ {
+ 	unsigned size;
+ 
+@@ -249,7 +249,7 @@ void file_copy(const string& path1, cons
+ /**
+  * Move a file.
+  */
+-void file_move(const string& path1, const string& path2) throw (error)
++void file_move(const string& path1, const string& path2)
+ {
+ 	if (rename(path1.c_str(), path2.c_str())!=0
+ 		&& errno==EXDEV) {
+@@ -271,7 +271,7 @@ void file_move(const string& path1, cons
+ /**
+  * Remove a file.
+  */
+-void file_remove(const string& path1) throw (error)
++void file_remove(const string& path1)
+ {
+ 	if (remove(path1.c_str())!=0) {
+ 		throw error() << "Failed remove of " << path1;
+@@ -281,7 +281,7 @@ void file_remove(const string& path1) th
+ /**
+  * Rename a file.
+  */
+-void file_rename(const string& path1, const string& path2) throw (error)
++void file_rename(const string& path1, const string& path2)
+ {
+ 	if (rename(path1.c_str(), path2.c_str())!=0) {
+ 		throw error() << "Failed rename of " << path1 << " to " << path2;
+@@ -409,7 +409,7 @@ string file_adjust(const string& path) t
+ /**
+  * Make a drectory tree.
+  */
+-void file_mktree(const std::string& path) throw (error)
++void file_mktree(const std::string& path)
+ {
+ 	string dir = file_dir(path);
+ 	string name = file_name(path);
+--- origsrc/advancescan-1.18/file.h	2015-08-12 15:35:05.000000000 +0900
++++ src/advancescan-1.18/file.h	2025-06-13 18:38:53.474843000 +0900
+@@ -67,18 +67,18 @@ typedef unsigned crc_t;
+ crc_t crc_compute(const char* data, unsigned len);
+ crc_t crc_compute(crc_t pred, const char* data, unsigned len);
+ 
+-bool file_exists(const std::string& file) throw (error);
+-void file_write(const std::string& path, const char* data, unsigned size) throw (error);
+-void file_read(const std::string& path, char* data, unsigned size) throw (error);
+-void file_read(const std::string& path, char* data, unsigned offset, unsigned size) throw (error);
+-time_t file_time(const std::string& path) throw (error);
+-void file_utime(const std::string& path, time_t tod) throw (error);
+-unsigned file_size(const std::string& path) throw (error);
+-crc_t file_crc(const std::string& path) throw (error);
+-void file_copy(const std::string& path1, const std::string& path2) throw (error);
+-void file_move(const std::string& path1, const std::string& path2) throw (error);
+-void file_remove(const std::string& path1) throw (error);
+-void file_mktree(const std::string& path1) throw (error);
++bool file_exists(const std::string& file);
++void file_write(const std::string& path, const char* data, unsigned size);
++void file_read(const std::string& path, char* data, unsigned size);
++void file_read(const std::string& path, char* data, unsigned offset, unsigned size);
++time_t file_time(const std::string& path);
++void file_utime(const std::string& path, time_t tod);
++unsigned file_size(const std::string& path);
++crc_t file_crc(const std::string& path);
++void file_copy(const std::string& path1, const std::string& path2);
++void file_move(const std::string& path1, const std::string& path2);
++void file_remove(const std::string& path1);
++void file_mktree(const std::string& path1);
+ 
+ std::string file_temp(const std::string& path) throw ();
+ std::string file_randomize(const std::string& path, int n) throw ();
