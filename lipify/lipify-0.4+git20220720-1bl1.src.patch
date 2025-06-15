@@ -1,0 +1,49 @@
+--- origsrc/lipify/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/lipify/CMakeLists.txt	2025-06-15 17:41:40.240308000 +0900
+@@ -0,0 +1,33 @@
++cmake_minimum_required(VERSION 3.28)
++project(lipify
++  VERSION 0.4
++  DESCRIPTION "C library for https://api.ipify.org"
++  HOMEPAGE_URL "https://github.com/troglobit/lipify")
++
++include(GNUInstallDirs)
++include(CTest)
++
++add_library(ipify SHARED "ipify.c")
++target_compile_definitions(ipify PRIVATE
++  PACKAGE_NAME="${PROJECT_NAME}"
++  PACKAGE_VERSION="${PROJECT_VERSION}")
++set_target_properties(ipify PROPERTIES SOVERSION 1)
++
++install(TARGETS ipify
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(main "main.c")
++target_include_directories(main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
++target_link_libraries(main PRIVATE ipify)
++set_target_properties(main PROPERTIES OUTPUT_NAME ipify)
++install(TARGETS main RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++
++install(FILES ipify.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/lipify.pc.in ${CMAKE_BINARY_DIR}/lipify.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/lipify.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/lipify/lipify.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/lipify/lipify.pc.in	2025-06-15 17:43:50.961556400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: lipify
++Description: C library for https://api.ipify.org
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lipify
++Cflags: -I${includedir}
