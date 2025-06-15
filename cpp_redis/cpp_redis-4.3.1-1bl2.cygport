@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/cpp-redis/${PN}"
-SRC_URI="https://github.com/cpp-redis/${PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/cpp-redis/${PN}/archive/refs/tags/${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="C++11 Lightweight Redis client: async, thread-safe, no dependency, pipelining, multi-platform"
@@ -7,12 +7,20 @@ DESCRIPTION="cpp_redis is a C++11 Asynchronous Multi-Platform Lightweight Redis 
 with support for synchronous operations, pipelining, sentinels and high
 availability."
 
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libtacopie-devel"
+
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 
 CYGCMAKE_ARGS="
 	-DBUILD_EXAMPLES:BOOL=ON
 	-DBUILD_SHARED_LIBS:BOOL=ON
 	-DBUILD_TESTS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+	-DVERSION:STRING=${PV}
 "
 
 inherit cmake
@@ -23,31 +31,25 @@ src_install()
 	ninja_install
 
 	cd ${D}
-	rm usr/bin/*_spec.exe
-}
-
-src_test()
-{
-	cd ${B}
-	ninja_test
+	rm -f usr/bin/*_spec.exe
 }
 
 PKG_NAMES="
 	cpp_redis
-	libcpp_redis0
+	libcpp_redis${PV[1]}
 	libcpp_redis-devel
 "
 cpp_redis_CONTENTS="
 	usr/bin/*.exe
 	usr/share
 "
-libcpp_redis0_CONTENTS="
-	usr/bin/*.dll
+libcpp_redis4_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
 "
 libcpp_redis_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
 cpp_redis_SUMMARY="${SUMMARY} (utilities)"
-libcpp_redis0_SUMMARY="${SUMMARY} (runtime)"
+libcpp_redis4_SUMMARY="${SUMMARY} (runtime)"
 libcpp_redis_devel_SUMMARY="${SUMMARY} (development)"
