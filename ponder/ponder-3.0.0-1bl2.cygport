@@ -1,0 +1,61 @@
+HOMEPAGE="https://github.com/billyquith/${PN}"
+SRC_URI="https://github.com/billyquith/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="C++ reflection library"
+DESCRIPTION="Ponder is a C++ multi-purpose reflection library. It provides an abstraction
+for most of the high-level concepts of C++: classes, enumerations, functions,
+properties."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="COPYING.txt"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}:${PATH} ninja_test
+}
+
+DOCS="
+	CHANGELOG.md
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	verbose mv ${D}/usr/share/${PN}/cmake/Modules ${D}/usr/lib/cmake/${PN}
+	verbose rm -fr ${D}/usr/share/${PN}
+}
+
+DIFF_EXCLUDES="
+	version.hpp
+"
+
+PKG_NAMES="
+	${PN}
+	lib${PN}${PV[1]}
+	lib${PN}-devel
+"
+ponder_CONTENTS="
+	usr/share/doc
+"
+libponder3_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
+"
+libponder_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+ponder_SUMMARY="${SUMMARY} (licensing & readmes)"
+libponder3_SUMMARY="${SUMMARY} (runtime)"
+libponder_devel_SUMMARY="${SUMMARY} (development)"
