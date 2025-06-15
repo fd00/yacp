@@ -1,27 +1,33 @@
 HOMEPAGE="https://github.com/BioPP/${PN}"
-SRC_URI="https://github.com/BioPP/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/BioPP/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/libb/libbpp-core/${PV}-13/debian/patches/gcc11.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="Bio++ Core Library"
 DESCRIPTION="This library contains the core classes and utilitary functions of the Bio++
 project."
 
+LICENSE="CECILL-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: CECILL-2.0"
+LICENSE_URI="COPYING.txt"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+
+inherit cmake
+
 CYGCMAKE_ARGS="
 	-DBUILD_TESTING:BOOL=ON
 	-DVERSION:STRING=${PV}
 "
 
-inherit cmake
-
 src_test()
 {
 	cd ${B}
-	ninja_test
+	PATH=${B}/src:${PATH} ninja_test
 }
 
-PKG_IGNORE="
-	usr/lib/libbpp-core.a
-"
 
 PKG_NAMES="
 	bpp-core
@@ -32,13 +38,11 @@ bpp_core_CONTENTS="
 	usr/share
 "
 libbpp_core4_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-4.dll
 "
 libbpp_core_devel_CONTENTS="
 	usr/include
-	usr/lib/cmake
-	usr/lib/libbpp-core.dll.a
-	usr/lib/pkgconfig
+	usr/lib
 "
 bpp_core_SUMMARY="${SUMMARY} (licensing & readmes)"
 libbpp_core4_SUMMARY="${SUMMARY} (runtime)"

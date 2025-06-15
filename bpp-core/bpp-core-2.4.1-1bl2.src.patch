@@ -1,0 +1,210 @@
+--- origsrc/bpp-core-2.4.1/CMakeLists.txt	2018-08-18 20:15:24.000000000 +0900
++++ src/bpp-core-2.4.1/CMakeLists.txt	2025-06-15 21:38:07.932791700 +0900
+@@ -8,9 +8,6 @@
+ cmake_minimum_required (VERSION 2.8.11)
+ project (bpp-core CXX)
+ 
+-# Compile options
+-set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Weffc++ -Wshadow -Wconversion")
+-
+ IF(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+@@ -121,3 +118,10 @@ include (CTest)
+ if (BUILD_TESTING)
+   add_subdirectory (test)
+ endif (BUILD_TESTING)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/bpp-core.pc.in ${CMAKE_BINARY_DIR}/bpp-core.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/bpp-core.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/bpp-core-2.4.1/bpp-core.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bpp-core-2.4.1/bpp-core.pc.in	2025-06-15 21:37:26.730207900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bpp-core
++Description: Bio++ Core Library
++Version: @VERSION@
++Libs: -L${libdir} -lbpp-core
++Cflags: -I${includedir}
+--- origsrc/bpp-core-2.4.1/cmake/doc-cmake-for-developpers.cmake	2018-08-18 20:15:24.000000000 +0900
++++ src/bpp-core-2.4.1/cmake/doc-cmake-for-developpers.cmake	2025-06-16 03:37:09.801626500 +0900
+@@ -19,11 +19,10 @@ project (bpp-something CXX)
+ # Defines a lot of stuff including PROJECT_NAME which will contain "bpp-something"
+ # PROJECT_NAME is used to name:
+ # - the library
+-# - the CMake targets (${PROJECT_NAME}-static or ${PROJECT_NAME}-shared)
++# - the CMake targets (${PROJECT_NAME}-shared)
+ # - the CMake package
+ # Do not change it unless there is a good reason...
+ 
+-set (CMAKE_CXX_FLAGS "std=c++11 -Wall -Weffc++ -Wshadow -Wconversion")
+ # Define compile options to be used for all C++ targets.
+ # NOTES for the future:
+ # -> CMake >= 2.8.12 adds per target COMPILE_OPTIONS by using target_compile_options (<target> [PRIVATE|PUBLIC] <opt1> ... <optN>)
+@@ -63,9 +62,9 @@ find_package (bpp-neededcomponent x.y.z
+ # Internally, this executes the package files of the needed components if they are found.
+ #
+ # Package files will include their targets file that define "imported targets".
+-# using target_link_libraries (current_target bpp-neededcomponent-static) will add link, include, and compile option flags to the whole compilation.
+-# For convenience package files also define the BPP_LIBS_SHARED and BPP_LIBS_STATIC variables.
+-# These variables hold a list of all imported shared or static library targets of bpp.
++# using target_link_libraries (current_target bpp-neededcomponent-shared) will add link, include, and compile option flags to the whole compilation.
++# For convenience package files also define the BPP_LIBS_SHARED variables.
++# These variables hold a list of all imported shared library targets of bpp.
+ # 
+ # GNUInstallDirs is a standard CMake module that defines distribution-specific install paths.
+ # We use:
+@@ -123,24 +122,6 @@ set (CPP_FILES
+   )
+ # File list (sorted to easily find duplicates or missing)
+ 
+-add_library (${PROJECT_NAME}-static STATIC ${CPP_FILES})
+-# Define the static lib
+-
+-target_include_directories (${PROJECT_NAME}-static PUBLIC
+-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
+-  )
+-# Annotates the static lib target with include paths.
+-# These paths will be added as -I options:
+-# - during compilation of the target, by looking at CMAKE_CURRENT_SOURCE_DIR
+-# - during compilation of anything that links to this target, by looking at <install_dir>/include.
+-# This allow the code to reference headers by a path relative to src/ instead of using ../OtherDir/blah.h
+-# NOTE the "$<INSTALL_PREFIX>/" part is only needed to support 2.8.11 due to a bugged cmake check.
+-
+-set_target_properties (${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+-# Set target file name (default is the target name)
+-
+-target_link_libraries (${PROJECT_NAME}-static ${BPP_LIBS_STATIC})
+ # "Links" to all bpp components included by find_package (adds everything, -I, -L -lbpp-comps...)
+ # (a manual list of bpp components targets also works here).
+ 
+@@ -159,7 +140,7 @@ target_link_libraries (${PROJECT_NAME}-s
+ # Build the shared lib, using the same system
+ 
+ install (
+-  TARGETS ${PROJECT_NAME}-static ${PROJECT_NAME}-shared
++  TARGETS ${PROJECT_NAME}-shared
+   EXPORT ${PROJECT_NAME}-targets
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+@@ -197,18 +178,14 @@ find_package (bpp-core @bpp-core_VERSION
+ include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
+ # Include the imported targets
+ 
+-set (BPP_LIBS_STATIC "${BPP_LIBS_STATIC}" @PROJECT_NAME@-static)
+ set (BPP_LIBS_SHARED "${BPP_LIBS_SHARED}" @PROJECT_NAME@-shared)
+ # Append targets to convenient lists
+ 
+-get_property (static-location TARGET @PROJECT_NAME@-static PROPERTY LOCATION)
+ get_property (shared-location TARGET @PROJECT_NAME@-shared PROPERTY LOCATION)
+-get_property (header-location TARGET @PROJECT_NAME@-static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
++get_property (header-location TARGET @PROJECT_NAME@-shared PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+ message (STATUS "@PROJECT_NAME@ @PROJECT_VERSION@ found:")
+-message (STATUS "  static lib: ${static-location}")
+ message (STATUS "  shared lib: ${shared-location}")
+ message (STATUS "  includes: ${header-location}")
+-unset (static-location)
+ unset (shared-location)
+ unset (header-location)
+ # Print information about this package when included (version, paths of libs and includes).
+--- origsrc/bpp-core-2.4.1/cmake/project-template-for-users.cmake	2018-08-18 20:15:24.000000000 +0900
++++ src/bpp-core-2.4.1/cmake/project-template-for-users.cmake	2025-06-16 03:37:50.167889300 +0900
+@@ -19,10 +19,6 @@ project (myproject CXX) # The name is no
+ find_package (bpp-core)
+ find_package (bpp-seq)
+ 
+-# Bio++ REQUIRES using at least the C++11 standard.
+-# This line specifies options passed to the compiler (you can add your own).
+-set (CMAKE_CXX_FLAGS "-std=c++11")
+-
+ # Tells CMake to create a binary from dummy.cpp (replace with your .cpp file(s))
+ add_executable (myprogram dummy.cpp other.cpp)
+ 
+@@ -51,10 +47,9 @@ target_link_libraries (myprogram ${BPP_L
+ # This can be done with: $ cmake -DCMAKE_PREFIX_PATH=<bpp-location> .
+ #
+ # find_package(bpp-<module>) defines, if successful:
+-# - a bpp-<module>-static symbol to link with the static library
+ # - a bpp-<module>-shared symbol to link with the shared library
+-# - variables BPP_LIBS_SHARED and BPP_LIBS_STATIC that includes the related symbols and symbols of Bio++ dependencies.
+-# The bpp-<module>-{static/shared} symbols also force CMake to link to their Bio++ dependencies.
++# - variables BPP_LIBS_SHARED that includes the related symbols and symbols of Bio++ dependencies.
++# The bpp-<module>-shared symbols also force CMake to link to their Bio++ dependencies.
+ # find_package of a a module also does a find_package of dependency Bio++ modules.
+ #
+ # So, for bpp-phyl (which depends on bpp-seq and bpp-core):
+@@ -69,9 +64,9 @@ target_link_libraries (myprogram bpp-cor
+ target_link_libraries (myprogram ${BPP_LIBS_SHARED})
+ # The short form relies on Bio++ inter module dependencies, but they are unlikely to change.
+ 
+-### Static libraries can be linked by using either:
+-target_link_libraries (myprogram bpp-phyl-static)
+-target_link_libraries (myprogram ${BPP_LIBS_STATIC})
++### Shared libraries can be linked by using either:
++target_link_libraries (myprogram bpp-phyl-shared)
++target_link_libraries (myprogram ${BPP_LIBS_SHARED})
+ # They make your binary program self contained (all Bio++ code is included with it).
+ # It can be given to people without having them install Bio++.
+ # However, the binary will be huge (10 to 100MB depending of which modules are used).
+--- origsrc/bpp-core-2.4.1/package.cmake.in	2018-08-18 20:15:24.000000000 +0900
++++ src/bpp-core-2.4.1/package.cmake.in	2025-06-16 07:13:28.274245300 +0900
+@@ -9,17 +9,13 @@ if (NOT @PROJECT_NAME@_FOUND)
+   # Add targets
+   include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
+   # Append targets to convenient lists
+-  set (BPP_LIBS_STATIC "${BPP_LIBS_STATIC}" @PROJECT_NAME@-static)
+   set (BPP_LIBS_SHARED "${BPP_LIBS_SHARED}" @PROJECT_NAME@-shared)
+   # Print some path info for targets
+-  get_property (static-location TARGET @PROJECT_NAME@-static PROPERTY LOCATION)
+   get_property (shared-location TARGET @PROJECT_NAME@-shared PROPERTY LOCATION)
+-  get_property (header-location TARGET @PROJECT_NAME@-static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
++  get_property (header-location TARGET @PROJECT_NAME@-shared PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+   message (STATUS "@PROJECT_NAME@ @PROJECT_VERSION@ found:")
+-  message (STATUS "  static lib: ${static-location}")
+   message (STATUS "  shared lib: ${shared-location}")
+   message (STATUS "  includes: ${header-location}")
+-  unset (static-location)
+   unset (shared-location)
+   unset (header-location)
+ endif (NOT @PROJECT_NAME@_FOUND)
+--- origsrc/bpp-core-2.4.1/src/CMakeLists.txt	2018-08-18 20:15:24.000000000 +0900
++++ src/bpp-core-2.4.1/src/CMakeLists.txt	2025-06-15 21:24:27.174839600 +0900
+@@ -96,15 +96,6 @@ set (CPP_FILES
+   Bpp/Utils/AttributesTools.cpp
+   )
+ 
+-# Build the static lib
+-add_library (${PROJECT_NAME}-static STATIC ${CPP_FILES})
+-target_include_directories (${PROJECT_NAME}-static PUBLIC
+-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
+-  )
+-set_target_properties (${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+-target_link_libraries (${PROJECT_NAME}-static ${BPP_LIBS_STATIC})
+-
+ # Build the shared lib
+ add_library (${PROJECT_NAME}-shared SHARED ${CPP_FILES})
+ target_include_directories (${PROJECT_NAME}-shared PUBLIC
+@@ -121,11 +112,11 @@ target_link_libraries (${PROJECT_NAME}-s
+ 
+ # Install libs and headers
+ install (
+-  TARGETS ${PROJECT_NAME}-static ${PROJECT_NAME}-shared
++  TARGETS ${PROJECT_NAME}-shared
+   EXPORT ${PROJECT_NAME}-targets
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   )
+ install (
+   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bpp
