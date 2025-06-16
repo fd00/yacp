@@ -1,0 +1,84 @@
+--- origsrc/libmdhtml-0.5.0/CMakeLists.txt	2018-07-13 20:40:03.000000000 +0900
++++ src/libmdhtml-0.5.0/CMakeLists.txt	2025-06-17 05:35:13.002653800 +0900
+@@ -11,11 +11,6 @@ add_definitions( -DLIBMDHTML_VERSION="${
+ 
+ set( LIBMDHTML_SRC_DIR ${PROJECT_SOURCE_DIR}/src )
+ 
+-if( UNIX )
+-	add_definitions( -std=c++11 )
+-endif()
+-
+-
+ if( MDHTML_DESTDIR )
+ else()
+ 	set( MDHTML_DESTDIR "${CMAKE_INSTALL_PREFIX}" )
+--- origsrc/libmdhtml-0.5.0/lib/LibMdHtml++.pc.in	2018-07-13 20:40:03.000000000 +0900
++++ src/libmdhtml-0.5.0/lib/LibMdHtml++.pc.in	2025-06-17 05:35:51.589305800 +0900
+@@ -4,6 +4,6 @@ includedir=@MDHTML_HEADER_INSTALL_DIR@
+ Name: LibMdHtml++
+ Description: A library for converting markdown to html
+ Version: @LIBMDHTML_VERSION@
+-Libs: ${libdir}/@MDHTML_PKGCONFIG_LIBNAME@
++Libs: -lMdHtml++
+ Cflags: -I${includedir}
+ 
+--- origsrc/libmdhtml-0.5.0/lib/LibMdHtmlQt.pc.in	2018-07-13 20:40:03.000000000 +0900
++++ src/libmdhtml-0.5.0/lib/LibMdHtmlQt.pc.in	2025-06-17 05:39:59.806250100 +0900
+@@ -4,6 +4,6 @@ includedir=@MDHTML_HEADER_INSTALL_DIR@
+ Name: LibMdHtmlQt
+ Description: A Qt support library for converting markdown to html with LibMdHtml++
+ Version: @LIBMDHTML_VERSION@
+-Libs: ${libdir}/@MDHTML_PKGCONFIG_LIBNAME@ ${libdir}/@MDHTMLQT_PKGCONFIG_LIBNAME@
++Libs: -lMdHtmlQt
+ Cflags: -I${includedir} -I${includedir}/qt
+-
++Requires: LibMdHtml++
+--- origsrc/libmdhtml-0.5.0/src/CMakeLists.txt	2018-07-13 20:40:03.000000000 +0900
++++ src/libmdhtml-0.5.0/src/CMakeLists.txt	2025-06-17 05:40:36.965137000 +0900
+@@ -5,10 +5,12 @@ file (GLOB LIBMDHTML_SOURCES *.cpp )
+ include_directories(.)
+ if( MDHTML_SHARED )
+ 	add_library( MdHtml++ SHARED ${LIBMDHTML_SOURCES} )
+-	set( MDHTML_PKGCONFIG_LIBNAME "libMdHtml++.so" )
+ else()
+ 	add_library( MdHtml++ STATIC ${LIBMDHTML_SOURCES} )
+-	set( MDHTML_PKGCONFIG_LIBNAME "libMdHtml++.a" )
++endif()
++
++if (DEFINED SOVERSION)
++	set_target_properties(MdHtml++ PROPERTIES SOVERSION "${SOVERSION}")
+ endif()
+ 
+ if( MDHTML_DONT_BUILD_GUI_CONVERT )
+@@ -42,7 +44,7 @@ else()
+ endif()
+ 
+ if( MDHTML_INSTALL_LIBS )
+-	install(TARGETS MdHtml++ DESTINATION ${MDHTML_LIB_INSTALL_DIR} )
++	install(TARGETS MdHtml++ RUNTIME DESTINATION bin ARCHIVE DESTINATION ${MDHTML_LIB_INSTALL_DIR} )
+ 	install(FILES ${LIBMDHTML_HEADERS} DESTINATION ${MDHTML_HEADER_INSTALL_DIR} )
+ 	install(FILES ${PROJECT_SOURCE_DIR}/lib/LibMdHtml++Config.cmake DESTINATION "${MDHTML_LIB_INSTALL_DIR}/cmake/LibMdHtml++" )
+ 	configure_file(${PROJECT_SOURCE_DIR}/lib/LibMdHtml++.pc.in ${CMAKE_CURRENT_BINARY_DIR}/LibMdHtml++.pc @ONLY)
+--- origsrc/libmdhtml-0.5.0/src/qt/CMakeLists.txt	2018-07-13 20:40:03.000000000 +0900
++++ src/libmdhtml-0.5.0/src/qt/CMakeLists.txt	2025-06-17 05:39:45.058306200 +0900
+@@ -15,15 +15,17 @@ if( MDHTML_QT_SUPPORT )
+ 	
+ 	if( MDHTML_SHARED )
+         add_library( MdHtmlQt SHARED ${LIBMDHTML_QT_SOURCES} )
+-        set( MDHTMLQT_PKGCONFIG_LIBNAME "libMdHtmlQt.so" )
+     else()
+ 		add_library( MdHtmlQt STATIC ${LIBMDHTML_QT_SOURCES} )
+-        set( MDHTMLQT_PKGCONFIG_LIBNAME "libMdHtmlQt.a" )
+     endif()
+ 	target_link_libraries( MdHtmlQt MdHtml++ Qt5::Core Qt5::Gui Qt5::WebKitWidgets Qt5::Widgets )
+ 
++	if (DEFINED SOVERSION)
++		set_target_properties(MdHtmlQt PROPERTIES SOVERSION "${SOVERSION}")
++	endif()
++
+ 	if( MDHTML_INSTALL_LIBS )
+-		install(TARGETS MdHtmlQt DESTINATION ${MDHTML_LIB_INSTALL_DIR} )
++		install(TARGETS MdHtmlQt RUNTIME DESTINATION bin ARCHIVE DESTINATION ${MDHTML_LIB_INSTALL_DIR} )
+ 		install(FILES ${LIBMDHTML_QT_HEADERS} DESTINATION ${MDHTML_HEADER_INSTALL_DIR}/qt )
+ 		install(FILES ${PROJECT_SOURCE_DIR}/lib/LibMdHtmlQtConfig.cmake DESTINATION "${MDHTML_LIB_INSTALL_DIR}/cmake/LibMdHtmlQt" )
+         configure_file(${PROJECT_SOURCE_DIR}/lib/LibMdHtmlQt.pc.in ${CMAKE_CURRENT_BINARY_DIR}/LibMdHtmlQt.pc @ONLY)
