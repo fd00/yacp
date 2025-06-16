@@ -1,0 +1,89 @@
+--- origsrc/bpp-phyl-2.4.1/CMakeLists.txt	2018-08-13 18:51:29.000000000 +0900
++++ src/bpp-phyl-2.4.1/CMakeLists.txt	2025-06-16 09:27:48.318800900 +0900
+@@ -8,9 +8,6 @@
+ cmake_minimum_required (VERSION 2.8.11)
+ project (bpp-phyl CXX)
+ 
+-# Compile options
+-set (CMAKE_CXX_FLAGS "-std=c++11 -Wall -Weffc++ -Wshadow -Wconversion")
+-
+ IF(NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+@@ -141,3 +138,10 @@ if (BUILD_TESTING)
+ endif (BUILD_TESTING)
+ 
+ ENDIF(NOT NO_DEP_CHECK)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/bpp-phyl.pc.in ${CMAKE_BINARY_DIR}/bpp-phyl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/bpp-phyl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/bpp-phyl-2.4.1/bpp-phyl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/bpp-phyl-2.4.1/bpp-phyl.pc.in	2025-06-16 09:28:02.142401700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: bpp-phyl
++Description: Bio++ Phylogenetic Library
++Version: @CPACK_PACKAGE_VERSION@
++Libs: -L${libdir} -lbpp-phyl
++Cflags: -I${includedir}
+--- origsrc/bpp-phyl-2.4.1/package.cmake.in	2018-08-13 18:51:29.000000000 +0900
++++ src/bpp-phyl-2.4.1/package.cmake.in	2025-06-16 07:56:30.669969600 +0900
+@@ -11,17 +11,13 @@ if (NOT @PROJECT_NAME@_FOUND)
+   # Add targets
+   include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
+   # Append targets to convenient lists
+-  set (BPP_LIBS_STATIC "${BPP_LIBS_STATIC}" @PROJECT_NAME@-static)
+   set (BPP_LIBS_SHARED "${BPP_LIBS_SHARED}" @PROJECT_NAME@-shared)
+   # Print some path info for targets
+-  get_property (static-location TARGET @PROJECT_NAME@-static PROPERTY LOCATION)
+   get_property (shared-location TARGET @PROJECT_NAME@-shared PROPERTY LOCATION)
+-  get_property (header-location TARGET @PROJECT_NAME@-static PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
++  get_property (header-location TARGET @PROJECT_NAME@-shared PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+   message (STATUS "@PROJECT_NAME@ @PROJECT_VERSION@ found:")
+-  message (STATUS "  static lib: ${static-location}")
+   message (STATUS "  shared lib: ${shared-location}")
+   message (STATUS "  includes: ${header-location}")
+-  unset (static-location)
+   unset (shared-location)
+   unset (header-location)
+ endif (NOT @PROJECT_NAME@_FOUND)
+--- origsrc/bpp-phyl-2.4.1/src/CMakeLists.txt	2018-08-13 18:51:29.000000000 +0900
++++ src/bpp-phyl-2.4.1/src/CMakeLists.txt	2025-06-16 07:57:03.999047600 +0900
+@@ -176,15 +176,6 @@ set (CPP_FILES
+   Bpp/Phyl/TreeTools.cpp  
+   )
+ 
+-# Build the static lib
+-add_library (${PROJECT_NAME}-static STATIC ${CPP_FILES})
+-target_include_directories (${PROJECT_NAME}-static PUBLIC
+-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+-  $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}>
+-  )
+-set_target_properties (${PROJECT_NAME}-static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
+-target_link_libraries (${PROJECT_NAME}-static ${BPP_LIBS_STATIC})
+-
+ # Build the shared lib
+ add_library (${PROJECT_NAME}-shared SHARED ${CPP_FILES})
+ target_include_directories (${PROJECT_NAME}-shared PUBLIC
+@@ -201,11 +192,11 @@ target_link_libraries (${PROJECT_NAME}-s
+ 
+ # Install libs and headers
+ install (
+-  TARGETS ${PROJECT_NAME}-static ${PROJECT_NAME}-shared
++  TARGETS ${PROJECT_NAME}-shared
+   EXPORT ${PROJECT_NAME}-targets
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+   )
+ install (
+   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Bpp
