@@ -1,0 +1,47 @@
+--- origsrc/libcmdlinecpp-1.0.0/CMakeLists.txt	2018-10-13 23:17:48.000000000 +0900
++++ src/libcmdlinecpp-1.0.0/CMakeLists.txt	2025-06-16 17:59:08.454547300 +0900
+@@ -10,9 +10,6 @@ add_definitions( -DLIBCMDLINECPP_VERSION
+ 
+ set( LIBCMDLINECPP_SRC_DIR ${PROJECT_SOURCE_DIR}/src )
+ 
+-if( UNIX )
+-	add_definitions( -std=c++11 )
+-endif()
+ add_definitions(-DCMDLINECPP_SRC_DIR=${LIBCMDLINECPP_SRC_DIR})
+ 
+ 
+--- origsrc/libcmdlinecpp-1.0.0/lib/libcmdlinecpp.pc.in	2018-10-13 23:17:48.000000000 +0900
++++ src/libcmdlinecpp-1.0.0/lib/libcmdlinecpp.pc.in	2025-06-16 17:57:41.735960300 +0900
+@@ -4,6 +4,5 @@ includedir=@CMDLINECPP_HEADER_INSTALL_DI
+ Name: LibCmdLineC++
+ Description: A simple parser for command line arguments with C++
+ Version: @LIBCMDLINECPP_VERSION@
+-Libs: ${libdir}/@CMDLINECPP_PKGCONFIG_LIBNAME@
++Libs: -lcmdlinecpp
+ Cflags: -I${includedir}
+-
+--- origsrc/libcmdlinecpp-1.0.0/src/CMakeLists.txt	2018-10-13 23:17:48.000000000 +0900
++++ src/libcmdlinecpp-1.0.0/src/CMakeLists.txt	2025-06-16 17:59:39.408280800 +0900
+@@ -11,18 +11,19 @@ set( LIBCMDLINECPP_SOURCE actions.cpp
+ 
+ if( CMDLINECPP_SHARED )
+ 	add_library( cmdlinecpp SHARED ${LIBCMDLINECPP_SOURCE} )
+-	set( CMDLINECPP_PKGCONFIG_LIBNAME "libcmdlinecpp.so" )
+ else()
+ 	add_library( cmdlinecpp STATIC ${LIBCMDLINECPP_SOURCE} )
+-	set( CMDLINECPP_PKGCONFIG_LIBNAME "libcmdlinecpp.a" )
+ endif()
+ 
++if (DEFINED SOVERSION)
++	set_target_properties(cmdlinecpp PROPERTIES SOVERSION "${SOVERSION}")
++endif()
+ 
+ add_subdirectory( examples )
+ 
+ 
+ if( CMDLINECPP_INSTALL_LIBS )
+-	install(TARGETS cmdlinecpp DESTINATION ${CMDLINECPP_LIB_INSTALL_DIR} )
++	install(TARGETS cmdlinecpp RUNTIME DESTINATION bin ARCHIVE DESTINATION ${CMDLINECPP_LIB_INSTALL_DIR} )
+ 	install(FILES ${LIBCMDLINECPP_HEADERS} DESTINATION ${CMDLINECPP_HEADER_INSTALL_DIR} )
+ endif()
+ 
