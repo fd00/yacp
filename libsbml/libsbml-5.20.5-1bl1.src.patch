@@ -1,0 +1,155 @@
+--- origsrc/libsbml-5.20.5/CMakeLists.txt	2025-05-05 13:53:07.000000000 +0900
++++ src/libsbml-5.20.5/CMakeLists.txt	2025-06-20 16:37:21.474691200 +0900
+@@ -555,7 +555,9 @@ if(WITH_ZLIB)
+ endif(WITH_ZLIB)
+ 
+ # install find scripts only for used dependencies
+-install(FILES ${LIBSBML_FIND_MODULES} DESTINATION share/cmake/Modules)
++if (NOT CYGWIN)
++    install(FILES ${LIBSBML_FIND_MODULES} DESTINATION share/cmake/Modules)
++endif()
+ 
+ ###############################################################################
+ #
+@@ -938,7 +940,9 @@ set(DOCUMENTATION_FILES
+         VERSION.txt
+ )
+ 
+-install(FILES ${DOCUMENTATION_FILES} DESTINATION ${MISC_PREFIX})
++if (NOT CYGWIN)
++    install(FILES ${DOCUMENTATION_FILES} DESTINATION ${MISC_PREFIX})
++endif()
+ 
+ ###############################################################################
+ #
+--- origsrc/libsbml-5.20.5/examples/CMakeLists.txt	2025-05-05 13:53:07.000000000 +0900
++++ src/libsbml-5.20.5/examples/CMakeLists.txt	2025-06-20 16:52:34.873579800 +0900
+@@ -55,47 +55,47 @@ endif(WITH_EXAMPLES)
+ # the remaining language bindings do not need to be compiled in order to run. 
+ 
+ # Now we just have to select files for installation# 
+-install(FILES README.txt DESTINATION ${MISC_PREFIX}examples)
++install(FILES README.txt DESTINATION ${MISC_PREFIX}/examples)
+ 
+ # install c examples
+ file(GLOB c_samples "${CMAKE_CURRENT_SOURCE_DIR}/c/*.c"
+                     "${CMAKE_CURRENT_SOURCE_DIR}/c/*.h"
+                     "${CMAKE_CURRENT_SOURCE_DIR}/c/README.txt")
+-install(FILES ${c_samples} DESTINATION ${MISC_PREFIX}examples/c)
++install(FILES ${c_samples} DESTINATION ${MISC_PREFIX}/examples/c)
+ 
+ # install c++ examples
+ file(GLOB cpp_samples "${CMAKE_CURRENT_SOURCE_DIR}/c++/*.c"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/c++/*.cpp"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/c++/*.h"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/c++/README.txt")
+-install(FILES ${cpp_samples} DESTINATION ${MISC_PREFIX}examples/c++)
++install(FILES ${cpp_samples} DESTINATION ${MISC_PREFIX}/examples/c++)
+ 
+ if(WITH_CSHARP)
+ # install c# examples
+ file(GLOB cs_samples "${CMAKE_CURRENT_SOURCE_DIR}/csharp/*.cs"
+                      "${CMAKE_CURRENT_SOURCE_DIR}/csharp/README.txt")
+-install(FILES ${cs_samples} DESTINATION ${MISC_PREFIX}examples/csharp)
++install(FILES ${cs_samples} DESTINATION ${MISC_PREFIX}/examples/csharp)
+ endif()
+ 
+ if(WITH_JAVA)
+ # install java examples
+ file(GLOB java_samples "${CMAKE_CURRENT_SOURCE_DIR}/java/*.java"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/java/README.txt")
+-install(FILES ${java_samples} DESTINATION ${MISC_PREFIX}examples/java)
++install(FILES ${java_samples} DESTINATION ${MISC_PREFIX}/examples/java)
+ endif()
+ 
+ if(WITH_PERL)
+ # install perl examples
+ file(GLOB perl_samples "${CMAKE_CURRENT_SOURCE_DIR}/perl/*.pl"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/perl/README.txt")
+-install(FILES ${perl_samples} DESTINATION ${MISC_PREFIX}examples/perl)
++install(FILES ${perl_samples} DESTINATION ${MISC_PREFIX}/examples/perl)
+ endif()
+ 
+ if (WITH_PYTHON)
+ # install python examples
+ file(GLOB python_samples "${CMAKE_CURRENT_SOURCE_DIR}/python/*.py"
+                          "${CMAKE_CURRENT_SOURCE_DIR}/python/README.txt")
+-install(FILES ${python_samples} DESTINATION ${MISC_PREFIX}examples/python)
++install(FILES ${python_samples} DESTINATION ${MISC_PREFIX}/examples/python)
+ endif()
+ 
+ 
+@@ -103,14 +103,14 @@ if(WITH_RUBY)
+ # install ruby examples
+ file(GLOB perl_samples "${CMAKE_CURRENT_SOURCE_DIR}/ruby/*.rb"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/ruby/README.txt")
+-install(FILES ${perl_samples} DESTINATION ${MISC_PREFIX}examples/ruby)
++install(FILES ${perl_samples} DESTINATION ${MISC_PREFIX}/examples/ruby)
+ endif()
+ 
+ if (WITH_R)
+ # install r examples
+ file(GLOB python_samples "${CMAKE_CURRENT_SOURCE_DIR}/r/*.R"
+                          "${CMAKE_CURRENT_SOURCE_DIR}/r/README.txt")
+-install(FILES ${python_samples} DESTINATION ${MISC_PREFIX}examples/r)
++install(FILES ${python_samples} DESTINATION ${MISC_PREFIX}/examples/r)
+ endif()
+ 
+ 
+@@ -122,13 +122,13 @@ endif()
+ #                         "${CMAKE_CURRENT_SOURCE_DIR}/layout/*.xsl"
+ #                         "${CMAKE_CURRENT_SOURCE_DIR}/layout/*.py"
+ #					 )
+-#install(FILES ${layout_samples} DESTINATION ${MISC_PREFIX}examples/layout)
++#install(FILES ${layout_samples} DESTINATION ${MISC_PREFIX}/examples/layout)
+ #endif()
+ 
+ # install sample-models
+ file(GLOB l2_samples "${CMAKE_CURRENT_SOURCE_DIR}/sample-models/from-spec/level-2/*.xml")
+-install(FILES ${l2_samples} DESTINATION ${MISC_PREFIX}examples/sample-models/from-spec/level-2)
++install(FILES ${l2_samples} DESTINATION ${MISC_PREFIX}/examples/sample-models/from-spec/level-2)
+ 
+ file(GLOB l3_samples "${CMAKE_CURRENT_SOURCE_DIR}/sample-models/from-spec/level-3/*.xml")
+-install(FILES ${l3_samples} DESTINATION ${MISC_PREFIX}examples/sample-models/from-spec/level-3)
++install(FILES ${l3_samples} DESTINATION ${MISC_PREFIX}/examples/sample-models/from-spec/level-3)
+ 
+--- origsrc/libsbml-5.20.5/examples/c/CMakeLists.txt	2025-05-05 13:53:07.000000000 +0900
++++ src/libsbml-5.20.5/examples/c/CMakeLists.txt	2025-06-20 16:37:21.474691200 +0900
+@@ -69,8 +69,11 @@ foreach(example
+ )
+ 	add_executable(example_c_${example} ${example}.c util.c)
+ 	set_target_properties(example_c_${example} PROPERTIES  OUTPUT_NAME ${example})
++    if (LIBSBML_SKIP_STATIC_LIBRARY)
++        target_link_libraries(example_c_${example} ${LIBSBML_LIBRARY})	
++    else()
+ 	target_link_libraries(example_c_${example} ${LIBSBML_LIBRARY}-static)	
+-
++    endif()
+ endforeach()
+ 
+ # run examples as test 
+--- origsrc/libsbml-5.20.5/examples/c++/CMakeLists.txt	2025-05-05 13:53:07.000000000 +0900
++++ src/libsbml-5.20.5/examples/c++/CMakeLists.txt	2025-06-20 16:37:21.474691200 +0900
+@@ -80,14 +80,21 @@ foreach(example
+ )
+     add_executable(example_cpp_${example} ${example}.cpp util.c)
+     set_target_properties(example_cpp_${example} PROPERTIES  OUTPUT_NAME ${example})
++    if (LIBSBML_SKIP_STATIC_LIBRARY)
++      target_link_libraries(example_cpp_${example} ${LIBSBML_LIBRARY})
++    else()
+     target_link_libraries(example_cpp_${example} ${LIBSBML_LIBRARY}-static)
+-
++    endif()
+ endforeach()
+ 
+ if (WITH_LIBXML)
+   add_executable(example_cpp_rngvalidator rngvalidator.cpp util.c)
+   set_target_properties(example_cpp_rngvalidator PROPERTIES  OUTPUT_NAME rngvalidator)
++  if (LIBSBML_SKIP_STATIC_LIBRARY)
++    target_link_libraries(example_cpp_rngvalidator ${LIBSBML_LIBRARY})
++  else()
+   target_link_libraries(example_cpp_rngvalidator ${LIBSBML_LIBRARY}-static)
++  endif()
+   target_link_libraries(example_cpp_rngvalidator LIBXML::LIBXML ${EXTRA_LIBS})
+ endif()
+ 
