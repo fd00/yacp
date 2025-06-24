@@ -1,5 +1,5 @@
---- origsrc/libmobi-0.11/configure.ac	2022-05-28 15:52:32.000000000 +0900
-+++ src/libmobi-0.11/configure.ac	2022-07-14 09:55:27.233088800 +0900
+--- origsrc/libmobi-0.12/configure.ac	2024-06-17 15:10:16.000000000 +0900
++++ src/libmobi-0.12/configure.ac	2025-06-25 02:59:20.470385700 +0900
 @@ -113,6 +113,12 @@ case "$host" in
          ISO99_SOURCE="-D_ISOC99_SOURCE=1"
          WIN32=yes
@@ -13,41 +13,8 @@
      *)
          NO_UNDEFINED=
          AVOID_VERSION=
-@@ -363,11 +369,12 @@ if test x$use_zlib = xyes; then
-         [AC_MSG_ERROR([couldn't find zlib header])])
- else
-     AC_DEFINE([USE_MINIZ], [1], [Define if you want to use included miniz library])
--    MINIZ_CFLAGS="-D_POSIX_C_SOURCE=200112L"
-+    PKG_CHECK_MODULES([MINIZ], [miniz])
-+    # MINIZ_CFLAGS="-D_POSIX_C_SOURCE=200112L"
-     LIBZ_LDFLAGS=
- fi
- AC_SUBST([LIBZ_LDFLAGS])
--AC_SUBST([MINIZ_CFLAGS])
-+# AC_SUBST([MINIZ_CFLAGS])
- 
- # Check for md5 or md5sum program, needed for tests
- AC_ARG_VAR([MD5PROG], [md5 hashing program executable])
---- origsrc/libmobi-0.11/src/Makefile.am	2022-05-28 15:52:32.000000000 +0900
-+++ src/libmobi-0.11/src/Makefile.am	2022-07-14 09:55:59.675210300 +0900
-@@ -13,14 +13,8 @@ endif
- if USE_ENCRYPTION
- libmobi_la_SOURCES += encryption.c encryption.h randombytes.c randombytes.h sha1.c sha1.h
- endif
--EXTRA_LTLIBRARIES = libminiz.la
--libminiz_la_SOURCES = miniz.c miniz.h
--libminiz_la_CFLAGS = $(VISIBILITY_HIDDEN) $(MINIZ_CFLAGS) \
---DMINIZ_NO_STDIO -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES \
---DMINIZ_NO_TIME -DMINIZ_NO_ARCHIVE_APIS -DMINIZ_NO_ARCHIVE_WRITING_APIS
--libminiz_la_LDFLAGS =
- if USE_MINIZ
--libmobi_la_LIBADD = libminiz.la
-+libmobi_la_LIBADD = $(MINIZ_LIBS)
- endif
- include_HEADERS = mobi.h
- libmobi_la_LDFLAGS = $(AVOID_VERSION) $(NO_UNDEFINED) $(DARWIN_LDFLAGS) $(LIBZ_LDFLAGS) $(LIBXML2_LDFLAGS)
---- origsrc/libmobi-0.11/tests/test.sh.in	2022-05-28 15:52:32.000000000 +0900
-+++ src/libmobi-0.11/tests/test.sh.in	2022-07-14 09:58:14.787666700 +0900
+--- origsrc/libmobi-0.12/tests/test.sh.in	2024-06-17 15:10:16.000000000 +0900
++++ src/libmobi-0.12/tests/test.sh.in	2025-06-25 03:00:05.767232600 +0900
 @@ -94,7 +94,7 @@ if [[ "${do_md5}" -eq "1" ]]; then
              cd "${tmp_dir}${separator}${markup_dir}" || die "Could not change directory to ${tmp_dir}${separator}${markup_dir}" $?
              rm -f "..${separator}${testfile_md5}.md5"
@@ -57,9 +24,9 @@
              rm -f "..${separator}${testfile_md5}.md5"
          ) || exit $?
          log "Checksum correct"
---- origsrc/libmobi-0.11/tools/Makefile.am	2022-05-28 15:52:32.000000000 +0900
-+++ src/libmobi-0.11/tools/Makefile.am	2022-07-14 10:04:34.225379900 +0900
-@@ -7,26 +7,22 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(to
+--- origsrc/libmobi-0.12/tools/Makefile.am	2024-06-17 15:10:16.000000000 +0900
++++ src/libmobi-0.12/tools/Makefile.am	2025-06-25 03:04:28.062409800 +0900
+@@ -7,26 +7,26 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(to
  bin_PROGRAMS = mobitool mobimeta
  man_MANS = mobitool.1 mobimeta.1
  
@@ -88,11 +55,15 @@
 -libminiz_a_CFLAGS = $(MINIZ_CFLAGS) -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES
 -mobitool_DEPENDENCIES += libminiz.a
 -mobitool_LDADD += libminiz.a
-+mobitool_LDADD += $(MINIZ_LIBS)
++noinst_LTLIBRARIES += libminiz.la
++libminiz_la_SOURCES = ../src/miniz.c ../src/miniz.h
++libminiz_la_CFLAGS = $(MINIZ_CFLAGS) -DMINIZ_NO_ZLIB_COMPATIBLE_NAMES
++mobitool_DEPENDENCIES += libminiz.la
++mobitool_LDADD += libminiz.la
  if USE_STATIC
  if USE_MINIZ
  mobitool_LDFLAGS += $(MOBI_ALLOW_MULTIPLE)
-@@ -35,8 +31,8 @@ endif
+@@ -35,8 +35,8 @@ endif
  endif
  
  mobimeta_SOURCES = mobimeta.c
@@ -103,7 +74,7 @@
  mobimeta_CFLAGS = $(ISO99_SOURCE) $(DEBUG_CFLAGS) -D_POSIX_C_SOURCE=200112L
  mobimeta_LDFLAGS = $(TOOLS_STATIC)
  
-@@ -44,8 +40,8 @@ if USE_ENCRYPTION
+@@ -44,8 +44,8 @@ if USE_ENCRYPTION
  bin_PROGRAMS += mobidrm
  man_MANS += mobidrm.1
  mobidrm_SOURCES = mobidrm.c
