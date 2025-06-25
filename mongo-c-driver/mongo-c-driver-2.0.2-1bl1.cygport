@@ -1,0 +1,76 @@
+HOMEPAGE="https://github.com/mongodb/${PN}"
+SRC_URI="https://github.com/mongodb/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="High-performance MongoDB driver for C"
+DESCRIPTION="The MongoDB C Driver, also known as “libmongoc”, is a library for using
+MongoDB from C applications, and for writing MongoDB drivers in higher-level
+languages."
+
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="libsasl2-devel libsnappy-devel libssl-devel libutf8proc-devel libzstd-devel zlib-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_VERSION:STRING=${PV}
+	-DENABLE_EXAMPLES:BOOL=ON
+	-DENABLE_SHM_COUNTERS:BOOL=ON
+	-DENABLE_SRV:BOOL=OFF
+	-DENABLE_STATIC:BOOL=OFF
+	-DENABLE_TESTS:BOOL=OFF
+	-DENABLE_ZLIB:STRING=SYSTEM
+	-DUSE_BUNDLED_UTF8PROC:BOOL=OFF
+"
+
+DOCS="
+	CONTRIBUTING.md
+	THIRD_PARTY_NOTICES
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -fr usr/share/mongo-c-driver/${PV}
+}
+
+PKG_NAMES="
+	mongo-c-driver
+	libmongoc2_2
+	libmongoc2-devel
+	libbson2_2
+	libbson2-devel
+"
+mongo_c_driver_CONTENTS="
+	usr/bin/*.exe
+	usr/share/doc
+"
+libmongoc2_2_CONTENTS="
+	usr/bin/cygmongoc2-2.dll
+"
+libmongoc2_devel_CONTENTS="
+	usr/include/mongoc-${PV}
+	usr/lib/cmake/mongoc-${PV}
+	usr/lib/libmongoc2.dll.a
+	usr/lib/pkgconfig/mongoc2.pc
+"
+libbson2_2_CONTENTS="
+	usr/bin/cygbson2-2.dll
+"
+libbson2_devel_CONTENTS="
+	usr/include/bson-${PV}
+	usr/lib/cmake/bson-${PV}
+	usr/lib/libbson2.dll.a
+	usr/lib/pkgconfig/bson2.pc
+"
+mongo_c_driver_SUMMARY="${SUMMARY} (utilities)"
+libmongoc2_2_SUMMARY="${SUMMARY} (runtime)"
+libmongoc2_0_devel_SUMMARY="${SUMMARY} (development)"
+libbson2_2_SUMMARY="Library providing useful routines related to building, parsing, and iterating BSON documents (runtime)"
+libbson2_devel_SUMMARY="Library providing useful routines related to building, parsing, and iterating BSON documents (development)"
