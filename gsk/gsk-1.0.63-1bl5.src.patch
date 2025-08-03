@@ -1,0 +1,93 @@
+--- origsrc/gsk-1.0.63/Makefile.am	2006-05-18 03:39:40.000000000 +0900
++++ src/gsk-1.0.63/Makefile.am	2025-08-03 18:19:55.873490300 +0900
+@@ -1,4 +1,4 @@
+-SUBDIRS = src doc
++SUBDIRS = src #doc
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = gsk-1.0.pc
+--- origsrc/gsk-1.0.63/src/Makefile.am	2008-11-05 03:33:18.000000000 +0900
++++ src/gsk-1.0.63/src/Makefile.am	2025-08-03 18:19:55.878850600 +0900
+@@ -139,7 +139,7 @@ cycle.h
+ 
+ gskerror.lo: gskerror.inc
+ 
+-libgsk_1_0_la_LDFLAGS = @GLIB_LIBS@
++libgsk_1_0_la_LDFLAGS = -no-undefined @GLIB_LIBS@
+ libgsk_1_0_la_LIBADD = \
+ main-loops/libgsk-mainloops.la \
+ dns/libgsk-dns.la \
+--- origsrc/gsk-1.0.63/src/gskdaemonize.c	2006-05-18 03:39:35.000000000 +0900
++++ src/gsk-1.0.63/src/gskdaemonize.c	2025-08-03 18:19:55.880888900 +0900
+@@ -21,7 +21,9 @@ is_error_signal (guint signal_no)
+       || signal_no == SIGILL
+       || signal_no == SIGABRT
+       || signal_no == SIGSEGV
++#if defined(SIGIOT)
+       || signal_no == SIGIOT
++#endif
+       || signal_no == SIGBUS
+       || signal_no == SIGFPE;
+ }
+--- origsrc/gsk-1.0.63/src/gsktable-flat.c	2008-10-10 22:03:32.000000000 +0900
++++ src/gsk-1.0.63/src/gsktable-flat.c	2025-08-03 18:19:55.884927000 +0900
+@@ -23,7 +23,11 @@
+ 
+ #define FTELLO          ftello          /* TODO: track the offsets ourselves */
+ #define FSEEKO          fseeko
++#if defined(__CYGWIN__)
++#define FREAD           fread
++#else
+ #define FREAD           fread_unlocked
++#endif
+ 
+ /* debug invocation of cache-entry force */
+ #define DEBUG_CACHE_ENTRY_FORCE                 0
+--- origsrc/gsk-1.0.63/src/tests/Makefile.am	2008-10-10 22:03:19.000000000 +0900
++++ src/gsk-1.0.63/src/tests/Makefile.am	2025-08-03 18:24:31.725711500 +0900
+@@ -42,8 +42,8 @@ common_check_programs = \
+ #### Once we get xml working again, add: test-xml
+ 
+ makecheck_scripts = \
+-	$(srcdir)/test-name-resolver \
+-	$(srcdir)/test-url-download
++	test-name-resolver \
++	test-url-download
+ 
+ if HAVE_OPENSSL
+ ssl_check_programs = test-ssl
+@@ -96,7 +96,7 @@ client-key.pem client.pem server-key.pem
+ make-ssl-pem-files
+ 
+ # --- How to build the programs. ---
+-INCLUDES = @GLIB_CFLAGS@ @GSK_DEBUG_CFLAGS@
++INCLUDES = -I$(top_srcdir)/src @GLIB_CFLAGS@ @GSK_DEBUG_CFLAGS@
+ 
+ # GLIB_LIBS should not be necessary, EXCEPT that
+ # on BSD -pthread is lost by libtool.  hack it up thusly.
+--- origsrc/gsk-1.0.63/src/tests/test-ssl.c	2006-05-18 03:39:31.000000000 +0900
++++ src/gsk-1.0.63/src/tests/test-ssl.c	2025-08-03 19:59:50.447469600 +0900
+@@ -100,10 +100,10 @@ int main(int argc, char **argv)
+     client = gsk_buffer_stream_new ();
+     server_ssl = GSK_STREAM_SSL (gsk_stream_ssl_new_server (server_cert_file, server_key_file, SERVER_PASSWORD, NULL, &error));
+     if (server_ssl == NULL)
+-      g_error (error->message);
++      g_error ("%s", error->message);
+     client_ssl = GSK_STREAM_SSL (gsk_stream_ssl_new_client (client_cert_file, client_key_file, CLIENT_PASSWORD, gsk_stream_ssl_peek_backend (server_ssl), &error));
+     if (client_ssl == NULL)
+-      g_error (error->message);
++      g_error ("%s", error->message);
+     if (!gsk_stream_attach_pair (GSK_STREAM (server), GSK_STREAM (server_ssl), NULL)
+      || !gsk_stream_attach_pair (GSK_STREAM (client), GSK_STREAM (client_ssl), NULL))
+       {
+--- origsrc/gsk-1.0.63/src/tests/test-zlib.c	2006-05-18 03:39:31.000000000 +0900
++++ src/gsk-1.0.63/src/tests/test-zlib.c	2025-08-03 20:01:21.140854100 +0900
+@@ -36,7 +36,7 @@ test_with_string (const char *str)
+   GskMainLoop *loop;
+   loop = gsk_main_loop_default ();
+ 
+-  memory_input = gsk_memory_source_new_printf (str);
++  memory_input = gsk_memory_source_new_printf ("%s", str);
+   deflator = gsk_zlib_deflator_new (-1, -1);
+   inflator = gsk_zlib_inflator_new ();
+   memory_output = gsk_memory_buffer_sink_new (memory_buffer_callback, &result, NULL);
