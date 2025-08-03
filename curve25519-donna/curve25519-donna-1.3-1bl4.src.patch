@@ -1,0 +1,78 @@
+--- origsrc/curve25519-donna-1.3/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/curve25519-donna-1.3/CMakeLists.txt	2025-08-04 08:53:37.959799200 +0900
+@@ -0,0 +1,38 @@
++cmake_minimum_required(VERSION 3.28)
++project(curve25519-donna
++  VERSION 1.3
++  DESCRIPTION "Implementations of a fast Elliptic-curve Diffie-Hellman primitive"
++  HOMEPAGE_URL "https://github.com/agl/curve25519-donna")
++enable_language(C ASM)
++
++include(GNUInstallDirs)
++include(CTest)
++
++file(GLOB_RECURSE LIB_SOURCES "curve25519-donna-c64.c")
++add_library(curve25519-donna SHARED curve25519-donna-c64.c)
++set_target_properties(curve25519-donna PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++
++install(TARGETS curve25519-donna
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++install(FILES curve25519-donna.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(TESTS "speed-curve25519" "test-curve25519" "test-noncanon" "test-sc-curve25519")
++foreach(test ${TESTS})
++  if (${test} STREQUAL "test-sc-curve25519")
++    set(test_src "test-sc-curve25519.c" "tsc-read.s")
++  else()
++    set(test_src "${test}.c")
++  endif()
++  add_executable(${test} ${test_src})
++  target_link_libraries(${test} curve25519-donna)
++  add_test(NAME ${test} COMMAND ${test})  
++endforeach(test ${TESTS})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/curve25519-donna.pc.in ${CMAKE_BINARY_DIR}/curve25519-donna.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/curve25519-donna.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/curve25519-donna-1.3/curve25519-donna.h	1970-01-01 09:00:00.000000000 +0900
++++ src/curve25519-donna-1.3/curve25519-donna.h	2025-08-04 08:51:50.434290900 +0900
+@@ -0,0 +1,5 @@
++#ifndef CURVE25519_DONNA_H
++#define CURVE25519_DONNA_H
++extern void curve25519_donna(unsigned char *output, const unsigned char *a,
++                             const unsigned char *b);
++#endif /* CURVE25519_DONNA_H */
+--- origsrc/curve25519-donna-1.3/curve25519-donna.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/curve25519-donna-1.3/curve25519-donna.pc.in	2025-08-04 08:54:01.434294700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: curve25519-donna
++Description: Implementations of a fast Elliptic-curve Diffie-Hellman primitive
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcurve25519-donna
++Cflags: -I${includedir}
+--- origsrc/curve25519-donna-1.3/test-curve25519.c	2015-02-09 03:51:11.000000000 +0900
++++ src/curve25519-donna-1.3/test-curve25519.c	2025-08-04 08:49:53.119899300 +0900
+@@ -16,10 +16,10 @@ void doit(unsigned char *ek,unsigned cha
+ {
+   int i;
+ 
+-  for (i = 0;i < 32;++i) printf("%02x",(unsigned int) e[i]); printf(" ");
+-  for (i = 0;i < 32;++i) printf("%02x",(unsigned int) k[i]); printf(" ");
++  for (i = 0;i < 32;++i) {printf("%02x",(unsigned int) e[i]);} printf(" ");
++  for (i = 0;i < 32;++i) {printf("%02x",(unsigned int) k[i]);} printf(" ");
+   curve25519_donna(ek,e,k);
+-  for (i = 0;i < 32;++i) printf("%02x",(unsigned int) ek[i]); printf("\n");
++  for (i = 0;i < 32;++i) {printf("%02x",(unsigned int) ek[i]);} printf("\n");
+ }
+ 
+ unsigned char e1k[32];
