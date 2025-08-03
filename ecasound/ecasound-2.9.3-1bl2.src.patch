@@ -1,6 +1,6 @@
 --- origsrc/ecasound-2.9.3/Documentation/Makefile.am	2009-06-30 05:58:08.000000000 +0900
-+++ src/ecasound-2.9.3/Documentation/Makefile.am	2020-02-13 16:44:10.541157900 +0900
-@@ -118,8 +118,8 @@ clean-manpages:
++++ src/ecasound-2.9.3/Documentation/Makefile.am	2025-08-03 12:56:57.104083800 +0900
+@@ -118,11 +118,11 @@ clean-manpages:
  install-data-local:
  	mkdir -p $(DESTDIR)$(mandir)/man1
  	mkdir -p $(DESTDIR)$(mandir)/man5
@@ -11,22 +11,13 @@
  
  # ---------------------------------------------------------------------
  # Uninstall targets
---- origsrc/ecasound-2.9.3/configure.ac	2020-01-11 21:11:38.000000000 +0900
-+++ src/ecasound-2.9.3/configure.ac	2020-02-13 16:45:11.066882900 +0900
-@@ -703,7 +703,11 @@ if test x$RUBYPATH = xnone; then
-   rubyecasound_support=no
-   ECA_S_RUBY_SITEDIR=""
- else
-+  if test "$host_os" = "cygwin"; then
-+    ECA_S_RUBY_SITEDIR="`ruby -e 'require "rbconfig"; print RbConfig::CONFIG[["vendordir"]] + "/" + RbConfig::CONFIG[["MAJOR"]] + "." + RbConfig::CONFIG[["MINOR"]]'`"
-+  else
-   ECA_S_RUBY_SITEDIR="`ruby -e 'require "rbconfig"; include RbConfig; print CONFIG[["sitedir"]] + "/" + CONFIG[["MAJOR"]] + "." + CONFIG[["MINOR"]]'`"
-+  fi
- fi
- 
- AC_SUBST(ECA_S_RUBY_SITEDIR)
+ uninstall-local:
+-	for f in $(man1_pages_to_install) ; do if test -f $$f ; then rm -vf $(DESTDIR)$(mandir)/man1/$$f ; fi ; done 
+-	for f in $(man5_pages_to_install) ; do if test -f $$f ; then rm -vf $(DESTDIR)$(mandir)/man5/$$f ; fi ; done 
++	for f in $(man1_pages_to_install) ; do if test -f $(srcdir)/$$f ; then rm -vf $(DESTDIR)$(mandir)/man1/$(srcdir)/$$f ; fi ; done 
++	for f in $(man5_pages_to_install) ; do if test -f $(srcdir)/$$f ; then rm -vf $(DESTDIR)$(mandir)/man5/$(srcdir)/$$f ; fi ; done 
 --- origsrc/ecasound-2.9.3/kvutils/Makefile.am	2014-02-25 20:16:53.000000000 +0900
-+++ src/ecasound-2.9.3/kvutils/Makefile.am	2020-02-13 16:45:40.542635500 +0900
++++ src/ecasound-2.9.3/kvutils/Makefile.am	2025-08-03 12:58:08.421136400 +0900
 @@ -56,13 +56,13 @@ kvutil_headers = 	kvu_dbc.h \
  			kvu_value_queue.h
  
@@ -44,26 +35,29 @@
  
  noinst_HEADERS = $(kvutil_headers)
 --- origsrc/ecasound-2.9.3/libecasound/Makefile.am	2014-02-25 20:16:53.000000000 +0900
-+++ src/ecasound-2.9.3/libecasound/Makefile.am	2020-02-13 16:46:32.431390500 +0900
-@@ -33,6 +33,7 @@ eca_libadd =  	$(top_builddir)/libecasou
++++ src/ecasound-2.9.3/libecasound/Makefile.am	2025-08-03 12:59:27.968004400 +0900
+@@ -33,8 +33,9 @@ eca_libadd =  	$(top_builddir)/libecasou
  else
  eca_libadd =  	$(top_builddir)/libecasound/plugins/libecasound_plugins.la $(ECA_S_EXTRA_LIBS)
  endif
 +eca_libadd += $(top_builddir)/kvutils/libkvutils.la
  
- eca_ldflags = -version-info @LIBECASOUND_VERSION@:0:@LIBECASOUND_VERSION_AGE@
+-eca_ldflags = -version-info @LIBECASOUND_VERSION@:0:@LIBECASOUND_VERSION_AGE@
++eca_ldflags = -no-undefined -version-info @LIBECASOUND_VERSION@:0:@LIBECASOUND_VERSION_AGE@
  
+ if ECA_AM_DEBUG_MODE
+ libecasound_tester_libs =	$(top_builddir)/libecasound/libecasound_debug.la \
 @@ -368,7 +369,7 @@ libecasound_tester_src = \
  
  libecasound_la_SOURCES = $(ecasound_common1_src) $(ecasound_common2_src)
  libecasound_debug_la_SOURCES = $(ecasound_common1_src) $(ecasound_common2_src)
 -libecasound_la_LDFLAGS = -export-dynamic $(eca_ldflags) -static
-+libecasound_la_LDFLAGS = -no-undefined -export-dynamic $(eca_ldflags)
++libecasound_la_LDFLAGS = -export-dynamic $(eca_ldflags)
  libecasound_la_LIBADD = $(eca_libadd)
  libecasound_debug_la_LDFLAGS = $(libecasound_la_LDFLAGS)
  libecasound_debug_la_LIBADD = $(libecasound_la_LIBADD)
 --- origsrc/ecasound-2.9.3/libecasound/plugins/Makefile.am	2014-02-25 20:16:53.000000000 +0900
-+++ src/ecasound-2.9.3/libecasound/plugins/Makefile.am	2020-02-13 16:47:08.697045900 +0900
++++ src/ecasound-2.9.3/libecasound/plugins/Makefile.am	2025-08-03 13:00:17.319321700 +0900
 @@ -105,7 +105,7 @@ plugin_all_sources = 	$(all_af_src) \
  libecasound_plugins_la_SOURCES          = audioio_dummy.cpp $(plugin_cond_sources)
  EXTRA_libecasound_plugins_la_SOURCES    = $(plugin_all_sources)
@@ -73,17 +67,11 @@
  
  libecasound_plugins_debug_la_SOURCES	= $(libecasound_plugins_la_SOURCES)
  EXTRA_libecasound_plugins_debug_la_SOURCES = $(EXTRA_libecasound_plugins_la_SOURCES)
---- origsrc/ecasound-2.9.3/libecasoundc/Makefile.am	2014-02-25 20:16:53.000000000 +0900
-+++ src/ecasound-2.9.3/libecasoundc/Makefile.am	2020-02-13 16:47:37.173685800 +0900
-@@ -14,10 +14,11 @@ AUTOMAKE_OPTIONS = foreign
- # !!!
- # remember to update eca-version.cpp
- if ECA_AM_DEBUG_MODE
--eca_ldflags = -version-info @LIBECASOUNDC_VERSION@:0:@LIBECASOUNDC_VERSION_AGE@ -static
-+eca_ldflags = -version-info @LIBECASOUNDC_VERSION@:0:@LIBECASOUNDC_VERSION_AGE@
+--- origsrc/ecasound-2.9.3/libecasoundc/Makefile.am	2025-08-03 12:54:25.666622000 +0900
++++ src/ecasound-2.9.3/libecasoundc/Makefile.am	2025-08-03 13:00:34.894166800 +0900
+@@ -18,6 +18,7 @@ eca_ldflags = -version-info @LIBECASOUND
  else
--eca_ldflags = -s -version-info @LIBECASOUNDC_VERSION@:0:@LIBECASOUNDC_VERSION_AGE@ -static
-+eca_ldflags = -s -version-info @LIBECASOUNDC_VERSION@:0:@LIBECASOUNDC_VERSION_AGE@
+ eca_ldflags = -s -version-info @LIBECASOUNDC_VERSION@:0:@LIBECASOUNDC_VERSION_AGE@ -shared -fPIC
  endif
 +eca_ldflags += -no-undefined
  
