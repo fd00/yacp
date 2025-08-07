@@ -1,0 +1,92 @@
+--- origsrc/libhomegear-node-0.7.40/Makefile.am	2019-07-30 21:18:34.000000000 +0900
++++ src/libhomegear-node-0.7.40/Makefile.am	2025-08-07 14:04:49.491298000 +0900
+@@ -1,3 +1,6 @@
+ AUTOMAKE_OPTIONS = foreign
+ ACLOCAL_AMFLAGS = -I m4 -I cfg
+ SUBDIRS = src
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libhomegear-node-0.7.40/configure.ac	2019-07-30 21:18:34.000000000 +0900
++++ src/libhomegear-node-0.7.40/configure.ac	2025-08-07 14:09:15.875414300 +0900
+@@ -2,7 +2,7 @@
+ # Process this file with autoconf to produce a configure script.
+ 
+ AC_PREREQ([2.69])
+-AC_INIT(libhomegear-node, m4_esyscmd_s([./getVersion.sh]), sathya@laufers.net)
++AC_INIT([libhomegear-node], [0.7.40], [sathya@laufers.net])
+ AC_CONFIG_AUX_DIR(cfg)
+ AM_INIT_AUTOMAKE
+ AC_CONFIG_SRCDIR([src/NodeFactory.h])
+@@ -44,7 +44,7 @@ case $host_os in
+ 	darwin* )
+ 		CPPFLAGS="$CPPFLAGS -DMACOSSYSTEM"
+ 		;;
+-	linux*)
++	linux*|*cygwin*)
+ 		CPPFLAGS="$CPPFLAGS -DLINUXSYSTEM"
+ 		;;
+ 	*BSD*)
+@@ -55,4 +55,4 @@ case $host_os in
+ 	        ;;
+ esac
+ 
+-AC_OUTPUT(Makefile src/Makefile)
++AC_OUTPUT(libhomegear-node.pc Makefile src/Makefile)
+--- origsrc/libhomegear-node-0.7.40/libhomegear-node.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libhomegear-node-0.7.40/libhomegear-node.pc.in	2025-08-07 14:04:49.451240300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libhomegear-node
++Description: Base library for Homegear nodes
++Version: @VERSION@
++Libs: -L${libdir} -lhomegear-node
++Cflags: -I${includedir}
+--- origsrc/libhomegear-node-0.7.40/src/Makefile.am	2019-07-30 21:18:34.000000000 +0900
++++ src/libhomegear-node-0.7.40/src/Makefile.am	2025-08-07 13:55:22.376511400 +0900
+@@ -5,7 +5,7 @@ AM_LDFLAGS = -Wl,-rpath=/lib/homegear -W
+ 
+ lib_LTLIBRARIES = libhomegear-node.la
+ libhomegear_node_la_SOURCES = Ansi.cpp BinaryDecoder.cpp BinaryEncoder.cpp BinaryRpc.cpp HelperFunctions.cpp INode.cpp IQueue.cpp IQueueBase.cpp JsonDecoder.cpp JsonEncoder.cpp Math.cpp NodeInfo.cpp Output.cpp RpcDecoder.cpp RpcEncoder.cpp Variable.cpp
+-libhomegear_node_la_LDFLAGS = -version-info 1:0:0
++libhomegear_node_la_LDFLAGS = -no-undefined -version-info 1:0:0
+ 
+ otherincludedir = $(includedir)/homegear-node
+ nobase_otherinclude_HEADERS = BinaryDecoder.h BinaryEncoder.h BinaryRpc.h FlowException.h HelperFunctions.h INode.h IQueue.h IQueueBase.h JsonDecoder.h JsonEncoder.h Math.h NodeInfo.h Output.h NodeFactory.h RpcDecoder.h RpcEncoder.h RpcHeader.h Variable.h
+--- origsrc/libhomegear-node-0.7.40/src/Variable.cpp	2019-07-30 21:18:34.000000000 +0900
++++ src/libhomegear-node-0.7.40/src/Variable.cpp	2025-08-07 14:01:34.778766000 +0900
+@@ -397,7 +397,7 @@ Variable::operator bool_type() const
+ 	return result ? &Variable::this_type_does_not_support_comparisons : 0;
+ }
+ 
+-std::string Variable::print(bool stdout, bool stderr, bool oneLine)
++std::string Variable::print(bool stdout_, bool stderr_, bool oneLine)
+ {
+     std::ostringstream result;
+     if(type == VariableType::tVoid)
+@@ -447,8 +447,8 @@ std::string Variable::print(bool stdout,
+         result << "(unknown)" << (oneLine ? " " : "\n");
+     }
+     std::string resultString = result.str();
+-    if(stdout) std::cout << resultString;
+-    if(stderr) std::cerr << resultString;
++    if(stdout_) std::cout << resultString;
++    if(stderr_) std::cerr << resultString;
+     return resultString;
+ }
+ 
+--- origsrc/libhomegear-node-0.7.40/src/Variable.h	2019-07-30 21:18:34.000000000 +0900
++++ src/libhomegear-node-0.7.40/src/Variable.h	2025-08-07 14:01:07.615135700 +0900
+@@ -112,7 +112,7 @@ public:
+ 	explicit Variable(const char* binaryVal, size_t binaryValSize);
+ 	virtual ~Variable();
+ 	static PVariable createError(int32_t faultCode, std::string faultString);
+-	std::string print(bool stdout = false, bool stderr = false, bool oneLine = false);
++	std::string print(bool stdout_ = false, bool stderr_ = false, bool oneLine = false);
+ 	static std::string getTypeString(VariableType type);
+ 	void setType(VariableType value) { type = value; };
+ 	std::string toString();
