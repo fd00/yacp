@@ -1,0 +1,62 @@
+--- origsrc/libLAS-1.8.1/CMakeLists.txt	2025-08-06 08:46:48.195322300 +0900
++++ src/libLAS-1.8.1/CMakeLists.txt	2025-08-07 09:57:56.790015000 +0900
+@@ -237,13 +237,20 @@ if(GEOTIFF_FOUND)
+ 
+     mark_as_advanced(CLEAR TIFF_INCLUDE_DIR)
+     mark_as_advanced(CLEAR TIFF_LIBRARY)
+-    if (WIN32)
+-        set(TIFF_NAMES libtiff_i)
+-    endif(WIN32)
+-    find_package (TIFF QUIET NO_MODULE)
+-    if (NOT TIFF_FOUND)
+-      find_package(TIFF)
+-    endif ()
++    if (CYGWIN)
++      find_package(pkgconfig)
++      pkg_check_modules(TIFF libtiff-4)
++      set(TIFF_INCLUDE_DIR ${TIFF_INCLUDE_DIRS})
++      set(TIFF_LIBRARY ${TIFF_LIBRARIES})
++    else()
++      if (WIN32)
++          set(TIFF_NAMES libtiff_i)
++      endif(WIN32)
++      find_package (TIFF QUIET NO_MODULE)
++      if (NOT TIFF_FOUND)
++        find_package(TIFF)
++      endif ()
++    endif()
+     if (TIFF_FOUND)
+       include_directories(${TIFF_INCLUDE_DIR})
+     endif()
+--- origsrc/libLAS-1.8.1/cmake/modules/FindGDAL.cmake	2016-08-22 22:06:34.000000000 +0900
++++ src/libLAS-1.8.1/cmake/modules/FindGDAL.cmake	2025-08-07 09:22:51.983559200 +0900
+@@ -241,7 +241,9 @@ ELSEIF(UNIX)
+             STRING(REGEX REPLACE "[-][l]" "" GDAL_LIB_NAME ${GDAL_LIB_NAME_WITH_PREFIX})
+         ENDIF()
+ 
+-        IF(APPLE)
++        IF(CYGWIN)
++            SET(GDAL_LIBRARY ${GDAL_LINK_DIRECTORIES}/lib${GDAL_LIB_NAME}.dll.a CACHE STRING INTERNAL)
++        ELSEIF(APPLE)
+             SET(GDAL_LIBRARY ${GDAL_LINK_DIRECTORIES}/lib${GDAL_LIB_NAME}.dylib CACHE STRING INTERNAL)
+         ELSE()
+             SET(GDAL_LIBRARY ${GDAL_LINK_DIRECTORIES}/lib${GDAL_LIB_NAME}.so CACHE STRING INTERNAL)
+--- origsrc/libLAS-1.8.1/src/gt_wkt_srs.cpp	2025-08-06 08:46:49.675715700 +0900
++++ src/libLAS-1.8.1/src/gt_wkt_srs.cpp	2025-08-07 09:39:04.099212700 +0900
+@@ -493,7 +493,6 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIF
+         {
+             char	*pszWKT;
+             oSRS.morphFromESRI();
+-            oSRS.FixupOrdering();
+             if( oSRS.exportToWkt( &pszWKT ) == OGRERR_NONE )
+                 return pszWKT;
+         }
+@@ -1094,8 +1093,6 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIF
+ /* ==================================================================== */
+     char	*pszWKT;
+ 
+-    oSRS.FixupOrdering();
+-
+     if( oSRS.exportToWkt( &pszWKT ) == OGRERR_NONE )
+         return pszWKT;
+     else

@@ -1,0 +1,77 @@
+HOMEPAGE="https://github.com/libLAS/libLAS/"
+SRC_URI="https://download.osgeo.org/${PN}/libLAS-${PV}.tar.bz2"
+SRC_DIR="libLAS-${PV}"
+PATCH_URI="
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${PN}-1.8.0_remove-std-c++98.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-fix-overload-call.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-CVE-2018-20540.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-CVE-2018-20540-fixup.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-fix-debug.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-boost-1.73.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-gcc11.patch
+	https://gitweb.gentoo.org/repo/gentoo.git/plain/sci-geosciences/${PN}/files/${P}-c99.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}_pkgconfig.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}_boost173.patch
+	https://src.fedoraproject.org/rpms/${PN}/raw/rawhide/f/${PN}-gcc15.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="LAS 1.0/1.1/1.2 ASPRS LiDAR data translation toolset"
+DESCRIPTION="libLAS is a C/C++ library for reading and writing the very common LAS LiDAR
+format. The ASPRS LAS format is a sequential binary format used to store data
+from LiDAR sensors and by LiDAR processing software for data interchange and
+archival. See Features for more details on what libLAS can provide a LiDAR
+software developer. See Getting Started with libLAS for how to get started
+using the library."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="libboost-devel libgdal-devel libgeotiff-devel liblaszip-devel libtiff-devel"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DWITH_LASZIP:BOOL=ON
+	-DWITH_GDAL:BOOL=ON
+	-DWITH_PKGCONFIG:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	verbose mkdir -p usr/lib/cmake/${PN}
+	verbose mv usr/share/cmake/libLAS/* usr/lib/cmake/${PN}/
+
+	verbose mkdir -p usr/share/doc/${PN}
+	verbose mv usr/share/${PN}/doc/* usr/share/doc/${PN}/
+}
+
+DIFF_EXCLUDES="
+	README.txt
+	*.las
+"
+
+PKG_NAMES="
+	liblas
+	liblas3
+	liblas-devel
+"
+liblas_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+liblas3_CONTENTS="
+	usr/bin/cyg*-3.dll
+"
+liblas_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+liblas_SUMMARY="${SUMMARY} (utilities)"
+liblas3_SUMMARY="${SUMMARY} (runtime)"
+liblas_devel_SUMMARY="${SUMMARY} (development)"
