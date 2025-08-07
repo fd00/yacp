@@ -1,5 +1,5 @@
---- origsrc/libhomegear-ipc-0.7.30/Makefile.am	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/Makefile.am	2018-11-25 11:52:18.201554400 +0900
+--- origsrc/libhomegear-ipc-0.7.40/Makefile.am	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/Makefile.am	2025-08-07 13:24:00.528359700 +0900
 @@ -1,3 +1,6 @@
  AUTOMAKE_OPTIONS = foreign
  ACLOCAL_AMFLAGS = -I m4 -I cfg
@@ -7,14 +7,14 @@
 +
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
---- origsrc/libhomegear-ipc-0.7.30/configure.ac	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/configure.ac	2018-11-25 11:52:46.724754300 +0900
+--- origsrc/libhomegear-ipc-0.7.40/configure.ac	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/configure.ac	2025-08-07 13:23:57.210556700 +0900
 @@ -2,7 +2,7 @@
  # Process this file with autoconf to produce a configure script.
  
  AC_PREREQ([2.69])
 -AC_INIT(libhomegear-ipc, m4_esyscmd_s([./getVersion.sh]), sathya@laufers.net)
-+AC_INIT(libhomegear-ipc, [0.7.30], sathya@laufers.net)
++AC_INIT([libhomegear-ipc], [0.7.40], [sathya@laufers.net])
  AC_CONFIG_AUX_DIR(cfg)
  AM_INIT_AUTOMAKE
  AC_CONFIG_SRCDIR([src/IIpcClient.h])
@@ -33,8 +33,8 @@
  
 -AC_OUTPUT(Makefile src/Makefile)
 +AC_OUTPUT(libhomegear-ipc.pc Makefile src/Makefile)
---- origsrc/libhomegear-ipc-0.7.30/libhomegear-ipc.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/libhomegear-ipc.pc.in	2018-11-25 11:52:57.172448800 +0900
+--- origsrc/libhomegear-ipc-0.7.40/libhomegear-ipc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/libhomegear-ipc.pc.in	2025-08-07 13:24:05.826932600 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -46,32 +46,32 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -lhomegear-ipc
 +Cflags: -I${includedir}
---- origsrc/libhomegear-ipc-0.7.30/src/IIpcClient.cpp	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/src/IIpcClient.cpp	2018-11-25 11:43:34.053726800 +0900
-@@ -30,6 +30,9 @@
- 
- #include "IIpcClient.h"
+--- origsrc/libhomegear-ipc-0.7.40/src/IIpcClient.cpp	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/src/IIpcClient.cpp	2025-08-07 13:17:28.440516000 +0900
+@@ -32,6 +32,9 @@
+  * files in the program, then also delete it here.
+ */
  
 +#include <sys/select.h>
 +#include <sys/time.h>
 +
- namespace Ipc
- {
+ #include "IIpcClient.h"
  
---- origsrc/libhomegear-ipc-0.7.30/src/Makefile.am	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/src/Makefile.am	2018-11-25 11:50:15.001115400 +0900
+ namespace Ipc
+--- origsrc/libhomegear-ipc-0.7.40/src/Makefile.am	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/src/Makefile.am	2025-08-07 12:59:50.377756700 +0900
 @@ -5,7 +5,7 @@ AM_LDFLAGS = -Wl,-rpath=/lib/homegear -W
  
  lib_LTLIBRARIES = libhomegear-ipc.la
- libhomegear_ipc_la_SOURCES = BinaryDecoder.cpp BinaryEncoder.cpp BinaryRpc.cpp HelperFunctions.cpp IIpcClient.cpp IQueue.cpp IQueueBase.cpp JsonDecoder.cpp JsonEncoder.cpp Math.cpp Output.cpp RpcDecoder.cpp RpcEncoder.cpp Variable.cpp
+ libhomegear_ipc_la_SOURCES = Ansi.cpp BinaryDecoder.cpp BinaryEncoder.cpp BinaryRpc.cpp HelperFunctions.cpp IIpcClient.cpp IQueue.cpp IQueueBase.cpp JsonDecoder.cpp JsonEncoder.cpp Math.cpp Output.cpp RpcDecoder.cpp RpcEncoder.cpp Variable.cpp
 -libhomegear_ipc_la_LDFLAGS = -version-info 1:0:0
 +libhomegear_ipc_la_LDFLAGS = -no-undefined -version-info 1:0:0
  
  otherincludedir = $(includedir)/homegear-ipc
  nobase_otherinclude_HEADERS = BinaryDecoder.h BinaryEncoder.h BinaryRpc.h HelperFunctions.h IIpcClient.h IpcException.h IpcResponse.h IQueue.h IQueueBase.h JsonDecoder.h JsonEncoder.h Math.h Output.h RpcDecoder.h RpcEncoder.h RpcHeader.h Variable.h
---- origsrc/libhomegear-ipc-0.7.30/src/Variable.cpp	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/src/Variable.cpp	2018-11-25 11:49:25.467926900 +0900
-@@ -262,7 +262,7 @@ Variable::operator Variable::bool_type()
+--- origsrc/libhomegear-ipc-0.7.40/src/Variable.cpp	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/src/Variable.cpp	2025-08-07 13:18:02.415383400 +0900
+@@ -397,7 +397,7 @@ Variable::operator Variable::bool_type()
  	return result ? &Variable::this_type_does_not_support_comparisons : 0;
  }
  
@@ -80,7 +80,7 @@
  {
  	std::ostringstream result;
  	if(type == VariableType::tVoid)
-@@ -312,8 +312,8 @@ std::string Variable::print(bool stdout,
+@@ -447,8 +447,8 @@ std::string Variable::print(bool stdout,
  		result << "(unknown)" << (oneLine ? " " : "\n");
  	}
  	std::string resultString = result.str();
@@ -91,14 +91,14 @@
  	return resultString;
  }
  
---- origsrc/libhomegear-ipc-0.7.30/src/Variable.h	2018-07-27 16:16:39.000000000 +0900
-+++ src/libhomegear-ipc-0.7.30/src/Variable.h	2018-11-25 11:41:48.260420700 +0900
-@@ -109,7 +109,7 @@ public:
- 	Variable(std::vector<char>& binaryVal) : Variable() { type = VariableType::tBinary; binaryValue.clear(); binaryValue.insert(binaryValue.end(), binaryVal.begin(), binaryVal.end()); }
+--- origsrc/libhomegear-ipc-0.7.40/src/Variable.h	2019-07-30 21:18:16.000000000 +0900
++++ src/libhomegear-ipc-0.7.40/src/Variable.h	2025-08-07 13:07:12.635415000 +0900
+@@ -112,7 +112,7 @@ public:
+     explicit Variable(const char* binaryVal, size_t binaryValSize);
  	virtual ~Variable();
  	static PVariable createError(int32_t faultCode, std::string faultString);
 -	std::string print(bool stdout = false, bool stderr = false, bool oneLine = false);
-+	std::string print(bool stdout_ = false, bool stderr_ = false, bool oneLine_ = false);
++	std::string print(bool stdout_ = false, bool stderr_ = false, bool oneLine = false);
  	static std::string getTypeString(VariableType type);
  	void setType(VariableType value) { type = value; };
  	std::string toString();
