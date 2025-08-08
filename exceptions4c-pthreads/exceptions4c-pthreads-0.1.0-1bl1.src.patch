@@ -1,0 +1,100 @@
+--- origsrc/exceptions4c-pthreads-0.1.0/Makefile.am	2025-02-23 05:12:11.000000000 +0900
++++ src/exceptions4c-pthreads-0.1.0/Makefile.am	2025-08-08 20:32:57.363304600 +0900
+@@ -7,26 +7,28 @@
+ 
+ AUTOMAKE_OPTIONS = foreign subdir-objects
+ 
+-AM_CFLAGS = -Wall -Werror --pedantic -Wno-missing-braces -Wno-dangling-else -coverage -O0 -I$(EXCEPTIONS4C_PTHREADS_PATH) -Ideps/exceptions4c
++AM_CFLAGS = -Wall -Werror --pedantic -Wno-missing-braces -Wno-dangling-else -I$(EXCEPTIONS4C_PTHREADS_PATH)
+ 
+ 
+ # Library
+ 
+-EXCEPTIONS4C_PTHREADS_PATH      = src
+-EXCEPTIONS4C_PTHREADS_LIBRARY   = lib/libexceptions4c-pthreads.a
++EXCEPTIONS4C_PTHREADS_PATH      = $(srcdir)/src
++EXCEPTIONS4C_PTHREADS_LIBRARY   = lib/libexceptions4c-pthreads.la
+ 
+ 
+ # Install
+ 
+-lib_LIBRARIES = $(EXCEPTIONS4C_PTHREADS_LIBRARY)
++lib_LTLIBRARIES = $(EXCEPTIONS4C_PTHREADS_LIBRARY)
+ 
+ include_HEADERS = src/exceptions4c-pthreads.h
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = exceptions4c-pthreads.pc
+ 
+ # Documentation
+ 
+-docsdir = $(datadir)/docs/exceptions4c-pthreads
+-docs_DATA = docs/*
++# docsdir = $(datadir)/docs/exceptions4c-pthreads
++# docs_DATA = docs/*
+ 
+ 
+ # Cleanup
+@@ -76,20 +78,25 @@ deps/exceptions4c/exceptions4c.c:
+ 
+ # Library
+ 
+-lib_libexceptions4c_pthreads_a_CFLAGS       = -Wall -Werror --pedantic -Wno-missing-braces -I$(EXCEPTIONS4C_PTHREADS_PATH) -Ideps/exceptions4c
+-lib_libexceptions4c_pthreads_a_SOURCES      = src/exceptions4c-pthreads.c
+-
++lib_libexceptions4c_pthreads_la_CFLAGS       = -Wall --pedantic -Wno-missing-braces -I$(EXCEPTIONS4C_PTHREADS_PATH) $(EXCEPTIONS4C_CFLAGS)
++lib_libexceptions4c_pthreads_la_SOURCES      = src/exceptions4c-pthreads.c
++lib_libexceptions4c_pthreads_la_LIBADD       = $(EXCEPTIONS4C_LIBS)
++lib_libexceptions4c_pthreads_la_LDFLAGS      = -no-undefined
+ 
+ # Tests
+ 
+-bin_check_dangling_block_SOURCES            = src/exceptions4c-pthreads.c deps/exceptions4c/exceptions4c.c tests/dangling-block.c
+-bin_check_integration_test_SOURCES          = src/exceptions4c-pthreads.c deps/exceptions4c/exceptions4c.c tests/integration-test.c
+-
++bin_check_dangling_block_CFLAGS             = -I$(EXCEPTIONS4C_PTHREADS_PATH)
++bin_check_dangling_block_SOURCES            = tests/dangling-block.c
++bin_check_dangling_block_LDADD              = $(EXCEPTIONS4C_PTHREADS_LIBRARY)
++bin_check_integration_test_CFLAGS           = -I$(EXCEPTIONS4C_PTHREADS_PATH)
++bin_check_integration_test_SOURCES          = tests/integration-test.c
++bin_check_integration_test_LDADD            = $(EXCEPTIONS4C_PTHREADS_LIBRARY)
+ 
+ # Examples
+ 
+-bin_check_examples_pthreads_SOURCES         = src/exceptions4c-pthreads.c deps/exceptions4c/exceptions4c.c examples/pthreads.c
+-
++bin_check_examples_pthreads_CFLAGS          = -I$(EXCEPTIONS4C_PTHREADS_PATH)
++bin_check_examples_pthreads_SOURCES         = examples/pthreads.c
++bin_check_examples_pthreads_LDADD           = $(EXCEPTIONS4C_PTHREADS_LIBRARY)
+ 
+ # Coverage
+ 
+--- origsrc/exceptions4c-pthreads-0.1.0/configure.ac	2025-02-23 05:12:11.000000000 +0900
++++ src/exceptions4c-pthreads-0.1.0/configure.ac	2025-08-08 20:20:27.275727100 +0900
+@@ -30,9 +30,7 @@ AC_CONFIG_SRCDIR([src/exceptions4c-pthre
+ # Checks for programs.
+ AC_PROG_CC
+ AC_PROG_CPP
+-AC_PROG_RANLIB
+-AM_PROG_AR
+-
++LT_INIT
+ 
+ # Checks for header files.
+ AC_HEADER_STDBOOL
+@@ -69,6 +67,8 @@ AC_CHECK_HEADERS([pthread.h], [
+     AC_MSG_ERROR(Missing required pthread library))
+ ], AC_MSG_ERROR(Missing required pthread header))
+ 
++PKG_CHECK_MODULES([EXCEPTIONS4C], [exceptions4c])
++
+ 
+ # The config file is generated but not used by the source code
+ #AC_CONFIG_HEADERS([config.h])
+--- origsrc/exceptions4c-pthreads-0.1.0/exceptions4c-pthreads.pc.in	2025-02-23 05:12:11.000000000 +0900
++++ src/exceptions4c-pthreads-0.1.0/exceptions4c-pthreads.pc.in	2025-08-08 21:22:37.579143600 +0900
+@@ -7,3 +7,4 @@ Name: exceptions4c-pthreads
+ Description: Multithreading exception handling for C
+ Version: @VERSION@
+ Cflags: -I${includedir}
++Libs: -L${libdir} -lexceptions4c-pthreads
