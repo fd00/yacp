@@ -1,5 +1,5 @@
 --- origsrc/libcomplearn-1.1.7/configure.ac	2010-11-25 06:26:29.000000000 +0900
-+++ src/libcomplearn-1.1.7/configure.ac	2018-07-02 16:59:48.167557300 +0900
++++ src/libcomplearn-1.1.7/configure.ac	2025-08-09 07:28:42.222039700 +0900
 @@ -114,7 +114,7 @@ else
    GOMPFLAGS=""
  fi
@@ -10,7 +10,7 @@
  else
    SONAMEOPTS="-Wl,-soname -Wl,libcomplearn${GOMPSTR}-1.0${shrext_cmds}.0"
 --- origsrc/libcomplearn-1.1.7/src/Makefile.am	2010-01-11 10:14:37.000000000 +0900
-+++ src/libcomplearn-1.1.7/src/Makefile.am	2018-07-02 16:59:48.167557300 +0900
++++ src/libcomplearn-1.1.7/src/Makefile.am	2025-08-09 07:28:42.229929500 +0900
 @@ -2,10 +2,10 @@
  bin_PROGRAMS = ncd anycompress anydecompress complearn-config
  
@@ -40,7 +40,7 @@
  endif
  
 --- origsrc/libcomplearn-1.1.7/src/anycompress.c	2010-01-11 09:03:47.000000000 +0900
-+++ src/libcomplearn-1.1.7/src/anycompress.c	2018-07-02 16:59:48.167557300 +0900
++++ src/libcomplearn-1.1.7/src/anycompress.c	2025-08-09 07:28:42.230939100 +0900
 @@ -29,7 +29,6 @@ SUCH DAMAGE.
  #include <stdio.h>
  #include <stdlib.h>
@@ -50,7 +50,7 @@
  #include <locale.h>
  #include <libintl.h>
 --- origsrc/libcomplearn-1.1.7/src/anydecompress.c	2010-01-11 09:03:47.000000000 +0900
-+++ src/libcomplearn-1.1.7/src/anydecompress.c	2018-07-02 16:59:48.183252200 +0900
++++ src/libcomplearn-1.1.7/src/anydecompress.c	2025-08-09 07:28:42.232948900 +0900
 @@ -29,7 +29,7 @@ SUCH DAMAGE.
  #include <stdio.h>
  #include <string.h>
@@ -61,7 +61,7 @@
  #include <locale.h>
  #include <libintl.h>
 --- origsrc/libcomplearn-1.1.7/src/complearn-config.c.in	2010-01-11 09:03:47.000000000 +0900
-+++ src/libcomplearn-1.1.7/src/complearn-config.c.in	2018-07-02 16:59:48.183252200 +0900
++++ src/libcomplearn-1.1.7/src/complearn-config.c.in	2025-08-09 07:28:42.232948900 +0900
 @@ -12,6 +12,12 @@
  
  #define _(O) gettext(O)
@@ -89,7 +89,7 @@
        case 'c':
          printf("-I%s/include/complearn-1.0 %s\n", "@prefix@", "@PRIVATECFLAGS@");
 --- origsrc/libcomplearn-1.1.7/tests/Makefile.am	2010-01-11 09:03:47.000000000 +0900
-+++ src/libcomplearn-1.1.7/tests/Makefile.am	2018-07-02 16:59:48.198808400 +0900
++++ src/libcomplearn-1.1.7/tests/Makefile.am	2025-08-09 07:28:42.232948900 +0900
 @@ -2,8 +2,14 @@
  if FOUND_CHECK
  TESTS = check_complearn
@@ -106,3 +106,51 @@
 -check_complearn_LDADD = @CHECK_LIBS@ -lcomplearn -L../src
 +check_complearn_LDADD = @CHECK_LIBS@ $(COMPLEARN_LIBS) -L../src
  endif
+--- origsrc/libcomplearn-1.1.7/tests/check_ncd.c	2010-01-11 09:03:47.000000000 +0900
++++ src/libcomplearn-1.1.7/tests/check_ncd.c	2025-08-09 15:40:33.216575900 +0900
+@@ -23,6 +23,7 @@ START_TEST (test_complearn_ncd)
+ END_TEST
+ 
+ START_TEST (test_complearn_ncd_literal)
++{
+   complearn_ncd_set_literal_mode ();
+   complearn_ncd_set_zero_diagonal(complearn_ncd_top(), FALSE);
+   complearn_ncd_add_argument ("hello");
+@@ -45,6 +46,7 @@ complearn_ncd_get_argument(1));
+   fail_if (lm->mat->size1 != 1 || lm->mat->size2 != 1,
+     "Error, got matrix of %dx%d expected 1x1\n", lm->mat->size1,lm->mat->size2);
+   fail_if (gsl_matrix_get(lm->mat, 0, 0) != 0.0);
++}
+ END_TEST
+ 
+ Suite *
+--- origsrc/libcomplearn-1.1.7/tests/check_util.c	2010-01-11 09:03:47.000000000 +0900
++++ src/libcomplearn-1.1.7/tests/check_util.c	2025-08-09 15:41:13.862367700 +0900
+@@ -5,6 +5,7 @@
+ #include "../src/complearn/complearn.h"
+ 
+ START_TEST (test_complearn_util_dir1)
++{
+   char *tnam;
+   int rv;
+   tnam = complearn_make_temp_dir_name();
+@@ -20,9 +21,11 @@ START_TEST (test_complearn_util_dir1)
+   fail_unless (rv == 0);
+   rv = complearn_remove_directory_recursively(tnam,0);
+   fail_if (rv == 0);
++}
+ END_TEST
+ 
+ START_TEST (test_complearn_util_dir2)
++{
+   char *tnam, *c1, *c2, *t2;
+   int rv;
+   tnam = complearn_make_temp_dir_name();
+@@ -35,6 +38,7 @@ START_TEST (test_complearn_util_dir2)
+   fail_unless(strcmp(tnam, c2) == 0);
+   t2 = complearn_make_temp_dir_name();
+   fail_if(strcmp(tnam, t2) == 0);
++}
+ END_TEST
+ 
+ Suite *
