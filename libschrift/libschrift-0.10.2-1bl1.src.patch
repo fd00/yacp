@@ -1,0 +1,81 @@
+--- origsrc/libschrift-0.10.2/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/libschrift-0.10.2/CMakeLists.txt	2025-08-09 23:52:33.028069200 +0900
+@@ -0,0 +1,29 @@
++cmake_minimum_required(VERSION 3.28)
++project(libschrift
++  VERSION 0.10.2
++  DESCRIPTION "Lightweight TrueType font rendering library"
++  HOMEPAGE_URL "https://github.com/tomolt/libschrift")
++
++include(GNUInstallDirs)
++include(CTest)
++
++add_library(schrift SHARED "schrift.c")
++set_target_properties(schrift PROPERTIES SOVERSION 0)
++
++install(TARGETS schrift
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(demo "demo.c")
++target_link_libraries(demo PRIVATE schrift X11 Xrender)
++add_executable(stress "stress.c")
++target_include_directories(stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
++target_link_libraries(stress PRIVATE schrift)
++
++install(FILES schrift.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++install(FILES schrift.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++configure_file(libschrift.pc.in ${CMAKE_BINARY_DIR}/libschrift.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libschrift.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+--- origsrc/libschrift-0.10.2/libschrift.pc.in	2025-08-09 22:38:23.855217000 +0900
++++ src/libschrift-0.10.2/libschrift.pc.in	2025-08-09 23:51:32.977815300 +0900
+@@ -4,7 +4,7 @@ libdir=${prefix}/lib
+ 
+ Name: libschrift
+ Description: A lightweight TrueType font rendering library
+-Version: @version@
++Version: @PROJECT_VERSION@
+ Libs: -L${libdir} -lschrift
+ Libs.private: -lm
+ Cflags: -I${includedir}
+--- origsrc/libschrift-0.10.2/schrift.c	2022-06-26 02:39:37.000000000 +0900
++++ src/libschrift-0.10.2/schrift.c	2025-08-09 22:55:30.850902700 +0900
+@@ -29,7 +29,9 @@
+ # define WIN32_LEAN_AND_MEAN 1
+ # include <windows.h>
+ #else
++# if !defined(_POSIX_C_SOURCE)
+ # define _POSIX_C_SOURCE 1
++# endif
+ # include <fcntl.h>
+ # include <sys/mman.h>
+ # include <sys/stat.h>
+@@ -125,7 +127,9 @@ struct SFT_Font
+ 
+ /* function declarations */
+ /* generic utility functions */
++#if !defined(__CYGWIN__)
+ static void *reallocarray(void *optr, size_t nmemb, size_t size);
++#endif
+ static inline int fast_floor(double x);
+ static inline int fast_ceil (double x);
+ /* file loading */
+@@ -406,6 +410,7 @@ failure:
+  * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW */
+ #define MUL_NO_OVERFLOW	((size_t)1 << (sizeof(size_t) * 4))
+ 
++#if !defined(__CYGWIN__)
+ /* OpenBSD's reallocarray() standard libary function.
+  * A wrapper for realloc() that takes two size args like calloc().
+  * Useful because it eliminates common integer overflow bugs. */
+@@ -419,6 +424,7 @@ reallocarray(void *optr, size_t nmemb, s
+ 	}
+ 	return realloc(optr, size * nmemb);
+ }
++#endif
+ 
+ /* TODO maybe we should use long here instead of int. */
+ static inline int
