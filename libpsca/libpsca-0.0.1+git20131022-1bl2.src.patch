@@ -1,0 +1,60 @@
+--- origsrc/libpsca/CMakeLists.txt	2025-08-11 23:02:02.000000000 +0900
++++ src/libpsca/CMakeLists.txt	2025-08-11 23:07:37.703227000 +0900
+@@ -11,7 +11,7 @@ set (PSCA_VERSION_STRING "${PSCA_VERSION
+ # Build documentation
+ find_package (Doxygen)
+ 
+-if (DOXYGEN_FOUND)
++if (BUILD_DOC AND DOXYGEN_FOUND)
+   set (PSCA_DOXYGEN_IN "${PSCA_ROOT}/doxy.config.in")
+   set (PSCA_DOXYGEN_OUT "${CMAKE_CURRENT_BINARY_DIR}/doxy.config")
+ 
+@@ -24,3 +24,9 @@ endif (DOXYGEN_FOUND)
+ add_subdirectory (lib)
+ add_subdirectory (examples)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libpsca.pc.in ${CMAKE_BINARY_DIR}/libpsca.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libpsca.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libpsca/lib/CMakeLists.txt	2025-08-11 23:02:02.000000000 +0900
++++ src/libpsca/lib/CMakeLists.txt	2025-08-11 23:03:30.739091700 +0900
+@@ -13,14 +13,6 @@ include_directories (${PROJECT_BINARY_DI
+   set (PSCA_PSCA_HEADERS ${PSCA_VERSION_OUT} ${PSCA_EXPORT_HEADER})
+ # }}}
+ 
+-# Build static library {{{
+-  add_library (psca_static STATIC ${PSCA_SOURCES} ${PSCA_HEADERS} ${PSCA_PSCA_HEADERS})
+-
+-  set_target_properties (psca_static
+-                         PROPERTIES
+-                         OUTPUT_NAME "psca")
+-# }}}
+-
+ # Build shared library {{{
+   add_library (psca SHARED ${PSCA_SOURCES} ${PSCA_HEADERS})
+ 
+@@ -31,7 +23,7 @@ include_directories (${PROJECT_BINARY_DI
+ # }}}
+ 
+ # Install targets {{{
+-  install (TARGETS psca psca_static
++  install (TARGETS psca
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib)
+--- origsrc/libpsca/libpsca.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libpsca/libpsca.pc.in	2025-08-11 23:09:27.806840800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libpsca
++Description: Pool Stack C Allocator
++Version: @PSCA_VERSION_STRING@
++Libs: -L${libdir} -lpsca
++Cflags: -I${includedir}
