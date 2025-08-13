@@ -4,7 +4,7 @@ SRC_URI="https://github.com/awesomized/${PN}/archive/refs/tags/${PV}.tar.gz"
 CATEGORY="Libs"
 SUMMARY="C and C++ client library for memcached"
 DESCRIPTION="libmemcached-awesome is an open source C/C++ client library and tools for the
-memcached server (http://memcached.org/). It has been designed to be light on
+memcached server (https://memcached.org/). It has been designed to be light on
 memory usage, thread safe, and provide full access to server side methods."
 
 LICENSE="BSD-3-Clause"
@@ -19,6 +19,7 @@ inherit cmake
 
 CYGCMAKE_ARGS="
 	-DBUILD_TESTING:BOOL=ON
+	-DCMAKE_INSTALL_DOCDIR:PATH=/usr/share/doc/${PN}
 	-DENABLE_HASH_HSIEH:BOOL=ON
 	-DENABLE_SASL:BOOL=ON
 "
@@ -26,7 +27,12 @@ CYGCMAKE_ARGS="
 src_test()
 {
 	cd ${B}
-	./test/runtests.exe
+	_path=${PATH}
+	for d in $(echo src/lib* | xargs -n 1 basename)
+	do
+		_path="${B}/src/$d:${_path}"
+	done
+	PATH=${_path} ./test/runtests.exe
 }
 
 PKG_NAMES="
@@ -43,7 +49,7 @@ PKG_NAMES="
 libmemcached_CONTENTS="
 	usr/bin/*.exe
 	usr/share/doc
-	usr/share/${PN}-awesome
+	usr/share/${PN}
 "
 libmemcached11_CONTENTS="
 	usr/bin/cygmemcached-11.dll
@@ -51,7 +57,7 @@ libmemcached11_CONTENTS="
 libmemcached_devel_CONTENTS="
 	usr/include/${PN}/*
 	usr/include/${PN}-1.0/*
-	usr/lib/cmake/${PN}-awesome/${PN}-*.cmake
+	usr/lib/cmake/${PN}/${PN}-*.cmake
 	usr/lib/${PN}.dll.a
 	usr/lib/pkgconfig
 	usr/share/aclocal
@@ -61,7 +67,7 @@ libmemcachedprotocol0_CONTENTS="
 "
 libmemcachedprotocol_devel_CONTENTS="
 	usr/include/${PN}protocol-0.0/*
-	usr/lib/cmake/${PN}-awesome/${PN}protocol-*.cmake
+	usr/lib/cmake/${PN}/${PN}protocol-*.cmake
 	usr/lib/${PN}protocol.dll.a
 "
 libmemcachedutil2_CONTENTS="
@@ -69,7 +75,7 @@ libmemcachedutil2_CONTENTS="
 "
 libmemcachedutil_devel_CONTENTS="
 	usr/include/${PN}util-1.0/*
-	usr/lib/cmake/${PN}-awesome/${PN}util-*.cmake
+	usr/lib/cmake/${PN}/${PN}util-*.cmake
 	usr/lib/${PN}util.dll.a
 "
 libhashkit2_CONTENTS="
@@ -78,7 +84,7 @@ libhashkit2_CONTENTS="
 libhashkit_devel_CONTENTS="
 	usr/include/libhashkit/*
 	usr/include/libhashkit-1.0/*
-	usr/lib/cmake/${PN}-awesome/libhashkit-*.cmake
+	usr/lib/cmake/${PN}/libhashkit-*.cmake
 	usr/lib/libhashkit.dll.a
 "
 libmemcached_SUMMARY="${SUMMARY} (utilities)"
