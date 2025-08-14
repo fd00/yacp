@@ -1,0 +1,58 @@
+--- origsrc/libdistance-0.2.3/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/libdistance-0.2.3/CMakeLists.txt	2025-08-14 19:55:34.760347800 +0900
+@@ -0,0 +1,32 @@
++cmake_minimum_required(VERSION 3.28)
++project(libdistance
++  VERSION 0.2.3
++  DESCRIPTION "Compute the distance between two pieces of data"
++  HOMEPAGE_URL "https://monkey.org/~jose/software/libdistance/")
++
++include(GNUInstallDirs)
++include(CTest)
++
++add_library(distance SHARED
++  levenshtein.c hamming.c bloom.c needleman_wunsch.c jaccard.c minkowski.c damerau.c)
++set_target_properties(distance PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++
++install(TARGETS distance
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++add_executable(distance-test "test/test.c")
++target_include_directories(distance-test PRIVATE ${CMAKE_SOURCE_DIR})
++target_link_libraries(distance-test distance)
++add_test(NAME distance-test COMMAND distance-test)
++
++install(FILES distance.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++install(FILES distance.3 DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libdistance.pc.in ${CMAKE_BINARY_DIR}/libdistance.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libdistance.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libdistance-0.2.3/libdistance.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdistance-0.2.3/libdistance.pc.in	2025-08-14 19:55:42.280213300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdistance
++Description: Compute the distance between two pieces of data
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -ldistance
++Cflags: -I${includedir}
+--- origsrc/libdistance-0.2.3/test/test.c	2014-10-10 22:11:38.000000000 +0900
++++ src/libdistance-0.2.3/test/test.c	2025-08-14 19:53:28.657858100 +0900
+@@ -12,6 +12,7 @@
+ #include <stdint.h>
+ #endif				/* __Darwin__ */
+ #include <math.h>
++#include <string.h>
+ #include "distance.h"
+ 
+ static int      num_tests = 0;
