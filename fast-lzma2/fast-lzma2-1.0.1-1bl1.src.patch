@@ -1,0 +1,53 @@
+--- origsrc/fast-lzma2-1.0.1/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/fast-lzma2-1.0.1/CMakeLists.txt	2025-08-15 10:06:16.348089300 +0900
+@@ -0,0 +1,37 @@
++cmake_minimum_required(VERSION 3.28)
++project(fast-lzma2
++  VERSION 1.0.1
++  DESCRIPTION "Fast LZMA2 Library"
++  HOMEPAGE_URL "https://github.com/conor42/fast-lzma2")
++
++include(GNUInstallDirs)
++include(CTest)
++
++find_package(pkgconfig)
++pkg_check_modules(XXHASH libxxhash)
++
++add_library(fast-lzma2 SHARED
++  dict_buffer.c fl2_common.c fl2_compress.c fl2_decompress.c fl2_pool.c
++  fl2_threading.c lzma2_dec.c lzma2_enc.c radix_bitpack.c radix_mf.c
++  radix_struct.c range_enc.c util.c)
++target_compile_definitions(fast-lzma2 PRIVATE FL2_DLL_EXPORT=1)
++target_link_libraries(fast-lzma2 PRIVATE ${XXHASH_LIBRARIES})
++set_target_properties(fast-lzma2 PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++
++install(TARGETS fast-lzma2
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++install(FILES fast-lzma2.h fl2_errors.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++add_executable(file_test test/file_test.c)
++target_include_directories(file_test PRIVATE ${CMAKE_SOURCE_DIR})
++target_link_libraries(file_test PRIVATE fast-lzma2)
++add_test(NAME file_test COMMAND file_test ${CMAKE_SOURCE_DIR}/dll/fast-lzma2.vcxproj)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/fast-lzma2.pc.in ${CMAKE_BINARY_DIR}/fast-lzma2.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/fast-lzma2.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/fast-lzma2-1.0.1/fast-lzma2.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/fast-lzma2-1.0.1/fast-lzma2.pc.in	2025-08-15 10:06:28.835934800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: fast-lzma2
++Description: Fast LZMA2 Library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lfast-lzma2
++Cflags: -I${includedir}
