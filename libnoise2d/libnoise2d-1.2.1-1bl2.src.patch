@@ -1,0 +1,74 @@
+--- origsrc/libnoise2d-1.2.1/CMakeLists.txt	2019-12-04 20:43:30.000000000 +0900
++++ src/libnoise2d-1.2.1/CMakeLists.txt	2025-08-16 20:58:15.505589200 +0900
+@@ -7,3 +7,10 @@ IF(USE_XXHASH)
+ ENDIF(USE_XXHASH)
+ 
+ ADD_SUBDIRECTORY(src)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libnoise2d.pc.in ${CMAKE_BINARY_DIR}/libnoise2d.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libnoise2d.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libnoise2d-1.2.1/libnoise2d.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libnoise2d-1.2.1/libnoise2d.pc.in	2025-08-16 20:58:08.614314200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libnoise2d
++Description: C++ library that is used to generate coherent noise
++Version: @VERSION@
++Libs: -L${libdir} -lnoise2d
++Cflags: -I${includedir}
+--- origsrc/libnoise2d-1.2.1/src/CMakeLists.txt	2019-12-04 20:43:30.000000000 +0900
++++ src/libnoise2d-1.2.1/src/CMakeLists.txt	2025-08-16 17:47:25.224746800 +0900
+@@ -1,13 +1,10 @@
+ INCLUDE_DIRECTORIES (
+-    ${CMAKE_HOME_DIRECTORY}/3rdParty/xxhash
+     ${CMAKE_HOME_DIRECTORY}/src/model
+     ${CMAKE_HOME_DIRECTORY}/src/module
+     ${CMAKE_HOME_DIRECTORY}/src
+ )
+ 
+ SET(HDRS
+-    ${CMAKE_HOME_DIRECTORY}/3rdParty/xxhash/xxhash.h
+-
+     ${CMAKE_HOME_DIRECTORY}/src/basictypes.h
+     ${CMAKE_HOME_DIRECTORY}/src/exception.h
+     ${CMAKE_HOME_DIRECTORY}/src/interp.h
+@@ -59,8 +56,6 @@ SET(MODULE_HDRS
+ )
+ 
+ SET(SRCS
+-    ${CMAKE_HOME_DIRECTORY}/3rdParty/xxhash/xxhash.c
+-
+     ${CMAKE_HOME_DIRECTORY}/src/latlon.cpp
+     ${CMAKE_HOME_DIRECTORY}/src/noisegen.cpp 
+     ${CMAKE_HOME_DIRECTORY}/src/model/cylinder.cpp 
+@@ -100,12 +95,21 @@ SET(SRCS
+ 
+ ADD_LIBRARY (noise2d SHARED ${SRCS})
+ 
++find_package(pkgconfig)
++pkg_check_modules(XXHASH libxxhash)
++target_link_libraries(noise2d ${XXHASH_LIBRARIES})
++
++if (DEFINED SOVERSION)
++  set_target_properties(noise2d PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ IF(WIN32)
+   INSTALL (TARGETS noise2d
+     RUNTIME DESTINATION lib)
+ ELSE()
+   INSTALL (TARGETS noise2d
+-    LIBRARY DESTINATION lib)
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib)
+ ENDIF()  
+ 
+ 
