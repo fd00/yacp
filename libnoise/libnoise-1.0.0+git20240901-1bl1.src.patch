@@ -1,0 +1,68 @@
+--- origsrc/libnoise/examples/CMakeLists.txt	2025-08-16 09:34:23.000000000 +0900
++++ src/libnoise/examples/CMakeLists.txt	2025-08-16 16:11:30.091488200 +0900
+@@ -3,4 +3,4 @@ SET(PROJECT_NAME examples)
+ add_executable(complexplanet complexplanet.cpp)
+ ADD_DEFINITIONS( "-I${PROJECT_SOURCE_DIR}/src" )
+ ADD_DEFINITIONS( "-I${PROJECT_SOURCE_DIR}/noiseutils" )
+-target_link_libraries(complexplanet noiseutils-static noise-static)
++target_link_libraries(complexplanet noiseutils noise)
+--- origsrc/libnoise/noiseutils/CMakeLists.txt	2025-08-16 09:34:23.000000000 +0900
++++ src/libnoise/noiseutils/CMakeLists.txt	2025-08-16 16:35:13.661192100 +0900
+@@ -22,20 +22,13 @@ if(BUILD_SHARED_LIBS)
+ 	target_include_directories(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+ 	
+ 	# install dynamic libraries (.dll or .so) into /bin
+-	install(TARGETS ${TARGET_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+-endif()
++	install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+-#----------------------------------------
+-# build static lib (it's good practice to include a lib file for the dll)
+-set(TARGET_NAME "${LIB_NAME}-static")
+-add_library(${TARGET_NAME} STATIC ${libSrcs})
+-set_target_properties(${TARGET_NAME} PROPERTIES VERSION ${LIBNOISE_VERSION})
+-target_link_libraries(${TARGET_NAME} noise-static) 
+-target_include_directories(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src) 
+-# install static libraries (.lib) into /lib
+-install(TARGETS ${TARGET_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+-#----------------------------------------
++	if (DEFINED SOVERSION)
++		set_target_properties(${TARGET_NAME} PROPERTIES SOVERSION ${SOVERSION})
++	endif()
++endif()
+ 
+ # install include files into /include
+ install( FILES "${PROJECT_SOURCE_DIR}/noiseutils/noiseutils.h" 
+-		DESTINATION "${CMAKE_INSTALL_PREFIX}/include/noise" )
+\ No newline at end of file
++		DESTINATION "${CMAKE_INSTALL_PREFIX}/include/noise" )
+--- origsrc/libnoise/src/CMakeLists.txt	2025-08-16 09:34:23.000000000 +0900
++++ src/libnoise/src/CMakeLists.txt	2025-08-16 16:35:27.643819400 +0900
+@@ -62,21 +62,12 @@ if(BUILD_SHARED_LIBS)
+ 	set_target_properties(${TARGET_NAME} PROPERTIES VERSION ${LIBNOISE_VERSION})
+ 	target_include_directories(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+ 	target_compile_definitions(${TARGET_NAME} PRIVATE NOISE_BUILD_DLL)
+-	install(TARGETS ${TARGET_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
++	install(TARGETS ${TARGET_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++  if (DEFINED SOVERSION)
++    set_target_properties(${TARGET_NAME} PROPERTIES SOVERSION ${SOVERSION})
++  endif()
+ endif()
+ 
+-#----------------------------------------
+-# build static lib (it's good practice to include a lib file for the dll)
+-set(TARGET_NAME "${LIB_NAME}-static")
+-message(STATUS "build ${TARGET_NAME}")
+-add_library(${TARGET_NAME} STATIC ${libSrcs})
+-set_target_properties(${TARGET_NAME} PROPERTIES VERSION ${LIBNOISE_VERSION})
+-target_include_directories(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+-target_compile_definitions(${TARGET_NAME} PUBLIC NOISE_STATIC)
+-# install static libraries (.lib) into /lib
+-install(TARGETS ${TARGET_NAME} DESTINATION "${CMAKE_INSTALL_PREFIX}/lib")
+-#----------------------------------------
+-
+ # install include files into /include
+ install( DIRECTORY   "${PROJECT_SOURCE_DIR}/src/noise" 
+-		 DESTINATION "${CMAKE_INSTALL_PREFIX}/include" )
+\ No newline at end of file
++		 DESTINATION "${CMAKE_INSTALL_PREFIX}/include" )
