@@ -1,0 +1,106 @@
+--- origsrc/OpenIGTLink-3.0/CMakeLists.txt	2017-06-28 19:28:12.000000000 +0900
++++ src/OpenIGTLink-3.0/CMakeLists.txt	2025-08-16 23:29:56.847019100 +0900
+@@ -56,6 +56,7 @@ SET(OpenIGTLink_EXECUTABLE_PATH "${EXECU
+ 
+ SET(OpenIGTLink_CMAKE_DIR "${OpenIGTLink_SOURCE_DIR}/CMake")
+ SET(CMAKE_MODULE_PATH "${OpenIGTLink_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
++set(CMAKE_MODULE_PATH "${PROJECT_BINARY_DIR}" ${CMAKE_MODULE_PATH})
+ 
+ #-----------------------------------------------------------------------------
+ # Installation vars.
+@@ -267,3 +268,10 @@ OPTION(BUILD_DOCUMENTATION "Build OpenIG
+ IF(BUILD_DOCUMENTATION)
+   ADD_SUBDIRECTORY( Documents/Doxygen )
+ ENDIF(BUILD_DOCUMENTATION)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/OpenIGTLink.pc.in ${CMAKE_BINARY_DIR}/OpenIGTLink.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/OpenIGTLink.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/OpenIGTLink-3.0/OpenIGTLink.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/OpenIGTLink-3.0/OpenIGTLink.pc.in	2025-08-16 23:49:26.187131900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: OpenIGTLink
++Description: Open Network Interface for Image Guided Therapy
++Version: @OpenIGTLink_VERSION_MAJOR@.@OpenIGTLink_VERSION_MINOR@.@OpenIGTLink_VERSION_PATCH@
++Libs: -L${libdir} -lOpenIGTLink
++Cflags: -I${includedir}
+--- origsrc/OpenIGTLink-3.0/Source/CMakeLists.txt	2025-08-16 23:18:06.036818300 +0900
++++ src/OpenIGTLink-3.0/Source/CMakeLists.txt	2025-08-16 23:54:00.780192600 +0900
+@@ -187,14 +187,12 @@ IF( ${OpenIGTLink_PROTOCOL_VERSION} GREA
+     igtlutil/igtl_command.c
+     igtlutil/igtl_query.c
+     )
+-  IF( MSVC OR ${CMAKE_GENERATOR} MATCHES "Xcode" )
+     LIST(APPEND OpenIGTLink_INCLUDE_FILES
+       igtlCommandMessage.h
+       igtlQueryMessage.h
+       igtlutil/igtl_command.h
+       igtlutil/igtl_query.h
+       )
+-  ENDIF()
+ ENDIF()
+ 
+ ADD_LIBRARY(OpenIGTLink ${OpenIGTLink_SOURCES} ${OpenIGTLink_INCLUDE_FILES})
+--- origsrc/OpenIGTLink-3.0/Source/igtlWin32Header.h	2017-06-28 19:28:12.000000000 +0900
++++ src/OpenIGTLink-3.0/Source/igtlWin32Header.h	2025-08-16 23:18:34.187597300 +0900
+@@ -35,17 +35,6 @@
+ 
+ #include "igtlConfigure.h"
+ 
+-// add in the Windows variants
+-
+-#if defined(__CYGWIN__)
+-#ifndef WIN32
+-#define WIN32 1
+-#endif
+-#ifndef _WIN32
+-#define _WIN32 1
+-#endif
+-#endif
+-
+ #if defined(_WIN32)
+   // Include the windows header here only if requested by user code.
+ # if defined(IGTL_INCLUDE_WINDOWS_H)
+--- origsrc/OpenIGTLink-3.0/Source/igtlWindows.h	2017-06-28 19:28:12.000000000 +0900
++++ src/OpenIGTLink-3.0/Source/igtlWindows.h	2025-08-16 23:18:56.144669100 +0900
+@@ -32,6 +32,8 @@
+ #ifndef __igtlWindows_h
+ #define __igtlWindows_h
+ 
++#if !defined(__CYGWIN__)
++
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+@@ -46,3 +48,5 @@
+ #include <winbase.h>
+ 
+ #endif
++
++#endif
+--- origsrc/OpenIGTLink-3.0/Testing/CMakeLists.txt	2017-06-28 19:28:12.000000000 +0900
++++ src/OpenIGTLink-3.0/Testing/CMakeLists.txt	2025-08-16 23:19:09.928920800 +0900
+@@ -9,13 +9,14 @@ include_directories(${PROJECT_BINARY_DIR
+ OPTION(USE_GTEST "Build the testing tree." ON)
+ IF(USE_GTEST)
+ 	SET(OpenIGTLink_USE_GTEST "1")
++  find_package(GTest)
+ ELSE()
+   SET(OpenIGTLink_USE_GTEST "0")
+ ENDIF()	
+ configure_file(${PROJECT_SOURCE_DIR}/igtlTestConfig.h.in ${PROJECT_BINARY_DIR}/igtlTestConfig.h)
+ ENABLE_TESTING()
+ ADD_SUBDIRECTORY( igtlutil )
+-IF(OpenIGTLink_USE_GTEST)
++IF(OpenIGTLink_USE_GTEST AND NOT GTEST_FOUND)
+ 	#-----------
+ 	#download of GoogleTest
+ 	if( MSVC ) # VS2012 doesn't support correctly the tuples yet
