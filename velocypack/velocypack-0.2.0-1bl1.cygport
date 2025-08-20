@@ -1,26 +1,43 @@
 HOMEPAGE="https://github.com/arangodb/${PN}"
-GIT_URI="https://github.com/arangodb/${PN}.git"
+SRC_URI="https://github.com/arangodb/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Fast and compact format for serialization and storage"
 DESCRIPTION="VelocyPack (VPack) - a fast and compact format for serialization and storage."
 
+LICENSE="BUSL-1.1"
+LICENSE_SPDX="SPDX-License-Identifier: BUSL-1.1"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="libxxhash-devel"
+
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
+export CXXFLAGS="${CXXFLAGS//-Werror=return-type/}"
 
 inherit cmake
-inherit git
 
 CYGCMAKE_ARGS="
+	-DBuildBench:BOOL=ON
 	-DBuildTests:BOOL=ON
 	-DBuildLargeTests:BOOL=ON
 	-DBuildAsmTest:BOOL=ON
 	-DINSTALL_GTEST:BOOL=OFF
+	-DSOVERSION:STRING=${PV[1]}
 "
 
 src_test()
 {
 	cd ${B}
 	PATH=${B}:${PATH} ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	verbose mv usr/bin/fuzzer.exe usr/bin/vpack-fuzzer.exe
 }
 
 DOCS="
@@ -37,7 +54,7 @@ velocypack_CONTENTS="
 	usr/share
 "
 libvelocypack0_CONTENTS="
-	usr/bin/*.dll
+	usr/bin/cyg*-0.dll
 "
 libvelocypack_devel_CONTENTS="
 	usr/include
