@@ -1,0 +1,297 @@
+--- origsrc/ltl-2.0.22/Makefile.am	2016-06-15 05:45:28.000000000 +0900
++++ src/ltl-2.0.22/Makefile.am	2025-08-21 11:25:01.148297700 +0900
+@@ -95,3 +95,6 @@ nobase_include_HEADERS = 	\
+ 	ltl/util/timer.h		\
+ 	ltl/util/u_exception.h	\
+ 	ltl/util/utdate.h               
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/ltl-2.0.22/configure.ac	2019-07-11 18:36:54.000000000 +0900
++++ src/ltl-2.0.22/configure.ac	2025-08-21 11:25:29.554485900 +0900
+@@ -91,7 +91,7 @@ AC_SYS_LARGEFILE_SENSITIVE
+ AC_SYS_LARGEFILE
+ 
+ AC_PROG_CXXCPP
+-AC_PROG_RANLIB
++LT_INIT
+ 
+ dnl Checks for libraries.
+ 
+@@ -189,6 +189,7 @@ echo
+ AC_SUBST(CXXVECFLAGS)
+ #AC_CONFIG_HEADER([ltl/ltlconfig.h])
+ AC_OUTPUT(Makefile ltl/Makefile doc/Makefile test/Makefile)
++AC_OUTPUT(ltl.pc)
+ 
+ # Display configuration summary
+ AC_MSG_NOTICE([displaying configuration summary
+--- origsrc/ltl-2.0.22/ltl/Makefile.am	2015-02-28 03:48:38.000000000 +0900
++++ src/ltl-2.0.22/ltl/Makefile.am	2025-08-21 09:27:43.432204200 +0900
+@@ -1,6 +1,6 @@
+-lib_LIBRARIES = libltl.a 
++lib_LTLIBRARIES = libltl.la 
+ 
+-libltl_a_SOURCES = 				\
++libltl_la_SOURCES = 				\
+ 	io/fits.cpp			 	\
+ 	io/fits_card.cpp			\
+ 	io/fits_const.cpp			\
+@@ -17,6 +17,7 @@ libltl_a_SOURCES = 				\
+ 	util/region.cpp				\
+ 	util/utdate.cpp				\
+ 	util/gnuplot.cpp
++libltl_la_LDFLAGS = -no-undefined
+ 
+-AM_CPPFLAGS = -I../ 
++AM_CPPFLAGS = -I../ -I$(top_srcdir)
+ 
+--- origsrc/ltl-2.0.22/ltl/util/option.cpp	2019-07-08 21:27:08.000000000 +0900
++++ src/ltl-2.0.22/ltl/util/option.cpp	2025-08-21 10:41:20.808531900 +0900
+@@ -96,7 +96,7 @@ namespace util {
+    }
+ 
+ 
+-   void IntOption::setValue( const std::string& s ) throw (UException)
++   void IntOption::setValue( const std::string& s ) 
+    {
+       value_ = atoi( s.c_str() );
+       if( storage_ )
+@@ -137,7 +137,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void FloatOption::setValue( const std::string& s ) throw (UException)
++   void FloatOption::setValue( const std::string& s ) 
+    {
+       value_ = atof( s.c_str() );
+       if( storage_ )
+@@ -170,7 +170,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void DoubleOption::setValue( const std::string& s ) throw (UException)
++   void DoubleOption::setValue( const std::string& s ) 
+    {
+       value_ = atof( s.c_str() );
+       if( storage_ )
+@@ -208,7 +208,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void BoolOption::setValue( const std::string& s ) throw (UException)
++   void BoolOption::setValue( const std::string& s ) 
+    {
+       if( s == "toggle" ) value_ = !value_;
+       else
+@@ -252,7 +252,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void StringOption::setValue( const std::string& s ) throw (UException)
++   void StringOption::setValue( const std::string& s ) 
+    {
+       value_ = s;
+       if( storage_ )
+@@ -293,7 +293,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void ShellOption::setValue( const std::string& s ) throw (UException)
++   void ShellOption::setValue( const std::string& s ) 
+    {
+       FILE* fp = NULL;
+       std::string sc = "echo " + s;
+@@ -360,7 +360,7 @@ namespace util {
+       delete [] value_;
+    }
+ 
+-   void FloatArrayOption::setValue( const std::string& s ) throw (UException)
++   void FloatArrayOption::setValue( const std::string& s ) 
+    {
+       int i=0;
+       std::string str = s, token;
+@@ -450,7 +450,7 @@ namespace util {
+       delete [] value_;
+    }
+ 
+-   void DoubleArrayOption::setValue( const std::string& s ) throw (UException)
++   void DoubleArrayOption::setValue( const std::string& s ) 
+    {
+       int i=0;
+       std::string str = s, token;
+@@ -538,7 +538,7 @@ namespace util {
+       delete [] value_;
+    }
+ 
+-   void IntArrayOption::setValue( const std::string& s ) throw (UException)
++   void IntArrayOption::setValue( const std::string& s ) 
+    {
+       int i=0;
+       std::string str = s, token;
+@@ -626,7 +626,7 @@ namespace util {
+       delete [] value_;
+    }
+ 
+-   void StringArrayOption::setValue( const std::string& s ) throw (UException)
++   void StringArrayOption::setValue( const std::string& s ) 
+    {
+       int i=0;
+       std::string str = s, token;
+@@ -705,7 +705,7 @@ namespace util {
+       setValue( default_ );
+    }
+ 
+-   void RegionArrayOption::setValue( const std::string& s ) throw (UException)
++   void RegionArrayOption::setValue( const std::string& s ) 
+    {
+       int i=1;
+       std::string str = s, token;
+--- origsrc/ltl-2.0.22/ltl/util/option.h	2019-07-08 21:27:08.000000000 +0900
++++ src/ltl-2.0.22/ltl/util/option.h	2025-08-21 10:37:03.258594500 +0900
+@@ -86,7 +86,7 @@ namespace util {
+       //@}
+ 
+       //! This function is the heart of the \c Option class: it parses the value of the option from the supplied \c string.
+-      virtual void setValue( const std::string& s ) throw (UException) = 0;
++      virtual void setValue( const std::string& s )  = 0;
+ 
+       //@{
+       /*! Acess the value of the option. Usually subclasses will not implement all of these, in fact, mostly just one of these. */
+@@ -179,7 +179,7 @@ namespace util {
+          return "INT";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual int getInt() const;
+ 
+@@ -211,7 +211,7 @@ namespace util {
+          return "FLOAT";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual float getFloat() const;
+ 
+@@ -243,7 +243,7 @@ namespace util {
+          return "DOUBLE";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual float getFloat() const
+       { return float(getDouble()); }
+@@ -274,7 +274,7 @@ namespace util {
+          return "FLAG";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual bool getBool() const;
+ 
+@@ -310,7 +310,7 @@ namespace util {
+          return "STRING";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual std::string getString() const;
+ 
+@@ -341,7 +341,7 @@ namespace util {
+          return "SHELLSTRING";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual std::string getString() const;
+ 
+@@ -373,7 +373,7 @@ namespace util {
+          return "FLOATARRAY";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual float* getFloatArray() const;
+ 
+@@ -407,7 +407,7 @@ namespace util {
+          return "DOUBLEARRAY";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual double* getDoubleArray() const;
+ 
+@@ -441,7 +441,7 @@ namespace util {
+          return "INTARRAY";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual int* getIntArray() const;
+ 
+@@ -473,7 +473,7 @@ namespace util {
+ 	 return "STRINGARRAY";
+       }
+    
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+    
+       virtual std::string* getStringArray() const;
+    
+@@ -507,7 +507,7 @@ namespace util {
+          return "REGIONARRAY";
+       }
+ 
+-      void setValue( const std::string& s ) throw (UException);
++      void setValue( const std::string& s ) ;
+ 
+       virtual Region getRegionArray() const;
+ 
+--- origsrc/ltl-2.0.22/ltl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ltl-2.0.22/ltl.pc.in	2025-08-21 11:25:01.064946700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ltl
++Description: Little Template Library
++Version: @VERSION@
++Libs: -L${libdir} -lltl
++Cflags: -I${includedir}
+--- origsrc/ltl-2.0.22/test/Makefile.am	2015-02-28 03:48:37.000000000 +0900
++++ src/ltl-2.0.22/test/Makefile.am	2025-08-21 09:27:43.440830200 +0900
+@@ -157,15 +157,15 @@ testcomplex_SOURCES = testcomplex.cpp
+ testcomplex_LDFLAGS = $(LIBS)
+ endif
+ 
+-testfitsio_LDADD = -L../ltl -lltl
+-testfitsextensionio_LDADD = -L../ltl -lltl
+-testascio_LDADD  = -L../ltl -lltl
+-testutildate_LDADD  = -L../ltl -lltl
+-testutilregion_LDADD  = -L../ltl -lltl
+-testconfreader_LDADD  = -L../ltl -lltl
++testfitsio_LDADD = $(top_builddir)/ltl/libltl.la
++testfitsextensionio_LDADD = $(top_builddir)/ltl/libltl.la
++testascio_LDADD  = $(top_builddir)/ltl/libltl.la
++testutildate_LDADD  = $(top_builddir)/ltl/libltl.la
++testutilregion_LDADD  = $(top_builddir)/ltl/libltl.la
++testconfreader_LDADD  = $(top_builddir)/ltl/libltl.la
+ 
+ 
+-AM_CPPFLAGS = -I../
++AM_CPPFLAGS = -I../ -I$(top_srcdir) -I$(top_srcdir)/ltl
+ CLEANFILES = test-64.fits test-32.fits test32.fits test16.fits test8.fits \
+ 	     testextensionio.fits test_inmem_float.fits \
+              testc.fits test-reg.fits test.map test.dat ltl-test.conf \
