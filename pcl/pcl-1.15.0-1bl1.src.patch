@@ -1,0 +1,275 @@
+--- origsrc/pcl-pcl-1.15.0/CMakeLists.txt	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/CMakeLists.txt	2025-08-23 23:00:29.777126600 +0900
+@@ -106,7 +106,7 @@ endif()
+ 
+ # check for SSE flags
+ include("${PCL_SOURCE_DIR}/cmake/pcl_find_sse.cmake")
+-if(PCL_ENABLE_SSE AND "${CMAKE_CXX_FLAGS}" STREQUAL "${CMAKE_CXX_FLAGS_DEFAULT}")
++if(PCL_ENABLE_SSE)
+   PCL_CHECK_FOR_SSE()
+ endif()
+ 
+@@ -390,9 +390,11 @@ endif()
+ option(WITH_GLEW "Support for GLEW" TRUE)
+ if(WITH_GLEW)
+   find_package(GLEW QUIET)
++  if (NOT GLEW_FOUND)
++    pkg_check_modules(GLEW glew)
++  endif()
+ endif()
+ 
+-
+ # Reset VTK_FOUND to off
+ set(VTK_FOUND OFF)
+ # Find VTK - VTK has to be found before Qt, otherwise it can overwrite Qt variables
+--- origsrc/pcl-pcl-1.15.0/cmake/pcl_find_boost.cmake	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/cmake/pcl_find_boost.cmake	2025-08-23 23:45:48.721778700 +0900
+@@ -15,18 +15,18 @@ endif()
+ 
+ if(CMAKE_CXX_STANDARD MATCHES "14")
+   # Optional boost modules
+-  set(BOOST_OPTIONAL_MODULES serialization mpi)
++  set(BOOST_OPTIONAL_MODULES serialization)
+   # Required boost modules
+   set(BOOST_REQUIRED_MODULES filesystem iostreams system)
+ else()
+   # Optional boost modules
+-  set(BOOST_OPTIONAL_MODULES filesystem serialization mpi)
++  set(BOOST_OPTIONAL_MODULES filesystem serialization)
+   # Required boost modules
+   set(BOOST_REQUIRED_MODULES iostreams system)
+ endif()
+ 
+-find_package(Boost 1.71.0 QUIET COMPONENTS ${BOOST_OPTIONAL_MODULES} CONFIG)
+-find_package(Boost 1.71.0 REQUIRED COMPONENTS ${BOOST_REQUIRED_MODULES} CONFIG)
++find_package(Boost 1.66.0 QUIET COMPONENTS ${BOOST_OPTIONAL_MODULES})
++find_package(Boost 1.66.0 REQUIRED COMPONENTS ${BOOST_REQUIRED_MODULES})
+ 
+ if(Boost_FOUND)
+   set(BOOST_FOUND TRUE)
+--- origsrc/pcl-pcl-1.15.0/cmake/pcl_targets.cmake	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/cmake/pcl_targets.cmake	2025-08-23 18:02:14.484340800 +0900
+@@ -424,6 +424,10 @@ macro(PCL_ADD_TEST _name _exename)
+ 
+   target_link_libraries(${_exename} Threads::Threads ${ATOMIC_LIBRARY})
+ 
++  if (GTEST_FOUND)
++    target_include_directories(${_exename} PUBLIC ${CMAKE_SOURCE_DIR}/test/include)
++  endif()
++
+   #Only applies to MSVC
+   if(MSVC)
+     #Only add if there are arguments to test
+--- origsrc/pcl-pcl-1.15.0/cmake/pcl_utils.cmake	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/cmake/pcl_utils.cmake	2025-08-23 12:59:17.803927300 +0900
+@@ -106,6 +106,8 @@ macro(SET_INSTALL_DIRS)
+     set(PKGCFG_INSTALL_DIR "${LIB_INSTALL_DIR}/pkgconfig")
+     if(WIN32 AND NOT MINGW)
+         set(PCLCONFIG_INSTALL_DIR "cmake")
++     elseif(CYGWIN)
++        set(PCLCONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}")
+       else()
+         set(PCLCONFIG_INSTALL_DIR "share/${PROJECT_NAME_LOWER}-${PCL_VERSION_MAJOR}.${PCL_VERSION_MINOR}")
+       endif()
+--- origsrc/pcl-pcl-1.15.0/common/include/pcl/pcl_exports.h	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/common/include/pcl/pcl_exports.h	2025-08-23 13:01:33.142759200 +0900
+@@ -40,7 +40,7 @@
+ // Header 'pcl_macros' is not suitable since it includes <Eigen/Core>,
+ // which can't be eaten by nvcc (it's too weak)
+ 
+-#if defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+--- origsrc/pcl-pcl-1.15.0/common/include/pcl/pcl_macros.h	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/common/include/pcl/pcl_macros.h	2025-08-23 13:00:20.009074900 +0900
+@@ -317,7 +317,7 @@ pcl_round (float number)
+     #endif
+ #endif
+ 
+-#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__
++#if defined WIN32 || defined _WIN32 || defined WINCE || defined __MINGW32__ || defined(__CYGWIN__)
+     #ifdef PCLAPI_EXPORTS
+         #define PCL_EXPORTS __declspec(dllexport)
+     #else
+--- origsrc/pcl-pcl-1.15.0/io/CMakeLists.txt	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/io/CMakeLists.txt	2025-08-23 16:05:12.401982100 +0900
+@@ -338,7 +338,7 @@ add_definitions(${VTK_DEFINES})
+ 
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs} ${compression_incs} ${impl_incs} ${OPENNI_INCLUDES} ${OPENNI2_INCLUDES})
+ 
+-target_link_libraries("${LIB_NAME}" Boost::boost Boost::iostreams pcl_common pcl_io_ply pcl_octree)
++target_link_libraries("${LIB_NAME}" Boost::boost Boost::iostreams Boost::system pcl_common pcl_io_ply pcl_octree)
+ if(TARGET Boost::filesystem)
+   target_link_libraries("${LIB_NAME}" Boost::filesystem)
+ endif()
+--- origsrc/pcl-pcl-1.15.0/registration/include/pcl/registration/icp.h	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/registration/include/pcl/registration/icp.h	2025-08-23 19:16:06.935927900 +0900
+@@ -95,7 +95,7 @@ namespace pcl {
+  * \ingroup registration
+  */
+ template <typename PointSource, typename PointTarget, typename Scalar = float>
+-class IterativeClosestPoint : public Registration<PointSource, PointTarget, Scalar> {
++class PCL_EXPORTS IterativeClosestPoint : public Registration<PointSource, PointTarget, Scalar> {
+ public:
+   using PointCloudSource =
+       typename Registration<PointSource, PointTarget, Scalar>::PointCloudSource;
+@@ -143,6 +143,7 @@ public:
+   using Matrix4 = typename Registration<PointSource, PointTarget, Scalar>::Matrix4;
+ 
+   /** \brief Empty constructor. */
++  inline PCL_EXPORTS
+   IterativeClosestPoint()
+   {
+     reg_name_ = "IterativeClosestPoint";
+@@ -195,6 +196,7 @@ public:
+    *
+    * \param[in] cloud the input point cloud source
+    */
++  inline PCL_EXPORTS
+   void
+   setInputSource(const PointCloudSourceConstPtr& cloud) override
+   {
+@@ -228,6 +230,7 @@ public:
+    *
+    * \param[in] cloud the input point cloud target
+    */
++  inline PCL_EXPORTS
+   void
+   setInputTarget(const PointCloudTargetConstPtr& cloud) override
+   {
+--- origsrc/pcl-pcl-1.15.0/registration/include/pcl/registration/transformation_estimation_svd.h	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/registration/include/pcl/registration/transformation_estimation_svd.h	2025-08-23 19:29:29.611021100 +0900
+@@ -43,6 +43,7 @@
+ #include <pcl/registration/transformation_estimation.h>
+ #include <pcl/cloud_iterator.h>
+ #include <pcl/pcl_config.h> // for PCL_NO_PRECOMPILE
++#include <pcl/pcl_exports.h>
+ 
+ namespace pcl {
+ namespace registration {
+@@ -76,6 +77,7 @@ public:
+    * \param[in] cloud_tgt the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::PointCloud<PointTarget>& cloud_tgt,
+@@ -88,6 +90,7 @@ public:
+    * \param[in] cloud_tgt the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::Indices& indices_src,
+@@ -103,6 +106,7 @@ public:
+    * interest points from \a indices_src
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   inline void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::Indices& indices_src,
+@@ -116,6 +120,7 @@ public:
+    * \param[in] correspondences the vector of correspondences between source and target
+    * point cloud \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   void
+   estimateRigidTransformation(const pcl::PointCloud<PointSource>& cloud_src,
+                               const pcl::PointCloud<PointTarget>& cloud_tgt,
+@@ -128,6 +133,7 @@ protected:
+    * \param[in] target_it an iterator over the target point cloud dataset
+    * \param[out] transformation_matrix the resultant transformation matrix
+    */
++  PCL_EXPORTS
+   void
+   estimateRigidTransformation(ConstCloudIterator<PointSource>& source_it,
+                               ConstCloudIterator<PointTarget>& target_it,
+--- origsrc/pcl-pcl-1.15.0/simulation/CMakeLists.txt	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/simulation/CMakeLists.txt	2025-08-23 23:00:42.072584300 +0900
+@@ -33,7 +33,7 @@ set(LIB_NAME "pcl_${SUBSYS_NAME}")
+ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${SUBSYS_NAME} SOURCES ${srcs} ${incs})
+ 
+ target_link_libraries("${LIB_NAME}" pcl_common pcl_io
+-            ${OPENGL_LIBRARIES} GLEW::GLEW)
++            ${OPENGL_LIBRARIES} ${GLEW_LIBRARIES})
+ 
+ set(EXT_DEPS eigen3)
+ PCL_MAKE_PKGCONFIG(${LIB_NAME} COMPONENT ${SUBSYS_NAME} DESC ${SUBSYS_DESC} PCL_DEPS ${SUBSYS_DEPS} EXT_DEPS ${EXT_DEPS})
+--- origsrc/pcl-pcl-1.15.0/simulation/tools/CMakeLists.txt	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/simulation/tools/CMakeLists.txt	2025-08-23 23:01:42.239390000 +0900
+@@ -17,19 +17,19 @@ PCL_ADD_EXECUTABLE(pcl_sim_viewer COMPON
+ target_link_libraries (pcl_sim_viewer
+   ${VTK_IO_TARGET_LINK_LIBRARIES}    pcl_kdtree
+   pcl_simulation   pcl_common  pcl_io pcl_visualization
+-  GLEW::GLEW ${_glut_target} ${OPENGL_LIBRARIES})
++  ${GLEW_LIBRARIES} ${_glut_target} ${OPENGL_LIBRARIES})
+ 
+ PCL_ADD_EXECUTABLE(pcl_sim_test_simple COMPONENT ${SUBSYS_NAME} SOURCES sim_test_simple.cpp)
+ target_link_libraries (pcl_sim_test_simple
+   ${VTK_IO_TARGET_LINK_LIBRARIES}
+   pcl_simulation   pcl_common  pcl_io pcl_visualization
+-  GLEW::GLEW ${_glut_target} ${OPENGL_LIBRARIES})
++  ${GLEW_LIBRARIES} ${_glut_target} ${OPENGL_LIBRARIES})
+ 
+ PCL_ADD_EXECUTABLE(pcl_sim_test_performance COMPONENT ${SUBSYS_NAME} SOURCES sim_test_performance.cpp)
+ target_link_libraries (pcl_sim_test_performance
+   ${VTK_IO_TARGET_LINK_LIBRARIES}
+   pcl_simulation   pcl_common  pcl_io pcl_visualization
+-  GLEW::GLEW ${_glut_target} ${OPENGL_LIBRARIES})
++  ${GLEW_LIBRARIES} ${_glut_target} ${OPENGL_LIBRARIES})
+ 
+ set(srcs simulation_io.cpp)
+ set(incs simulation_io.hpp)
+@@ -39,10 +39,10 @@ PCL_ADD_LIBRARY(${LIB_NAME} COMPONENT ${
+   ${VTK_IO_TARGET_LINK_LIBRARIES}
+   ${OPENNI_INCLUDES})
+ target_link_libraries(${LIB_NAME} pcl_simulation pcl_common pcl_io
+-  ${VTK_IO_TARGET_LINK_LIBRARIES} ${OPENGL_LIBRARIES} ${_glut_target} GLEW::GLEW)
++  ${VTK_IO_TARGET_LINK_LIBRARIES} ${OPENGL_LIBRARIES} ${_glut_target} ${GLEW_LIBRARIES})
+ 
+ PCL_ADD_EXECUTABLE(pcl_sim_terminal_demo COMPONENT ${SUBSYS_NAME} SOURCES sim_terminal_demo.cpp)
+ target_link_libraries (pcl_sim_terminal_demo
+   ${VTK_IO_TARGET_LINK_LIBRARIES}
+   pcl_simulation   pcl_common  pcl_io pcl_visualization pcl_simulation_io
+-  GLEW::GLEW ${_glut_target} ${OPENGL_LIBRARIES})
++  ${GLEW_LIBRARIES} ${_glut_target} ${OPENGL_LIBRARIES})
+--- origsrc/pcl-pcl-1.15.0/test/CMakeLists.txt	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/test/CMakeLists.txt	2025-08-23 13:04:46.307375400 +0900
+@@ -8,11 +8,16 @@ if(NOT build)
+   return()
+ endif()
+ 
+-find_package(GTestSource REQUIRED)
+-include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR})
+-
+-add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
+-target_include_directories(pcl_gtest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
++find_package(GTest)
++if (GTEST_FOUND)
++  add_library(pcl_gtest INTERFACE)
++  target_link_libraries(pcl_gtest INTERFACE GTest::gtest GTest::gtest_main)
++else()
++  find_package(GTestSource REQUIRED)
++  include_directories(SYSTEM ${GTEST_INCLUDE_DIRS} ${GTEST_SRC_DIR}) 
++  add_library(pcl_gtest STATIC ${GTEST_SRC_DIR}/src/gtest-all.cc)
++  target_include_directories(pcl_gtest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
++endif()
+ 
+ enable_testing()
+ 
+--- origsrc/pcl-pcl-1.15.0/visualization/include/pcl/visualization/vtk/vtkFixedXRenderWindowInteractor.h	2025-02-22 23:20:17.000000000 +0900
++++ src/pcl-pcl-1.15.0/visualization/include/pcl/visualization/vtk/vtkFixedXRenderWindowInteractor.h	2025-08-23 17:11:16.787129300 +0900
+@@ -32,6 +32,8 @@
+ //===========================================================
+ // now we define the C++ class
+ 
++#define RenderingUI_EXPORTS
++
+ #include "vtkRenderWindowInteractor.h"
+ #include "vtkRenderingUIModule.h" // For export macro
+ #include <X11/Xlib.h>             // Needed for X types in the public interface
