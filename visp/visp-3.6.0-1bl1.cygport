@@ -1,0 +1,90 @@
+HOMEPAGE="https://${PN}.inria.fr/"
+SRC_URI="https://${PN}-doc.inria.fr/download/releases/${P}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-5/debian/patches/Update-usage-of-operators-Int.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-5/debian/patches/Fix-typo-overriden-overridden.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-5/debian/patches/Fix-build-on-some-architectures.patch
+"
+
+CATEGORY="Libs"
+SUMMARY="Visual Servoing Platform"
+DESCRIPTION="ViSP standing for Visual Servoing Platform is a modular cross platform library
+that allows prototyping and developing applications using visual tracking and
+visual servoing technics at the heart of the researches done by Inria Rainbow
+team (previously Lagadic team)."
+
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="
+	libCoin-devel
+	libdmtx-devel
+	libflann-devel
+	libfreenect-devel
+	libGL-devel
+	libglib2.0-devel
+	libGLU-devel
+	libgsl-devel
+	libgtk2.0-devel
+	libICE-devel
+	libjpeg-devel
+	libopencv-devel
+	libpcl-devel
+	libpng-devel
+	libqhull-devel
+	libSM-devel
+	libusb1.0-devel
+	libX11-devel
+	libXext-devel
+	libxml2-devel
+	libzbar-devel
+	zlib-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -I/usr/include/vtk-9.5"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DUSE_GTK2:BOOL=ON
+	-DUSE_X11:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	sed -i -E \
+		-e 's/cyg(visp_[a-zA-Z0-9_]+)-[0-9.]+\.dll/\1/g' \
+		-e 's/cyg(vtk[a-zA-Z0-9_]+-9.5)-[0-9.]+\.dll/\1/g' \
+		usr/lib/pkgconfig/${PN}.pc
+}
+
+DOCS="
+	ChangeLog.txt
+"
+
+PKG_NAMES="
+	visp
+	libvisp${PV[1]}.${PV[2]}
+	libvisp-devel
+"
+visp_CONTENTS="
+	usr/share/doc
+	usr/share/${PN}*
+"
+libvisp3_6_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.${PV[2]}.dll
+"
+libvisp_devel_CONTENTS="
+	usr/bin/${PN}-config
+	usr/include
+	usr/lib
+	usr/share/man
+"
+visp_SUMMARY="${SUMMARY} (licensing & readmes)"
+libvisp3_6_SUMMARY="${SUMMARY} (runtime)"
+libvisp_devel_SUMMARY="${SUMMARY} (development)"
