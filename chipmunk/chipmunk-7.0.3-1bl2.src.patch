@@ -1,0 +1,55 @@
+--- origsrc/Chipmunk2D-Chipmunk-7.0.3/CMakeLists.txt	2019-06-08 00:59:45.000000000 +0900
++++ src/Chipmunk2D-Chipmunk-7.0.3/CMakeLists.txt	2025-08-24 20:10:17.289521500 +0900
+@@ -47,7 +47,7 @@ if(INSTALL_DEMOS)
+ endif()
+ 
+ # these need the static lib too
+-if(BUILD_DEMOS OR INSTALL_STATIC)
++if(INSTALL_STATIC)
+   set(BUILD_STATIC ON FORCE)
+ endif()
+ 
+@@ -65,3 +65,10 @@ add_subdirectory(src)
+ if(BUILD_DEMOS)
+   add_subdirectory(demo)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/chipmunk.pc.in ${CMAKE_BINARY_DIR}/chipmunk.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/chipmunk.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Chipmunk2D-Chipmunk-7.0.3/chipmunk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Chipmunk2D-Chipmunk-7.0.3/chipmunk.pc.in	2025-08-24 20:10:28.954918300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: chipmunk
++Description: Fast and lightweight 2D game physics library
++Version: @VERSION@
++Libs: -L${libdir} -lchipmunk
++Cflags: -I${includedir}/chipmunk
+--- origsrc/Chipmunk2D-Chipmunk-7.0.3/demo/CMakeLists.txt	2019-06-08 00:59:45.000000000 +0900
++++ src/Chipmunk2D-Chipmunk-7.0.3/demo/CMakeLists.txt	2025-08-24 20:07:25.669753200 +0900
+@@ -9,7 +9,7 @@ set(chipmunk_demos_include_dirs
+ )
+ 
+ set(chipmunk_demos_libraries
+-	chipmunk_static
++	chipmunk
+ 	${OPENGL_LIBRARIES}
+ )
+ 
+@@ -26,7 +26,7 @@ else()
+ 	list(APPEND chipmunk_demos_source_files "sokol/sokol.c")
+ endif(APPLE)
+ 
+-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
++IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR CYGWIN)
+ 	list(APPEND chipmunk_demos_libraries dl X11)
+ endif()
+ 
