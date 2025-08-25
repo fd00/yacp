@@ -1,0 +1,39 @@
+--- origsrc/mauveAligner/configure.ac	2009-10-08 05:12:38.000000000 +0900
++++ src/mauveAligner/configure.ac	2025-08-25 12:23:48.496869800 +0900
+@@ -47,13 +47,6 @@ PKG_CHECK_MODULES(DEPS, libMems-1.6 >= 1
+ AC_SUBST(DEPS_CFLAGS)
+ AC_SUBST(DEPS_LIBS)
+ 
+-dnl Mac OS X won't allow static compilation...
+-STATIC_FLAG="-static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive"
+-if ( test "x$target_vendor" = "xapple") then
+-        STATIC_FLAG=""
+-fi
+-AC_SUBST(STATIC_FLAG)
+-
+ dnl Allow debugging compilation
+ AC_ARG_ENABLE(debug,
+ [  --enable-debug    Turn on debugging],
+--- origsrc/mauveAligner/src/Makefile.am	2011-02-28 06:51:03.000000000 +0900
++++ src/mauveAligner/src/Makefile.am	2025-08-25 12:24:01.119503500 +0900
+@@ -6,7 +6,7 @@ P_CXXFLAGS = -DCOMMAND_LINE
+ endif
+ OPTIMIZATION = -O2 -funroll-loops -fomit-frame-pointer -ftree-vectorize 
+ AM_CXXFLAGS = $(OPTIMIZATION) $(D_CXXFLAGS) $(P_CXXFLAGS) 
+-AM_LDFLAGS = @STATIC_FLAG@
++AM_LDFLAGS =
+ LIBRARY_CL = $(DEPS_LIBS) 
+ #AM_LDADD = $(DEPS_LIBS) 
+ INCLUDES = @DEPS_CFLAGS@ 
+--- origsrc/mauveAligner/src/repeatoire.cpp	2009-03-31 06:55:35.000000000 +0900
++++ src/mauveAligner/src/repeatoire.cpp	2025-08-25 12:59:48.806511000 +0900
+@@ -1591,7 +1591,8 @@ void processNovelSubsetMatches( GappedMa
+ 		getSubsets(M_j,-direction*ni_parity*nj_parity).push_back(nj_link);
+         //getExtraSubsets(M_j,-direction*ni_parity*nj_parity).push_back(nj_link);
+ 		// push M_n onto the heap
+-		novel_subset_list.push_back(M_n);
++		// novel_subset_list.push_back(M_n);
++		novel_subset_list.push_back(boost::make_tuple(M_n, new_to_j_map, std::vector<size_t>(M_n->Multiplicity(), 0)));
+ 		//procrastination_queue.push(M_n);
+ 		novel_subset_count++;
+ 	}
