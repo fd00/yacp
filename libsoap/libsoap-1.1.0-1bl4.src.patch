@@ -1,0 +1,176 @@
+--- origsrc/libsoap-1.1.0/configure.ac	2006-07-10 01:24:18.000000000 +0900
++++ src/libsoap-1.1.0/configure.ac	2025-08-26 08:43:02.424849700 +0900
+@@ -320,49 +320,15 @@ AC_CHECK_LIB(nsl, inet_ntoa, [LIBNSL="-l
+ AC_CHECK_LIB(nsl, gethostbyname, [LIBNSL="-lnsl"])
+ AC_SUBST(LIBNSL)
+ 
+-AM_PATH_XML2(2.6.0,CFLAGS="$CFLAGS $XML_CPPFLAGS"; LDFLAGS="$LDFLAGS $XML_LIBS",exit 1)
++PKG_CHECK_MODULES([LIBXML2], [libxml-2.0])
+ 
+ # ------------------------------------------
+ # Check ssl library 
+ # Original work at: http://autoconf-archive.cryp.to/check_ssl.html
+ # ------------------------------------------
+-AC_DEFUN([CHECK_SSL],
+-[AC_MSG_CHECKING(if ssl is wanted)
+-AC_ARG_WITH(ssl,
+-[  --with-ssl=PFX	will check PFX for ssl library
+-  --with-ssl		will check /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr for ssl library
+-],
+-[   AC_MSG_RESULT(yes)
+-    for dir in $withval /usr/local/ssl /usr/lib/ssl /usr/ssl /usr/pkg /usr/local /usr; do
+-        ssldir="$dir"
+-        if test -f "$dir/include/openssl/ssl.h"; then
+-            found_ssl="yes";
+-            CFLAGS="$CFLAGS -I$ssldir/include/openssl";
+-            break;
+-        fi
+-        if test -f "$dir/include/ssl.h"; then
+-            found_ssl="yes";
+-            CFLAGS="$CFLAGS -I$ssldir/include";
+-            break
+-        fi
+-    done
+-    if test x_$found_ssl != x_yes; then
+-        AC_MSG_ERROR(Cannot find ssl libraries
+-		Please goto http://www.openssl.org and install OpenSSL or
+-		install it from your os distribution)
+-    else
+-        printf "OpenSSL found in $ssldir\n";
+-        LIBS="$LIBS -lssl -lcrypto";
+-        LDFLAGS="$LDFLAGS -L$ssldir/lib";
+-        AC_DEFINE(HAVE_SSL,1,Define to 1 if you have requested --with-ssl)
+-    fi
+-],
+-[
+-    AC_MSG_RESULT(no)
+-])
+-])dnl
+-
+-CHECK_SSL
++PKG_CHECK_MODULES([OPENSSL], [openssl], [
++    AC_DEFINE([HAVE_SSL], [1], [Define SSL])
++], [])
+ 
+ AC_OUTPUT(Makefile 
+ libcsoap/Makefile 
+--- origsrc/libsoap-1.1.0/csoap-config.in	2006-07-10 01:24:18.000000000 +0900
++++ src/libsoap-1.1.0/csoap-config.in	2025-08-26 09:52:15.421733600 +0900
+@@ -68,11 +68,11 @@ while test $# -gt 0; do
+ 			;;
+ 
+ 		--cflags)
+-			echo -I${includedir}/libcsoap-$relcsoap -I${includedir}/nanohttp-$relnanohttp @XML_CPPFLAGS@ @PTHREAD_CFLAGS@
++			echo -I${includedir}/libcsoap-$relcsoap -I${includedir}/nanohttp-$relnanohttp @LIBXML2_CFLAGS@ @PTHREAD_CFLAGS@
+ 		 	;;
+ 
+ 		--libs)
+-			echo -L${libdir} -lcsoap -lnanohttp @XML_LIBS@ @PTHREAD_LIBS@
++			echo -L${libdir} -lcsoap-@csoap_major@.@csoap_minor@ -lnanohttp-@csoap_major@.@csoap_minor@ @LIBXML2_LIBS@ @PTHREAD_LIBS@
+ 			;;
+ 		*)
+ 			usage
+--- origsrc/libsoap-1.1.0/examples/csoap/Makefile.am	2006-07-10 01:24:19.000000000 +0900
++++ src/libsoap-1.1.0/examples/csoap/Makefile.am	2025-08-26 09:42:35.237389300 +0900
+@@ -1,5 +1,5 @@
+-LDADD=../../nanohttp/libnanohttp.la ../../libcsoap/libcsoap.la
+-INCLUDES=-I${top_srcdir}
++LDADD=../../nanohttp/libnanohttp-@csoap_major@.@csoap_minor@.la ../../libcsoap/libcsoap-@csoap_major@.@csoap_minor@.la
++INCLUDES=-I${top_srcdir} $(LIBXML2_CFLAGS)
+ 
+ noinst_PROGRAMS=simpleclient simpleserver echoattachments-client echoattachments-server
+ bin_PROGRAMS=soapclient
+--- origsrc/libsoap-1.1.0/examples/nanohttp/Makefile.am	2006-07-10 01:24:19.000000000 +0900
++++ src/libsoap-1.1.0/examples/nanohttp/Makefile.am	2025-08-26 09:42:51.851230200 +0900
+@@ -1,4 +1,4 @@
+-LDADD=../../nanohttp/libnanohttp.la
++LDADD=../../nanohttp/libnanohttp-@csoap_major@.@csoap_minor@.la
+ INCLUDES=-I${top_srcdir}
+ 
+ noinst_PROGRAMS=http_server http_client
+--- origsrc/libsoap-1.1.0/libcsoap/Makefile.am	2006-03-29 17:35:55.000000000 +0900
++++ src/libsoap-1.1.0/libcsoap/Makefile.am	2025-08-26 09:42:04.972440200 +0900
+@@ -1,16 +1,16 @@
+ 
+-lib_LTLIBRARIES=libcsoap.la
++lib_LTLIBRARIES=libcsoap-@csoap_major@.@csoap_minor@.la
+ 
+-libcsoap_ladir=$(includedir)/libcsoap-@csoap_release@/libcsoap
++libcsoap_@csoap_major@_@csoap_minor@_ladir=$(includedir)/libcsoap-@csoap_release@/libcsoap
+ 
+-libcsoap_la_SOURCES=soap-xml.c soap-fault.c soap-env.c soap-service.c    \
++libcsoap_@csoap_major@_@csoap_minor@_la_SOURCES=soap-xml.c soap-fault.c soap-env.c soap-service.c    \
+                     soap-router.c soap-client.c soap-server.c soap-ctx.c \
+                     soap-admin.c
+ 
+-libcsoap_la_HEADERS=soap-xml.h soap-fault.h soap-env.h soap-service.h    \
++libcsoap_@csoap_major@_@csoap_minor@_la_HEADERS=soap-xml.h soap-fault.h soap-env.h soap-service.h    \
+                     soap-router.h soap-client.h soap-server.h soap-ctx.h \
+                     soap-admin.h
+ 
+-libcsoap_la_LDFLAGS= -version-info @csoap_version@ -release @csoap_release@
+-libcsoap_la_CFLAGS=-I${top_srcdir}
+-
++libcsoap_@csoap_major@_@csoap_minor@_la_LDFLAGS= -no-undefined -version-info @csoap_version@
++libcsoap_@csoap_major@_@csoap_minor@_la_CFLAGS=-I${top_srcdir} $(LIBXML2_CFLAGS)
++libcsoap_@csoap_major@_@csoap_minor@_la_LIBADD = $(top_builddir)/nanohttp/libnanohttp-@csoap_major@.@csoap_minor@.la $(LIBXML2_LIBS)
+--- origsrc/libsoap-1.1.0/libcsoap.pc.in	2006-03-06 22:28:21.000000000 +0900
++++ src/libsoap-1.1.0/libcsoap.pc.in	2025-08-26 09:26:37.736197400 +0900
+@@ -5,7 +5,7 @@ includedir=@includedir@
+ 
+ Name: csoap
+ Description: C API for SOAP applications
+-Version: @csoap_version_dotted@
+-Libs: -L${libdir} -lcsoap-@csoap_release@ -lnanohttp-@nanohttp_release@ @XML_LIBS@
+-Cflags: @XML_CPPFLAGS@ -I${includedir}/libcsoap-@csoap_release@ -I${includedir}/nanohttp-@nanohttp_release@
++Version: @VERSION@
++Libs: -L${libdir} -lcsoap-@csoap_release@ -lnanohttp-@nanohttp_release@ @LIBXML2_LIBS@
++Cflags: @LIBXML2_CFLAGS@ -I${includedir}/libcsoap-@csoap_release@ -I${includedir}/nanohttp-@nanohttp_release@
+ 
+--- origsrc/libsoap-1.1.0/nanohttp/Makefile.am	2006-07-10 01:24:19.000000000 +0900
++++ src/libsoap-1.1.0/nanohttp/Makefile.am	2025-08-26 09:37:45.457002800 +0900
+@@ -1,17 +1,17 @@
+-lib_LTLIBRARIES=libnanohttp.la
++lib_LTLIBRARIES=libnanohttp-@csoap_major@.@csoap_minor@.la
+ 
+-libnanohttp_ladir=$(includedir)/nanohttp-@nanohttp_release@/nanohttp
++libnanohttp_@csoap_major@_@csoap_minor@_ladir=$(includedir)/nanohttp-@nanohttp_release@/nanohttp
+ 
+-libnanohttp_la_SOURCES=nanohttp-common.c nanohttp-socket.c nanohttp-client.c     \
++libnanohttp_@csoap_major@_@csoap_minor@_la_SOURCES=nanohttp-common.c nanohttp-socket.c nanohttp-client.c     \
+                            nanohttp-server.c nanohttp-stream.c nanohttp-mime.c   \
+                            nanohttp-request.c nanohttp-response.c                \
+                            nanohttp-base64.c nanohttp-ssl.c nanohttp-logging.c
+ 
+-libnanohttp_la_HEADERS=nanohttp-common.h nanohttp-socket.h nanohttp-client.h     \
++libnanohttp_@csoap_major@_@csoap_minor@_la_HEADERS=nanohttp-common.h nanohttp-socket.h nanohttp-client.h     \
+                            nanohttp-server.h nanohttp-stream.h nanohttp-mime.h   \
+                            nanohttp-request.h nanohttp-response.h                \
+                            nanohttp-base64.h nanohttp-ssl.h nanohttp-logging.h
+ 
+-libnanohttp_la_LDFLAGS= -version-info @nanohttp_version@ -release @nanohttp_release@
+-libnanohttp_la_CFLAGS=-I${top_srcdir}
+-
++libnanohttp_@csoap_major@_@csoap_minor@_la_LDFLAGS= -no-undefined -version-info @nanohttp_version@
++libnanohttp_@csoap_major@_@csoap_minor@_la_CFLAGS= $(OPENSSL_CFLAGS) -I${top_srcdir}
++libnanohttp_@csoap_major@_@csoap_minor@_la_LIBADD = $(OPENSSL_LIBS)
+--- origsrc/libsoap-1.1.0/nanohttp/nanohttp-logging.c	2006-07-10 01:22:52.000000000 +0900
++++ src/libsoap-1.1.0/nanohttp/nanohttp-logging.c	2025-08-26 09:06:12.014729700 +0900
+@@ -134,7 +134,7 @@ _log_write(log_level_t level, const char
+     vsprintf(buffer2, buffer, ap);
+     if (!log_background)
+     {
+-      printf(buffer2);
++      printf("%s", buffer2);
+       fflush(stdout);
+     }
+ 
+@@ -145,7 +145,7 @@ _log_write(log_level_t level, const char
+         f = fopen(hlog_get_file(), "w");
+       if (f)
+       {
+-        fprintf(f, buffer2);
++        fprintf(f, "%s", buffer2);
+         fflush(f);
+         fclose(f);
+       }
