@@ -1,0 +1,81 @@
+--- origsrc/OpenHMD-0.3.0/configure.ac	2019-07-12 19:27:11.000000000 +0900
++++ src/OpenHMD-0.3.0/configure.ac	2025-08-26 22:52:43.146157700 +0900
+@@ -40,6 +40,13 @@ AS_CASE(["$host"],
+ 
+ 		#link with realtime lib on linux for clock_gettime, and libm for math functions such as sincosf
+ 		AC_SUBST(EXTRA_LD_FLAGS, "-lrt -lpthread -lm")],
++	[*-cygwin*],
++		[AC_MSG_RESULT([$host (Cygwin)])
++		hidapi="hidapi-libusb"
++		deps_ld_flags="-lhidapi-libusb"
++
++		#link with realtime lib on linux for clock_gettime, and libm for math functions such as sincosf
++		AC_SUBST(EXTRA_LD_FLAGS, "-lrt -lpthread -lm")],
+ 	[*-freebsd*],
+ 		[AC_SUBST(PKG_CONFIG_EXTRA_PATH, "libdata/")
+ 		AC_SUBST(EXTRA_LD_FLAGS, "-lthr")],
+@@ -192,6 +199,9 @@ AS_IF([test "x$openglexample_enabled" !=
+ 	AC_SUBST(GLEW_CFLAGS)
+ ])
+ 
++PKG_CHECK_MODULES([NXJSON], [nxjson], [have_nxjson=yes], [have_nxjson=no])
++AM_CONDITIONAL([HAVE_NXJSON], [test "x$have_nxjson" = "xyes"])
++
+ AC_PROG_CC
+ AC_PROG_CC_C99
+ 
+--- origsrc/OpenHMD-0.3.0/examples/opengl/Makefile.am	2019-07-12 19:27:11.000000000 +0900
++++ src/OpenHMD-0.3.0/examples/opengl/Makefile.am	2025-08-26 13:14:22.335348800 +0900
+@@ -1,5 +1,5 @@
+ bin_PROGRAMS = openglexample
+-AM_CPPFLAGS = -Wall -Werror -I$(top_srcdir)/include -DOHMD_STATIC $(sdl2_CFLAGS) $(GLEW_CFLAGS)
++AM_CPPFLAGS = -Wall -Werror -I$(top_srcdir)/include $(sdl2_CFLAGS) $(GLEW_CFLAGS)
+ openglexample_SOURCES = gl.c main.c
+ openglexample_LDADD = $(top_builddir)/src/libopenhmd.la -lm
+-openglexample_LDFLAGS = -static-libtool-libs $(sdl2_LIBS) $(GLEW_LIBS) $(GL_LIBS)
++openglexample_LDFLAGS = $(sdl2_LIBS) $(GLEW_LIBS) $(GL_LIBS)
+--- origsrc/OpenHMD-0.3.0/examples/simple/Makefile.am	2019-07-12 19:27:11.000000000 +0900
++++ src/OpenHMD-0.3.0/examples/simple/Makefile.am	2025-08-26 13:14:22.339109900 +0900
+@@ -1,5 +1,5 @@
+ bin_PROGRAMS = simple
+-AM_CPPFLAGS = -Wall -I$(top_srcdir)/include -DOHMD_STATIC
++AM_CPPFLAGS = -Wall -I$(top_srcdir)/include
+ simple_SOURCES = simple.c
+ simple_LDADD = $(top_builddir)/src/libopenhmd.la -lm
+-simple_LDFLAGS = -static-libtool-libs
++simple_LDFLAGS =
+--- origsrc/OpenHMD-0.3.0/src/Makefile.am	2019-07-12 19:27:11.000000000 +0900
++++ src/OpenHMD-0.3.0/src/Makefile.am	2025-08-26 22:55:55.782236100 +0900
+@@ -30,12 +30,20 @@ if BUILD_DRIVER_HTC_VIVE
+ 
+ libopenhmd_la_SOURCES += \
+ 	drv_htc_vive/vive.c \
+-	drv_htc_vive/packet.c \
+-	ext_deps/nxjson.c
++	drv_htc_vive/packet.c
++
++if !HAVE_NXJSON
++libopenhmd_la_SOURCES += ext_deps/nxjson.c
++endif
+ 
+ libopenhmd_la_CPPFLAGS += $(hidapi_CFLAGS) -DDRIVER_HTC_VIVE
+ libopenhmd_la_LDFLAGS += $(hidapi_LIBS)
+ 
++if HAVE_NXJSON
++libopenhmd_la_CFLAGS = $(NXJSON_CFLAGS)
++libopenhmd_la_LIBADD = $(NXJSON_LIBS)
++endif
++
+ endif
+ 
+ if BUILD_DRIVER_DEEPOON
+--- origsrc/OpenHMD-0.3.0/tests/unittests/Makefile.am	2019-07-12 19:27:11.000000000 +0900
++++ src/OpenHMD-0.3.0/tests/unittests/Makefile.am	2025-08-26 13:14:22.341121800 +0900
+@@ -1,5 +1,5 @@
+ bin_PROGRAMS = unittests
+-AM_CPPFLAGS = -Wall -Werror -I$(top_srcdir)/include -I$(top_srcdir)/src -DOHMD_STATIC
++AM_CPPFLAGS = -Wall -Werror -I$(top_srcdir)/include -I$(top_srcdir)/src
+ unittests_SOURCES = main.c quat.c vec.c highlevel.c
+ unittests_LDADD = $(top_builddir)/src/libopenhmd.la -lm
+-unittests_LDFLAGS = -static-libtool-libs
++unittests_LDFLAGS =
