@@ -1,0 +1,51 @@
+--- origsrc/libbitcoin-blockchain-3.8.0/Makefile.am	2023-08-18 11:49:14.000000000 +0900
++++ src/libbitcoin-blockchain-3.8.0/Makefile.am	2025-08-28 21:43:11.783388200 +0900
+@@ -51,6 +51,7 @@ src_libbitcoin_blockchain_la_SOURCES = \
+     src/validate/validate_block.cpp \
+     src/validate/validate_input.cpp \
+     src/validate/validate_transaction.cpp
++src_libbitcoin_blockchain_la_LDFLAGS = -no-undefined
+ 
+ # local: test/libbitcoin-blockchain-test
+ #------------------------------------------------------------------------------
+--- origsrc/libbitcoin-blockchain-3.8.0/configure.ac	2023-08-18 11:49:14.000000000 +0900
++++ src/libbitcoin-blockchain-3.8.0/configure.ac	2025-08-28 21:43:26.835918700 +0900
+@@ -245,17 +245,17 @@ AS_CASE([${CC}], [*],
+ 
+ # Check dependencies.
+ #==============================================================================
+-# Require Boost of at least version 1.72.0 and output ${boost_CPPFLAGS/LDFLAGS}.
++# Require Boost of at least version 1.66.0 and output ${boost_CPPFLAGS/LDFLAGS}.
+ #------------------------------------------------------------------------------
+ AS_CASE([${CC}], [*],
+-    [AX_BOOST_BASE([1.72.0],
++    [AX_BOOST_BASE([1.66.0],
+         [AC_SUBST([boost_CPPFLAGS], [${BOOST_CPPFLAGS}])
+          AC_SUBST([boost_ISYS_CPPFLAGS], [`echo ${BOOST_CPPFLAGS} | $SED s/^-I/-isystem/g | $SED s/' -I'/' -isystem'/g`])
+          AC_SUBST([boost_LDFLAGS], [${BOOST_LDFLAGS}])
+          AC_MSG_NOTICE([boost_CPPFLAGS : ${boost_CPPFLAGS}])
+          AC_MSG_NOTICE([boost_ISYS_CPPFLAGS : ${boost_ISYS_CPPFLAGS}])
+          AC_MSG_NOTICE([boost_LDFLAGS : ${boost_LDFLAGS}])],
+-        [AC_MSG_ERROR([Boost 1.72.0 or later is required but was not found.])])])
++        [AC_MSG_ERROR([Boost 1.66.0 or later is required but was not found.])])])
+ 
+ AS_CASE([${enable_isystem}],[yes],
+     [AC_SUBST([boost_BUILD_CPPFLAGS], [${boost_ISYS_CPPFLAGS}])],
+--- origsrc/libbitcoin-blockchain-3.8.0/include/bitcoin/blockchain/define.hpp	2023-08-18 11:49:14.000000000 +0900
++++ src/libbitcoin-blockchain-3.8.0/include/bitcoin/blockchain/define.hpp	2025-08-28 22:04:14.483937000 +0900
+@@ -44,6 +44,7 @@
+ // DLL exports (or does nothing for static build)
+ // BCD_INTERNAL is used for non-api symbols.
+ 
++#if !defined(BCD_API)
+ #if defined BCB_STATIC
+     #define BCD_API
+     #define BCD_INTERNAL
+@@ -54,6 +55,7 @@
+     #define BCD_API      BC_HELPER_DLL_IMPORT
+     #define BCD_INTERNAL BC_HELPER_DLL_LOCAL
+ #endif
++#endif
+ 
+ // Log name.
+ #define LOG_BLOCKCHAIN "blockchain"
