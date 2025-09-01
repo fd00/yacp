@@ -1,0 +1,100 @@
+--- origsrc/gerbera-2.6.1/CMakeLists.txt	2025-08-15 22:41:10.000000000 +0900
++++ src/gerbera-2.6.1/CMakeLists.txt	2025-09-01 09:04:43.191166400 +0900
+@@ -512,7 +512,8 @@ if (WITH_NPUPNP)
+     message(STATUS "Found libnpupnp: ${_UPNP_LIB} (found version ${_UPNP_VERSION})")
+ 
+     target_compile_definitions(libgerbera PUBLIC USING_NPUPNP)
+-    target_link_libraries(libgerbera PUBLIC NPUPNP::NPUPNP)
++    target_include_directories(libgerbera PUBLIC ${NPUPNP_INCLUDE_DIR})
++    target_link_libraries(libgerbera PUBLIC ${NPUPNP_LIBRARY})
+ else()
+     set(REQ_UPNP_VERSION 1.14.6)
+     # LibUPnP official target since 1.16 (Lib version 18)
+--- origsrc/gerbera-2.6.1/cmake/FindNPUPNP.cmake	2025-08-15 22:41:10.000000000 +0900
++++ src/gerbera-2.6.1/cmake/FindNPUPNP.cmake	2025-09-01 08:59:16.222887800 +0900
+@@ -7,7 +7,7 @@
+ #  NPUPNP_HAS_IPV6 - If LibNPUPnP was built with IPv6 support
+ #  NPUPNP_HAS_REUSEADDR - If LibNPUPnP was built with SO_REUSEADDR support
+ find_package(PkgConfig QUIET)
+-pkg_search_module (PC_NPUPNP libnpupnp QUIET)
++pkg_search_module (PC_NPUPNP libnpupnp npupnp QUIET)
+ 
+ find_path(NPUPNP_INCLUDE_DIR upnp.h
+     HINTS ${PC_NPUPNP_INCLUDEDIR} ${PC_NPUPNP_INCLUDEDIR}/npupnp ${PC_NPUPNP_INCLUDE_DIRS})
+--- origsrc/gerbera-2.6.1/src/config/result/dynamic_content.cc	2025-08-15 22:41:10.000000000 +0900
++++ src/gerbera-2.6.1/src/config/result/dynamic_content.cc	2025-09-01 11:46:33.178871600 +0900
+@@ -30,6 +30,7 @@
+ 
+ #include <algorithm>
+ 
++#if !defined(__CYGWIN__)
+ template <>
+ void EditHelper<DynamicContent>::_add(const std::shared_ptr<DynamicContent>& cont, std::size_t index)
+ {
+@@ -45,6 +46,7 @@ void EditHelper<DynamicContent>::_add(co
+     list.push_back(cont);
+     indexMap[index] = cont;
+ }
++#endif
+ 
+ std::shared_ptr<DynamicContent> DynamicContentList::getKey(const fs::path& location) const
+ {
+--- origsrc/gerbera-2.6.1/src/content/onlineservice/lastfm_scrobbler.cc	2025-08-15 22:41:10.000000000 +0900
++++ src/gerbera-2.6.1/src/content/onlineservice/lastfm_scrobbler.cc	2025-09-01 09:40:31.403536500 +0900
+@@ -35,10 +35,12 @@
+ #define GRB_LOG_FAC GrbLogFacility::online
+ #include "lastfm_scrobbler.h" // API
+ 
+-#include "cds_item.h"
++#include "cds/cds_item.h"
+ #include "config/config.h"
++#include "config/config_val.h"
+ #include "context.h"
+ #include "metadata/metadata_enums.h"
++#include "util/grb_time.h"
+ #include "util/tools.h"
+ 
+ LastFm::LastFm(const std::shared_ptr<Context>& context)
+@@ -75,8 +77,8 @@ void LastFm::startedPlaying(const std::s
+ 
+     currentTrackId = item->getID();
+ 
+-    std::string artist = item->getMetaData(MetadataField::M_ARTIST);
+-    std::string title = item->getMetaData(MetadataField::M_TITLE);
++    std::string artist = item->getMetaData(MetadataFields::M_ARTIST);
++    std::string title = item->getMetaData(MetadataFields::M_TITLE);
+ 
+     log_debug("Artist:\t{}", artist);
+     log_debug("Title:\t{}", title);
+@@ -89,11 +91,11 @@ void LastFm::startedPlaying(const std::s
+ 
+     auto info = SubmissionInfo(artist, title);
+ 
+-    std::string album = item->getMetaData(MetadataField::M_ALBUM);
++    std::string album = item->getMetaData(MetadataFields::M_ALBUM);
+     if (!album.empty())
+         info.setAlbum(album);
+ 
+-    std::string trackNr = item->getMetaData(MetadataField::M_TRACKNUMBER);
++    std::string trackNr = item->getMetaData(MetadataFields::M_TRACKNUMBER);
+     if (!trackNr.empty())
+         info.setTrackNr(std::stoi(trackNr));
+ 
+--- origsrc/gerbera-2.6.1/src/database/sql_table.cc	2025-08-15 22:41:10.000000000 +0900
++++ src/gerbera-2.6.1/src/database/sql_table.cc	2025-09-01 11:41:32.640814500 +0900
+@@ -115,6 +115,7 @@ const std::vector<PlaystatusColumn> Play
+     PlaystatusColumn::BookMarkPosition,
+ };
+ 
++#if !defined(__CYGWIN__)
+ /// \brief Generate INSERT statement from row data and object for object tables
+ template <>
+ std::string TableAdaptor<BrowseColumn, CdsObject>::sqlForInsert(
+@@ -167,6 +168,7 @@ std::string TableAdaptor<MetadataColumn,
+         fmt::join(fields, ", "),
+         fmt::join(values, ", "));
+ }
++#endif
+ 
+ std::string Resource2Table::sqlForInsert(
+     const std::shared_ptr<CdsObject>& obj) const
