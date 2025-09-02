@@ -1,0 +1,174 @@
+--- origsrc/azure-storage-cpplite-0.3.0/CMakeLists.txt	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/CMakeLists.txt	2025-09-02 08:47:25.093467700 +0900
+@@ -130,6 +130,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMA
+ 
+ add_library(azure-storage-lite ${AZURE_STORAGE_LITE_HEADER} ${AZURE_STORAGE_LITE_SOURCE})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(azure-storage-lite PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+ find_package(Threads REQUIRED)
+@@ -173,7 +177,7 @@ target_link_libraries(azure-storage-lite
+ if(MSVC)
+   target_compile_options(azure-storage-lite PRIVATE /W4 /WX /MP)
+ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+-  target_compile_options(azure-storage-lite PRIVATE -Wall -Wextra -Werror -pedantic)
++  target_compile_options(azure-storage-lite PRIVATE -Wall -Wextra -pedantic)
+ endif()
+ 
+ if(BUILD_ADLS)
+@@ -193,7 +197,7 @@ set(AZURE_STORAGE_LITE_VERSION_MAJOR 0)
+ set(AZURE_STORAGE_LITE_VERSION_MINOR 3)
+ set(AZURE_STORAGE_LITE_VERSION_REVISION 0)
+ 
+-install(DIRECTORY include/ DESTINATION include)
++install(DIRECTORY include/ DESTINATION include/azure-storage-lite)
+ install(TARGETS azure-storage-lite
+     ARCHIVE DESTINATION lib
+     LIBRARY DESTINATION lib
+--- origsrc/azure-storage-cpplite-0.3.0/adls/CMakeLists.txt	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/adls/CMakeLists.txt	2025-09-02 08:51:17.913811000 +0900
+@@ -32,6 +32,10 @@ set(AZURE_STORAGE_ADLS_SOURCES
+ 
+ add_library(azure-storage-adls ${AZURE_STORAGE_ADLS_SOURCES})
+ 
++if(DEFINED SOVERSION)
++  set_target_properties(azure-storage-adls PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ target_include_directories(azure-storage-adls PUBLIC include)
+ if(WIN32)
+   target_compile_definitions(azure-storage-adls PRIVATE NOMINMAX)
+@@ -50,3 +54,9 @@ if(BUILD_TESTS)
+   string(REGEX REPLACE "([^;]+)" "${CMAKE_CURRENT_SOURCE_DIR}/\\1" AZURE_STORAGE_ADLS_TEST_SOURCES "${AZURE_STORAGE_ADLS_TEST_SOURCES}")
+   set(AZURE_STORAGE_ADLS_TEST_SOURCES ${AZURE_STORAGE_ADLS_TEST_SOURCES} PARENT_SCOPE)
+ endif()
++
++install(DIRECTORY include/ DESTINATION include/azure-storage-adls)
++install(TARGETS azure-storage-adls
++    ARCHIVE DESTINATION lib
++    LIBRARY DESTINATION lib
++    RUNTIME DESTINATION bin)
+--- origsrc/azure-storage-cpplite-0.3.0/adls/test/client_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/adls/test/client_test.cpp	2025-09-02 08:05:05.623784400 +0900
+@@ -1,4 +1,4 @@
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include "adls_client.h"
+ #include "adls_test_base.h"
+--- origsrc/azure-storage-cpplite-0.3.0/adls/test/directory_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/adls/test/directory_test.cpp	2025-09-02 08:05:05.623784400 +0900
+@@ -1,4 +1,4 @@
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include "adls_client.h"
+ #include "adls_test_base.h"
+--- origsrc/azure-storage-cpplite-0.3.0/adls/test/file_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/adls/test/file_test.cpp	2025-09-02 08:09:12.895298300 +0900
+@@ -1,8 +1,10 @@
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include "adls_client.h"
+ #include "adls_test_base.h"
+ 
++#include <random>
++
+ TEST_CASE("Create File", "[adls][file]")
+ {
+     {
+--- origsrc/azure-storage-cpplite-0.3.0/adls/test/filesystem_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/adls/test/filesystem_test.cpp	2025-09-02 08:05:05.623784400 +0900
+@@ -1,4 +1,4 @@
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include "adls_client.h"
+ #include "adls_test_base.h"
+--- origsrc/azure-storage-cpplite-0.3.0/src/base64.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/src/base64.cpp	2025-09-01 21:52:28.102453100 +0900
+@@ -1,5 +1,6 @@
+ #include <array>
+ #include <cstring>
++#include <stdexcept>
+ 
+ #include "base64.h"
+ 
+--- origsrc/azure-storage-cpplite-0.3.0/test/CMakeLists.txt	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/CMakeLists.txt	2025-09-02 08:40:09.384286900 +0900
+@@ -21,7 +21,7 @@ add_executable(azure-storage-test ${AZUR
+ if(WIN32)
+   target_compile_definitions(azure-storage-test PRIVATE NOMINMAX)
+ endif()
+-target_link_libraries(azure-storage-test azure-storage-lite Catch2::Catch2)
++target_link_libraries(azure-storage-test azure-storage-lite Catch2::Catch2 Catch2Main)
+ if (TARGET azure-storage-adls)
+   target_sources(azure-storage-test PRIVATE ${AZURE_STORAGE_ADLS_TEST_SOURCES})
+   target_link_libraries(azure-storage-test azure-storage-adls)
+--- origsrc/azure-storage-cpplite-0.3.0/test/integration/append_blob_integration_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/integration/append_blob_integration_test.cpp	2025-09-02 08:02:10.647698600 +0900
+@@ -1,6 +1,6 @@
+ #include "blob_integration_base.h"
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ TEST_CASE("Create append blob", "[append blob],[blob_service]")
+ {
+--- origsrc/azure-storage-cpplite-0.3.0/test/integration/blob_container_integration_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/integration/blob_container_integration_test.cpp	2025-09-02 08:02:10.647698600 +0900
+@@ -1,6 +1,6 @@
+ #include "blob_integration_base.h"
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ TEST_CASE("Create containers", "[container],[blob_service]")
+ {
+--- origsrc/azure-storage-cpplite-0.3.0/test/integration/blob_general_integration_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/integration/blob_general_integration_test.cpp	2025-09-02 08:02:10.645650300 +0900
+@@ -1,6 +1,6 @@
+ #include "blob_integration_base.h"
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ // List all blobs that returns a iterator is going to be supported in the future, and this test case set will be valid again.
+ 
+--- origsrc/azure-storage-cpplite-0.3.0/test/integration/block_blob_integration_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/integration/block_blob_integration_test.cpp	2025-09-02 08:02:10.644686400 +0900
+@@ -2,7 +2,7 @@
+ #include "storage_errno.h"
+ #include "mstream.h"
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ TEST_CASE("Upload block blob from stream", "[block blob],[blob_service]")
+ {
+--- origsrc/azure-storage-cpplite-0.3.0/test/integration/page_blob_integration_test.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/integration/page_blob_integration_test.cpp	2025-09-02 08:02:10.645650300 +0900
+@@ -1,6 +1,6 @@
+ #include "blob_integration_base.h"
+ 
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ TEST_CASE("Create page blob", "[page blob],[blob_service]")
+ {
+--- origsrc/azure-storage-cpplite-0.3.0/test/test_base.cpp	2020-03-13 12:39:47.000000000 +0900
++++ src/azure-storage-cpplite-0.3.0/test/test_base.cpp	2025-09-02 08:01:05.756418700 +0900
+@@ -2,7 +2,7 @@
+ 
+ // tell Catch to provide a main()
+ #define CATCH_CONFIG_MAIN
+-#include "catch2/catch.hpp"
++#include "catch2/catch_all.hpp"
+ 
+ #include <unordered_map>
+ #include <sstream>
