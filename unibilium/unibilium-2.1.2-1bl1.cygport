@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/neovim/${PN}"
-SRC_URI="https://github.com/neovim/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/neovim/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Terminfo parsing library"
@@ -7,27 +7,37 @@ DESCRIPTION="Unibilium is a very basic terminfo library. It doesn't depend on cu
 any other library. It also doesn't use global variables, so it should be
 thread-safe."
 
-src_compile()
-{
-	cd ${B}
-	lndirs
-	cygmake PREFIX=/usr
-}
+LICENSE="LGPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-3.0-or-later"
+LICENSE_URI="LICENSE"
 
-src_test()
-{
-	cd ${B}
-	PATH=${B}/.libs:${PATH} prove -r
-}
+BUILD_REQUIRES="
+	perl
+"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=4
+"
 
 src_install()
 {
 	cd ${B}
-	cygmake install DESTDIR=${D} PREFIX=/usr
+	ninja_install
+
+	mkdir -p ${D}/usr/share/man/man3
+	cd ${S}/doc
+	for man in *.pod
+	do
+		pod2man -c ${PN} -s3 -r ${P} ${man} > ${D}/usr/share/man/man3/${man%.*}.3
+	done
 }
 
-PKG_IGNORE="
-	usr/lib/lib${PN}.a
+DOCS="
+	GPLv3
+	LGPLv3
 "
 
 PKG_NAMES="
@@ -39,12 +49,11 @@ unibilium_CONTENTS="
 	usr/share/doc
 "
 libunibilium4_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-4.dll
 "
 libunibilium_devel_CONTENTS="
 	usr/include
-	usr/lib/*.dll.a
-	usr/lib/pkgconfig
+	usr/lib
 	usr/share/man
 "
 unibilium_SUMMARY="${SUMMARY} (licensing & readmes)"
