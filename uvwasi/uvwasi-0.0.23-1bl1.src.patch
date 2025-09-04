@@ -1,11 +1,12 @@
---- origsrc/uvwasi-0.0.21/CMakeLists.txt	2024-05-03 05:17:00.000000000 +0900
-+++ src/uvwasi-0.0.21/CMakeLists.txt	2024-12-11 12:37:26.120049800 +0900
-@@ -97,17 +97,6 @@ if(ASAN AND CMAKE_C_COMPILER_ID MATCHES
+--- origsrc/uvwasi-0.0.23/CMakeLists.txt	2025-09-04 04:56:15.000000000 +0900
++++ src/uvwasi-0.0.23/CMakeLists.txt	2025-09-04 09:37:40.678612300 +0900
+@@ -99,18 +99,6 @@ if(ASAN AND CMAKE_C_COMPILER_ID MATCHES
      set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
  endif()
  
 -## Static library target.
 -add_library(uvwasi_a STATIC ${uvwasi_sources})
+-set_target_properties(uvwasi_a PROPERTIES OUTPUT_NAME "uvwasi")
 -target_compile_definitions(uvwasi_a PRIVATE ${uvwasi_defines})
 -target_compile_options(uvwasi_a PRIVATE ${uvwasi_cflags})
 -target_include_directories(uvwasi_a PRIVATE ${PROJECT_SOURCE_DIR}/include)
@@ -18,18 +19,17 @@
  ## Shared library target.
  add_library(uvwasi SHARED ${uvwasi_sources})
  target_compile_definitions(uvwasi PRIVATE ${uvwasi_defines})
-@@ -118,7 +107,9 @@ if(CODE_COVERAGE)
- else()
+@@ -122,6 +110,9 @@ else()
      target_link_libraries(uvwasi PRIVATE ${LIBUV_LIBRARIES})
  endif()
--
+ 
 +if (DEFINED SOVERSION)
-+    set_target_properties(uvwasi PROPERTIES SOVERSION "${SOVERSION}")
++    set_target_properties(uvwasi PROPERTIES SOVERSION ${SOVERSION})
 +endif()
  
  ## Test targets.
- if(UVWASI_BUILD_TESTS)
-@@ -132,7 +123,7 @@ if(UVWASI_BUILD_TESTS)
+ if(BUILD_TESTING)
+@@ -135,7 +126,7 @@ if(BUILD_TESTING)
          target_include_directories(${test_name}
                                      PRIVATE
                                      ${PROJECT_SOURCE_DIR}/include)
@@ -38,7 +38,7 @@
          list(APPEND test_list ${test_name})
      endforeach()
  
-@@ -159,7 +150,7 @@ if(INSTALL_UVWASI AND NOT CODE_COVERAGE)
+@@ -162,7 +153,7 @@ if(INSTALL_UVWASI AND NOT CODE_COVERAGE)
      configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/Config.cmake.in ${config_file} INSTALL_DESTINATION ${cmake_files_install_dir})
  
      install(
@@ -47,36 +47,13 @@
          EXPORT ${target_export_name}
          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-@@ -167,7 +158,7 @@ if(INSTALL_UVWASI AND NOT CODE_COVERAGE)
-     )
-     install(
-         DIRECTORY ${PROJECT_SOURCE_DIR}/include/
--        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/uvwasi
-+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-         FILES_MATCHING PATTERN "*.h"
-     )
-     install(
-@@ -200,3 +191,10 @@ message(STATUS "summary of uvwasi build
-     ASAN:            ${ASAN}
-     Build tests:     ${UVWASI_BUILD_TESTS}
- ")
-+
-+set(prefix ${CMAKE_INSTALL_PREFIX})
-+set(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+set(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+configure_file(${CMAKE_SOURCE_DIR}/uvwasi.pc.in ${CMAKE_BINARY_DIR}/uvwasi.pc @ONLY)
-+install(FILES ${CMAKE_BINARY_DIR}/uvwasi.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/uvwasi-0.0.21/uvwasi.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/uvwasi-0.0.21/uvwasi.pc.in	2024-12-11 12:32:25.103830100 +0900
-@@ -0,0 +1,10 @@
-+prefix=@prefix@
-+exec_prefix=@exec_prefix@
-+libdir=@libdir@
-+includedir=@includedir@
-+
-+Name: uvwasi
-+Description: WASI syscall API built atop libuv
-+Version: @VERSION@
+--- origsrc/uvwasi-0.0.23/cmake/uvwasi.pc.in	2025-09-04 04:56:15.000000000 +0900
++++ src/uvwasi-0.0.23/cmake/uvwasi.pc.in	2025-09-04 10:59:46.610046300 +0900
+@@ -9,6 +9,6 @@ Name: @PROJECT_NAME@
+ Description: @PROJECT_DESCRIPTION@
+ Version: @PROJECT_VERSION@
+ 
+-Libs: -L${libdir}
 +Libs: -L${libdir} -luvwasi
-+Cflags: -I${includedir}
+ Libs.private: -l@LIBUV_LIBRARIES@
+ Cflags: -I${includedir} -I${libuv_includedir} @uvwasi_cflags@
