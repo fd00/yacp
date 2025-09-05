@@ -1,6 +1,6 @@
---- origsrc/wabt/CMakeLists.txt	2024-11-19 16:19:09.000000000 +0900
-+++ src/wabt/CMakeLists.txt	2024-11-19 16:49:36.619523500 +0900
-@@ -391,10 +391,14 @@ set(WABT_LIBRARY_H
+--- origsrc/wabt/CMakeLists.txt	2025-09-05 23:55:39.000000000 +0900
++++ src/wabt/CMakeLists.txt	2025-09-05 23:57:20.536778400 +0900
+@@ -396,10 +396,14 @@ set(WABT_LIBRARY_H
  
  set(WABT_LIBRARY_SRC ${WABT_LIBRARY_CC} ${WABT_LIBRARY_H})
  
@@ -16,9 +16,9 @@
  if (HAVE_OPENSSL_SHA_H)
    target_link_libraries(wabt OpenSSL::Crypto)
  else()
-@@ -425,9 +429,12 @@ endif ()
+@@ -430,9 +434,12 @@ endif ()
  if (HAVE_SETJMP_H)
-   set(WASM_RT_FILES "wasm2c/wasm-rt-impl.h" "wasm2c/wasm-rt-impl.c" "wasm2c/wasm-rt-exceptions-impl.c" "wasm2c/wasm-rt-mem-impl.c")
+   set(WASM_RT_FILES "wasm2c/wasm-rt-impl.h" "wasm2c/wasm-rt-impl.c" "wasm2c/wasm-rt-exceptions-impl.c" "wasm2c/wasm-rt-mem-impl.c" "wasm2c/wasm-rt-impl-tableops.inc" "wasm2c/wasm-rt-mem-impl-helper.inc")
  
 -  add_library(wasm-rt-impl STATIC ${WASM_RT_FILES})
 +  add_library(wasm-rt-impl SHARED ${WASM_RT_FILES})
@@ -30,7 +30,7 @@
    if (WABT_BIG_ENDIAN)
      target_compile_definitions(wasm-rt-impl PUBLIC WABT_BIG_ENDIAN=1)
    endif ()
-@@ -438,6 +445,8 @@ if (HAVE_SETJMP_H)
+@@ -443,6 +450,8 @@ if (HAVE_SETJMP_H)
        EXPORT wabt-targets
        COMPONENT wabt-development
        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
@@ -39,7 +39,7 @@
      )
      install(
        FILES "wasm2c/wasm-rt.h" "wasm2c/wasm-rt-exceptions.h"
-@@ -474,6 +483,9 @@ if (BUILD_LIBWASM)
+@@ -479,6 +488,9 @@ if (BUILD_LIBWASM)
      target_compile_definitions(wasm PRIVATE "WASM_API_EXTERN=__attribute__((visibility(\"default\")))")
    endif ()
    set_target_properties(wasm PROPERTIES CXX_VISIBILITY_PRESET hidden)
@@ -49,7 +49,7 @@
  endif ()
  
  if (CODE_COVERAGE)
-@@ -572,22 +584,30 @@ if (BUILD_TOOLS)
+@@ -577,22 +589,30 @@ if (BUILD_TOOLS)
      INSTALL
    )
  
@@ -82,9 +82,9 @@
    endif()
  
    # wasm-interp
---- origsrc/wabt/test/run-spec-wasm2c.py	2024-11-19 16:19:09.000000000 +0900
-+++ src/wabt/test/run-spec-wasm2c.py	2024-11-19 16:52:22.807095700 +0900
-@@ -466,7 +466,7 @@ def Compile(cc, c_filename, out_dir, use
+--- origsrc/wabt/test/run-spec-wasm2c.py	2025-09-05 23:55:40.000000000 +0900
++++ src/wabt/test/run-spec-wasm2c.py	2025-09-05 23:57:20.547020300 +0900
+@@ -472,7 +472,7 @@ def Compile(cc, c_filename, out_dir, use
          else:
              args.append('-std=c99')
          args += ['-c', c_filename, '-o', o_filename, '-O2',
