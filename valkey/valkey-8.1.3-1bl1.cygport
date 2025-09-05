@@ -1,0 +1,60 @@
+HOMEPAGE="https://github.com/${PN}-io/${PN}"
+SRC_URI="https://github.com/${PN}-io/${PN}/archive/refs/tags/${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/8.1.1%2Bdfsg1-3/debian/patches/0002-Add-CPPFLAGS-to-upstream-makefiles.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/8.1.1%2Bdfsg1-3/debian/patches/0003-Use-get_current_dir_name-over-PATHMAX.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/8.1.1%2Bdfsg1-3/debian/patches/0005-Incorporate-Redis-CVE-for-CVE-2025-27151-2146.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/8.1.1%2Bdfsg1-3/debian/patches/CVE-2025-49112.patch
+"
+
+CATEGORY="Net"
+SUMMARY="Flexible distributed key-value datastore"
+DESCRIPTION="Valkey is a high-performance data structure server that primarily serves
+key/value workloads. It supports a wide range of native structures and an
+extensible plugin system for adding new data structures and access patterns."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="
+	libfpconv-devel
+	libhdr_histogram-devel
+	libhiredis-devel
+	libhiredis_ssl-devel
+	liblinenoise-devel
+	libssl-devel
+	libtcmalloc-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -DNO_SDSCOMPAT_H -DUSE_SYSTEM_HDR_HISTOGRAM -DUSE_SYSTEM_FPCONV -DUSE_SYSTEM_LINENOISE"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_EXAMPLE_MODULES:BOOL=ON
+	-DBUILD_MALLOC:STRING=tcmalloc
+	-DBUILD_TEST_MODULES:BOOL=ON
+	-DBUILD_TLS:BOOL=ON
+	-DBUILD_UNIT_TESTS:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -rf usr/bin/lib*.dll.a
+	mkdir -p usr/lib/valkey
+	mv usr/bin/*.dll usr/lib/valkey
+}
+
+DOCS="
+	00-RELEASENOTES
+	*.md
+"
+
+DIFF_EXCLUDES="
+	jemalloc
+"
