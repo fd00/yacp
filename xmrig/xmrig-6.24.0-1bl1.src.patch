@@ -1,0 +1,167 @@
+--- origsrc/xmrig-6.24.0/CMakeLists.txt	2025-09-07 15:16:24.375651900 +0900
++++ src/xmrig-6.24.0/CMakeLists.txt	2025-09-07 15:48:12.017691300 +0900
+@@ -228,8 +228,11 @@ endif()
+ include(src/hw/api/api.cmake)
+ include(src/hw/dmi/dmi.cmake)
+ 
++find_package(pkgConfig REQUIRED)
++pkg_check_modules(FMT REQUIRED fmt)
++
+ include_directories(src)
+-include_directories(src/3rdparty)
++# include_directories(src/3rdparty)
+ include_directories(${UV_INCLUDE_DIR})
+ 
+ if (WITH_DEBUG_LOG)
+@@ -237,7 +240,7 @@ if (WITH_DEBUG_LOG)
+ endif()
+ 
+ add_executable(${CMAKE_PROJECT_NAME} ${HEADERS} ${SOURCES} ${SOURCES_OS} ${HEADERS_CRYPTO} ${SOURCES_CRYPTO} ${SOURCES_SYSLOG} ${TLS_SOURCES} ${XMRIG_ASM_SOURCES})
+-target_link_libraries(${CMAKE_PROJECT_NAME} ${XMRIG_ASM_LIBRARY} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${CPUID_LIB} ${ARGON2_LIBRARY} ${ETHASH_LIBRARY} ${GHOSTRIDER_LIBRARY})
++target_link_libraries(${CMAKE_PROJECT_NAME} ${XMRIG_ASM_LIBRARY} ${OPENSSL_LIBRARIES} ${EXTRA_LIBS} ${CPUID_LIB} ${ARGON2_LIBRARY} ${ETHASH_LIBRARY} ${GHOSTRIDER_LIBRARY} ${UV_LIBRARIES} ${HWLOC_LIBRARY} ${FMT_LIBRARIES})
+ 
+ if (WIN32)
+     if (NOT ARM_TARGET)
+--- origsrc/xmrig-6.24.0/src/3rdparty/fmt/format.cc	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/3rdparty/fmt/format.cc	2025-09-07 15:28:25.252943700 +0900
+@@ -5,7 +5,7 @@
+ //
+ // For the license information refer to format.h.
+ 
+-#include "3rdparty/fmt/format-inl.h"
++#include <fmt/format-inl.h>
+ 
+ FMT_BEGIN_NAMESPACE
+ namespace detail {
+--- origsrc/xmrig-6.24.0/src/backend/cpu/platform/lscpu_arm.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/backend/cpu/platform/lscpu_arm.cpp	2025-09-07 15:29:11.016022700 +0900
+@@ -18,7 +18,7 @@
+  */
+ 
+ #include "base/tools/String.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ 
+ 
+ #include <cstdio>
+--- origsrc/xmrig-6.24.0/src/backend/opencl/wrappers/AdlLib_linux.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/backend/opencl/wrappers/AdlLib_linux.cpp	2025-09-07 15:29:11.016022700 +0900
+@@ -20,7 +20,7 @@
+ 
+ 
+ #include "backend/opencl/wrappers/AdlLib.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "backend/opencl/wrappers/OclDevice.h"
+ 
+ 
+--- origsrc/xmrig-6.24.0/src/backend/opencl/wrappers/OclDevice.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/backend/opencl/wrappers/OclDevice.cpp	2025-09-07 15:29:11.017058100 +0900
+@@ -18,7 +18,7 @@
+  */
+ 
+ #include "backend/opencl/wrappers/OclDevice.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "backend/opencl/OclGenerator.h"
+ #include "backend/opencl/OclThreads.h"
+--- origsrc/xmrig-6.24.0/src/base/kernel/Process.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/base/kernel/Process.cpp	2025-09-07 15:29:11.014497300 +0900
+@@ -22,7 +22,7 @@
+ 
+ 
+ #include "base/kernel/Process.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "base/tools/Chrono.h"
+ #include "version.h"
+ 
+--- origsrc/xmrig-6.24.0/src/base/net/stratum/BaseClient.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/base/net/stratum/BaseClient.cpp	2025-09-07 15:29:11.016022700 +0900
+@@ -17,7 +17,7 @@
+  */
+ 
+ #include "base/net/stratum/BaseClient.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "base/io/Env.h"
+ #include "base/io/log/Log.h"
+--- origsrc/xmrig-6.24.0/src/base/net/stratum/benchmark/BenchClient.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/base/net/stratum/benchmark/BenchClient.cpp	2025-09-07 15:29:11.016022700 +0900
+@@ -17,7 +17,7 @@
+  */
+ 
+ #include "base/net/stratum/benchmark/BenchClient.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "backend/common/benchmark/BenchState.h"
+ #include "backend/common/interfaces/IBackend.h"
+--- origsrc/xmrig-6.24.0/src/base/net/stratum/benchmark/BenchConfig.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/base/net/stratum/benchmark/BenchConfig.cpp	2025-09-07 15:29:11.016022700 +0900
+@@ -17,7 +17,7 @@
+  */
+ 
+ #include "base/net/stratum/benchmark/BenchConfig.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "base/io/json/Json.h"
+ 
+--- origsrc/xmrig-6.24.0/src/base/tools/String.h	2025-09-07 15:16:25.772097300 +0900
++++ src/xmrig-6.24.0/src/base/tools/String.h	2025-09-07 15:26:51.079684000 +0900
+@@ -21,7 +21,7 @@
+ 
+ 
+ #include "3rdparty/rapidjson/fwd.h"
+-#include "3rdparty/fmt/format.h"
++#include <fmt/format.h>
+ 
+ #include <utility>
+ #include <vector>
+--- origsrc/xmrig-6.24.0/src/crypto/common/LinuxMemory.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/crypto/common/LinuxMemory.cpp	2025-09-07 15:29:11.013488700 +0900
+@@ -17,7 +17,7 @@
+  */
+ 
+ #include "crypto/common/LinuxMemory.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "crypto/common/VirtualMemory.h"
+ 
+ 
+--- origsrc/xmrig-6.24.0/src/hw/dmi/DmiMemory.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/hw/dmi/DmiMemory.cpp	2025-09-07 15:26:51.079684000 +0900
+@@ -20,7 +20,7 @@
+ 
+ 
+ #include "hw/dmi/DmiMemory.h"
+-#include "3rdparty/fmt/format.h"
++#include <fmt/format.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "hw/dmi/DmiTools.h"
+ 
+--- origsrc/xmrig-6.24.0/src/hw/dmi/DmiReader.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/hw/dmi/DmiReader.cpp	2025-09-07 15:29:11.013488700 +0900
+@@ -19,7 +19,7 @@
+  */
+ 
+ #include "hw/dmi/DmiReader.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "3rdparty/rapidjson/document.h"
+ #include "hw/dmi/DmiTools.h"
+ 
+--- origsrc/xmrig-6.24.0/src/hw/msr/Msr_linux.cpp	2025-06-23 09:44:53.000000000 +0900
++++ src/xmrig-6.24.0/src/hw/msr/Msr_linux.cpp	2025-09-07 15:29:11.013488700 +0900
+@@ -18,7 +18,7 @@
+ 
+ 
+ #include "hw/msr/Msr.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "backend/cpu/Cpu.h"
+ #include "base/io/log/Log.h"
+ 
