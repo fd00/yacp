@@ -1,0 +1,63 @@
+--- origsrc/xmrig-proxy-6.24.0/CMakeLists.txt	2025-06-23 09:43:32.000000000 +0900
++++ src/xmrig-proxy-6.24.0/CMakeLists.txt	2025-09-07 17:01:52.479512500 +0900
+@@ -190,11 +190,13 @@ if (WITH_DEBUG_LOG)
+ endif()
+ 
+ include_directories(src)
+-include_directories(src/3rdparty)
+ include_directories(${UV_INCLUDE_DIR})
+ 
++find_package(pkgConfig REQUIRED)
++pkg_check_modules(FMT REQUIRED fmt)
++
+ add_executable(${CMAKE_PROJECT_NAME} ${HEADERS} ${SOURCES} ${SOURCES_OS} ${SOURCES_SYSLOG} ${HTTP_SOURCES} ${TLS_SOURCES})
+-target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${GOOGLE_BREAKPAD_LIBS})
++target_link_libraries(${CMAKE_PROJECT_NAME} ${OPENSSL_LIBRARIES} ${UV_LIBRARIES} ${EXTRA_LIBS} ${GOOGLE_BREAKPAD_LIBS} ${FMT_LIBRARIES})
+ 
+ if (CMAKE_CXX_COMPILER_ID MATCHES Clang AND CMAKE_BUILD_TYPE STREQUAL Release AND NOT CMAKE_GENERATOR STREQUAL Xcode)
+     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_STRIP} "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>")
+--- origsrc/xmrig-proxy-6.24.0/src/base/base.cmake	2025-06-23 09:43:32.000000000 +0900
++++ src/xmrig-proxy-6.24.0/src/base/base.cmake	2025-09-07 16:48:27.372215400 +0900
+@@ -88,7 +88,6 @@ set(HEADERS_BASE
+    )
+ 
+ set(SOURCES_BASE
+-    src/3rdparty/fmt/format.cc
+     src/base/crypto/Algorithm.cpp
+     src/base/crypto/Coin.cpp
+     src/base/crypto/keccak.cpp
+--- origsrc/xmrig-proxy-6.24.0/src/base/kernel/Process.cpp	2025-06-23 09:43:32.000000000 +0900
++++ src/xmrig-proxy-6.24.0/src/base/kernel/Process.cpp	2025-09-07 16:48:35.505158800 +0900
+@@ -22,7 +22,7 @@
+ 
+ 
+ #include "base/kernel/Process.h"
+-#include "3rdparty/fmt/core.h"
++#include <fmt/core.h>
+ #include "base/tools/Chrono.h"
+ #include "version.h"
+ 
+--- origsrc/xmrig-proxy-6.24.0/src/base/net/stratum/BaseClient.cpp	2025-06-23 09:43:32.000000000 +0900
++++ src/xmrig-proxy-6.24.0/src/base/net/stratum/BaseClient.cpp	2025-09-07 16:49:57.077864900 +0900
+@@ -17,8 +17,8 @@
+  */
+ 
+ #include "base/net/stratum/BaseClient.h"
+-#include "3rdparty/fmt/core.h"
+-#include "3rdparty/rapidjson/document.h"
++#include <fmt/core.h>
++#include <rapidjson/document.h>
+ #include "base/io/Env.h"
+ #include "base/io/log/Log.h"
+ #include "base/io/log/Tags.h"
+--- origsrc/xmrig-proxy-6.24.0/src/base/net/stratum/Pool.cpp	2025-06-23 09:43:32.000000000 +0900
++++ src/xmrig-proxy-6.24.0/src/base/net/stratum/Pool.cpp	2025-09-07 16:49:55.486514900 +0900
+@@ -25,7 +25,7 @@
+ 
+ 
+ #include "base/net/stratum/Pool.h"
+-#include "3rdparty/rapidjson/document.h"
++#include "rapidjson/document.h"
+ #include "base/io/json/Json.h"
+ #include "base/io/log/Log.h"
+ #include "base/kernel/Platform.h"
