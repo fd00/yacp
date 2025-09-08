@@ -1,5 +1,9 @@
 HOMEPAGE="https://github.com/${PN}/${PN}"
 SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/1.5.1%2Bds1-1/debian/patches/typos.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/1.5.1%2Bds1-1/debian/patches/cppcheck.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="File format designed for highly efficient deltas while maintaining good compression"
@@ -11,9 +15,23 @@ LICENSE="BSD-2-Clause"
 LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libargp-devel libcurl-devel libssl-devel libzstd-devel"
+BUILD_REQUIRES="
+	libargp-devel
+	libcurl-devel
+	libssl-devel
+	libzstd-devel
+"
 
 inherit meson
+
+src_install()
+{
+	cd ${S}
+	meson_install
+
+	exeinto /usr/libexec
+	newexe contrib/gen_xml_dictionary zck_gen_xml_dictionary
+}
 
 DOCS="
 	DOCKER_TESTING.md
@@ -27,6 +45,7 @@ PKG_NAMES="
 "
 zchunk_CONTENTS="
 	usr/bin/*.exe
+	usr/libexec
 	usr/share
 "
 libzck1_CONTENTS="
