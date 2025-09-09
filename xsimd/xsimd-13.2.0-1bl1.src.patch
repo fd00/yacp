@@ -1,0 +1,92 @@
+--- origsrc/xsimd-13.2.0/CMakeLists.txt	2025-09-09 11:48:21.614076900 +0900
++++ src/xsimd-13.2.0/CMakeLists.txt	2025-09-09 14:03:41.801330800 +0900
+@@ -93,7 +93,7 @@ OPTION(BUILD_TESTS "xsimd test suite" OF
+ 
+ if(ENABLE_XTL_COMPLEX)
+     find_package(xtl 0.7.0 REQUIRED)
+-    target_compile_features(xsimd INTERFACE cxx_std_14)
++    # target_compile_features(xsimd INTERFACE cxx_std_14)
+     target_compile_definitions(xsimd INTERFACE XSIMD_ENABLE_XTL_COMPLEX=1)
+     target_link_libraries(xsimd INTERFACE xtl)
+ else()
+@@ -139,7 +139,7 @@ install(DIRECTORY ${XSIMD_INCLUDE_DIR}/x
+         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
+-set(XSIMD_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}" CACHE STRING "install path for xsimdConfig.cmake")
++set(XSIMD_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE STRING "install path for xsimdConfig.cmake")
+ 
+ configure_package_config_file(${PROJECT_NAME}Config.cmake.in
+                               "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+--- origsrc/xsimd-13.2.0/benchmark/CMakeLists.txt	2025-02-26 01:15:29.000000000 +0900
++++ src/xsimd-13.2.0/benchmark/CMakeLists.txt	2025-09-09 14:05:11.993982400 +0900
+@@ -33,24 +33,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang
+     if(NOT CMAKE_CXX_FLAGS MATCHES "-march" AND NOT CMAKE_CXX_FLAGS MATCHES "-arch" AND NOT CMAKE_OSX_ARCHITECTURES)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+     endif()
+-
+-    if(NOT MSVC)
+-        CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
+-        if (ENABLE_XTL_COMPLEX)
+-            CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
+-            if (NOT HAS_CPP14_FLAG)
+-                message(FATAL_ERROR "Unsupported compiler -- xsimd requires C++14 support when xtl complex support is enabled")
+-            endif()
+-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+-        else()
+-            CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
+-            if (NOT HAS_CPP11_FLAG)
+-                message(FATAL_ERROR "Unsupported compiler -- xsimd requires C++11 support!")
+-            else()
+-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-            endif()
+-        endif()
+-    endif()
+ endif()
+ 
+ if(MSVC)
+--- origsrc/xsimd-13.2.0/test/CMakeLists.txt	2025-02-26 01:15:29.000000000 +0900
++++ src/xsimd-13.2.0/test/CMakeLists.txt	2025-09-09 14:04:44.603846200 +0900
+@@ -48,24 +48,6 @@ set(TARGET_ARCH "native" CACHE STRING "T
+ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+     if (NOT WIN32 AND NOT ANDROID)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder")
+-        # Users may override the c++ standard:
+-        if(NOT DEFINED CMAKE_CXX_STANDARD OR "${CMAKE_CXX_STANDARD}" STREQUAL "")
+-            if (ENABLE_XTL_COMPLEX)
+-                CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
+-                if (NOT HAS_CPP14_FLAG)
+-                    message(FATAL_ERROR "Unsupported compiler -- xsimd requires C++14 support when xtl complex support is enabled")
+-                endif()
+-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+-            else()
+-                CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
+-                if (NOT HAS_CPP11_FLAG)
+-                    message(FATAL_ERROR "Unsupported compiler -- xsimd requires C++11 support!")
+-                else()
+-                    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-                endif()
+-            endif()
+-        endif()
+-
+         if (NOT CROSS_COMPILE_ARM)
+             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fPIC")
+         endif()
+@@ -127,7 +109,7 @@ set(XSIMD_TESTS
+     test_api.cpp
+     test_arch.cpp
+     test_basic_math.cpp
+-    test_batch.cpp
++    # test_batch.cpp # too many sections on cygwin
+     test_batch_bool.cpp
+     test_batch_cast.cpp
+     test_batch_complex.cpp
+@@ -148,7 +130,7 @@ set(XSIMD_TESTS
+     test_extract_pair.cpp
+     test_fp_manipulation.cpp
+     test_hyperbolic.cpp
+-    test_load_store.cpp
++    # test_load_store.cpp # too many sections on cygwin
+     test_memory.cpp
+     test_poly_evaluation.cpp
+     test_power.cpp
