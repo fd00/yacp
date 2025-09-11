@@ -1,0 +1,46 @@
+--- origsrc/tqsl-2.8.1/CMakeLists.txt	2025-04-27 21:25:56.000000000 +0900
++++ src/tqsl-2.8.1/CMakeLists.txt	2025-09-11 12:48:11.856595300 +0900
+@@ -38,7 +38,7 @@ ENDIF ()
+ #    ENDIF (CMAKE_SIZEOF_VOID_P EQUAL 4)
+ #ENDIF (LINUX AND NOT CMAKE_SHARED_LIBRARY_PREFIX AND NOT LIB_SUFFIX) 
+ 
+-if(LINUX)
++if(LINUX OR CYGWIN)
+ 	include(GNUInstallDirs)
+ 	if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
+ 		if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+@@ -187,3 +187,10 @@ add_subdirectory(src) #tqsllib
+ add_subdirectory(apps)
+ macro_optional_add_subdirectory(tests)
+ enable_testing()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/tqsllib.pc.in ${CMAKE_BINARY_DIR}/tqsllib.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/tqsllib.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/tqsl-2.8.1/src/CMakeLists.txt	2025-09-11 10:38:39.393733100 +0900
++++ src/tqsl-2.8.1/src/CMakeLists.txt	2025-09-11 11:46:13.036972400 +0900
+@@ -60,7 +60,7 @@ include_directories(${OPENSSL_INCLUDE_DI
+ 
+ if(NOT APPLE AND NOT WIN32)
+ set(HEADERS_TO_INSTALL tqsllib.h tqslerrno.h cabrillo.h adif.h tqslconvert.h)
+-install(TARGETS tqsllib DESTINATION ${CMAKE_INSTALL_LIBDIR})
++install(TARGETS tqsllib RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES config.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/TrustedQSL)
+ install(FILES ${HEADERS_TO_INSTALL} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ endif()
+--- origsrc/tqsl-2.8.1/tqsllib.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/tqsl-2.8.1/tqsllib.pc.in	2025-09-11 12:49:33.453244500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: tqsllib
++Description: Library for digitally signing Amateur Radio QSO records
++Version: @TQSLVERSION@
++Libs: -L${libdir} -ltqsllib
++Cflags: -I${includedir}
