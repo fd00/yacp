@@ -1,0 +1,78 @@
+--- origsrc/t3-1.0.0/CMakeLists.txt	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/CMakeLists.txt	2025-09-12 13:17:04.565065700 +0900
+@@ -38,11 +38,17 @@ else()
+ endif()
+ enable_testing()
+ 
+-set(ENV{GTEST_ROOT} ${PROJECT_SOURCE_DIR}/gtest-1.7.0)
++# set(ENV{GTEST_ROOT} ${PROJECT_SOURCE_DIR}/gtest-1.7.0)
+ # set(gtest_SOURCE_DIR gtest-1.7.0)
+ # add_subdirectory(${gtest_SOURCE_DIR})
+ # include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+-add_subdirectory(gtest-1.7.0)
++# add_subdirectory(gtest-1.7.0)
+ add_subdirectory(src)
+ add_subdirectory(tests)
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libt3.pc.in ${CMAKE_BINARY_DIR}/libt3.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libt3.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/t3-1.0.0/libt3.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/t3-1.0.0/libt3.pc.in	2025-09-12 13:17:04.501335700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libt3
++Description: Lightweight C++ Thread Pool
++Version: @VERSION@
++Libs: -L${libdir} -lt3
++Cflags: -I${includedir}
+--- origsrc/t3-1.0.0/src/CMakeLists.txt	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/src/CMakeLists.txt	2025-09-12 13:14:43.432642100 +0900
+@@ -1,2 +1,11 @@
+ add_library(t3 thread_pool.cc thread_task.cc channel.cc wait_group.cc)
+ target_link_libraries(t3 pthread)
++if (DEFINED SOVERSION)
++    set_target_properties(t3 PROPERTIES SOVERSION ${SOVERSION})
++endif()
++install(TARGETS t3
++    LIBRARY DESTINATION lib
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin
++)
++install(FILES channel.h thread_pool.h thread_task.h wait_group.h DESTINATION include/t3)
+--- origsrc/t3-1.0.0/tests/thread_pool_test.cc	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/tests/thread_pool_test.cc	2025-09-12 13:05:36.253520700 +0900
+@@ -4,7 +4,6 @@
+  *
+  * Distributed under terms of the MIT license.
+  */
+-#include <gperftools/profiler.h>
+ #include "gtest/gtest.h"
+ #include "thread_task.h"
+ #include "thread_pool.h"
+@@ -36,7 +35,7 @@ void parent_a(ThreadTask *task, void * d
+ void sub_a(ThreadTask *task, void * data) {
+     MutexData * d = (MutexData*) data;
+     d->Inc();
+-    std::chrono::microseconds a{100,0};
++    std::chrono::microseconds a{100};
+     std::this_thread::sleep_for(a);
+ }
+ 
+--- origsrc/t3-1.0.0/tests/wait_group_test.cc	2014-08-04 23:56:53.000000000 +0900
++++ src/t3-1.0.0/tests/wait_group_test.cc	2025-09-12 13:05:31.686074900 +0900
+@@ -6,7 +6,6 @@
+  */
+ 
+ #include "wait_group.h"
+-#include <gperftools/profiler.h>
+ #include "gtest/gtest.h"
+ 
+ using namespace t3;
