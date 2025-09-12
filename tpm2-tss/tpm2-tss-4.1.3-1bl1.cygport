@@ -1,5 +1,9 @@
 HOMEPAGE="https://github.com/tpm2-software/${PN}"
 SRC_URI="https://github.com/tpm2-software/${PN}/archive/refs/tags/${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.2/debian/patches/0004-ESYS-FAPI-Fix-order-of-calloc-parameters.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.2/debian/patches/0005-FAPI-Fix-wrong-format-directive-in-ifap_set_auth.patch
+"
 
 CATEGORY="Libs"
 SUMMARY="OSS implementation of the TCG TPM2 Software Stack"
@@ -10,7 +14,12 @@ LICENSE="BSD-2-Clause"
 LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libcurl-devel libjson-c-devel libssl-devel libuuid-devel"
+BUILD_REQUIRES="
+	libcurl-devel
+	libjson-c-devel
+	libssl-devel
+	libuuid-devel
+"
 
 CYGPORT_USE_UNSTABLE_API=1
 src_patch_hook()
@@ -21,8 +30,14 @@ src_patch_hook()
 
 CYGCONF_ARGS="
 	--disable-tcti-cmd
+	--disable-tcti-i2c-ftdi
+	--disable-tcti-spi-ftdi
+	--disable-tcti-spi-ltt2go
 "
-# --disable-tcti-cmd : prctl 
+# --disable-tcti-cmd : prctl
+# --disable-tcti-i2c-ftdi : libftdi1 conflicts with windows.h
+# --disable-tcti-spi-ftdi : libftdi1 conflicts with windows.h
+# --disable-tcti-spi-ltt2go : libftdi1 conflicts with windows.h
 
 src_compile()
 {
@@ -34,20 +49,28 @@ src_compile()
 	cygmake
 }
 
-DIFF_EXCLUDES="
-	*.m4
-	src_vars.mk
-"
+src_test()
+{
+	cd ${B}
+	cygmake check
+}
 
 DOCS="
 	*.md
 	doc/*.md
 	doc/*.png
 "
-
+DIFF_EXCLUDES="
+	*.m4
+	src_vars.mk
+"
 PKG_IGNORE="
 	usr/share/man/man3/Tss2_Tcti_Cmd_Init.3.gz
 	usr/share/man/man7/tss2-tcti-cmd.7.gz
+	usr/share/man/man7/tss2-tcti-i2c-ftdi.7.gz
+	usr/share/man/man7/tss2-tcti-spi-ftdi.7.gz
+	usr/share/man/man7/tss2-tcti-spi-ltt2go.7.gz
+	usr/share/man/man7/tss2-tcti-spidev.7.gz
 "
 
 PKG_NAMES="
@@ -67,6 +90,8 @@ PKG_NAMES="
 	libtss2-sys-devel
 	libtss2-tcti-device0
 	libtss2-tcti-device-devel
+	libtss2-tcti-i2c-helper0
+	libtss2-tcti-i2c-helper-devel
 	libtss2-tcti-mssim0
 	libtss2-tcti-mssim-devel
 	libtss2-tcti-pcap0
@@ -147,6 +172,15 @@ libtss2_tcti_device_devel_CONTENTS="
 	usr/share/man/man3/Tss2_Tcti_Device_Init.3.gz
 	usr/share/man/man7/tss2-tcti-device.7.gz
 "
+libtss2_tcti_i2c_helper0_CONTENTS="
+	usr/bin/cygtss2-tcti-i2c-helper-0.dll
+"
+libtss2_tcti_i2c_helper_devel_CONTENTS="
+	usr/include/tss2/tss2_tcti_i2c_helper.h
+	usr/lib/libtss2-tcti-i2c-helper.dll.a
+	usr/lib/pkgconfig/tss2-tcti-i2c-helper.pc
+	usr/share/man/man7/tss2-tcti-i2c-helper.7.gz
+"
 libtss2_tcti_mssim0_CONTENTS="
 	usr/bin/cygtss2-tcti-mssim-0.dll
 "
@@ -172,6 +206,7 @@ libtss2_tcti_spi_helper_devel_CONTENTS="
 	usr/include/tss2/tss2_tcti_spi_helper.h
 	usr/lib/libtss2-tcti-spi-helper.dll.a
 	usr/lib/pkgconfig/tss2-tcti-spi-helper.pc
+	usr/share/man/man7/tss2-tcti-spi-helper.7.gz
 "
 libtss2_tcti_swtpm0_CONTENTS="
 	usr/bin/cygtss2-tcti-swtpm-0.dll
@@ -206,6 +241,8 @@ libtss2_sys1_SUMMARY="${SUMMARY} (runtime / sys)"
 libtss2_sys_devel_SUMMARY="${SUMMARY} (development / sys)"
 libtss2_tcti_device0_SUMMARY="${SUMMARY} (runtime / tcti device)"
 libtss2_tcti_device_devel_SUMMARY="${SUMMARY} (development / tcti device)"
+libtss2_tcti_i2c_helper0_SUMMARY="${SUMMARY} (runtime / tcti i2c helper)"
+libtss2_tcti_i2c_helper_devel_SUMMARY="${SUMMARY} (development / tcti i2c helper)"
 libtss2_tcti_mssim0_SUMMARY="${SUMMARY} (runtime / tcti mssim)"
 libtss2_tcti_mssim_devel_SUMMARY="${SUMMARY} (development / tcti mssim)"
 libtss2_tcti_pcap0_SUMMARY="${SUMMARY} (runtime / tcti pcap)"
