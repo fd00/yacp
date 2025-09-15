@@ -1,0 +1,44 @@
+--- origsrc/Turbo-Base64-2023.08/CMakeLists.txt	2025-09-15 00:23:02.909852800 +0900
++++ src/Turbo-Base64-2023.08/CMakeLists.txt	2025-09-15 09:21:09.428102000 +0900
+@@ -89,6 +89,10 @@ set_target_properties(base64 PROPERTIES
+     RUNTIME_OUTPUT_NAME "${PROJECT_NAME}"
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(base64 PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ foreach(_obj ${_b64_objs})
+     set_target_properties(${_obj} PROPERTIES POSITION_INDEPENDENT_CODE ${BUILD_SHARED_LIBS})
+     target_sources(base64 PRIVATE $<TARGET_OBJECTS:${_obj}>)
+@@ -108,6 +112,7 @@ endif()
+ if(BUILD_APP)
+     add_executable(tb64app tb64app.c)
+     target_link_libraries(tb64app base64)
++    install(TARGETS tb64app RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+ endif()
+ 
+ # Set package information.
+@@ -166,3 +171,9 @@ install(
+     DESTINATION "${CONFIG_INSTALL_DIR}"
+ )
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/turbobase64.pc.in ${CMAKE_BINARY_DIR}/turbobase64.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/turbobase64.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Turbo-Base64-2023.08/turbobase64.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Turbo-Base64-2023.08/turbobase64.pc.in	2025-09-15 09:21:09.365843000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: turbobase64
++Description: Fastest Base64 SIMD Encoding library
++Version: @VERSION@
++Libs: -L${libdir} -lturbobase64
++Cflags: -I${includedir}
