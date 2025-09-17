@@ -10,7 +10,10 @@ LICENSE="MIT"
 LICENSE_SPDX="SPDX-License-Identifier: MIT"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="bison libpng-devel"
+BUILD_REQUIRES="
+	bison
+	libpng-devel
+"
 
 inherit cmake
 
@@ -20,16 +23,34 @@ CYGCMAKE_ARGS="
 
 src_test()
 {
-	cd ${B}/src
-	./rgbasm.exe -V
-	./rgbfix.exe -V
-	./rgbgfx.exe -V
-	./rgblink.exe -V
+	cd ${S}
+	verbose ./rgbasm.exe -V
+	verbose ./rgbfix.exe -V
+	verbose ./rgbgfx.exe -V
+	verbose ./rgblink.exe -V
 }
 
-DOCS="
-	*.rst
-"
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${S}/contrib
+	pushd bash_compl
+		insinto /usr/share/bash-completion/bash_completion
+		for b in *
+		do
+			newins ${b} ${b%.*}
+		done
+	popd
+	pushd zsh_compl
+		insinto /usr/share/zsh/site-functions
+		for z in *
+		do
+			doins ${z}
+		done
+	popd
+}
 
 DIFF_EXCLUDES="
 	src
