@@ -1,0 +1,79 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/${P}.tar.gz"
+SRC_DIR="${PN}-${P}"
+
+CATEGORY="Net"
+SUMMARY="C++ implementation of SIP, ICE, TURN and related protocols"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="VSL-1.0"
+LICENSE_SPDX="SPDX-License-Identifier: VSL-1.0"
+LICENSE_URI="LICENSE.md"
+
+BUILD_REQUIRES="
+	cppunit
+	libcares-devel
+	libdb-devel
+	libfmt-devel
+	libGeoIP-devel
+	libmariadb-devel
+	libNetxx-devel
+	libpopt-devel
+	libpq-devel
+	libradcli-devel
+	libssl-devel
+"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_QPID_PROTON:BOOL=OFF
+	-DBUILD_RECON:BOOL=OFF
+	-DBUILD_REFLOW:BOOL=OFF
+	-DBUILD_RETURN:BOOL=OFF
+	-DENABLE_LOG_REPOSITORY_DETAILS:BOOL=OFF
+	-DRESIP_HAVE_RADCLI:BOOL=ON
+	-DUSE_FMT:BOOL=ON
+	-DUSE_MYSQL:BOOL=ON
+	-DUSE_POSTGRESQL:BOOL=ON
+	-DUSE_SOCI_POSTGRESQL:BOOL=ON
+	-DUSE_SOCI_MYSQL:BOOL=ON
+"
+
+src_test()
+{
+	cd ${B}
+	PATH=`find . -name '*.dll' | xargs dirname | sort | uniq | sed -e "s:.:${B}:" | tr '\n' ':'`:${PATH} ninja_test
+}
+
+DOCS="
+	CHANGELOG.md
+"
+
+DIFF_EXCLUDES="
+	*.db
+	*.log
+	testLogger*.txt
+"
+
+PKG_NAMES="
+	resiprocate
+	libresiprocate${PV[1]}.${PV[2]}
+	libresiprocate-devel
+"
+resiprocate_CONTENTS="
+	usr/bin/*.exe
+	usr/lib/${PN}
+	usr/sbin/*.exe
+	usr/share
+"
+libresiprocate1_13_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.${PV[2]}.dll
+"
+libresiprocate_devel_CONTENTS="
+	usr/include
+	usr/lib/lib*.dll.a
+"
+resiprocate_SUMMARY="${SUMMARY} (utilities)"
+libresiprocate1_13_SUMMARY="${SUMMARY} (runtime)"
+libresiprocate_devel_SUMMARY="${SUMMARY} (development)"
