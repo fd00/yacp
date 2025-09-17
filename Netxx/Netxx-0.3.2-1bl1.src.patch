@@ -1,0 +1,163 @@
+--- origsrc/Netxx-0.3.2/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/Netxx-0.3.2/CMakeLists.txt	2025-09-17 09:15:15.723229300 +0900
+@@ -0,0 +1,34 @@
++cmake_minimum_required(VERSION 3.28)
++project(Netxx
++  VERSION 0.3.2
++  DESCRIPTION "C++ network programming library"
++  HOMEPAGE_URL "https://sourceforge.net/projects/netxx/")
++
++include(GNUInstallDirs)
++include(CTest)
++
++file(GLOB_RECURSE LIB_SOURCES "src/*.cxx")
++add_library(Netxx SHARED "${LIB_SOURCES}")
++target_include_directories(Netxx PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
++target_link_libraries(Netxx PRIVATE crypto ssl)
++set_target_properties(Netxx PROPERTIES SOVERSION 0)
++
++install(TARGETS Netxx
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++file(GLOB_RECURSE BIN_SOURCES "examples/*.cxx")
++foreach(source_file ${BIN_SOURCES})
++  get_filename_component(exe_name ${source_file} NAME_WE)
++  add_executable(${exe_name} "${source_file}")
++  target_link_libraries(${exe_name} Netxx)
++endforeach(source_file ${BIN_SOURCES})
++
++install(DIRECTORY include/Netxx DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/Netxx.pc.in ${CMAKE_BINARY_DIR}/Netxx.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/Netxx.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/Netxx-0.3.2/Netxx.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/Netxx-0.3.2/Netxx.pc.in	2025-09-17 09:15:11.553355500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: Netxx
++Description: C++ network programming library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lNetxx
++Cflags: -I${includedir}
+--- origsrc/Netxx-0.3.2/examples/multi_server.cxx	2003-01-14 02:01:09.000000000 +0900
++++ src/Netxx-0.3.2/examples/multi_server.cxx	2025-09-17 09:04:57.496970800 +0900
+@@ -48,6 +48,7 @@
+ #include <iostream>
+ #include <exception>
+ #include <ctime>
++#include <cstring>
+ 
+ namespace {
+     const Netxx::port_type const_port_echo	= 4000;
+--- origsrc/Netxx-0.3.2/include/Netxx/Netbuf.h	2003-01-14 02:01:09.000000000 +0900
++++ src/Netxx-0.3.2/include/Netxx/Netbuf.h	2025-09-17 09:10:05.029119300 +0900
+@@ -63,6 +63,9 @@ namespace Netxx {
+ template <typename std::streamsize bufsize, class charT=char, class traits=std::char_traits<char> >
+ class Netbuf : public std::basic_streambuf<charT, traits> {
+ public:
++    /// traits type
++    typedef traits traits_type;
++
+     /// int type
+     typedef typename std::basic_streambuf<charT, traits>::int_type int_type;
+ 
+@@ -113,8 +116,8 @@ template<std::streamsize bufsize, class
+ Netbuf<bufsize, charT, traits>::Netbuf (StreamBase &stream)
+     : stream_(stream)
+ {
+-    setp(putbuf_, putbuf_ + bufsize);
+-    setg(getbuf_+PUTBACK_SIZE, getbuf_+PUTBACK_SIZE, getbuf_+PUTBACK_SIZE);
++    this->setp(putbuf_, putbuf_ + bufsize);
++    this->setg(getbuf_+PUTBACK_SIZE, getbuf_+PUTBACK_SIZE, getbuf_+PUTBACK_SIZE);
+ }
+ //#############################################################################
+ template<std::streamsize bufsize, class charT, class traits>
+@@ -127,7 +130,7 @@ typename Netbuf<bufsize, charT, traits>:
+     if (buffer_out() < 0) {
+ 	return traits_type::eof();
+     } else if (!traits_type::eq_int_type(c, traits_type::eof())) {
+-	return sputc(c);
++	return this->sputc(c);
+     } else {
+ 	return traits_type::not_eof(c);
+     }
+@@ -142,7 +145,7 @@ template<std::streamsize bufsize, class
+ int Netbuf<bufsize, charT, traits>::buffer_out (void) {
+     int length = pptr() - pbase();
+     int rc = stream_.write(putbuf_, length);
+-    pbump(-length);
++    this->pbump(-length);
+     return rc;
+ }
+ //#############################################################################
+@@ -156,7 +159,7 @@ typename Netbuf<bufsize, charT, traits>:
+ template<std::streamsize bufsize, class charT, class traits>
+ typename Netbuf<bufsize, charT, traits>::int_type Netbuf<bufsize, charT, traits>::pbackfail(int_type c) {
+     if (gptr() != eback()) {
+-	gbump(-1);
++	this->gbump(-1);
+ 
+ 	if (!traits_type::eq_int_type(c, traits_type::eof())) {
+ 	    *(gptr()) = traits_type::to_char_type(c);
+@@ -177,10 +180,10 @@ int Netbuf<bufsize, charT, traits>::buff
+     int rc = stream_.read(getbuf_ + PUTBACK_SIZE * sizeof(char_type), bufsize - PUTBACK_SIZE);
+     
+     if (rc <= 0) {
+-	setg(0, 0, 0);
++	this->setg(0, 0, 0);
+ 	return -1;
+     } else {
+-	setg(getbuf_ + PUTBACK_SIZE - number_putbacks, getbuf_ + PUTBACK_SIZE, getbuf_ + PUTBACK_SIZE + rc);
++	this->setg(getbuf_ + PUTBACK_SIZE - number_putbacks, getbuf_ + PUTBACK_SIZE, getbuf_ + PUTBACK_SIZE + rc);
+ 	return rc;
+     }
+ }
+--- origsrc/Netxx-0.3.2/src/Address.cxx	2003-01-14 02:01:24.000000000 +0900
++++ src/Netxx-0.3.2/src/Address.cxx	2025-09-17 08:46:45.499708700 +0900
+@@ -57,6 +57,7 @@
+ 
+ // standard includes
+ #include <cstdlib>
++#include <cstring>
+ 
+ namespace {
+     const char const_local_service[] = "local";
+--- origsrc/Netxx-0.3.2/src/Peer.cxx	2003-07-09 04:24:16.000000000 +0900
++++ src/Netxx-0.3.2/src/Peer.cxx	2025-09-17 08:48:01.224870700 +0900
+@@ -57,6 +57,7 @@
+ #include <algorithm>
+ #include <iostream>
+ #include <cstdlib>
++#include <cstring>
+ #include <new>
+ 
+ //####################################################################
+--- origsrc/Netxx-0.3.2/src/Probe_select.cxx	2003-01-14 02:01:25.000000000 +0900
++++ src/Netxx-0.3.2/src/Probe_select.cxx	2025-09-17 08:48:54.725149100 +0900
+@@ -63,6 +63,7 @@
+ #include <string>
+ #include <list>
+ #include <set>
++#include <cstring>
+ 
+ //####################################################################
+ namespace {
+--- origsrc/Netxx-0.3.2/src/TLS_Certificate.cxx	2003-01-14 02:01:25.000000000 +0900
++++ src/Netxx-0.3.2/src/TLS_Certificate.cxx	2025-09-17 08:49:27.702816300 +0900
+@@ -40,6 +40,7 @@
+ 
+ // standard includes
+ #include <string>
++#include <cstring>
+ 
+ //####################################################################
+ namespace {
