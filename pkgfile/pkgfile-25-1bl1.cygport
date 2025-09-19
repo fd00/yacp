@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/falconindy/${PN}"
-SRC_URI="https://github.com/falconindy/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/falconindy/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Devel"
 SUMMARY="Alpm .files metadata explorer"
@@ -9,6 +9,19 @@ be a filename and pkgfile will return the package(s) which contain this file.
 The repos which pkgfile searches is determined by those enabled in
 /etc/pacman.conf."
 
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libarchive-devel
+	libcurl-devel
+	libintl-devel
+	libpcre-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -DMAP_POPULATE=0"
+
 inherit meson
 
 CYGMESON_ARGS="
@@ -17,6 +30,15 @@ CYGMESON_ARGS="
 
 src_test()
 {
-	cd ${S}/${CHOST}
-	./${PN}.exe --version
+	cd ${S}/_build.${CHOST}
+	verbose ./${PN}.exe --version
+}
+
+src_install()
+{
+	cd ${S}
+	meson_install
+
+	cd ${D}
+	rm -f usr/share/licenses/pkgfile/LICENSE
 }
