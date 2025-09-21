@@ -1,0 +1,54 @@
+--- origsrc/libdsk-1.5.22/Makefile.am	2020-11-26 09:50:28.000000000 +0900
++++ src/libdsk-1.5.22/Makefile.am	2025-09-21 10:07:40.595559100 +0900
+@@ -63,3 +63,6 @@ install-man:
+ 	cd man && make install-man
+ 
+ 
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libdsk-1.5.22/configure.ac	2025-08-09 08:01:31.000000000 +0900
++++ src/libdsk-1.5.22/configure.ac	2025-09-21 10:07:40.613326000 +0900
+@@ -61,11 +61,13 @@ AC_CHECK_HEADERS(errno.h limits.h sys/io
+ AC_CHECK_HEADERS(unistd.h termios.h libgen.h assert.h)
+ AC_CHECK_HEADERS(dirent.h fcntl.h utime.h pwd.h time.h dir.h direct.h)
+ AC_CHECK_HEADERS(linux/fd.h linux/fdreg.h sys/sysmacros.h shlobj.h)
++if test "$host_os" != "cygwin"; then
+ AC_CHECK_HEADERS([windows.h winioctl.h], [], [], 
+ [[#ifdef HAVE_WINDOWS_H
+ #include <windows.h>
+ #endif
+ ]])
++fi
+ 
+ dnl Checks for functions
+ AC_CHECK_FUNCS(strcmpi stricmp strcasecmp, break)
+@@ -135,4 +137,5 @@ AC_SUBST(LIBDSKJAR)
+ AC_SUBST(TOOLCLASSES)
+ AC_SUBST(CLASSPATH)
+ AC_CONFIG_FILES([Makefile doc/Makefile include/Makefile lib/Makefile tools/Makefile man/Makefile])
++AC_CONFIG_FILES([libdsk.pc])
+ AC_OUTPUT
+--- origsrc/libdsk-1.5.22/lib/Makefile.am	2025-07-04 19:10:25.000000000 +0900
++++ src/libdsk-1.5.22/lib/Makefile.am	2025-09-21 09:52:36.789244200 +0900
+@@ -86,6 +86,7 @@ libdsk_la_SOURCES = dskread.c  dskwrite.
+ 		   drvd64.h   drvd64.c \
+ 		   drvldbs.h  drvldbs.c ldbs.h ldbs.c \
+ 		   drvldbst.h drvldbst.c ldbs2txt.c txt2ldbs.c
++libdsk_la_LDFLAGS += -no-undefined
+ 
+ JARCLASSES=$(CLASSDPRE)/Drive.class \
+ 	   $(CLASSDPRE)/DskException.class \
+--- origsrc/libdsk-1.5.22/libdsk.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdsk-1.5.22/libdsk.pc.in	2025-09-21 10:07:40.525962000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdsk
++Description: Library for accessing discs and disc image files
++Version: @VERSION@
++Libs: -L${libdir} -ldsk
++Cflags: -I${includedir}
