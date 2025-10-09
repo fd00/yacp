@@ -1,0 +1,82 @@
+HOMEPAGE="https://github.com/facebook/${PN}"
+SRC_URI="https://github.com/facebook/${PN}/archive/refs/tags/v${PV}.tar.gz"
+
+CATEGORY="Libs"
+SUMMARY="Novel data compression framework"
+DESCRIPTION="OpenZL delivers high compression ratios while preserving high speed, a level
+of performance that is out of reach for generic compressors."
+
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libzstd-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -DZSTD_DISABLE_ASM"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DOPENZL_BUILD_ALL:BOOL=ON
+	-DOPENZL_BUILD_PYTHON_EXT:BOOL=OFF
+	-DOPENZL_BUILD_PYTHON_EXT_TESTS:BOOL=OFF
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	PATH=${B}:${B}/cpp:${PATH} cygninja
+}
+
+src_test()
+{
+	cd ${B}
+	PATH=${B}:${B}/cpp:${PATH} ninja_test
+}
+
+DOCS="
+	CHANGELOG
+"
+
+DIFF_EXCLUDES="
+	deps
+"
+
+PKG_NAMES="
+	openzl
+	libopenzl0
+	libopenzl-devel
+	libopenzl_cpp0
+	libopenzl_cpp-devel
+"
+openzl_CONTENTS="
+	usr/share
+"
+libopenzl0_CONTENTS="
+	usr/bin/cygopenzl-0.dll
+"
+libopenzl_devel_CONTENTS="
+	usr/include/openzl/codecs
+	usr/include/openzl/detail
+	usr/include/openzl/*.h
+	usr/lib/libopenzl.dll.a
+	usr/lib/cmake
+"
+libopenzl_cpp0_CONTENTS="
+	usr/bin/cygopenzl_cpp-0.dll
+"
+libopenzl_cpp_devel_CONTENTS="
+	usr/include/openzl/cpp
+	usr/include/openzl/openzl.hpp
+	usr/lib/libopenzl_cpp.dll.a
+"
+openzl_SUMMARY="${SUMMARY} (licensing & readmes)"
+libopenzl0_SUMMARY="${SUMMARY} (runtime)"
+libopenzl_devel_SUMMARY="${SUMMARY} (development)"
+libopenzl_cpp0_SUMMARY="${SUMMARY} (runtime / c++)"
+libopenzl_cpp_devel_SUMMARY="${SUMMARY} (development / c++)"
