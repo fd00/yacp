@@ -1,0 +1,107 @@
+--- origsrc/android-simg2img-1.1.5/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/android-simg2img-1.1.5/CMakeLists.txt	2025-10-09 14:44:40.131536200 +0900
+@@ -0,0 +1,40 @@
++cmake_minimum_required(VERSION 3.28)
++project(simg2img
++  VERSION 1.1.5
++  DESCRIPTION "Tool to convert Android sparse images to raw images"
++  HOMEPAGE_URL "https://github.com/anestisb/android-simg2img")
++
++include(GNUInstallDirs)
++
++add_library(sparse SHARED backed_block.cpp
++  output_file.cpp
++  sparse.cpp
++  sparse_crc32.cpp
++  sparse_err.cpp
++  sparse_read.cpp
++  android-base/stringprintf.cpp)
++target_include_directories(sparse PUBLIC
++  ${CMAKE_CURRENT_SOURCE_DIR}/include
++  ${CMAKE_CURRENT_SOURCE_DIR}/android-base/include)
++target_link_libraries(sparse PUBLIC z)
++set_target_properties(sparse PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++
++install(TARGETS sparse
++  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++
++set(BIN_BASENAMES simg2img simg2simg img2simg append2simg)
++foreach(BIN_BASENAME IN LISTS BIN_BASENAMES)
++  add_executable(${BIN_BASENAME} "${BIN_BASENAME}.cpp")
++  target_link_libraries(${BIN_BASENAME} PRIVATE sparse)
++  install(TARGETS ${BIN_BASENAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++endforeach(BIN_BASENAME IN LISTS BIN_BASENAMES)
++
++install(FILES include/sparse/sparse.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sparse)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/sparse.pc.in ${CMAKE_BINARY_DIR}/sparse.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/sparse.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/android-simg2img-1.1.5/append2simg.cpp	2024-12-31 18:58:31.000000000 +0900
++++ src/android-simg2img-1.1.5/append2simg.cpp	2025-10-09 14:38:53.716562000 +0900
+@@ -32,7 +32,7 @@
+ #define O_BINARY 0
+ #endif
+ 
+-#if defined(__APPLE__) && defined(__MACH__)
++#if (defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #define off64_t off_t
+ #endif
+--- origsrc/android-simg2img-1.1.5/img2simg.cpp	2024-12-31 18:58:31.000000000 +0900
++++ src/android-simg2img-1.1.5/img2simg.cpp	2025-10-09 14:40:13.962015400 +0900
+@@ -32,7 +32,7 @@
+ #define O_BINARY 0
+ #endif
+ 
+-#if defined(__APPLE__) && defined(__MACH__)
++#if (defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #define off64_t off_t
+ #endif
+--- origsrc/android-simg2img-1.1.5/output_file.cpp	2024-12-31 18:58:31.000000000 +0900
++++ src/android-simg2img-1.1.5/output_file.cpp	2025-10-09 14:39:22.801490200 +0900
+@@ -36,12 +36,14 @@
+ 
+ #ifndef _WIN32
+ #include <sys/mman.h>
++#if !defined(O_BINARY)
+ #define O_BINARY 0
++#endif
+ #else
+ #define ftruncate64 ftruncate
+ #endif
+ 
+-#if defined(__APPLE__) && defined(__MACH__)
++#if (defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #define ftruncate64 ftruncate
+ #define mmap64 mmap
+--- origsrc/android-simg2img-1.1.5/sparse.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/android-simg2img-1.1.5/sparse.pc.in	2025-10-09 14:45:11.832287000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: sparse
++Description: Tool to convert Android sparse images to raw images
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lsparse
++Cflags: -I${includedir}
+--- origsrc/android-simg2img-1.1.5/sparse_read.cpp	2024-12-31 18:58:31.000000000 +0900
++++ src/android-simg2img-1.1.5/sparse_read.cpp	2025-10-09 14:39:39.784806100 +0900
+@@ -37,7 +37,7 @@
+ #include "sparse_file.h"
+ #include "sparse_format.h"
+ 
+-#if defined(__APPLE__) && defined(__MACH__)
++#if (defined(__APPLE__) && defined(__MACH__)) || defined(__CYGWIN__)
+ #define lseek64 lseek
+ #define off64_t off_t
+ #endif
