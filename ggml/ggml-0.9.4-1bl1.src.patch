@@ -1,0 +1,45 @@
+--- origsrc/ggml-0.9.4/CMakeLists.txt	2025-09-30 19:42:39.000000000 +0900
++++ src/ggml-0.9.4/CMakeLists.txt	2025-11-13 00:08:49.678664400 +0900
+@@ -8,7 +8,7 @@ set(GGML_VERSION_PATCH 4)
+ set(GGML_VERSION_BASE "${GGML_VERSION_MAJOR}.${GGML_VERSION_MINOR}.${GGML_VERSION_PATCH}")
+ 
+ find_program(GIT_EXE NAMES git git.exe NO_CMAKE_FIND_ROOT_PATH)
+-if(GIT_EXE)
++if(GIT_EXE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+     # Get current git commit hash
+     execute_process(COMMAND ${GIT_EXE} rev-parse --short HEAD
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+@@ -322,13 +322,18 @@ set_target_properties(ggml PROPERTIES PU
+ install(TARGETS ggml LIBRARY PUBLIC_HEADER)
+ install(TARGETS ggml-base LIBRARY)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(ggml PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(ggml-base PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if (GGML_STANDALONE)
+     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ggml.pc.in
+         ${CMAKE_CURRENT_BINARY_DIR}/ggml.pc
+         @ONLY)
+ 
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ggml.pc
+-        DESTINATION share/pkgconfig)
++        DESTINATION lib/pkgconfig)
+ endif()
+ 
+ #
+--- origsrc/ggml-0.9.4/src/CMakeLists.txt	2025-09-30 19:42:39.000000000 +0900
++++ src/ggml-0.9.4/src/CMakeLists.txt	2025-11-13 00:57:47.689721300 +0900
+@@ -245,7 +245,10 @@ function(ggml_add_backend_library backen
+     else()
+         add_library(${backend} ${ARGN})
+         target_link_libraries(ggml PUBLIC ${backend})
+-        install(TARGETS ${backend} LIBRARY)
++        install(TARGETS ${backend} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
++        if (DEFINED SOVERSION)
++            set_target_properties(${backend} PROPERTIES SOVERSION ${SOVERSION})
++        endif()
+     endif()
+ 
+     target_link_libraries(${backend} PRIVATE ggml-base)
