@@ -1,0 +1,75 @@
+--- origsrc/whisper.cpp-1.8.2/cmake/build-info.cmake	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/cmake/build-info.cmake	2025-11-13 01:35:25.485765800 +0900
+@@ -16,7 +16,7 @@ if(NOT Git_FOUND)
+ endif()
+ 
+ # Get the commit count and hash
+-if(Git_FOUND)
++if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+     execute_process(
+         COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+--- origsrc/whisper.cpp-1.8.2/cmake/git-vars.cmake	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/cmake/git-vars.cmake	2025-11-13 01:21:10.576857100 +0900
+@@ -1,5 +1,6 @@
+ find_package(Git)
+ 
++if (GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+ # the commit's SHA1
+ execute_process(COMMAND
+     "${GIT_EXECUTABLE}" describe --match=NeVeRmAtCh --always --abbrev=8
+@@ -20,3 +21,4 @@ execute_process(COMMAND
+     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+     OUTPUT_VARIABLE GIT_COMMIT_SUBJECT
+     ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
++endif()
+--- origsrc/whisper.cpp-1.8.2/examples/common-sdl.cpp	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/examples/common-sdl.cpp	2025-11-13 01:21:19.112359500 +0900
+@@ -1,6 +1,7 @@
+ #include "common-sdl.h"
+ 
+ #include <cstdio>
++#include <cstring>
+ 
+ audio_async::audio_async(int len_ms) {
+     m_len_ms = len_ms;
+--- origsrc/whisper.cpp-1.8.2/examples/stream/stream.cpp	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/examples/stream/stream.cpp	2025-11-13 01:22:27.804754100 +0900
+@@ -9,6 +9,7 @@
+ 
+ #include <chrono>
+ #include <cstdio>
++#include <cstring>
+ #include <fstream>
+ #include <string>
+ #include <thread>
+--- origsrc/whisper.cpp-1.8.2/examples/talk-llama/llama-mmap.cpp	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/examples/talk-llama/llama-mmap.cpp	2025-11-13 01:26:36.900104900 +0900
+@@ -476,7 +476,7 @@ struct llama_mlock::impl {
+ 
+         char* errmsg = std::strerror(errno);
+         bool suggest = (errno == ENOMEM);
+-#if defined(TARGET_OS_VISION) || defined(TARGET_OS_TV) || defined(_AIX)
++#if !defined(RLIMIT_MEMLOCK) || defined(TARGET_OS_VISION) || defined(TARGET_OS_TV) || defined(_AIX)
+         // visionOS/tvOS dont't support RLIMIT_MEMLOCK
+         // Skip resource limit checks on visionOS/tvOS
+         suggest = false;
+--- origsrc/whisper.cpp-1.8.2/examples/talk-llama/llama-model.cpp	2025-10-15 16:29:42.000000000 +0900
++++ src/whisper.cpp-1.8.2/examples/talk-llama/llama-model.cpp	2025-11-13 01:41:17.941318900 +0900
+@@ -19325,7 +19325,7 @@ struct llm_build_apertus : public llm_gr
+                 float alpha_p_val = hparams.xielu_alpha_p[il];
+                 float beta_val = hparams.xielu_beta[il];
+                 float eps_val = hparams.xielu_eps[il];
+-
++#if 0 // ggml_xielu not yet supported in ggml-0.9.4
+                 // Apply xIELU activation
+                 ggml_tensor * activated = ggml_xielu(ctx0, up, alpha_n_val, alpha_p_val, beta_val, eps_val);
+                 cb(activated, "ffn_xielu", il);
+@@ -19333,6 +19333,7 @@ struct llm_build_apertus : public llm_gr
+                 // Down projection
+                 cur = build_lora_mm(model.layers[il].ffn_down, activated);
+                 cb(cur, "ffn_down", il);
++#endif
+             }
+ 
+             cur = ggml_add(ctx0, cur, ffn_inp);
