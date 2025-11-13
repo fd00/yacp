@@ -1,0 +1,39 @@
+--- origsrc/geographiclib-fortran-2.1/CMakeLists.txt	2025-08-22 00:39:03.000000000 +0900
++++ src/geographiclib-fortran-2.1/CMakeLists.txt	2025-11-13 09:29:24.707363400 +0900
+@@ -188,3 +188,10 @@ if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/
+   endif ()
+ 
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libgeodfor.pc.in ${CMAKE_BINARY_DIR}/libgeodfor.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libgeodfor.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geographiclib-fortran-2.1/libgeodfor.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geographiclib-fortran-2.1/libgeodfor.pc.in	2025-11-13 09:28:18.060876000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geographiclib-fortran
++Description: Fortran implementation of geodesic routines
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lgeodfor
++Cflags: -I${includedir}
+--- origsrc/geographiclib-fortran-2.1/src/CMakeLists.txt	2025-08-22 00:39:03.000000000 +0900
++++ src/geographiclib-fortran-2.1/src/CMakeLists.txt	2025-11-13 09:25:28.098261400 +0900
+@@ -3,3 +3,10 @@ add_library (${LIBNAME} geodesic.for geo
+ target_include_directories (${LIBNAME} PUBLIC
+   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+   $<INSTALL_INTERFACE:include>)
++
++if (DEFINED SOVERSION)
++  set_target_properties(${LIBNAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
++install(TARGETS ${LIBNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES geodesic.inc DESTINATION include)
