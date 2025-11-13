@@ -1,0 +1,39 @@
+--- origsrc/geographiclib-c-2.2/CMakeLists.txt	2025-08-20 00:39:32.000000000 +0900
++++ src/geographiclib-c-2.2/CMakeLists.txt	2025-11-13 09:02:35.344113800 +0900
+@@ -208,3 +208,10 @@ if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/.
+       COMMENT "Exporting source to ${PROJDIR}")
+   endif ()
+ endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libgeodc.pc.in ${CMAKE_BINARY_DIR}/libgeodc.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libgeodc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/geographiclib-c-2.2/libgeodc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/geographiclib-c-2.2/libgeodc.pc.in	2025-11-13 09:02:53.079915500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: geographiclib-c
++Description: C implementation of geodesic routines
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lgeodc
++Cflags: -I${includedir}
+--- origsrc/geographiclib-c-2.2/src/CMakeLists.txt	2025-08-20 00:39:32.000000000 +0900
++++ src/geographiclib-c-2.2/src/CMakeLists.txt	2025-11-13 08:56:24.819838200 +0900
+@@ -3,3 +3,10 @@ add_library (${LIBNAME} geodesic.c geode
+ target_include_directories (${LIBNAME} PUBLIC
+   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+   $<INSTALL_INTERFACE:include>)
++
++if (DEFINED SOVERSION)
++  set_target_properties(${LIBNAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
++install(TARGETS ${LIBNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES geodesic.h DESTINATION include)
