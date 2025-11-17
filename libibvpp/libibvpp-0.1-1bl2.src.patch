@@ -1,0 +1,553 @@
+--- origsrc/libibvpp-0.1/Makefile.am	2008-05-12 05:58:51.000000000 +0900
++++ src/libibvpp-0.1/Makefile.am	2025-11-17 10:22:36.270942900 +0900
+@@ -15,7 +15,7 @@ pkginclude_HEADERS = ibvpp.h ibvpp_utili
+ EXTRA_DIST = bootstrap
+ 
+ libibvpp_la_SOURCES = ibvpp.cxx ibvpp_utility.cxx ibvpp.h ibvpp_utility.h
+-libibvpp_la_LDFLAGS = -version-info $(LT_INFO)
++libibvpp_la_LDFLAGS = -no-undefined -version-info $(LT_INFO)
+ libibvpp_la_LIBADD = $(LIBS)
+ 
+ examples_ibvpp_rc_pingpong_SOURCES = examples/rc_pingpong.cxx
+@@ -39,3 +39,5 @@ examples_ibvpp_device_list_LDADD = $(top
+ examples_ibvpp_devinfo_SOURCES = examples/devinfo.cxx
+ examples_ibvpp_devinfo_LDADD = $(top_builddir)/libibvpp.la
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libibvpp-0.1/configure.ac	2008-05-12 06:20:19.000000000 +0900
++++ src/libibvpp-0.1/configure.ac	2025-11-17 10:22:17.552831900 +0900
+@@ -49,5 +49,6 @@ AC_SUBST([LT_AGE])
+ 
+ AC_CONFIG_FILES([Makefile])
+ 
++AC_CONFIG_FILES([libibvpp.pc])
+ AC_OUTPUT
+ 
+--- origsrc/libibvpp-0.1/examples/rc_pingpong.cxx	2008-05-12 06:24:29.000000000 +0900
++++ src/libibvpp-0.1/examples/rc_pingpong.cxx	2025-11-17 09:14:39.586725400 +0900
+@@ -63,7 +63,6 @@
+ #include <time.h>
+ 
+ using namespace std;
+-using tr1::shared_ptr;
+ 
+ enum {
+ 	PINGPONG_RECV_WRID = 1,
+--- origsrc/libibvpp-0.1/examples/uc_pingpong.cxx	2008-05-12 06:24:29.000000000 +0900
++++ src/libibvpp-0.1/examples/uc_pingpong.cxx	2025-11-17 09:45:12.538465700 +0900
+@@ -63,7 +63,6 @@
+ #include <time.h>
+ 
+ using namespace std;
+-using IBVPP_SPNS::shared_ptr;
+ 
+ enum {
+ 	PINGPONG_RECV_WRID = 1,
+--- origsrc/libibvpp-0.1/examples/ud_pingpong.cxx	2008-05-12 06:24:29.000000000 +0900
++++ src/libibvpp-0.1/examples/ud_pingpong.cxx	2025-11-17 09:44:20.099174500 +0900
+@@ -63,8 +63,6 @@
+ #include <time.h>
+ 
+ using namespace std;
+-using IBVPP_SPNS::shared_ptr;
+-
+ 
+ enum {
+ 	PINGPONG_RECV_WRID = 1,
+--- origsrc/libibvpp-0.1/ibvpp.cxx	2008-05-12 06:24:03.000000000 +0900
++++ src/libibvpp-0.1/ibvpp.cxx	2025-11-17 09:11:33.073520600 +0900
+@@ -56,7 +56,7 @@ namespace ibv {
+     }
+ 
+     void context::query_device(device_attr *device_attr) const
+-        throw (error)
++        
+     {
+         clear(*device_attr);
+         int result = ibv_query_device(context_,device_attr);
+@@ -65,7 +65,7 @@ namespace ibv {
+     }
+ 
+     const_device_attr_ptr context::get_device_attrs() const
+-        throw (std::exception)
++        
+     {
+         scoped_ibv_lock l;
+         if (device_attrs == 0) {
+@@ -76,7 +76,7 @@ namespace ibv {
+     }
+ 
+     void context::query_port(uint8_t port_num, port_attr *port_attr) const
+-        throw (error)
++        
+     {
+         clear(*port_attr);
+         int result = ibv_query_port(context_,port_num,port_attr);
+@@ -85,7 +85,7 @@ namespace ibv {
+     }
+ 
+     void context::query_gid(uint8_t port_num, int index, ibv_gid *gid) const
+-        throw (error)
++        
+     {
+         memset(gid,0,sizeof(ibv_gid));
+         int result = ibv_query_gid(context_,port_num,index,gid);
+@@ -94,7 +94,7 @@ namespace ibv {
+     }
+ 
+     void context::query_pkey(uint8_t port_num, int index, uint16_t *pkey) const
+-        throw (error)
++        
+     {
+         int result = ibv_query_pkey(context_,port_num,index,pkey);
+         if (result != 0)
+@@ -131,7 +131,7 @@ namespace ibv {
+     //-----------------------------------------------------------
+     // ibv_pd
+ 
+-    pd::pd(const context_ptr &ctx) throw (std::exception)
++    pd::pd(const context_ptr &ctx) 
+         : context_(ctx)
+     {
+         pd_ = ibv_alloc_pd(context_->get());
+@@ -158,7 +158,7 @@ namespace ibv {
+     // ibv_mr
+ 
+     mr::mr(const pd_ptr &pdp,void *addr,size_t length,
+-           enum ibv_access_flags access) throw (std::exception)
++           enum ibv_access_flags access) 
+         : pd_(pdp)
+     {
+         mr_ = ibv_reg_mr(pd_->get(),addr,length,access);
+@@ -178,7 +178,7 @@ namespace ibv {
+     // ibv_srq
+ 
+     srq::srq(const pd_ptr &pdp,srq_init_attr *init_attr)
+-        throw (error)
++        
+         : pd_(pdp)
+     {
+         srq_ = ibv_create_srq(pd_->get(), init_attr);
+@@ -194,14 +194,14 @@ namespace ibv {
+         // how should failure be handled?
+     }
+ 
+-    void srq::modify(srq_attr *attr,srq_attr_mask attr_mask) throw (error)
++    void srq::modify(srq_attr *attr,srq_attr_mask attr_mask) 
+     {
+         int result = ibv_modify_srq(srq_,attr,attr_mask);
+         if (result != 0)
+             throw error("ibv_modify_srq", result);
+     }
+ 
+-    void srq::query(srq_attr *attr) const throw (error)
++    void srq::query(srq_attr *attr) const 
+     {
+         int result = ibv_query_srq(srq_,attr);
+         if (result != 0)
+@@ -211,7 +211,7 @@ namespace ibv {
+     //-----------------------------------------------------------
+     // ibv_ah
+ 
+-    ah::ah(const pd_ptr &pdp,ah_attr *attr) throw (error)
++    ah::ah(const pd_ptr &pdp,ah_attr *attr) 
+         : pd_(pdp)
+     {
+         ah_ = ibv_create_ah(pd_->get(), attr);
+@@ -231,7 +231,7 @@ namespace ibv {
+     // ibv_qp
+ 
+     qp::qp(const pd_ptr &pdp,qp_init_attr *init_attr)
+-        throw (error)
++        
+         : pd_(pdp)
+     {
+         ibv_qp_init_attr in_attr;
+@@ -270,7 +270,7 @@ namespace ibv {
+         // how should failure be handled?
+     }
+ 
+-    void qp::modify(qp_attr *attr,qp_attr_mask attr_mask) throw (error)
++    void qp::modify(qp_attr *attr,qp_attr_mask attr_mask) 
+     {
+         int result = ibv_modify_qp(qp_,attr,attr_mask);
+         if (result != 0)
+@@ -279,7 +279,7 @@ namespace ibv {
+ 
+     void qp::query(qp_attr *attr,
+                    qp_attr_mask attr_mask,
+-                   qp_init_attr *init_attr) const throw (error)
++                   qp_init_attr *init_attr) const 
+     {
+         clear(*attr);
+         ibv_qp_init_attr out_init_attr;
+@@ -315,7 +315,7 @@ namespace ibv {
+         // how should failure be handled?
+     }
+ 
+-    cq_ptr comp_channel::get_event(void **cq_context) throw (error)
++    cq_ptr comp_channel::get_event(void **cq_context) 
+     {
+         ibv_cq *event_cq;
+         int result = ibv_get_cq_event(comp_channel_,&event_cq,cq_context);
+@@ -342,7 +342,7 @@ namespace ibv {
+ 
+     cq_ptr context::create_cq(int cqe,void *cq_context,
+                               const comp_channel_ptr &cchan,
+-                              int comp_vector) throw (std::exception)
++                              int comp_vector) 
+     {
+         ibv_comp_channel *ccp = 0;
+         if (cchan) ccp = cchan->get();
+@@ -384,19 +384,19 @@ namespace ibv {
+         // how should failure be handled?
+     }
+ 
+-    void cq::resize(int cqe) throw (error)
++    void cq::resize(int cqe) 
+     {
+         int result = ibv_resize_cq(cq_,cqe);
+         if (result != 0)
+             throw error("ibv_resize_cq", result);
+     }
+ 
+-    void cq::ack_events(unsigned int nevents) throw ()
++    void cq::ack_events(unsigned int nevents) 
+     {
+         ibv_ack_cq_events(cq_,nevents);
+     }
+ 
+-    unsigned cq::poll(int num_entries,wc *wc) throw (error) {
++    unsigned cq::poll(int num_entries,wc *wc)  {
+         int result = ibv_poll_cq(cq_,num_entries,wc);
+         if (result == -1)
+             throw error("ibv_poll_cq", result);
+@@ -404,7 +404,7 @@ namespace ibv {
+         return unsigned(result);
+     }
+ 
+-    void cq::req_notify(bool solicited_only) throw (error)
++    void cq::req_notify(bool solicited_only) 
+     {
+         int result = ibv_req_notify_cq(cq_,solicited_only);
+         if (result != 0)
+@@ -416,7 +416,7 @@ namespace ibv {
+ 
+     namespace {
+         inline context_ptr open_device(ibv_device *dev)
+-            throw (std::exception)
++            
+         {
+             ibv_context *ctx = ibv_open_device(dev);
+             if (ctx == 0)
+@@ -427,7 +427,7 @@ namespace ibv {
+     }
+ 
+ 
+-    context_ptr device::open_device() throw (std::exception)
++    context_ptr device::open_device() 
+     {
+         return ibv::open_device(device_);
+     }
+@@ -439,13 +439,13 @@ namespace ibv {
+         IBVPP_SPNS::weak_ptr<device_list> singleton_device_list;
+     }
+ 
+-    device_list::~device_list() throw ()
++    device_list::~device_list() 
+     {
+         DEBUG_MESG("ibv_free_device_list(0x%x)",device_list_);
+         ibv_free_device_list(device_list_);
+     }
+ 
+-    device_list_ptr get_device_list() throw (std::exception)
++    device_list_ptr get_device_list() 
+     {
+         device_list_ptr result;
+ 
+@@ -473,7 +473,7 @@ namespace ibv {
+     }
+  
+     context_ptr device_list::open_device(const iterator &it)
+-        throw (std::exception)
++        
+     {
+         return ibv::open_device(*it);
+     }
+--- origsrc/libibvpp-0.1/ibvpp.h	2008-05-13 06:24:54.000000000 +0900
++++ src/libibvpp-0.1/ibvpp.h	2025-11-17 09:10:38.443814900 +0900
+@@ -140,7 +140,7 @@ namespace ibv {
+     typedef IBVPP_SPNS::shared_ptr<device_list> device_list_ptr;
+ 
+     //! get the infiniband device list
+-    device_list_ptr get_device_list() throw (std::exception);
++    device_list_ptr get_device_list() ;
+ 
+     //-----------------------------------------------------------
+     // attributes
+@@ -269,23 +269,23 @@ namespace ibv {
+ 
+         //! Get device properties
+         void query_device(device_attr *device_attr) const
+-            throw (error);
++            ;
+ 
+         //! Get device properties
+         const_device_attr_ptr get_device_attrs() const
+-            throw (std::exception);
++            ;
+ 
+         //!  Get port properties
+         void query_port(uint8_t port_num, port_attr *port_attr) const
+-            throw (error);
++            ;
+ 
+         //! Get a GID table entry
+         void query_gid(uint8_t port_num, int index, ibv_gid *gid) const
+-            throw (error);
++            ;
+ 
+         //! Get a P_Key table entry
+         void query_pkey(uint8_t port_num, int index, uint16_t *pkey) const
+-            throw (error);
++            ;
+ 
+         //! get a device's name
+         const char *get_device_name() const {
+@@ -303,7 +303,7 @@ namespace ibv {
+         //! Create a completion queue
+         cq_ptr create_cq(int cqe,void *cq_context,
+                          const comp_channel_ptr &cchan=comp_channel_ptr(),
+-                         int comp_vector=0) throw (std::exception);
++                         int comp_vector=0) ;
+ 
+         //! Create a completion event channel
+         inline comp_channel_ptr create_comp_channel();
+@@ -373,7 +373,7 @@ namespace ibv {
+         context_ptr context_;
+ 
+     public:
+-        pd(const context_ptr &ctx) throw (std::exception);
++        pd(const context_ptr &ctx) ;
+         ~pd();
+ 
+         //! Get the ibv_pd.
+@@ -413,7 +413,7 @@ namespace ibv {
+         pd_ptr pd_;
+     public:
+         mr(const pd_ptr &pdp,void *addr,size_t length,ibv_access_flags access)
+-            throw (std::exception);
++            ;
+         ~mr();
+ 
+         //! Get the ibv_mr.
+@@ -441,7 +441,7 @@ namespace ibv {
+         pd_ptr pd_;
+     public:
+         srq(const pd_ptr &pdp,srq_init_attr *init_attr)
+-            throw (error);
++            ;
+         ~srq();
+ 
+         //! Get the ibv_srq.
+@@ -455,17 +455,17 @@ namespace ibv {
+         const_pd_ptr get_pd() const { return pd_; }
+ 
+         //! Modifies the attributes for the specified SRQ.
+-        void modify(srq_attr *attr,srq_attr_mask attr_mask) throw (error);
++        void modify(srq_attr *attr,srq_attr_mask attr_mask) ;
+ 
+         //! Returns the attribute list and current values for the specified SRQ.
+-        void query(srq_attr *attr) const throw (error);
++        void query(srq_attr *attr) const ;
+ 
+         //! Posts a list of work requests to the specified SRQ.
+         int post_recv(recv_wr *wr,recv_wr **bad_wr) {
+             return ibv_post_srq_recv(srq_,wr,bad_wr);
+         }
+         //! Posts a list of work requests to the specified SRQ.
+-        void post_recv(recv_wr *wr) throw (error)
++        void post_recv(recv_wr *wr) 
+         {
+             recv_wr *bad_wr;
+             int result;
+@@ -487,7 +487,7 @@ namespace ibv {
+         ibv_ah *ah_;
+         pd_ptr pd_;
+     public:
+-        ah(const pd_ptr &pdp,ah_attr *attr) throw (error);
++        ah(const pd_ptr &pdp,ah_attr *attr) ;
+         ~ah();
+ 
+         //! Get the ibv_ah.
+@@ -517,7 +517,7 @@ namespace ibv {
+         srq_ptr srq_;
+     public:
+         qp(const pd_ptr &pdp,qp_init_attr *init_attr)
+-            throw (error);
++            ;
+         ~qp();
+ 
+         //! Get the ibv_qp.
+@@ -549,18 +549,18 @@ namespace ibv {
+         uint32_t get_num() const { return qp_->qp_num; }
+ 
+         //! Modify a queue pair.
+-        void modify(qp_attr *attr,qp_attr_mask attr_mask) throw (error);
++        void modify(qp_attr *attr,qp_attr_mask attr_mask) ;
+ 
+         //! Returns the attribute list and current values for the specified QP
+         void query(qp_attr *attr,
+                   qp_attr_mask attr_mask,
+-                  qp_init_attr *init_attr) const throw (error);
++                  qp_init_attr *init_attr) const ;
+ 
+         //! Post a list of work requests to a send queue.
+         int post_send(send_wr *wr,send_wr **bad_wr) {
+             return ibv_post_send(qp_,wr,bad_wr);
+         }
+-        void post_send(send_wr *wr) throw (error) {
++        void post_send(send_wr *wr)  {
+             send_wr *bad_wr;
+             int result;
+             if ((result=post_send(wr,&bad_wr)))
+@@ -572,7 +572,7 @@ namespace ibv {
+             return ibv_post_recv(qp_,wr,bad_wr);
+         }
+         //! Post a list of work requests to a receive queue.
+-        void post_recv(recv_wr *wr) throw (error)
++        void post_recv(recv_wr *wr) 
+         {
+             recv_wr *bad_wr;
+             int result;
+@@ -609,7 +609,7 @@ namespace ibv {
+                                          void *cq_context,
+                                          const comp_channel_ptr &cchan,
+                                          int comp_vector)
+-            throw (std::exception);
++            ;
+ 
+         ibv_cq *cq_;
+         context_ptr context_;
+@@ -631,16 +631,16 @@ namespace ibv {
+         const_context_ptr get_context() const { return context_; }
+ 
+         //! Modify the capacity of the CQ.
+-        void resize(int cqe) throw (error);
++        void resize(int cqe) ;
+ 
+         //! Acknowledge CQ completion events.
+-        void ack_events(unsigned int nevents) throw ();
++        void ack_events(unsigned int nevents) ;
+ 
+         //! Poll a CQ for work completions
+-        unsigned poll(int num_entries,wc *wc) throw (error);
++        unsigned poll(int num_entries,wc *wc) ;
+ 
+         //! Request completion notification on a CQ.
+-        void req_notify(bool solicited_only) throw (error);
++        void req_notify(bool solicited_only) ;
+     };
+ 
+     //-----------------------------------------------------------
+@@ -652,7 +652,7 @@ namespace ibv {
+                                          void *cq_context,
+                                          const comp_channel_ptr &cchan,
+                                          int comp_vector)
+-            throw (std::exception);
++            ;
+         friend class cq;
+ 
+         ibv_comp_channel *comp_channel_;
+@@ -675,7 +675,7 @@ namespace ibv {
+         const_context_ptr get_context() const { return context_; }
+ 
+         //! Read next CQ event.
+-        cq_ptr get_event(void **cq_context) throw (error);
++        cq_ptr get_event(void **cq_context) ;
+     };
+ 
+     inline comp_channel_ptr context::create_comp_channel()
+@@ -709,7 +709,7 @@ namespace ibv {
+         }
+ 
+         //! open a device
+-        context_ptr open_device() throw (std::exception);
++        context_ptr open_device() ;
+     };
+ 
+     //! ib device shared pointer
+@@ -723,7 +723,7 @@ namespace ibv {
+     //! ib device list
+     class device_list : public IBVPP_SPNS::enable_shared_from_this<device_list>
+     {
+-        friend device_list_ptr get_device_list() throw (std::exception);
++        friend device_list_ptr get_device_list() ;
+ 
+         ibv_device **device_list_;
+         size_t device_count_;
+@@ -733,7 +733,7 @@ namespace ibv {
+         {}
+ 
+     public:
+-        ~device_list() throw ();
++        ~device_list() ;
+ 
+         //! ib device list iterator (random access)
+         class iterator {
+@@ -822,7 +822,7 @@ namespace ibv {
+         }
+ 
+         //! open a device
+-        context_ptr open_device(const iterator &it) throw (std::exception);
++        context_ptr open_device(const iterator &it) ;
+     };
+ 
+     //-----------------------------------------------------------
+--- origsrc/libibvpp-0.1/ibvpp_utility.cxx	2008-05-12 06:24:03.000000000 +0900
++++ src/libibvpp-0.1/ibvpp_utility.cxx	2025-11-17 09:12:09.484523100 +0900
+@@ -10,7 +10,7 @@ namespace ibv {
+     port_iterator find_active_port(
+             const port_iterator &s,
+             const port_iterator &e)
+-        throw (std::exception)
++        
+     {
+         port_iterator it;
+         port_attr port_attrs;
+--- origsrc/libibvpp-0.1/ibvpp_utility.h	2008-05-12 06:24:03.000000000 +0900
++++ src/libibvpp-0.1/ibvpp_utility.h	2025-11-17 09:10:54.799794600 +0900
+@@ -12,16 +12,16 @@ namespace ibv {
+     port_iterator find_active_port(
+             const port_iterator &s,
+             const port_iterator &e)
+-        throw (std::exception);
++        ;
+ 
+     inline port_iterator find_active_port(const device_list_ptr &devlist)
+-        throw (std::exception)
++        
+     {
+         return find_active_port(devlist->begin_port(),devlist->end_port());
+     }
+ 
+     inline port_iterator find_active_port()
+-        throw (std::exception)
++        
+     {
+         device_list_ptr devlist = get_device_list();
+         port_iterator pit =
+--- origsrc/libibvpp-0.1/libibvpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libibvpp-0.1/libibvpp.pc.in	2025-11-17 10:22:17.505246700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libibvpp
++Description: C++ wrapper around libibverbs, which is part of OpenIB
++Version: @VERSION@
++Libs: -L${libdir} -libvpp
++Cflags: -I${includedir}
