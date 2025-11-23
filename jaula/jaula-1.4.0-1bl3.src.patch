@@ -1,0 +1,352 @@
+--- origsrc/jaula-1.4.0/Makefile.am	2009-01-12 01:34:56.000000000 +0900
++++ src/jaula-1.4.0/Makefile.am	2025-11-24 07:35:48.915076200 +0900
+@@ -26,5 +26,7 @@ libtool: $(LIBTOOL_DEPS)
+ docs:
+ 	make -C doc
+ 
+-# # EOF $Id: Makefile.am 45 2009-01-11 16:17:03Z morongo $
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+ 
++# # EOF $Id: Makefile.am 45 2009-01-11 16:17:03Z morongo $
+--- origsrc/jaula-1.4.0/configure.in	2009-01-12 01:34:56.000000000 +0900
++++ src/jaula-1.4.0/configure.in	2025-11-24 07:35:48.917085600 +0900
+@@ -24,7 +24,7 @@ dnl Default installation directory
+ AC_PREFIX_DEFAULT([/usr])
+ 
+ dnl project first-level directories
+-AC_SUBST(SUBDIRS, ["doc jaula examples"])
++AC_SUBST(SUBDIRS, ["jaula examples"])
+ 
+ dnl Autoheader configuration
+ AH_TOP([/*
+@@ -139,6 +139,6 @@ fi
+ AC_SUBST(PDFLATEX)
+ 
+ dnl Generacion de ficheros
+-AC_OUTPUT([Makefile doc/Doxyfile doc/Makefile jaula/Makefile examples/Makefile])
++AC_OUTPUT([Makefile doc/Doxyfile doc/Makefile jaula/Makefile examples/Makefile jaula.pc])
+ 
+ dnl EOF $Id: configure.in 48 2009-01-11 16:31:24Z morongo $
+--- origsrc/jaula-1.4.0/examples/Makefile.am	2009-01-12 01:34:56.000000000 +0900
++++ src/jaula-1.4.0/examples/Makefile.am	2025-11-24 07:35:48.919097100 +0900
+@@ -1,4 +1,3 @@
+- 
+ # # svn info
+ # # $Author: morongo $
+ # # $Date: 2009-01-11 17:17:03 +0100 (dom, 11 ene 2009) $
+@@ -35,11 +34,12 @@ bin_PROGRAMS = jparse
+ # # lextst generation directives
+ lextst_SOURCES = lextst.cc
+ lextst_LDADD = $(top_builddir)/jaula/libjaula.la
+-lextst_LDFLAGS = -static
++lextst_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/jaula
+ 
+ # # jparse generation directives
+ jparse_SOURCES = jparse.cc
+ jparse_LDADD = $(top_builddir)/jaula/libjaula.la
++jparse_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/jaula
+ # # jparse_LDFLAGS = -static
+ 
+ # # EOF $Id: Makefile.am 45 2009-01-11 16:17:03Z morongo $
+--- origsrc/jaula-1.4.0/jaula/Makefile.am	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/Makefile.am	2025-11-24 07:35:48.921106700 +0900
+@@ -1,4 +1,3 @@
+- 
+ # # svn info
+ # # $Author: morongo $
+ # # $Date: 2009-01-11 17:17:03 +0100 (dom, 11 ene 2009) $
+@@ -67,7 +66,9 @@ nodist_libjaula_la_SOURCES = jaula_lexan
+ # # statement
+ EXTRA_DIST = jaula_lexan.ll
+ 
+-libjaula_la_LDFLAGS = -version-info $(VERSION_INFO)
++libjaula_la_LDFLAGS = -no-undefined -version-info $(VERSION_INFO)
++
++libjaula_la_CPPFLAGS = -I$(top_srcdir)
+ 
+ clean-local:
+ 	$(RM) jaula_lexan.cc
+--- origsrc/jaula-1.4.0/jaula/jaula_parse.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_parse.cc	2025-11-24 07:55:53.529506600 +0900
+@@ -71,7 +71,7 @@ namespace JAULA
+ 
+   Value_Complex *Parser::parseStream(std::istream &inpStream
+     , bool comments_allowed
+-    , bool full_read) throw(Exception)
++    , bool full_read)
+   {
+     try
+     {
+@@ -115,7 +115,7 @@ namespace JAULA
+     {}
+ 
+   Value *Parser::Value_Parser::parseValue(Lexan &lexan, unsigned int token)
+-    throw(Exception)
++   
+   {
+     try
+     {
+@@ -560,7 +560,7 @@ namespace JAULA
+   }
+ 
+   void Parser::Value_Parser::EOFError(Lexan &lexan, Syntax_Error const &ex)
+-    throw(Exception)
++   
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_parse.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_parse.h	2025-11-24 07:55:33.280432200 +0900
+@@ -109,7 +109,7 @@ namespace JAULA
+       static Value_Complex *parseStream(std::istream &inpStream
+         , bool comments_allowed = false
+         , bool full_read = true
+-        ) throw(Exception);
++        );
+ 
+     private:
+ 
+@@ -165,7 +165,7 @@ namespace JAULA
+            * positioned so that a new token or EOF can be read from the input.
+            */
+           static Value *parseValue(Lexan &lexan, unsigned int token)
+-            throw(Exception);
++           ;
+ 
+         private:
+ 
+@@ -237,7 +237,7 @@ namespace JAULA
+            * the input parameter based on this.
+            */
+           static void EOFError(Lexan &lexan, Syntax_Error const &ex)
+-            throw(Exception);
++           ;
+       };                         // class Value_Parser
+ 
+   };                             // class Parser
+--- origsrc/jaula-1.4.0/jaula/jaula_value.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value.cc	2025-11-24 07:54:58.412893100 +0900
+@@ -58,7 +58,7 @@ namespace JAULA
+     return Type_;
+   }
+ 
+-  void Value::set(Value const &origin) throw(Bad_Data_Type)
++  void Value::set(Value const &origin)
+   {
+     if (Type_ != origin.getType())
+       throw Bad_Data_Type("Origin and destination value types do not match"
+@@ -66,7 +66,7 @@ namespace JAULA
+         , "Value::set(Value const &)");
+   }
+ 
+-  Value &Value::operator=(Value const &orig) throw(Bad_Data_Type)
++  Value &Value::operator=(Value const &orig)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value.h	2025-11-24 07:51:11.341591200 +0900
+@@ -107,7 +107,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+       /**
+        * \brief Assignment operator
+@@ -127,7 +127,7 @@ namespace JAULA
+        * This method controls if destination and origin instances are the same
+        * so there is no trouble in a = a asignments.
+        */
+-      Value &operator=(Value const &orig) throw(Bad_Data_Type);
++      Value &operator=(Value const &orig);
+ 
+       /**
+        * \brief Creates a duplicate of a value
+--- origsrc/jaula-1.4.0/jaula/jaula_value_array.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_array.cc	2025-11-24 07:54:58.415978400 +0900
+@@ -94,7 +94,7 @@ namespace JAULA
+       data_.push_back(duplicate(*(*it)));
+   }
+ 
+-  void Value_Array::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Array::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_array.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_array.h	2025-11-24 07:54:58.413891000 +0900
+@@ -148,7 +148,7 @@ namespace JAULA
+        * The destination array is destroyed during the asignment process so,
+        * any references to it or to its former elements will be void.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+       /**
+        * \brief Appends one item to the array
+--- origsrc/jaula-1.4.0/jaula/jaula_value_boolean.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_boolean.cc	2025-11-24 07:51:43.566035700 +0900
+@@ -65,7 +65,7 @@ namespace JAULA
+     data_ = data;
+   }
+ 
+-  void Value_Boolean::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Boolean::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_boolean.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_boolean.h	2025-11-24 07:51:28.304299900 +0900
+@@ -95,7 +95,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+     private:
+ 
+--- origsrc/jaula-1.4.0/jaula/jaula_value_null.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_null.cc	2025-11-24 07:54:58.415978400 +0900
+@@ -51,7 +51,7 @@ namespace JAULA
+     ostr << "null";
+   }
+ 
+-  void Value_Null::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Null::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_null.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_null.h	2025-11-24 07:54:58.420017100 +0900
+@@ -80,7 +80,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+   };                             // class Value_Null
+ 
+--- origsrc/jaula-1.4.0/jaula/jaula_value_number.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_number.cc	2025-11-24 07:54:58.420017100 +0900
+@@ -62,7 +62,7 @@ namespace JAULA
+     data_ = data;
+   }
+ 
+-  void Value_Number::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Number::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_number.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_number.h	2025-11-24 07:54:58.415978400 +0900
+@@ -95,7 +95,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+     private:
+ 
+--- origsrc/jaula-1.4.0/jaula/jaula_value_number_int.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_number_int.cc	2025-11-24 07:54:58.415978400 +0900
+@@ -61,7 +61,7 @@ namespace JAULA
+     data_ = data;
+   }
+ 
+-  void Value_Number_Int::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Number_Int::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_number_int.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_number_int.h	2025-11-24 07:54:58.420017100 +0900
+@@ -96,7 +96,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+     private:
+ 
+--- origsrc/jaula-1.4.0/jaula/jaula_value_object.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_object.cc	2025-11-24 07:55:52.648349100 +0900
+@@ -93,7 +93,7 @@ namespace JAULA
+       data_.insert(dataType::value_type(it->first, duplicate(*(it->second))));
+   }
+ 
+-  void Value_Object::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_Object::set(Value const &origin)
+   {
+     try
+     {
+@@ -110,7 +110,7 @@ namespace JAULA
+     }
+   }
+ 
+-  void Value_Object::insertItem(std::string const &name, Value const &item) throw(Name_Duplicated)
++  void Value_Object::insertItem(std::string const &name, Value const &item)
+   {
+     std::pair<dataType::iterator, bool> insSt = data_.insert(dataType::value_type(name, duplicate(item)));
+     if (!insSt.second)
+--- origsrc/jaula-1.4.0/jaula/jaula_value_object.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_object.h	2025-11-24 07:55:52.648349100 +0900
+@@ -151,7 +151,7 @@ namespace JAULA
+        * The destination object is destroyed during the asignment process so,
+        * any references to it or to its former elements will be void.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+       /**
+        * \brief Inserts one item to the object
+@@ -169,7 +169,7 @@ namespace JAULA
+        * object.
+        */
+       void insertItem(std::string const &name, Value const &item)
+-        throw(Name_Duplicated);
++       ;
+ 
+       /**
+        * \brief Empties the contents of an instance
+--- origsrc/jaula-1.4.0/jaula/jaula_value_string.cc	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_string.cc	2025-11-24 07:54:58.420017100 +0900
+@@ -71,7 +71,7 @@ namespace JAULA
+     data_ = data;
+   }
+ 
+-  void Value_String::set(Value const &origin) throw(Bad_Data_Type)
++  void Value_String::set(Value const &origin)
+   {
+     try
+     {
+--- origsrc/jaula-1.4.0/jaula/jaula_value_string.h	2009-01-12 01:34:55.000000000 +0900
++++ src/jaula-1.4.0/jaula/jaula_value_string.h	2025-11-24 07:54:58.425980100 +0900
+@@ -95,7 +95,7 @@ namespace JAULA
+        * This exception is launched in case that origin and destination value
+        * types are different.
+        */
+-      virtual void set(Value const &origin) throw(Bad_Data_Type);
++      virtual void set(Value const &origin);
+ 
+       /**
+        * \brief Represents a string in JSON Notation
+--- origsrc/jaula-1.4.0/jaula.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/jaula-1.4.0/jaula.pc.in	2025-11-24 07:35:48.921106700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: jaula
++Description: C++ JSON encoder/decoder library
++Version: @VERSION@
++Libs: -L${libdir} -ljaula
++Cflags: -I${includedir}
