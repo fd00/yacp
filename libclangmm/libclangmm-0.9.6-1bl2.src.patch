@@ -1,0 +1,61 @@
+--- origsrc/libclangmm-v0.9.6/CMakeLists.txt	2016-04-15 22:05:21.000000000 +0900
++++ src/libclangmm-v0.9.6/CMakeLists.txt	2025-11-23 13:13:08.115976400 +0900
+@@ -9,5 +9,12 @@ endif()
+ 
+ add_subdirectory(src)
+ 
+-# enable_testing()
+-# add_subdirectory(tests)
++enable_testing()
++add_subdirectory(tests)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libclangmm.pc.in ${CMAKE_BINARY_DIR}/libclangmm.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libclangmm.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libclangmm-v0.9.6/libclangmm.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libclangmm-v0.9.6/libclangmm.pc.in	2025-11-23 13:13:45.223382000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libclangmm
++Description: Easy to use C++-wrapper for libclang
++Version: @VERSION@
++Libs: -L${libdir} -lclangmm
++Cflags: -I${includedir}
+--- origsrc/libclangmm-v0.9.6/src/CMakeLists.txt	2016-04-15 22:05:21.000000000 +0900
++++ src/libclangmm-v0.9.6/src/CMakeLists.txt	2025-11-23 13:13:14.488629600 +0900
+@@ -1,4 +1,3 @@
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -Wno-unused-parameter -Wno-reorder")
+ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_HOME_DIRECTORY}/cmake/Modules/")
+@@ -47,8 +46,12 @@ set(cc_files
+ 
+ add_library(${project_name} SHARED ${header_files} ${cc_files})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(${project_name} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ include_directories(${LIBCLANG_INCLUDE_DIRS})
+ target_link_libraries(${project_name} ${LIBCLANG_LIBRARIES})
+ 
+-install(TARGETS ${project_name} RUNTIME DESTINATION bin LIBRARY DESTINATION lib)
++install(TARGETS ${project_name} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(FILES ${header_files} DESTINATION include/libclangmm)
+--- origsrc/libclangmm-v0.9.6/src/CodeCompleteResults.cc	2016-04-15 22:05:21.000000000 +0900
++++ src/libclangmm-v0.9.6/src/CodeCompleteResults.cc	2025-11-23 13:05:57.429141200 +0900
+@@ -1,6 +1,7 @@
+ #include "CodeCompleteResults.h"
+ #include "CompletionString.h"
+ #include <exception>
++#include <stdexcept>
+ #include "Utility.h"
+ 
+ clang::CodeCompleteResults::CodeCompleteResults(CXTranslationUnit &cx_tu, 
