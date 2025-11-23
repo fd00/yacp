@@ -1,0 +1,46 @@
+--- origsrc/yyaml/CMakeLists.txt	2025-11-23 10:00:58.000000000 +0900
++++ src/yyaml/CMakeLists.txt	2025-11-23 10:08:25.159572500 +0900
+@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 11)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+ # Create library target
+-add_library(yyaml STATIC src/yyaml.c)
++add_library(yyaml src/yyaml.c)
+ 
+ # Include directories
+ target_include_directories(yyaml PUBLIC
+@@ -26,7 +26,9 @@ target_compile_options(yyaml PRIVATE
+     -Wpedantic
+ )
+ 
+-
++if (DEFINED SOVERSION)
++    set_target_properties(yyaml PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ # Optimize for performance
+ if(CMAKE_BUILD_TYPE STREQUAL "Release")
+@@ -121,3 +123,10 @@ if(BUILD_EXAMPLES)
+         add_subdirectory(examples)
+     endif()
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/yyaml.pc.in ${CMAKE_BINARY_DIR}/yyaml.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/yyaml.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yyaml/yyaml.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yyaml/yyaml.pc.in	2025-11-23 10:08:36.843061400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yyaml
++Description: High-performance YAML parser
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lyyaml
++Cflags: -I${includedir}
