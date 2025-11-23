@@ -1,0 +1,91 @@
+--- origsrc/ctoon/CMakeLists.txt	2025-11-23 10:16:01.000000000 +0900
++++ src/ctoon/CMakeLists.txt	2025-11-23 10:20:38.842224900 +0900
+@@ -27,9 +27,23 @@ project(${PyProject_NAME} LANGUAGES CXX
+ 
+ 
+ 
+-file(GLOB CTOON_SOURCES_C ${PROJECT_SOURCE_DIR}/src/sources/*.c)
+ file(GLOB CTOON_SOURCES_CPP ${PROJECT_SOURCE_DIR}/src/sources/*.cpp)
+-set(CTOON_SOURCES ${CTOON_SOURCES_CPP} ${CTOON_SOURCES_C})
++
++# Try to find system yyjson
++find_package(PkgConfig)
++if(PKG_CONFIG_FOUND)
++    pkg_check_modules(YYJSON yyjson)
++endif()
++
++# Set source files based on whether system yyjson is found
++if(YYJSON_FOUND)
++    message(STATUS "Using system yyjson library")
++    set(CTOON_SOURCES ${CTOON_SOURCES_CPP})
++else()
++    message(STATUS "Using bundled yyjson library")
++    file(GLOB CTOON_SOURCES_C ${PROJECT_SOURCE_DIR}/src/sources/*.c)
++    set(CTOON_SOURCES ${CTOON_SOURCES_CPP} ${CTOON_SOURCES_C})
++endif()
+ 
+ # Create library
+ add_library(ctoon ${CTOON_SOURCES})
+@@ -40,6 +54,13 @@ target_include_directories(ctoon
+     PRIVATE ${PROJECT_SOURCE_DIR}/src/sources
+ )
+ 
++# Link system yyjson if found
++if(YYJSON_FOUND)
++    target_link_libraries(ctoon PUBLIC ${YYJSON_LIBRARIES})
++    target_include_directories(ctoon PRIVATE ${YYJSON_INCLUDE_DIRS})
++    target_compile_options(ctoon PRIVATE ${YYJSON_CFLAGS_OTHER})
++endif()
++
+ target_compile_definitions(ctoon PUBLIC
+     CTOON_VERSION=${PROJECT_VERSION}
+ )
+@@ -51,6 +72,9 @@ target_compile_options(ctoon PRIVATE
+     -Wpedantic
+ )
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(ctoon PROPERTIES SOVERSION ${SOVERSION})
++endif()
+ 
+ # Build examples
+ option(BUILD_EXAMPLES "Build example programs" ON)
+@@ -85,3 +109,25 @@ if(CTOON_BUILD_TESTS)
+     add_test(NAME ctoon_tests COMMAND ctoon_tests)
+     set_tests_properties(ctoon_tests PROPERTIES WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+ endif()
++
++install(TARGETS ctoon
++    EXPORT ctoon-targets
++    ARCHIVE DESTINATION lib
++    RUNTIME DESTINATION bin
++)
++install(TARGETS ctoon-cli
++    RUNTIME DESTINATION bin
++)
++install(FILES
++    includes/ctoon.h
++    includes/ordered_hash.h
++    includes/ordered_map.h
++    DESTINATION include/ctoon
++)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ctoon.pc.in ${CMAKE_BINARY_DIR}/ctoon.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ctoon.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ctoon/ctoon.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ctoon/ctoon.pc.in	2025-11-23 10:16:07.063332900 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ctoon
++Description: C++ TOON Format Library
++Version: @VERSION@
++Libs: -L${libdir} -lctoon
++Cflags: -I${includedir}
