@@ -1,0 +1,57 @@
+--- origsrc/libbf-1.0.0/CMakeLists.txt	2018-04-21 05:36:05.000000000 +0900
++++ src/libbf-1.0.0/CMakeLists.txt	2025-11-24 06:26:36.901125600 +0900
+@@ -42,12 +42,6 @@ if (NOT Threads_FOUND)
+   message(FATAL_ERROR "Could not find system threading libraries")
+ endif ()
+ 
+-set(CMAKE_CXX_FLAGS                "-Wall -Wextra -std=c++11")
+-set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g")
+-set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
+-set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
+-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+-
+ if (ENABLE_DEBUG)
+   set(CMAKE_BUILD_TYPE Debug)
+ else ()
+@@ -83,7 +77,17 @@ set(libbf_sources
+ 
+ add_library(libbf SHARED ${libbf_sources})
+ set_target_properties(libbf PROPERTIES OUTPUT_NAME bf)
+-install(TARGETS libbf DESTINATION lib)
++install(TARGETS libbf RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bf DESTINATION include)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(libbf PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ add_subdirectory(test)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libbf.pc.in ${CMAKE_BINARY_DIR}/libbf.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libbf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libbf-1.0.0/libbf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libbf-1.0.0/libbf.pc.in	2025-11-24 06:27:11.734297800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libbf
++Description: Bloom filters for C++11
++Version: @VERSION@
++Libs: -L${libdir} -lbf
++Cflags: -I${includedir}
+--- origsrc/libbf-1.0.0/src/hash.cpp	2018-04-21 05:36:05.000000000 +0900
++++ src/libbf-1.0.0/src/hash.cpp	2025-11-24 06:22:43.042845600 +0900
+@@ -1,6 +1,7 @@
+ #include <bf/hash.hpp>
+ 
+ #include <cassert>
++#include <stdexcept>
+ 
+ namespace bf {
+ 
