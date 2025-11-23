@@ -1,0 +1,75 @@
+--- origsrc/libmbtiles/CMakeLists.txt	2025-11-23 12:21:04.000000000 +0900
++++ src/libmbtiles/CMakeLists.txt	2025-11-23 12:33:03.565603800 +0900
+@@ -7,11 +7,29 @@ set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+ include(cmake/EmbededTemplate.cmake)
+ 
+-add_library(mbtiles STATIC
+-    src/lib/mbtiles.cpp
+-    src/lib/mbtiles_viewer.cpp
+-    src/lib/sqlite3.c
+-)
++# Try to find system SQLite3 using pkg-config
++find_package(PkgConfig QUIET)
++if(PkgConfig_FOUND)
++    pkg_check_modules(SQLITE3 QUIET sqlite3)
++endif()
++
++if(SQLITE3_FOUND)
++    message(STATUS "Using system SQLite3: ${SQLITE3_VERSION}")
++    add_library(mbtiles
++        src/lib/mbtiles.cpp
++        src/lib/mbtiles_viewer.cpp
++    )
++    target_include_directories(mbtiles PRIVATE ${SQLITE3_INCLUDE_DIRS})
++    target_link_libraries(mbtiles PRIVATE ${SQLITE3_LINK_LIBRARIES})
++    target_compile_options(mbtiles PRIVATE ${SQLITE3_CFLAGS_OTHER})
++else()
++    message(STATUS "Using embedded SQLite3")
++    add_library(mbtiles
++        src/lib/mbtiles.cpp
++        src/lib/mbtiles_viewer.cpp
++        src/lib/sqlite3.c
++    )
++endif()
+ 
+ target_include_directories(mbtiles
+     PUBLIC
+@@ -24,6 +42,10 @@ if(UNIX)
+     target_link_libraries(mbtiles PRIVATE dl pthread)
+ endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(mbtiles PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ add_executable(mbtiles-cli src/cli/main.cpp)
+ 
+ set_target_properties(mbtiles-cli PROPERTIES OUTPUT_NAME mbtiles)
+@@ -35,5 +57,12 @@ target_include_directories(mbtiles-cli P
+ target_link_libraries(mbtiles-cli PRIVATE mbtiles)
+ 
+ install(TARGETS mbtiles-cli DESTINATION bin)
+-install(TARGETS mbtiles DESTINATION lib)
++install(TARGETS mbtiles RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install(DIRECTORY includes/ DESTINATION include)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libmbtiles.pc.in ${CMAKE_BINARY_DIR}/libmbtiles.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libmbtiles.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libmbtiles/libmbtiles.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libmbtiles/libmbtiles.pc.in	2025-11-23 12:32:55.956531700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libmbtiles
++Description: Lightweight C++ utility library and command-line toolset for working with MBTiles
++Version: @VERSION@
++Libs: -L${libdir} -lmbtiles
++Cflags: -I${includedir}
