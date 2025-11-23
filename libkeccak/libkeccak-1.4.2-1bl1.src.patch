@@ -1,0 +1,179 @@
+--- origsrc/libkeccak/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/libkeccak/CMakeLists.txt	2025-11-23 20:31:46.544770500 +0900
+@@ -0,0 +1,163 @@
++cmake_minimum_required(VERSION 3.10)
++
++project(libkeccak VERSION 1.4.2 LANGUAGES C)
++
++# Configuration options
++set(CMAKE_C_STANDARD 99)
++set(CMAKE_C_STANDARD_REQUIRED ON)
++set(CMAKE_POSITION_INDEPENDENT_CODE ON)
++
++# Default to Release build type
++if(NOT CMAKE_BUILD_TYPE)
++    set(CMAKE_BUILD_TYPE Release)
++endif()
++
++# Installation directories
++include(GNUInstallDirs)
++
++# Library version
++set(LIB_MAJOR 1)
++set(LIB_MINOR 4)
++set(LIB_VERSION "${LIB_MAJOR}.${LIB_MINOR}")
++
++# Compiler definitions and flags
++add_definitions(
++    -D_DEFAULT_SOURCE
++    -D_BSD_SOURCE
++    -D_XOPEN_SOURCE=700
++)
++
++# Optional: Uncomment to set ALLOCA_LIMIT
++# add_definitions(-DALLOCA_LIMIT=0)
++
++# Source files
++set(LIB_SOURCES
++    digest.c
++    libkeccak_cshake_initialise.c
++    libkeccak_state_destroy.c
++    libkeccak_state_fast_destroy.c
++    libkeccak_state_initialise.c
++    libkeccak_zerocopy_chunksize.c
++    extra/libkeccak_state_copy.c
++    extra/libkeccak_state_create.c
++    extra/libkeccak_state_duplicate.c
++    extra/libkeccak_state_fast_free.c
++    extra/libkeccak_state_free.c
++    extra/libkeccak_state_marshal.c
++    extra/libkeccak_state_reset.c
++    extra/libkeccak_state_unmarshal.c
++    extra/libkeccak_state_wipe.c
++    extra/libkeccak_state_wipe_message.c
++    extra/libkeccak_state_wipe_sponge.c
++    hmac/libkeccak_hmac_copy.c
++    hmac/libkeccak_hmac_create.c
++    hmac/libkeccak_hmac_destroy.c
++    hmac/libkeccak_hmac_digest.c
++    hmac/libkeccak_hmac_duplicate.c
++    hmac/libkeccak_hmac_fast_destroy.c
++    hmac/libkeccak_hmac_fast_digest.c
++    hmac/libkeccak_hmac_fast_free.c
++    hmac/libkeccak_hmac_fast_update.c
++    hmac/libkeccak_hmac_free.c
++    hmac/libkeccak_hmac_initialise.c
++    hmac/libkeccak_hmac_marshal.c
++    hmac/libkeccak_hmac_reset.c
++    hmac/libkeccak_hmac_set_key.c
++    hmac/libkeccak_hmac_unmarshal.c
++    hmac/libkeccak_hmac_update.c
++    hmac/libkeccak_hmac_wipe.c
++    spec/libkeccak_cshake_suffix.c
++    spec/libkeccak_degeneralise_spec.c
++    spec/libkeccak_generalised_spec_initialise.c
++    spec/libkeccak_spec_check.c
++    spec/libkeccak_spec_rawshake.c
++    spec/libkeccak_spec_sha3.c
++    util/libkeccak_behex_lower.c
++    util/libkeccak_behex_upper.c
++    util/libkeccak_generalised_sum_fd.c
++    util/libkeccak_keccaksum_fd.c
++    util/libkeccak_rawshakesum_fd.c
++    util/libkeccak_sha3sum_fd.c
++    util/libkeccak_shakesum_fd.c
++    util/libkeccak_unhex.c
++)
++
++# Header files
++set(PUBLIC_HEADERS
++    libkeccak.h
++)
++
++set(PUBLIC_SUBHEADERS
++    libkeccak/keccak.h
++    libkeccak/sha3.h
++    libkeccak/rawshake.h
++    libkeccak/shake.h
++    libkeccak/cshake.h
++    libkeccak/extra.h
++    libkeccak/hmac.h
++    libkeccak/legacy.h
++    libkeccak/util.h
++)
++
++# Shared library
++add_library(keccak SHARED ${LIB_SOURCES})
++set_target_properties(keccak PROPERTIES
++    VERSION ${LIB_VERSION}
++    SOVERSION ${LIB_MAJOR}
++    OUTPUT_NAME keccak
++)
++
++# Platform-specific settings
++if(APPLE)
++    set_target_properties(keccak PROPERTIES
++        MACOSX_RPATH ON
++        INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
++    )
++endif()
++
++# Test executable
++add_executable(test test.c)
++target_link_libraries(test keccak)
++
++# Benchmark executable
++add_executable(benchmark benchmark.c)
++target_link_libraries(benchmark keccak)
++
++# Installation
++install(TARGETS keccak
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++)
++
++# Install headers
++install(FILES ${PUBLIC_HEADERS}
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++)
++
++install(FILES ${PUBLIC_SUBHEADERS}
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libkeccak
++)
++
++# Install man pages
++file(GLOB MAN3_FILES "man3/*.3")
++file(GLOB MAN7_FILES "man7/*.7")
++
++if(MAN3_FILES)
++    install(FILES ${MAN3_FILES}
++        DESTINATION ${CMAKE_INSTALL_MANDIR}/man3
++    )
++endif()
++
++if(MAN7_FILES)
++    install(FILES ${MAN7_FILES}
++        DESTINATION ${CMAKE_INSTALL_MANDIR}/man7
++    )
++endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libkeccak.pc.in ${CMAKE_BINARY_DIR}/libkeccak.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libkeccak.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libkeccak/libkeccak.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libkeccak/libkeccak.pc.in	2025-11-23 20:31:54.122751300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libkeccak
++Description: Keccak-family hashing library
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lkeccak
++Cflags: -I${includedir}
