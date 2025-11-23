@@ -1,0 +1,59 @@
+HOMEPAGE="https://github.com/kanedo/${PN}"
+GIT_URI="https://github.com/kanedo/${PN}.git"
+GIT_REV="9a20658673492c41fd9726d439cdea7f96235e84"
+
+CATEGORY="Libs"
+SUMMARY="Zlib C-library in a C++ iostream"
+DESCRIPTION="Gzstream is a small C++ library, basically just a wrapper, that provides the
+functionality of the zlib C-library in a C++ iostream."
+
+LICENSE="LGPL-2.1-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: LGPL-2.1-or-later"
+LICENSE_URI="COPYING.LIB"
+
+BUILD_REQUIRES="
+	zlib-devel
+"
+
+inherit cmake
+inherit git
+
+CYGCMAKE_ARGS="
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_test()
+{
+	cd ${B}
+	verbose ./test_gzip.exe ${S}/COPYING.LIB gz.tmp.gz
+	verbose gunzip gz.tmp.gz
+	verbose diff ${S}/COPYING.LIB gz.tmp
+	verbose gzip gz.tmp
+	verbose ./test_gunzip.exe gz.tmp.gz gz.tmp
+	verbose diff ${S}/COPYING.LIB gz.tmp
+	verbose rm gz.tmp.gz gz.tmp
+}
+
+DOCS="
+	README.md
+	logo.gif
+"
+
+PKG_NAMES="
+	gzstream
+	libgzstream${PV[1]}
+	libgzstream-devel
+"
+gzstream_CONTENTS="
+	usr/share
+"
+libgzstream1_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
+"
+libgzstream_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+gzstream_SUMMARY="${SUMMARY} (licensing & readmes)"
+libgzstream1_SUMMARY="${SUMMARY} (runtime)"
+libgzstream_devel_SUMMARY="${SUMMARY} (development)"
