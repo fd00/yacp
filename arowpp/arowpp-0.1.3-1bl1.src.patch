@@ -1,0 +1,167 @@
+--- origsrc/arowpp-0.1.3/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/arowpp-0.1.3/CMakeLists.txt	2025-11-24 12:54:42.592423200 +0900
+@@ -0,0 +1,129 @@
++cmake_minimum_required(VERSION 3.10)
++project(arowpp VERSION 0.1.3 LANGUAGES CXX)
++
++# Set C++ standard
++set(CMAKE_CXX_STANDARD 11)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++
++# GNUInstallDirs for standard installation directories
++include(GNUInstallDirs)
++
++# Compiler options (equivalent to COPTS in BUILD)
++set(AROWPP_COMPILE_OPTIONS
++    -Wcast-align
++    -Wcast-qual
++    -Wconversion
++    -Wextra
++    -Wfloat-equal
++    -Woverloaded-virtual
++    -Wparentheses
++    -Wpointer-arith
++    -Wswitch-enum
++    -Wwrite-strings
++)
++
++# Library: arowpp
++add_library(arowpp SHARED
++    src/classifier.cc
++    src/feature.cc
++    src/libarowpp.cc
++    src/model_reader.cc
++    src/model_writer.cc
++    src/options.cc
++    src/result.cc
++    src/tokenizer.cc
++)
++
++target_include_directories(arowpp
++    PUBLIC
++        ${CMAKE_CURRENT_SOURCE_DIR}/src
++)
++
++target_compile_options(arowpp PRIVATE ${AROWPP_COMPILE_OPTIONS})
++
++set_target_properties(arowpp PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
++
++# Binary: arow_learn
++add_executable(arow_learn
++    src/arow_learn.cc
++)
++
++target_link_libraries(arow_learn PRIVATE arowpp)
++
++# Binary: arow_test
++add_executable(arow_test
++    src/arow_test.cc
++)
++
++target_link_libraries(arow_test PRIVATE arowpp)
++
++# Unit tests (optional, requires Google Test)
++option(BUILD_TESTING "Build the testing tree" ON)
++
++if(BUILD_TESTING)
++    find_package(GTest REQUIRED)
++    enable_testing()
++
++    add_executable(arow_unittest
++        src/classifier_test.cc
++        src/feature_test.cc
++        src/model_reader_test.cc
++        src/result_test.cc
++        src/tokenizer_test.cc
++    )
++
++    target_link_libraries(arow_unittest
++        PRIVATE
++            arowpp
++            GTest::GTest
++            GTest::Main
++            pthread
++    )
++
++    target_include_directories(arow_unittest
++        PRIVATE
++            ${GTEST_INCLUDE_DIRS}
++    )
++
++    add_test(NAME arow_unittest COMMAND arow_unittest)
++endif()
++
++# Generate pkg-config file
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix \${prefix})
++set(libdir \${exec_prefix}/${CMAKE_INSTALL_LIBDIR})
++set(includedir \${prefix}/${CMAKE_INSTALL_INCLUDEDIR})
++set(VERSION ${PROJECT_VERSION})
++
++configure_file(
++    ${CMAKE_CURRENT_SOURCE_DIR}/arowpp.pc.in
++    ${CMAKE_CURRENT_BINARY_DIR}/arowpp.pc
++    @ONLY
++)
++
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/arowpp.pc
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
++)
++
++# Installation rules
++install(TARGETS arowpp arow_learn arow_test
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++)
++
++install(FILES
++    src/arowpp.h
++    src/common.h
++    src/error_handler.h
++    src/feature.h
++    src/logging.h
++    src/model_reader_interface.h
++    src/model_writer_interface.h
++    src/options.h
++    src/param.h
++    src/random.h
++    src/timer.h
++    src/tokenizer.h
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/arowpp
++)
+--- origsrc/arowpp-0.1.3/arowpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/arowpp-0.1.3/arowpp.pc.in	2025-11-24 12:54:42.592423200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: arowpp
++Description: AROW++ - Adaptive Regularization of Weights online learning algorithm
++Version: @VERSION@
++Libs: -L${libdir} -larowpp
++Cflags: -I${includedir}/arowpp
+--- origsrc/arowpp-0.1.3/src/classifier.cc	2016-01-18 12:22:48.000000000 +0900
++++ src/arowpp-0.1.3/src/classifier.cc	2025-11-24 12:50:38.989130200 +0900
+@@ -212,7 +212,7 @@ void BinaryClassifierImpl::Update(const
+     for (const auto& elem : fv) {
+       const unsigned int id = elem.first;
+       const float val = elem.second;
+-      param_->mean[id] += alpha * label * param_->cov[id] * val;
++      param_->mean[id] += static_cast<float>(alpha * label * param_->cov[id] * val);
+       param_->cov[id] = 1.f / ((1.f / param_->cov[id]) + val * val / static_cast<float>(param_->r));
+     }
+   }
+--- origsrc/arowpp-0.1.3/src/timer.h	2016-01-18 12:22:48.000000000 +0900
++++ src/arowpp-0.1.3/src/timer.h	2025-11-24 12:49:45.934934000 +0900
+@@ -41,7 +41,7 @@ namespace {
+ double gettimeofday_sec() {
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+-  return tv.tv_sec + static_cast<double>(tv.tv_usec) * 1e-6;
++  return static_cast<double>(tv.tv_sec) + static_cast<double>(tv.tv_usec) * 1e-6;
+ }
+ 
+ } // namespace
