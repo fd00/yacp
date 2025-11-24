@@ -1,0 +1,48 @@
+--- origsrc/tlsdate-tlsdate-0.0.13/src/tlsdate.h	2015-05-29 03:49:40.000000000 +0900
++++ src/tlsdate-tlsdate-0.0.13/src/tlsdate.h	2025-11-24 12:29:02.775234500 +0900
+@@ -188,8 +188,6 @@ struct state
+   int exitting;
+ };
+ 
+-char timestamp_path[PATH_MAX];
+-
+ int is_sane_time (time_t ts);
+ int load_disk_timestamp (const char *path, time_t * t);
+ void save_disk_timestamp (const char *path, time_t t);
+--- origsrc/tlsdate-tlsdate-0.0.13/src/util.c	2015-05-29 03:49:40.000000000 +0900
++++ src/tlsdate-tlsdate-0.0.13/src/util.c	2025-11-24 12:26:38.987254500 +0900
+@@ -286,11 +286,15 @@ int rtc_close(struct rtc_handle *handle)
+ 
+ int file_write(int fd, void *buf, size_t sz)
+ {
+-	struct iovec iov[1];
+ 	ssize_t ret;
++#ifdef __CYGWIN__
++	ret = IGNORE_EINTR (write (fd, buf, sz));
++#else
++	struct iovec iov[1];
+ 	iov[0].iov_base = buf;
+ 	iov[0].iov_len = sz;
+ 	ret = IGNORE_EINTR (pwritev (fd, iov, 1, 0));
++#endif
+ 	if (ret != sz)
+ 	{
+ 		return -1;
+@@ -329,10 +333,16 @@ int file_close(int fd)
+ 
+ int file_read(int fd, void *buf, size_t sz)
+ {
++	ssize_t ret;
++#ifdef __CYGWIN__
++	ret = read (fd, buf, sz);
++#else
+ 	struct iovec iov[1];
+ 	iov[0].iov_base = buf;
+ 	iov[0].iov_len = sz;
+-	if (preadv (fd, iov, 1, 0) != sz)
++	ret = preadv (fd, iov, 1, 0);
++#endif
++	if (ret != sz)
+ 	{
+ 		/* Returns -1 on read failure */
+ 		return -1;
