@@ -1,0 +1,155 @@
+--- origsrc/taliesin-1.0.19/CMakeLists.txt	2022-01-12 08:08:42.000000000 +0900
++++ src/taliesin-1.0.19/CMakeLists.txt	2025-11-29 07:07:37.489137800 +0900
+@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.5)
+ project(taliesin C)
+ 
+ set(CMAKE_C_STANDARD 99)
+-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
++set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+ 
+ # library info
+ 
+--- origsrc/taliesin-1.0.19/src/data_source.c	2022-01-12 08:08:42.000000000 +0900
++++ src/taliesin-1.0.19/src/data_source.c	2025-11-29 07:30:26.242206200 +0900
+@@ -799,7 +799,6 @@ void * thread_run_refresh_data_source(vo
+             }
+           }
+         }
+-        avcodec_close(thumbnail_cover_codec_context);
+         avcodec_free_context(&thumbnail_cover_codec_context);
+         if (data_source_clean_removed(config, tds_id) != T_OK) {
+           y_log_message(Y_LOG_LEVEL_ERROR, "thread_run_refresh_data_source - Error data_source_clean_removed");
+--- origsrc/taliesin-1.0.19/src/libav-transcode-filter.c	2022-01-12 08:08:42.000000000 +0900
++++ src/taliesin-1.0.19/src/libav-transcode-filter.c	2025-11-29 07:30:26.242206200 +0900
+@@ -132,6 +132,7 @@ int init_resampler(AVCodecContext *input
+                    SwrContext **resample_context) {
+   int error;
+   /* Create a resampler context for the conversion. */
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+   if (!(*resample_context = swr_alloc_set_opts(NULL,
+                                                av_get_default_channel_layout(output_codec_context->channels),
+                                                output_codec_context->sample_fmt,
+@@ -143,6 +144,19 @@ int init_resampler(AVCodecContext *input
+     y_log_message(Y_LOG_LEVEL_ERROR, "Could not allocate resample context");
+     return AVERROR(ENOMEM);
+   }
++#else
++  if (swr_alloc_set_opts2(resample_context,
++                          &output_codec_context->ch_layout,
++                          output_codec_context->sample_fmt,
++                          output_codec_context->sample_rate,
++                          &input_codec_context->ch_layout,
++                          input_codec_context->sample_fmt,
++                          input_codec_context->sample_rate,
++                          0, NULL) < 0) {
++    y_log_message(Y_LOG_LEVEL_ERROR, "Could not allocate resample context");
++    return AVERROR(ENOMEM);
++  }
++#endif
+   
+   /* Open the resampler with the specified parameters. */
+   if ((error = swr_init(*resample_context)) < 0) {
+@@ -155,7 +169,11 @@ int init_resampler(AVCodecContext *input
+ 
+ int init_fifo(AVAudioFifo **fifo, AVCodecContext *output_codec_context) {
+   /* Create the FIFO buffer based on the specified output sample format. */
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+   if (!(*fifo = av_audio_fifo_alloc(output_codec_context->sample_fmt, output_codec_context->channels, 1))) {
++#else
++  if (!(*fifo = av_audio_fifo_alloc(output_codec_context->sample_fmt, output_codec_context->ch_layout.nb_channels, 1))) {
++#endif
+     y_log_message(Y_LOG_LEVEL_ERROR, "Could not allocate FIFO");
+     return AVERROR(ENOMEM);
+   }
+@@ -252,7 +270,11 @@ int read_decode_convert_and_store(AVAudi
+         /* If there is decoded data, convert and store it. */
+         if (data_present) {
+           out_samples = av_rescale_rnd(swr_get_delay(resample_context, output_codec_context->sample_rate) + input_frame->nb_samples, input_codec_context->sample_rate, output_codec_context->sample_rate, AV_ROUND_UP);
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+           if (!(converted_input_samples = calloc(output_codec_context->channels, sizeof(uint8_t *)))) {
++#else
++          if (!(converted_input_samples = calloc(output_codec_context->ch_layout.nb_channels, sizeof(uint8_t *)))) {
++#endif
+             y_log_message(Y_LOG_LEVEL_ERROR, "Could not allocate converted input sample pointers");
+             ret = AVERROR(ENOMEM);
+           } else {
+@@ -297,7 +319,11 @@ int init_output_frame(AVFrame **frame,
+      * Default channel layouts based on the number of channels
+      * are assumed for simplicity. */
+     (*frame)->nb_samples     = frame_size;
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+     (*frame)->channel_layout = output_codec_context->channel_layout;
++#else
++    av_channel_layout_copy(&(*frame)->ch_layout, &output_codec_context->ch_layout);
++#endif
+     (*frame)->format         = output_codec_context->sample_fmt;
+     (*frame)->sample_rate    = output_codec_context->sample_rate;
+     /* Allocate the samples of the created frame. This call will make
+@@ -444,8 +470,12 @@ int webradio_open_output_buffer(struct _
+         y_log_message(Y_LOG_LEVEL_ERROR, "Could not find output format '%s'", format);
+         error = AVERROR(ENOMEM);
+       } else {
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+         avctx->channels       = audio_stream->stream_channels;
+         avctx->channel_layout = av_get_default_channel_layout(audio_stream->stream_channels);
++#else
++        av_channel_layout_default(&avctx->ch_layout, audio_stream->stream_channels);
++#endif
+         avctx->sample_rate    = audio_stream->stream_sample_rate;
+         avctx->sample_fmt     = output_codec->sample_fmts[0];
+         if (0 != o_strcasecmp("flac", audio_stream->stream_format)) {
+@@ -457,7 +487,11 @@ int webradio_open_output_buffer(struct _
+ 
+         if ((error = avcodec_open2(avctx, output_codec, NULL)) < 0) {
+           y_log_message(Y_LOG_LEVEL_ERROR, "Could not open output codec (error '%s')", get_error_text(error));
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+         } else if ((audio_stream->fifo = av_audio_fifo_alloc(avctx->sample_fmt, avctx->channels, 1)) == NULL) {
++#else
++        } else if ((audio_stream->fifo = av_audio_fifo_alloc(avctx->sample_fmt, avctx->ch_layout.nb_channels, 1)) == NULL) {
++#endif
+           y_log_message(Y_LOG_LEVEL_ERROR, "Could not open fifo (error '%s')", get_error_text(error));
+         } else {
+           if ((avcodec_parameters_from_context(stream->codecpar, avctx)) < 0) {
+@@ -578,7 +612,6 @@ int open_input_buffer(const unsigned cha
+   if (ret != T_OK) {
+     if (*image_codec_context) {
+       avcodec_flush_buffers(*image_codec_context);
+-      avcodec_close(*image_codec_context);
+       avcodec_free_context(image_codec_context);
+       *image_codec_context = NULL;
+     }
+@@ -659,8 +692,12 @@ int open_output_buffer_jukebox(struct _j
+         y_log_message(Y_LOG_LEVEL_ERROR, "Could not find output format '%s'", format);
+         error = AVERROR(ENOMEM);
+       } else {
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+         avctx->channels       = jukebox_audio_buffer->jukebox->stream_channels;
+         avctx->channel_layout = av_get_default_channel_layout(jukebox_audio_buffer->jukebox->stream_channels);
++#else
++        av_channel_layout_default(&avctx->ch_layout, jukebox_audio_buffer->jukebox->stream_channels);
++#endif
+         avctx->sample_rate    = jukebox_audio_buffer->jukebox->stream_sample_rate;
+         avctx->sample_fmt     = output_codec->sample_fmts[0];
+         if (0 != o_strcasecmp("flac", jukebox_audio_buffer->jukebox->stream_format)) {
+@@ -672,7 +709,11 @@ int open_output_buffer_jukebox(struct _j
+ 
+         if ((error = avcodec_open2(avctx, output_codec, NULL)) < 0) {
+           y_log_message(Y_LOG_LEVEL_ERROR, "Could not open output codec (error '%s')", get_error_text(error));
++#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(59, 0, 0)
+         } else if ((*fifo = av_audio_fifo_alloc(avctx->sample_fmt, avctx->channels, 1)) == NULL) {
++#else
++        } else if ((*fifo = av_audio_fifo_alloc(avctx->sample_fmt, avctx->ch_layout.nb_channels, 1)) == NULL) {
++#endif
+           y_log_message(Y_LOG_LEVEL_ERROR, "Could not open fifo (error '%s')", get_error_text(error));
+         } else {
+           if ((avcodec_parameters_from_context(stream->codecpar, avctx)) < 0) {
+--- origsrc/taliesin-1.0.19/src/taliesin.h	2022-01-12 08:08:42.000000000 +0900
++++ src/taliesin-1.0.19/src/taliesin.h	2025-11-29 07:35:06.257458100 +0900
+@@ -32,6 +32,7 @@
+ #define MIN(a,b) (((a)<(b))?(a):(b))
+ #define MAX(a,b) (((a)>(b))?(a):(b))
+ 
++#include <libavcodec/avcodec.h>
+ #include <libavformat/avformat.h>
+ #include <libavutil/audio_fifo.h>
+ #include <libswresample/swresample.h>
