@@ -1,0 +1,89 @@
+--- origsrc/libyuv/CMakeLists.txt	2025-11-29 10:43:05.000000000 +0900
++++ src/libyuv/CMakeLists.txt	2025-11-29 10:43:09.298891200 +0900
+@@ -13,7 +13,6 @@ set ( ly_src_dir	${ly_base_dir}/source )
+ set ( ly_inc_dir	${ly_base_dir}/include )
+ set ( ly_tst_dir	${ly_base_dir}/unit_test )
+ set ( ly_lib_name	yuv )
+-set ( ly_lib_static	${ly_lib_name} )
+ set ( ly_lib_shared	${ly_lib_name}_shared )
+ 
+ # We cannot use GLOB here since we want to be able to separate out files that
+@@ -169,28 +168,31 @@ if(LOONGARCH64)
+   endif()
+ endif()
+ 
+-# this creates the static library (.a)
+-add_library( ${ly_lib_static} STATIC ${ly_lib_parts})
+-
+ # this creates the shared library (.so)
+ add_library( ${ly_lib_shared} SHARED ${ly_lib_parts})
+ set_target_properties( ${ly_lib_shared} PROPERTIES OUTPUT_NAME "${ly_lib_name}" )
+-set_target_properties( ${ly_lib_shared} PROPERTIES PREFIX "lib" )
++if (NOT CYGWIN)
++  set_target_properties( ${ly_lib_shared} PROPERTIES PREFIX "lib" )
++endif()
+ if(WIN32)
+   set_target_properties( ${ly_lib_shared} PROPERTIES IMPORT_PREFIX "lib" )
+ endif()
+ 
++if (DEFINED SOVERSION)
++  set_target_properties( ${ly_lib_shared} PROPERTIES SOVERSION ${SOVERSION} )
++endif()
++
+ # this creates the cpuid tool
+ add_executable      ( cpuid ${ly_base_dir}/util/cpuid.c )
+-target_link_libraries  ( cpuid ${ly_lib_static} )
++target_link_libraries  ( cpuid ${ly_lib_shared} )
+ 
+ # this creates the conversion tool
+ add_executable			( yuvconvert ${ly_base_dir}/util/yuvconvert.cc )
+-target_link_libraries	( yuvconvert ${ly_lib_static} )
++target_link_libraries	( yuvconvert ${ly_lib_shared} )
+ 
+ # this creates the yuvconstants tool
+ add_executable      ( yuvconstants ${ly_base_dir}/util/yuvconstants.c )
+-target_link_libraries  ( yuvconstants ${ly_lib_static} )
++target_link_libraries  ( yuvconstants ${ly_lib_shared} )
+ 
+ find_package ( JPEG )
+ if (JPEG_FOUND)
+@@ -220,7 +222,7 @@ if(UNIT_TEST)
+   endif()
+ 
+   add_executable(libyuv_unittest ${ly_unittest_sources})
+-  target_link_libraries(libyuv_unittest ${ly_lib_name} ${GTEST_LIBRARY})
++  target_link_libraries(libyuv_unittest ${ly_lib_shared} ${GTEST_LIBRARY})
+   find_library(PTHREAD_LIBRARY pthread)
+   if(NOT PTHREAD_LIBRARY STREQUAL "PTHREAD_LIBRARY-NOTFOUND")
+     target_link_libraries(libyuv_unittest pthread)
+@@ -243,10 +245,15 @@ endif()
+ 
+ # install the conversion tool, .so, .a, and all the header files
+ install ( TARGETS yuvconvert DESTINATION bin )
+-install ( TARGETS ${ly_lib_static}						DESTINATION lib )
+-install ( TARGETS ${ly_lib_shared} LIBRARY DESTINATION lib RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++install ( TARGETS ${ly_lib_shared} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ install ( DIRECTORY ${PROJECT_SOURCE_DIR}/include/		DESTINATION include )
+ 
+ # create the .deb and .rpm packages using cpack
+ include ( CM_linux_packages.cmake )
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libyuv.pc.in ${CMAKE_BINARY_DIR}/libyuv.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libyuv.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libyuv/libyuv.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libyuv/libyuv.pc.in	2025-11-29 10:43:09.300889300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libyuv
++Description: YUV conversion and scaling functionality
++Version: @YUV_VERSION@
++Libs: -L${libdir} -lyuv
++Cflags: -I${includedir}
