@@ -11,22 +11,39 @@ LICENSE="Apache-2.0 OR BSD-3-Clause"
 LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0 OR BSD-3-Clause"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libgmock-devel libgtest-devel libre2-devel libutf8proc-devel libyaml-cpp-devel rapidjson-devel"
+BUILD_REQUIRES="
+	libiconv-devel
+	libintl-devel
+	libgmock-devel
+	libgtest-devel
+	libyaml-cpp-devel
+	rapidjson-devel
+"
 
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -DRAPIDJSON_HAS_STDSTRING=1"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DBUILD_ID:STRING=e7d3c209402b8d81d119584cb147f88efe976965
+	-DBUILD_ID:STRING=00e895f2c507a714062aa88ed41466aec10d2e01
+	-DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
 	-DLIBDDWAF_BUILD_STATIC:BOOL=OFF
-	-DSOVERSION:STRING=1
+	-DSOVERSION:STRING=${PV[1]}
 "
 
 src_test()
 {
 	cd ${B}
 	ninja_test
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -fr usr/lib/.build-id
 }
 
 DOCS="
@@ -42,14 +59,14 @@ DIFF_EXCLUDES="
 
 PKG_NAMES="
 	libddwaf
-	libddwaf1
+	libddwaf${PV[1]}
 	libddwaf-devel
 "
 libddwaf_CONTENTS="
 	usr/share
 "
 libddwaf1_CONTENTS="
-	usr/bin/cyg*-1.dll
+	usr/bin/cyg*-${PV[1]}.dll
 "
 libddwaf_devel_CONTENTS="
 	usr/include

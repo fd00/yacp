@@ -1,0 +1,359 @@
+--- origsrc/libddwaf-1.30.0/CMakeLists.txt	2025-10-28 18:59:29.000000000 +0900
++++ src/libddwaf-1.30.0/CMakeLists.txt	2025-12-07 15:40:00.860629100 +0900
+@@ -133,3 +133,10 @@ if (LIBDDWAF_TESTING)
+     include(cmake/clang-tidy.cmake)
+     include(cmake/clang-format.cmake)
+ endif()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libddwaf.pc.in ${CMAKE_BINARY_DIR}/libddwaf.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libddwaf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libddwaf-1.30.0/cmake/package.cmake	2025-10-28 18:59:29.000000000 +0900
++++ src/libddwaf-1.30.0/cmake/package.cmake	2025-12-07 15:21:53.317913900 +0900
+@@ -1,7 +1,7 @@
+ # Packaging
+ 
+ install(FILES ${libddwaf_SOURCE_DIR}/include/ddwaf.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+-install(EXPORT libddwaf-config DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/libddwaf)
++install(EXPORT libddwaf-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libddwaf)
+ 
+ if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES STREQUAL "")
+     set(LIBDDWAF_PACKAGE_PROCESSOR ${CMAKE_OSX_ARCHITECTURES} CACHE STRING "Alternative processor for packaging purposes")
+@@ -16,20 +16,24 @@ set(CPACK_GENERATOR "TGZ")
+ set(CPACK_SOURCE_GENERATOR "TGZ")
+ 
+ ## Package name
++if (EXISTS "${libddwaf_SOURCE_DIR}/.git")
+ execute_process(COMMAND git describe --exact-match --tags HEAD
+     WORKING_DIRECTORY ${libddwaf_SOURCE_DIR}
+     OUTPUT_VARIABLE DDWAF_VERSION
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+     ERROR_QUIET
+ )
++endif()
+ 
+ if (NOT DDWAF_VERSION)
+     set(DDWAF_VERSION ${CMAKE_PROJECT_VERSION})
++    if (EXISTS "${libddwaf_SOURCE_DIR}/.git")
+     execute_process(COMMAND git rev-parse --short HEAD
+         WORKING_DIRECTORY ${libddwaf_SOURCE_DIR}
+         OUTPUT_VARIABLE SHORT_BUILD_ID
+         OUTPUT_STRIP_TRAILING_WHITESPACE
+     )
++    endif()
+ endif()
+ 
+ set(CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${DDWAF_VERSION}-${CMAKE_SYSTEM_NAME}-${LIBDDWAF_PACKAGE_PROCESSOR})
+--- origsrc/libddwaf-1.30.0/cmake/shared.cmake	2025-10-28 18:59:29.000000000 +0900
++++ src/libddwaf-1.30.0/cmake/shared.cmake	2025-12-07 15:23:01.829252700 +0900
+@@ -1,8 +1,10 @@
+-execute_process(COMMAND git rev-parse HEAD
+-    WORKING_DIRECTORY ${libddwaf_SOURCE_DIR}
+-    OUTPUT_VARIABLE BUILD_ID
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
++if (NOT DEFINED BUILD_ID AND EXISTS "${libddwaf_SOURCE_DIR}/.git")
++    execute_process(COMMAND git rev-parse HEAD
++        WORKING_DIRECTORY ${libddwaf_SOURCE_DIR}
++        OUTPUT_VARIABLE BUILD_ID
++        OUTPUT_STRIP_TRAILING_WHITESPACE
++    )
++endif()
+ 
+ message(STATUS "Build id is ${BUILD_ID}")
+ string(SUBSTRING "${BUILD_ID}" 0 2 BUILD_ID_PREFIX)
+@@ -12,8 +14,13 @@ add_library(libddwaf_shared SHARED
+     $<TARGET_OBJECTS:libddwaf_shared_objects> $<$<BOOL:${MSVC}>:libddwaf.def>)
+ set_target_properties(libddwaf_shared PROPERTIES OUTPUT_NAME ddwaf)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(libddwaf_shared PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ install(TARGETS libddwaf_shared EXPORT libddwaf-config
+-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ if(LINUX)
+--- origsrc/libddwaf-1.30.0/libddwaf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libddwaf-1.30.0/libddwaf.pc.in	2025-12-07 15:40:09.034814400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libddwaf
++Description: Datadog's implementation of a WAF engine
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lddwaf
++Cflags: -I${includedir}
+--- origsrc/libddwaf-1.30.0/tests/common/base_path.hpp	1970-01-01 09:00:00.000000000 +0900
++++ src/libddwaf-1.30.0/tests/common/base_path.hpp	2025-12-07 14:00:41.609514800 +0900
+@@ -0,0 +1,15 @@
++// Unless explicitly stated otherwise all files in this repository are
++// dual-licensed under the Apache-2.0 License or BSD-3-Clause License.
++//
++// This product includes software developed at Datadog (https://www.datadoghq.com/).
++// Copyright 2021 Datadog, Inc.
++
++#pragma once
++
++#include <string>
++
++namespace ddwaf::test {
++
++static std::string test_directory{"/tmp/libddwaf/libddwaf-1.30.0-1bl1.x86_64/src/libddwaf-1.30.0/tests"};
++
++} // namespace ddwaf::test
+--- origsrc/libddwaf-1.30.0/third_party/CMakeLists.txt	2025-10-28 18:59:29.000000000 +0900
++++ src/libddwaf-1.30.0/third_party/CMakeLists.txt	2025-12-07 14:29:14.967211400 +0900
+@@ -15,27 +15,38 @@ if(NOT MSVC)
+     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-parameter -Wno-shadow")
+ endif()
+ 
+-set(RAPIDJSON_COMMIT 24b5e7a8b27f42fa16b96fc70aade9106cf7102f)
+-ExternalProject_Add(proj_rapidjson
+-    URL               https://github.com/Tencent/rapidjson/archive/${RAPIDJSON_COMMIT}.tar.gz
+-    INSTALL_DIR       ${INSTALL_DIR}
+-    CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+-               -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+-               -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-               -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+-               -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+-               -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
+-               -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
+-               -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+-               -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+-    BUILD_COMMAND     ""
+-    INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory "<SOURCE_DIR>/include/" "<INSTALL_DIR>/include/"
+-)
+-add_library(lib_rapidjson INTERFACE IMPORTED GLOBAL)
+-target_include_directories(lib_rapidjson INTERFACE ${INSTALL_DIR}/include)
+-add_dependencies(lib_rapidjson proj_rapidjson)
+-target_compile_definitions(lib_rapidjson INTERFACE RAPIDJSON_HAS_STDSTRING=1)
+-set_target_properties(proj_rapidjson PROPERTIES EXCLUDE_FROM_ALL TRUE)
++# Try to find RapidJSON in system
++find_package(RapidJSON QUIET)
++
++if(NOT RapidJSON_FOUND)
++    message(STATUS "RapidJSON not found in system, will download")
++    set(RAPIDJSON_COMMIT 24b5e7a8b27f42fa16b96fc70aade9106cf7102f)
++    ExternalProject_Add(proj_rapidjson
++        URL               https://github.com/Tencent/rapidjson/archive/${RAPIDJSON_COMMIT}.tar.gz
++        INSTALL_DIR       ${INSTALL_DIR}
++        CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
++                   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
++                   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
++                   -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
++                   -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
++                   -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
++                   -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
++                   -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
++                   -DCMAKE_POLICY_VERSION_MINIMUM=3.5
++        BUILD_COMMAND     ""
++        INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory "<SOURCE_DIR>/include/" "<INSTALL_DIR>/include/"
++    )
++    add_library(lib_rapidjson INTERFACE IMPORTED GLOBAL)
++    target_include_directories(lib_rapidjson INTERFACE ${INSTALL_DIR}/include)
++    add_dependencies(lib_rapidjson proj_rapidjson)
++    target_compile_definitions(lib_rapidjson INTERFACE RAPIDJSON_HAS_STDSTRING=1)
++    set_target_properties(proj_rapidjson PROPERTIES EXCLUDE_FROM_ALL TRUE)
++else()
++    message(STATUS "Using system RapidJSON")
++    add_library(lib_rapidjson INTERFACE IMPORTED GLOBAL)
++    target_include_directories(lib_rapidjson INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
++    target_compile_definitions(lib_rapidjson INTERFACE RAPIDJSON_HAS_STDSTRING=1)
++endif()
+ 
+ if(NOT MSVC)
+     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC")
+@@ -43,87 +54,112 @@ if(NOT MSVC)
+     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
+ endif()
+ 
+-if(CMAKE_BUILD_TYPE MATCHES Debug)
+-    set(LIBGTEST_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gtestd${CMAKE_STATIC_LIBRARY_SUFFIX})
+-    set(LIBGMOCK_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gmockd${CMAKE_STATIC_LIBRARY_SUFFIX})
++# Try to find GTest in system
++find_package(GTest QUIET)
++
++if(NOT GTest_FOUND)
++    message(STATUS "GTest not found in system, will download")
++    if(CMAKE_BUILD_TYPE MATCHES Debug)
++        set(LIBGTEST_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gtestd${CMAKE_STATIC_LIBRARY_SUFFIX})
++        set(LIBGMOCK_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gmockd${CMAKE_STATIC_LIBRARY_SUFFIX})
++    else()
++        set(LIBGTEST_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX})
++        set(LIBGMOCK_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX})
++    endif()
++
++    set(GOOGLETEST_COMMIT 955c7f837efad184ec63e771c42542d37545eaef)
++    ExternalProject_Add(proj_gtest
++        URL         https://github.com/google/googletest/archive/${GOOGLETEST_COMMIT}.tar.gz
++        INSTALL_DIR ${INSTALL_DIR}
++        CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
++                    -DCMAKE_INSTALL_LIBDIR=lib
++                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
++                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
++                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
++                    -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
++                    -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
++                    -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
++                    -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
++                    -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
++                    -DBUILD_SHARED_LIBS=0
++                    -DBUILD_GMOCK=ON
++                    BUILD_BYPRODUCTS ${INSTALL_DIR}/lib/${LIBGTEST_FILENAME} ${INSTALL_DIR}/lib/${LIBGMOCK_FILENAME}
++    )
++
++    add_library(lib_gtest STATIC IMPORTED GLOBAL)
++    add_library(lib_gmock STATIC IMPORTED GLOBAL)
++    set_property(TARGET lib_gtest PROPERTY IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBGTEST_FILENAME})
++    set_property(TARGET lib_gmock PROPERTY IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBGMOCK_FILENAME})
++    target_include_directories(lib_gtest INTERFACE ${INSTALL_DIR}/include)
++    target_include_directories(lib_gmock INTERFACE ${INSTALL_DIR}/include)
++    if(NOT MSVC)
++        target_link_libraries(lib_gtest INTERFACE -lpthread)
++        target_link_libraries(lib_gmock INTERFACE -lpthread)
++    endif()
++
++    add_dependencies(lib_gtest proj_gtest)
++    add_dependencies(lib_gmock proj_gtest)
++    set_target_properties(lib_gtest lib_gmock proj_gtest PROPERTIES EXCLUDE_FROM_ALL TRUE)
+ else()
+-    set(LIBGTEST_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX})
+-    set(LIBGMOCK_FILENAME ${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX})
++    message(STATUS "Using system GTest")
++    add_library(lib_gtest ALIAS GTest::gtest)
++    add_library(lib_gmock ALIAS GTest::gmock)
+ endif()
+ 
+-set(GOOGLETEST_COMMIT 955c7f837efad184ec63e771c42542d37545eaef)
+-ExternalProject_Add(proj_gtest
+-    URL         https://github.com/google/googletest/archive/${GOOGLETEST_COMMIT}.tar.gz
+-    INSTALL_DIR ${INSTALL_DIR}
+-    CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+-                -DCMAKE_INSTALL_LIBDIR=lib
+-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+-                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-                -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+-                -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+-                -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
+-                -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
+-                -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+-                -DBUILD_SHARED_LIBS=0
+-                -DBUILD_GMOCK=ON
+-                BUILD_BYPRODUCTS ${INSTALL_DIR}/lib/${LIBGTEST_FILENAME} ${INSTALL_DIR}/lib/${LIBGMOCK_FILENAME}
+-)
+-
+-add_library(lib_gtest STATIC IMPORTED GLOBAL)
+-add_library(lib_gmock STATIC IMPORTED GLOBAL)
+-set_property(TARGET lib_gtest PROPERTY IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBGTEST_FILENAME})
+-set_property(TARGET lib_gmock PROPERTY IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBGMOCK_FILENAME})
+-target_include_directories(lib_gtest INTERFACE ${INSTALL_DIR}/include)
+-target_include_directories(lib_gmock INTERFACE ${INSTALL_DIR}/include)
+-if(NOT MSVC)
+-    target_link_libraries(lib_gtest INTERFACE -lpthread)
+-    target_link_libraries(lib_gmock INTERFACE -lpthread)
++# yaml-cpp
++# Try to find yaml-cpp in system using pkg-config
++find_package(PkgConfig QUIET)
++if(PKG_CONFIG_FOUND)
++    pkg_check_modules(YAML_CPP QUIET yaml-cpp)
+ endif()
+ 
+-add_dependencies(lib_gtest proj_gtest)
+-add_dependencies(lib_gmock proj_gtest)
+-set_target_properties(lib_gtest lib_gmock proj_gtest PROPERTIES EXCLUDE_FROM_ALL TRUE)
+-
+-# yaml-cpp
+-if (NOT MSVC)
+-    if(CMAKE_BUILD_TYPE MATCHES Debug)
+-        set(LIBYAML_FILENAME libyaml-cppd${CMAKE_STATIC_LIBRARY_SUFFIX})
++if(NOT YAML_CPP_FOUND)
++    message(STATUS "yaml-cpp not found in system, will download")
++    if (NOT MSVC)
++        if(CMAKE_BUILD_TYPE MATCHES Debug)
++            set(LIBYAML_FILENAME libyaml-cppd${CMAKE_STATIC_LIBRARY_SUFFIX})
++        else()
++            set(LIBYAML_FILENAME libyaml-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
++        endif()
+     else()
+-        set(LIBYAML_FILENAME libyaml-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
++        set(LIBYAML_FILENAME yaml-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
+     endif()
++
++    ExternalProject_Add(proj_yamlcpp
++        URL https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.zip
++        INSTALL_DIR       ${INSTALL_DIR}
++        CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
++                    -DCMAKE_INSTALL_LIBDIR=lib
++                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
++                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
++                    -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
++                    -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
++                    -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
++                    -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
++                    -DYAML_CPP_BUILD_TESTS=OFF
++                    -DYAML_CPP_BUILD_CONTRIB=OFF
++                    -DYAML_CPP_BUILD_TOOLS=OFF
++                    -DYAML_CPP_INSTALL=ON
++                    -DYAML_BUILD_SHARED_LIBS=OFF
++                    -DYAML_MSVC_SHARED_RT=OFF
++                    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
++                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
++                    -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
++                    BUILD_BYPRODUCTS ${INSTALL_DIR}/lib/${LIBYAML_FILENAME}
++    )
++    add_library(lib_yamlcpp STATIC IMPORTED GLOBAL)
++    set_target_properties(lib_yamlcpp PROPERTIES  IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBYAML_FILENAME})
++    target_include_directories(lib_yamlcpp INTERFACE ${INSTALL_DIR}/include)
++    add_dependencies(lib_yamlcpp proj_yamlcpp)
++    set_target_properties(lib_yamlcpp proj_yamlcpp PROPERTIES EXCLUDE_FROM_ALL TRUE)
+ else()
+-    set(LIBYAML_FILENAME yaml-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
++    message(STATUS "Using system yaml-cpp")
++    add_library(lib_yamlcpp INTERFACE IMPORTED GLOBAL)
++    target_include_directories(lib_yamlcpp INTERFACE ${YAML_CPP_INCLUDE_DIRS})
++    target_link_libraries(lib_yamlcpp INTERFACE ${YAML_CPP_LIBRARIES})
++    target_link_directories(lib_yamlcpp INTERFACE ${YAML_CPP_LIBRARY_DIRS})
+ endif()
+ 
+-ExternalProject_Add(proj_yamlcpp
+-    URL https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.zip
+-    INSTALL_DIR       ${INSTALL_DIR}
+-    CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+-                -DCMAKE_INSTALL_LIBDIR=lib
+-                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+-                -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+-                -DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}
+-                -DCMAKE_CXX_FLAGS_RELWITHDEBINFO=${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
+-                -DCMAKE_CXX_FLAGS_DEBUG=${CMAKE_CXX_FLAGS_DEBUG}
+-                -DYAML_CPP_BUILD_TESTS=OFF
+-                -DYAML_CPP_BUILD_CONTRIB=OFF
+-                -DYAML_CPP_BUILD_TOOLS=OFF
+-                -DYAML_CPP_INSTALL=ON
+-                -DYAML_BUILD_SHARED_LIBS=OFF
+-                -DYAML_MSVC_SHARED_RT=OFF
+-                -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+-                -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
+-                BUILD_BYPRODUCTS ${INSTALL_DIR}/lib/${LIBYAML_FILENAME}
+-)
+-add_library(lib_yamlcpp STATIC IMPORTED GLOBAL)
+-set_target_properties(lib_yamlcpp PROPERTIES  IMPORTED_LOCATION ${INSTALL_DIR}/lib/${LIBYAML_FILENAME})
+-target_include_directories(lib_yamlcpp INTERFACE ${INSTALL_DIR}/include)
+-add_dependencies(lib_yamlcpp proj_yamlcpp)
+-set_target_properties(lib_yamlcpp proj_yamlcpp PROPERTIES EXCLUDE_FROM_ALL TRUE)
+-
+ # Appsec event rules
+ ExternalProject_Add(proj_event_rules
+     GIT_REPOSITORY git@github.com:DataDog/appsec-event-rules.git
