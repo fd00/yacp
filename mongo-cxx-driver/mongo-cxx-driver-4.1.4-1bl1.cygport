@@ -1,0 +1,77 @@
+HOMEPAGE="https://github.com/mongodb/${PN}"
+SRC_URI="https://github.com/mongodb/${PN}/archive/refs/tags/r${PV}.tar.gz"
+SRC_DIR="${PN}-r${PV}"
+
+CATEGORY="Libs"
+SUMMARY="C++ Driver for MongoDB"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="Apache-2.0"
+LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libbson2-devel
+	libmongoc2-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -DBSONCXX_EXPORT"
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_VERSION:STRING=${PV}
+	-DENABLE_TESTS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	rm -f usr/share/mongo-cxx-driver/LICENSE
+	rm -f usr/share/mongo-cxx-driver/README.md
+	rm -f usr/share/mongo-cxx-driver/THIRD-PARTY-NOTICES
+}
+
+DOCS="
+	CHANGELOG.md
+	CONTRIBUTING.md
+	THIRD-PARTY-NOTICES
+"
+
+PKG_NAMES="
+	mongo-cxx-driver
+	libmongocxx4
+	libmongocxx-devel
+	libbsoncxx4
+	libbsoncxx-devel
+"
+mongo_cxx_driver_CONTENTS="
+	usr/share
+"
+libmongocxx4_CONTENTS="
+	usr/bin/cygmongocxx-4.dll
+"
+libmongocxx_devel_CONTENTS="
+	usr/include/mongocxx
+	usr/lib/cmake/mongocxx-${PV}
+	usr/lib/libmongocxx.dll.a
+	usr/lib/pkgconfig/libmongocxx.pc
+"
+libbsoncxx4_CONTENTS="
+	usr/bin/cygbsoncxx-4.dll
+"
+libbsoncxx_devel_CONTENTS="
+	usr/include/bsoncxx
+	usr/lib/cmake/bsoncxx-${PV}
+	usr/lib/libbsoncxx.dll.a
+	usr/lib/pkgconfig/libbsoncxx.pc
+"
+mongo_cxx_driver_SUMMARY="${SUMMARY} (licensing and readmes)"
+libmongocxx4_SUMMARY="${SUMMARY} (runtime)"
+libmongocxx_devel_SUMMARY="${SUMMARY} (development)"
+libbsoncxx4_SUMMARY="MongoDB C++11 BSON Library (runtime)"
+libbsoncxx_devel_SUMMARY="MongoDB C++11 BSON Library (development)"
