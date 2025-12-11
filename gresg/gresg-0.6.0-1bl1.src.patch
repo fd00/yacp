@@ -1,0 +1,46 @@
+--- origsrc/gresg-0.6.0/meson.build	2022-02-26 03:00:52.000000000 +0900
++++ src/gresg-0.6.0/meson.build	2025-12-11 14:41:04.345281400 +0900
+@@ -11,6 +11,8 @@ CAMEL_CASE_NAME = 'Gresg'
+ VERSIONED_CAMEL_CASE_NAME = CAMEL_CASE_NAME +'-'+ API_VERSION
+ vapidir = join_paths (get_option('datadir'),'vala','vapi')
+ 
++gnome = import('gnome')
++
+ xml = dependency('libxml-2.0')
+ gio = dependency('gio-2.0')
+ gee = dependency('gee-0.8')
+--- origsrc/gresg-0.6.0/src/meson.build	2022-02-26 03:00:52.000000000 +0900
++++ src/gresg-0.6.0/src/meson.build	2025-12-11 14:43:59.232625500 +0900
+@@ -53,8 +53,8 @@ LT_AGE='1'
+ LT_VERSION='1'
+ libgresg = library(VERSIONED_PROJECT_NAME,
+ 	libgresg_sources,
+-	version : LT_VERSION,
+-	soversion : LT_VERSION+'.'+LT_AGE+'.'+LT_REVISION,
++	soversion : LT_VERSION,
++	version : LT_VERSION+'.'+LT_AGE+'.'+LT_REVISION,
+ 	vala_header : PROJECT_NAME+'.h',
+ 	vala_vapi : VAPI_NAME,
+ 	vala_gir : GIR_NAME,
+@@ -76,6 +76,21 @@ libgresg = library(VERSIONED_PROJECT_NAM
+ 
+ libgresg_dep = declare_dependency(include_directories : inc_libh, link_with: libgresg)
+ 
++# Compile GIR to typelib
++g_ir_compiler = find_program('g-ir-compiler')
++custom_target(TYPELIB_NAME,
++	command: [
++		g_ir_compiler,
++		'--output', '@OUTPUT@',
++		join_paths(meson.current_build_dir(), GIR_NAME)
++	],
++	input: libgresg,
++	output: TYPELIB_NAME,
++	depends: libgresg,
++	install: true,
++	install_dir: join_paths(get_option('libdir'), 'girepository-1.0')
++)
++
+ gresg_deps = [ gee, gio, xml, gxml, namespaceinfo_dep, inc_libh_dep, inc_rooth_dep ]
+ 
+ 
