@@ -1,0 +1,53 @@
+--- origsrc/ticpp/CMakeLists.txt	2025-12-12 08:10:10.000000000 +0900
++++ src/ticpp/CMakeLists.txt	2025-12-12 08:18:02.949126900 +0900
+@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
+ 
+ project(ticpp VERSION 2.5.3 LANGUAGES CXX)
+ 
++include(GNUInstallDirs)
++
+ get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+ if(PROJECT_IS_TOP_LEVEL)
+   set(buildTypes "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+@@ -54,8 +56,12 @@ endif()
+ 
+ add_library(ticpp_ticpp)
+ add_library(ticpp::ticpp ALIAS ticpp_ticpp)
++
++file(GLOB TICPP_HEADERS "*.h")
+ set_target_properties(ticpp_ticpp PROPERTIES
+   OUTPUT_NAME ticpp
++  PUBLIC_HEADER "${TICPP_HEADERS}"
++  SOVERSION ${PROJECT_VERSION_MAJOR}
+ )
+ 
+ target_sources(ticpp_ticpp
+@@ -94,6 +100,14 @@ install(TARGETS ticpp_ticpp
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   ARCHIVE
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-    ${excludeFromAllTag}
++  PUBLIC_HEADER
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ticpp
++  ${excludeFromAllTag}
+ )
+ unset(excludeFromAllTag)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ticpp.pc.in ${CMAKE_BINARY_DIR}/ticpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ticpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ticpp/ticpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ticpp/ticpp.pc.in	2025-12-12 12:04:26.531898300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ticpp
++Description: Completely new interface to TinyXML
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lticpp
++Cflags: -I${includedir}
