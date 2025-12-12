@@ -1,5 +1,5 @@
 --- origsrc/mecab-0.996/Makefile.am	2012-09-30 01:44:28.000000000 +0900
-+++ src/mecab-0.996/Makefile.am	2024-05-03 12:41:53.123903400 +0900
++++ src/mecab-0.996/Makefile.am	2025-12-12 16:40:40.861395400 +0900
 @@ -89,3 +89,6 @@ export-package:
  	python googlecode_upload.py -p mecab -s mecab-python -u taku@chasen.org -w `cat ~/.googlecode_upload_password` mecab-python-@VERSION@.tar.gz
  	python googlecode_upload.py -p mecab -s mecab-java   -u taku@chasen.org -w `cat ~/.googlecode_upload_password` mecab-java-@VERSION@.tar.gz
@@ -8,8 +8,35 @@
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = $(PACKAGE).pc
 --- origsrc/mecab-0.996/configure.in	2013-02-15 17:07:36.000000000 +0900
-+++ src/mecab-0.996/configure.in	2024-05-03 12:41:53.123903400 +0900
-@@ -107,7 +107,7 @@ AC_SUBST(CHARSET)
++++ src/mecab-0.996/configure.in	2025-12-12 16:44:47.363880900 +0900
+@@ -37,7 +37,10 @@ AC_C_CONST
+ AC_C_BIGENDIAN
+ AC_CHECK_HEADERS(string.h stdlib.h unistd.h fcntl.h stdint.h \
+ 		sys/stat.h sys/mman.h sys/times.h sys/types.h dirent.h \
+-	        ctype.h sys/types.h io.h windows.h pthread.h)
++	        ctype.h sys/types.h io.h pthread.h)
++if test "$CYGWIN" != "yes"; then
++  AC_CHECK_HEADERS(windows.h)
++fi
+ AC_TYPE_OFF_T
+ AC_TYPE_SIZE_T
+ AC_CHECK_SIZEOF(char)
+@@ -86,14 +89,6 @@ else
+ fi
+ 
+ dnl
+-dnl check gcc
+-dnl
+-if test -n "$GCC"; then
+-   CFLAGS="-O3 -Wall "
+-   CXXFLAGS="-O3 -Wall "
+-fi
+-
+-dnl
+ dnl check Char Code
+ dnl
+ AC_ARG_WITH(
+@@ -107,7 +102,7 @@ AC_SUBST(CHARSET)
  dnl
  dnl check C++ features
  dnl
@@ -18,7 +45,7 @@
    AC_MSG_CHECKING(if ${CXX-c++} supports stl <$1> (required))
    AC_TRY_COMPILE(
  	[
-@@ -314,7 +314,7 @@ AC_SUBST(datarootdir)
+@@ -314,7 +309,7 @@ AC_SUBST(datarootdir)
  AC_SUBST(DIC_VERSION)
  
  AM_CONFIG_HEADER(config.h)
@@ -28,7 +55,7 @@
  	    src/Makefile
  	    src/Makefile.msvc
 --- origsrc/mecab-0.996/mecab.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/mecab-0.996/mecab.pc.in	2024-05-03 12:41:53.123903400 +0900
++++ src/mecab-0.996/mecab.pc.in	2025-12-12 16:40:40.867855800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -41,7 +68,7 @@
 +Libs: -L${libdir} -lmecab
 +Cflags: -I${includedir}
 --- origsrc/mecab-0.996/src/Makefile.am	2013-01-24 14:35:35.000000000 +0900
-+++ src/mecab-0.996/src/Makefile.am	2024-05-03 12:41:53.123903400 +0900
++++ src/mecab-0.996/src/Makefile.am	2025-12-12 16:40:40.869610400 +0900
 @@ -4,6 +4,7 @@ EXTRA_DIST = Makefile.msvc.in make.bat
  pkglibexecdir = ${libexecdir}/mecab
  INCLUDES = -DDIC_VERSION=$(DIC_VERSION) $(MECAB_NO_TLS) $(MECAB_USE_UTF8_ONLY) -DMECAB_DEFAULT_RC="\"$(MECAB_DEFAULT_RC)\""
@@ -51,7 +78,7 @@
                        dictionary_rewriter.h dictionary_rewriter.cpp dictionary_generator.cpp \
  	              dictionary_compiler.cpp context_id.h context_id.cpp \
 --- origsrc/mecab-0.996/src/common.h	2012-09-30 01:44:27.000000000 +0900
-+++ src/mecab-0.996/src/common.h	2024-05-03 12:41:53.123903400 +0900
++++ src/mecab-0.996/src/common.h	2025-12-12 16:40:40.871620800 +0900
 @@ -15,10 +15,6 @@
  #include <iostream>
  #include <sstream>
@@ -64,7 +91,7 @@
  #include "config.h"
  #endif
 --- origsrc/mecab-0.996/src/winmain.h	2012-10-28 13:07:01.000000000 +0900
-+++ src/mecab-0.996/src/winmain.h	2024-05-03 12:41:53.123903400 +0900
++++ src/mecab-0.996/src/winmain.h	2025-12-12 16:40:40.871620800 +0900
 @@ -2,7 +2,7 @@
  //
  //  Copyright(C) 2001-2011 Taku Kudo <taku@chasen.org>
