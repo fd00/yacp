@@ -1,0 +1,108 @@
+--- origsrc/latticelm/Makefile	2013-04-08 11:59:12.000000000 +0900
++++ src/latticelm/Makefile	2025-12-13 02:14:47.179760800 +0900
+@@ -1,12 +1,12 @@
+-CXX=g++
+-CC=g++
+-CXXFLAGS=-g -O3 -Wall
+-LDFLAGS=-g -O3 -lfst -ldl
++# CXX=g++
++# CC=g++
++# CXXFLAGS=-g -O3 -Wall
++# LDFLAGS=-g -O3 -lfst -ldl
+ 
+ all: latticelm
+ 
+ latticelm: latticelm.h pylm.h lexfst.h ${ADDLD}
+-	${CXX} -o latticelm mainlatticelm.cc ${LDFLAGS} 
++	${CXX} ${CPPFLAGS} ${CXXFLAGS} -o latticelm mainlatticelm.cc -lfst -ldl ${LDFLAGS} 
+ 
+ clean:
+ 	rm -f latticelm
+--- origsrc/latticelm/latticelm.h	2013-04-08 12:00:59.000000000 +0900
++++ src/latticelm/latticelm.h	2025-12-13 02:26:56.871835400 +0900
+@@ -26,6 +26,7 @@
+ #include <fst/compose.h>
+ #include <fst/prune.h>
+ #include <fst/arcsort.h>
++#include <fst/arc-map.h>
+ 
+ #define MAX_WORD_LEN 1e3
+ 
+@@ -142,8 +143,8 @@ public:
+         exit(1);
+     }
+ 
+-    CharId findId(const string & str, unordered_map<string,CharId> & idHash, vector<string> & idList) {
+-        unordered_map<string,CharId>::iterator it = idHash.find(str);
++    CharId findId(const string & str, std::tr1::unordered_map<string,CharId> & idHash, vector<string> & idList) {
++        std::tr1::unordered_map<string,CharId>::iterator it = idHash.find(str);
+         if(it == idHash.end()) {
+             idHash.insert(pair<string,CharId>(str,idHash.size()));
+             idList.push_back("x"+str);
+@@ -152,7 +153,7 @@ public:
+         return it->second;
+     }
+     vector<string> loadText() {
+-        unordered_map<string,CharId> idHash;
++        std::tr1::unordered_map<string,CharId> idHash;
+         vector<string> idList;
+         int state;
+         // NOTE: <unk> and </unk> are included in the output vocab,
+@@ -480,7 +481,7 @@ public:
+         WeightedMapper mapper(amScale_);
+         Fst<StdArc> * nextFst = VectorFst<StdArc>::Read(inputFiles_[sentId]);
+         ret = new VectorFst<StdArc>;
+-        Map(*nextFst, (VectorFst<StdArc>*)ret, mapper);
++        ArcMap(*nextFst, (VectorFst<StdArc>*)ret, mapper);
+         ArcSort((VectorFst<StdArc>*)ret,OLabelCompare<StdArc>());
+         delete nextFst;
+         if(cacheInput_) {
+--- origsrc/latticelm/pylmfst.h	2012-05-01 10:54:41.000000000 +0900
++++ src/latticelm/pylmfst.h	2025-12-13 02:19:59.864009800 +0900
+@@ -45,7 +45,7 @@ public:
+ 
+     mutable vector< vector< StdArc >* > arcs_;
+     string type_;
+-    uint64 properties_;
++    uint64_t properties_;
+ 
+     PylmFst(const PyLM<WordId> & knownLm, const PyLM<CharId> & unkLm, unsigned unkVocabSize) :
+         knownLm_(&knownLm), unkLm_(&unkLm), 
+@@ -164,7 +164,7 @@ public:
+         return (stateId==(StateId)knownLm_->size()?0:1);
+     }
+ 
+-    uint64 Properties(uint64 mask, bool test) const {
++    uint64_t Properties(uint64_t mask, bool test) const {
+         return mask & properties_;
+     }
+ 
+@@ -222,7 +222,7 @@ public:
+             Final(s).Write(strm);
+             //int64 narcs_ = state->arcs_.size();
+             const vector<StdArc> * myArcs = GetArcs(s);
+-            int64 narcs_ = myArcs->size();
++            int64_t narcs_ = myArcs->size();
+             WriteType(strm, narcs_);
+             for (size_t a = 0; a < myArcs->size(); ++a) {
+                 const StdArc &arc = (*myArcs)[a];
+--- origsrc/latticelm/weighted-mapper.h	2012-06-05 16:53:54.000000000 +0900
++++ src/latticelm/weighted-mapper.h	2025-12-13 02:22:34.987131900 +0900
+@@ -18,7 +18,7 @@
+ #define _WEIGHTED_MAP_H__
+ 
+ #include <fst/fst.h>
+-#include <fst/map.h>
++#include <fst/arc-map.h>
+ #include <fst/arc.h>
+ 
+ namespace fst {
+@@ -42,7 +42,7 @@ struct WeightedMapper {
+ 
+     MapSymbolsAction OutputSymbolsAction() const { return MAP_COPY_SYMBOLS;}
+ 
+-    uint64 Properties(uint64 props) const { return props; }
++    uint64_t Properties(uint64_t props) const { return props; }
+ 
+ };
+ 
