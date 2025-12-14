@@ -1,0 +1,137 @@
+--- origsrc/streamhtmlparser-streamhtmlparser-0.1/Makefile.am	2009-04-29 01:52:07.000000000 +0900
++++ src/streamhtmlparser-streamhtmlparser-0.1/Makefile.am	2025-12-14 18:49:26.843202000 +0900
+@@ -28,7 +28,7 @@ googleinclude_HEADERS = \
+ noinst_HEADERS = \
+   src/streamhtmlparser/htmlparser_cpp.h.in
+ 
+-docdir = $(prefix)/share/doc/$(PACKAGE)-$(VERSION)
++docdir = $(prefix)/share/doc/$(PACKAGE)
+ ## This is for HTML and other documentation you want to install.
+ ## Add your documentation files (in doc/) in addition to these
+ ## top-level boilerplate files.  Also add a TODO file if you have one.
+@@ -125,7 +125,7 @@ src/jsparser_fsm.h
+ STREAMHTMLPARSER_SYMBOLS='^htmlparser_'
+ 
+ libstreamhtmlparser_la_CFLAGS = -DNDEBUG $(AM_CFLAGS)
+-libstreamhtmlparser_la_LDFLAGS = -export-symbols-regex $(STREAMHTMLPARSER_SYMBOLS)
++libstreamhtmlparser_la_LDFLAGS = -export-symbols-regex $(STREAMHTMLPARSER_SYMBOLS) $(AM_LDFLAGS)
+ 
+ if ENABLE_PYTHON
+ 
+@@ -133,8 +133,8 @@ PYTHON_CFLAGS = -I/usr/include/python$(P
+ PYTHON_LDFLAGS = -avoid-version -module
+ 
+ py_streamhtmlparser_la_SOURCES = src/py_streamhtmlparser.c
+-py_streamhtmlparser_la_LIBADD = libstreamhtmlparser.la
+-py_streamhtmlparser_la_LDFLAGS = $(PYTHON_LDFLAGS)
++py_streamhtmlparser_la_LIBADD = libstreamhtmlparser.la -lpython$(PYTHON_VERSION)
++py_streamhtmlparser_la_LDFLAGS = $(PYTHON_LDFLAGS) $(AM_LDFLAGS)
+ py_streamhtmlparser_la_CFLAGS = $(PYTHON_CFLAGS)
+ 
+ endif ENABLE_PYTHON
+@@ -190,3 +190,6 @@ src/tests/statemachine_test_fsm.h: src/t
+ BUILT_SOURCES = src/htmlparser_fsm.h \
+                 src/jsparser_fsm.h \
+                 src/tests/statemachine_test_fsm.h
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/streamhtmlparser-streamhtmlparser-0.1/configure.ac	2009-04-29 01:52:07.000000000 +0900
++++ src/streamhtmlparser-streamhtmlparser-0.1/configure.ac	2025-12-14 18:44:19.693355000 +0900
+@@ -78,7 +78,7 @@ AC_SUBST(ac_google_start_namespace)
+ AC_SUBST(ac_google_end_namespace)
+ 
+ # Write generated configuration file
+-AC_CONFIG_FILES([Makefile \
++AC_CONFIG_FILES([streamhtmlparser.pc Makefile \
+                  src/streamhtmlparser/htmlparser_cpp.h \
+                  ])
+ AC_OUTPUT
+--- origsrc/streamhtmlparser-streamhtmlparser-0.1/src/tools/fsm_config.py	2009-04-29 01:52:07.000000000 +0900
++++ src/streamhtmlparser-streamhtmlparser-0.1/src/tools/fsm_config.py	2025-12-14 18:55:07.276942600 +0900
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # Copyright (c) 2008, Google Inc.
+ # All rights reserved.
+@@ -69,7 +69,7 @@ class OrderedDict:
+     return len(self.keys())
+ 
+   def __contains__(self, key):
+-    return self.has_key(key)
++    return key in self._dict
+ 
+   def __iter__(self):
+     # It's not as portable -- though it would be more space-efficient -- to do
+@@ -212,7 +212,8 @@ class FSMConfig(object):
+ 
+     self.sm['state'] = self.AddState
+     self.sm['condition'] = self.AddCondition
+-    execfile(filename, self.sm)
++    with open(filename) as f:
++      exec(f.read(), self.sm)
+     self.name = self.sm['name']
+     if not self.name.isalnum():
+       raise Exception("State machine name must consist of only alphanumeric"
+--- origsrc/streamhtmlparser-streamhtmlparser-0.1/src/tools/generate_fsm.py	2009-04-29 01:52:07.000000000 +0900
++++ src/streamhtmlparser-streamhtmlparser-0.1/src/tools/generate_fsm.py	2025-12-14 18:53:12.244587500 +0900
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python3
+ #
+ # Copyright (c) 2008, Google Inc.
+ # All rights reserved.
+@@ -265,8 +265,7 @@ class FSMGenerateC(FSMGenerateAbstract):
+     state_table = {}
+ 
+     for state in self._config.states:
+-      state_table[state] = [default_state for col in xrange(255)]
+-
++      state_table[state] = [default_state for col in range(255)]
+     # We process the transition in reverse order while updating the table.
+     for i_transition in range(len(self._config.transitions) - 1, -1, -1):
+       transition = self._config.transitions[i_transition]
+@@ -282,7 +281,7 @@ class FSMGenerateC(FSMGenerateAbstract):
+     # Create the inner lists which map input characters to destination states.
+     for state in self._config.states:
+       transition_row = []
+-      for c in xrange(0, 255):
++      for c in range(0, 255):
+         transition_row.append('    /* %06s */ %s' % (repr(chr(c)),
+                                                      state_table[state][c]))
+ 
+@@ -307,17 +306,17 @@ class FSMGenerateC(FSMGenerateAbstract):
+   def Generate(self):
+     """Returns the generated the C include statements for the statemachine."""
+ 
+-    print '\n'.join((self._CreateHeader(),
++    print('\n'.join((self._CreateHeader(),
+                      self._CreateNumStates(),
+                      self._CreateStatesEnum(),
+                      self._CreateStatesExternal(),
+                      self._CreateStatesInternalNames(),
+-                     self._CreateTransitionTable()))
++                     self._CreateTransitionTable())))
+ 
+ 
+ def main():
+   if len(sys.argv) != 2:
+-    print "usage: generate_fsm.py config_file"
++    print("usage: generate_fsm.py config_file")
+     sys.exit(1)
+ 
+   config = FSMConfig()
+--- origsrc/streamhtmlparser-streamhtmlparser-0.1/streamhtmlparser.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/streamhtmlparser-streamhtmlparser-0.1/streamhtmlparser.pc.in	2025-12-14 18:44:19.703669200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: streamhtmlparser
++Description: Streaming HTML parser
++Version: @VERSION@
++Libs: -L${libdir} -lstreamhtmlparser
++Cflags: -I${includedir}
