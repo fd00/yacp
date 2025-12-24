@@ -1,0 +1,143 @@
+--- origsrc/fastq-trim-0.1.4/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/fastq-trim-0.1.4/CMakeLists.txt	2025-12-25 07:59:08.496257400 +0900
+@@ -0,0 +1,126 @@
++cmake_minimum_required(VERSION 3.16)
++
++# Project version override.
++# If not provided on the command line, derive it from version.sh
++# (Makefile: -DVERSION="`./version.sh`").
++set(VERSION "" CACHE STRING "Project version override. If empty, run version.sh.")
++
++if(VERSION STREQUAL "")
++  set(VERSION "0.0.0")
++  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/version.sh")
++    execute_process(
++      COMMAND sh "${CMAKE_CURRENT_SOURCE_DIR}/version.sh"
++      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
++      OUTPUT_VARIABLE VERSION
++      OUTPUT_STRIP_TRAILING_WHITESPACE
++      ERROR_QUIET
++    )
++  endif()
++endif()
++
++project(fastq-trim VERSION "${VERSION}" LANGUAGES C)
++
++include(GNUInstallDirs)
++find_package(PkgConfig REQUIRED)
++
++pkg_check_modules(BIOLIBC REQUIRED IMPORTED_TARGET biolibc)
++pkg_check_modules(XTEND REQUIRED IMPORTED_TARGET libxtend)
++
++add_library(fastq-trim SHARED
++  fastq-trim-class.c
++  fastq-trim-mutators.c
++)
++
++set_target_properties(fastq-trim PROPERTIES
++  OUTPUT_NAME "fastq-trim"
++  SOVERSION "${PROJECT_VERSION_MAJOR}"
++  VERSION "${PROJECT_VERSION}"
++)
++
++target_compile_definitions(fastq-trim PRIVATE
++  VERSION="${PROJECT_VERSION}"
++)
++
++target_include_directories(fastq-trim
++  PUBLIC
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
++)
++
++target_link_libraries(fastq-trim PRIVATE PkgConfig::BIOLIBC PkgConfig::XTEND)
++
++set_target_properties(fastq-trim PROPERTIES
++  BUILD_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}"
++  INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}"
++)
++
++add_executable(fastq-trim-bin fastq-trim.c)
++set_target_properties(fastq-trim-bin PROPERTIES OUTPUT_NAME "fastq-trim")
++
++target_compile_definitions(fastq-trim-bin PRIVATE
++  VERSION="${PROJECT_VERSION}"
++)
++
++target_include_directories(fastq-trim-bin PRIVATE
++  "${CMAKE_CURRENT_SOURCE_DIR}"
++)
++
++target_include_directories(fastq-trim-bin SYSTEM PRIVATE
++  "${CMAKE_INSTALL_PREFIX}/include"
++)
++
++target_link_libraries(fastq-trim-bin PRIVATE fastq-trim)
++target_link_libraries(fastq-trim-bin PRIVATE PkgConfig::BIOLIBC PkgConfig::XTEND)
++
++set_target_properties(fastq-trim-bin PROPERTIES
++  BUILD_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}"
++  INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}"
++)
++
++set(prefix "${CMAKE_INSTALL_PREFIX}")
++set(exec_prefix "${CMAKE_INSTALL_PREFIX}")
++set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
++set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
++
++configure_file(
++  "${CMAKE_CURRENT_SOURCE_DIR}/fastq-trim.pc.in"
++  "${CMAKE_CURRENT_BINARY_DIR}/fastq-trim.pc"
++  @ONLY
++)
++
++install(TARGETS fastq-trim fastq-trim-bin
++  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++)
++
++install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/fastq-scum"
++  DESTINATION "${CMAKE_INSTALL_BINDIR}"
++)
++
++install(FILES
++  "${CMAKE_CURRENT_SOURCE_DIR}/fastq-trim-accessors.h"
++  "${CMAKE_CURRENT_SOURCE_DIR}/fastq-trim-mutators.h"
++  "${CMAKE_CURRENT_SOURCE_DIR}/fastq-trim-rvs.h"
++  "${CMAKE_CURRENT_SOURCE_DIR}/fastq-trim.h"
++  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
++)
++
++file(GLOB _man1_files "${CMAKE_CURRENT_SOURCE_DIR}/Man/*.1")
++file(GLOB _man3_files "${CMAKE_CURRENT_SOURCE_DIR}/Man/*.3")
++
++if(_man1_files)
++  install(FILES ${_man1_files}
++    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
++  )
++endif()
++
++if(_man3_files)
++  install(FILES ${_man3_files}
++    DESTINATION "${CMAKE_INSTALL_MANDIR}/man3"
++  )
++endif()
++
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/fastq-trim.pc"
++  DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
++)
+--- origsrc/fastq-trim-0.1.4/fastq-trim.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/fastq-trim-0.1.4/fastq-trim.pc.in	2025-12-25 08:11:37.048899900 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: fastq-trim
++Description: FASTQ adapter trimming library
++Version: @PROJECT_VERSION@
++Requires: biolibc libxtend
++Libs: -L${libdir} -lfastq-trim
++Cflags: -I${includedir}
