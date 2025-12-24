@@ -1,0 +1,302 @@
+--- origsrc/libxtend-0.2.1/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/libxtend-0.2.1/CMakeLists.txt	2025-12-24 19:03:09.993600100 +0900
+@@ -0,0 +1,275 @@
++cmake_minimum_required(VERSION 3.16)
++
++project(libxtend VERSION 0.2.1 LANGUAGES C)
++
++include(GNUInstallDirs)
++
++# Match Makefile versioning
++# Increment when the API changes
++set(LIBXTEND_API_VER 2)
++# Increment for changes that don't affect the API
++set(LIBXTEND_LIB_VER 0)
++
++# Match Makefile library naming
++set(LIB_NAME xtend)
++
++# Build shared library
++option(LIBXTEND_BUILD_SHARED "Build shared library" ON)
++
++# Extra include path from the Makefile: -isystem ${LOCALBASE}/include
++# CMake equivalent: allow overriding LOCALBASE like the Makefile.
++set(LOCALBASE "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Base prefix for local includes (Makefile LOCALBASE)" )
++
++# -----------------------------------------------------------------------------
++# Sources
++
++set(LIBXTEND_SOURCES
++    valid-extension.c
++    xt-file.c
++    string.c
++    time.c
++    mv.c
++    fast-cp.c
++    gcd.c
++    fd-purge.c
++    fgetline.c
++    file-mod-cmp.c
++    get-home-dir.c
++    xt-get-user-name.c
++    digits.c
++    parse-cmd.c
++    rmkdir.c
++    spawnlp.c
++    spawnvp.c
++    va-usage.c
++    xt-malloc.c
++    dsv.c
++    dsv-accessors.c
++    dsv-mutators.c
++    resolve-hostname.c
++    numeric_cmp.c
++    combinatorics.c
++    fast-file.c
++    fast-file-accessors.c
++    fast-file-mutators.c
++    dprintf.c
++    xt-shuffle.c
++    roman.c
++    xt-daemonize.c
++    strlcpy.c
++    strlcat.c
++)
++
++# -----------------------------------------------------------------------------
++# Generated ff-dsv.* from dsv.* via sed (as in Makefile)
++
++find_program(SED_EXECUTABLE sed)
++
++set(FF_DSV_C "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv.c")
++set(FF_DSV_H "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv.h")
++set(FF_DSV_PRIVATE_H "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv-private.h")
++set(FF_DSV_RVS_H "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv-rvs.h")
++set(FF_DSV_ACCESSORS_H "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv-accessors.h")
++set(FF_DSV_MUTATORS_H "${CMAKE_CURRENT_BINARY_DIR}/ff-dsv-mutators.h")
++
++if(NOT SED_EXECUTABLE)
++  message(FATAL_ERROR "sed not found. Required to generate ff-dsv.* from dsv.*")
++endif()
++
++add_custom_command(
++  OUTPUT "${FF_DSV_C}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|xt_tsv_|xt_ff_tsv_|g"
++          -e "s|xt_csv_|xt_ff_csv_|g"
++          -e "s|FILE \\*|xt_ff_t \\*|g"
++          -e "s|getc|xt_ff_getc|g"
++          -e "s|dsv.h|ff-dsv.h|g"
++          -e "s|dsv-private.h|ff-dsv-private.h|g"
++          -e "s|fprintf(stream|xt_ff_printf(stream|g"
++          -e "s|unxt_ff_getc(ch, stream)|xt_ff_ungetc(stream, ch)|g"
++          -e "s|unxt_ff_getc(ch2, stream)|xt_ff_ungetc(stream, ch2)|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv.c"
++          > "${FF_DSV_C}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv.c"
++          "${CMAKE_CURRENT_SOURCE_DIR}/ff-dsv.h"
++          "${CMAKE_CURRENT_SOURCE_DIR}/ff-dsv-private.h"
++  VERBATIM
++)
++
++add_custom_command(
++  OUTPUT "${FF_DSV_PRIVATE_H}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|dsv.h|ff-dsv.h|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv-private.h"
++          > "${FF_DSV_PRIVATE_H}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv-private.h"
++  VERBATIM
++)
++
++add_custom_command(
++  OUTPUT "${FF_DSV_H}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|xt_csv_|xt_ff_csv_|g"
++          -e "s|xt_tsv_|xt_ff_tsv_|g"
++          -e "s|FILE \\*|xt_ff_t \\*|g"
++          -e "s|dsv-accessors.h|ff-dsv-accessors.h|g"
++          -e "s|dsv-mutators.h|ff-dsv-mutators.h|g"
++          -e "s|dsv-rvs.h|ff-dsv-rvs.h|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv.h"
++          > "${FF_DSV_H}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv.h"
++          "${CMAKE_CURRENT_SOURCE_DIR}/ff-dsv-accessors.h"
++          "${CMAKE_CURRENT_SOURCE_DIR}/ff-dsv-mutators.h"
++          "${CMAKE_CURRENT_SOURCE_DIR}/ff-dsv-rvs.h"
++  VERBATIM
++)
++
++add_custom_command(
++  OUTPUT "${FF_DSV_RVS_H}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|xt_csv_|xt_ff_csv_|g"
++          -e "s|xt_tsv_|xt_ff_tsv_|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv-rvs.h"
++          > "${FF_DSV_RVS_H}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv-rvs.h"
++  VERBATIM
++)
++
++add_custom_command(
++  OUTPUT "${FF_DSV_ACCESSORS_H}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|xt_csv_|xt_ff_csv_|g"
++          -e "s|xt_tsv_|xt_ff_tsv_|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv-accessors.h"
++          > "${FF_DSV_ACCESSORS_H}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv-accessors.h"
++  VERBATIM
++)
++
++add_custom_command(
++  OUTPUT "${FF_DSV_MUTATORS_H}"
++  COMMAND "${SED_EXECUTABLE}"
++          -e "s|xt_dsv_|xt_ff_dsv_|g"
++          -e "s|xt_csv_|xt_ff_csv_|g"
++          -e "s|xt_tsv_|xt_ff_tsv_|g"
++          "${CMAKE_CURRENT_SOURCE_DIR}/dsv-mutators.h"
++          > "${FF_DSV_MUTATORS_H}"
++  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/dsv-mutators.h"
++  VERBATIM
++)
++
++add_custom_target(ff_dsv_generated
++  DEPENDS "${FF_DSV_C}" "${FF_DSV_H}" "${FF_DSV_PRIVATE_H}" "${FF_DSV_RVS_H}" "${FF_DSV_ACCESSORS_H}" "${FF_DSV_MUTATORS_H}"
++)
++
++# -----------------------------------------------------------------------------
++# Library targets
++
++# Common compile settings from Makefile:
++#   CFLAGS += -fPIC ... -DLIBXTEND_LIBRARY_BUILD
++#   Default CFLAGS include -Wall -g -O (debug/release handled by CMake, but keep -Wall)
++set(LIBXTEND_COMMON_DEFS LIBXTEND_LIBRARY_BUILD)
++
++set(LIBXTEND_COMMON_INCLUDES
++  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
++  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>" # for generated ff-dsv.*
++  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/xtend>"
++  "${LOCALBASE}/include"
++)
++
++# We treat the generated ff-dsv.c as a source and compile it into the library.
++set(LIBXTEND_GENERATED_SOURCES "${FF_DSV_C}")
++
++if(LIBXTEND_BUILD_SHARED)
++  add_library(${LIB_NAME} SHARED
++    ${LIBXTEND_SOURCES}
++    ${LIBXTEND_GENERATED_SOURCES}
++  )
++  add_dependencies(${LIB_NAME} ff_dsv_generated)
++
++  # Match SONAME style: libxtend.so.<API_VER> and file version <API_VER>.<LIB_VER>
++  set_target_properties(${LIB_NAME} PROPERTIES
++    VERSION "${LIBXTEND_API_VER}.${LIBXTEND_LIB_VER}"
++    SOVERSION "${LIBXTEND_API_VER}"
++    OUTPUT_NAME "${LIB_NAME}"
++  )
++
++  target_compile_definitions(${LIB_NAME} PRIVATE ${LIBXTEND_COMMON_DEFS})
++  target_include_directories(${LIB_NAME} PUBLIC ${LIBXTEND_COMMON_INCLUDES})
++
++  if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
++    target_compile_options(${LIB_NAME} PRIVATE -Wall)
++  endif()
++
++  # Makefile links with ${LDFLAGS}; CMake users can pass extra link flags via CMAKE_SHARED_LINKER_FLAGS.
++endif()
++
++# -----------------------------------------------------------------------------
++# pkg-config file (libxtend.pc)
++
++set(LIBXTEND_PC "${CMAKE_CURRENT_BINARY_DIR}/libxtend.pc")
++configure_file(
++  "${CMAKE_CURRENT_SOURCE_DIR}/libxtend.pc.in"
++  "${LIBXTEND_PC}"
++  @ONLY
++)
++
++install(FILES "${LIBXTEND_PC}" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
++
++# -----------------------------------------------------------------------------
++# Manpage generation (Makefile: Man/libxtend.3 depends on Man/xt_* then runs function-list.sh)
++
++find_program(AUTO_MAN2MAN_EXECUTABLE auto-man2man)
++
++set(MAN_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/Man/libxtend.3")
++file(GLOB MAN_INPUTS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "Man/xt_*")
++
++if(AUTO_MAN2MAN_EXECUTABLE AND MAN_INPUTS)
++  add_custom_command(
++    OUTPUT "${MAN_OUTPUT}"
++    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/function-list.sh"
++    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
++    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/function-list.sh" ${MAN_INPUTS}
++    VERBATIM
++  )
++  add_custom_target(man ALL DEPENDS "${MAN_OUTPUT}")
++elseif(MAN_INPUTS)
++  message(STATUS "auto-man2man not found; skipping manpage generation")
++endif()
++
++# -----------------------------------------------------------------------------
++# Install (Makefile common-install/install/apple-install)
++
++# Headers: install *.h into include/xtend, but remove dsv-private.h
++file(GLOB XTEND_HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.h")
++list(REMOVE_ITEM XTEND_HEADERS "dsv-private.h")
++
++foreach(hdr IN LISTS XTEND_HEADERS)
++  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${hdr}" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/xtend")
++endforeach()
++
++# Also install manpages (Makefile installs Man/*.3 to man3)
++file(GLOB XTEND_MANPAGES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "Man/*.3")
++foreach(mp IN LISTS XTEND_MANPAGES)
++  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${mp}" DESTINATION "${CMAKE_INSTALL_MANDIR}/man3")
++endforeach()
++
++if(LIBXTEND_BUILD_SHARED)
++  install(TARGETS ${LIB_NAME}
++    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++  )
++endif()
++
++# Convenience targets similar to Makefile
++add_custom_target(realclean
++  COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles"
++  COMMAND "${CMAKE_COMMAND}" -E rm -f "${CMAKE_CURRENT_BINARY_DIR}/CMakeCache.txt"
++  COMMENT "Remove CMake-generated build files (run in build dir)"
++)
+--- origsrc/libxtend-0.2.1/libxtend.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libxtend-0.2.1/libxtend.pc.in	2025-12-24 19:07:07.763790600 +0900
+@@ -0,0 +1,10 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
++
++Name: libxtend
++Description: Miscellaneous generic C utility functions
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -l@LIB_NAME@
++Cflags: -I${includedir}
+--- origsrc/libxtend-0.2.1/stdlib.h	2025-03-02 06:19:50.000000000 +0900
++++ src/libxtend-0.2.1/stdlib.h	2025-12-24 18:55:22.317230700 +0900
+@@ -10,7 +10,7 @@ extern "C" {
+ #endif
+ 
+ /* xt-shuffle.c */
+-void *xt_shuffle(void *base, size_t nelem, size_t size);
++void xt_shuffle(void *base, size_t nelem, size_t size);
+ 
+ /* roman.c */
+ int xt_romantoi(const char *nptr, char **endptr);
