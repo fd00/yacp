@@ -1,0 +1,196 @@
+--- origsrc/biolibc-0.2.7/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/biolibc-0.2.7/CMakeLists.txt	2025-12-24 22:33:02.766832600 +0900
+@@ -0,0 +1,179 @@
++cmake_minimum_required(VERSION 3.16)
++
++# biolibc - CMake build that mirrors the shipped Makefile as closely as practical.
++# - Builds shared library
++# - Uses API_VER as SOVERSION and LIB_VER as patch component
++# - Installs headers to <prefix>/include/biolibc
++# - Installs man3 pages to <prefix>/${CMAKE_INSTALL_MANDIR}/man3 (GNUInstallDirs)
++
++project(biolibc VERSION 0.2.7 LANGUAGES C)
++
++include(GNUInstallDirs)
++
++# -----------------------------------------------------------------------------
++# Dependencies
++# -----------------------------------------------------------------------------
++# Use libxtend.pc via pkg-config to obtain correct -I/-L/-l flags.
++find_package(PkgConfig REQUIRED)
++pkg_check_modules(LIBXTEND REQUIRED IMPORTED_TARGET libxtend)
++
++# -----------------------------------------------------------------------------
++# Versioning (mirrors Makefile)
++# -----------------------------------------------------------------------------
++set(API_VER 2 CACHE STRING "Increment when the API changes")
++set(LIB_VER 0 CACHE STRING "Increment for changes that don't affect the API")
++
++# -----------------------------------------------------------------------------
++# pkg-config (biolibc.pc)
++# -----------------------------------------------------------------------------
++# Generate biolibc.pc and install it to ${libdir}/pkgconfig.
++# pkg-config version is taken from PROJECT_VERSION.
++
++configure_file(
++    "${CMAKE_CURRENT_SOURCE_DIR}/biolibc.pc.in"
++    "${CMAKE_CURRENT_BINARY_DIR}/biolibc.pc"
++    @ONLY
++)
++
++# -----------------------------------------------------------------------------
++# Makefile-compatible knobs
++# -----------------------------------------------------------------------------
++# Makefile has LOCALBASE (defaults to PREFIX)
++set(LOCALBASE "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Where to find local libraries and headers")
++
++# -----------------------------------------------------------------------------
++# Sources (mirrors OBJS list)
++# -----------------------------------------------------------------------------
++set(BIOLIBC_SOURCES
++    align.c
++    align-mutators.c
++    bed.c
++    bed-mutators.c
++    chrom-name-cmp.c
++    fasta.c
++    fasta-mutators.c
++    fastq.c
++    fastq-mutators.c
++    fastx.c
++    fastx-mutators.c
++    gff3.c
++    gff3-mutators.c
++    gff3-index.c
++    gff3-index-mutators.c
++    orf.c
++    overlap.c
++    overlap-mutators.c
++    pos-list.c
++    pos-list-mutators.c
++    sam.c
++    sam-mutators.c
++    sam-buff.c
++    sam-buff-mutators.c
++    vcf.c
++    vcf-mutators.c
++)
++
++# -----------------------------------------------------------------------------
++# Libraries
++# -----------------------------------------------------------------------------
++add_library(biolibc_shared SHARED ${BIOLIBC_SOURCES})
++
++# Link against libxtend (requested)
++target_link_libraries(biolibc_shared PRIVATE PkgConfig::LIBXTEND)
++
++# Match Makefile names: libbiolibc.so.* / .dylib
++set_target_properties(biolibc_shared PROPERTIES
++    OUTPUT_NAME biolibc
++    VERSION "${API_VER}.${LIB_VER}"
++    SOVERSION "${API_VER}"
++)
++
++# Makefile uses -fPIC; in CMake, make it explicit.
++set_target_properties(biolibc_shared PROPERTIES
++    POSITION_INDEPENDENT_CODE ON
++)
++
++# -----------------------------------------------------------------------------
++# Compile flags / includes (mirrors Makefile defaults)
++# -----------------------------------------------------------------------------
++# The Makefile sets CFLAGS ?= -Wall -g -O and adds -Wno-char-subscripts.
++# We only add the same compiler options if supported.
++foreach(tgt IN ITEMS biolibc_shared)
++    target_compile_options(${tgt} PRIVATE
++        $<$<COMPILE_LANG_AND_ID:C,GNU,Clang,AppleClang>:-Wall>
++        $<$<COMPILE_LANG_AND_ID:C,GNU,Clang,AppleClang>:-Wno-char-subscripts>
++    )
++
++    # Prefer SYSTEM includes to match -isystem behavior.
++    target_include_directories(${tgt} SYSTEM PRIVATE
++        "${CMAKE_INSTALL_PREFIX}/include"
++        "${LOCALBASE}/include"
++    )
++
++    # Consumers include headers as <biolibc/*.h>, so expose <prefix>/include.
++    target_include_directories(${tgt} PUBLIC
++        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
++    )
++endforeach()
++
++# Apple: encode an absolute-ish install name via INSTALL_NAME_DIR.
++# Makefile uses DYLIB_PATH (realpath(PREFIX/lib)). CMake sets this at install time.
++if(APPLE)
++    set_target_properties(biolibc_shared PROPERTIES
++        INSTALL_NAME_DIR "${CMAKE_INSTALL_FULL_LIBDIR}"
++    )
++endif()
++
++# -----------------------------------------------------------------------------
++# Install (mirrors common-install/install targets)
++# -----------------------------------------------------------------------------
++# Headers -> <prefix>/include/biolibc
++file(GLOB BIOLIBC_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
++install(FILES ${BIOLIBC_HEADERS}
++    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/biolibc"
++)
++
++# Man pages -> ${CMAKE_INSTALL_MANDIR}/man3 (GNU)
++file(GLOB BIOLIBC_MAN3 CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Man/*.3")
++if(BIOLIBC_MAN3)
++    install(FILES ${BIOLIBC_MAN3}
++        DESTINATION "${CMAKE_INSTALL_MANDIR}/man3"
++    )
++endif()
++
++# Libraries -> <prefix>/lib
++install(TARGETS biolibc_shared
++    EXPORT biolibcTargets
++    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
++    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
++)
++
++# pkg-config file -> <prefix>/${CMAKE_INSTALL_LIBDIR}/pkgconfig
++install(FILES "${CMAKE_CURRENT_BINARY_DIR}/biolibc.pc"
++    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
++)
++
++# -----------------------------------------------------------------------------
++# Test (mirrors Makefile test target)
++# -----------------------------------------------------------------------------
++option(BIOLIBC_BUILD_TESTS "Build test programs" ON)
++
++if(BIOLIBC_BUILD_TESTS)
++    add_executable(bed-test
++        Bed-test/bed-test.c
++    )
++
++    target_include_directories(bed-test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
++
++    # Link to our built library (it already links libxtend)
++    target_link_libraries(bed-test PRIVATE biolibc_shared)
++
++    # Equivalent of: cd Bed-test && ./run-test.sh
++    add_custom_target(test
++        DEPENDS biolibc_shared bed-test
++        COMMAND "${CMAKE_COMMAND}" -E chdir "${CMAKE_CURRENT_SOURCE_DIR}/Bed-test" ./run-test.sh
++        USES_TERMINAL
++    )
++endif()
+--- origsrc/biolibc-0.2.7/biolibc.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/biolibc-0.2.7/biolibc.pc.in	2025-12-24 22:33:02.763824400 +0900
+@@ -0,0 +1,11 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
++
++Name: biolibc
++Description: biolibc C library
++Version: @PROJECT_VERSION@
++Requires: libxtend
++Libs: -L${libdir} -lbiolibc
++Cflags: -I${includedir}
