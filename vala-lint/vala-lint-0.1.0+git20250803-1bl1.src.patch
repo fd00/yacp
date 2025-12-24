@@ -1,0 +1,59 @@
+--- origsrc/vala-lint/lib/meson.build	2025-12-24 10:38:06.000000000 +0900
++++ src/vala-lint/lib/meson.build	2025-12-24 10:58:11.533335500 +0900
+@@ -54,7 +54,7 @@ vala_linter_library = shared_library(
+     dependencies : vala_linter_deps,
+     install : true,
+ 	install_dir : [
+-		get_option('libdir'),
++		get_option('bindir'),
+ 		join_paths (get_option('includedir'),'vala-linter-1.0'),
+ 		vapidir,
+ 	]
+--- origsrc/vala-lint/src/Application.vala	2025-12-24 10:38:06.000000000 +0900
++++ src/vala-lint/src/Application.vala	2025-12-24 10:44:33.268932800 +0900
+@@ -20,6 +20,13 @@
+  */
+ 
+ public class ValaLint.Application : GLib.Application {
++    [CCode (cname = "vala_lint_fnmatch_extmatch_flag")]
++    private static extern int fnmatch_extmatch_flag ();
++
++    private static int get_fnmatch_flags () {
++        return fnmatch_extmatch_flag () | Posix.FNM_PERIOD | Posix.FNM_PATHNAME;
++    }
++
+     private const string VERSION = "0.1";
+ 
+     private static string? lint_directory = null;
+@@ -31,7 +38,7 @@ public class ValaLint.Application : GLib
+     private static bool json_output = false;
+     private static string? config_file = null;
+     private static string ignore_pattern_list = "";
+-    private static int fnmatch_flags = Posix.FNM_EXTMATCH | Posix.FNM_PERIOD | Posix.FNM_PATHNAME;
++    private static int fnmatch_flags = get_fnmatch_flags ();
+     private static File root_dir;
+ 
+     private ApplicationCommandLine application_command_line;
+--- origsrc/vala-lint/src/fnmatch_compat.c	1970-01-01 09:00:00.000000000 +0900
++++ src/vala-lint/src/fnmatch_compat.c	2025-12-24 10:44:33.237802200 +0900
+@@ -0,0 +1,9 @@
++#include <fnmatch.h>
++
++int vala_lint_fnmatch_extmatch_flag(void) {
++#ifdef FNM_EXTMATCH
++    return FNM_EXTMATCH;
++#else
++    return 0;
++#endif
++}
+--- origsrc/vala-lint/src/meson.build	2025-12-24 10:38:06.000000000 +0900
++++ src/vala-lint/src/meson.build	2025-12-24 10:44:33.237802200 +0900
+@@ -1,6 +1,7 @@
+ app_files = files (
+     'Application.vala',
+-    'FileData.vala'
++    'FileData.vala',
++    'fnmatch_compat.c'
+ )
+ 
+ vala_lint = executable(
