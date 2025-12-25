@@ -1,0 +1,42 @@
+HOMEPAGE="https://github.com/auerlab/${PN}"
+SRC_URI="https://github.com/auerlab/${PN}/archive/refs/tags/${PV}.tar.gz"
+
+CATEGORY="Science"
+SUMMARY="Split combined-sample VCF stream into single-sample VCF files"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="BSD-2-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-2-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libbiolibc-devel
+	libxtend-devel
+"
+
+src_compile()
+{
+	cd ${B}
+	lndirs
+	verbose ${CC} ${CFLAGS} -o ${PN}.exe ${PN}.c \
+		-DVERSION=\"${PV}\" \
+		-DBL_VCF_ID_MAX_CHARS=BL_VCF_SAMPLE_ID_MAX_CHARS \
+		-Dstrptrcmp=xt_strptrcmp \
+		-Dtsv_skip_field=xt_tsv_skip_field \
+		-Dtsv_skip_rest_of_line=xt_tsv_skip_rest_of_line \
+		-Dtsv_read_field_malloc=xt_tsv_read_field_malloc \
+		`pkg-config --cflags --libs biolibc libxtend`
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ${PN}.exe
+
+	cd ${S}
+	doman ${PN}.1
+}
+
+DOCS="
+	todo
+"
