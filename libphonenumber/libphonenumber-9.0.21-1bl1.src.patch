@@ -1,0 +1,90 @@
+--- origsrc/libphonenumber-9.0.21/cpp/CMakeLists.txt	2025-12-17 19:11:03.000000000 +0900
++++ src/libphonenumber-9.0.21/cpp/CMakeLists.txt	2025-12-25 19:52:56.150811300 +0900
+@@ -462,7 +462,7 @@ if (BUILD_STATIC_LIB)
+ 
+   if (BUILD_GEOCODER)
+     add_library (geocoding STATIC ${GEOCODING_SOURCES})
+-    target_link_libraries (geocoding ${LIBRARY_DEPS})
++    target_link_libraries (geocoding phonenumber ${LIBRARY_DEPS})
+     target_include_directories(geocoding PUBLIC $<INSTALL_INTERFACE:include>)
+     add_dependencies (geocoding generate_geocoding_data)
+     add_dependencies (phonenumber generate_geocoding_data)
+@@ -480,10 +480,15 @@ if (BUILD_SHARED_LIBS)
+   target_link_libraries (phonenumber-shared ${LIBRARY_DEPS})
+   target_include_directories(phonenumber-shared PUBLIC $<INSTALL_INTERFACE:include>)
+ 
++  # Cygwin does not automatically export all C++ symbols from DLLs.
++  # Without this, downstream link steps can fail with undefined references.
++  if (CYGWIN)
++    target_link_options(phonenumber-shared PRIVATE "-Wl,--export-all-symbols")
++  endif ()
++
+   set_target_properties (phonenumber-shared
+     PROPERTIES
+       OUTPUT_NAME "phonenumber"
+-      PREFIX "lib"
+       SOVERSION ${libphonenumber_VERSION_MAJOR}
+       VERSION ${libphonenumber_VERSION_MAJOR}.${libphonenumber_VERSION_MINOR})
+ 
+@@ -493,15 +498,18 @@ if (BUILD_SHARED_LIBS)
+ 
+   if (BUILD_GEOCODER)
+     add_library (geocoding-shared SHARED ${GEOCODING_SOURCES})
+-    target_link_libraries (geocoding-shared ${LIBRARY_DEPS})
++    target_link_libraries (geocoding-shared phonenumber-shared ${LIBRARY_DEPS})
+     target_include_directories(geocoding-shared PUBLIC $<INSTALL_INTERFACE:include>)
+     add_dependencies (geocoding-shared generate_geocoding_data)
+     add_dependencies (phonenumber-shared generate_geocoding_data)
+ 
++    if (CYGWIN)
++      target_link_options(geocoding-shared PRIVATE "-Wl,--export-all-symbols")
++    endif ()
++
+     set_target_properties (geocoding-shared
+       PROPERTIES
+         OUTPUT_NAME "geocoding"
+-        PREFIX "lib"
+         SOVERSION ${libphonenumber_VERSION_MAJOR}
+         VERSION ${libphonenumber_VERSION_MAJOR}.${libphonenumber_VERSION_MINOR})
+   endif ()
+@@ -593,7 +601,11 @@ if(BUILD_TESTING)
+   # libraries are built properly.
+   if (BUILD_GEOCODER)
+     add_executable (geocoding_test_program "test/phonenumbers/geocoding/geocoding_test_program.cc")
+-    target_link_libraries (geocoding_test_program geocoding phonenumber)
++    if (BUILD_SHARED_LIBS)
++      target_link_libraries (geocoding_test_program geocoding-shared phonenumber-shared ${ICU_LIB})
++    else ()
++      target_link_libraries (geocoding_test_program geocoding phonenumber ${ICU_LIB})
++    endif ()
+   endif ()
+ endif()
+ 
+@@ -621,6 +633,7 @@ endif()
+ install (
+   TARGETS ${BUILT_LIBS}
+   EXPORT "${targets_export_name}"
++  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ 
+--- origsrc/libphonenumber-9.0.21/cpp/src/phonenumbers/regexp_adapter_re2.cc	2025-12-17 19:11:03.000000000 +0900
++++ src/libphonenumber-9.0.21/cpp/src/phonenumbers/regexp_adapter_re2.cc	2025-12-25 18:57:32.357238900 +0900
+@@ -31,6 +31,8 @@
+ namespace i18n {
+ namespace phonenumbers {
+ 
++using re2::StringPiece;
++
+ // Implementation of RegExpInput abstract class.
+ class RE2RegExpInput : public RegExpInput {
+  public:
+@@ -39,7 +41,7 @@ class RE2RegExpInput : public RegExpInpu
+         utf8_input_(string_) {}
+ 
+   virtual string ToString() const {
+-    return utf8_input_.ToString();
++    return string(utf8_input_.data(), utf8_input_.size());
+   }
+ 
+   StringPiece* Data() {
