@@ -1,0 +1,83 @@
+--- origsrc/indel-seq-gen-2.1.03/src/main.cpp	2011-03-31 05:51:46.000000000 +0900
++++ src/indel-seq-gen-2.1.03/src/main.cpp	2025-12-25 10:17:51.569445900 +0900
+@@ -17,7 +17,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <stdlib.h>
+-#include <stdio.h>
++#include <unistd.h>
+ #include <ctime>
+ #include <iostream>
+ #include <limits>
+--- origsrc/indel-seq-gen-2.1.03/src/nucmodels.cpp	2011-01-23 05:39:07.000000000 +0900
++++ src/indel-seq-gen-2.1.03/src/nucmodels.cpp	2025-12-25 10:19:38.855433300 +0900
+@@ -54,7 +54,7 @@ double freqR, freqY, freqAG, freqCT;
+ double freqA, freqC, freqG, freqT;
+ double tstv, kappa;
+ 
+-static double beta, beta_A_R, beta_A_Y;
++static double _beta, beta_A_R, beta_A_Y;
+ static double tab1A, tab2A, tab3A;
+ static double tab1C, tab2C, tab3C;
+ static double tab1G, tab2G, tab3G;
+@@ -119,10 +119,10 @@ void SetNucModel(int theNucModel)
+ 				kappa = 1.0;
+ 				tstv=(kappa*(freqA*freqG + freqC*freqT))/(freqR*freqY);
+ 			}
+-			beta=-1.0/(2*(freqR*freqY + kappa*(freqAG+freqCT)));
++			_beta=-1.0/(2*(freqR*freqY + kappa*(freqAG+freqCT)));
+ 			
+-			beta_A_R=beta*(1.0+freqR*(kappa-1));
+-			beta_A_Y=beta*(1.0+freqY*(kappa-1));
++			beta_A_R=_beta*(1.0+freqR*(kappa-1));
++			beta_A_Y=_beta*(1.0+freqY*(kappa-1));
+ 		break;
+ 		case NUC_F84:
+ 			freqA2=freqA*freqA;
+@@ -188,7 +188,7 @@ void SetHKYMatrix(double *matrix, double
+ {	
+ 	double aa, bbR, bbY;
+ 	
+-	aa=exp(beta*len);
++	aa=exp(_beta*len);
+ 	bbR=exp(beta_A_R*len);
+ 	bbY=exp(beta_A_Y*len);
+ 	
+@@ -199,7 +199,7 @@ void SetHKYVector(double *vector, short
+ {	
+ 	double aa, bbR, bbY;
+ 
+-	aa=exp(beta*len);
++	aa=exp(_beta*len);
+ 	bbR=exp(beta_A_R*len);
+ 	bbY=exp(beta_A_Y*len);
+ 
+--- origsrc/indel-seq-gen-2.1.03/src/random.cpp	2011-01-23 05:39:07.000000000 +0900
++++ src/indel-seq-gen-2.1.03/src/random.cpp	2025-12-25 10:23:00.321941100 +0900
+@@ -65,7 +65,7 @@
+ static uint32_t state[N]; /* the array for the state vector  */
+ 
+ static int leqq = 1;
+-static uint32_t *next;
++static uint32_t *_next;
+ 
+ /* CS:  From Numerical Recipes in C.  Has period of length 2.3 * 10^18 */
+ 
+@@ -145,7 +145,7 @@ void mt_srand(uint32_t uKeys[], size_t u
+ inline void mt_next_state()
+ {
+ 	leqq = N;
+-    next = state;
++    _next = state;
+ 	uint32_t *p=state;
+     for (int j=N-M+1; --j; p++) 
+         *p = p[M] ^ TWIST(p[0], p[1]);
+@@ -160,7 +160,7 @@ uint32_t mt_rand()
+     if (--leqq == 0)
+ 		mt_next_state();
+ 
+-	uint32_t y = *next++;
++	uint32_t y = *_next++;
+ 
+     /* Tempering */
+     y ^= (y >> 11);
