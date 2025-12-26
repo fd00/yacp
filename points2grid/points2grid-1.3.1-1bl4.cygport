@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/CRREL/${PN}"
-SRC_URI="https://github.com/CRREL/${PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/CRREL/${PN}/archive/refs/tags/${PV}.tar.gz"
 
 CATEGORY="Science"
 SUMMARY="Generate digital elevation models from 3D point clouds"
@@ -17,17 +17,32 @@ filling option, which applies an inverse distance weighted focal mean via a
 square moving window of 3, 5, or 7 pixels to fill cells in the DEM that have
 null values."
 
+LICENSE="BSD-4-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-4-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libboost-devel
+	libcurl-devel
+	libgdal-devel
+"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DWITH_TESTS:BOOL=OFF
+	-DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
+	-DSOVERSION:STRING=${PV[1]}
 "
 
 src_test()
 {
 	cd ${B}
-	./points2grid.exe -i ${S}/example.las -o ${T}/output
+	PATH=${B}:${PATH} ninja_test
 }
+
+DOCS="
+	CHANGELOG
+"
 
 DIFF_EXCLUDES="
 	config.h
@@ -35,20 +50,20 @@ DIFF_EXCLUDES="
 
 PKG_NAMES="
 	${PN}
-	libpts2grd0
+	libpts2grd1
 	libpts2grd-devel
 "
 points2grid_CONTENTS="
 	usr/bin/*.exe
 	usr/share
 "
-libpts2grd0_CONTENTS="
-	usr/bin/*.dll
+libpts2grd1_CONTENTS="
+	usr/bin/cyg*-1.dll
 "
 libpts2grd_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
 points2grid_SUMMARY="${SUMMARY} (utilities)"
-libpts2grd0_SUMMARY="${SUMMARY} (runtime)"
+libpts2grd1_SUMMARY="${SUMMARY} (runtime)"
 libpts2grd_devel_SUMMARY="${SUMMARY} (development)"

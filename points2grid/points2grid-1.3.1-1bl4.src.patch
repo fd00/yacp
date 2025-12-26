@@ -1,0 +1,49 @@
+--- origsrc/points2grid-1.3.1/CMakeLists.txt	2016-04-29 06:37:26.000000000 +0900
++++ src/points2grid-1.3.1/CMakeLists.txt	2025-12-26 08:47:15.892423600 +0900
+@@ -7,7 +7,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DI
+ set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE ON)
+ 
+ if (CMAKE_MAJOR_VERSION GREATER 2)
+-    cmake_policy(SET CMP0042 OLD)
++    if(POLICY CMP0042)
++        cmake_policy(SET CMP0042 NEW)
++    endif()
+ endif()
+ 
+ # set build type
+@@ -182,6 +184,10 @@ if (WIN32)
+         COMPILE_DEFINITIONS P2G_DLL_EXPORT)
+ endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${P2G_LIB_NAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if (BZIP2_FOUND)
+     target_link_libraries(${P2G_LIB_NAME} ${BZIP2_LIBRARIES})
+ endif()
+@@ -232,3 +238,11 @@ if (WITH_TESTS)
+     add_subdirectory(test)
+     add_subdirectory(vendor/gtest-1.7.0)
+ endif(WITH_TESTS)
++
++include(GNUInstallDirs)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/points2grid.pc.in ${CMAKE_BINARY_DIR}/points2grid.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/points2grid.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/points2grid-1.3.1/points2grid.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/points2grid-1.3.1/points2grid.pc.in	2025-12-26 08:46:57.614015700 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: points2grid
++Description: Generate digital elevation models from 3D point clouds
++Version: @P2G_VERSION_STRING@
++Libs: -L${libdir} -lpts2grd
++Cflags: -I${includedir}
