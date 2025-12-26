@@ -1,0 +1,41 @@
+HOMEPAGE="https://github.com/dzerbino/${PN}"
+SRC_URI="https://github.com/dzerbino/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/include_debians_zlib.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/shuffleSequences_fasta.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/fix-perl-path.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/hardening.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/spelling.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/2to3.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-9/debian/patches/gcc-14.patch
+"
+
+CATEGORY="Science"
+SUMMARY="Short read de novo assembler using de Bruijn graphs"
+DESCRIPTION="${SUMMARY}"
+
+LICENSE="GPL-2.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-2.0-or-later"
+LICENSE_URI="LICENSE.txt"
+
+BUILD_REQUIRES="
+	zlib-devel
+"
+
+src_compile()
+{ 
+	cd ${B}
+	lndirs
+	cygmake LONGSEQUENCES=1 CATEGORIES=2 MAXKMERLENGTH=127 OPENMP=1 velveth velvetg
+}
+
+src_install()
+{
+	cd ${B}
+	dobin velveth.exe velvetg.exe
+	dodoc Manual.pdf
+
+	cd ${S}
+	verbose mkdir -p ${D}/usr/share/${PN}
+	verbose cp -R data ${D}/usr/share/${PN}
+}
