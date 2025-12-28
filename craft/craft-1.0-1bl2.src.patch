@@ -1,0 +1,126 @@
+--- origsrc/Craft-1.0/CMakeLists.txt	2025-12-28 06:10:24.956540900 +0900
++++ src/Craft-1.0/CMakeLists.txt	2025-12-28 09:07:48.422366300 +0900
+@@ -4,24 +4,89 @@ project(craft)
+ 
+ FILE(GLOB SOURCE_FILES src/*.c)
+ 
++find_package(PkgConfig)
++if(PKG_CONFIG_FOUND)
++    pkg_check_modules(GLEW glew)
++    pkg_check_modules(GLFW3 glfw3)
++    pkg_check_modules(LODEPNG lodepng)
++    pkg_check_modules(SQLITE3 sqlite3)
++    pkg_check_modules(TINYCTHREAD tinycthread)
++endif()
++
++if(GLEW_FOUND)
++    message(STATUS "Using system GLEW (pkg-config)")
++    include_directories(${GLEW_INCLUDE_DIRS})
++    link_directories(${GLEW_LIBRARY_DIRS})
++    set(GLEW_LIBS ${GLEW_LIBRARIES})
++    set(GLEW_SRC)
++else()
++    message(STATUS "Using bundled GLEW")
++    include_directories(deps/glew/include)
++    set(GLEW_LIBS)
++    set(GLEW_SRC deps/glew/src/glew.c)
++endif()
++
++if(LODEPNG_FOUND)
++    message(STATUS "Using system lodepng (pkg-config)")
++    include_directories(${LODEPNG_INCLUDE_DIRS})
++    link_directories(${LODEPNG_LIBRARY_DIRS})
++    set(LODEPNG_LIBS ${LODEPNG_LIBRARIES})
++    set(LODEPNG_SRC)
++else()
++    message(STATUS "Using bundled lodepng")
++    include_directories(deps/lodepng)
++    set(LODEPNG_LIBS)
++    set(LODEPNG_SRC deps/lodepng/lodepng.c)
++endif()
++
++if(SQLITE3_FOUND)
++    message(STATUS "Using system sqlite3 (pkg-config)")
++    include_directories(${SQLITE3_INCLUDE_DIRS})
++    link_directories(${SQLITE3_LIBRARY_DIRS})
++    set(SQLITE3_LIBS ${SQLITE3_LIBRARIES})
++    set(SQLITE3_SRC)
++else()
++    message(STATUS "Using bundled sqlite3")
++    include_directories(deps/sqlite)
++    set(SQLITE3_LIBS)
++    set(SQLITE3_SRC deps/sqlite/sqlite3.c)
++endif()
++
++if(TINYCTHREAD_FOUND)
++    message(STATUS "Using system tinycthread (pkg-config)")
++    include_directories(${TINYCTHREAD_INCLUDE_DIRS})
++    link_directories(${TINYCTHREAD_LIBRARY_DIRS})
++    set(TINYCTHREAD_LIBS ${TINYCTHREAD_LIBRARIES})
++    set(TINYCTHREAD_SRC)
++else()
++    message(STATUS "Using bundled tinycthread")
++    include_directories(deps/tinycthread)
++    set(TINYCTHREAD_LIBS)
++    set(TINYCTHREAD_SRC deps/tinycthread/tinycthread.c)
++endif()
++
+ add_executable(
+     craft
+     ${SOURCE_FILES}
+-    deps/glew/src/glew.c
+-    deps/lodepng/lodepng.c
++    ${GLEW_SRC}
++    ${LODEPNG_SRC}
+     deps/noise/noise.c
+-    deps/sqlite/sqlite3.c
+-    deps/tinycthread/tinycthread.c)
++    ${SQLITE3_SRC}
++    ${TINYCTHREAD_SRC})
+ 
+-add_definitions(-std=c99 -O3)
++if(GLFW3_FOUND)
++    message(STATUS "Using system GLFW (pkg-config)")
++    include_directories(${GLFW3_INCLUDE_DIRS})
++    link_directories(${GLFW3_LIBRARY_DIRS})
++    set(GLFW_LIBS ${GLFW3_LIBRARIES})
++else()
++    message(STATUS "Using bundled GLFW")
++    add_subdirectory(deps/glfw)
++    include_directories(deps/glfw/include)
++    set(GLFW_LIBS glfw ${GLFW_LIBRARIES})
++endif()
+ 
+-add_subdirectory(deps/glfw)
+-include_directories(deps/glew/include)
+-include_directories(deps/glfw/include)
+-include_directories(deps/lodepng)
+ include_directories(deps/noise)
+-include_directories(deps/sqlite)
+-include_directories(deps/tinycthread)
+ 
+ if(MINGW)
+     set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH}
+@@ -34,16 +99,16 @@ find_package(CURL REQUIRED)
+ include_directories(${CURL_INCLUDE_DIR})
+ 
+ if(APPLE)
+-    target_link_libraries(craft glfw
+-        ${GLFW_LIBRARIES} ${CURL_LIBRARIES})
++    target_link_libraries(craft ${GLFW_LIBS}
++    ${CURL_LIBRARIES} ${SQLITE3_LIBS} ${GLEW_LIBS} ${TINYCTHREAD_LIBS} ${LODEPNG_LIBS})
+ endif()
+ 
+ if(UNIX)
+-    target_link_libraries(craft dl glfw
+-        ${GLFW_LIBRARIES} ${CURL_LIBRARIES})
++    target_link_libraries(craft dl ${GLFW_LIBS}
++    ${CURL_LIBRARIES} ${SQLITE3_LIBS} ${GLEW_LIBS} ${TINYCTHREAD_LIBS} ${LODEPNG_LIBS})
+ endif()
+ 
+ if(MINGW)
+-    target_link_libraries(craft ws2_32.lib glfw
+-        ${GLFW_LIBRARIES} ${CURL_LIBRARIES})
++    target_link_libraries(craft ws2_32.lib ${GLFW_LIBS}
++    ${CURL_LIBRARIES} ${SQLITE3_LIBS} ${GLEW_LIBS} ${TINYCTHREAD_LIBS} ${LODEPNG_LIBS})
+ endif()
