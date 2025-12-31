@@ -1,0 +1,92 @@
+--- origsrc/BehaviorTree.CPP-4.8.3/.clangd	1970-01-01 09:00:00.000000000 +0900
++++ src/BehaviorTree.CPP-4.8.3/.clangd	2025-12-31 12:56:28.156020700 +0900
+@@ -0,0 +1,10 @@
++CompileFlags:
++  Add:
++    - -xc++
++    - -std=c++17
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/include
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/3rdparty
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/3rdparty/minitrace
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/3rdparty/tinyxml2
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/3rdparty/minicoro
++    - -I/tmp/BehaviorTree.CPP/BehaviorTree.CPP-4.8.3-1bl1.x86_64/src/BehaviorTree.CPP-4.8.3/3rdparty/lexy/include
+--- origsrc/BehaviorTree.CPP-4.8.3/CMakeLists.txt	2025-12-30 18:08:13.000000000 +0900
++++ src/BehaviorTree.CPP-4.8.3/CMakeLists.txt	2025-12-31 12:55:34.253457400 +0900
+@@ -105,10 +105,29 @@ else()
+     if(USE_VENDORED_TINYXML2)
+         add_subdirectory(3rdparty/tinyxml2)
+     else()
+-        find_package(tinyxml2 REQUIRED)
++        # Different distros expose different CMake package/target names.
++        # Prefer a CMake config package if available, otherwise fall back.
++        find_package(TinyXML2 QUIET)
++        if(NOT TinyXML2_FOUND)
++            find_package(tinyxml2 REQUIRED)
++        endif()
+     endif()
+ endif()
+ 
++# Normalize tinyxml2 target name.
++# We always link against tinyxml2::tinyxml2 elsewhere in the project.
++if(NOT TARGET tinyxml2::tinyxml2)
++    if(TARGET TinyXML2::TinyXML2)
++        add_library(tinyxml2::tinyxml2 ALIAS TinyXML2::TinyXML2)
++    elseif(TARGET tinyxml2)
++        add_library(tinyxml2::tinyxml2 ALIAS tinyxml2)
++    endif()
++endif()
++
++if(NOT TARGET tinyxml2::tinyxml2)
++    message(FATAL_ERROR "tinyxml2 was requested, but no usable CMake target was defined. Tried: tinyxml2::tinyxml2, TinyXML2::TinyXML2, tinyxml2")
++endif()
++
+ #############################################################
+ # Handle dependencies
+ 
+@@ -223,6 +242,10 @@ else()
+     add_library(${BTCPP_LIBRARY} STATIC ${BT_SOURCE})
+ endif()
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${BTCPP_LIBRARY} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ message(STATUS "BTCPP_EXTRA_LIBRARIES: ${BTCPP_EXTRA_LIBRARIES}")
+ 
+ target_link_libraries(${BTCPP_LIBRARY}
+@@ -337,3 +360,10 @@ INSTALL( DIRECTORY ${CMAKE_CURRENT_SOURC
+     FILES_MATCHING PATTERN "*.h*")
+ 
+ export_btcpp_package()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/behaviortree_cpp.pc.in ${CMAKE_BINARY_DIR}/behaviortree_cpp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/behaviortree_cpp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/BehaviorTree.CPP-4.8.3/behaviortree_cpp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/BehaviorTree.CPP-4.8.3/behaviortree_cpp.pc.in	2025-12-31 12:56:21.917566300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: BehaviorTree.CPP
++Description: Behavior Trees Library in C++
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lbehaviortree_cpp
++Cflags: -I${includedir}
+--- origsrc/BehaviorTree.CPP-4.8.3/tests/CMakeLists.txt	2025-12-30 18:08:13.000000000 +0900
++++ src/BehaviorTree.CPP-4.8.3/tests/CMakeLists.txt	2025-12-31 10:20:09.292349700 +0900
+@@ -57,7 +57,7 @@ else()
+ 
+     # gtest_discover_tests queries the test executable for available tests and registers them on ctest individually
+     # On Windows it needs a little help to find the shared libraries
+-    if(WIN32)
++    if(WIN32 OR CYGWIN)
+         gtest_discover_tests(behaviortree_cpp_test
+             DISCOVERY_MODE PRE_TEST
+             DISCOVERY_ENVIRONMENT "PATH=$<TARGET_FILE_DIR:behaviortree_cpp_test>;$ENV{PATH}"
