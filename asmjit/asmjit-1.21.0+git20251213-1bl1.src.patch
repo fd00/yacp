@@ -1,0 +1,49 @@
+--- origsrc/asmjit/CMakeLists.txt	2025-12-31 20:57:49.000000000 +0900
++++ src/asmjit/CMakeLists.txt	2025-12-31 21:42:31.707155000 +0900
+@@ -367,6 +367,10 @@ function(asmjit_add_target target target
+     add_library(${target} ${target_type} ${X_SOURCES})
+   endif()
+ 
++  if (DEFINED SOVERSION)
++    set_target_properties(${target} PROPERTIES SOVERSION ${SOVERSION})
++  endif()
++
+   set_target_properties(${target}
+     PROPERTIES
+       DEFINE_SYMBOL ""
+@@ -714,3 +718,10 @@ else()
+ endif()
+ 
+ message(STATUS "[asmjit] == Configuring done ==")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/asmjit.pc.in ${CMAKE_BINARY_DIR}/asmjit.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/asmjit.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/asmjit/asmjit/core/api-build_p.h	2025-12-31 20:57:49.000000000 +0900
++++ src/asmjit/asmjit/core/api-build_p.h	2025-12-31 21:01:07.164315800 +0900
+@@ -40,7 +40,8 @@
+       defined(__DragonFly__) || \
+       defined(__FreeBSD__  ) || \
+       defined(__NetBSD__   ) || \
+-      defined(__OpenBSD__  )
++      defined(__OpenBSD__  ) || \
++      defined(__CYGWIN__   )
+     #define ASMJIT_FILE64_API(NAME) NAME
+   #else
+     #define ASMJIT_FILE64_API(NAME) NAME##64
+--- origsrc/asmjit/asmjit.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/asmjit/asmjit.pc.in	2025-12-31 21:33:33.383670800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: asmjit
++Description: Low-latency machine code generation
++Version: @VERSION@
++Libs: -L${libdir} -lasmjit
++Cflags: -I${includedir}
