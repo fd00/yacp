@@ -1,6 +1,11 @@
 HOMEPAGE="https://github.com/bcgsc/${PN}"
 GIT_URI="https://github.com/bcgsc/${PN}.git"
 GIT_TAG="v${PV}"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-2/debian/patches/find_object_files_at_right_loc.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-2/debian/patches/use_debian_packaged_libs.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-2/debian/patches/python3
+"
 
 CATEGORY="Libs"
 SUMMARY="Bioinformatics Technology Lab common code library"
@@ -10,19 +15,33 @@ LICENSE="GPL-3.0-or-later"
 LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libsdsl-devel python39-devel python39-setuptools"
+BUILD_REQUIRES="
+	cpptoml
+	libsdsl-devel
+	python39-devel
+	python39-setuptools
+"
 
 export CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -DO_CLOEXEC=0"
+export PYTHON_SITE_PACKAGE_DIR=`python3 -c "import site; print (site.getsitepackages()[1])"`
 
 inherit git
 inherit meson
 
-DIFF_EXCLUDES="
-	subprojects
+CYGMESON_ARGS="
+	-Dpython_site_package_dir=${PYTHON_SITE_PACKAGE_DIR}
 "
 
-PKG_IGNORE="
-	usr/lib/python3.9/site-packages/btllib/_btllib.dll.a
+src_install()
+{
+	cd ${S}
+	meson_install
+
+	verbose rm -f ${D}${PYTHON_SITE_PACKAGE_DIR}/btllib/_btllib.dll.a
+}
+
+DIFF_EXCLUDES="
+	subprojects
 "
 
 PKG_NAMES="
@@ -44,10 +63,7 @@ libbtllib_devel_CONTENTS="
 	usr/lib/pkgconfig
 "
 python39_btllib_CONTENTS="
-	usr/lib/btllib/python/setup.py
-	usr/lib/python3.9/site-packages/btllib/_btllib.dll
-	usr/lib/python3.9/site-packages/btllib/__init__.py
-	usr/lib/python3.9/site-packages/btllib/__pycache__
+	usr/lib/python3.9
 "
 btllib_SUMMARY="${SUMMARY} (licensing & readmes)"
 libbtllib0_SUMMARY="${SUMMARY} (runtime)"

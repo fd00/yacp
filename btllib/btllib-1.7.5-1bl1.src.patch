@@ -1,0 +1,176 @@
+--- origsrc/btllib/meson.build	2026-01-01 10:18:42.152586000 +0900
++++ src/btllib/meson.build	2026-01-01 12:09:25.147885500 +0900
+@@ -53,8 +53,8 @@ deps = [ threads_dep, openmp_dep ]
+ meson.add_install_script('scripts/install-cpptoml')
+ meson.add_install_script('scripts/install-sdsl-lite')
+ 
+-# argparse_subproject = cmake.subproject('argparse', options : cmake_options)
+-# argparse_dep = argparse_subproject.dependency('argparse')
++argparse_subproject = cmake.subproject('argparse') # , options : cmake_options)
++argparse_dep = argparse_subproject.dependency('argparse')
+ 
+ # Run time dependencies
+ # ===========================================================
+@@ -114,18 +114,25 @@ run_target('test-wrappers', command: joi
+ btllib_include = [ include_directories('include'), include_directories('.') ]
+ btllib_sources = run_command('scripts/get-files', 'src').stdout().strip().split()
+ 
+-btllib_lib = static_library('btllib',
++btllib_lib = shared_library('btllib',
+                            btllib_sources,
+                            include_directories : btllib_include,
+                            dependencies : deps,
+                            install : true,
+-                           install_dir : 'lib')
++                           soversion : 1)
+ 
+ btllib_dep = declare_dependency(
+   link_with : btllib_lib,
+   include_directories : btllib_include
+ )
+ 
++pkg = import('pkgconfig')
++pkg.generate(libraries : btllib_lib,
++             filebase : 'btllib',
++             version : meson.project_version(),
++             name : meson.project_name(),
++             description : 'Bioinformatics Technology Lab common code library')
++
+ subdir('include')
+ subdir('wrappers')
+ subdir('recipes')
+--- origsrc/btllib/meson_options.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/btllib/meson_options.txt	2026-01-01 11:48:08.576990100 +0900
+@@ -0,0 +1,4 @@
++option('python_site_package_dir',
++  type : 'string',
++  value : '',
++  description : 'If set (non-empty), install the Python btllib package under this site-packages directory (e.g. /usr/lib/python3.X/site-packages).')
+--- origsrc/btllib/recipes/meson.build	2026-01-01 10:18:42.154598200 +0900
++++ src/btllib/recipes/meson.build	2026-01-01 11:15:43.614191900 +0900
+@@ -10,7 +10,7 @@ executable('indexlr',
+ executable('randseq',
+             meson.project_source_root() + '/recipes/randseq.cpp',
+             include_directories : btllib_include,
+-            dependencies : deps + [ btllib_dep ],
++            dependencies : deps + [ btllib_dep, argparse_dep ],
+             install : true,
+             install_dir : 'bin',
+             override_options : ['cpp_std=c++17'])
+--- origsrc/btllib/scripts/get-python-flags	2026-01-01 10:18:05.000000000 +0900
++++ src/btllib/scripts/get-python-flags	2026-01-01 10:36:36.854393700 +0900
+@@ -26,6 +26,8 @@ get_libs() {
+     libsfound="$(find "$libpath" -maxdepth 1 -regextype sed -regex ".*/lib${libname}\.\(so\|a\)")"
+   elif [[ "$OSTYPE" == "darwin"* ]]; then
+     libsfound="$(find -E "$libpath" -maxdepth 1 -regex ".*/lib${libname}\.(so|dylib|tbd|a)")"
++  elif [[ "$OSTYPE" == "cygwin" ]]; then
++    libsfound="$(find "$libpath" -maxdepth 1 -regextype sed -regex ".*/lib${libname}\.dll\.a")"
+   fi
+   echo "$libsfound"
+ }
+--- origsrc/btllib/src/btllib/randseq.cpp	2026-01-01 10:18:05.000000000 +0900
++++ src/btllib/src/btllib/randseq.cpp	2026-01-01 12:13:01.939489000 +0900
+@@ -2,6 +2,9 @@
+ #include "btllib/status.hpp"
+ 
+ #include <algorithm>
++#include <cstdlib>
++#include <ctime>
++#include <mutex>
+ #include <random>
+ 
+ namespace btllib {
+@@ -39,14 +42,44 @@ RandSeq::generate(size_t length)
+ {
+   std::string seq;
+   seq.reserve(length);
+-  std::random_device rd;
+-  std::default_random_engine rng(rd());
++
++  if (chars.empty() || length == 0) {
++    return seq;
++  }
++
+   if (has_seed) {
+-    rng.seed(seed);
++    std::mt19937 rng(static_cast<std::mt19937::result_type>(seed));
++    std::uniform_int_distribution<size_t> dist(0, chars.size() - 1);
++    for (size_t i = 0; i < length; i++) {
++      seq.push_back(chars[dist(rng)]);
++    }
++    return seq;
+   }
+-  std::uniform_int_distribution<size_t> dist(0, chars.size() - 1);
+-  for (size_t i = 0; i < length; i++) {
+-    seq.append(std::string(1, chars[dist(rng)]));
++
++  try {
++    std::random_device rd;
++    std::mt19937 rng(rd());
++    std::uniform_int_distribution<size_t> dist(0, chars.size() - 1);
++    for (size_t i = 0; i < length; i++) {
++      seq.push_back(chars[dist(rng)]);
++    }
++    return seq;
++  } catch (const std::exception&) {
++    static std::once_flag srand_once;
++    std::call_once(srand_once, []() {
++      std::srand(static_cast<unsigned int>(std::time(nullptr)));
++    });
++
++    const int n = static_cast<int>(chars.size());
++    const int max_acceptable = RAND_MAX - (RAND_MAX % n);
++    for (size_t i = 0; i < length; i++) {
++      int r = 0;
++      do {
++        r = std::rand();
++      } while (r >= max_acceptable);
++      seq.push_back(chars[static_cast<size_t>(r % n)]);
++    }
++    return seq;
+   }
+   return seq;
+ }
+--- origsrc/btllib/wrappers/python/meson.build	2026-01-01 11:30:38.924096700 +0900
++++ src/btllib/wrappers/python/meson.build	2026-01-01 12:19:18.263250700 +0900
+@@ -19,20 +19,34 @@ cpp_extra_args += ['-w']
+ cpp_extra_args = global_args + cpp_extra_args
+ link_extra_args = global_link_args + link_extra_args
+ 
++python_site_package_dir = get_option('python_site_package_dir')
++
++python_root_dir = 'lib/btllib/python'
++python_pkg_dir = 'lib/btllib/python/btllib'
++if python_site_package_dir != ''
++  python_root_dir = python_site_package_dir
++  python_pkg_dir = join_paths(python_site_package_dir, 'btllib')
++endif
++
++py_mod_suffix = 'so'
++if host_machine.system() == 'cygwin'
++  py_mod_suffix = 'dll'
++endif
++
+ py_sources = ['btllib_wrap.cxx']
+ btllib_py = shared_module('_btllib',
+                            py_sources,
+-                           name_suffix : 'so',
++                           name_suffix : py_mod_suffix,
+                            include_directories : btllib_include,
+                            dependencies : deps + [ btllib_dep ],
+                            cpp_args : cpp_extra_args,
+                            link_args : link_extra_args,
+                            install : true,
+-                           install_dir : 'lib/btllib/python/btllib',
++                           install_dir : python_pkg_dir,
+                            name_prefix : '')
+ 
+-install_data('btllib.py', install_dir : 'lib/btllib/python/btllib', rename : '__init__.py')
++install_data('btllib.py', install_dir : python_pkg_dir, rename : '__init__.py')
+ configure_file(input : 'setup.py', 
+                output : 'setup.py', 
+-               install_dir : 'lib/btllib/python',
+-               configuration : {'PROJECT_VERSION' : meson.project_version()})
+\ No newline at end of file
++               install_dir : python_pkg_dir,
++               configuration : {'PROJECT_VERSION' : meson.project_version()})
