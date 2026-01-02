@@ -1,0 +1,344 @@
+--- origsrc/customfetch-1.0.0/CMakeLists.txt	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/CMakeLists.txt	2026-01-02 14:23:58.924093100 +0900
+@@ -7,15 +7,14 @@ project(customfetch)
+ set(CMAKE_CXX_STANDARD 20)
+ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb3 -O0 -DDEBUG=1 -Wall -Wextra -Wpedantic -Wno-unused-parameter")
+ 
+-include_directories(include)
++set(PROJECT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+ 
+ file(GLOB
+ 	SRC
+ 	"src/*.cpp"
+ 	"src/query/linux/*.cpp"
+ 	"src/query/android/*.cpp"
+-	"src/query/linux/utils/*.cpp"
+-	"src/toml++/toml.cpp")
++    "src/query/linux/utils/*.cpp")
+ 
+ if(GUI_APP)
+ set(TARGET_NAME customfetch-gui)
+@@ -25,12 +24,42 @@ endif()
+ 
+ add_executable(${TARGET_NAME} ${SRC})
+ 
+-# get git branch
+-execute_process(
+-    COMMAND git rev-parse --abbrev-ref HEAD
+-    OUTPUT_VARIABLE GIT_BRANCH
+-    OUTPUT_STRIP_TRAILING_WHITESPACE
+-)
++# Project headers (added after pkg-config include dirs)
++target_include_directories(${TARGET_NAME} PRIVATE "${PROJECT_INCLUDE_DIR}")
++
++# Force system-installed deps (bundled {include,src}/{fmt,toml++} removed)
++find_package(PkgConfig REQUIRED)
++
++pkg_check_modules(TOMLPLUSPLUS REQUIRED tomlplusplus)
++message(STATUS "  TOMLPLUSPLUS: using system library via pkg-config")
++target_link_libraries(${TARGET_NAME} PUBLIC ${TOMLPLUSPLUS_LIBRARIES})
++target_include_directories(${TARGET_NAME} SYSTEM PUBLIC ${TOMLPLUSPLUS_INCLUDE_DIRS})
++target_compile_options(${TARGET_NAME} PUBLIC ${TOMLPLUSPLUS_CFLAGS_OTHER})
++
++pkg_check_modules(FMT REQUIRED fmt)
++message(STATUS "  FMT: using system library via pkg-config")
++target_link_libraries(${TARGET_NAME} PUBLIC ${FMT_LIBRARIES})
++target_include_directories(${TARGET_NAME} SYSTEM PUBLIC ${FMT_INCLUDE_DIRS})
++target_compile_options(${TARGET_NAME} PUBLIC ${FMT_CFLAGS_OTHER})
++
++# get git branch (only if not provided via -DGIT_BRANCH=...)
++set(GIT_BRANCH "" CACHE STRING "Git branch name to embed; auto-detected when empty")
++if(NOT GIT_BRANCH)
++    find_package(Git QUIET)
++    if(GIT_FOUND)
++        execute_process(
++            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
++            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
++            OUTPUT_VARIABLE GIT_BRANCH
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++            ERROR_QUIET
++        )
++    endif()
++    if(NOT GIT_BRANCH)
++        set(GIT_BRANCH "unknown")
++    endif()
++    set(GIT_BRANCH "${GIT_BRANCH}" CACHE STRING "Git branch name to embed; auto-detected when empty" FORCE)
++endif()
+ 
+ set(VERSION "1.0.0")
+ target_compile_definitions(${TARGET_NAME} PRIVATE
+@@ -74,10 +103,3 @@ if(USE_DCONF)
+         target_compile_options(${TARGET_NAME} PUBLIC ${DCONF_CFLAGS_OTHER})
+ endif()
+ 
+-
+-# fmt
+-add_library(fmt STATIC
+-	"src/fmt/os.cc"
+-	"src/fmt/format.cc")
+-
+-target_link_libraries(${TARGET_NAME} PUBLIC fmt)
+--- origsrc/customfetch-1.0.0/include/config.hpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/include/config.hpp	2026-01-02 14:23:58.840020800 +0900
+@@ -32,7 +32,7 @@
+ #include <type_traits>
+ #include <unordered_map>
+ 
+-#include "toml++/toml.hpp"
++#include <toml++/toml.hpp>
+ #include "util.hpp"
+ 
+ enum types
+--- origsrc/customfetch-1.0.0/include/platform.hpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/include/platform.hpp	2026-01-02 14:24:51.866177200 +0900
+@@ -7,13 +7,13 @@
+ # define CF_ANDROID 0
+ #endif
+ 
+-#if (defined(__linux) || defined(__linux__) || defined(__gnu_linux__)) && !CF_ANDROID
++#if (defined(__linux) || defined(__linux__) || defined(__gnu_linux__) || defined(__CYGWIN__)) && !CF_ANDROID
+ # define CF_LINUX 1
+ #else
+ # define CF_LINUX 0
+ #endif
+ 
+-#if (defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__))
++#if (defined(_WIN32) || defined(_WIN64))
+ # define CF_WINDOWS 1
+ #else
+ # define CF_WINDOWS 0
+--- origsrc/customfetch-1.0.0/include/util.hpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/include/util.hpp	2026-01-02 14:23:58.839021000 +0900
+@@ -37,10 +37,10 @@
+ #include <string>
+ #include <vector>
+ 
+-#include "fmt/base.h"
+-#include "fmt/chrono.h"
+-#include "fmt/color.h"
+-#include "fmt/os.h"
++#include <fmt/base.h>
++#include <fmt/chrono.h>
++#include <fmt/color.h>
++#include <fmt/os.h>
+ #include "platform.hpp"
+ 
+ // clang-format off
+--- origsrc/customfetch-1.0.0/src/config.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/config.cpp	2026-01-02 14:23:58.818465100 +0900
+@@ -29,7 +29,7 @@
+ #include <filesystem>
+ #include <string>
+ 
+-#include "fmt/os.h"
++#include <fmt/os.h>
+ #include "query.hpp"
+ #include "switch_fnv1a.hpp"
+ #include "util.hpp"
+--- origsrc/customfetch-1.0.0/src/display.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/display.cpp	2026-01-02 14:25:59.875341300 +0900
+@@ -33,6 +33,7 @@
+ #endif
+ 
+ #include <pty.h>
++#include <sys/ioctl.h>
+ #include <termios.h>
+ #include <unistd.h>
+ 
+@@ -44,8 +45,8 @@
+ #include <vector>
+ 
+ #include "config.hpp"
+-#include "fmt/core.h"
+-#include "fmt/format.h"
++#include <fmt/core.h>
++#include <fmt/format.h>
+ #include "parse.hpp"
+ #include "query.hpp"
+ #include "stb_image.h"
+--- origsrc/customfetch-1.0.0/src/gui.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/gui.cpp	2026-01-02 14:23:58.814464100 +0900
+@@ -34,7 +34,7 @@
+ 
+ #include "config.hpp"
+ #include "display.hpp"
+-#include "fmt/ranges.h"
++#include <fmt/ranges.h>
+ #include "gdkmm/pixbufanimation.h"
+ #include "glibmm/main.h"
+ #include "gtkmm/enums.h"
+--- origsrc/customfetch-1.0.0/src/main.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/main.cpp	2026-01-02 14:23:58.825493700 +0900
+@@ -34,7 +34,7 @@
+ 
+ #include "config.hpp"
+ #include "display.hpp"
+-#include "fmt/ranges.h"
++#include <fmt/ranges.h>
+ #include "gui.hpp"
+ #include "query.hpp"
+ #include "switch_fnv1a.hpp"
+--- origsrc/customfetch-1.0.0/src/parse.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/parse.cpp	2026-01-02 14:43:28.743437400 +0900
+@@ -40,9 +40,9 @@
+ #include <vector>
+ 
+ #include "config.hpp"
+-#include "fmt/color.h"
+-#include "fmt/format.h"
+-#include "fmt/ranges.h"
++#include <fmt/color.h>
++#include <fmt/format.h>
++#include <fmt/ranges.h>
+ #include "query.hpp"
+ #include "switch_fnv1a.hpp"
+ #include "util.hpp"
+@@ -541,6 +541,7 @@ jumpauto:
+             if (pos != std::string::npos)
+             {
+                 const std::string& opt_clr = str_clr.substr(0, pos);
++                const fmt::rgb parsed_rgb = hexStringToColor(str_clr.substr(pos));
+ 
+                 fmt::text_style style;
+ 
+@@ -563,7 +564,7 @@ jumpauto:
+                     {
+                         case 'b':
+                             bgcolor = true;
+-                            append_styles(style, fmt::bg(hexStringToColor(str_clr.substr(pos))));
++                            append_styles(style, fmt::bg(parsed_rgb));
+                             break;
+                         case '!': append_styles(style, fmt::emphasis::bold); break;
+                         case 'u': append_styles(style, fmt::emphasis::underline); break;
+@@ -583,7 +584,7 @@ jumpauto:
+                 }
+ 
+                 if (!bgcolor)
+-                    append_styles(style, fmt::fg(hexStringToColor(str_clr.substr(pos))));
++                    append_styles(style, fmt::fg(parsed_rgb));
+ 
+                 // you can't fmt::format(style, ""); ughh
+                 if (style.has_emphasis())
+@@ -593,9 +594,7 @@ jumpauto:
+                 }
+                 if (style.has_background() || style.has_foreground())
+                 {
+-                    const uint32_t rgb_num = bgcolor ? style.get_background().value.rgb_color : style.get_foreground().value.rgb_color;
+-                    fmt::rgb rgb(rgb_num);
+-                    fmt::detail::ansi_color_escape<char> ansi(rgb, bgcolor ? "\x1B[48;2;" : "\x1B[38;2;");
++                    fmt::detail::ansi_color_escape<char> ansi(parsed_rgb, bgcolor ? "\x1B[48;2;" : "\x1B[38;2;");
+                     output += ansi.begin();
+                 }
+             }
+--- origsrc/customfetch-1.0.0/src/query/android/user.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/android/user.cpp	2026-01-02 14:23:58.836207900 +0900
+@@ -32,7 +32,7 @@
+ #include <cstdlib>
+ #include <string>
+ 
+-#include "fmt/format.h"
++#include <fmt/format.h>
+ #include "query.hpp"
+ #include "util.hpp"
+ 
+--- origsrc/customfetch-1.0.0/src/query/linux/cpu.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/cpu.cpp	2026-01-02 14:23:58.838022800 +0900
+@@ -35,7 +35,7 @@
+ #include <string>
+ #include <string_view>
+ 
+-#include "fmt/format.h"
++#include <fmt/format.h>
+ #include "query.hpp"
+ #include "switch_fnv1a.hpp"
+ #include "util.hpp"
+--- origsrc/customfetch-1.0.0/src/query/linux/disk.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/disk.cpp	2026-01-02 14:26:22.928176900 +0900
+@@ -149,8 +149,10 @@ static int get_disk_type(const mntent* d
+     else
+         ret = DISK_VOLUME_TYPE_REGULAR;
+ 
++#if defined(MNTOPT_RO)
+     if (hasmntopt(device, MNTOPT_RO))
+         ret |= DISK_VOLUME_TYPE_READ_ONLY;
++#endif
+ 
+     return ret;
+ #else // CF_ANDROID
+--- origsrc/customfetch-1.0.0/src/query/linux/gpu.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/gpu.cpp	2026-01-02 14:23:58.838022800 +0900
+@@ -29,7 +29,7 @@
+ #include <cstdint>
+ #include <filesystem>
+ #include <string>
+-#include "fmt/format.h"
++#include <fmt/format.h>
+ 
+ #include "query.hpp"
+ #include "util.hpp"
+--- origsrc/customfetch-1.0.0/src/query/linux/system.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/system.cpp	2026-01-02 15:24:58.676210800 +0900
+@@ -26,7 +26,9 @@
+ #include "platform.hpp"
+ #if CF_LINUX
+ 
++#if !defined(__CYGWIN__)
+ #include <linux/limits.h>
++#endif
+ #include <unistd.h>
+ 
+ #include <array>
+@@ -129,6 +131,10 @@ static System::System_t get_system_infos
+         }
+     }
+ 
++#if defined(__CYGWIN__)
++	ret.os_name = "Cygwin";
++	ret.os_pretty_name = "Cygwin";
++#else
+     std::ifstream os_release_file(os_release_path, std::ios::in);
+     if (!os_release_file.is_open())
+     {
+@@ -156,6 +162,7 @@ static System::System_t get_system_infos
+         else if (hasStart(line, "VERSION_CODENAME="))
+             getFileValue(iter_index, line, ret.os_version_codename, "VERSION_CODENAME="_len);
+     }
++#endif
+ 
+     return ret;
+ }
+--- origsrc/customfetch-1.0.0/src/query/linux/theme.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/theme.cpp	2026-01-02 14:23:58.830010900 +0900
+@@ -30,7 +30,7 @@
+ #include <cstdint>
+ 
+ #include "config.hpp"
+-#include "fmt/format.h"
++#include <fmt/format.h>
+ #include "parse.hpp"
+ #include "query.hpp"
+ #include "rapidxml-1.13/rapidxml.hpp"
+--- origsrc/customfetch-1.0.0/src/query/linux/utils/term.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/query/linux/utils/term.cpp	2026-01-02 14:23:58.830010900 +0900
+@@ -22,7 +22,7 @@
+ 
+ #include <fstream>
+ 
+-#include "fmt/format.h"
++#include <fmt/format.h>
+ #include "util.hpp"
+ 
+ void get_term_version_exec(const std::string_view term, std::string& ret, bool _short, bool _stderr)
+--- origsrc/customfetch-1.0.0/src/util.cpp	2025-03-02 05:20:07.000000000 +0900
++++ src/customfetch-1.0.0/src/util.cpp	2026-01-02 14:23:58.818465100 +0900
+@@ -45,8 +45,8 @@
+ #include <tuple>
+ #include <vector>
+ 
+-#include "fmt/color.h"
+-#include "fmt/ranges.h"
++#include <fmt/color.h>
++#include <fmt/ranges.h>
+ #include "pci.ids.hpp"
+ #include "platform.hpp"
+ 
