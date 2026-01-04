@@ -10,41 +10,44 @@ LICENSE="GPL-3.0-or-later"
 LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
 LICENSE_URI="COPYING"
 
-BUILD_REQUIRES="liblapack-devel libmctc-lib-devel libmstore-devel libmulticharge-devel"
-
-inherit cmake
-
-CYGCMAKE_ARGS="
-	-DBUILD_SHARED_LIBS:BOOL=ON
+BUILD_REQUIRES="
+	liblapack-devel
+	libmctc-lib-devel
+	libmulticharge-devel
 "
 
-PKG_IGNORE="
-	usr/lib/cmake/${PN}/Findcustom-blas.cmake
-	usr/lib/cmake/${PN}/Findmctc-lib.cmake
-	usr/lib/cmake/${PN}/Findmstore.cmake
-	usr/lib/cmake/${PN}/Findmulticharge.cmake
-	usr/share/licenses/${PN}/COPYING
-	usr/share/licenses/${PN}/COPYING.LESSER
+inherit meson
+
+CYGMESON_ARGS="
+	-Ddefault_library=shared
 "
+
+src_install()
+{
+	cd ${S}
+	meson_install
+
+	cd ${D}
+	verbose mkdir -p usr/share/doc/${PN}/
+	verbose mv usr/share/licenses/${PN}/* usr/share/doc/${PN}/
+}
 
 PKG_NAMES="
 	dftd4
-	libdftd4_3
+	libdftd4_4
 	libdftd4-devel
 "
 dftd4_CONTENTS="
 	usr/bin/*.exe
-	usr/share/doc
+	usr/share
 "
-libdftd4_3_CONTENTS="
-	usr/bin/cyg*-3.dll
+libdftd4_4_CONTENTS="
+	usr/bin/cyg*-4.dll
 "
 libdftd4_devel_CONTENTS="
 	usr/include
-	usr/lib/cmake/${PN}/${PN}*.cmake
-	usr/lib/lib${PN}.dll.a
-	usr/lib/pkgconfig
+	usr/lib
 "
 dftd4_SUMMARY="${SUMMARY} (utilities)"
-libdftd4_3_SUMMARY="${SUMMARY} (runtime)"
+libdftd4_4_SUMMARY="${SUMMARY} (runtime)"
 libdftd4_devel_SUMMARY="${SUMMARY} (development)"
