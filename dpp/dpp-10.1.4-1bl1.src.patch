@@ -1,0 +1,61 @@
+--- origsrc/DPP-10.1.4/library/CMakeLists.txt	2025-12-18 01:58:29.000000000 +0900
++++ src/DPP-10.1.4/library/CMakeLists.txt	2026-01-05 09:52:02.050558400 +0900
+@@ -281,6 +281,29 @@ foreach (fullmodname ${subdirlist})
+ 		)
+ 	endif()
+ 
++	if (HAVE_VOICE)
++	# Private statically linked dependencies
++		if(NOT BUILD_SHARED_LIBS AND NOT APPLE)
++			target_link_libraries(dpp PRIVATE
++					mlspp.a
++					mls_vectors.a
++					bytes.a
++					tls_syntax.a
++					hpke.a
++			)
++			message("-- INFO: Linking static dependencies")
++		else()
++			target_link_libraries(dpp PRIVATE
++					mlspp
++					mls_vectors
++					bytes
++					tls_syntax
++					hpke
++			)
++			message("-- INFO: Linking dynamic dependencies")
++		endif()
++	endif()
++
+ 	if (WIN32 AND NOT MINGW AND NOT CONAN_EXPORTED)
+ 
+ 		if (NOT WINDOWS_32_BIT)
+@@ -326,28 +349,6 @@ else()
+ 	message("-- Building with ${Green}poll socket engine${ColourReset} -- ${Red}meh!${ColourReset}")
+ 	target_sources("dpp" PRIVATE "${modules_dir}/dpp/socketengines/poll.cpp")
+ endif()
+-if (HAVE_VOICE)
+-	# Private statically linked dependencies
+-	if(NOT BUILD_SHARED_LIBS AND NOT APPLE)
+-		target_link_libraries(dpp PRIVATE
+-				mlspp.a
+-				mls_vectors.a
+-				bytes.a
+-				tls_syntax.a
+-				hpke.a
+-		)
+-		message("-- INFO: Linking static dependencies")
+-	else()
+-		target_link_libraries(dpp PRIVATE
+-				mlspp
+-				mls_vectors
+-				bytes
+-				tls_syntax
+-				hpke
+-		)
+-		message("-- INFO: Linking dynamic dependencies")
+-	endif()
+-endif()
+ 
+ target_compile_features(dpp PUBLIC cxx_std_17)
+ target_compile_features(dpp PRIVATE cxx_constexpr)
