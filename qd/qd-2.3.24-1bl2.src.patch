@@ -1,0 +1,72 @@
+--- origsrc/QD-2.3.24/Makefile.am	2025-03-01 15:35:04.000000000 +0900
++++ src/QD-2.3.24/Makefile.am	2026-01-07 13:41:52.873460500 +0900
+@@ -4,8 +4,8 @@ SUBDIRS = src include tests fortran
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = qd.pc
+ 
+-BUILT_SOURCES = docs/qd.pdf
+-dist_doc_DATA = README README.md docs/qd.pdf
++BUILT_SOURCES = # docs/qd.pdf
++dist_doc_DATA = README README.md # docs/qd.pdf
+ dist_noinst_DATA = docs/Makefile \
+   docs/qd.tex docs/qd.bib \
+   docs/nine-two-sum.eps docs/nine-two-sum.fig \
+@@ -23,10 +23,10 @@ dist_noinst_DATA = docs/Makefile \
+   docs/two-prod.eps docs/two-prod.fig \
+   docs/two-sum.eps docs/two-sum.fig
+ 
+-doc: docs/qd.pdf
++#doc: docs/qd.pdf
+ 
+-docs/qd.pdf:
+-	$(MAKE) -C docs qd.pdf
++#docs/qd.pdf:
++#	$(MAKE) -C docs qd.pdf
+ 
+ cpp-demo:
+ 	$(MAKE) -C tests demo
+--- origsrc/QD-2.3.24/fortran/Makefile.am	2025-03-01 15:35:04.000000000 +0900
++++ src/QD-2.3.24/fortran/Makefile.am	2026-01-07 13:35:31.603201100 +0900
+@@ -14,11 +14,10 @@ QDMOD=qdmodule.$(module_ext)
+ DDMOD=ddmodule.$(module_ext)
+ endif
+ 
+-lib_LTLIBRARIES = libqdmod.la libqd_f_main.la
++lib_LTLIBRARIES = libqdmod.la
+ libqdmod_la_SOURCES = ddext.f ddmod.f qdext.f qdmod.f f_dd.cpp f_qd.cpp
+ libqdmod_la_LIBADD = $(top_builddir)/src/libqd.la $(FCLIBS)
+-libqd_f_main_la_SOURCES = main.cpp
+-libqd_f_main_la_LIBADD = $(top_builddir)/src/libqd.la libqdmod.la $(FCLIBS)
++libqdmod_la_LDFLAGS = -no-undefined
+ ddmod.lo: $(DDEXT) ddext.lo
+ qdmod.lo: ddmod.lo $(DDMOD) qdext.lo
+ $(QDMOD): qdmod.lo $(DDMOD)
+--- origsrc/QD-2.3.24/src/Makefile.am	2025-03-01 15:35:04.000000000 +0900
++++ src/QD-2.3.24/src/Makefile.am	2026-01-07 13:35:31.612760300 +0900
+@@ -4,6 +4,7 @@ SRC = c_dd.cpp c_qd.cpp dd_real.cpp dd_c
+ lib_LTLIBRARIES = libqd.la
+ 
+ libqd_la_SOURCES = $(SRC)
++libqd_la_LDFLAGS = -no-undefined
+ 
+ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/include -I$(top_srcdir)/include
+ 
+--- origsrc/QD-2.3.24/tests/Makefile.am	2025-03-01 15:35:04.000000000 +0900
++++ src/QD-2.3.24/tests/Makefile.am	2026-01-07 13:35:31.614784400 +0900
+@@ -16,7 +16,6 @@ AM_FFLAGS = $(AM_FCFLAGS)
+ f_test_SOURCES = f_test.f
+ f_test_LINK=$(CXXLINK)
+ f_test_LDADD = $(top_builddir)/fortran/libqdmod.la \
+-               $(top_builddir)/fortran/libqd_f_main.la \
+                $(LDADD) $(top_builddir)/src/libqd.la $(FCLIBS)
+ endif
+ 
+--- origsrc/QD-2.3.24/tests/f_test.f	2025-03-01 15:35:04.000000000 +0900
++++ src/QD-2.3.24/tests/f_test.f	2026-01-07 13:35:31.616795700 +0900
+@@ -28,3 +28,6 @@ subroutine f_main
+   call f_fpu_fix_end (old_cw)
+ end
+ 
++program main
++  call f_main
++end
