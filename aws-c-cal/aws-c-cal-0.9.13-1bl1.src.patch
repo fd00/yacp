@@ -1,6 +1,6 @@
---- origsrc/aws-c-cal-0.8.9/CMakeLists.txt	2025-04-02 05:25:21.000000000 +0900
-+++ src/aws-c-cal-0.8.9/CMakeLists.txt	2025-04-08 15:46:11.948010300 +0900
-@@ -102,7 +102,7 @@ if (NOT BYO_CRYPTO)
+--- origsrc/aws-c-cal-0.9.13/CMakeLists.txt	2025-11-27 03:34:13.000000000 +0900
++++ src/aws-c-cal-0.9.13/CMakeLists.txt	2026-01-09 15:32:17.404011000 +0900
+@@ -130,7 +130,7 @@ if (NOT BYO_CRYPTO)
          if (USE_OPENSSL AND NOT ANDROID)
              find_package(OpenSSL REQUIRED)
              find_package(Threads REQUIRED)
@@ -9,7 +9,7 @@
              message(STATUS "Using libcrypto from system: ${OPENSSL_CRYPTO_LIBRARY}")
          elseif(NOT USE_OPENSSL AND IN_SOURCE_BUILD)
              if (TARGET crypto)
-@@ -156,6 +156,10 @@ endif()
+@@ -184,6 +184,10 @@ endif()
  # Our ABI is not yet stable
  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 1.0.0)
  
@@ -20,7 +20,7 @@
  target_include_directories(${PROJECT_NAME} PUBLIC
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:include>)
-@@ -180,7 +184,7 @@ else()
+@@ -208,7 +212,7 @@ else()
  endif()
  
  install(EXPORT "${PROJECT_NAME}-targets"
@@ -29,7 +29,7 @@
      NAMESPACE AWS::
      COMPONENT Development)
  
-@@ -205,3 +209,10 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
+@@ -233,3 +237,10 @@ if (NOT CMAKE_CROSSCOMPILING AND NOT BYO
          add_subdirectory(tests)
      endif()
  endif()
@@ -40,8 +40,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/aws-c-cal.pc.in ${CMAKE_BINARY_DIR}/aws-c-cal.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/aws-c-cal.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/aws-c-cal-0.8.9/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws-c-cal-0.8.9/aws-c-cal.pc.in	2025-04-08 15:46:17.027058200 +0900
+--- origsrc/aws-c-cal-0.9.13/aws-c-cal.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/aws-c-cal-0.9.13/aws-c-cal.pc.in	2026-01-09 15:32:17.407006800 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -53,8 +53,8 @@
 +Version: @VERSION@
 +Libs: -L${libdir} -laws-c-cal
 +Cflags: -I${includedir}
---- origsrc/aws-c-cal-0.8.9/cmake/aws-c-cal-config.cmake	2025-04-02 05:25:21.000000000 +0900
-+++ src/aws-c-cal-0.8.9/cmake/aws-c-cal-config.cmake	2025-04-08 15:31:39.113446600 +0900
+--- origsrc/aws-c-cal-0.9.13/cmake/aws-c-cal-config.cmake	2025-11-27 03:34:13.000000000 +0900
++++ src/aws-c-cal-0.9.13/cmake/aws-c-cal-config.cmake	2026-01-09 15:32:17.410162300 +0900
 @@ -14,21 +14,4 @@ if (NOT @BYO_CRYPTO@ AND (@AWS_USE_LIBCR
      endif()
  endif()
@@ -78,8 +78,8 @@
 -    endif()
 -endif()
 +include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake)
---- origsrc/aws-c-cal-0.8.9/cmake/modules/Findcrypto.cmake	2025-04-02 05:25:21.000000000 +0900
-+++ src/aws-c-cal-0.8.9/cmake/modules/Findcrypto.cmake	2025-04-08 15:31:58.730199900 +0900
+--- origsrc/aws-c-cal-0.9.13/cmake/modules/Findcrypto.cmake	2025-11-27 03:34:13.000000000 +0900
++++ src/aws-c-cal-0.9.13/cmake/modules/Findcrypto.cmake	2026-01-09 15:32:17.413370600 +0900
 @@ -41,7 +41,7 @@ else()
          )
  
@@ -89,9 +89,9 @@
          HINTS
          ${CMAKE_PREFIX_PATH}/build/crypto
          ${CMAKE_PREFIX_PATH}/build
---- origsrc/aws-c-cal-0.8.9/source/unix/openssl_platform_init.c	2025-04-02 05:25:21.000000000 +0900
-+++ src/aws-c-cal-0.8.9/source/unix/openssl_platform_init.c	2025-04-08 15:40:46.591985700 +0900
-@@ -129,6 +129,11 @@ enum aws_libcrypto_version {
+--- origsrc/aws-c-cal-0.9.13/source/unix/openssl_platform_init.c	2025-11-27 03:34:13.000000000 +0900
++++ src/aws-c-cal-0.9.13/source/unix/openssl_platform_init.c	2026-01-09 15:32:17.417381100 +0900
+@@ -155,6 +155,11 @@ enum aws_libcrypto_version {
      AWS_LIBCRYPTO_BORINGSSL
  };
  
@@ -103,7 +103,7 @@
  bool s_resolve_hmac_102(void *module) {
  #if defined(OPENSSL_IS_OPENSSL)
      hmac_ctx_init init_fn = (hmac_ctx_init)HMAC_CTX_init;
-@@ -311,6 +316,10 @@ static enum aws_libcrypto_version s_reso
+@@ -353,6 +358,10 @@ static enum aws_libcrypto_version s_reso
      return AWS_LIBCRYPTO_NONE;
  }
  
@@ -114,7 +114,7 @@
  #if !defined(OPENSSL_IS_AWSLC)
  /* EVP_MD_CTX API */
  /* 1.0.2 NOTE: these are macros in 1.1.x, so we have to undef them to weak link */
-@@ -334,6 +343,7 @@ static evp_md_ctx_free s_EVP_MD_CTX_dest
+@@ -376,6 +385,7 @@ static evp_md_ctx_free s_EVP_MD_CTX_dest
  #        pragma pop_macro("EVP_MD_CTX_destroy")
  #    endif
  #endif /* !OPENSSL_IS_AWSLC */
