@@ -1,0 +1,124 @@
+--- origsrc/kfr-7.0.1/cmake/add_kfr_library.cmake	2025-11-14 19:06:46.000000000 +0900
++++ src/kfr-7.0.1/cmake/add_kfr_library.cmake	2026-01-13 18:07:13.842503500 +0900
+@@ -13,7 +13,7 @@ function (add_kfr_library)
+         add_library(${LIB_NAME} INTERFACE)
+         list(GET KFR_ARCHS 0 BASE_ARCH)
+         foreach (ARCH IN LISTS KFR_ARCHS)
+-            add_library(${LIB_NAME}_${ARCH} STATIC ${LIB_SOURCES})
++            add_library(${LIB_NAME}_${ARCH} ${LIB_SOURCES})
+             target_compile_definitions(${LIB_NAME}_${ARCH} PRIVATE KFR_MULTI=1)
+             foreach (ENABLED_ARCH IN LISTS KFR_ARCHS)
+                 string(TOUPPER ${ENABLED_ARCH} ENABLED_ARCH_UPPER)
+@@ -41,12 +41,16 @@ function (add_kfr_library)
+         target_compile_definitions(
+             ${LIB_NAME} INTERFACE $<BUILD_INTERFACE:${LIB_PUBLIC_DEFINITIONS}>)
+     else ()
+-        add_library(${LIB_NAME} STATIC ${LIB_SOURCES})
++        add_library(${LIB_NAME} ${LIB_SOURCES})
+         list(APPEND ${LIB_NAME}_LIBS ${LIB_NAME})
+         list(APPEND ${LIB_NAME}_TARGETS ${LIB_NAME})
+         target_set_arch(${LIB_NAME} PRIVATE ${KFR_ARCH})
+     endif ()
+ 
++    if (DEFINED SOVERSION)
++        set_target_properties(${LIB_NAME} PROPERTIES SOVERSION ${SOVERSION})
++    endif ()
++
+     foreach (LIB IN LISTS ${LIB_NAME}_LIBS)
+         target_link_libraries(${LIB} PUBLIC kfr)
+         target_link_libraries(${LIB} PRIVATE ${LIB_LIBRARIES})
+--- origsrc/kfr-7.0.1/src/audio/CMakeLists.txt	2025-11-14 19:06:46.000000000 +0900
++++ src/kfr-7.0.1/src/audio/CMakeLists.txt	2026-01-13 21:07:06.467730400 +0900
+@@ -14,12 +14,12 @@ find_package(Ogg CONFIG CMAKE_FIND_ROOT_
+ find_package(FLAC CONFIG CMAKE_FIND_ROOT_PATH_BOTH)
+ if (TARGET FLAC::FLAC)
+     get_target_property(_type FLAC::FLAC TYPE)
+-    if (_type STREQUAL "SHARED_LIBRARY")
+-        message(
+-            WARNING
+-                "FLAC::FLAC (${}) is a shared library, but kfr_audio requires the static FLAC library. Please install the static FLAC library and set CMAKE_PREFIX_PATH accordingly."
+-        )
+-    else ()
++    #if (_type STREQUAL "SHARED_LIBRARY")
++    #    message(
++    #        WARNING
++    #            "FLAC::FLAC (${}) is a shared library, but kfr_audio requires the static FLAC library. Please install the static FLAC library and set CMAKE_PREFIX_PATH accordingly."
++    #    )
++    #else ()
+         message(STATUS "FLAC found, enabling FLAC support in kfr_audio")
+         target_link_libraries(kfr_audio PUBLIC $<BUILD_INTERFACE:FLAC::FLAC>)
+         target_compile_definitions(kfr_audio
+@@ -27,7 +27,7 @@ if (TARGET FLAC::FLAC)
+         set(KFR_AUDIO_FLAC
+             TRUE
+             CACHE BOOL "FLAC support enabled in kfr_audio" FORCE)
+-    endif ()
++    #endif ()
+ else ()
+     message(STATUS "FLAC not found, FLAC support in kfr_audio disabled")
+     message(
+@@ -40,24 +40,22 @@ if (TARGET Ogg::ogg)
+     message(STATUS "Ogg found")
+ endif ()
+ 
+-find_path(
+-    ALAC_INCLUDE_DIRS "alac/ALACDecoder.h"
+-    PATH_SUFFIXES include
+-    CMAKE_FIND_ROOT_PATH_BOTH)
+-find_library(
+-    ALAC_LIBRARY
+-    NAMES libalac alac
+-    PATH_SUFFIXES lib
+-    CMAKE_FIND_ROOT_PATH_BOTH)
+-
+-if (ALAC_INCLUDE_DIRS AND ALAC_LIBRARY)
+-    add_library(ALAC::ALAC UNKNOWN IMPORTED)
+-    set_target_properties(
+-        ALAC::ALAC
+-        PROPERTIES IMPORTED_LOCATION "${ALAC_LIBRARY}"
+-                   INTERFACE_INCLUDE_DIRECTORIES "${ALAC_INCLUDE_DIR}")
++#find_path(
++#    ALAC_INCLUDE_DIRS "alac/ALACDecoder.h"
++#    PATH_SUFFIXES include
++#    CMAKE_FIND_ROOT_PATH_BOTH)
++#find_library(
++#    ALAC_LIBRARY
++#    NAMES libalac alac
++#    PATH_SUFFIXES lib
++#    CMAKE_FIND_ROOT_PATH_BOTH)
++
++find_package(PkgConfig)
++pkg_check_modules(ALAC alac)
++if (ALAC_FOUND)
+     message(STATUS "ALAC found, enabling ALAC support in kfr_audio")
+-    target_link_libraries(kfr_audio PUBLIC $<BUILD_INTERFACE:ALAC::ALAC>)
++    target_link_libraries(kfr_audio PUBLIC ${ALAC_LINK_LIBRARIES})
++    target_include_directories(kfr_audio PUBLIC ${ALAC_INCLUDE_DIRS})
+     target_compile_definitions(kfr_audio
+                                PUBLIC $<BUILD_INTERFACE:KFR_AUDIO_ALAC=1>)
+     set(KFR_AUDIO_ALAC
+@@ -95,11 +93,4 @@ if (KFR_INSTALL_LIBRARIES)
+                 DESTINATION lib$<$<CONFIG:Debug>:${KFR_DEBUG_INSTALL_SUFFIX}>)
+         endif ()
+     endif ()
+-    if (KFR_AUDIO_ALAC)
+-        if (TARGET ALAC::ALAC)
+-            install(
+-                FILES $<TARGET_FILE:ALAC::ALAC>
+-                DESTINATION lib$<$<CONFIG:Debug>:${KFR_DEBUG_INSTALL_SUFFIX}>)
+-        endif ()
+-    endif ()
+ endif ()
+--- origsrc/kfr-7.0.1/src/capi/CMakeLists.txt	2025-11-14 19:06:46.000000000 +0900
++++ src/kfr-7.0.1/src/capi/CMakeLists.txt	2026-01-13 18:07:45.401333900 +0900
+@@ -30,6 +30,10 @@ target_link_libraries(kfr_capi PRIVATE k
+ 
+ target_compile_definitions(kfr_capi PRIVATE KFR_BUILDING_DLL=1)
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(kfr_capi PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+     set_property(
+         TARGET kfr_capi
