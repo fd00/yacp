@@ -1,0 +1,180 @@
+--- origsrc/lcm-1.5.2/examples/cpp/lcm_log_writer/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/examples/cpp/lcm_log_writer/CMakeLists.txt	2026-01-15 10:30:10.529601600 +0900
+@@ -23,4 +23,4 @@ target_include_directories(pjs_messages-
+ 
+ # Create executable
+ add_executable(lcm_log_writer "main.cpp")
+-lcm_target_link_libraries(lcm_log_writer pjs_messages-cpp ${LCM_NAMESPACE}lcm-static)
++lcm_target_link_libraries(lcm_log_writer pjs_messages-cpp ${LCM_NAMESPACE}lcm)
+--- origsrc/lcm-1.5.2/lcm/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/lcm/CMakeLists.txt	2026-01-15 09:24:38.928725300 +0900
+@@ -46,10 +46,9 @@ endif()
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+ add_library(lcm-coretypes INTERFACE)
+-add_library(lcm-static STATIC ${lcm_sources})
+ add_library(lcm SHARED ${lcm_sources})
+ 
+-foreach(lcm_lib lcm lcm-static)
++foreach(lcm_lib lcm)
+   target_compile_definitions(${lcm_lib} PRIVATE
+     _FILE_OFFSET_BITS=64
+     _LARGEFILE_SOURCE
+@@ -79,16 +78,11 @@ endforeach()
+ 
+ generate_export_header(lcm STATIC_DEFINE LCM_STATIC)
+ 
+-target_compile_definitions(lcm-static PUBLIC LCM_STATIC)
+-if(NOT WIN32)
+-  set_target_properties(lcm-static PROPERTIES OUTPUT_NAME lcm)
+-endif()
+-
+ target_include_directories(lcm-coretypes INTERFACE
+   $<BUILD_INTERFACE:${lcm_SOURCE_DIR}>
+ )
+ 
+-install(TARGETS lcm-coretypes lcm-static lcm
++install(TARGETS lcm-coretypes lcm
+   EXPORT lcmTargets
+   RUNTIME DESTINATION bin
+   LIBRARY DESTINATION lib${LIB_SUFFIX}
+--- origsrc/lcm-1.5.2/lcm-cmake/install.cmake	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/lcm-cmake/install.cmake	2026-01-15 10:37:07.172822400 +0900
+@@ -1,9 +1,11 @@
+ include(CMakePackageConfigHelpers)
+ 
+-if(WIN32)
+-  set(CONFIG_INSTALL_DIR CMake)
+-else()
+-  set(CONFIG_INSTALL_DIR lib${LIB_SUFFIX}/${PROJECT_NAME}/cmake)
++if(NOT DEFINED CONFIG_INSTALL_DIR)
++  if(WIN32)
++    set(CONFIG_INSTALL_DIR CMake)
++  else()
++    set(CONFIG_INSTALL_DIR lib${LIB_SUFFIX}/${PROJECT_NAME}/cmake)
++  endif()
+ endif()
+ 
+ # Java exported targets (note: must precede configure_package_config_file)
+--- origsrc/lcm-1.5.2/lcm-cmake/lcmUtilities.cmake	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/lcm-cmake/lcmUtilities.cmake	2026-01-15 10:30:17.419807200 +0900
+@@ -400,7 +400,7 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.1)
+       add_library(${NAME} ${_type} ${ARGN})
+       add_dependencies(${NAME} ${NAME}.sources)
+       target_link_libraries(${NAME}
+-        PRIVATE ${LCM_NAMESPACE}lcm-static
++        PRIVATE ${LCM_NAMESPACE}lcm
+         PUBLIC ${LCM_NAMESPACE}lcm-coretypes)
+ 
+     # C++ library
+--- origsrc/lcm-1.5.2/lcm-logger/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/lcm-logger/CMakeLists.txt	2026-01-15 09:50:25.801998200 +0900
+@@ -1,8 +1,8 @@
+ add_executable(lcm-logger lcm_logger.c glib_util.c)
+-target_link_libraries(lcm-logger lcm-static ${lcm-winport} GLib2::glib)
++target_link_libraries(lcm-logger lcm ${lcm-winport} GLib2::glib)
+ 
+ add_executable(lcm-logplayer lcm_logplayer.c)
+-target_link_libraries(lcm-logplayer lcm-static ${lcm-winport} GLib2::glib)
++target_link_libraries(lcm-logplayer lcm ${lcm-winport} GLib2::glib)
+ 
+ install(TARGETS
+   lcm-logger
+--- origsrc/lcm-1.5.2/lcm-python/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/lcm-python/CMakeLists.txt	2026-01-15 09:56:26.375692200 +0900
+@@ -52,14 +52,14 @@ else ()
+ endif ()
+ 
+ target_link_libraries(lcm-python PRIVATE
+-  lcm-static
++  lcm
+ )
+ 
+ if(APPLE)
+   set_target_properties(lcm-python PROPERTIES LINK_FLAGS "-undefined dynamic_lookup -Wl,-no_fixup_chains")
+ else()
+   target_link_libraries(lcm-python PRIVATE
+-    ${Python_LIBRARIES}
++    ${Python3_LIBRARIES}
+   )
+ endif()
+ 
+--- origsrc/lcm-1.5.2/liblcm-test/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/liblcm-test/CMakeLists.txt	2026-01-15 09:52:13.818264900 +0900
+@@ -1,29 +1,29 @@
+ add_executable(lcm-sink lcm-sink.c)
+-target_link_libraries(lcm-sink lcm-static)
++target_link_libraries(lcm-sink lcm)
+ 
+ add_executable(lcm-source lcm-source.c)
+-target_link_libraries(lcm-source lcm-static ${lcm-winport})
++target_link_libraries(lcm-source lcm ${lcm-winport})
+ 
+ add_executable(lcm-tester lcm-tester.c)
+-target_link_libraries(lcm-tester lcm-static GLib2::glib)
++target_link_libraries(lcm-tester lcm GLib2::glib)
+ if(WIN32)
+   target_link_libraries(lcm-tester wsock32 ws2_32)
+ endif()
+ 
+ add_executable(lcm-example lcm-example.c)
+-target_link_libraries(lcm-example lcm-static)
++target_link_libraries(lcm-example lcm)
+ if(WIN32)
+   target_link_libraries(lcm-example ws2_32)
+ endif()
+ 
+ add_executable(lcm-logfilter lcm-logfilter.c)
+-target_link_libraries(lcm-logfilter lcm-static ${lcm-winport} GLib2::glib)
++target_link_libraries(lcm-logfilter lcm ${lcm-winport} GLib2::glib)
+ 
+ add_executable(lcm-buftest-receiver buftest-receiver.c)
+-target_link_libraries(lcm-buftest-receiver lcm-static GLib2::glib)
++target_link_libraries(lcm-buftest-receiver lcm GLib2::glib)
+ 
+ add_executable(lcm-buftest-sender buftest-sender.c)
+-target_link_libraries(lcm-buftest-sender lcm-static GLib2::glib)
++target_link_libraries(lcm-buftest-sender lcm GLib2::glib)
+ 
+ install(TARGETS
+   lcm-sink
+--- origsrc/lcm-1.5.2/test/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/test/CMakeLists.txt	2026-01-15 10:29:21.640856400 +0900
+@@ -1,4 +1,9 @@
+-add_subdirectory(gtest)
++find_package(gtest)
++if (NOT GTEST_FOUND)
++  add_subdirectory(gtest)
++endif()
++
++include_directories(${CMAKE_BINARY_DIR}/lcm)
+ 
+ add_subdirectory(types)
+ 
+--- origsrc/lcm-1.5.2/test/c/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/test/c/CMakeLists.txt	2026-01-15 10:29:15.934885500 +0900
+@@ -1,7 +1,7 @@
+-set(test_c_libs lcm-test-types-c-static lcm-static gtest gtest_main)
++set(test_c_libs lcm-test-types-c lcm gtest gtest_main)
+ 
+ add_executable(test-c-server server.c common.c)
+-target_link_libraries(test-c-server lcm-test-types-c-static lcm-static)
++target_link_libraries(test-c-server lcm-test-types-c lcm)
+ 
+ add_executable(test-c-client client.cpp common.c)
+ target_link_libraries(test-c-client ${test_c_libs})
+--- origsrc/lcm-1.5.2/test/types/CMakeLists.txt	2025-10-24 00:25:33.000000000 +0900
++++ src/lcm-1.5.2/test/types/CMakeLists.txt	2026-01-15 09:59:42.328421600 +0900
+@@ -41,12 +41,6 @@ set_target_properties(lcm-test-types-c P
+ target_include_directories(lcm-test-types-c INTERFACE
+   ${CMAKE_CURRENT_BINARY_DIR})
+ 
+-lcm_add_library(lcm-test-types-c-static C STATIC ${c_sources} ${c_headers})
+-generate_export_header(lcm-test-types-c-static BASE_NAME lcmtest)
+-set_target_properties(lcm-test-types-c-static PROPERTIES OUTPUT_NAME lcm-test-types)
+-target_include_directories(lcm-test-types-c-static INTERFACE
+-  ${CMAKE_CURRENT_BINARY_DIR})
+-
+ lcm_add_library(lcm-test-types-cpp CPP ${cpp_headers})
+ target_include_directories(lcm-test-types-cpp INTERFACE
+   ${CMAKE_CURRENT_BINARY_DIR})
