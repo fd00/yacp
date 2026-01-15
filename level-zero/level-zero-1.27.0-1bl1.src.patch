@@ -1,0 +1,171 @@
+--- origsrc/level-zero-1.27.0/CMakeLists.txt	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/CMakeLists.txt	2026-01-15 12:07:26.709320500 +0900
+@@ -16,25 +16,27 @@ endif()
+ project(level-zero VERSION 1.27.0)
+ include(GNUInstallDirs)
+ 
+-find_package(Git)
+-if(Git_FOUND)
+-	if(MSVC)
+-		execute_process(
+-			COMMAND CMD /c ${GIT_EXECUTABLE} rev-parse HEAD
+-			OUTPUT_VARIABLE VERSION_SHA
+-			OUTPUT_STRIP_TRAILING_WHITESPACE
+-			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-		)
+-	else()
+-	execute_process(
+-		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+-		OUTPUT_VARIABLE VERSION_SHA
+-		OUTPUT_STRIP_TRAILING_WHITESPACE
+-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+-	)
+-	endif()
+-else()
+-	set(VERSION_SHA " - No git SHA found, compiled outside git folder.")
++if (NOT DEFINED VERSION_SHA)
++    find_package(Git)
++    if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
++        if(MSVC)
++            execute_process(
++                COMMAND CMD /c ${GIT_EXECUTABLE} rev-parse HEAD
++                OUTPUT_VARIABLE VERSION_SHA
++                OUTPUT_STRIP_TRAILING_WHITESPACE
++                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++            )
++        else()
++        execute_process(
++            COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
++            OUTPUT_VARIABLE VERSION_SHA
++            OUTPUT_STRIP_TRAILING_WHITESPACE
++            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
++        )
++        endif()
++    else()
++        set(VERSION_SHA " - No git SHA found, compiled outside git folder.")
++    endif()
+ endif()
+ add_definitions(-DLOADER_VERSION_SHA="${VERSION_SHA}")
+ 
+@@ -52,17 +54,19 @@ endif()
+ include(FetchContent)
+ 
+ if(BUILD_L0_LOADER_TESTS)
+-	set(INSTALL_GTEST OFF)
+-    FetchContent_Declare(
+-        googletest
+-        GIT_REPOSITORY https://github.com/google/googletest.git
+-        GIT_TAG        v1.14.0
+-    )
+-    add_library(GTest::GTest INTERFACE IMPORTED)
+-    target_link_libraries(GTest::GTest INTERFACE gtest_main)
+-
+-	FetchContent_MakeAvailable(googletest)
++    find_package(GTest)
++    if (NOT GTest_FOUND)
++        set(INSTALL_GTEST OFF)
++        FetchContent_Declare(
++            googletest
++            GIT_REPOSITORY https://github.com/google/googletest.git
++            GIT_TAG        v1.14.0
++        )
++        add_library(GTest::GTest INTERFACE IMPORTED)
++        target_link_libraries(GTest::GTest INTERFACE gtest_main)
+ 
++        FetchContent_MakeAvailable(googletest)
++    endif()
+ 	enable_testing()
+ endif()
+ 
+@@ -208,7 +212,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRE
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+     endif()
+   else()
+-    set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
++    if (NOT CYGWIN)
++        set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
++    endif()
+   endif()
+ endif()
+ 
+--- origsrc/level-zero-1.27.0/source/CMakeLists.txt	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/source/CMakeLists.txt	2026-01-15 11:43:26.645360200 +0900
+@@ -75,9 +75,15 @@ install(TARGETS ze_loader
+ )
+ 
+ if(NOT BUILD_INSTALLER)
+-file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
+-file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+-file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++if (NOT DEFINED pkgconfig_prefix)
++    file(RELATIVE_PATH pkgconfig_prefix "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
++endif()
++if (NOT DEFINED pkgconfig_include_dir)
++    file(RELATIVE_PATH pkgconfig_include_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
++endif()
++if (NOT DEFINED pkgconfig_lib_dir)
++    file(RELATIVE_PATH pkgconfig_lib_dir "${CMAKE_INSTALL_PREFIX}" "${CMAKE_INSTALL_FULL_LIBDIR}")
++endif()
+ 
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libze_loader.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libze_loader.pc @ONLY)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/level-zero.pc.in ${CMAKE_CURRENT_BINARY_DIR}/level-zero.pc @ONLY)
+--- origsrc/level-zero-1.27.0/source/inc/ze_util.h	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/source/inc/ze_util.h	2026-01-15 11:44:29.052383700 +0900
+@@ -41,7 +41,9 @@ inline void getLastErrorString(std::stri
+ #  define putenv_safe _putenv
+ #  define strdup_safe _strdup
+ #else
+-#  include <link.h>
++#  if defined(__GLIBC__)
++#    include <link.h>
++#  endif
+ #  include <dlfcn.h>
+ #  define HMODULE void*
+ #  define LOAD_DRIVER_LIBRARY(NAME) dlopen(NAME, RTLD_LAZY|RTLD_LOCAL)
+@@ -57,6 +59,9 @@ inline void getLastErrorString(std::stri
+ #if defined(ANDROID)
+ #  define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so"
+ #  define MAKE_LAYER_NAME(NAME)    "lib" NAME ".so"
++#elif defined(__CYGWIN__)
++#  define MAKE_LIBRARY_NAME(NAME, VERSION)    "cyg" NAME "-" L0_VALIDATION_LAYER_SUPPORTED_VERSION ".dll"
++#  define MAKE_LAYER_NAME(NAME)    "cyg" NAME "-" L0_VALIDATION_LAYER_SUPPORTED_VERSION ".dll"
+ #elif !defined(WIN32)
+ #  define MAKE_LIBRARY_NAME(NAME, VERSION)    "lib" NAME ".so." VERSION
+ #  define MAKE_LAYER_NAME(NAME)    "lib" NAME ".so." L0_VALIDATION_LAYER_SUPPORTED_VERSION
+--- origsrc/level-zero-1.27.0/source/loader/ze_loader.cpp	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/source/loader/ze_loader.cpp	2026-01-15 11:45:41.522679200 +0900
+@@ -684,7 +684,7 @@ namespace loader
+                 {
+                     if (debugTraceEnabled) {
+                         std::string message = "Loading Driver " + driverInfo.path + " succeeded";
+-#if !defined(_WIN32) && !defined(ANDROID)
++#if !defined(_WIN32) && !defined(ANDROID) && defined(RTLD_DI_LINKMAP)
+                         // TODO: implement same message for windows, move dlinfo to ze_util.h as a macro
+                         struct link_map *dlinfo_map;
+                         if (dlinfo(handle, RTLD_DI_LINKMAP, &dlinfo_map) == 0) {
+--- origsrc/level-zero-1.27.0/source/utils/logging.h	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/source/utils/logging.h	2026-01-15 11:49:37.371387300 +0900
+@@ -191,10 +191,12 @@ inline std::shared_ptr<Logger> createLog
+ #else
+       home_dir = getenv_string("HOME");
+ 
++#if !defined(__CYGWIN__)
+       if (home_dir == "") {
+           auto pwdir = getpwuid(getuid())->pw_dir;
+           home_dir = (pwdir == NULL) ? "." : std::string(pwdir);
+       }
++#endif
+       log_directory = home_dir + "/" + LOADER_LOG_FILE_DIRECTORY;
+ #endif
+   }
+--- origsrc/level-zero-1.27.0/test/CMakeLists.txt	2025-12-20 05:50:38.000000000 +0900
++++ src/level-zero-1.27.0/test/CMakeLists.txt	2026-01-15 12:26:48.785094300 +0900
+@@ -97,7 +97,7 @@ if(NOT BUILD_STATIC)
+         $<TARGET_FILE_DIR:tests>/ze_fake_vpu.dll
+       COMMENT "Copying null drivers to fake driver names for init_driver_unit_tests"
+     )
+-  else()
++  elif(NOT CYGWIN)
+     add_custom_command(TARGET tests POST_BUILD
+       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+         ${CMAKE_BINARY_DIR}/lib/libze_null.so.1
