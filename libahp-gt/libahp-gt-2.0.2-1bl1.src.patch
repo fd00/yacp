@@ -1,0 +1,54 @@
+--- origsrc/libahp-gt-2.0.2/CMakeLists.txt	2026-01-13 21:38:12.000000000 +0900
++++ src/libahp-gt-2.0.2/CMakeLists.txt	2026-01-15 21:12:55.525470000 +0900
+@@ -8,7 +8,6 @@ include(GNUInstallDirs)
+ 
+ find_package(Threads REQUIRED)
+ 
+-set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+ set(AHP_GT_VERSION_MAJOR 2)
+ set(AHP_GT_VERSION_MINOR 0)
+ set(AHP_GT_VERSION_RELEASE 2)
+@@ -33,7 +32,10 @@ include_directories(${CMAKE_CURRENT_BINA
+ include_directories(${CMAKE_INCLUDE_PATH})
+ link_directories(${CMAKE_LIBRARY_PATH})
+ 
+-execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
++find_program(DOXYGEN doxygen)
++if (DOXYGEN AND BUILD_DOCS)
++    execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
++endif()
+ 
+ add_library(ahp_gt SHARED ${SOURCES} ${PLATFORM_SOURCES})
+ 
+@@ -46,6 +48,16 @@ endif(WIN32)
+ 
+ target_link_libraries(ahp_gt ${CMAKE_THREAD_LIBS_INIT})
+ 
+-install(TARGETS ahp_gt LIBRARY DESTINATION ${LIB_INSTALL_DIR})
++install(TARGETS ahp_gt RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
+-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FindAHPGT.cmake DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
++if (NOT DEFINED CMAKE_INSTALL_CMAKEDIR)
++    set(CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
++endif()
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FindAHPGT.cmake DESTINATION "${CMAKE_INSTALL_CMAKEDIR}")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libahp-gt.pc.in ${CMAKE_BINARY_DIR}/libahp-gt.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libahp-gt.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libahp-gt-2.0.2/libahp-gt.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libahp-gt-2.0.2/libahp-gt.pc.in	2026-01-15 21:13:18.106206800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libahp-gt
++Description: Driver library for the AHP® GT Correlators
++Version: @AHPGT_VERSION@
++Libs: -L${libdir} -lahp_gt
++Cflags: -I${includedir}
