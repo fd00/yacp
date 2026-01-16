@@ -1,0 +1,54 @@
+--- origsrc/libcloudproviders-0.4.0/docs/meson.build	2026-01-06 17:20:29.000000000 +0900
++++ src/libcloudproviders-0.4.0/docs/meson.build	2026-01-16 12:01:50.334448500 +0900
+@@ -26,7 +26,7 @@ gidocgen = find_program('gi-docgen')
+ docs_dir = datadir / 'doc'
+ 
+ custom_target('libcloudproviders-doc',
+-  input: [ libcloudproviders_toml, libcloudproviders_gir[0], libcloudproviders_dbus_files ],
++  input: [ libcloudproviders_toml, libcloudproviders_gir[0] ],
+   output: 'libcloudproviders-@0@'.format(libcloudproviders_api_version),
+   command: [
+     gidocgen,
+--- origsrc/libcloudproviders-0.4.0/meson.build	2026-01-06 17:20:29.000000000 +0900
++++ src/libcloudproviders-0.4.0/meson.build	2026-01-16 12:00:30.338484500 +0900
+@@ -1,6 +1,6 @@
+ project ('libcloudproviders', 'c',
+   version: '0.4.0',
+-  meson_version: '>=1.9.0',
++  meson_version: '>=1.4.0',
+   license: 'LGPL-3.0-or-later',
+   default_options: [
+     'c_std=gnu99',
+@@ -42,7 +42,7 @@ glib = dependency ('glib-2.0', version:
+ gio = dependency ('gio-2.0', version: glib_ver)
+ 
+ host_os = host_machine.system().to_lower()
+-if host_os.contains('mingw') or host_os.contains('cygwin') or host_os.contains('windows')
++if host_os.contains('mingw') or host_os.contains('windows')
+     gio_platform = dependency ('gio-windows-2.0', version: glib_ver)
+ else
+     gio_platform = dependency ('gio-unix-2.0', version: glib_ver)
+--- origsrc/libcloudproviders-0.4.0/src/meson.build	2026-01-06 17:20:29.000000000 +0900
++++ src/libcloudproviders-0.4.0/src/meson.build	2026-01-16 12:02:24.028205700 +0900
+@@ -27,12 +27,11 @@ gdbus_generated_sources = gnome.gdbus_co
+   extra_args: '--glib-min-required=@0@'.format(glib_req_version),
+   interface_prefix: 'org.freedesktop.CloudProviders',
+   namespace: 'CloudProvidersDbus',
+-  markdown: 'dbus',
+   object_manager: true
+ )
+ 
+ libcloudproviders_sources += [gdbus_generated_sources[0], gdbus_generated_sources[1]]
+-libcloudproviders_dbus_files = gdbus_generated_sources[2]
++libcloudproviders_dbus_files = []
+ libcloudproviders_dbus_files_dir = meson.current_build_dir()
+ 
+ libcloudproviders = shared_library ('cloudproviders',
+@@ -73,7 +72,6 @@ if get_option('introspection')
+     namespace: 'CloudProviders',
+     symbol_prefix: 'cloud_providers',
+     link_with: libcloudproviders,
+-    doc_format: 'gi-docgen',
+     header: 'cloudproviders/cloudproviders.h',
+     includes: [ 'GLib-2.0', 'Gio-2.0' ],
+     install: true,
