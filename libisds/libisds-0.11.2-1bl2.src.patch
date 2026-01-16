@@ -1,0 +1,151 @@
+--- origsrc/libisds-0.11.2/configure.ac	2026-01-16 21:24:28.844452700 +0900
++++ src/libisds-0.11.2/configure.ac	2026-01-16 22:35:52.552242500 +0900
+@@ -139,6 +139,11 @@ AS_IF([test "x${enable_openssl_backend}"
+   AC_SYS_LARGEFILE
+   #TODO: Determine minimal version
+   AM_PATH_GPGME()
++
++  dnl Check for libgpg-error (required by gpgme)
++  PKG_CHECK_MODULES([LIBGPG_ERROR], [gpg-error], [], [
++    AC_MSG_WARN([libgpg-error not found via pkg-config, trying to link anyway])
++  ])
+ ])
+ AM_CONDITIONAL([USE_OPENSSL_BACKEND], [test "x${enable_openssl_backend}" = "xyes"])
+ 
+--- origsrc/libisds-0.11.2/m4/gpgme.m4	2010-01-25 22:53:40.000000000 +0900
++++ src/libisds-0.11.2/m4/gpgme.m4	2026-01-16 22:35:52.552242500 +0900
+@@ -20,9 +20,14 @@ AC_DEFUN([_AM_PATH_GPGME_CONFIG],
+   fi
+   AC_PATH_PROG(GPGME_CONFIG, gpgme-config, no)
+ 
++  gpgme_version=""
+   if test "$GPGME_CONFIG" != "no" ; then
+     gpgme_version=`$GPGME_CONFIG --version`
+   fi
++  dnl Fallback to pkg-config if gpgme-config is not found
++  if test -z "$gpgme_version" && test -n "$PKG_CONFIG" && $PKG_CONFIG --exists gpgme 2>/dev/null ; then
++    gpgme_version=`$PKG_CONFIG --modversion gpgme`
++  fi
+   gpgme_version_major=`echo $gpgme_version | \
+                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
+   gpgme_version_minor=`echo $gpgme_version | \
+@@ -48,7 +53,8 @@ AC_DEFUN([AM_PATH_GPGME],
+ 
+   AC_MSG_CHECKING(for GPGME - version >= $min_gpgme_version)
+   ok=no
+-  if test "$GPGME_CONFIG" != "no" ; then
++  dnl Check version if we have gpgme_version set (from gpgme-config or pkg-config)
++  if test -n "$gpgme_version" ; then
+     req_major=`echo $min_gpgme_version | \
+                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
+     req_minor=`echo $min_gpgme_version | \
+@@ -74,7 +80,7 @@ AC_DEFUN([AM_PATH_GPGME],
+   if test $ok = yes; then
+      # If we have a recent GPGME, we should also check that the
+      # API is compatible.
+-     if test "$req_gpgme_api" -gt 0 ; then
++     if test "$req_gpgme_api" -gt 0 && test "$GPGME_CONFIG" != "no" ; then
+         tmp=`$GPGME_CONFIG --api-version 2>/dev/null || echo 0`
+         if test "$tmp" -gt 0 ; then
+            if test "$req_gpgme_api" -ne "$tmp" ; then
+@@ -84,8 +90,14 @@ AC_DEFUN([AM_PATH_GPGME],
+      fi
+   fi
+   if test $ok = yes; then
+-    GPGME_CFLAGS=`$GPGME_CONFIG --cflags`
+-    GPGME_LIBS=`$GPGME_CONFIG --libs`
++    dnl Use gpgme-config if available, otherwise use pkg-config
++    if test "$GPGME_CONFIG" != "no" ; then
++      GPGME_CFLAGS=`$GPGME_CONFIG --cflags`
++      GPGME_LIBS=`$GPGME_CONFIG --libs`
++    elif test -n "$PKG_CONFIG" && $PKG_CONFIG --exists gpgme 2>/dev/null ; then
++      GPGME_CFLAGS=`$PKG_CONFIG --cflags gpgme`
++      GPGME_LIBS=`$PKG_CONFIG --libs gpgme`
++    fi
+     AC_MSG_RESULT(yes)
+     ifelse([$2], , :, [$2])
+   else
+--- origsrc/libisds-0.11.2/m4/libgcrypt.m4	2012-06-04 14:42:51.000000000 +0900
++++ src/libisds-0.11.2/m4/libgcrypt.m4	2026-01-16 22:35:52.550225000 +0900
+@@ -43,7 +43,16 @@ AC_DEFUN([AM_PATH_LIBGCRYPT],
+ 
+   AC_MSG_CHECKING(for LIBGCRYPT - version >= $min_libgcrypt_version)
+   ok=no
+-  if test "$LIBGCRYPT_CONFIG" != "no" ; then
++  dnl Try pkg-config first if libgcrypt-config is not found
++  if test "$LIBGCRYPT_CONFIG" = "no" ; then
++    if test -n "$PKG_CONFIG" && $PKG_CONFIG --exists libgcrypt 2>/dev/null ; then
++      libgcrypt_config_version=`$PKG_CONFIG --modversion libgcrypt`
++      LIBGCRYPT_CFLAGS=`$PKG_CONFIG --cflags libgcrypt`
++      LIBGCRYPT_LIBS=`$PKG_CONFIG --libs libgcrypt`
++      ok=yes
++    fi
++  fi
++  if test $ok != yes && test "$LIBGCRYPT_CONFIG" != "no" ; then
+     req_major=`echo $min_libgcrypt_version | \
+                sed 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
+     req_minor=`echo $min_libgcrypt_version | \
+@@ -78,10 +87,11 @@ AC_DEFUN([AM_PATH_LIBGCRYPT],
+   else
+     AC_MSG_RESULT(no)
+   fi
++  use_libgcrypt_config=no
+   if test $ok = yes; then
+      # If we have a recent libgcrypt, we should also check that the
+      # API is compatible
+-     if test "$req_libgcrypt_api" -gt 0 ; then
++     if test "$req_libgcrypt_api" -gt 0 && test "$LIBGCRYPT_CONFIG" != "no" ; then
+         tmp=`$LIBGCRYPT_CONFIG --api-version 2>/dev/null || echo 0`
+         if test "$tmp" -gt 0 ; then
+            AC_MSG_CHECKING([LIBGCRYPT API version])
+@@ -94,11 +104,14 @@ AC_DEFUN([AM_PATH_LIBGCRYPT],
+         fi
+      fi
+   fi
+-  if test $ok = yes; then
++  if test $ok = yes && test "$LIBGCRYPT_CONFIG" != "no" ; then
++    use_libgcrypt_config=yes
+     LIBGCRYPT_CFLAGS=`$LIBGCRYPT_CONFIG --cflags`
+     LIBGCRYPT_LIBS=`$LIBGCRYPT_CONFIG --libs`
++  fi
++  if test $ok = yes; then
+     ifelse([$2], , :, [$2])
+-    if test x"$host" != x ; then
++    if test x"$host" != x && test $use_libgcrypt_config = yes ; then
+       libgcrypt_config_host=`$LIBGCRYPT_CONFIG --host 2>/dev/null || echo none`
+       if test x"$libgcrypt_config_host" != xnone ; then
+         if test x"$libgcrypt_config_host" != x"$host" ; then
+@@ -114,8 +127,6 @@ AC_DEFUN([AM_PATH_LIBGCRYPT],
+       fi
+     fi
+   else
+-    LIBGCRYPT_CFLAGS=""
+-    LIBGCRYPT_LIBS=""
+     ifelse([$3], , :, [$3])
+   fi
+   AC_SUBST(LIBGCRYPT_CFLAGS)
+--- origsrc/libisds-0.11.2/src/Makefile.am	2022-04-04 00:00:44.000000000 +0900
++++ src/libisds-0.11.2/src/Makefile.am	2026-01-16 22:35:52.559174400 +0900
+@@ -47,6 +47,6 @@ endif
+ libisds_la_HEADERS = isds.h
+ libisds_la_CPPFLAGS = @XML_CPPFLAGS@ @LIBCURL_CPPFLAGS@ \
+ 					  -DLOCALEDIR=\"$(localedir)\"
+-libisds_la_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@
+-libisds_la_LDFLAGS = -version-info 9:0:4 @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ \
+-	@GPGME_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@
++libisds_la_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@ @LIBGPG_ERROR_CFLAGS@
++libisds_la_LDFLAGS = -no-undefined -version-info 9:0:4 @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ \
++	@GPGME_LIBS@ @LIBGPG_ERROR_LIBS@ @EXPAT_LIBS@ @LTLIBINTL@
+--- origsrc/libisds-0.11.2/test/offline/Makefile.am	2019-09-05 04:26:55.000000000 +0900
++++ src/libisds-0.11.2/test/offline/Makefile.am	2026-01-16 22:35:52.560872500 +0900
+@@ -10,8 +10,8 @@ AM_CPPFLAGS = -I$(LIBDIR) -I$(top_buildd
+ # Large files needed by GPGME
+ AM_CPPFLAGS += @XML_CPPFLAGS@ @LIBCURL_CPPFLAGS@ \
+ 					  -DLOCALEDIR=\"$(localedir)\"
+-AM_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@
+-LDADD = @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ @GPGME_LIBS@ @EXPAT_LIBS@ \
++AM_CFLAGS = @LIBGCRYPT_CFLAGS@ @GPGME_CFLAGS@ @LIBGPG_ERROR_CFLAGS@
++LDADD = @XML_LIBS@ @LIBCURL@ @LIBGCRYPT_LIBS@ @GPGME_LIBS@ @LIBGPG_ERROR_LIBS@ @EXPAT_LIBS@ \
+ 		@LTLIBINTL@
+ 
+ # To fake home dir for gnupg2
