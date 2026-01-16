@@ -1,0 +1,45 @@
+--- origsrc/libcaption-0.8/CMakeLists.txt	2018-07-23 01:14:37.000000000 +0900
++++ src/libcaption-0.8/CMakeLists.txt	2026-01-16 10:05:21.761227300 +0900
+@@ -75,6 +75,10 @@ set(CAPTION_HEADERS
+ 
+ add_library(caption ${CAPTION_SOURCES})
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(caption PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if(ENABLE_RE2C)
+   add_dependencies(caption re2c)
+ endif()
+@@ -98,7 +102,7 @@ endif()
+ add_executable(test_wrap unit_tests/test_wrap.c )
+ target_link_libraries(test_wrap caption)
+ 
+-install (TARGETS caption DESTINATION lib EXPORT caption-targets)
++install (TARGETS caption EXPORT caption-targets RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ install (FILES ${CAPTION_HEADERS} DESTINATION include/caption)
+ 
+ find_package(Doxygen)
+@@ -110,3 +114,9 @@ if(DOXYGEN_FOUND)
+   COMMENT "Generating API documentation with Doxygen" VERBATIM
+ )
+ endif(DOXYGEN_FOUND)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libcaption.pc.in ${CMAKE_BINARY_DIR}/libcaption.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libcaption.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcaption-0.8/libcaption.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcaption-0.8/libcaption.pc.in	2026-01-16 10:05:29.084600200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcaption
++Description: Free open-source CEA608 / CEA708 closed-caption encoder/decoder
++Version: @VERSION@
++Libs: -L${libdir} -lcaption
++Cflags: -I${includedir}
