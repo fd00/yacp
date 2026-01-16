@@ -1,0 +1,66 @@
+--- origsrc/libcint-6.1.3/CMakeLists.txt	2025-08-18 01:31:48.000000000 +0900
++++ src/libcint-6.1.3/CMakeLists.txt	2026-01-16 11:03:31.507749000 +0900
+@@ -252,3 +252,10 @@ endif()
+ set(CPACK_COMPONENTS_GROUPING "IGNORE")
+ 
+ include(CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libcint.pc.in ${CMAKE_BINARY_DIR}/libcint.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libcint.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libcint-6.1.3/examples/time_c2h6.c	2025-08-18 01:31:48.000000000 +0900
++++ src/libcint-6.1.3/examples/time_c2h6.c	2026-01-16 11:00:48.075340400 +0900
+@@ -717,7 +717,7 @@ void run_all(int *atm, int natm, int *ba
+         printf("\tcint2e_sph without optimizer: total num ERI = %.2e\n", tot);
+         pct = 0; count = 0;
+ #pragma omp parallel default(none) \
+-        shared(atm, natm, bas, nbas, env, ishls, jshls, non_opt, time0, pct, count, stdout) \
++        shared(atm, natm, bas, nbas, env, ishls, jshls, non_opt, time0, pct, count) \
+         private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
+ #pragma omp for nowait schedule(dynamic, 2)
+         for (ij = 0; ij < nbas*(nbas+1)/2; ij++) {
+@@ -758,7 +758,7 @@ void run_all(int *atm, int natm, int *ba
+         pct = 0; count = 0;
+ 
+ #pragma omp parallel default(none) \
+-        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_cint2e, time0, pct, count, stdout) \
++        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_cint2e, time0, pct, count) \
+         private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
+ #pragma omp for nowait schedule(dynamic, 2)
+         for (ij = 0; ij < nbas*(nbas+1)/2; ij++) {
+@@ -800,7 +800,7 @@ void run_all(int *atm, int natm, int *ba
+         printf("\tGradients with optimizer: total num ERI = %.2e\n", tot);
+         pct = 0; count = 0;
+ #pragma omp parallel default(none) \
+-        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_ip1, time0, pct, count, stdout) \
++        shared(atm, natm, bas, nbas, env, ishls, jshls, opt_for_ip1, time0, pct, count) \
+         private(di, dj, dk, dl, i, j, k, l, ij, kl, shls, buf, time1)
+ #pragma omp for nowait schedule(dynamic, 2)
+         for (ij = 0; ij < nbas*nbas; ij++) {
+--- origsrc/libcint-6.1.3/examples/time_c60.c	2025-08-18 01:31:48.000000000 +0900
++++ src/libcint-6.1.3/examples/time_c60.c	2026-01-16 11:00:48.075340400 +0900
+@@ -194,7 +194,7 @@ void run_all(int *atm, int natm, int *ba
+ 
+         pct = 0; count = 0;
+ #pragma omp parallel default(none) \
+-        shared(atm, natm, bas, nbas, env, ishls, jshls, opt, time0, pct, count, stdout) \
++        shared(atm, natm, bas, nbas, env, ishls, jshls, opt, time0, pct, count) \
+         private(di, dj, dk, dl, i, j, k, l, ij, kl, kl_max, shls, buf, time1)
+ #pragma omp for nowait schedule(dynamic, 2)
+         for (ij = 0; ij < nbas*(nbas+1)/2; ij++) {
+--- origsrc/libcint-6.1.3/libcint.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libcint-6.1.3/libcint.pc.in	2026-01-16 11:03:03.205020300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libcint
++Description: General GTO integrals for quantum chemistry
++Version: @cint_VERSION@
++Libs: -L${libdir} -lcint
++Cflags: -I${includedir}
