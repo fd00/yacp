@@ -1,5 +1,5 @@
---- origsrc/libddwaf-1.30.0/CMakeLists.txt	2025-10-28 18:59:29.000000000 +0900
-+++ src/libddwaf-1.30.0/CMakeLists.txt	2025-12-07 15:40:00.860629100 +0900
+--- origsrc/libddwaf-1.30.1/CMakeLists.txt	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/CMakeLists.txt	2026-01-17 10:42:08.844441900 +0900
 @@ -133,3 +133,10 @@ if (LIBDDWAF_TESTING)
      include(cmake/clang-tidy.cmake)
      include(cmake/clang-format.cmake)
@@ -11,8 +11,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/libddwaf.pc.in ${CMAKE_BINARY_DIR}/libddwaf.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/libddwaf.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/libddwaf-1.30.0/cmake/package.cmake	2025-10-28 18:59:29.000000000 +0900
-+++ src/libddwaf-1.30.0/cmake/package.cmake	2025-12-07 15:21:53.317913900 +0900
+--- origsrc/libddwaf-1.30.1/cmake/package.cmake	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/cmake/package.cmake	2026-01-17 10:42:08.844441900 +0900
 @@ -1,7 +1,7 @@
  # Packaging
  
@@ -47,8 +47,8 @@
  endif()
  
  set(CPACK_PACKAGE_FILE_NAME ${CMAKE_PROJECT_NAME}-${DDWAF_VERSION}-${CMAKE_SYSTEM_NAME}-${LIBDDWAF_PACKAGE_PROCESSOR})
---- origsrc/libddwaf-1.30.0/cmake/shared.cmake	2025-10-28 18:59:29.000000000 +0900
-+++ src/libddwaf-1.30.0/cmake/shared.cmake	2025-12-07 15:23:01.829252700 +0900
+--- origsrc/libddwaf-1.30.1/cmake/shared.cmake	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/cmake/shared.cmake	2026-01-17 10:42:08.851362400 +0900
 @@ -1,8 +1,10 @@
 -execute_process(COMMAND git rev-parse HEAD
 -    WORKING_DIRECTORY ${libddwaf_SOURCE_DIR}
@@ -80,8 +80,8 @@
      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
  
  if(LINUX)
---- origsrc/libddwaf-1.30.0/libddwaf.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libddwaf-1.30.0/libddwaf.pc.in	2025-12-07 15:40:09.034814400 +0900
+--- origsrc/libddwaf-1.30.1/libddwaf.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libddwaf-1.30.1/libddwaf.pc.in	2026-01-17 10:42:08.853389700 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -93,26 +93,44 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -lddwaf
 +Cflags: -I${includedir}
---- origsrc/libddwaf-1.30.0/tests/common/base_path.hpp	1970-01-01 09:00:00.000000000 +0900
-+++ src/libddwaf-1.30.0/tests/common/base_path.hpp	2025-12-07 14:00:41.609514800 +0900
-@@ -0,0 +1,15 @@
-+// Unless explicitly stated otherwise all files in this repository are
-+// dual-licensed under the Apache-2.0 License or BSD-3-Clause License.
-+//
-+// This product includes software developed at Datadog (https://www.datadoghq.com/).
-+// Copyright 2021 Datadog, Inc.
-+
-+#pragma once
-+
-+#include <string>
-+
-+namespace ddwaf::test {
-+
-+static std::string test_directory{"/tmp/libddwaf/libddwaf-1.30.0-1bl1.x86_64/src/libddwaf-1.30.0/tests"};
-+
-+} // namespace ddwaf::test
---- origsrc/libddwaf-1.30.0/third_party/CMakeLists.txt	2025-10-28 18:59:29.000000000 +0900
-+++ src/libddwaf-1.30.0/third_party/CMakeLists.txt	2025-12-07 14:29:14.967211400 +0900
+--- origsrc/libddwaf-1.30.1/src/context_allocator.hpp	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/src/context_allocator.hpp	2026-01-17 12:36:57.234349600 +0900
+@@ -89,8 +89,8 @@ public:
+         mr->deallocate(p, n * sizeof(T), alignof(T));
+     }
+ 
+-    bool operator!=(const context_allocator & /*unused*/) { return false; }
+-    bool operator==(const context_allocator & /*unused*/) { return true; }
++    bool operator!=(const context_allocator & /*unused*/) const { return false; }
++    bool operator==(const context_allocator & /*unused*/) const { return true; }
+ };
+ 
+ // Required STL type definitions with context allocator
+--- origsrc/libddwaf-1.30.1/tests/CMakeLists.txt	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/tests/CMakeLists.txt	2026-01-17 14:14:08.920400500 +0900
+@@ -14,7 +14,7 @@ if (LIBDDWAF_VECTORIZED_TRANSFORMERS)
+     target_compile_definitions(waf_test PRIVATE LIBDDWAF_VECTORIZED_TRANSFORMERS)
+ endif()
+ 
+-set(LIBDDWAF_TEST_LIBRARIES lib_gtest lib_gmock libddwaf_objects lib_yamlcpp lib_rapidjson)
++set(LIBDDWAF_TEST_LIBRARIES gtest gmock libddwaf_objects lib_yamlcpp lib_rapidjson)
+ if(NOT MSVC AND LIBDDWAF_TEST_COVERAGE)
+     target_compile_options(waf_test PRIVATE -ggdb --coverage)
+     list(APPEND LIBDDWAF_TEST_LIBRARIES gcov)
+--- origsrc/libddwaf-1.30.1/tests/common/json_utils.hpp	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/tests/common/json_utils.hpp	2026-01-17 11:46:49.857271700 +0900
+@@ -5,7 +5,9 @@
+ // Copyright 2021 Datadog, Inc.
+ #pragma once
+ 
++#include <memory>
+ #include <optional>
++#include <rapidjson/error/en.h>
+ #include <rapidjson/prettywriter.h>
+ #include <rapidjson/schema.h>
+ #include <unordered_map>
+--- origsrc/libddwaf-1.30.1/third_party/CMakeLists.txt	2025-12-11 21:52:17.000000000 +0900
++++ src/libddwaf-1.30.1/third_party/CMakeLists.txt	2026-01-17 10:42:08.859428600 +0900
 @@ -15,27 +15,38 @@ if(NOT MSVC)
      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-parameter -Wno-shadow")
  endif()
