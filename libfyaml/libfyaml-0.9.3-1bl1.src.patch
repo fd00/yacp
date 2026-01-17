@@ -1,0 +1,165 @@
+--- origsrc/libfyaml-0.9.3/CMakeLists.txt	2026-01-15 00:42:46.000000000 +0900
++++ src/libfyaml-0.9.3/CMakeLists.txt	2026-01-17 21:52:28.665616300 +0900
+@@ -185,6 +185,21 @@ else()
+     endif()
+ endif()
+ 
++# xxhash detection via pkg-config
++set(HAVE_XXHASH 0)
++find_package(PkgConfig)
++if(PKG_CONFIG_FOUND)
++    pkg_check_modules(XXHASH libxxhash)
++    if(XXHASH_FOUND)
++        set(HAVE_XXHASH 1)
++        message(STATUS "Found xxhash via pkg-config")
++    else()
++        message(STATUS "xxhash not found via pkg-config; using bundled xxhash")
++    endif()
++else()
++    message(STATUS "pkg-config not found; using bundled xxhash")
++endif()
++
+ # check framework detection - try CMake config first, then pkg-config
+ set(HAVE_CHECK 0)
+ set(HAVE_COMPATIBLE_CHECK 0)
+@@ -638,7 +653,6 @@ set(LIBSRCS
+     src/util/fy-ctype.c
+     src/util/fy-utf8.c
+     src/util/fy-utils.c
+-    src/xxhash/xxhash.c
+     src/thread/fy-thread.c
+     src/allocator/fy-allocator.c
+     src/allocator/fy-allocator-linear.c
+@@ -657,6 +671,11 @@ set(LIBSRCS
+     src/lib/fy-parse-diag.c
+ )
+ 
++# Add bundled xxhash if system xxhash not found
++if(NOT HAVE_XXHASH)
++    list(APPEND LIBSRCS src/xxhash/xxhash.c)
++endif()
++
+ set(LIBHDRSPUB
+     include/libfyaml.h
+ )
+@@ -832,16 +851,21 @@ target_include_directories(fyaml_static
+     PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+-        ${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash
++        $<IF:$<BOOL:${HAVE_XXHASH}>,${XXHASH_INCLUDE_DIRS},${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash>
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/thread
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/allocator
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/blake3
+         ${CMAKE_CURRENT_BINARY_DIR}
+ )
+ 
++if(HAVE_XXHASH)
++    target_link_directories(fyaml_static PRIVATE ${XXHASH_LIBRARY_DIRS})
++endif()
++
+ target_link_libraries(fyaml_static
+     PUBLIC
+         Threads::Threads
++        $<$<BOOL:${HAVE_XXHASH}>:${XXHASH_LIBRARIES}>
+ )
+ 
+ # Add libclang support if available
+@@ -895,7 +919,7 @@ target_include_directories(fyaml
+     PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+-        ${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash
++        $<IF:$<BOOL:${HAVE_XXHASH}>,${XXHASH_INCLUDE_DIRS},${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash>
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/thread
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/allocator
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/blake3
+@@ -903,9 +927,14 @@ target_include_directories(fyaml
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/reflection
+ )
+ 
++if(HAVE_XXHASH)
++    target_link_directories(fyaml PRIVATE ${XXHASH_LIBRARY_DIRS})
++endif()
++
+ target_link_libraries(fyaml
+     PUBLIC
+         Threads::Threads
++        $<$<BOOL:${HAVE_XXHASH}>:${XXHASH_LIBRARIES}>
+ )
+ 
+ # Add libclang support if available
+@@ -1543,6 +1572,7 @@ message(STATUS "Build type:            $
+ message(STATUS "HAVE_CHECK:            ${HAVE_CHECK}")
+ message(STATUS "HAVE_COMPATIBLE_CHECK: ${HAVE_COMPATIBLE_CHECK}")
+ message(STATUS "HAVE_LIBYAML:          ${HAVE_LIBYAML}")
++message(STATUS "HAVE_XXHASH:           ${HAVE_XXHASH}")
+ message(STATUS "HAVE_CMAKE_GEXPR:      ${HAVE_CMAKE_GEXPR}")
+ message(STATUS "HAVE_LIBCLANG:         ${HAVE_LIBCLANG}")
+ message(STATUS "HAVE_CLANG_BLOCKS:     ${HAVE_CLANG_BLOCKS}")
+--- origsrc/libfyaml-0.9.3/doc/include/libfyaml.h	2026-01-15 00:42:46.000000000 +0900
++++ src/libfyaml-0.9.3/doc/include/libfyaml.h	2026-01-17 22:01:51.851721700 +0900
+@@ -44,6 +44,13 @@ extern "C" {
+ #include <unistd.h>
+ #endif
+ 
++/* alloca is needed for FY_ALLOCA_COPY_FREE macro */
++#if defined(_WIN32) || defined(_WIN64)
++#include <malloc.h>
++#elif defined(__GNUC__) || defined(__clang__)
++#include <alloca.h>
++#endif
++
+ #include <sys/uio.h>
+ 
+ /* opaque types for the user */
+--- origsrc/libfyaml-0.9.3/include/libfyaml.h	2026-01-15 00:42:46.000000000 +0900
++++ src/libfyaml-0.9.3/include/libfyaml.h	2026-01-17 22:01:51.851721700 +0900
+@@ -44,6 +44,13 @@ extern "C" {
+ #include <unistd.h>
+ #endif
+ 
++/* alloca is needed for FY_ALLOCA_COPY_FREE macro */
++#if defined(_WIN32) || defined(_WIN64)
++#include <malloc.h>
++#elif defined(__GNUC__) || defined(__clang__)
++#include <alloca.h>
++#endif
++
+ #include <sys/uio.h>
+ 
+ /* opaque types for the user */
+--- origsrc/libfyaml-0.9.3/test/libfyaml-test.c	2026-01-15 00:42:46.000000000 +0900
++++ src/libfyaml-0.9.3/test/libfyaml-test.c	2026-01-17 22:01:51.847046200 +0900
+@@ -40,13 +40,13 @@ static void display_usage(FILE *fp, char
+ #if defined(HAVE_STATIC) && HAVE_STATIC
+ extern TCase *libfyaml_case_private(void);
+ extern TCase *libfyaml_case_private_id(void);
++extern TCase *libfyaml_case_parser(void);
++extern TCase *libfyaml_case_thread(void);
+ #endif
+ extern TCase *libfyaml_case_core(void);
+ extern TCase *libfyaml_case_meta(void);
+ extern TCase *libfyaml_case_emit(void);
+ extern TCase *libfyaml_case_allocator(void);
+-extern TCase *libfyaml_case_parser(void);
+-extern TCase *libfyaml_case_thread(void);
+ 
+ Suite *libfyaml_suite(void)
+ {
+@@ -57,13 +57,13 @@ Suite *libfyaml_suite(void)
+ #if defined(HAVE_STATIC) && HAVE_STATIC
+ 	suite_add_tcase(s, libfyaml_case_private());
+ 	suite_add_tcase(s, libfyaml_case_private_id());
++	suite_add_tcase(s, libfyaml_case_parser());
++	suite_add_tcase(s, libfyaml_case_thread());
+ #endif
+ 	suite_add_tcase(s, libfyaml_case_core());
+ 	suite_add_tcase(s, libfyaml_case_meta());
+ 	suite_add_tcase(s, libfyaml_case_emit());
+ 	suite_add_tcase(s, libfyaml_case_allocator());
+-	suite_add_tcase(s, libfyaml_case_parser());
+-	suite_add_tcase(s, libfyaml_case_thread());
+ 
+ 	return s;
+ }
