@@ -1,0 +1,70 @@
+--- origsrc/gnunet-0.26.2/doc/handbook/meson.build	2025-09-17 18:30:50.000000000 +0900
++++ src/gnunet-0.26.2/doc/handbook/meson.build	2026-01-18 16:20:33.419755900 +0900
+@@ -1,9 +1,11 @@
+ fs = import('fs')
+ makeinfo = find_program('makeinfo', native: true, required: false)
+ 
+-install_subdir('html',
+-               install_dir: docdir,
+-               strip_directory: false)
++if get_option('install-handbook-html')
++  install_subdir('html',
++                 install_dir: docdir,
++                 strip_directory: false)
++endif
+ if makeinfo.found()
+   custom_target('gnunet.info',
+     output: 'gnunet.info',
+--- origsrc/gnunet-0.26.2/meson.options	2025-12-23 05:50:58.000000000 +0900
++++ src/gnunet-0.26.2/meson.options	2026-01-18 16:20:33.403179300 +0900
+@@ -11,3 +11,4 @@ option('disable-autostart', type : 'bool
+ option('install-rpath', type : 'boolean', value : false, description: 'Add rpath to installed binaries if set')
+ option('heap-statistics', type : 'boolean', value : false, description: 'Expensive heap statistics if set')
+ option('logging', type : 'string', value: 'yes', description: 'Log setting. Can be set to "yes" (logging, default), "no" (no logging), "verbose" (extra logging"), "veryverbose" (even more logging)')
++option('install-handbook-html', type : 'boolean', value : true, description: 'Install HTML handbook documentation')
+--- origsrc/gnunet-0.26.2/meson_options.txt	2025-12-23 05:50:58.000000000 +0900
++++ src/gnunet-0.26.2/meson_options.txt	2026-01-18 16:20:33.403179300 +0900
+@@ -11,3 +11,4 @@ option('disable-autostart', type : 'bool
+ option('install-rpath', type : 'boolean', value : false, description: 'Add rpath to installed binaries if set')
+ option('heap-statistics', type : 'boolean', value : false, description: 'Expensive heap statistics if set')
+ option('logging', type : 'string', value: 'yes', description: 'Log setting. Can be set to "yes" (logging, default), "no" (no logging), "verbose" (extra logging"), "veryverbose" (even more logging)')
++option('install-handbook-html', type : 'boolean', value : true, description: 'Install HTML handbook documentation')
+--- origsrc/gnunet-0.26.2/src/lib/util/disk.c	2025-12-23 05:50:58.000000000 +0900
++++ src/gnunet-0.26.2/src/lib/util/disk.c	2026-01-18 13:16:47.171992200 +0900
+@@ -380,7 +380,7 @@ GNUNET_DISK_file_backup (const char *fil
+   target = GNUNET_malloc (slen);
+   num = 0;
+ 
+-#if HAVE_RENAMEAT2
++#if HAVE_RENAMEAT2 && defined(RENAME_EXCHANGE)
+   {
+     int fd;
+ 
+--- origsrc/gnunet-0.26.2/src/service/nat/gnunet-helper-nat-client.c	2025-12-23 05:50:58.000000000 +0900
++++ src/gnunet-0.26.2/src/service/nat/gnunet-helper-nat-client.c	2026-01-18 13:16:47.171992200 +0900
+@@ -67,6 +67,11 @@
+ #define ICMP_TIME_EXCEEDED 11
+ #endif
+ 
++/* The following constant is missing from Cygwin */
++#ifndef ICMP_ECHO
++#define ICMP_ECHO 8
++#endif
++
+ /**
+  * Call memcpy() but check for @a n being 0 first. In the latter
+  * case, it is now safe to pass NULL for @a src or @a dst.
+--- origsrc/gnunet-0.26.2/src/service/nat/gnunet-helper-nat-server.c	2025-12-23 05:50:58.000000000 +0900
++++ src/gnunet-0.26.2/src/service/nat/gnunet-helper-nat-server.c	2026-01-18 13:16:47.171992200 +0900
+@@ -71,6 +71,11 @@
+ #define ICMP_TIME_EXCEEDED 11
+ #endif
+ 
++/* The following constant is missing from Cygwin */
++#ifndef ICMP_ECHO
++#define ICMP_ECHO 8
++#endif
++
+ /**
+  * Call memcpy() but check for @a n being 0 first. In the latter
+  * case, it is now safe to pass NULL for @a src or @a dst.
