@@ -1,0 +1,47 @@
+--- origsrc/libmp4tag-2.0.1/CMakeLists.txt	2025-10-06 23:36:32.000000000 +0900
++++ src/libmp4tag-2.0.1/CMakeLists.txt	2026-01-19 13:42:53.919837400 +0900
+@@ -51,7 +51,7 @@ include (CheckSymbolExists)
+ include (CheckStructHasMember)
+ 
+ set (LIBMP4TAG_LIBNAME libmp4tag)
+-if (WIN32)
++if (WIN32 OR CYGWIN)
+   # msys2 loves to put the lib prefix in front
+   # difficult to work around
+   set (LIBMP4TAG_LIBNAME mp4tag)
+@@ -211,7 +211,7 @@ if (NOT WIN32)
+     # universal binary
+     set (CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+   endif()
+-else()
++elseif(NOT CYGWIN)
+   checkAddLinkFlag ("-static-libgcc")
+   checkAddLinkFlag ("-static-libstdc++")
+ endif()
+@@ -219,6 +219,7 @@ endif()
+ #### configuration
+ 
+ # windows functions
++if (NOT UNIX)
+ check_function_exists (GetFileTime _lib_GetFileTime)
+ check_function_exists (Sleep _lib_Sleep)
+ check_function_exists (CommandLineToArgvW _lib_CommandLinetoArgvW)
+@@ -235,6 +236,7 @@ check_struct_has_member ("struct stat"
+     st_atim sys/stat.h _mem_struct_stat_st_atim)
+ check_struct_has_member ("struct stat"
+     st_atimespec sys/stat.h _mem_struct_stat_st_atimespec)
++endif()
+ 
+ configure_file (config.h.in config.h)
+ configure_file (libmp4tag.h.in libmp4tag.h)
+@@ -250,7 +252,9 @@ add_library (${LIBMP4TAG_LIBNAME}
+   mp4writeutil.c
+   mp4const.c
+ )
+-set_target_properties (${LIBMP4TAG_LIBNAME} PROPERTIES PREFIX "")
++if (NOT CYGWIN)
++  set_target_properties (${LIBMP4TAG_LIBNAME} PROPERTIES PREFIX "")
++endif()
+ if (WIN32)
+   set_target_properties (${LIBMP4TAG_LIBNAME} PROPERTIES PREFIX "lib")
+ endif()
