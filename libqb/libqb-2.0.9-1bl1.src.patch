@@ -1,31 +1,28 @@
---- origsrc/libqb-2.0.8/configure.ac	2023-07-21 20:30:39.000000000 +0900
-+++ src/libqb-2.0.8/configure.ac	2023-08-14 14:43:20.916016600 +0900
-@@ -29,9 +29,12 @@ LT_PREREQ([2.2.6])
- # --enable-new-dtags: Use RUNPATH instead of RPATH.
- # It is necessary to have this done before libtool does linker detection.
- # See also: https://github.com/kronosnet/kronosnet/issues/107
-+AC_CANONICAL_HOST
-+if test "$host_os" != "cygwin"; then
- AX_CHECK_LINK_FLAG([-Wl,--enable-new-dtags],
- 		   [AM_LDFLAGS=-Wl,--enable-new-dtags],
- 		   [AC_MSG_ERROR(["Linker support for --enable-new-dtags is required"])])
-+fi
- AC_SUBST([AM_LDFLAGS])
- saved_LDFLAGS="$LDFLAGS"
- LDFLAGS="$AM_LDFLAGS $LDFLAGS"
---- origsrc/libqb-2.0.8/lib/Makefile.am	2023-07-21 20:30:39.000000000 +0900
-+++ src/libqb-2.0.8/lib/Makefile.am	2023-08-14 14:43:59.552815800 +0900
+--- origsrc/libqb-2.0.9/configure.ac	2025-09-16 13:48:12.000000000 +0900
++++ src/libqb-2.0.9/configure.ac	2026-01-20 11:06:33.406617900 +0900
+@@ -36,6 +36,9 @@ case "$host_os" in
+ 	solaris*)
+ 		AC_MSG_NOTICE([Skipping --enable-new-dtags check, Solaris' RPATH logic is like RUNPATH on other platforms])
+ 		;;
++	cygwin*)
++		AC_MSG_NOTICE([Skipping --enable-new-dtags check, Not supported on cygwin])
++		;;
+ 	*)
+ 		AX_CHECK_LINK_FLAG([-Wl,--enable-new-dtags],
+ 				   [AM_LDFLAGS=-Wl,--enable-new-dtags],
+--- origsrc/libqb-2.0.9/lib/Makefile.am	2025-09-16 13:48:12.000000000 +0900
++++ src/libqb-2.0.9/lib/Makefile.am	2026-01-20 11:07:16.497922500 +0900
 @@ -76,6 +76,8 @@ source_to_lint		= util.c hdb.c ringbuffe
  EXTRA_libqb_la_DEPENDENCIES = qblog_script.ld qblog_script.la
  EXTRA_DIST		= qblog_script.ld.in qblog_script.la.in qblog_script_noop.ld
  
-+libqb_la_LDFLAGS += -no-undefined
++libqb_la_LDFLAGS	+= -no-undefined
 +
  libqb_la_SOURCES	= $(source_to_lint) unix.c
  libqb_la_CFLAGS		= $(PTHREAD_CFLAGS) $(SYSTEMD_CFLAGS)
  libqb_la_LIBADD		= $(LTLIBOBJS) $(dlopen_LIBS) $(PTHREAD_LIBS) $(socket_LIBS) $(rt_LIBS) $(SYSTEMD_LIBS)
---- origsrc/libqb-2.0.8/tests/_libstat_wrapper.c	2023-07-21 20:30:39.000000000 +0900
-+++ src/libqb-2.0.8/tests/_libstat_wrapper.c	2023-08-14 14:50:20.122439900 +0900
+--- origsrc/libqb-2.0.9/tests/_libstat_wrapper.c	2025-09-16 13:48:12.000000000 +0900
++++ src/libqb-2.0.9/tests/_libstat_wrapper.c	2026-01-20 11:07:52.852820800 +0900
 @@ -11,7 +11,7 @@
  // __xstat for earlier libc
  int __xstat(int __ver, const char *__filename, struct stat *__stat_buf)
@@ -44,9 +41,9 @@
  	static int opened = 0;
  	static int (*real_stat)(const char *__filename, void *__stat_buf);
  
---- origsrc/libqb-2.0.8/tests/check_ipc.c	2023-07-21 20:30:39.000000000 +0900
-+++ src/libqb-2.0.8/tests/check_ipc.c	2023-08-14 14:51:59.551394800 +0900
-@@ -2001,14 +2001,18 @@ test_ipc_server_fail(void)
+--- origsrc/libqb-2.0.9/tests/check_ipc.c	2025-09-16 13:48:12.000000000 +0900
++++ src/libqb-2.0.9/tests/check_ipc.c	2026-01-20 11:15:30.994724700 +0900
+@@ -2005,14 +2005,18 @@ test_ipc_server_fail(void)
  	ck_assert(conn != NULL);
  
  	request_server_exit();
