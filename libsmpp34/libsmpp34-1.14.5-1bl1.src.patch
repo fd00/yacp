@@ -1,0 +1,122 @@
+--- origsrc/libsmpp34-1.14.5/src/smpp34_params.c	2025-12-04 14:20:50.000000000 +0900
++++ src/libsmpp34-1.14.5/src/smpp34_params.c	2026-01-21 07:36:02.922913900 +0900
+@@ -134,60 +134,50 @@ destroy_tlv( tlv_t *sourceList )
+ 
+ char* str_tlv_id( uint16_t tlv_id, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_tlv_id ) (tlv_id == p_tlv_id)?#p_tlv_id:
++#define OPERACION( p_tlv_id ) if(tlv_id == p_tlv_id){ snprintf(buff, SMALL_BUFF, "%s", #p_tlv_id); return( buff ); }
+ #include "def_list/tlv_id.list"
+-            "Reserved"
+ #undef OPERACION
+-          );
++    snprintf(buff, SMALL_BUFF, "%s", "Reserved");
+     return( buff );
+ };
+ 
+ 
+ char* str_command_id( uint32_t command, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_command ) (command == p_command)?#p_command:
++#define OPERACION( p_command ) if(command == p_command){ snprintf(buff, SMALL_BUFF, "%s", #p_command); return( buff ); }
+ #include "def_list/command_id.list"
+-            ""
+ #undef OPERACION
+-          );
++    snprintf(buff, SMALL_BUFF, "%s", "");
+     return( buff );
+ };
+ 
+ 
+ char* str_addr_ton( uint8_t ton, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_command ) (ton == p_command)?#p_command:
++#define OPERACION( p_command ) if(ton == p_command){ snprintf(buff, SMALL_BUFF, "%s", #p_command); return( buff ); }
+ #include "def_list/addr_ton.list"
+-            ""
+ #undef OPERACION
+-          );
++    snprintf(buff, SMALL_BUFF, "%s", "");
+     return( buff );
+ };
+ 
+ 
+ char* str_addr_npi( uint8_t npi, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_command ) (npi == p_command)?#p_command:
++#define OPERACION( p_command ) if(npi == p_command){ snprintf(buff, SMALL_BUFF, "%s", #p_command); return( buff ); }
+ #include "def_list/addr_npi.list"
+-            ""
+ #undef OPERACION
+-          );
++    snprintf(buff, SMALL_BUFF, "%s", "");
+     return( buff );
+ };
+ 
+ 
+ char* str_command_status( uint32_t command, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_command ) (command == p_command)?#p_command:
++#define OPERACION( p_command ) if(command == p_command){ snprintf(buff, SMALL_BUFF, "%s", #p_command); return( buff ); }
+ #include "def_list/command_status.list"
+-            ""
+ #undef OPERACION
+-             );
++    snprintf(buff, SMALL_BUFF, "%s", "");
+     return( buff );
+ };
+ 
+@@ -199,12 +189,10 @@ char *test_interface_version( uint8_t in
+ 
+ char *test_dest_flag( uint8_t dest_flag, char* buff )
+ {
+-    snprintf(buff, SMALL_BUFF, "%s", 
+-#define OPERACION( p_command ) (dest_flag == p_command)?#p_command:
++#define OPERACION( p_command ) if(dest_flag == p_command){ snprintf(buff, SMALL_BUFF, "%s", #p_command); return( buff ); }
+ #include "def_list/dest_flag.list"
+-            ""
+ #undef OPERACION
+-            );
++    snprintf(buff, SMALL_BUFF, "%s", "");
+     return( buff );
+ };
+ 
+--- origsrc/libsmpp34-1.14.5/test_apps/tcp.c	2025-12-04 14:20:50.000000000 +0900
++++ src/libsmpp34-1.14.5/test_apps/tcp.c	2026-01-21 07:36:02.922913900 +0900
+@@ -81,15 +81,28 @@ int do_tcp_connect( xmlNodePtr p, int *s
+         }
+     }
+ 
+-#if defined(__linux__) || defined(__FreeBSD__)
++#if defined(__CYGWIN__)
++    {
++        struct hostent *__host_result = gethostbyname(h);
++        if (__host_result == NULL) {
++            printf("Error in gethostbyname().\n");
++            ret = -1; goto lb_tcp_connect_end;
++        }
++        memcpy(&_host, __host_result, sizeof(_host));
++    }
++#elif defined(__linux__) || defined(__FreeBSD__)
+     if( gethostbyname_r(h,&_host,ahost,sizeof(ahost),&__host_result,&n) != 0)
++    {
++        printf("Error in gethostbyname_r().\n");
++        ret = -1; goto lb_tcp_connect_end;
++    }
+ #else /* solaris */
+     if( gethostbyname_r(h,&_host,ahost,sizeof(ahost),&n) == NULL)
+-#endif
+     {
+         printf("Error in gethostbyname_r().\n");
+         ret = -1; goto lb_tcp_connect_end;
+-    };
++    }
++#endif
+ 
+     memcpy(&addr.s_addr, _host.h_addr_list[0], sizeof(struct in_addr));
+     memset(&name, 0, sizeof(name));
