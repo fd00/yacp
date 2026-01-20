@@ -1,0 +1,94 @@
+--- origsrc/libplctag-2.6.14/src/examples/CMakeLists.txt	2026-01-20 02:43:09.000000000 +0900
++++ src/libplctag-2.6.14/src/examples/CMakeLists.txt	2026-01-20 09:33:38.491509100 +0900
+@@ -89,7 +89,7 @@ foreach(example ${EXAMPLE_EXECUTABLES})
+     endif()
+ 
+     # Link with the static library and apply static linking flags
+-    target_link_libraries(${example} plctag_static ${EXTRA_LINKER_LIBS})
++    target_link_libraries(${example} plctag_dyn ${EXTRA_LINKER_LIBS})
+ 
+     if(UNIX AND NOT APPLE)
+         # Don't use static linking with sanitizers as they are incompatible
+--- origsrc/libplctag-2.6.14/src/libplctag/CMakeLists.txt	2026-01-20 02:43:09.000000000 +0900
++++ src/libplctag-2.6.14/src/libplctag/CMakeLists.txt	2026-01-20 09:33:52.361643000 +0900
+@@ -151,46 +151,19 @@ if(PLATFORM_WINDOWS)
+ endif(PLATFORM_WINDOWS)
+ 
+ install(TARGETS plctag_dyn
+-    LIBRARY DESTINATION lib${LIB_SUFFIX}
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
+     COMPONENT runtime)
+ 
+-# static library
+-# Note: No add_dependencies needed - DEBUG_GENERATED_NAMES_C in sources triggers generation automatically
+-add_library(plctag_static STATIC ${libplctag_SRCS} )
+-target_link_libraries(plctag_static ${EXTRA_LINKER_LIBS})
+-# Link atomic library for 64-bit atomic operations on 32-bit ARM
+-# Link math library (main library may use sqrt in some places)
+-if(UNIX AND NOT APPLE)
+-    target_link_libraries(plctag_static atomic)
+-    target_link_libraries(plctag_static m)
+-elseif(UNIX)
+-    # macOS: link math library
+-    target_link_libraries(plctag_static m)
+-endif()
+-set_target_properties(plctag_static PROPERTIES SOVERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}" OUTPUT_NAME "plctag_static")
+-target_compile_definitions(plctag_static PUBLIC -DLIBPLCTAG_STATIC=1)
+-
+-# if(STATIC_LINK_OPTIONS)
+-#     target_link_options(plctag_static PUBLIC "${EXTRA_LINK_FLAGS} ${STATIC_LINK_OPTIONS}")
+-# endif()
+-
+-if(PLATFORM_WINDOWS)
+-    target_compile_definitions(plctag_static PUBLIC -D_CRT_SECURE_NO_WARNINGS)
+-endif(PLATFORM_WINDOWS)
+-
+ # make sure the .h file is in the output directory
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/lib/libplctag.h" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.h" COPYONLY)
+ 
+-install(TARGETS plctag_static
+-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-    COMPONENT devel)
+-
+ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/lib/libplctag.h"
+     DESTINATION include
+     COMPONENT devel)
+ 
+ if(EXISTS "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc")
+     install(FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc"
+-            DESTINATION "lib${LIB_SUFFIX}/pkgconfig"
++            DESTINATION "lib/pkgconfig"
+             COMPONENT devel)
+ endif()
+--- origsrc/libplctag-2.6.14/src/tests/ab_server/src/utils.c	2026-01-20 02:43:09.000000000 +0900
++++ src/libplctag-2.6.14/src/tests/ab_server/src/utils.c	2026-01-20 09:29:55.222691400 +0900
+@@ -44,7 +44,7 @@
+ #include <time.h>
+ 
+ 
+-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || (__linux__)
++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__linux__) || defined(__CYGWIN__)
+ #    define USE_ARC4RANDOM
+ #    define PLATFORM_POSIX
+ 
+@@ -320,7 +320,7 @@ uint64_t random_u64(uint64_t upper_bound
+     return random_number;
+ }
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #    include <stdlib.h>
+ #    include <sys/random.h>
+ 
+--- origsrc/libplctag-2.6.14/src/utils/random_utils.c	2026-01-20 02:43:09.000000000 +0900
++++ src/libplctag-2.6.14/src/utils/random_utils.c	2026-01-20 09:30:21.158838700 +0900
+@@ -49,7 +49,7 @@ uint64_t random_u64(uint64_t upper_bound
+     return random_number;
+ }
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #include <stdlib.h>
+ #include <sys/random.h>
+ 
