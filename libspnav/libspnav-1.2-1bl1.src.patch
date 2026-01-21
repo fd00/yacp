@@ -1,0 +1,76 @@
+--- origsrc/libspnav-1.2/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/libspnav-1.2/CMakeLists.txt	2026-01-21 09:18:38.652860600 +0900
+@@ -0,0 +1,51 @@
++cmake_minimum_required(VERSION 3.10)
++project(libspnav VERSION 1.2 LANGUAGES C)
++
++include(GNUInstallDirs)
++
++set(SOURCES
++    src/spnav.c
++    src/proto.c
++    src/util.c
++    src/spnav_magellan.c
++)
++set(HEADERS
++    src/spnav.h
++    src/spnav_config.h
++    src/spnav_magellan.h
++)
++
++include_directories(
++    ${CMAKE_CURRENT_SOURCE_DIR}
++    ${CMAKE_CURRENT_SOURCE_DIR}/src
++)
++
++add_library(spnav SHARED ${SOURCES})
++    
++set_target_properties(spnav PROPERTIES
++    VERSION 0.4
++    SOVERSION 0
++)
++
++target_link_libraries(spnav PRIVATE m)
++find_package(X11)
++target_link_libraries(spnav PRIVATE ${X11_LIBRARIES})
++target_include_directories(spnav PRIVATE ${X11_INCLUDE_DIR})
++    
++install(TARGETS spnav
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++)
++
++install(FILES ${HEADERS}
++    DESTINATION include
++)
++
++configure_file(
++    ${CMAKE_CURRENT_SOURCE_DIR}/spnav.pc.in
++    ${CMAKE_CURRENT_BINARY_DIR}/spnav.pc
++    @ONLY
++)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/spnav.pc
++    DESTINATION lib/pkgconfig
++)
+--- origsrc/libspnav-1.2/spnav.pc.in	2025-03-30 11:42:13.000000000 +0900
++++ src/libspnav-1.2/spnav.pc.in	2026-01-21 09:06:18.820197100 +0900
+@@ -1,6 +1,6 @@
+ Name: libspnav
+ Description: Library to access 6-DoF input devices managed by spacenavd or the proprietary 3dxsrv driver.
+-URL: http://spacenav.sourceforge.net
+-Version: @VERSION@
+-Cflags: -I${PREFIX}/include
+-Libs: -L${PREFIX}/@LIBDIR@ -lspnav
++URL: https://github.com/FreeSpacenav/libspnav
++Version: @PROJECT_VERSION@
++Cflags: -I@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@
++Libs: -L@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@ -lspnav
+--- origsrc/libspnav-1.2/src/spnav_config.h	1970-01-01 09:00:00.000000000 +0900
++++ src/libspnav-1.2/src/spnav_config.h	2026-01-21 08:56:41.810665300 +0900
+@@ -0,0 +1,6 @@
++#ifndef SPNAV_CONFIG_H_
++#define SPNAV_CONFIG_H_
++
++#define SPNAV_USE_X11
++
++#endif	/* SPNAV_CONFIG_H_ */
