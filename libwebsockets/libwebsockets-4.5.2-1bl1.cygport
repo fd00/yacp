@@ -10,7 +10,15 @@ LICENSE="Apache-2.0 AND CC0-1.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zl
 LICENSE_SPDX="SPDX-License-Identifier: Apache-2.0 AND CC0-1.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib"
 LICENSE_URI="LICENSE"
 
-BUILD_REQUIRES="libbrotli-devel libdbus1-devel libevent-devel libglib2.0-devel libssl-devel libuv-devel zlib-devel"
+BUILD_REQUIRES="
+	libbrotli-devel
+	libdbus1-devel
+	libevent-devel
+	libglib2.0-devel
+	libssl-devel
+	libuv-devel
+	zlib-devel
+"
 
 inherit cmake
 
@@ -22,6 +30,7 @@ CYGCMAKE_ARGS="
 	-DLWS_ROLE_MQTT:BOOL=ON
 	-DLWS_ROLE_RAW_PROXY:BOOL=ON
 	-DLWS_UNIX_SOCK:BOOL=ON
+	-DLWS_WITHOUT_TESTAPPS:BOOL=ON
 	-DLWS_WITH_ACME:BOOL=ON
 	-DLWS_WITH_ACCESS_LOG:BOOL=ON
 	-DLWS_WITH_EVLIB_PLUGINS:BOOL=OFF
@@ -36,12 +45,12 @@ CYGCMAKE_ARGS="
 	-DLWS_WITH_LIBEVENT:BOOL=ON
 	-DLWS_WITH_LIBUV:BOOL=ON
 	-DLWS_WITH_LWSWS:BOOL=ON
+	-DLWS_WITH_MINIMAL_EXAMPLES:BOOL=OFF
 	-DLWS_WITH_PEER_LIMITS:BOOL=ON
 	-DLWS_WITH_PLUGINS:BOOL=ON
 	-DLWS_WITH_RANGES:BOOL=ON
 	-DLWS_WITH_SECURE_STREAMS:BOOL=ON
 	-DLWS_WITH_SECURE_STREAMS_PROXY_API:BOOL=ON
-	-DLWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY:BOOL=ON
 	-DLWS_WITH_SECURE_STREAMS_SYS_AUTH_API_AMAZON_COM:BOOL=ON
 	-DLWS_WITH_SELFTESTS:BOOL=ON
 	-DLWS_WITH_SERVER_STATUS:BOOL=ON
@@ -56,26 +65,38 @@ CYGCMAKE_ARGS="
 	-DLWS_WITH_ZLIB:BOOL=ON
 "
 
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	verbose rm ${D}/usr/lib/pkgconfig/libwebsockets_static.pc
+}
+
 DOCS="
 	READMEs/*.md
 "
 
+DIFF_EXCLUDES="
+	minimal-examples
+"
+
 PKG_NAMES="
 	${PN}
-	${PN}19
+	${PN}21
 	${PN}-devel
 "
 libwebsockets_CONTENTS="
 	usr/bin/*.exe
 	usr/share
 "
-libwebsockets19_CONTENTS="
-	usr/bin/cyg*-19.dll
+libwebsockets21_CONTENTS="
+	usr/bin/cyg*-21.dll
 "
 libwebsockets_devel_CONTENTS="
 	usr/include
 	usr/lib
 "
 libwebsockets_SUMMARY="${SUMMARY} (utilities)"
-libwebsockets19_SUMMARY="${SUMMARY} (runtime)"
+libwebsockets21_SUMMARY="${SUMMARY} (runtime)"
 libwebsockets_devel_SUMMARY="${SUMMARY} (development)"
