@@ -1,0 +1,33 @@
+--- origsrc/libva-2.23.0/va/libva.def	2025-12-12 16:58:13.000000000 +0900
++++ src/libva-2.23.0/va/libva.def	2026-01-22 16:08:51.031510100 +0900
+@@ -85,3 +85,6 @@ EXPORTS
+     vaSyncSurface2
+     vaDisplayIsValid
+     vaGetLibFunc
++    va_TraceStatus
++    va_trace_flag
++    va_TracePutSurface
+--- origsrc/libva-2.23.0/va/va.c	2025-12-12 16:58:13.000000000 +0900
++++ src/libva-2.23.0/va/va.c	2026-01-22 15:55:29.013321800 +0900
+@@ -44,7 +44,11 @@
+ #else
+ #include <dlfcn.h>
+ #include <unistd.h>
++#if defined(_CYGWIN__)
++#define DRIVER_EXTENSION    "_drv_video.dll"
++#else
+ #define DRIVER_EXTENSION    "_drv_video.so"
++#endif
+ #define DRIVER_PATH_STRING  "%s/%s%s"
+ #define ENV_VAR_SEPARATOR ":"
+ #endif
+--- origsrc/libva-2.23.0/va/va_compat.c	2025-12-12 16:58:13.000000000 +0900
++++ src/libva-2.23.0/va/va_compat.c	2026-01-22 15:55:29.015334100 +0900
+@@ -40,6 +40,6 @@ vaCreateSurfaces_0_32_0(
+     return vaCreateSurfaces(dpy, format, width, height, surfaces, num_surfaces,
+                             NULL, 0);
+ }
+-#if !defined(_WIN32)
++#if !defined(_WIN32) && !defined(__CYGWIN__)
+ VA_CPP_HELPER_ALIAS(vaCreateSurfaces, 0, 32, 0);
+ #endif
