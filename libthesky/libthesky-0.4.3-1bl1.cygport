@@ -8,22 +8,34 @@ planets, stars) and events (conjunctions, eclipses). It forms the core of the
 software that produces the Dutch popular-astronomy website
 https://hemel.waarnemen.com/"
 
-BUILD_REQUIRES="libSUFR-devel"
+LICENSE="EUPL-1.2"
+LICENSE_SPDX="SPDX-License-Identifier: EUPL-1.2"
+LICENSE_URI="doc/LICENCE"
+
+BUILD_REQUIRES="
+	libSUFR-devel
+"
 
 inherit cmake
 
 CYGCMAKE_ARGS="
-	-DWANT_OPENMP:BOOL=ON
+	-DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
 	-DCREATE_STATICLIB:BOOL=OFF
+	-DSOVERSION:STRING=${PV[1]}
+	-DWANT_OPENMP:BOOL=ON
 "
 
-DIFF_EXCLUDES="
-	*.mod
-	*.dll.a
-"
-PKG_IGNORE="
-	usr/lib/cygTheSky-0.dll
-"
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	includeinto ${PN}
+	doinclude *.mod
+
+	cd ${D}
+	verbose mv usr/share/doc/${P} usr/share/doc/${PN}
+}
 
 PKG_NAMES="
 	${PN}
@@ -34,12 +46,12 @@ libthesky_CONTENTS="
 	usr/share/doc
 "
 libTheSky0_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-0.dll
 "
 libTheSky_devel_CONTENTS="
 	usr/include
-	usr/lib/libTheSky.dll.a
-	usr/share/man/man3*
+	usr/lib
+	usr/share/man
 "
 libthesky_SUMMARY="${SUMMARY} (licensing & readmes)"
 libTheSky0_SUMMARY="${SUMMARY} (runtime)"

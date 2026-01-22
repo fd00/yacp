@@ -1,0 +1,81 @@
+--- origsrc/libthesky-0.4.3/CMakeLists.txt	2023-12-26 20:39:39.000000000 +0900
++++ src/libthesky-0.4.3/CMakeLists.txt	2026-01-22 09:52:39.020081900 +0900
+@@ -43,16 +43,17 @@ list( APPEND CMAKE_MODULE_PATH ${CMAKE_S
+ include( SetCompileOptions )
+ 
+ 
+-# Place the products in their directories:
+-get_filename_component( Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME )
+-if( COMPILER_SPECIFIC_LIBS )
+-  set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libTheSky/${Fortran_COMPILER_NAME}" )
+-else( COMPILER_SPECIFIC_LIBS )
+-  set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libTheSky" )
+-endif( COMPILER_SPECIFIC_LIBS )
+-
+-set( LIBRARY_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/usr/lib${LIB_SUFFIX}" )
++if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
++  # Place the products in their directories:
++  get_filename_component( Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME )
++  if( COMPILER_SPECIFIC_LIBS )
++    set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libTheSky/${Fortran_COMPILER_NAME}" )
++  else( COMPILER_SPECIFIC_LIBS )
++    set( MODULE_DIRECTORY "${CMAKE_SOURCE_DIR}/usr/include/libTheSky" )
++  endif( COMPILER_SPECIFIC_LIBS )
+ 
++  set( LIBRARY_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/usr/lib${LIB_SUFFIX}" )
++endif()
+ 
+ # Find dependencies:
+ find_package( LibSUFR REQUIRED )
+@@ -107,7 +108,12 @@ if( CREATE_SHAREDLIB )
+   else( COMPILER_SPECIFIC_LIBS )
+     set_target_properties( libTheSky_shared PROPERTIES OUTPUT_NAME "TheSky" )
+   endif( COMPILER_SPECIFIC_LIBS )
+-  set_target_properties( libTheSky_shared PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY} )
++  #set_target_properties( libTheSky_shared PROPERTIES Fortran_MODULE_DIRECTORY ${MODULE_DIRECTORY} )
++  target_link_libraries( libTheSky_shared ${LibSUFR_LIBRARIES} )
++  if (DEFINED SOVERSION)
++    set_target_properties( libTheSky_shared PROPERTIES SOVERSION ${SOVERSION} )
++  endif (DEFINED SOVERSION)
++  install( TARGETS libTheSky_shared RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
+ endif( CREATE_SHAREDLIB )
+ 
+ # Use add_dependencies below in order to pretend the static lib depends on the shared.  This
+@@ -134,9 +140,11 @@ add_custom_target( "libTheSky_data"
+   )
+ 
+ 
+-# Install to destination:
+-#   use DIRECTORY rather than TARGETS to allow include/<fortrancompiler>/
+-install( DIRECTORY usr/ DESTINATION ${CMAKE_INSTALL_PREFIX} )
++if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
++  # Install to destination:
++  #   use DIRECTORY rather than TARGETS to allow include/<fortrancompiler>/
++  install( DIRECTORY usr/ DESTINATION ${CMAKE_INSTALL_PREFIX} )
++endif()
+ 
+ # Install man pages:
+ install( DIRECTORY man/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man )
+@@ -148,3 +156,9 @@ else( NOT EXISTS VERSION )
+   install( FILES CHANGELOG LICENCE README VERSION DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc/libthesky-${PKG_VERSION} )
+ endif( NOT EXISTS VERSION )
+ 
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libthesky.pc.in ${CMAKE_BINARY_DIR}/libthesky.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libthesky.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libthesky-0.4.3/libthesky.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libthesky-0.4.3/libthesky.pc.in	2026-01-22 09:55:50.779188300 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libthesky
++Description: Fortran library to compute positions of celestial bodies
++Version: @PKG_VERSION@
++Libs: -L${libdir} -lTheSky
++Cflags: -I${includedir}/libthesky
