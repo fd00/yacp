@@ -1,0 +1,52 @@
+--- origsrc/nghttp3/CMakeOptions.txt	2026-01-27 10:03:45.000000000 +0900
++++ src/nghttp3/CMakeOptions.txt	2026-01-27 10:27:13.514471500 +0900
+@@ -7,6 +7,6 @@ option(ENABLE_LIB_ONLY   "Build libnghtt
+ option(ENABLE_STATIC_LIB "Build libnghttp3 as a static library" ON)
+ option(ENABLE_SHARED_LIB "Build libnghttp3 as a shared library" ON)
+ option(ENABLE_STATIC_CRT "Build libnghttp3 against the MS LIBCMT[d]")
+-cmake_dependent_option(BUILD_TESTING "Enable tests" ON "ENABLE_STATIC_LIB" OFF)
++# cmake_dependent_option(BUILD_TESTING "Enable tests" ON "ENABLE_STATIC_LIB" OFF)
+ 
+ # vim: ft=cmake:
+--- origsrc/nghttp3/lib/CMakeLists.txt	2026-01-27 10:03:45.000000000 +0900
++++ src/nghttp3/lib/CMakeLists.txt	2026-01-27 10:34:36.192489900 +0900
+@@ -63,9 +63,15 @@ set(nghttp3_SOURCES
+   nghttp3_settings.c
+   nghttp3_callbacks.c
+   nghttp3_ratelim.c
+-  sfparse/sfparse.c
+ )
+ 
++find_package(pkgconfig)
++pkg_check_modules(SFPARSE sfparse)
++
++if (NOT SFPARSE_FOUND)
++  list(APPEND nghttp3_SOURCES sfparse/sfparse.c)
++endif()
++
+ set(NGHTTP3_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+ set(NGHTTP3_VERSION_CONFIG "${NGHTTP3_GENERATED_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+ set(NGHTTP3_PROJECT_CONFIG "${NGHTTP3_GENERATED_DIR}/${PROJECT_NAME}Config.cmake")
+@@ -96,6 +102,11 @@ if(ENABLE_SHARED_LIB)
+ 
+   target_include_directories(nghttp3 INTERFACE $<INSTALL_INTERFACE:include>)
+ 
++  if (SFPARSE_FOUND)
++    target_include_directories(nghttp3 PRIVATE ${SFPARSE_INCLUDE_DIRS})
++    target_link_libraries(nghttp3 PRIVATE ${SFPARSE_LIBRARIES})
++  endif()
++
+   install(TARGETS nghttp3
+     EXPORT ${NGHTTP3_TARGETS_EXPORT_NAME}
+     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+--- origsrc/nghttp3/tests/CMakeLists.txt	2026-01-27 10:03:45.000000000 +0900
++++ src/nghttp3/tests/CMakeLists.txt	2026-01-27 10:24:22.672487600 +0900
+@@ -50,7 +50,7 @@ add_executable(main EXCLUDE_FROM_ALL
+ # FIXME enable and fix warnings
+ #set_target_properties(main PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}")
+ target_link_libraries(main
+-  nghttp3_static
++  nghttp3
+ )
+ add_test(main main)
+ add_dependencies(check main)
