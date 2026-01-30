@@ -1,0 +1,129 @@
+--- origsrc/opkg-0.9.0/libopkg/CMakeLists.txt	2025-06-28 05:47:29.000000000 +0900
++++ src/opkg-0.9.0/libopkg/CMakeLists.txt	2026-01-30 12:26:23.183036500 +0900
+@@ -125,15 +125,17 @@ set(SOURCE_FILES
+     xsystem.c
+ )
+ 
+-add_library(libopkg
++add_library(opkg
+     ${LIBRARY_TYPE}
+     ${SOURCE_FILES}
+     ${HEADER_FILES}
+ )
+ 
+ # avoid double "lib" prefix
+-set_target_properties(libopkg PROPERTIES PREFIX "")
+-set_target_properties(libopkg PROPERTIES VERSION 1.0.0 SOVERSION 1)
++if (NOT CYGWIN)
++    set_target_properties(opkg PROPERTIES PREFIX "")
++endif()
++set_target_properties(opkg PROPERTIES VERSION 1.0.0 SOVERSION 1)
+ 
+ find_package(PkgConfig REQUIRED)
+ if(STATIC_LIBOPKG)
+@@ -145,26 +147,26 @@ endif()
+ 
+ # Always require libarchive
+ find_package(LibArchive REQUIRED)
+-target_link_libraries(libopkg ${LibArchive_LIBRARIES})
++target_link_libraries(opkg ${LibArchive_LIBRARIES})
+ 
+ if(WITH_XZ)
+     find_package(LibLZMA REQUIRED)
+-    target_link_libraries(libopkg ${LIBLZMA_LIBRARIES})
++    target_link_libraries(opkg ${LIBLZMA_LIBRARIES})
+ endif()
+ 
+ if(WITH_BZIP2)
+     find_package(BZip2 REQUIRED)
+-    target_link_libraries(libopkg ${BZIP2_LIBRARIES})
++    target_link_libraries(opkg ${BZIP2_LIBRARIES})
+ endif()
+ 
+ if(WITH_LZ4)
+     pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+-    target_link_libraries(libopkg PkgConfig::lz4)
++    target_link_libraries(opkg PkgConfig::lz4)
+ endif()
+ 
+ if(WITH_ZSTD)
+     pkg_check_modules(zstd REQUIRED IMPORTED_TARGET libzstd)
+-    target_link_libraries(libopkg PkgConfig::zstd)
++    target_link_libraries(opkg PkgConfig::zstd)
+ endif()
+ 
+ if(WITH_CURL)
+@@ -174,38 +176,44 @@ if(WITH_CURL)
+ 
+     # Do not use "IMPORTED_TARGET", because libraries are missing from PkgConfig::curl_pkgconfig
+     pkg_check_modules(curl_pkgconfig REQUIRED libcurl)
+-    target_link_libraries(libopkg ${curl_pkgconfig_LIBRARIES})
++    target_link_libraries(opkg ${curl_pkgconfig_LIBRARIES})
+ endif()
+ 
+ if(WITH_SSLCURL)
+     find_package(OpenSSL REQUIRED)
+-    target_link_libraries(libopkg OpenSSL::Crypto OpenSSL::SSL)
++    target_link_libraries(opkg OpenSSL::Crypto OpenSSL::SSL)
+ endif()
+ 
+ if(USE_ACL)
+-    pkg_check_modules(acl REQUIRED IMPORTED_TARGET libacl)
+-    target_link_libraries(libopkg PkgConfig::acl)
++    if(CYGWIN)
++        target_link_libraries(opkg acl) # No pkg-config for libacl on Cygwin
++    else()
++        pkg_check_modules(acl REQUIRED IMPORTED_TARGET libacl)
++        target_link_libraries(opkg PkgConfig::acl)
++    endif()
+ endif()
+ 
+ if(USE_SOLVER_LIBSOLV)
+     # There is no FindLibsolv.cmake, use libsolv.pc (pkg-config) instead
+     pkg_check_modules(LIBSOLV REQUIRED libsolv)
+-    target_link_libraries(libopkg ${LIBSOLV_LIBRARIES})
++    target_link_libraries(opkg ${LIBSOLV_LIBRARIES})
+ endif()
+ 
+ if(WITH_GPGME)
+     pkg_check_modules(gpgme REQUIRED IMPORTED_TARGET gpgme)
+-    target_link_libraries(libopkg PkgConfig::gpgme)
++    target_link_libraries(opkg PkgConfig::gpgme)
++    pkg_check_modules(gpgerror REQUIRED IMPORTED_TARGET gpg-error)
++    target_link_libraries(opkg PkgConfig::gpgerror)
+ endif()
+ 
+-target_include_directories(libopkg PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/..)
+-target_include_directories(libopkg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
++target_include_directories(opkg PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/..)
++target_include_directories(opkg PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ if(NOT STATIC_LIBOPKG)
+-    install(TARGETS libopkg)
++    install(TARGETS opkg)
+ endif()
+ 
+-if(WITH_LIBOPKG_API)
++if(WITH_LIBOPKG_API OR NOT STATIC_LIBOPKG)
+     # Only install headers if we're building the API
+     install(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libopkg)
+ endif()
+--- origsrc/opkg-0.9.0/src/CMakeLists.txt	2025-06-28 05:47:29.000000000 +0900
++++ src/opkg-0.9.0/src/CMakeLists.txt	2026-01-30 13:38:54.291814000 +0900
+@@ -1,11 +1,12 @@
+-add_executable(opkg
++add_executable(opkgexe
+   opkg.c
+ )
+ 
+-target_link_libraries(opkg PUBLIC libopkg)
+-install(TARGETS opkg)
++target_link_libraries(opkgexe PUBLIC opkg)
++install(TARGETS opkgexe)
+ # Necessary for default install path /usr/local/bin and /usr/local/lib
+-set_target_properties(opkg
++set_target_properties(opkgexe
+     PROPERTIES
+         INSTALL_RPATH "\$ORIGIN/../lib"
++    OUTPUT_NAME "opkg"
+ )
