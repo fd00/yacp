@@ -1,0 +1,59 @@
+--- origsrc/ptex-2.5.1/src/build/CMakeLists.txt	2025-12-13 03:58:38.000000000 +0900
++++ src/ptex-2.5.1/src/build/CMakeLists.txt	2026-01-31 10:54:18.887831700 +0900
+@@ -38,4 +38,4 @@ else()
+ endif()
+ configure_file("${PROJECT_NAME_LOWERCASE}.pc.in" "${PROJECT_NAME_LOWERCASE}.pc" @ONLY)
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME_LOWERCASE}.pc"
+-    COMPONENT devel DESTINATION share/pkgconfig)
++    COMPONENT devel DESTINATION lib/pkgconfig)
+--- origsrc/ptex-2.5.1/src/build/ptex.pc.in	2025-12-13 03:58:38.000000000 +0900
++++ src/ptex-2.5.1/src/build/ptex.pc.in	2026-01-31 11:50:06.776053200 +0900
+@@ -5,17 +5,17 @@
+ # Good tutoral for understanding .pc files:
+ # https://people.freedesktop.org/~dbn/pkg-config-guide.html
+ 
+-prefix="@CMAKE_INSTALL_PREFIX@"
+-exec_prefix="${prefix}"
+-libdir="@CMAKE_INSTALL_PKGCONFIG_LIBDIR@"
+-includedir="@CMAKE_INSTALL_PKGCONFIG_INCLUDEDIR@"
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=@CMAKE_INSTALL_PKGCONFIG_LIBDIR@
++includedir=@CMAKE_INSTALL_PKGCONFIG_INCLUDEDIR@
+ 
+ Name: @PROJECT_NAME@
+ Description: @CMAKE_PROJECT_DESCRIPTION@
+ URL: @CMAKE_PROJECT_HOMEPAGE_URL@
+-Version: @PROJECT_VERSION@
++Version: @PTEX_VER@
+ Requires: @pc_req_public@
+ Requires.private: @pc_req_private@
+-Cflags: -I"${includedir}"
+-Libs: -L"${libdir}" -l@PTEX_OUTPUT_NAME@
++Cflags: -I${includedir}
++Libs: -L${libdir} -l@PTEX_OUTPUT_NAME@
+ 
+--- origsrc/ptex-2.5.1/src/ptex/CMakeLists.txt	2025-12-13 03:58:38.000000000 +0900
++++ src/ptex-2.5.1/src/ptex/CMakeLists.txt	2026-01-31 10:51:21.565236100 +0900
+@@ -44,7 +44,9 @@ if(PTEX_BUILD_SHARED_LIBS)
+       PUBLIC Threads::Threads
+       PRIVATE libdeflate::libdeflate_shared
+     )
+-    install(TARGETS Ptex_dynamic EXPORT Ptex DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS Ptex_dynamic EXPORT Ptex
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ install(FILES
+--- origsrc/ptex-2.5.1/src/ptex/PtexWriter.cpp	2025-12-13 03:58:38.000000000 +0900
++++ src/ptex-2.5.1/src/ptex/PtexWriter.cpp	2026-01-31 10:15:14.616795500 +0900
+@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ #include <algorithm>
+ #include <iostream>
+ #include <sstream>
+-#if defined(__FreeBSD__)
++#if defined(__FreeBSD__) || defined(__CYGWIN__)
+     #include <unistd.h>
+     #include <stddef.h>
+ #endif
