@@ -1,0 +1,103 @@
+--- origsrc/SVT-VP9-0.3.1/CMakeLists.txt	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/CMakeLists.txt	2026-02-04 17:29:28.631982000 +0900
+@@ -105,7 +105,7 @@ if(UNIX)
+             "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+         set(CMAKE_CXX_ARCHIVE_FINISH
+             "<CMAKE_RANLIB> -no_warning_for_no_symbols -c <TARGET>")
+-    else()
++    elseif(NOT CYGWIN)
+         set(CMAKE_EXE_LINKER_FLAGS
+             "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack -z relro -z now -pie ")
+     endif()
+@@ -232,6 +232,8 @@ if(BUILD_APP)
+     add_subdirectory(Source/App)
+ endif()
+ 
++add_subdirectory(gstreamer-plugin)
++
+ install(DIRECTORY ${PROJECT_SOURCE_DIR}/Source/API/
+         DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/svt-vp9"
+         FILES_MATCHING
+--- origsrc/SVT-VP9-0.3.1/Source/Lib/Codec/CMakeLists.txt	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/Source/Lib/Codec/CMakeLists.txt	2026-02-04 16:17:59.737590500 +0900
+@@ -81,7 +81,6 @@ set_target_properties(SvtVp9Enc PROPERTI
+ configure_file(../pkg-config.pc.in ${CMAKE_BINARY_DIR}/SvtVp9Enc.pc @ONLY)
+ install(FILES ${CMAKE_BINARY_DIR}/SvtVp9Enc.pc
+         DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+-install(TARGETS SvtVp9Enc DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+ install(TARGETS SvtVp9Enc
+         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+--- origsrc/SVT-VP9-0.3.1/Source/Lib/Codec/EbEncHandle.c	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/Source/Lib/Codec/EbEncHandle.c	2026-02-04 16:17:59.739621100 +0900
+@@ -128,7 +128,7 @@ uint8_t                          eb_vp9_
+ #ifdef _WIN32
+ GROUP_AFFINITY                   eb_vp9_group_affinity;
+ EbBool                           eb_vp9_alternate_groups = 0;
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ cpu_set_t                        eb_vp9_group_affinity;
+ typedef struct logicalProcessorGroup {
+     uint32_t num;
+--- origsrc/SVT-VP9-0.3.1/Source/Lib/Codec/EbThreads.c	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/Source/Lib/Codec/EbThreads.c	2026-02-04 16:17:59.739621100 +0900
+@@ -23,7 +23,7 @@
+  ****************************************/
+ #ifdef _WIN32
+ #include <windows.h>
+-#elif __linux__
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #include <pthread.h>
+ #include <semaphore.h>
+ #include <time.h>
+--- origsrc/SVT-VP9-0.3.1/Source/Lib/Codec/EbUtility.c	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/Source/Lib/Codec/EbUtility.c	2026-02-04 16:17:59.745722100 +0900
+@@ -13,7 +13,7 @@
+ #include <stdio.h>
+ 
+ //#endif
+-#elif __linux__
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include "EbDefinitions.h"
+--- origsrc/SVT-VP9-0.3.1/gstreamer-plugin/CMakeLists.txt	2025-12-05 00:44:35.000000000 +0900
++++ src/SVT-VP9-0.3.1/gstreamer-plugin/CMakeLists.txt	2026-02-04 18:04:05.900048800 +0900
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 3.5)
+ 
+ if(NOT MSVC AND NOT CMAKE_BUILD_TYPE)
+     set(CMAKE_BUILD_TYPE Release)
+@@ -48,7 +48,7 @@ foreach(flag ${flags_to_test})
+     endif()
+ endforeach()
+ 
+-if(UNIX AND NOT APPLE)
++if(UNIX AND NOT APPLE AND NOT CYGWIN)
+     set(CMAKE_SHARED_LINKER_FLAGS
+         "${CMAKE_SHARED_LINKER_FLAGS} -z noexecstack -z relro -z now -pie")
+ endif()
+@@ -60,11 +60,18 @@ target_link_libraries(gstsvtvp9enc
+                       ${GSTREAMER_VIDEO_LIBRARIES}
+                       ${SVT_VP9_LIBRARIES})
+ 
+-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+-    set(CMAKE_INSTALL_PREFIX "${GSTREAMER_LIBDIR}")
+-    message("Install to: " ${GSTREAMER_LIBDIR})
++if(DEFINED GSTREAMER_LIBDIR AND NOT GSTREAMER_LIBDIR STREQUAL "")
++    string(REGEX MATCH "gstreamer-1.0$" _gst_has_suffix "${GSTREAMER_LIBDIR}")
++    if(_gst_has_suffix)
++        set(GST_PLUGIN_DESTINATION "${GSTREAMER_LIBDIR}")
++    else()
++        set(GST_PLUGIN_DESTINATION "${GSTREAMER_LIBDIR}/gstreamer-1.0")
++    endif()
++else()
++    set(GST_PLUGIN_DESTINATION "${CMAKE_INSTALL_LIBDIR}/gstreamer-1.0")
+ endif()
++message(STATUS "GStreamer plugin will install to: ${GST_PLUGIN_DESTINATION}")
+ 
+-install(TARGETS gstsvtvp9enc LIBRARY DESTINATION gstreamer-1.0)
++install(TARGETS gstsvtvp9enc RUNTIME DESTINATION ${GST_PLUGIN_DESTINATION})
+ 
+ message(STATUS "Build: " ${CMAKE_BUILD_TYPE})
