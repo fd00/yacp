@@ -1,0 +1,51 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+SRC_URI="https://github.com/${PN}/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/build-stratum-without-libethash.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/make-donation-optional.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/reproducibility.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/use-system-fmt.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/use-system-opencl.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/fix-fmtlib-10.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg-1/debian/patches/unreleased-rapidjson-feature.patch
+"
+
+CATEGORY="Net"
+SUMMARY="Monero (XMR) CPU miner"
+DESCRIPTION="XMRig High performance, open source, cross platform RandomX,
+CryptoNight and Argon2 CPU/GPU miner, with official support for Windows."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libfmt-devel
+	libhwloc-devel
+	libiconv-devel
+	libintl-devel
+	libssl-devel
+	libuv-devel
+"
+
+export CPPFLAGS="${CPPFLAGS} -DMAP_HUGETLB=0 -DMAP_POPULATE=0"
+
+inherit cmake
+
+src_test()
+{
+	cd ${B}
+	verbose ./${PN}.exe --version
+}
+
+src_install()
+{
+	cd ${B}
+	dobin ${PN}.exe
+
+	cd ${S}
+	insinto /usr/share/${PN}
+	doins src/config.json
+	verbose mkdir -p ${D}/usr/share/doc/${PN}
+	verbose cp -r doc/* ${D}/usr/share/doc/${PN}/
+}
