@@ -1,45 +1,57 @@
---- origsrc/cquery/CMakeLists.txt	2020-01-05 21:31:36.000000000 +0900
-+++ src/cquery/CMakeLists.txt	2020-01-05 21:55:47.945394700 +0900
-@@ -143,7 +143,6 @@ target_include_directories(cquery PRIVAT
+--- origsrc/cquery/CMakeLists.txt	2026-02-15 07:21:03.000000000 +0900
++++ src/cquery/CMakeLists.txt	2026-02-15 07:37:04.981503600 +0900
+@@ -141,9 +141,7 @@ target_include_directories(cquery PRIVAT
+                            src
+                            third_party
                             third_party/doctest
-                            third_party/loguru
+-                           third_party/loguru
                             third_party/msgpack-c/include
 -                           third_party/pugixml/src
                             third_party/rapidjson/include
                             third_party/sparsepp)
  
-@@ -256,8 +255,9 @@ endif()
+@@ -255,9 +253,10 @@ endif()
+ 
  ### Sources
  
++target_link_libraries(cquery PRIVATE loguru pugixml)
++
  target_sources(cquery PRIVATE
 -               third_party/siphash.cc
 -               third_party/pugixml/src/pugixml.cpp)
 +               third_party/siphash.cc)
-+
-+target_link_libraries(cquery PRIVATE pugixml)
  
  target_sources(cquery PRIVATE
                 src/c_cpp_properties.cc
---- origsrc/cquery/third_party/loguru/loguru.hpp	2020-01-05 21:32:23.000000000 +0900
-+++ src/cquery/third_party/loguru/loguru.hpp	2020-01-05 21:45:46.694973400 +0900
-@@ -1358,13 +1358,13 @@ This will define all the Loguru function
+--- origsrc/cquery/src/import_manager.cc	2026-02-15 07:21:04.000000000 +0900
++++ src/cquery/src/import_manager.cc	2026-02-15 07:45:33.784657800 +0900
+@@ -1,4 +1,5 @@
+ #include "import_manager.h"
++#include <mutex>
  
- // TODO: use defined(_POSIX_VERSION) for some of these things?
+ bool ImportManager::IsInitialImport(const std::string& path) {
+   // Try reading the value
+--- origsrc/cquery/src/options.h	2026-02-15 07:21:04.000000000 +0900
++++ src/cquery/src/options.h	2026-02-15 07:47:58.698760300 +0900
+@@ -1,6 +1,7 @@
+ #pragma once
  
--#if defined(_WIN32) || defined(__CYGWIN__)
-+#if defined(_WIN32)
- 	#define LOGURU_PTHREADS    0
- 	#define LOGURU_WINTHREADS  1
- 	#ifndef LOGURU_STACKTRACES
- 		#define LOGURU_STACKTRACES 0
- 	#endif
--#elif defined(__rtems__)
-+#elif defined(__rtems__) || defined(__CYGWIN__)
- 	#define LOGURU_PTHREADS    1
- 	#define LOGURU_WINTHREADS  0
- 	#ifndef LOGURU_STACKTRACES
---- origsrc/cquery/third_party/sparsepp/sparsepp/spp_memory.h	2020-01-05 21:32:30.000000000 +0900
-+++ src/cquery/third_party/sparsepp/sparsepp/spp_memory.h	2020-01-05 22:10:52.092049000 +0900
+ #include <unordered_map>
++#include <string>
+ 
+ std::unordered_map<std::string, std::string> ParseOptions(int argc,
+                                                           char** argv);
+--- origsrc/cquery/src/third_party_impl.cc	2026-02-15 07:21:04.000000000 +0900
++++ src/cquery/src/third_party_impl.cc	2026-02-15 07:52:44.373262800 +0900
+@@ -1,5 +1,5 @@
+ #define DOCTEST_CONFIG_IMPLEMENT
+ #include <doctest/doctest.h>
+ 
+-#define LOGURU_IMPLEMENTATION 1
++//#define LOGURU_IMPLEMENTATION 1
+ #include <loguru.hpp>
+--- origsrc/cquery/third_party/sparsepp/sparsepp/spp_memory.h	2026-02-15 07:21:37.000000000 +0900
++++ src/cquery/third_party/sparsepp/sparsepp/spp_memory.h	2026-02-15 07:41:31.146143600 +0900
 @@ -5,7 +5,7 @@
  #include <cstring>
  #include <cstdlib>
