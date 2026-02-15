@@ -1,0 +1,167 @@
+--- origsrc/libsklog/Makefile.am	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/Makefile.am	2026-02-15 22:45:13.696960300 +0900
+@@ -1,2 +1,5 @@
+ SUBDIRS = lib apps include docs
+ ACLOCAL_AMFLAGS = -I m4
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libsklog/configure.ac	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/configure.ac	2026-02-15 23:13:56.656936800 +0900
+@@ -1,7 +1,7 @@
+ AC_INIT([libsklog],[0.1],[paolo.smiraglia@polito.it])
+ LT_INIT
+ AC_CONFIG_MACRO_DIR([m4])
+-AM_INIT_AUTOMAKE([foreign -Wall -Werror])
++AM_INIT_AUTOMAKE([foreign -Wall subdir-objects])
+ AC_PROG_CC
+ AC_PROG_CC_C_O
+ AC_PROG_LIBTOOL
+@@ -144,14 +144,14 @@ LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl
+ #----------------------------------------------------------------------
+ AC_ARG_WITH([storage-sqlite],
+     AC_HELP_STRING(
+-        [--without-storage-sqlite],
++        [--with-storage-sqlite],
+         [disable sqlite as storage driver]
+     ),
+     [],
+-    [without_storage_sqlite=no]
++    [with_storage_sqlite=no]
+ )
+ 
+-if test "x$without_storage_sqlite" == "xno"; then
++if test "x$with_storage_sqlite" != "xno"; then
+     CFLAGS="$CFLAGS -DUSE_SQLITE"
+     LIBS="$LIBS -lsqlite3"
+     AC_CHECK_LIB([sqlite3],[sqlite3_open])
+@@ -185,7 +185,7 @@ AC_CHECK_LIB([uuid],[uuid_generate_rando
+ #----------------------------------------------------------------------
+ 
+ AC_CONFIG_HEADERS([config.h])
+-AC_CONFIG_FILES([\
++AC_CONFIG_FILES([libsklog.pc \
+     Makefile \
+     apps/Makefile \
+     docs/Makefile \
+@@ -197,4 +197,3 @@ AC_CONFIG_FILES([\
+ ])
+ 
+ AC_OUTPUT
+-
+--- origsrc/libsklog/docs/certs/Makefile.am	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/docs/certs/Makefile.am	2026-02-15 23:50:18.405938600 +0900
+@@ -1,12 +1,11 @@
+ install-data-local:
+-	if [ ! -d $(sysconfdir)/libsklog ]; then \
+-		mkdir -p $(sysconfdir)/libsklog ; \
++	if [ ! -d $(DESTDIR)$(sysconfdir)/libsklog ]; then \
++		mkdir -p $(DESTDIR)$(sysconfdir)/libsklog ; \
+ 	fi ; \
+-	mkdir -p $(sysconfdir)/libsklog/certs && \
+-	mkdir $(sysconfdir)/libsklog/certs/private && \
+-	mkdir $(sysconfdir)/libsklog/certs/ca && \
+- 	cp $(srcdir)/ca/ca_cert.pem $(sysconfdir)/libsklog/certs/ca && \
+- 	cp $(srcdir)/ca/ca_key.pem $(sysconfdir)/libsklog/certs/private && \
+- 	cp $(srcdir)/u1/u1_cert.pem $(sysconfdir)/libsklog/certs && \
+- 	cp $(srcdir)/u1/u1_key.pem $(sysconfdir)/libsklog/certs/private
+-
++	mkdir -p $(DESTDIR)$(sysconfdir)/libsklog/certs && \
++	mkdir -p $(DESTDIR)$(sysconfdir)/libsklog/certs/private && \
++	mkdir -p $(DESTDIR)$(sysconfdir)/libsklog/certs/ca && \
++ 	cp $(srcdir)/ca/ca_cert.pem $(DESTDIR)$(sysconfdir)/libsklog/certs/ca && \
++ 	cp $(srcdir)/ca/ca_key.pem $(DESTDIR)$(sysconfdir)/libsklog/certs/private && \
++ 	cp $(srcdir)/u1/u1_cert.pem $(DESTDIR)$(sysconfdir)/libsklog/certs && \
++ 	cp $(srcdir)/u1/u1_key.pem $(DESTDIR)$(sysconfdir)/libsklog/certs/private
+--- origsrc/libsklog/docs/config/Makefile.am	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/docs/config/Makefile.am	2026-02-15 23:49:56.777078200 +0900
+@@ -1,8 +1,8 @@
+ install-data-local:
+-	if [ ! -d $(sysconfdir)/libsklog ]; then \
+-		mkdir -p $(sysconfdir)/libsklog ; \
++	if [ ! -d $(DESTDIR)$(sysconfdir)/libsklog ]; then \
++		mkdir -p $(DESTDIR)$(sysconfdir)/libsklog ; \
+ 	fi ; \
+ 	sed "s|%%%SYSCONFDIR%%%|$(sysconfdir)|g" \
+-		$(srcdir)/libsklog-u.conf.example > $(sysconfdir)/libsklog/libsklog-u.conf.example && \
++		$(srcdir)/libsklog-u.conf.example > $(DESTDIR)$(sysconfdir)/libsklog/libsklog-u.conf.example && \
+ 	sed "s|%%%SYSCONFDIR%%%|$(sysconfdir)|g" \
+-		$(srcdir)/libsklog-t.conf.example >	$(sysconfdir)/libsklog/libsklog-t.conf.example
++		$(srcdir)/libsklog-t.conf.example >	$(DESTDIR)$(sysconfdir)/libsklog/libsklog-t.conf.example
+--- origsrc/libsklog/docs/sql/Makefile.am	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/docs/sql/Makefile.am	2026-02-15 23:53:00.150977300 +0900
+@@ -1,13 +1,13 @@
+ install-data-local:
+-	if [ ! -d $(sysconfdir)/libsklog ]; then \
+-		mkdir -p $(sysconfdir)/libsklog/sql ; \
++	if [ ! -d $(DESTDIR)$(sysconfdir)/libsklog ]; then \
++		mkdir -p $(DESTDIR)$(sysconfdir)/libsklog/sql ; \
+ 	else \
+-		mkdir $(sysconfdir)/libsklog/sql ; \
++		mkdir $(DESTDIR)$(sysconfdir)/libsklog/sql ; \
+ 	fi ; \
+-	cp $(srcdir)/*.sql $(sysconfdir)/libsklog/sql && \
+-	if [ ! -d $(localstatedir)/libsklog]; then \
+-		mkdir -p $(localstatedir)/libsklog ; \
++	cp $(srcdir)/*.sql $(DESTDIR)$(sysconfdir)/libsklog/sql && \
++	if [ ! -d $(DESTDIR)$(localstatedir)/libsklog]; then \
++		mkdir -p $(DESTDIR)$(localstatedir)/libsklog ; \
+ 	fi ; \
+-	mkdir -p $(localstatedir)/libsklog/db && \
+-	sqlite3 $(localstatedir)/libsklog/db/t.db "" && \
+-	sqlite3 $(localstatedir)/libsklog/db/u.db ""
++	mkdir -p $(DESTDIR)$(localstatedir)/db/libsklog && \
++	sqlite3 $(DESTDIR)$(localstatedir)/db/libsklog/t.db "" && \
++	sqlite3 $(DESTDIR)$(localstatedir)/db/libsklog/u.db ""
+--- origsrc/libsklog/include/sklog_commons.h	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/include/sklog_commons.h	2026-02-15 22:58:44.027589500 +0900
+@@ -85,7 +85,9 @@
+ #define     SHA256_LEN                32
+ #define     UUID_LEN                  16
+ #define     UUID_STR_LEN              36
++#if !defined(HOST_NAME_MAX)
+ #define     HOST_NAME_MAX             64
++#endif
+ #define     AES_KEYSIZE_256           32
+ 
+ #define     SKLOG_BUFFER_LEN          10240
+--- origsrc/libsklog/lib/Makefile.am	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/lib/Makefile.am	2026-02-15 22:45:13.705078800 +0900
+@@ -11,10 +11,10 @@ libsklog_la_SOURCES = \
+ 	storage/sklog_sqlite.c storage/sklog_sqlite.h \
+ 	storage/sklog_file.c storage/sklog_file.h
+ 
+-libsklog_la_CFLAGS = -Wall -Werror \
++libsklog_la_CFLAGS = -Wall \
+ 	-DETC_PREFIX=\"@sysconfdir@\" \
+ 	-DVAR_PREFIX=\"@localstatedir@\"
+ 
+-libsklog_la_LDFLAGS = \
++libsklog_la_LDFLAGS = -no-undefined \
+ 	--version-info $(LIB_VERSION) \
+ 	-lconfuse -luuid
+--- origsrc/libsklog/lib/sklog_commons.h	2026-02-15 22:45:11.000000000 +0900
++++ src/libsklog/lib/sklog_commons.h	2026-02-15 22:58:44.027589500 +0900
+@@ -85,7 +85,9 @@
+ #define     SHA256_LEN                32
+ #define     UUID_LEN                  16
+ #define     UUID_STR_LEN              36
++#if !defined(HOST_NAME_MAX)
+ #define     HOST_NAME_MAX             64
++#endif
+ #define     AES_KEYSIZE_256           32
+ 
+ #define     SKLOG_BUFFER_LEN          10240
+--- origsrc/libsklog/libsklog.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libsklog/libsklog.pc.in	2026-02-15 22:45:13.707485600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libsklog
++Description: Library for secure logging
++Version: @VERSION@
++Libs: -L${libdir} -lsklog
++Cflags: -I${includedir}/libsklog
