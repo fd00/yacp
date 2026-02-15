@@ -1,5 +1,5 @@
---- origsrc/aws_dynamo/Makefile.am	2020-01-05 10:52:04.000000000 +0900
-+++ src/aws_dynamo/Makefile.am	2020-01-05 10:52:09.247366400 +0900
+--- origsrc/aws_dynamo/Makefile.am	2026-02-16 05:33:37.000000000 +0900
++++ src/aws_dynamo/Makefile.am	2026-02-16 05:33:39.806498300 +0900
 @@ -2,3 +2,6 @@
  ACLOCAL_AMFLAGS = -I m4
  SUBDIRS = src test
@@ -8,7 +8,7 @@
 +pkgconfigdir = $(libdir)/pkgconfig
 +pkgconfig_DATA = aws_dynamo.pc
 --- origsrc/aws_dynamo/aws_dynamo.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/aws_dynamo/aws_dynamo.pc.in	2020-01-05 10:52:09.262657800 +0900
++++ src/aws_dynamo/aws_dynamo.pc.in	2026-02-16 05:33:39.806498300 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -20,9 +20,9 @@
 +Version: 0.1.0+git20141208
 +Libs: -L${libdir} -laws_dynamo
 +Cflags: -I${includedir}
---- origsrc/aws_dynamo/configure.ac	2020-01-05 10:52:04.000000000 +0900
-+++ src/aws_dynamo/configure.ac	2020-01-05 10:52:09.278398300 +0900
-@@ -1,24 +1,20 @@
+--- origsrc/aws_dynamo/configure.ac	2026-02-16 05:33:37.000000000 +0900
++++ src/aws_dynamo/configure.ac	2026-02-16 05:35:31.166844100 +0900
+@@ -1,24 +1,21 @@
  dnl Process this file with autoconf to produce a configure script.
 -AC_INIT(aws_dynamo, 0.1.0)
 +AC_INIT([aws_dynamo], [0.1.0])
@@ -39,6 +39,7 @@
 +PKG_CHECK_MODULES([OPENSSL], [openssl])
 +PKG_CHECK_MODULES([YAJL], [yajl])
 +PKG_CHECK_MODULES([LIBCURL], [libcurl])
++PKG_CHECK_MODULES([JSMN], [jsmn])
  
  # We support two yajl major versions. Version 1.x.x doesn't include yajl_version.h.
  # If yajl_version.h is missing assume major version 1.  Otherwise we will get the
@@ -51,26 +52,33 @@
  LOCAL_CFLAGS="-Wall -Wno-pointer-sign"
  AC_ARG_ENABLE([debug], [  --enable-debug    Turn on debugging],
  [case "${enableval}" in
-@@ -38,4 +34,4 @@ AC_SUBST([AM_CFLAGS], [${LOCAL_CFLAGS}])
+@@ -38,4 +35,4 @@ AC_SUBST([AM_CFLAGS], [${LOCAL_CFLAGS}])
  AC_PROG_CC
  AC_PROG_LIBTOOL
  
 -AC_OUTPUT(Makefile src/Makefile test/Makefile)
 +AC_OUTPUT(Makefile src/Makefile test/Makefile aws_dynamo.pc)
---- origsrc/aws_dynamo/src/Makefile.am	2020-01-05 10:52:04.000000000 +0900
-+++ src/aws_dynamo/src/Makefile.am	2020-01-05 10:52:09.294022300 +0900
-@@ -24,7 +24,8 @@ libaws_dynamo_la_SOURCES = aws.c aws_dyn
+--- origsrc/aws_dynamo/src/Makefile.am	2026-02-16 05:33:37.000000000 +0900
++++ src/aws_dynamo/src/Makefile.am	2026-02-16 05:40:19.843062800 +0900
+@@ -18,13 +18,12 @@ libaws_dynamo_la_SOURCES = aws.c aws_dyn
+ 	aws_iam.h \
+ 	aws_sigv4.c \
+ 	aws_sigv4.h \
+-	jsmn.c \
+ 	sim.c \
+-	jsmn.h \
  	http.h
  
- libaws_dynamo_la_CPPFLAGS = -I$(top_srcdir)/src
+-libaws_dynamo_la_CPPFLAGS = -I$(top_srcdir)/src
 -libaws_dynamo_la_LDFLAGS = -version-info 0:0:0
-+libaws_dynamo_la_LDFLAGS = -no-undefined -version-info 0:0:0
-+libaws_dynamo_la_LIBADD = $(OPENSSL_LIBS) $(YAJL_LIBS) $(LIBCURL_LIBS)
++libaws_dynamo_la_CPPFLAGS = -I$(top_srcdir)/src $(OPENSSL_CFLAGS)
++libaws_dynamo_la_LDFLAGS = -no-undefined -version-info 0:0:0 $(OPENSSL_LDFLAGS)
++libaws_dynamo_la_LIBADD = $(OPENSSL_LIBS) $(YAJL_LIBS) $(LIBCURL_LIBS) $(JSMN_LIBS)
  
  pkginclude_HEADERS=\
  	aws_dynamo_batch_get_item.h \
---- origsrc/aws_dynamo/test/Makefile.am	2020-01-05 10:52:04.000000000 +0900
-+++ src/aws_dynamo/test/Makefile.am	2020-01-05 11:11:08.285265700 +0900
+--- origsrc/aws_dynamo/test/Makefile.am	2026-02-16 05:33:37.000000000 +0900
++++ src/aws_dynamo/test/Makefile.am	2026-02-16 05:33:39.816650100 +0900
 @@ -33,7 +33,7 @@ sigv4.log: setup.log
  
  noinst_PROGRAMS = $(TESTS)
