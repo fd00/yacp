@@ -1,0 +1,95 @@
+--- origsrc/libcapn-2.0.0/CMakeLists.txt	2016-06-21 07:26:07.000000000 +0900
++++ src/libcapn-2.0.0/CMakeLists.txt	2026-02-16 22:31:23.152400800 +0900
+@@ -28,7 +28,7 @@ STRING(REPLACE "/" ";" CAPN_CC_LIST ${CM
+ LIST(GET CAPN_CC_LIST -1 CAPN_CC)
+ 
+ IF("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+-    SET(CMAKE_C_FLAGS "-std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
++    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -D_POSIX_C_SOURCE=200112L -Wno-deprecated -Wall -Wextra -Wimplicit -fPIC -W -Wformat-security -pedantic -Wno-pointer-bool-conversion")
+     SET(CMAKE_C_FLAGS_DEBUGE "-g3 -O0 -DDEBUG")
+     SET(CMAKE_C_FLAGS_RELEASE "-g2 -O3")
+ ENDIF()
+@@ -92,11 +92,6 @@ FOREACH(STRERROR_R_HEADER
+ CAPN_TEST_STRERROR_R(${STRERROR_R_HEADER})
+ ENDFOREACH(STRERROR_R_HEADER)
+ 
+-INCLUDE(ExternalProject)
+-
+-INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson")
+-INCLUDE_DIRECTORIES ("${CAPN_THIRD_PARTY_DIR}/jansson/include")
+-
+ CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_platform.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_platform.h")
+ CONFIGURE_FILE("${CAPN_SOURCE_LIB_DIR}/apn_version.h.cmake" "${PROJECT_BINARY_DIR}/src/library/apn_version.h")
+ 
+@@ -169,7 +164,8 @@ IF(WIN32)
+     	ADD_CUSTOM_TARGET(zip COMMAND "${PROJECT_BINARY_DIR}/win_build/createpkg.bat")
+ ELSE(WIN32)
+     IF(UNIX)
+-	INCLUDE (FindOpenSSL)
++        FIND_PACKAGE(PkgConfig REQUIRED)
++        PKG_CHECK_MODULES(OPENSSL openssl REQUIRED)
+         IF(NOT OPENSSL_FOUND)
+             MESSAGE(FATAL_ERROR "openssl is not found!")
+         ENDIF()
+@@ -205,17 +201,9 @@ ELSE(WIN32)
+             ENDIF()
+         ENDIF()
+ 
+-        ExternalProject_Add(
+-            jansson
+-            SOURCE_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+-            BINARY_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+-            INSTALL_DIR "${CAPN_THIRD_PARTY_DIR}/jansson"
+-            CMAKE_COMMAND cmake . -DCMAKE_C_FLAGS=-fPIC -DJANSSON_BUILD_DOCS=OFF
+-            BUILD_COMMAND make
+-            INSTALL_COMMAND ""
+-        )
++        PKG_CHECK_MODULES(JANSSON jansson REQUIRED)
+ 		
+-        SET(CAPN_INSTALL_PATH_LIB "${CAPN_INSTALL_PATH_LIB}/${CAPN_LIB_NAME}")
++        # SET(CAPN_INSTALL_PATH_LIB "${CAPN_INSTALL_PATH_LIB}/${CAPN_LIB_NAME}")
+         SET(CAPN_PKGCONF_FILE_NAME "libcapn.pc")
+         CONFIGURE_FILE("${CAPN_PKGCONF_FILE_NAME}.cmake" "${PROJECT_BINARY_DIR}/${CAPN_PKGCONF_FILE_NAME}")
+         INSTALL(FILES "${PROJECT_BINARY_DIR}/${CAPN_PKGCONF_FILE_NAME}" DESTINATION ${CAPN_INSTALL_PATH_PKGCONFIG})
+@@ -254,7 +242,9 @@ IF(WIN32)
+ 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_SSLEAY_LIBRARY})
+ 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_LIBEAY_LIBRARY})
+ ELSE()
+-	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} "${CAPN_THIRD_PARTY_DIR}/jansson/lib/libjansson.a")
++	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${JANSSON_LIBRARIES})
++    TARGET_INCLUDE_DIRECTORIES(${CAPN_LIB_NAME} PRIVATE ${OPENSSL_INCLUDE_DIRS})
++    TARGET_LINK_DIRECTORIES(${CAPN_LIB_NAME} PRIVATE ${OPENSSL_LIBRARY_DIRS})
+ 	TARGET_LINK_LIBRARIES(${CAPN_LIB_NAME} ${OPENSSL_LIBRARIES})
+ ENDIF()
+ 
+@@ -263,8 +253,6 @@ SET_TARGET_PROPERTIES(${CAPN_LIB_NAME} P
+     CLEAN_DIRECT_OUTPUT 1
+ )
+ 
+-ADD_DEPENDENCIES(${CAPN_LIB_NAME} jansson)
+-
+ INSTALL(TARGETS ${CAPN_LIB_NAME}
+     RUNTIME DESTINATION ${CAPN_INSTALL_PATH_BIN}
+     LIBRARY DESTINATION ${CAPN_INSTALL_PATH_LIB}
+--- origsrc/libcapn-2.0.0/src/library/apn.c	2016-06-21 07:26:07.000000000 +0900
++++ src/libcapn-2.0.0/src/library/apn.c	2026-02-16 22:12:04.285195400 +0900
+@@ -57,6 +57,8 @@
+ #include <netdb.h>
+ #endif
+ 
++#include <sys/select.h>
++
+ typedef enum __apn_apple_errors {
+     APN_APNS_ERR_PROCESSING_ERROR = 1,
+     APN_APNS_ERR_MISSING_DEVICE_TOKEN,
+--- origsrc/libcapn-2.0.0/src/library/apn_payload.c	2016-06-21 07:26:07.000000000 +0900
++++ src/libcapn-2.0.0/src/library/apn_payload.c	2026-02-16 22:04:53.109784400 +0900
+@@ -24,7 +24,7 @@
+ #include <errno.h>
+ #include <assert.h>
+ 
+-#include "src/jansson.h"
++#include <jansson.h>
+ #include "apn_strings.h"
+ #include "apn_memory.h"
+ #include "apn_private.h"
