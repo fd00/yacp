@@ -1,0 +1,822 @@
+--- origsrc/libwibble-1.1/configure.ac	2013-10-22 19:53:18.000000000 +0900
++++ src/libwibble-1.1/configure.ac	2026-02-18 05:41:39.218256500 +0900
+@@ -14,7 +14,7 @@ AC_ARG_ENABLE(docs,
+ AM_CONDITIONAL(DO_DOCS, test x$docs = xtrue)
+ 
+ dnl Doen not work when embedded
+-dnl AC_CONFIG_HEADERS(wibble/config.h)
++AC_CONFIG_HEADERS(wibble/config.h)
+ 
+ dnl To use subdirs
+ AC_PROG_MAKE_SET
+--- origsrc/libwibble-1.1/wibble/Makefile.am	2013-10-21 02:26:23.000000000 +0900
++++ src/libwibble-1.1/wibble/Makefile.am	2026-02-18 05:41:39.223617800 +0900
+@@ -127,7 +127,7 @@ libwibble_la_SOURCES = \
+     net/http.cpp
+ 
+ #libwibble_la_LIBADD = 
+-#libwibble_la_LDFLAGS = -no-undefined
++libwibble_la_LDFLAGS = -no-undefined
+ 
+ EXTRA_DIST = README libwibble.m4 libwibble.pc.in \
+     amorph.test.h \
+--- origsrc/libwibble-1.1/wibble/commandline/core.h	2008-10-15 23:55:30.000000000 +0900
++++ src/libwibble-1.1/wibble/commandline/core.h	2026-02-18 06:10:45.940671900 +0900
+@@ -14,12 +14,12 @@ class BadOption : public Consistency
+ 	std::string m_error;
+ 
+ public:
+-	BadOption(const std::string& error, const std::string& context = std::string("parsing commandline options")) throw ()
++	BadOption(const std::string& error, const std::string& context = std::string("parsing commandline options")) noexcept
+ 		: Consistency(context), m_error(error) {}
+-	~BadOption() throw () {}
++	~BadOption() noexcept {}
+ 
+-	virtual const char* type() const throw () { return "BadOption"; }
+-	virtual std::string desc() const throw () { return m_error; }
++	virtual const char* type() const noexcept { return "BadOption"; }
++	virtual std::string desc() const noexcept { return m_error; }
+ 
+ };
+ }
+--- origsrc/libwibble-1.1/wibble/exception.cpp	2010-10-31 00:10:53.000000000 +0900
++++ src/libwibble-1.1/wibble/exception.cpp	2026-02-18 06:10:45.936472800 +0900
+@@ -29,7 +29,7 @@
+ #include <sstream>
+ #include <iostream>
+ 
+-#if defined(POSIX) && ! defined(__xlC__)
++#if defined(POSIX) && ! defined(__xlC__) && !defined(__CYGWIN__)
+ #include <execinfo.h>
+ #endif
+ 
+@@ -40,7 +40,7 @@ namespace exception {
+ 
+ std::vector< std::string > *AddContext::s_context = 0;
+ 
+-#if defined(POSIX) && ! defined(__xlC__)
++#if defined(POSIX) && ! defined(__xlC__) && !defined(__CYGWIN__)
+ void DefaultUnexpected()
+ {
+ 	try {
+@@ -85,14 +85,14 @@ InstallUnexpected::~InstallUnexpected()
+ 
+ ///// SystemException
+ 
+-System::System(const std::string& context) throw ()
++System::System(const std::string& context) noexcept
+ 	: Generic(context), m_errno(errno) {}
+ 
+-System::System(int code, const std::string& context) throw ()
++System::System(int code, const std::string& context) noexcept
+ 	: Generic(context), m_errno(code) {}
+ 
+ #ifdef POSIX
+-string System::desc() const throw ()
++string System::desc() const noexcept
+ {
+ 	const int buf_size = 500;
+ 	char buf[buf_size];
+@@ -111,7 +111,7 @@ string System::desc() const throw ()
+ #endif
+ 
+ #ifdef _WIN32
+-string System::desc() const throw ()
++string System::desc() const noexcept
+ {
+ 	return strerror(m_errno);
+ }
+--- origsrc/libwibble-1.1/wibble/exception.h	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/exception.h	2026-02-18 06:10:45.936472800 +0900
+@@ -139,19 +139,19 @@ protected:
+ 	std::vector<std::string> m_context;
+ 
+ public:
+-    Context() throw ()
+-    {
+-        AddContext::copyContext( std::back_inserter( m_context ) );
+-    }
++	Context() noexcept
++	{
++		AddContext::copyContext( std::back_inserter( m_context ) );
++	}
+ 
+-    Context(const std::string& context) throw ()
+-    {
+-        AddContext::copyContext( std::back_inserter( m_context ) );
+-        addContext(context);
+-    }
++	Context(const std::string& context) noexcept
++	{
++		AddContext::copyContext( std::back_inserter( m_context ) );
++		addContext(context);
++	}
+ 
+-    void addContext(const std::string& c) throw () { m_context.push_back(c); }
+-    std::string formatContext() const throw ()
++	void addContext(const std::string& c) noexcept { m_context.push_back(c); }
++	std::string formatContext() const noexcept
+     {
+         if (m_context.empty())
+             return "no context information available";
+@@ -163,10 +163,10 @@ public:
+         return std::string( r, 0, r.length() - 7 );
+     }
+ 
+-    const std::vector<std::string>& context() const throw ()
+-    {
+-        return m_context;
+-    }
++	const std::vector<std::string>& context() const noexcept
++	{
++		return m_context;
++	}
+ };
+ 
+ /// Base class for all exceptions
+@@ -182,15 +182,15 @@ protected:
+ 	mutable std::string m_formatted;
+ 
+ public:
+-	Generic() throw () {}
+-	Generic(const std::string& context) throw () : Context(context) {}
+-	virtual ~Generic() throw () {}
++	Generic() noexcept {}
++	Generic(const std::string& context) noexcept : Context(context) {}
++	virtual ~Generic() noexcept {}
+ 
+ 	/// Get a string tag identifying the exception type
+-	virtual const char* type() const throw () { return "Generic"; }
++	virtual const char* type() const noexcept { return "Generic"; }
+ 
+ 	/// Get a string describing what happened that threw the exception
+-	virtual std::string desc() const throw ()
++	virtual std::string desc() const noexcept
+ 	{
+ 		return "an unspecified problem happened; if you see this message, please report a bug to the maintainer";
+ 	}
+@@ -202,7 +202,7 @@ public:
+ 	 * implement the default what() method, which needs to return a stable
+ 	 * c_str() pointer.
+ 	 */
+-	virtual const std::string& fullInfo() const throw ()
++	virtual const std::string& fullInfo() const noexcept
+ 	{
+ 		if (m_formatted.empty())
+ 			m_formatted = desc() + ". Context:\n    "
+@@ -210,7 +210,7 @@ public:
+ 		return m_formatted;
+ 	}
+ 
+-	virtual const char* what() const throw () { return fullInfo().c_str(); }
++	virtual const char* what() const noexcept { return fullInfo().c_str(); }
+ };
+ 
+ /// Exception thrown when some long event is interrupted by an external event
+@@ -224,10 +224,10 @@ public:
+ class Interrupted : public Generic
+ {
+ public:
+-	Interrupted() throw () {}
+-	Interrupted(const std::string& context) throw () : Generic(context) {}
++	Interrupted() noexcept {}
++	Interrupted(const std::string& context) noexcept : Generic(context) {}
+ 
+-	virtual const char* type() const throw () { return "Interrupted"; }
++	virtual const char* type() const noexcept { return "Interrupted"; }
+ };
+ 
+ /// Exception thrown when some system wait is interrupted by a signal
+@@ -241,10 +241,10 @@ public:
+ class WaitInterrupted : public Interrupted
+ {
+ public:
+-	WaitInterrupted(const std::string& context) throw () :
++	WaitInterrupted(const std::string& context) noexcept :
+ 		Interrupted(context) {}
+ 
+-	virtual const char* type() const throw () { return "WaitInterrupted"; }
++	virtual const char* type() const noexcept { return "WaitInterrupted"; }
+ };
+ 
+ /// Exception thrown when some consistency check fails
+@@ -256,13 +256,13 @@ class Consistency : public Generic
+ 	std::string m_error;
+ 
+ public:
+-	Consistency(const std::string& context, const std::string& error = std::string()) throw () :
++	Consistency(const std::string& context, const std::string& error = std::string()) noexcept :
+ 		Generic(context), m_error(error) {}
+-	~Consistency() throw () {}
++	~Consistency() noexcept {}
+ 
+-	virtual const char* type() const throw () { return "Consistency"; }
++	virtual const char* type() const noexcept { return "Consistency"; }
+ 
+-	virtual std::string desc() const throw ()
++	virtual std::string desc() const noexcept
+ 	{
+ 		if (m_error.empty())
+ 			return "consistency check failed";
+@@ -272,12 +272,12 @@ public:
+ 
+ struct BadCast : public Consistency
+ {
+-    BadCast( const std::string &context ) throw()
++	BadCast( const std::string &context ) noexcept
+         : Consistency( context )
+     {}
+-    ~BadCast() throw() {}
+-    virtual std::string typeinfo() const throw() { return "unknown types"; }
+-    virtual std::string desc() const throw() {
++	~BadCast() noexcept {}
++	virtual std::string typeinfo() const noexcept { return "unknown types"; }
++	virtual std::string desc() const noexcept {
+         return std::string( "bad cast: " ) + typeinfo();
+     }
+ };
+@@ -286,11 +286,11 @@ struct BadCast : public Consistency
+ template< typename From, typename To >
+ struct BadCastExt : public BadCast
+ {
+-    BadCastExt( const std::string &error = std::string() ) throw()
+-        : BadCast( error )
+-    {}
+-    ~BadCastExt() throw() {}
+-    virtual std::string typeinfo() const throw() { return std::string( "from " )
++	BadCastExt( const std::string &error = std::string() ) noexcept
++		: BadCast( error )
++	{}
++	~BadCastExt() noexcept {}
++	virtual std::string typeinfo() const noexcept { return std::string( "from " )
+                                                        + typeid( From ).name()
+                                                        + " to "
+                                                        + typeid( To ).name(); }
+@@ -312,16 +312,16 @@ protected:
+ 	std::string m_var_desc;
+ 
+ public:
+-	OutOfRange(const std::string& var_desc, const std::string& context) throw ()
++	OutOfRange(const std::string& var_desc, const std::string& context) noexcept
+ 		: Consistency(context), m_var_desc(var_desc) {}
+-	~OutOfRange() throw () {}
++	~OutOfRange() noexcept {}
+ 
+-	virtual const char* type() const throw () { return "OutOfRange"; }
++	virtual const char* type() const noexcept { return "OutOfRange"; }
+ 
+ 	/// Get a short description of the variable that has been checked
+-	virtual std::string var_desc() const throw () { return m_var_desc; }
++	virtual std::string var_desc() const noexcept { return m_var_desc; }
+ 
+-	virtual std::string desc() const throw () { return m_var_desc + " out of range"; }
++	virtual std::string desc() const noexcept { return m_var_desc + " out of range"; }
+ };
+ 
+ /// Exception thrown when index checking fails
+@@ -352,27 +352,27 @@ public:
+ 	/** Construct the exception; minBound and maxBound are the bounds of the
+ 	 * valid index range (inclusive).
+ 	 */
+-	ValOutOfRange(const std::string& var_desc, C val, C inf, C sup,
+-			const std::string& context) throw ()
+-					: OutOfRange(var_desc, context),
+-						m_val(val), m_inf(inf), m_sup(sup) {}
++	    ValOutOfRange(const std::string& var_desc, C val, C inf, C sup,
++		    const std::string& context) noexcept
++			    : OutOfRange(var_desc, context),
++				m_val(val), m_inf(inf), m_sup(sup) {}
+ 	
+ 	///@name Methods used to get informations about the index and its bounds
+ 	//@{
+ 	/// Get the value that caused the index to go out-of-bounds
+-	virtual C val() const throw () { return m_val; }
++	virtual C val() const noexcept { return m_val; }
+ 	/// Get the minimum allowed value for this index
+-	virtual C inf() const throw () { return m_inf; }
++	virtual C inf() const noexcept { return m_inf; }
+ 	/// Get the maximum allowed value for this index
+-	virtual C sup() const throw () { return m_sup; }
++	virtual C sup() const noexcept { return m_sup; }
+ 	//@}
+ 
+-	virtual const char* type() const throw ()
++	virtual const char* type() const noexcept
+ 	{
+ 		return "ValOutOfRange<>";
+ 	}
+ 
+-	virtual std::string desc() const throw ();
++	virtual std::string desc() const noexcept;
+ };
+ 
+ /// Base class for system exceptions
+@@ -399,16 +399,16 @@ protected:
+ 	int m_errno;
+ 
+ public:
+-	System(const std::string& context) throw ();
+-	System(int code, const std::string& context) throw ();
++	System(const std::string& context) noexcept;
++	System(int code, const std::string& context) noexcept;
+ 
+-	virtual const char* type() const throw () { return "System"; }
++	virtual const char* type() const noexcept { return "System"; }
+ 
+ 	/// Get the system error code associated to the exception
+-	virtual int code() const throw () { return m_errno; }
++	virtual int code() const noexcept { return m_errno; }
+ 
+ 	/// Get the description of the error code
+-	virtual std::string desc() const throw ();
++	virtual std::string desc() const noexcept;
+ };
+ 
+ /// Base class for exceptions for file I/O
+@@ -423,13 +423,13 @@ protected:
+ 	std::string m_name;
+ 
+ public:
+-	File(const std::string& name, const std::string& context)	throw () :
++	File(const std::string& name, const std::string& context) noexcept :
+ 		System(context), m_name(name) {}
+-	~File() throw () {}
++	~File() noexcept {}
+ 
+-	virtual const char* type() const throw () { return "File"; }
++	virtual const char* type() const noexcept { return "File"; }
+ 
+-	virtual std::string desc() const throw () { return m_name + ": " + System::desc(); }
++	virtual std::string desc() const noexcept { return m_name + ": " + System::desc(); }
+ };
+ 
+ }
+--- origsrc/libwibble-1.1/wibble/exception.tcc	2008-10-15 23:54:33.000000000 +0900
++++ src/libwibble-1.1/wibble/exception.tcc	2026-02-18 06:10:45.938648600 +0900
+@@ -26,7 +26,7 @@ namespace wibble {
+ namespace exception {
+ 
+ template<typename C>
+-std::string ValOutOfRange<C>::desc() const throw ()
++std::string ValOutOfRange<C>::desc() const noexcept
+ {
+ 	std::stringstream str;
+ 	str << m_var_desc << "(" << m_val << ") out of range (" <<
+--- origsrc/libwibble-1.1/wibble/net/http.cpp	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/net/http.cpp	2026-02-18 06:10:45.940671900 +0900
+@@ -35,7 +35,7 @@ namespace wibble {
+ namespace net {
+ namespace http {
+ 
+-const char* error::what() const throw ()
++const char* error::what() const noexcept
+ {
+     if (!msg.empty()) return msg.c_str();
+     return desc.c_str();
+--- origsrc/libwibble-1.1/wibble/net/http.h	2010-12-04 01:22:19.000000000 +0900
++++ src/libwibble-1.1/wibble/net/http.h	2026-02-18 06:10:45.936472800 +0900
+@@ -44,9 +44,9 @@ struct error : public std::exception
+         : code(code), desc(desc) {}
+     error(int code, const std::string& desc, const std::string& msg)
+         : code(code), desc(desc), msg(msg) {}
+-    virtual ~error() throw () {}
++    virtual ~error() noexcept {}
+ 
+-    virtual const char* what() const throw ();
++    virtual const char* what() const noexcept;
+ 
+     virtual void send(Request& req);
+ };
+--- origsrc/libwibble-1.1/wibble/parse.h	2013-10-21 02:56:02.000000000 +0900
++++ src/libwibble-1.1/wibble/parse.h	2026-02-18 06:10:45.940671900 +0900
+@@ -226,7 +226,7 @@ struct ParseContext
+             position = pos;
+             type = t;
+         }
+-        ~Fail() throw () {}
++        ~Fail() noexcept {}
+     };
+ 
+     std::priority_queue< Fail > failures;
+--- origsrc/libwibble-1.1/wibble/regexp.cpp	2008-10-15 23:53:54.000000000 +0900
++++ src/libwibble-1.1/wibble/regexp.cpp	2026-02-18 06:10:45.936472800 +0900
+@@ -29,7 +29,7 @@ namespace exception {
+ ////// wibble::exception::Regexp
+ 
+ Regexp::Regexp(const regex_t& re, int code,
+-				const string& context) throw ()
++				const string& context) noexcept
+ 			: Generic(context), m_code(code)
+ {
+ 	int size = 64;
+@@ -50,7 +50,7 @@ Regexp::Regexp(const regex_t& re, int co
+ ////// Regexp
+ 
+ Regexp::Regexp(const string& expr, int match_count, int flags)
+-	throw (wibble::exception::Regexp) : pmatch(0), nmatch(match_count)
++	: pmatch(0), nmatch(match_count)
+ {
+ 	if (match_count == 0)
+ 		flags |= REG_NOSUB;
+@@ -63,7 +63,7 @@ Regexp::Regexp(const string& expr, int m
+ 		pmatch = new regmatch_t[match_count];
+ }
+ 
+-Regexp::~Regexp() throw ()
++Regexp::~Regexp() noexcept
+ {
+ 	regfree(&re);
+ 	if (pmatch)
+@@ -72,7 +72,6 @@ Regexp::~Regexp() throw ()
+ 	
+ 
+ bool Regexp::match(const string& str, int flags)
+-	throw(wibble::exception::Regexp)
+ {
+ 	int res;
+ 	
+@@ -92,7 +91,7 @@ bool Regexp::match(const string& str, in
+ 	}
+ }
+ 
+-string Regexp::operator[](int idx) throw (wibble::exception::OutOfRange)
++string Regexp::operator[](int idx)
+ {
+ 	if (idx > nmatch)
+ 		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
+@@ -103,21 +102,21 @@ string Regexp::operator[](int idx) throw
+ 	return string(lastMatch, pmatch[idx].rm_so, pmatch[idx].rm_eo - pmatch[idx].rm_so);
+ }
+ 
+-size_t Regexp::matchStart(int idx) throw (wibble::exception::OutOfRange)
++size_t Regexp::matchStart(int idx)
+ {
+ 	if (idx > nmatch)
+ 		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
+ 	return pmatch[idx].rm_so;
+ }
+ 
+-size_t Regexp::matchEnd(int idx) throw (wibble::exception::OutOfRange)
++size_t Regexp::matchEnd(int idx)
+ {
+ 	if (idx > nmatch)
+ 		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
+ 	return pmatch[idx].rm_eo;
+ }
+ 
+-size_t Regexp::matchLength(int idx) throw (wibble::exception::OutOfRange)
++size_t Regexp::matchLength(int idx)
+ {
+ 	if (idx > nmatch)
+ 		throw wibble::exception::ValOutOfRange<int>("index", idx, 0, nmatch, "getting submatch of regexp");
+--- origsrc/libwibble-1.1/wibble/regexp.h	2008-10-15 23:53:53.000000000 +0900
++++ src/libwibble-1.1/wibble/regexp.h	2026-02-18 06:10:45.925628600 +0900
+@@ -38,14 +38,14 @@ protected:
+ 
+ public:
+ 	Regexp(const regex_t& re, int code, const std::string& context)
+-		throw ();
+-	~Regexp() throw () {}
++		noexcept;
++	~Regexp() noexcept {}
+ 
+ 	/// Get the regexp error code associated to the exception
+-	virtual int code() const throw () { return m_code; }
++	virtual int code() const noexcept { return m_code; }
+ 
+-	virtual const char* type() const throw () { return "Regexp"; }
+-	virtual std::string desc() const throw () { return m_message; }
++	virtual const char* type() const noexcept { return "Regexp"; }
++	virtual std::string desc() const noexcept { return m_message; }
+ };
+ 
+ }
+@@ -63,26 +63,26 @@ public:
+            sub-regexp capture. The maximum *INCLUDES* the whole-regexp
+            match (indexed 0). [TODO we may want to fix this to be more
+            friendly?] */
+-	Regexp(const std::string& expr, int match_count = 0, int flags = 0) throw (wibble::exception::Regexp);
+-	~Regexp() throw ();
++	Regexp(const std::string& expr, int match_count = 0, int flags = 0);
++	~Regexp() noexcept;
+ 
+-	bool match(const std::string& str, int flags = 0) throw (wibble::exception::Regexp);
++	bool match(const std::string& str, int flags = 0);
+ 	
+         /* Indexing is from 1 for capture matches, like perl's $0,
+            $1... 0 is whole-regexp match, not a capture. TODO
+            the range is miscalculated (an off-by-one, wrt. the
+            counterintuitive match counting). */
+-	std::string operator[](int idx) throw (wibble::exception::OutOfRange);
++	std::string operator[](int idx);
+ 
+-	size_t matchStart(int idx) throw (wibble::exception::OutOfRange);
+-	size_t matchEnd(int idx) throw (wibble::exception::OutOfRange);
+-	size_t matchLength(int idx) throw (wibble::exception::OutOfRange);
++	size_t matchStart(int idx);
++	size_t matchEnd(int idx);
++	size_t matchLength(int idx);
+ };
+ 
+ class ERegexp : public Regexp
+ {
+ public:
+-	ERegexp(const std::string& expr, int match_count = 0, int flags = 0) throw (wibble::exception::Regexp)
++	ERegexp(const std::string& expr, int match_count = 0, int flags = 0)
+ 		: Regexp(expr, match_count, flags | REG_EXTENDED) {}
+ };
+ 
+--- origsrc/libwibble-1.1/wibble/sys/buffer.cpp	2013-10-02 08:34:50.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/buffer.cpp	2026-02-18 06:10:45.944703400 +0900
+@@ -76,7 +76,7 @@ void Buffer::Data::resize(size_t size)
+ }
+ 
+ /// Compare the contents of two buffers
+-bool Buffer::Data::operator==(const Data& d) const throw()
++bool Buffer::Data::operator==(const Data& d) const noexcept
+ {
+ 	if (_size != d._size)
+ 		return false;
+@@ -88,7 +88,7 @@ bool Buffer::Data::operator==(const Data
+ }
+ 
+ /// Compare the contents of two buffers
+-bool Buffer::Data::operator<(const Data& d) const throw()
++bool Buffer::Data::operator<(const Data& d) const noexcept
+ {
+ 	if (_size < d._size)
+ 		return true;
+--- origsrc/libwibble-1.1/wibble/sys/buffer.h	2013-10-22 19:52:16.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/buffer.h	2026-02-18 06:10:45.942686300 +0900
+@@ -41,7 +41,7 @@ public:
+ 		void* _data;
+ 
+ 	public:
+-		Data() throw () : _ref(0), _size(0), _data(0) {}
++		Data() noexcept : _ref(0), _size(0), _data(0) {}
+ 		Data(size_t size);
+ 		// if own == true, take possession of the memory buffer, else copy it
+ 		Data(void* buf, size_t size, bool own = true);
+@@ -49,20 +49,20 @@ public:
+ 		~Data();
+ 
+ 		/// Increment the reference count for this object
+-		void ref() const throw () { ++_ref; }
++		void ref() const noexcept { ++_ref; }
+ 
+ 		/// Decrement the reference count for this object, returning true when it
+ 		/// reaches 0
+-		bool unref() const throw () { return --_ref == 0; }
++		bool unref() const noexcept { return --_ref == 0; }
+ 
+ 		/// Resize (enlarging or shrinking it) the buffer to `size' bytes
+ 		void resize(size_t size);
+ 
+ 		/// Compare the contents of two buffers
+-		bool operator==(const Data& d) const throw();
++		bool operator==(const Data& d) const noexcept;
+ 
+ 		/// Compare the contents of two buffers
+-		bool operator<(const Data& d) const throw();
++		bool operator<(const Data& d) const noexcept;
+ 
+ 		friend class Buffer;
+ 	};
+@@ -71,7 +71,7 @@ public:
+ 	
+ public:
+ 	/// Create a 0-lenght buffer
+-	Buffer() throw () : item(0) {}
++	Buffer() noexcept : item(0) {}
+ 
+ 	/// Create a buffer with the specified size
+ 	Buffer(size_t size) : item(0)
+@@ -118,7 +118,7 @@ public:
+ 		}
+ 	}
+ 
+-	Buffer(const Buffer& buf) throw ()
++	Buffer(const Buffer& buf) noexcept
+ 	{
+ 		if (buf.item)
+ 			buf.item->ref();
+@@ -140,13 +140,13 @@ public:
+ 	}
+ 
+ 	/// Return a pointer to the buffer
+-	void* data() throw () { return item ? item->_data : 0; }
++	void* data() noexcept { return item ? item->_data : 0; }
+ 
+ 	/// Return a pointer to the buffer
+-	const void* data() const throw () { return item ? item->_data : 0; }
++	const void* data() const noexcept { return item ? item->_data : 0; }
+ 
+ 	/// Return the buffer size
+-	size_t size() const throw () { return item ? item->_size : 0; }
++	size_t size() const noexcept { return item ? item->_size : 0; }
+ 
+ 	/// Resize the buffer to hold exactly the specified amount of bytes
+ 	void resize(size_t newSize)
+@@ -167,7 +167,7 @@ public:
+ 	}
+ 
+ 	/// Compare the contents of two buffers
+-	bool operator==(const Buffer& buf) const throw ()
++	bool operator==(const Buffer& buf) const noexcept
+ 	{
+ 		if (item == 0 && buf.item == 0)
+ 			return true;
+@@ -176,13 +176,13 @@ public:
+ 		return *item == *buf.item;
+ 	}
+ 
+-	bool operator!=(const Buffer& buf) const throw ()
++	bool operator!=(const Buffer& buf) const noexcept
+ 	{
+ 		return !operator==(buf);
+ 	}
+ 
+ 	/// Compare the contents of two buffers
+-	bool operator<(const Buffer& buf) const throw ()
++	bool operator<(const Buffer& buf) const noexcept
+ 	{
+ 		if (item == 0 && buf.item == 0)
+ 			return false;
+--- origsrc/libwibble-1.1/wibble/sys/filelock.h	2013-10-21 07:29:57.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/filelock.h	2026-02-18 05:41:39.223617800 +0900
+@@ -5,6 +5,7 @@
+ 
+ #ifdef POSIX
+ 
++#include <cstdio>
+ #include <fcntl.h>
+ 
+ namespace wibble {
+--- origsrc/libwibble-1.1/wibble/sys/mutex.h	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/mutex.h	2026-02-18 05:41:39.228868900 +0900
+@@ -64,13 +64,13 @@ public:
+             pthread_mutexattr_t attr;
+             pthread_mutexattr_init( &attr );
+             if ( recursive ) {
+-#if (__APPLE__ || __xlC__)
++#if (__APPLE__ || __xlC__) || defined(__CYGWIN__)
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
+ #else
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE_NP );
+ #endif
+             } else {
+-#ifndef NDEBUG
++#if !defined(NDEBUG) && defined(PTHREAD_MUTEX_ERRORCHECK_NP)
+                 pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+ #endif
+             }
+--- origsrc/libwibble-1.1/wibble/sys/netbuffer.h	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/netbuffer.h	2026-02-18 06:10:45.936472800 +0900
+@@ -42,15 +42,15 @@ public:
+ 	size_t cursor;
+ 	
+ public:
+-	NetBuffer() throw () : Buffer(), cursor(0) {}
++	NetBuffer() noexcept : Buffer(), cursor(0) {}
+ 	NetBuffer(size_t size) : Buffer(size), cursor(0) {}
+ 	NetBuffer(void* buf, size_t size, bool own = true)
+ 		: Buffer(buf, size, own), cursor(0) {}
+ 	NetBuffer(const void* buf, size_t size)
+ 		: Buffer(buf, size), cursor(0) {}
+ 
+-	NetBuffer(const Buffer& buf) throw () : Buffer(buf), cursor(0) {}
+-	NetBuffer(const NetBuffer& buf) throw ()
++	NetBuffer(const Buffer& buf) noexcept : Buffer(buf), cursor(0) {}
++	NetBuffer(const NetBuffer& buf) noexcept
+ 		: Buffer(buf), cursor(buf.cursor) {}
+ 
+ 	NetBuffer& operator=(const Buffer& buf)
+@@ -68,20 +68,20 @@ public:
+ 	}
+ 
+ 	/// Return a pointer to the buffer
+-	const void* data(size_t ofs = 0) const throw () { return static_cast<const char*>(Buffer::data()) + cursor + ofs; }
++	const void* data(size_t ofs = 0) const noexcept { return static_cast<const char*>(Buffer::data()) + cursor + ofs; }
+ 
+ 	/// Return a pointer to the buffer
+-	void* data(size_t ofs = 0) throw () { return static_cast<char*>(Buffer::data()) + cursor + ofs; }
++	void* data(size_t ofs = 0) noexcept { return static_cast<char*>(Buffer::data()) + cursor + ofs; }
+ 
+ 	/// Return the buffer size
+-	size_t size() const throw () { return Buffer::size() - cursor; }
++	size_t size() const noexcept { return Buffer::size() - cursor; }
+ 
+ 	/**
+ 	 * Check if the buffer is long enough to contain a structure T at the given
+ 	 * offset
+ 	 */
+ 	template<class T>
+-	bool fits(size_t ofs = 0) const throw ()
++	bool fits(size_t ofs = 0) const noexcept
+ 	{
+ 		return cursor + ofs + sizeof(T) < size();
+ 	}
+@@ -90,7 +90,7 @@ public:
+ 	 * Access the buffer contents as a structure T at the given offset
+ 	 */
+ 	template<class T>
+-	const T* cast(size_t ofs = 0) const throw (wibble::exception::Consistency)
++	const T* cast(size_t ofs = 0) const
+ 	{
+ 		if (cursor + ofs + sizeof(T) >= size())
+ 			throw wibble::exception::Consistency("reading from buffer", "tried to read past the end of the buffer");
+@@ -100,7 +100,7 @@ public:
+ 	/**
+ 	 * Return another NetBuffer starting ofs bytes from the beginning of this one
+ 	 */
+-	NetBuffer operator+(size_t ofs) throw (wibble::exception::Consistency)
++	NetBuffer operator+(size_t ofs)
+ 	{
+ 		return after(ofs);
+ 	}
+@@ -108,7 +108,7 @@ public:
+ 	/**
+ 	 * Return another NetBuffer starting ofs bytes from the beginning of this one
+ 	 */
+-	const NetBuffer after(size_t ofs) const throw (wibble::exception::Consistency)
++	const NetBuffer after(size_t ofs) const
+ 	{
+ 		NetBuffer res(*this);
+ 		res.skip(ofs);
+@@ -120,7 +120,7 @@ public:
+ 	 * beginning of this one
+ 	 */
+ 	template<class T>
+-	const NetBuffer after() const throw (wibble::exception::Consistency)
++	const NetBuffer after() const
+ 	{
+ 		NetBuffer res(*this);
+ 		res.skip(sizeof(T));
+@@ -130,7 +130,7 @@ public:
+ 	/**
+ 	 * Move the starting point of this buffer ofs bytes from the beginning
+ 	 */
+-	NetBuffer& operator+=(size_t ofs) throw (wibble::exception::Consistency)
++	NetBuffer& operator+=(size_t ofs)
+ 	{
+ 		skip(ofs);
+ 		return *this;
+@@ -141,7 +141,7 @@ public:
+ 	 * beginning
+ 	 */
+ 	template<class T>
+-	void skip() throw (wibble::exception::Consistency)
++	void skip()
+ 	{
+ 		skip(sizeof(T));
+ 	}
+@@ -149,7 +149,7 @@ public:
+ 	/**
+ 	 * Move the starting point of this buffer ofs bytes from the beginning
+ 	 */
+-	void skip(size_t t) throw (wibble::exception::Consistency)
++	void skip(size_t t)
+ 	{
+ 		if (cursor + t >= size())
+ 			throw wibble::exception::Consistency("reading from buffer", "tried to skip past the end of the buffer");
+--- origsrc/libwibble-1.1/wibble/sys/process.cpp	2013-10-21 01:52:20.000000000 +0900
++++ src/libwibble-1.1/wibble/sys/process.cpp	2026-02-18 05:41:39.228868900 +0900
+@@ -271,10 +271,14 @@ static string describe_rlimit_res_t(int
+ 		case RLIMIT_DATA: return "max data size";
+ 		case RLIMIT_STACK: return "max stack size";
+ 		case RLIMIT_CORE: return "max core file size";
++#if defined(RLIMIT_RSS)
+ 		case RLIMIT_RSS: return "max resident set size";
++#endif
++#if defined(RLIMIT_NPROC)
+ 		case RLIMIT_NPROC: return "max number of processes";
++#endif
+ 		case RLIMIT_NOFILE: return "max number of open files";
+-#ifndef __xlC__
++#if defined(RLIMIT_MEMLOCK)
+ 		case RLIMIT_MEMLOCK: return "max locked-in-memory address spac";
+ #endif
+ #ifndef __APPLE__
+@@ -312,14 +316,22 @@ int getCPUTimeLimit(int* max) { return g
+ int getFileSizeLimit(int* max) { return getLimit(RLIMIT_FSIZE, max); }
+ int getDataMemoryLimit(int* max) { return getLimit(RLIMIT_DATA, max); }
+ int getCoreSizeLimit(int* max) { return getLimit(RLIMIT_CORE, max); }
++#if defined(RLIMIT_NPROC)
+ int getChildrenLimit(int* max) { return getLimit(RLIMIT_NPROC, max); }
++#else
++int getChildrenLimit(int* max) { return 0; }
++#endif
+ int getOpenFilesLimit(int* max) { return getLimit(RLIMIT_NOFILE, max); }
+ 
+ void setCPUTimeLimit(int value) { setLimit(RLIMIT_CPU, value); }
+ void setFileSizeLimit(int value) { setLimit(RLIMIT_FSIZE, value); }
+ void setDataMemoryLimit(int value) { setLimit(RLIMIT_DATA, value); }
+ void setCoreSizeLimit(int value) { setLimit(RLIMIT_CORE, value); }
++#if defined(RLIMIT_NPROC)
+ void setChildrenLimit(int value) { setLimit(RLIMIT_NPROC, value); }
++#else
++void setChildrenLimit(int value) { }
++#endif
+ void setOpenFilesLimit(int value) { setLimit(RLIMIT_NOFILE, value); }
+ 
+ #ifdef __linux__
