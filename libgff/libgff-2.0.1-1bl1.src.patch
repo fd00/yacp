@@ -1,5 +1,14 @@
---- origsrc/libgff-2.0.0/CMakeLists.txt	2020-07-03 01:49:43.000000000 +0900
-+++ src/libgff-2.0.0/CMakeLists.txt	2024-10-21 22:15:49.260579000 +0900
+--- origsrc/libgff-2.0.1/CMakeLists.txt	2026-03-07 03:56:13.000000000 +0900
++++ src/libgff-2.0.1/CMakeLists.txt	2026-03-21 22:16:34.182667200 +0900
+@@ -10,7 +10,7 @@ include(CMakePackageConfigHelpers)
+ 
+ set(ver_major 2)
+ set(ver_minor 0)
+-set(ver_patch 0)
++set(ver_patch 1)
+ 
+ set(CPACK_PACKAGE_VERSION_MAJOR ${ver_major})
+ set(CPACK_PACKAGE_VERSION_MINOR ${ver_minor})
 @@ -23,7 +23,6 @@ set(PROJECT_VERSION ${CPACK_PACKAGE_VERS
  
  set(CMAKE_CXX_STANDARD 14)
@@ -8,7 +17,7 @@
  
  set(PROJECT_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
  set(PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-@@ -43,7 +42,7 @@ set(GFFLib_SRCS
+@@ -43,15 +42,17 @@ set(GFFLib_SRCS
  
  include_directories(${PROJECT_INCLUDE_DIR})
  
@@ -17,7 +26,10 @@
  add_executable(TestGFFParse ${PROJECT_SOURCE_DIR}/TestGFFParse.cpp)
  target_link_libraries(TestGFFParse ${PROJECT_NAME})
  
-@@ -51,15 +50,26 @@ target_link_libraries(TestGFFParse ${PRO
+-
++if (DEFINED SOVERSION)
++  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION "${SOVERSION}")
++endif()
  
  configure_package_config_file(libgffConfig.cmake.in
    ${CMAKE_CURRENT_BINARY_DIR}/libgffConfig.cmake
@@ -26,15 +38,12 @@
    PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
  write_basic_package_version_file(
    ${CMAKE_CURRENT_BINARY_DIR}/libgffConfigVersion.cmake
-   VERSION ${ver_major}.${ver_minor}.${ver_patch}
+@@ -59,7 +60,15 @@ write_basic_package_version_file(
    COMPATIBILITY SameMajorVersion )
-+if(CYGWIN)
-+  set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION 0)
-+endif()
  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgffConfig.cmake
                ${CMAKE_CURRENT_BINARY_DIR}/libgffConfigVersion.cmake
 -        DESTINATION ${LIB_INSTALL_DIR}/libgff/cmake )
-+        DESTINATION ${LIB_INSTALL_DIR}/cmake/libgff)
++        DESTINATION ${LIB_INSTALL_DIR}/cmake/libgff )
  
 -install(FILES ${CMAKE_BINARY_DIR}/lib${PROJECT_NAME}.a DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 -install(DIRECTORY ${PROJECT_INCLUDE_DIR} DESTINATION ${CMAKE_INSTALL_PREFIX})
@@ -42,14 +51,14 @@
 +file(GLOB HEADERS "include/*")
 +install(FILES ${HEADERS} DESTINATION include/libgff)
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include/libgff)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libgff.pc.in ${CMAKE_BINARY_DIR}/libgff.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/libgff.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/libgff-2.0.0/libgff.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/libgff-2.0.0/libgff.pc.in	2024-10-21 19:23:55.107042700 +0900
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libgff.pc.in ${CMAKE_BINARY_DIR}/libgff.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libgff.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libgff-2.0.1/libgff.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libgff-2.0.1/libgff.pc.in	2026-03-21 22:07:34.404382100 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -61,8 +70,8 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -lgff
 +Cflags: -I${includedir}
---- origsrc/libgff-2.0.0/libgffConfig.cmake.in	2020-07-03 01:49:43.000000000 +0900
-+++ src/libgff-2.0.0/libgffConfig.cmake.in	2024-10-21 22:16:23.179935800 +0900
+--- origsrc/libgff-2.0.1/libgffConfig.cmake.in	2026-03-07 03:56:13.000000000 +0900
++++ src/libgff-2.0.1/libgffConfig.cmake.in	2026-03-21 22:02:35.774332500 +0900
 @@ -4,6 +4,6 @@ set(LIB_GFF_VERSION 2.0.0)
  
  set_and_check(LIB_GFF_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
