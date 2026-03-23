@@ -1,0 +1,442 @@
+--- origsrc/libplctag-2.6.15/src/examples/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/examples/CMakeLists.txt	2026-03-23 10:21:53.395156700 +0900
+@@ -51,8 +51,8 @@ foreach(example ${EXAMPLE_EXECUTABLES})
+         target_link_options(${example} PRIVATE "${STATIC_C_LINKER_OPTIONS}")
+     endif()
+ 
+-    # Link with the static library and apply static linking flags
+-    target_link_libraries(${example} plctag_static ${EXTRA_LINKER_LIBS})
++    # Link with the dynamic library and apply dynamic linking flags
++    target_link_libraries(${example} plctag_dyn ${EXTRA_LINKER_LIBS})
+ 
+     if(UNIX AND NOT APPLE)
+         # Don't use static linking with sanitizers as they are incompatible
+--- origsrc/libplctag-2.6.15/src/libplctag/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/libplctag/CMakeLists.txt	2026-03-23 10:23:16.641216400 +0900
+@@ -151,46 +151,19 @@ if(PLATFORM_WINDOWS)
+ endif(PLATFORM_WINDOWS)
+ 
+ install(TARGETS plctag_dyn
+-    LIBRARY DESTINATION lib${LIB_SUFFIX}
++    RUNTIME DESTINATION bin
++    ARCHIVE DESTINATION lib
+     COMPONENT runtime)
+ 
+-# static library
+-# Note: No add_dependencies needed - DEBUG_GENERATED_NAMES_C in sources triggers generation automatically
+-add_library(plctag_static STATIC ${libplctag_SRCS} )
+-target_link_libraries(plctag_static ${EXTRA_LINKER_LIBS})
+-# Link atomic library for 64-bit atomic operations on 32-bit ARM
+-# Link math library (main library may use sqrt in some places)
+-if(UNIX AND NOT APPLE)
+-    target_link_libraries(plctag_static atomic)
+-    target_link_libraries(plctag_static m)
+-elseif(UNIX)
+-    # macOS: link math library
+-    target_link_libraries(plctag_static m)
+-endif()
+-set_target_properties(plctag_static PROPERTIES SOVERSION "${libplctag_VERSION_MAJOR}.${libplctag_VERSION_MINOR}" OUTPUT_NAME "plctag_static")
+-target_compile_definitions(plctag_static PUBLIC -DLIBPLCTAG_STATIC=1)
+-
+-# if(STATIC_LINK_OPTIONS)
+-#     target_link_options(plctag_static PUBLIC "${EXTRA_LINK_FLAGS} ${STATIC_LINK_OPTIONS}")
+-# endif()
+-
+-if(PLATFORM_WINDOWS)
+-    target_compile_definitions(plctag_static PUBLIC -D_CRT_SECURE_NO_WARNINGS)
+-endif(PLATFORM_WINDOWS)
+-
+ # make sure the .h file is in the output directory
+ CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/lib/libplctag.h" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.h" COPYONLY)
+ 
+-install(TARGETS plctag_static
+-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-    COMPONENT devel)
+-
+ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/lib/libplctag.h"
+     DESTINATION include
+     COMPONENT devel)
+ 
+ if(EXISTS "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc")
+     install(FILES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libplctag.pc"
+-            DESTINATION "lib${LIB_SUFFIX}/pkgconfig"
++            DESTINATION "lib/pkgconfig"
+             COMPONENT devel)
+ endif()
+--- origsrc/libplctag-2.6.15/src/poc/list_tags_omron/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/poc/list_tags_omron/CMakeLists.txt	2026-03-23 10:31:47.362419400 +0900
+@@ -15,5 +15,5 @@ add_executable(list_tags_omron ${LIST_TA
+ 
+ target_include_directories(list_tags_omron PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(list_tags_omron PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(list_tags_omron PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(list_tags_omron PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/poc/test_alternate_tag_listing/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/poc/test_alternate_tag_listing/CMakeLists.txt	2026-03-23 10:31:47.379253100 +0900
+@@ -15,5 +15,5 @@ add_executable(test_alternate_tag_listin
+ 
+ target_include_directories(test_alternate_tag_listing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_alternate_tag_listing PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_alternate_tag_listing PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_alternate_tag_listing PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/stress_api_lock/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/stress_api_lock/CMakeLists.txt	2026-03-23 10:31:47.383254300 +0900
+@@ -15,5 +15,5 @@ add_executable(stress_api_lock ${STRESS_
+ 
+ target_include_directories(stress_api_lock PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(stress_api_lock PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(stress_api_lock PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(stress_api_lock PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/stress_rc_mem/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/stress_rc_mem/CMakeLists.txt	2026-03-23 10:31:47.383254300 +0900
+@@ -15,5 +15,5 @@ add_executable(stress_rc_mem ${STRESS_RC
+ 
+ target_include_directories(stress_rc_mem PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(stress_rc_mem PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(stress_rc_mem PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(stress_rc_mem PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/stress_test/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/stress_test/CMakeLists.txt	2026-03-23 10:31:47.381252400 +0900
+@@ -15,5 +15,5 @@ add_executable(stress_test ${STRESS_TEST
+ 
+ target_include_directories(stress_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(stress_test PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(stress_test PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(stress_test PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_array_notation/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_array_notation/CMakeLists.txt	2026-03-23 10:31:47.381252400 +0900
+@@ -15,5 +15,5 @@ add_executable(test_array_notation ${TES
+ 
+ target_include_directories(test_array_notation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_array_notation PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_array_notation PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_array_notation PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_auto_sync/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_auto_sync/CMakeLists.txt	2026-03-23 10:31:47.403526000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_auto_sync ${TEST_AUT
+ 
+ target_include_directories(test_auto_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_auto_sync PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_auto_sync PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_auto_sync PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_auto_sync_modbus/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_auto_sync_modbus/CMakeLists.txt	2026-03-23 10:31:47.397517300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_auto_sync_modbus ${T
+ 
+ target_include_directories(test_auto_sync_modbus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_auto_sync_modbus PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_auto_sync_modbus PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_auto_sync_modbus PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_callback/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_callback/CMakeLists.txt	2026-03-23 10:31:47.397517300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_callback ${TEST_CALL
+ 
+ target_include_directories(test_callback PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_callback PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_callback PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_callback PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_callback_ex/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_callback_ex/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_callback_ex ${TEST_C
+ 
+ target_include_directories(test_callback_ex PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_callback_ex PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_callback_ex PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_callback_ex PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_callback_ex_logix/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_callback_ex_logix/CMakeLists.txt	2026-03-23 10:31:47.397517300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_callback_ex_logix ${
+ 
+ target_include_directories(test_callback_ex_logix PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_callback_ex_logix PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_callback_ex_logix PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_callback_ex_logix PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_callback_ex_modbus/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_callback_ex_modbus/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_callback_ex_modbus $
+ 
+ target_include_directories(test_callback_ex_modbus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_callback_ex_modbus PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_callback_ex_modbus PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_callback_ex_modbus PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_connection_group/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_connection_group/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_connection_group ${T
+ 
+ target_include_directories(test_connection_group PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_connection_group PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_connection_group PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_connection_group PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_connection_stress/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_connection_stress/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_connection_stress ${
+ 
+ target_include_directories(test_connection_stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_connection_stress PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_connection_stress PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_connection_stress PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_emulator_performance/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_emulator_performance/CMakeLists.txt	2026-03-23 10:31:47.392528600 +0900
+@@ -15,5 +15,5 @@ add_executable(test_emulator_performance
+ 
+ target_include_directories(test_emulator_performance PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_emulator_performance PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_emulator_performance PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_emulator_performance PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_event/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_event/CMakeLists.txt	2026-03-23 10:31:47.392528600 +0900
+@@ -15,5 +15,5 @@ add_executable(test_event ${TEST_EVENT_F
+ 
+ target_include_directories(test_event PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_event PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_event PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_event PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_fairness/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_fairness/CMakeLists.txt	2026-03-23 10:31:47.392528600 +0900
+@@ -15,7 +15,7 @@ add_executable(test_fairness ${TEST_FAIR
+ 
+ target_include_directories(test_fairness PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_fairness PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_fairness PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_fairness PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+ 
+ # test_fairness needs stats.c for statistics calculations
+--- origsrc/libplctag-2.6.15/src/tests/test_idle_disconnect/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_idle_disconnect/CMakeLists.txt	2026-03-23 10:31:47.390253900 +0900
+@@ -15,5 +15,5 @@ add_executable(test_idle_disconnect ${TE
+ 
+ target_include_directories(test_idle_disconnect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_idle_disconnect PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_idle_disconnect PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_idle_disconnect PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_indexed_tags/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_indexed_tags/CMakeLists.txt	2026-03-23 10:31:47.390253900 +0900
+@@ -15,5 +15,5 @@ add_executable(test_indexed_tags ${TEST_
+ 
+ target_include_directories(test_indexed_tags PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_indexed_tags PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_indexed_tags PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_indexed_tags PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_modbus_multiple/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_modbus_multiple/CMakeLists.txt	2026-03-23 10:31:47.388252700 +0900
+@@ -15,5 +15,5 @@ add_executable(test_modbus_multiple ${TE
+ 
+ target_include_directories(test_modbus_multiple PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_modbus_multiple PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_modbus_multiple PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_modbus_multiple PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_raw_cip/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_raw_cip/CMakeLists.txt	2026-03-23 10:31:47.388252700 +0900
+@@ -15,5 +15,5 @@ add_executable(test_raw_cip ${TEST_RAW_C
+ 
+ target_include_directories(test_raw_cip PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_raw_cip PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_raw_cip PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_raw_cip PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_reconnect/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_reconnect/CMakeLists.txt	2026-03-23 10:31:47.385336400 +0900
+@@ -15,5 +15,5 @@ add_executable(test_reconnect ${TEST_REC
+ 
+ target_include_directories(test_reconnect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_reconnect PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_reconnect PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_reconnect PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_reconnect_after_outage_async/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_reconnect_after_outage_async/CMakeLists.txt	2026-03-23 10:31:47.383254300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_reconnect_after_outa
+ 
+ target_include_directories(test_reconnect_after_outage_async PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_reconnect_after_outage_async PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_reconnect_after_outage_async PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_reconnect_after_outage_async PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_reconnect_after_outage_sync/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_reconnect_after_outage_sync/CMakeLists.txt	2026-03-23 10:31:47.403526000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_reconnect_after_outa
+ 
+ target_include_directories(test_reconnect_after_outage_sync PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_reconnect_after_outage_sync PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_reconnect_after_outage_sync PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_reconnect_after_outage_sync PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_shutdown_cip/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_shutdown_cip/CMakeLists.txt	2026-03-23 10:31:47.401528800 +0900
+@@ -15,5 +15,5 @@ add_executable(test_shutdown_cip ${TEST_
+ 
+ target_include_directories(test_shutdown_cip PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_shutdown_cip PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_shutdown_cip PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_shutdown_cip PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_shutdown_modbus/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_shutdown_modbus/CMakeLists.txt	2026-03-23 10:31:47.397517300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_shutdown_modbus ${TE
+ 
+ target_include_directories(test_shutdown_modbus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_shutdown_modbus PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_shutdown_modbus PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_shutdown_modbus PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_shutdown_restart/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_shutdown_restart/CMakeLists.txt	2026-03-23 10:31:47.403526000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_shutdown_restart ${T
+ 
+ target_include_directories(test_shutdown_restart PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_shutdown_restart PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_shutdown_restart PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_shutdown_restart PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_simultaneous_rw_ab_server/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_simultaneous_rw_ab_server/CMakeLists.txt	2026-03-23 10:31:47.403526000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_simultaneous_rw_ab_s
+ 
+ target_include_directories(test_simultaneous_rw_ab_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_simultaneous_rw_ab_server PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_simultaneous_rw_ab_server PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_simultaneous_rw_ab_server PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_special/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_special/CMakeLists.txt	2026-03-23 10:31:47.396515300 +0900
+@@ -15,5 +15,5 @@ add_executable(test_special ${TEST_SPECI
+ 
+ target_include_directories(test_special PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_special PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_special PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_special PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_string/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_string/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_string ${TEST_STRING
+ 
+ target_include_directories(test_string PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_string PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_string PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_string PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_tag_attributes/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_tag_attributes/CMakeLists.txt	2026-03-23 10:31:47.394516000 +0900
+@@ -15,5 +15,5 @@ add_executable(test_tag_attributes ${TES
+ 
+ target_include_directories(test_tag_attributes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_tag_attributes PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_tag_attributes PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_tag_attributes PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/test_tag_type_attribute/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/test_tag_type_attribute/CMakeLists.txt	2026-03-23 10:31:47.390253900 +0900
+@@ -15,5 +15,5 @@ add_executable(test_tag_type_attribute $
+ 
+ target_include_directories(test_tag_type_attribute PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(test_tag_type_attribute PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(test_tag_type_attribute PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(test_tag_type_attribute PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/thread_stress/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/thread_stress/CMakeLists.txt	2026-03-23 10:31:47.390253900 +0900
+@@ -15,5 +15,5 @@ add_executable(thread_stress ${THREAD_ST
+ 
+ target_include_directories(thread_stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(thread_stress PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(thread_stress PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(thread_stress PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tests/trigger_double_free/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tests/trigger_double_free/CMakeLists.txt	2026-03-23 10:31:47.388252700 +0900
+@@ -15,5 +15,5 @@ add_executable(trigger_double_free ${TRI
+ 
+ target_include_directories(trigger_double_free PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(trigger_double_free PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(trigger_double_free PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(trigger_double_free PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tools/ab_server/utils.c	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tools/ab_server/utils.c	2026-03-23 10:28:12.817820000 +0900
+@@ -45,7 +45,7 @@
+ #include <time.h>
+ 
+ 
+-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || (__linux__)
++#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__linux__) || defined(__CYGWIN__)
+ #    define USE_ARC4RANDOM
+ #    define PLATFORM_POSIX
+ 
+@@ -326,7 +326,7 @@ uint64_t random_u64(uint64_t upper_bound
+     return random_number;
+ }
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #    include <stdlib.h>
+ #    include <sys/random.h>
+ 
+--- origsrc/libplctag-2.6.15/src/tools/list_tags_logix/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tools/list_tags_logix/CMakeLists.txt	2026-03-23 10:31:47.381252400 +0900
+@@ -15,5 +15,5 @@ add_executable(list_tags_logix ${LIST_TA
+ 
+ target_include_directories(list_tags_logix PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(list_tags_logix PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(list_tags_logix PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(list_tags_logix PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tools/list_tags_micro8x0/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tools/list_tags_micro8x0/CMakeLists.txt	2026-03-23 10:31:47.381252400 +0900
+@@ -15,5 +15,5 @@ add_executable(list_tags_micro8x0 ${LIST
+ 
+ target_include_directories(list_tags_micro8x0 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(list_tags_micro8x0 PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(list_tags_micro8x0 PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(list_tags_micro8x0 PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/tools/tag_rw2/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tools/tag_rw2/CMakeLists.txt	2026-03-23 10:31:47.379253100 +0900
+@@ -15,7 +15,7 @@ add_executable(tag_rw2 ${TAG_RW2_FILES})
+ 
+ target_include_directories(tag_rw2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(tag_rw2 PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(tag_rw2 PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(tag_rw2 PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+ 
+ # Install tag_rw2 tool into the devel component
+--- origsrc/libplctag-2.6.15/src/tools/tag_rw_deprecated/CMakeLists.txt	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/tools/tag_rw_deprecated/CMakeLists.txt	2026-03-23 10:31:47.379253100 +0900
+@@ -15,5 +15,5 @@ add_executable(tag_rw_deprecated ${TAG_R
+ 
+ target_include_directories(tag_rw_deprecated PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
+ 
+-target_link_libraries(tag_rw_deprecated PUBLIC plctag_static ${EXTRA_LINKER_LIBS})
++target_link_libraries(tag_rw_deprecated PUBLIC plctag_dyn ${EXTRA_LINKER_LIBS})
+ target_link_options(tag_rw_deprecated PRIVATE ${STATIC_C_LINKER_OPTIONS} ${EXTRA_LINK_FLAGS})
+--- origsrc/libplctag-2.6.15/src/utils/random_utils.c	2026-03-01 01:08:37.000000000 +0900
++++ src/libplctag-2.6.15/src/utils/random_utils.c	2026-03-23 10:25:39.152696500 +0900
+@@ -49,7 +49,7 @@ uint64_t random_u64(uint64_t upper_bound
+     return random_number;
+ }
+ 
+-#elif defined(__linux__)
++#elif defined(__linux__) || defined(__CYGWIN__)
+ #    include <stdlib.h>
+ #    include <sys/random.h>
+ 
