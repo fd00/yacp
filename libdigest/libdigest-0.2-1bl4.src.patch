@@ -1,0 +1,62 @@
+--- origsrc/libdigest-0.2/CMakeLists.txt	2008-01-08 02:44:41.000000000 +0900
++++ src/libdigest-0.2/CMakeLists.txt	2026-03-24 18:11:36.501406900 +0900
+@@ -1,3 +1,5 @@
++cmake_minimum_required(VERSION 4.2)
++
+ PROJECT( digest )
+ 
+ SET( CMAKE_VERBOSE_MAKEFILE OFF )
+@@ -12,3 +14,10 @@ ADD_SUBDIRECTORY( test )
+ #INSTALL( TARGETS digest /usr/lib )
+ #INSTALL( TARGETS testdigest /usr/bin )
+ #INSTALL( FILES ${PROJECT_SOURCE_DIR}/lib/digest.h /usr/include )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libdigest.pc.in ${CMAKE_BINARY_DIR}/libdigest.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libdigest.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libdigest-0.2/lib/CMakeLists.txt	2008-01-08 02:44:41.000000000 +0900
++++ src/libdigest-0.2/lib/CMakeLists.txt	2026-03-24 18:06:49.621242700 +0900
+@@ -1,14 +1,13 @@
+ SET( libdigest_SRCS digest.c )
+ 
+-INCLUDE(UsePkgConfig)
+-PKGCONFIG( apr-util-1 APRUTIL_INCLUDE_DIR APRUTIL_LIBRARY_DIR APRUTIL_LINK_FLAGS APRUTIL_CFLAGS )
+-ADD_DEFINITIONS(${APRUTIL_CFLAGS})
++PKG_CHECK_MODULES( APRUTIL apr-util-1 REQUIRED )
+ 
+ ADD_LIBRARY( digest SHARED ${libdigest_SRCS} )
+ 
+ SET_TARGET_PROPERTIES( digest PROPERTIES VERSION 0.1 SOVERSION 0)
+ 
+-TARGET_LINK_LIBRARIES( digest ${APRUTIL_LINK_FLAGS})
++TARGET_INCLUDE_DIRECTORIES( digest PUBLIC ${APRUTIL_INCLUDE_DIRS} )
++TARGET_LINK_LIBRARIES( digest ${APRUTIL_LIBRARIES})
+ 
+-INSTALL( TARGETS digest LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/usr/lib )
+-INSTALL( FILES ${PROJECT_SOURCE_DIR}/lib/digest.h DESTINATION ${CMAKE_INSTALL_PREFIX}/usr/include )
++INSTALL( TARGETS digest RUNTIME DESTINATION bin ARCHIVE DESTINATION lib )
++INSTALL( FILES ${PROJECT_SOURCE_DIR}/lib/digest.h DESTINATION include )
+--- origsrc/libdigest-0.2/libdigest.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libdigest-0.2/libdigest.pc.in	2026-03-24 18:11:39.263568100 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libdigest
++Description: C library for computing the RFC2617-compliant digest
++Version: @VERSION@
++Libs: -L${libdir} -ldigest
++Cflags: -I${includedir}
+--- origsrc/libdigest-0.2/test/CMakeLists.txt	2008-01-08 02:44:41.000000000 +0900
++++ src/libdigest-0.2/test/CMakeLists.txt	2026-03-24 18:06:08.653299500 +0900
+@@ -2,4 +2,4 @@ INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DI
+ SET( testdigest_SRCS testdigest.c )
+ ADD_EXECUTABLE( testdigest ${testdigest_SRCS} )
+ TARGET_LINK_LIBRARIES( testdigest digest )
+-INSTALL( TARGETS testdigest RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/usr/bin )
++INSTALL( TARGETS testdigest RUNTIME DESTINATION bin )
