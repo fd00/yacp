@@ -1,0 +1,49 @@
+--- origsrc/libIGES/CMakeLists.txt	2026-03-24 21:06:04.000000000 +0900
++++ src/libIGES/CMakeLists.txt	2026-03-25 08:22:46.846724800 +0900
+@@ -141,3 +141,10 @@ else()
+ endif()
+ 
+ add_subdirectory( src )
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/libiges.pc.in ${CMAKE_BINARY_DIR}/libiges.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/libiges.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libIGES/libiges.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libIGES/libiges.pc.in	2026-03-25 08:22:27.851975500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libiges
++Description: Implementation of the IGESv5.3 specification
++Version: @LIBIGES_VERSION_MAJOR@.@LIBIGES_VERSION_MINOR@
++Libs: -L${libdir} -liges
++Cflags: -I${includedir}
+--- origsrc/libIGES/src/CMakeLists.txt	2026-03-24 21:06:04.000000000 +0900
++++ src/libIGES/src/CMakeLists.txt	2026-03-25 08:18:19.983089800 +0900
+@@ -100,6 +100,9 @@ if( STATIC_IGES )
+ else()
+     add_library( iges SHARED ${IGES_SOURCES} )
+     set( IGES_LIBS iges )
++    if (DEFINED SOVERSION)
++        set_target_properties( iges PROPERTIES SOVERSION ${SOVERSION} )
++    endif()
+ endif()
+ 
+ if( USE_SISL AND SISL_NEEDS_BUILD )
+--- origsrc/libIGES/src/idf/CMakeLists.txt	2026-03-24 21:06:04.000000000 +0900
++++ src/libIGES/src/idf/CMakeLists.txt	2026-03-25 08:16:49.785294700 +0900
+@@ -7,7 +7,7 @@ add_library( idf3 STATIC
+     idf_parser.cpp )
+ 
+ add_executable( idf2igs idf2igs.cpp )
+-target_link_libraries( idf2igs ${IGES_LIBS} idf3 )
++target_link_libraries( idf2igs idf3 ${IGES_LIBS} )
+ 
+ install( TARGETS idf2igs
+         RUNTIME DESTINATION ${LIBIGES_BINDIR}
