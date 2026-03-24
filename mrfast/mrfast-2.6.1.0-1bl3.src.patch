@@ -1,0 +1,82 @@
+--- origsrc/mrfast-2.6.1.0/HashTable.c	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/HashTable.c	2026-03-24 17:47:15.282487700 +0900
+@@ -58,6 +58,11 @@ char		*_ih_refGen		= NULL;
+ char		*_ih_refGenName		= NULL;
+ long long	_ih_memUsage		= 0;
+ int		_ih_refGenOff		= 0;
++
++void 			(*generateHashTable)(char *fileName, char *indexName);
++int				(*loadHashTable)(double *loadTime);
++void			(*finalizeLoadingHashTable)();
++unsigned int	*(*getCandidates)(int hv);
+ /**********************************************/
+ 
+ int hashVal(char *seq)
+--- origsrc/mrfast-2.6.1.0/HashTable.h	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/HashTable.h	2026-03-24 17:46:49.840609200 +0900
+@@ -65,9 +65,9 @@ int				getRefGenomeOffset();
+ int				initLoadingHashTable(char *fileName);
+ HashTable		*getHashTable();
+ 
+-void 			(*generateHashTable)(char *fileName, char *indexName);
+-int				(*loadHashTable)(double *loadTime);
+-void			(*finalizeLoadingHashTable)();
+-unsigned int	*(*getCandidates)(int hv);
++extern void 			(*generateHashTable)(char *fileName, char *indexName);
++extern int				(*loadHashTable)(double *loadTime);
++extern void			(*finalizeLoadingHashTable)();
++extern unsigned int	*(*getCandidates)(int hv);
+ 
+ #endif
+--- origsrc/mrfast-2.6.1.0/Makefile	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/Makefile	2026-03-24 17:40:48.907391000 +0900
+@@ -1,5 +1,5 @@
+-CC=gcc
+-CFLAGS = -c -O3 -Wall -msse -msse2 
++CC ?= gcc
++CFLAGS ?= -O3 -Wall -msse -msse2 
+ LDFLAGS = -lz -lm -pg
+ SOURCES = baseFAST.c CommandLineParser.c Common.c HashTable.c MrFAST.c Output.c Reads.c RefGenome.c 
+ OBJECTS = $(SOURCES:.c=.o)
+@@ -13,6 +13,6 @@ $(EXECUTABLE): $(OBJECTS)
+ 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS) 
+ 
+ .c.o:
+-	$(CC) $(CFLAGS) $< -o $@ 
++	$(CC) -c $(CFLAGS) $< -o $@ 
+ clean:
+ 	rm -f *.o *~ \#* mrfast
+--- origsrc/mrfast-2.6.1.0/MrFAST.c	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/MrFAST.c	2026-03-24 17:50:20.589064000 +0900
+@@ -73,7 +73,6 @@ long long verificationCnt = 0;
+ long long mappingCnt = 0;
+ long long mappedSeqCnt = 0;
+ long long completedSeqCnt = 0;
+-char *mappingOutput;
+ /**********************************************/
+ char *_msf_refGen = NULL;
+ int _msf_refGenLength = 0;
+--- origsrc/mrfast-2.6.1.0/Output.c	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/Output.c	2026-03-24 17:49:34.266071000 +0900
+@@ -56,6 +56,8 @@ gzFile			_out_gzfp;
+ char buffer[300000];
+ int bufferSize = 0;
+ 
++void (*finalizeOutput)();
++void (*output)(SAM map);
+ 
+ void finalizeGZOutput()
+ {
+--- origsrc/mrfast-2.6.1.0/Output.h	2014-11-26 01:54:37.000000000 +0900
++++ src/mrfast-2.6.1.0/Output.h	2026-03-24 17:49:11.887774600 +0900
+@@ -77,8 +77,8 @@ typedef struct
+ } SAM;
+ 
+ int initOutput(char *fileName, int compressed);
+-void (*finalizeOutput)();
+-void (*output)(SAM map);
++extern void (*finalizeOutput)();
++extern void (*output)(SAM map);
+ void outputSAM(FILE *fp, SAM map);
+ 
+ FILE * getOutputFILE();
