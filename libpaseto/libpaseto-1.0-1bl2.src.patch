@@ -1,5 +1,5 @@
 --- origsrc/libpaseto-1.0/CMakeLists.txt	2019-07-03 23:51:58.000000000 +0900
-+++ src/libpaseto-1.0/CMakeLists.txt	2020-02-07 18:42:53.308257900 +0900
++++ src/libpaseto-1.0/CMakeLists.txt	2026-03-26 16:44:30.011238400 +0900
 @@ -5,7 +5,7 @@ project(libpaseto
  
  set(CMAKE_C_STANDARD 11)
@@ -9,16 +9,31 @@
  
  find_package(PkgConfig REQUIRED)
  pkg_check_modules(SODIUM REQUIRED libsodium)
-@@ -27,8 +27,11 @@ configure_file("paseto.pc.in" "paseto.pc
+@@ -27,12 +27,15 @@ configure_file("paseto.pc.in" "paseto.pc
  add_library(paseto SHARED ${PASETO_SOURCES})
  target_link_libraries(paseto ${SODIUM_LIBRARIES})
  install(TARGETS paseto
 -	LIBRARY DESTINATION lib
 +	RUNTIME DESTINATION bin
  	ARCHIVE DESTINATION lib)
-+if(CYGWIN)
-+	set_target_properties(paseto PROPERTIES SOVERSION 0)
-+endif()
  install(FILES include/paseto.h
  	DESTINATION include)
  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/paseto.pc"
+ 	DESTINATION lib/pkgconfig)
++set_target_properties(paseto PROPERTIES
++	VERSION ${PROJECT_VERSION}
++	SOVERSION ${PROJECT_VERSION_MAJOR})
+ 
+ # test executable
+ add_executable(pasetotest
+--- origsrc/libpaseto-1.0/paseto.pc.in	2019-07-03 23:51:58.000000000 +0900
++++ src/libpaseto-1.0/paseto.pc.in	2026-03-26 16:45:16.623623300 +0900
+@@ -5,7 +5,7 @@ includedir=${prefix}/include
+ 
+ Name: paseto
+ Description: C implementation of PASETO (v2 tokens only)
+-Version: @VERSION@
++Version: @PROJECT_VERSION@
+ 
+ Requires: libsodium
+ Libs: -L${libdir} -lpaseto
