@@ -1,0 +1,58 @@
+--- origsrc/zipkin-cpp-opentracing-0.5.2/zipkin/CMakeLists.txt	2018-08-17 23:32:47.000000000 +0900
++++ src/zipkin-cpp-opentracing-0.5.2/zipkin/CMakeLists.txt	2026-03-27 18:15:15.197535900 +0900
+@@ -23,7 +23,8 @@ if (BUILD_SHARED_LIBS)
+                                           SOVERSION ${ZIPKIN_VERSION_MAJOR})
+   install(TARGETS zipkin 
+           COMPONENT DIST
+-          LIBRARY DESTINATION lib)
++          RUNTIME DESTINATION bin
++          ARCHIVE DESTINATION lib)
+ endif()
+ 
+ if (BUILD_STATIC_LIBS)
+--- origsrc/zipkin-cpp-opentracing-0.5.2/zipkin_opentracing/CMakeLists.txt	2018-08-17 23:32:47.000000000 +0900
++++ src/zipkin-cpp-opentracing-0.5.2/zipkin_opentracing/CMakeLists.txt	2026-03-27 18:15:15.197535900 +0900
+@@ -30,7 +30,8 @@ if (BUILD_SHARED_LIBS)
+                                                       SOVERSION ${ZIPKIN_VERSION_MAJOR})
+   install(TARGETS zipkin_opentracing 
+           COMPONENT DIST
+-          LIBRARY DESTINATION lib)
++          RUNTIME DESTINATION bin
++          ARCHIVE DESTINATION lib)
+ endif()
+ 
+ if (BUILD_STATIC_LIBS)
+--- origsrc/zipkin-cpp-opentracing-0.5.2/zipkin_opentracing/src/opentracing.cc	2018-08-17 23:32:47.000000000 +0900
++++ src/zipkin-cpp-opentracing-0.5.2/zipkin_opentracing/src/opentracing.cc	2026-03-27 18:35:40.091018200 +0900
+@@ -80,6 +80,16 @@ public:
+     }
+   }
+ 
++  std::unique_ptr<ot::SpanContext> Clone() const noexcept override try {
++    std::lock_guard<std::mutex> lock_guard{baggage_mutex_};
++    auto baggage_copy = baggage_;
++    auto span_context_copy = span_context_;
++    return std::unique_ptr<ot::SpanContext>{
++        new OtSpanContext{std::move(span_context_copy), std::move(baggage_copy)}};
++  } catch (const std::exception &) {
++    return nullptr;
++  }
++
+   void setBaggageItem(string_view key, string_view value) noexcept try {
+     std::lock_guard<std::mutex> lock_guard{baggage_mutex_};
+     baggage_.emplace(key, value);
+@@ -258,6 +268,14 @@ public:
+   void Log(std::initializer_list<std::pair<string_view, Value>>
+                fields) noexcept override {}
+ 
++  void Log(SystemTime timestamp,
++           std::initializer_list<std::pair<string_view, Value>>
++               fields) noexcept override {}
++
++  void Log(SystemTime timestamp,
++           const std::vector<std::pair<string_view, Value>> &fields) noexcept
++      override {}
++
+   const ot::SpanContext &context() const noexcept override {
+     return span_context_;
+   }
