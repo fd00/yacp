@@ -1,0 +1,79 @@
+--- origsrc/librcnb-1.0.0/CMakeLists.txt	2019-10-16 18:13:51.000000000 +0900
++++ src/librcnb-1.0.0/CMakeLists.txt	2026-03-29 05:18:30.339675600 +0900
+@@ -22,30 +22,20 @@ endif()
+ include_directories(include)
+ 
+ add_library(rcnb SHARED src/cencode.c src/cdecode.c src/rcnb.c)
+-add_library(rcnb-static STATIC src/cencode.c src/cdecode.c src/rcnb.c)
+ set_target_properties(rcnb PROPERTIES
+         VERSION ${PROJECT_VERSION}
+         SOVERSION ${PROJECT_VERSION_MAJOR}
+         PUBLIC_HEADER "include/rcnb/cencode.h;include/rcnb/cdecode.h;include/rcnb/encode.h;include/rcnb/decode.h")
+-set_target_properties(rcnb-static PROPERTIES
+-        VERSION ${PROJECT_VERSION}
+-        SOVERSION ${PROJECT_VERSION_MAJOR}
+-        PUBLIC_HEADER "include/rcnb/cencode.h;include/rcnb/cdecode.h;include/rcnb/encode.h;include/rcnb/decode.h")
+-if (NOT CMAKE_VERSION VERSION_LESS 2.8.12)
+-    target_include_directories(rcnb-static
+-            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+-            $<INSTALL_INTERFACE:include>)
+-endif()
+ add_executable(example1 examples/c-example1.c)
+-target_link_libraries(example1 rcnb-static)
++target_link_libraries(example1 rcnb)
+ add_executable(example2 examples/c-example2.c)
+-target_link_libraries(example2 rcnb-static)
++target_link_libraries(example2 rcnb)
+ add_executable(example3 examples/cpp-example3.cc)
+-target_link_libraries(example3 rcnb-static)
++target_link_libraries(example3 rcnb)
+ add_executable(rcnb-cli examples/cpp-rcnb-cli.cc)
+ set_target_properties(example3
+         PROPERTIES CXX_STANDARD 11)
+-target_link_libraries(rcnb-cli rcnb-static)
++target_link_libraries(rcnb-cli rcnb)
+ set_target_properties(rcnb-cli
+         PROPERTIES OUTPUT_NAME rcnb
+         CXX_STANDARD 11)
+@@ -63,10 +53,10 @@ endif()
+ include(GNUInstallDirs)
+ 
+ export(
+-        TARGETS rcnb-static
++        TARGETS rcnb
+         FILE "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-targets.cmake")
+ export(PACKAGE ${PROJECT_NAME})
+-set(EXPORT_TARGETS rcnb-static CACHE INTERNAL "export targets")
++set(EXPORT_TARGETS rcnb CACHE INTERNAL "export targets")
+ 
+ set(CONFIG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}-config.cmake.in
+@@ -76,6 +66,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DI
+ 
+ install(TARGETS rcnb EXPORT ${PROJECT_NAME}-config
+         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rcnb)
+-install(EXPORT ${PROJECT_NAME}-config DESTINATION share/${PROJECT_NAME}/cmake)
++install(EXPORT ${PROJECT_NAME}-config DESTINATION lib/cmake/${PROJECT_NAME})
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/librcnb.pc.in ${CMAKE_BINARY_DIR}/librcnb.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/librcnb.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/librcnb-1.0.0/librcnb.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/librcnb-1.0.0/librcnb.pc.in	2026-03-29 05:18:42.780912400 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: librcnb
++Description: Everything can be encoded into RCNB
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lrcnb
++Cflags: -I${includedir}
