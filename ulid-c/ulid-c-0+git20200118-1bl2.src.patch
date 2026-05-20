@@ -1,0 +1,58 @@
+--- origsrc/ulid-c/CMakeLists.txt	1970-01-01 09:00:00.000000000 +0900
++++ src/ulid-c/CMakeLists.txt	2026-05-20 21:10:49.443138800 +0900
+@@ -0,0 +1,42 @@
++cmake_minimum_required(VERSION 3.14)
++project(ulid-c VERSION 0 LANGUAGES C)
++
++set(CMAKE_C_STANDARD 99)
++
++add_library(ulid-c SHARED ulid.c)
++target_include_directories(ulid-c PUBLIC
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++    $<INSTALL_INTERFACE:include>
++)
++set_target_properties(ulid-c PROPERTIES
++    PUBLIC_HEADER ulid.h
++    SOVERSION 0
++)
++
++add_executable(ulidgen tests/ulidgen.c)
++target_link_libraries(ulidgen PRIVATE ulid-c)
++
++enable_testing()
++
++add_executable(tests tests/tests.c)
++target_link_libraries(tests PRIVATE ulid-c)
++add_test(NAME tests COMMAND tests)
++
++add_executable(benchmark tests/benchmark.c)
++target_link_libraries(benchmark PRIVATE ulid-c)
++
++include(GNUInstallDirs)
++install(TARGETS ulid-c
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++)
++install(TARGETS ulidgen
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/ulid-c.pc.in ${CMAKE_BINARY_DIR}/ulid-c.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/ulid-c.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/ulid-c/ulid-c.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/ulid-c/ulid-c.pc.in	2026-05-20 21:10:36.297926800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: ulid-c
++Description: ULID Library for C
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lulid-c
++Cflags: -I${includedir}
