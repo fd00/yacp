@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/splatlab/${PN}"
-SRC_URI="https://github.com/splatlab/${PN}/archive/V${PV}.tar.gz"
+SRC_URI="https://github.com/splatlab/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Science"
 SUMMARY="Exact and Approximate k-mer Counting System"
@@ -7,19 +7,30 @@ DESCRIPTION="Squeakr is a k-mer-counting and multiset-representation system usin
 recently-introduced counting quotient filter (CQF) Pandey et al. (2017), a
 feature-rich approximate membership query (AMQ) data structure."
 
+LICENSE="BSD-3-Clause"
+LICENSE_SPDX="SPDX-License-Identifier: BSD-3-Clause"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libboost-devel
+	libbz2-devel
+	zlib-devel
+"
+
+export CFLAGS="${CFLAGS} -D_GNU_SOURCE -Dstat64=stat -Dfstat64=fstat"
+export CXXFLAGS="${CXXFLAGS} -D_GNU_SOURCE -Dstat64=stat -Dfstat64=fstat -fpermissive"
+
 src_compile()
 {
 	cd ${B}
 	lndirs
-	cygmake \
-		CFLAGS="${CFLAGS} -D_GNU_SOURCE -I${S}/include -Dstat64=stat -Dfstat64=fstat" \
-		CXXFLAGS="${CXXFLAGS} -D_GNU_SOURCE -I${S}/include -Dstat64=stat -Dfstat64=fstat -fpermissive"
+	cygmake
 }
 
 src_test()
 {
 	cd ${B}
-	./${PN} count -e -k 28 -s 20 -t 1 -o /dev/null data/test.fastq
+	verbose ./${PN} count -e -k 28 -s 20 -t 1 -o /dev/null data/test.fastq
 }
 
 src_install()

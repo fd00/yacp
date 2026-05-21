@@ -1,0 +1,43 @@
+--- origsrc/squeakr-0.8/Makefile	2024-02-09 05:41:54.000000000 +0900
++++ src/squeakr-0.8/Makefile	2026-05-21 19:54:21.967947600 +0900
+@@ -18,9 +18,9 @@ ifdef P
+ 	PROFILE=-pg -no-pie # for bug in gprof.
+ endif
+ 
+-CXX = g++ -std=c++11
+-CC = gcc -std=gnu11
+-LD= g++ -std=c++11
++CXX ?= g++ -std=c++11
++CC ?= gcc -std=gnu11
++LD = g++ -std=c++11
+ 
+ LOC_INCLUDE=include
+ LOC_SRC=src
+--- origsrc/squeakr-0.8/include/gqf_cpp.h	2024-02-09 05:41:54.000000000 +0900
++++ src/squeakr-0.8/include/gqf_cpp.h	2026-05-21 19:32:58.374178900 +0900
+@@ -29,6 +29,10 @@
+ #define NUM_Q_BITS 16
+ #define SEED 2038074761
+ 
++#if defined(FREAD)
++#undef FREAD
++#endif
++
+ enum readmode {
+ 	MMAP,
+ 	FREAD
+--- origsrc/squeakr-0.8/src/gqf/partitioned_counter.c	2024-02-09 05:41:54.000000000 +0900
++++ src/squeakr-0.8/src/gqf/partitioned_counter.c	2026-05-21 19:10:10.220288800 +0900
+@@ -13,8 +13,12 @@
+ #include <unistd.h>
+ #include <sched.h>
+ #include <sys/sysinfo.h>
++#if defined(__linux__)
+ #include <linux/unistd.h>
++#endif
++#if !defined(__CYGWIN__)
+ #include <sys/syscall.h>
++#endif
+ #include <errno.h>
+ 
+ #include "gqf/partitioned_counter.h"
