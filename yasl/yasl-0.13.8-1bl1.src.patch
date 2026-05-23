@@ -1,0 +1,144 @@
+--- origsrc/yasl-0.13.8/CMakeLists.txt	2026-04-05 12:20:17.000000000 +0900
++++ src/yasl-0.13.8/CMakeLists.txt	2026-05-23 09:41:09.196466500 +0900
+@@ -35,11 +35,11 @@ if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCH
+ endif()
+ 
+ if (CMAKE_COMPILER_IS_GNUCC)
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pedantic-ms-format -Werror")
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pedantic-ms-format")
+ endif()
+ 
+ if (CMAKE_COMPILER_IS_GNUCXX)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pedantic-ms-format -Werror")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pedantic-ms-format")
+ endif()
+ 
+ if ("{CMAKE_C_COMPILER_ID}" MATCHES ".*TinyCC.*")
+@@ -63,61 +63,17 @@ include_directories(src/util)
+ include_directories(src/std)
+ include_directories(test)
+ 
+-add_executable(yasl
+-        src/common/opcode.h
+-        src/yasl.c
+-        src/yasl_aux.c
++add_executable(yasl_bin
+         src/main.c
+-        src/compiler/ast.c
+-        src/data-structures/YASL_ByteBuffer.c
+-        src/data-structures/YASL_Buffer.c
+-        src/data-structures/YASL_Table.c
+-        src/compiler/compiler.c
+-        src/compiler/env.c
+-        src/compiler/lexer.c
+-        src/compiler/lexinput.c
+-        src/compiler/middleend.c
+-        src/compiler/parser.c
+-        src/interpreter/upvalue.c
+-        src/interpreter/closure.c
+-        src/interpreter/methods/bool_methods.c
+-        src/interpreter/builtins.c
+-        src/interpreter/methods/float_methods.c
+-        src/util/yasl_float.c
+-        src/interpreter/methods/int_methods.c
+-        src/data-structures/YASL_List.c
+-        src/interpreter/methods/list_methods.c
+-        src/interpreter/methods/table_methods.c
+-        src/interpreter/VM.c
+-        src/interpreter/GC.c
+-        src/interpreter/YASL_Object.c
+-        src/interpreter/refcount.c
+-        src/interpreter/methods/str_methods.c
+-        src/data-structures/LString.c
+-        src/data-structures/YASL_String.c
+-        src/data-structures/YASL_StringSet.c
+-        src/interpreter/userdata.c
+-        src/interpreter/methods/undef_methods.c
+-        src/std/yasl-std-io.c
+-        src/std/yasl-std-math.c
+-        src/std/yasl-std-require.c
+-        src/std/yasl-std-error.c
+-        src/data-structures/YASL_Set.c
+-        src/std/yasl-std-collections.c
+-        src/std/yasl-std-mt.c
+-        src/std/yasl-std-os.c
+-        src/std/yasl-std-try.c
+-        src/util/hash_function.c
+-        src/util/IO.c
+-        src/util/prime.c
+-        src/util/varint.c
+         src/util/yapp.h
+         src/yasl_conf.h
+         src/yasl_error.h
+         src/interpreter/yasl_types.h
+         src/yasl_plat.h)
+ 
+-add_library(yaslapi
++set_target_properties(yasl_bin PROPERTIES OUTPUT_NAME "yasl")
++
++add_library(yasl SHARED
+         src/common/opcode.h
+         src/yasl.c
+         src/yasl_aux.c
+@@ -165,7 +121,11 @@ add_library(yaslapi
+         src/std/yasl-std-os.c
+         src/std/yasl-std-try.c)
+ 
+-set_property(TARGET yaslapi PROPERTY POSITION_INDEPENDENT_CODE ON)
++set_property(TARGET yasl PROPERTY POSITION_INDEPENDENT_CODE ON)
++
++if (DEFINED SOVERSION)
++    set_target_properties(yasl PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
++endif()
+ 
+ add_executable(tests
+         test/integration_tests.c
+@@ -209,18 +169,31 @@ add_library(test_module SHARED
+ 
+ set_property(TARGET test_module PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
++target_link_libraries(yasl_bin yasl)
++
+ if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES ".*MSVC.*")
++    target_link_libraries(yasl_bin m)
+     target_link_libraries(yasl m)
+-    target_link_libraries(yaslapi m)
+     target_link_libraries(tests m)
+ endif()
+ 
+-target_link_libraries(tests yaslapi)
+-target_link_libraries(test_module yaslapi)
++target_link_libraries(tests yasl)
++target_link_libraries(test_module yasl)
+ 
+ if (NOT WIN32)
++    target_link_libraries(yasl_bin dl)
+     target_link_libraries(yasl dl)
+-    target_link_libraries(yaslapi dl)
+     target_link_libraries(tests dl)
+     target_link_libraries(test_module dl)
+ endif()
++
++install(TARGETS yasl_bin DESTINATION bin)
++install(TARGETS yasl RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
++install(FILES src/yasl.h src/yasl_error.h src/yasl_aux.h src/yasl_conf.h DESTINATION include)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/yasl.pc.in ${CMAKE_BINARY_DIR}/yasl.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/yasl.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/yasl-0.13.8/yasl.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/yasl-0.13.8/yasl.pc.in	2026-05-23 09:42:08.108274800 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: yasl
++Description: Bytecode Interpreter for Yet Another Scripting Language
++Version: @VERSION@
++Libs: -L${libdir} -lyasl
++Cflags: -I${includedir}
