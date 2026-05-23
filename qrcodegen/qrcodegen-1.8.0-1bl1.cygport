@@ -1,0 +1,80 @@
+HOMEPAGE="https://github.com/nayuki/QR-Code-generator"
+SRC_URI="
+	https://github.com/nayuki/QR-Code-generator/archive/refs/tags/v${PV}.tar.gz
+	https://github.com/EasyCoding/${PN}-cmake/archive/refs/tags/v${PV}-cmake5.tar.gz
+"
+SRC_DIR="QR-Code-generator-${PV}"
+
+CATEGORY="Libs"
+SUMMARY="High-quality QR Code generator library"
+DESCRIPTION="This project aims to be the best, clearest QR Code generator library in
+multiple languages. The primary goals are flexible options and absolute
+correctness. Secondary goals are compact implementation size and good
+documentation comments."
+
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+# LICENSE_URI=""
+
+CYGPORT_USE_UNSTABLE_API=1
+src_patch_hook()
+{
+	cd ${origsrcdir}/${SRC_DIR}
+	verbose cp ../qrcodegen-cmake-1.8.0-cmake5/CMakeLists.txt .
+	verbose cp -r ../qrcodegen-cmake-1.8.0-cmake5/cmake .
+}
+
+inherit cmake
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DQRCODEGEN_BUILD_EXAMPLES:BOOL=ON
+	-DQRCODEGEN_BUILD_TESTS:BOOL=ON
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	dobin *.exe
+}
+
+DOCS="
+	Readme.markdown
+"
+
+PKG_NAMES="
+	qrcodegen
+	libqrcodegen1
+	libqrcodegen-devel
+	libqrcodegencpp1
+	libqrcodegencpp-devel
+"
+qrcodegen_CONTENTS="
+	usr/bin/*.exe
+	usr/share
+"
+libqrcodegen1_CONTENTS="
+	usr/bin/cygqrcodegen-1.dll
+"
+libqrcodegen_devel_CONTENTS="
+	usr/include/qrcodegen/qrcodegen.h
+	usr/lib/cmake/qrcodegen
+	usr/lib/libqrcodegen.dll.a
+	usr/lib/pkgconfig/qrcodegen.pc
+"
+libqrcodegencpp1_CONTENTS="
+	usr/bin/cygqrcodegencpp-1.dll
+"
+libqrcodegencpp_devel_CONTENTS="
+	usr/include/qrcodegencpp/qrcodegen.hpp
+	usr/lib/cmake/qrcodegencpp
+	usr/lib/libqrcodegencpp.dll.a
+	usr/lib/pkgconfig/qrcodegencpp.pc
+"
+qrcodegen_SUMMARY="${SUMMARY} (utilities)"
+libqrcodegen1_SUMMARY="${SUMMARY} (runtime)"
+libqrcodegen_devel_SUMMARY="${SUMMARY} (development)"
+libqrcodegencpp1_SUMMARY="${SUMMARY} (runtime / c++)"
+libqrcodegencpp_devel_SUMMARY="${SUMMARY} (development / c++)"
