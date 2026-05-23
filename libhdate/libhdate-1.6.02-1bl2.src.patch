@@ -1,6 +1,6 @@
---- origsrc/libhdate-1.6.02/bindings/python/Makefile.am	2013-02-22 06:27:08.000000000 +0900
-+++ src/libhdate-1.6.02/bindings/python/Makefile.am	2020-08-03 11:31:47.196903300 +0900
-@@ -3,23 +3,11 @@ EXTRA_DIST = hdate.i
+--- origsrc/libhdate-1.6.02/bindings/python/Makefile.am	2026-05-23 10:10:59.921943600 +0900
++++ src/libhdate-1.6.02/bindings/python/Makefile.am	2026-05-23 10:40:03.176413800 +0900
+@@ -3,23 +3,14 @@ EXTRA_DIST = hdate.i
  
  if WITH_PYTHON
  
@@ -12,27 +12,28 @@
 -	
 -
 -_hdate.so: hdate_wrap.cxx
--	g++ -fpic -c hdate_wrap.cxx $(PY_CFLAGS) -I$(top_srcdir)/src
--	g++ -shared ../../src/.libs/libhdate.so hdate_wrap.o -o _hdate.so
+-	g++ -fpic -c hdate_wrap.cxx $(CPPFLAGS) $(CFLAGS) $(PY_CFLAGS) -I$(top_srcdir)/src
+-	g++ -shared hdate_wrap.o ../../src/.libs/libhdate.so -o _hdate.so $(LDFLAGS)
 -
--hdate_wrap.cxx: hdate.i
+ hdate_wrap.cxx: hdate.i
 -	swig -python -c++ hdate.i
--
++	$(SWIG) -python -c++ $(srcdir)/hdate.i
+ 
 -install-data-local: _hdate.so
 -	$(mkinstalldirs) $(DESTDIR)$(PY_MODULES_PATH)
 -	$(INSTALL_DATA) _hdate.so $(DESTDIR)$(PY_MODULES_PATH)/_hdate.so
 -	$(INSTALL_DATA) hdate.py $(DESTDIR)$(PY_MODULES_PATH)/hdate.py
 +python_PYTHON = $(builddir)/hdate.py
 +pyexec_LTLIBRARIES = _hdate.la
-+_hdate_la_SOURCES = $(builddir)/hdate_wrap.cxx hdate.i
++_hdate_la_SOURCES = $(builddir)/hdate_wrap.cxx
 +_hdate_la_CPPFLAGS = -I$(top_srcdir)/src $(PYTHON_CPPFLAGS)
 +_hdate_la_LDFLAGS = -avoid-version -no-undefined -module $(PYTHON_LDFLAGS)
 +_hdate_la_LIBADD = $(top_builddir)/src/libhdate.la $(PYTHON_LIBS)
  
  endif
---- origsrc/libhdate-1.6.02/configure.in	2013-02-22 06:27:08.000000000 +0900
-+++ src/libhdate-1.6.02/configure.in	2020-08-03 13:03:41.464535100 +0900
-@@ -14,21 +14,19 @@ VERSION_INFO=$LIBHDATE_MAJOR_VERSION:$LI
+--- origsrc/libhdate-1.6.02/configure.in	2026-05-23 10:10:59.937406100 +0900
++++ src/libhdate-1.6.02/configure.in	2026-05-23 10:21:12.217856300 +0900
+@@ -14,20 +14,18 @@ VERSION_INFO=$LIBHDATE_MAJOR_VERSION:$LI
  AC_SUBST(VERSION_INFO)
  
  AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
@@ -48,14 +49,14 @@
  AC_PROG_LN_S
  AC_PROG_MAKE_SET
  AC_STDC_HEADERS
- AM_PROG_LIBTOOL
- 
--AM_MAINTAINER_MODE
+-AM_PROG_LIBTOOL
 -
+-AM_MAINTAINER_MODE
++LT_INIT
+ 
  AC_C_CONST
  AC_CONFIG_MACRO_DIR([m4])
- AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-@@ -84,44 +82,16 @@ AM_CONDITIONAL(WITH_FPC, [test "$build_g
+@@ -83,44 +81,16 @@ AM_CONDITIONAL(WITH_FPC, [test "$build_g
  
  dnl =======================================================================================
  
@@ -105,33 +106,14 @@
  
  AM_CONDITIONAL(WITH_PYTHON, test "$build_python" = "yes")
  
---- origsrc/libhdate-1.6.02/examples/Makefile.am	2013-02-22 06:27:08.000000000 +0900
-+++ src/libhdate-1.6.02/examples/Makefile.am	2020-08-03 13:11:10.978894400 +0900
-@@ -1 +1 @@
--SUBDIRS = hcal bindings
-+SUBDIRS = hcal # bindings
---- origsrc/libhdate-1.6.02/examples/hcal/Makefile.am	2013-02-22 06:27:08.000000000 +0900
-+++ src/libhdate-1.6.02/examples/hcal/Makefile.am	2020-08-03 13:10:57.772901500 +0900
-@@ -20,6 +20,6 @@ hcal_LDADD = $(ldadd)
- endif
- 
- libhdatedocdir = ${prefix}/share/doc/libhdate/examples/hcal
--libhdatedoc_DATA = hcal.c hdate.c local_functions.c
-+# libhdatedoc_DATA = hcal.c hdate.c local_functions.c
- 
- EXTRA_DIST = $(libhdatedoc_DATA)
-\ No newline at end of file
 --- origsrc/libhdate-1.6.02/src/Makefile.am	2013-02-22 06:27:08.000000000 +0900
-+++ src/libhdate-1.6.02/src/Makefile.am	2020-08-03 10:02:04.303091000 +0900
-@@ -12,9 +12,9 @@ libhdate_la_SOURCES = \
++++ src/libhdate-1.6.02/src/Makefile.am	2026-05-23 10:11:26.924430300 +0900
+@@ -12,7 +12,7 @@ libhdate_la_SOURCES = \
  	hdate.h\
  	support.h
  
 -libhdate_la_LDFLAGS = $(libhdate_LDFLAGS) -version-info $(VERSION_INFO)
 +libhdate_la_LDFLAGS = -no-undefined $(libhdate_LDFLAGS) -version-info $(VERSION_INFO)
  
--libhdate_la_LIBADD = 
-+libhdate_la_LIBADD = $(LTLIBINTL)
- 
- include_HEADERS = hdate.h hdatepp.h
+ libhdate_la_LIBADD = 
  
