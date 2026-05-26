@@ -1,15 +1,15 @@
---- origsrc/ortp-5.3.96/CMakeLists.txt	2024-07-18 17:21:48.000000000 +0900
-+++ src/ortp-5.3.96/CMakeLists.txt	2024-12-02 08:59:47.736284900 +0900
+--- origsrc/ortp-5.4.116/CMakeLists.txt	2025-12-08 21:13:19.000000000 +0900
++++ src/ortp-5.4.116/CMakeLists.txt	2026-05-26 13:12:39.443502100 +0900
 @@ -22,7 +22,7 @@
  
  cmake_minimum_required(VERSION 3.22)
  
--project(Ortp VERSION 5.3.0)
-+project(Ortp VERSION 5.3.96)
+-project(Ortp VERSION 5.4.0)
++project(Ortp VERSION 5.4.116)
  
  
  set(ORTP_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
-@@ -212,7 +212,7 @@ if (ENABLE_PACKAGE_SOURCE)
+@@ -197,7 +197,7 @@ if (ENABLE_PACKAGE_SOURCE)
  endif()
  
  include(CMakePackageConfigHelpers)
@@ -18,9 +18,9 @@
  configure_package_config_file("cmake/${PROJECT_NAME}Config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
  	INSTALL_DESTINATION "${CMAKE_MODULES_INSTALL_DIR}"
  	NO_SET_AND_CHECK_MACRO
---- origsrc/ortp-5.3.96/src/rtpsession_inet.c	2024-07-18 17:21:48.000000000 +0900
-+++ src/ortp-5.3.96/src/rtpsession_inet.c	2024-12-02 08:41:30.976938700 +0900
-@@ -542,9 +542,10 @@ int rtp_session_set_pktinfo(RtpSession *
+--- origsrc/ortp-5.4.116/src/rtpsession_inet.c	2025-12-08 21:13:19.000000000 +0900
++++ src/ortp-5.4.116/src/rtpsession_inet.c	2026-05-26 14:00:39.120360700 +0900
+@@ -537,9 +537,10 @@ int rtp_session_set_pktinfo(RtpSession *
  
  #ifdef IPV6_RECVPKTINFO
  		optname = IPV6_RECVPKTINFO;
@@ -32,29 +32,20 @@
  		retval = setsockopt(session->rtp.gs.socket, IPPROTO_IPV6, optname, optval, optlen);
  		if (retval < 0) {
  			ortp_warning("Fail to set IPv6 packet info on RTP socket: %s.", getSocketError());
-@@ -553,8 +554,8 @@ int rtp_session_set_pktinfo(RtpSession *
+@@ -548,6 +549,7 @@ int rtp_session_set_pktinfo(RtpSession *
  		if (retval < 0) {
  			ortp_warning("Fail to set IPv6 packet info on RTCP socket: %s.", getSocketError());
  		}
 +#endif
  	}
--
- 	return retval;
- }
  
-@@ -1228,6 +1229,7 @@ static int rtp_sendmsg(ortp_socket_t soc
+ 	return retval;
+@@ -1227,7 +1229,7 @@ static int rtp_sendmsg(ortp_socket_t soc
  		}
  	}
  #endif
-+#if !defined(__CYGWIN__)
- #ifdef IP_PKTINFO
+-#ifdef IP_PKTINFO
++#if defined(IP_PKTINFO) && !defined(__CYGWIN__)
  	if (m->recv_addr.family == AF_INET || useV4 == TRUE) { // Add IPV4 to the message control
  		struct in_pktinfo *pktinfo;
-@@ -1241,6 +1243,7 @@ static int rtp_sendmsg(ortp_socket_t soc
- 		cmsg = CMSG_NXTHDR(&msg, cmsg);
- 	}
- #endif
-+#endif
- 
- #ifdef IPV6_RECVDSTADDR
- 	if (m->recv_addr.family == AF_INET6 && !IN6_IS_ADDR_UNSPECIFIED(&m->recv_addr.addr.ipi6_addr) &&
+ 		cmsg->cmsg_len = CMSG_LEN(sizeof(struct in_pktinfo));
