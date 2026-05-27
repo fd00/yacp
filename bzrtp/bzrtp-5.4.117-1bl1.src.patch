@@ -1,0 +1,58 @@
+--- origsrc/bzrtp-5.4.117/CMakeLists.txt	2025-01-09 07:02:14.000000000 +0900
++++ src/bzrtp-5.4.117/CMakeLists.txt	2026-05-27 07:18:27.308979600 +0900
+@@ -22,7 +22,7 @@
+ 
+ cmake_minimum_required(VERSION 3.22)
+ 
+-project(BZRTP VERSION 5.4.0 LANGUAGES C CXX)
++project(BZRTP VERSION 5.4.117 LANGUAGES C CXX)
+ 
+ option(ENABLE_ZIDCACHE "Turn on compilation of ZID cache, request sqlite" YES)
+ option(ENABLE_STRICT "Build with strict compile options." YES)
+@@ -117,7 +117,7 @@ if(ENABLE_PACKAGE_SOURCE)
+ endif()
+ 
+ include(CMakePackageConfigHelpers)
+-set(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
++option(CMAKE_MODULES_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake")
+ configure_package_config_file("cmake/${PROJECT_NAME}Config.cmake.in" "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+ 	INSTALL_DESTINATION "${CMAKE_MODULES_INSTALL_DIR}"
+ 	NO_SET_AND_CHECK_MACRO
+@@ -139,3 +139,6 @@ install(EXPORT ${PROJECT_NAME}Targets
+ 	FILE "${PROJECT_NAME}Targets.cmake"
+ 	DESTINATION ${CMAKE_MODULES_INSTALL_DIR}
+ )
++
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libbzrtp.pc.in ${CMAKE_BINARY_DIR}/libbzrtp.pc @ONLY)
++install(FILES "${CMAKE_BINARY_DIR}/libbzrtp.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+--- origsrc/bzrtp-5.4.117/libbzrtp.pc.in	2025-01-09 07:02:14.000000000 +0900
++++ src/bzrtp-5.4.117/libbzrtp.pc.in	2026-05-27 11:11:12.174857400 +0900
+@@ -1,10 +1,11 @@
+ # This is a comment
+-prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-includedir=@includedir@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=@CMAKE_INSTALL_PREFIX@
++includedir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@
++libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+ 
+ Name:  libbzrtp
+ Description: Implement the ZRTP Media Path Key agreement for unicast secure RTP
+-Version: @PACKAGE_VERSION@                           
+-Libs: -L@libdir@ -lbzrtp 
+-Cflags: -I@includedir@ 
++Version: @PROJECT_VERSION@                           
++Libs: -L${libdir} -lbzrtp 
++Cflags: -I${includedir}
+--- origsrc/bzrtp-5.4.117/src/CMakeLists.txt	2025-01-09 07:02:14.000000000 +0900
++++ src/bzrtp-5.4.117/src/CMakeLists.txt	2026-05-27 06:55:06.471825900 +0900
+@@ -42,7 +42,7 @@ bc_apply_compile_flags(BZRTP_CPP_SOURCE_
+ set(BZRTP_SOURCE_FILES ${BZRTP_C_SOURCE_FILES} ${BZRTP_CXX_SOURCE_FILES})
+ 
+ add_library(bzrtp ${BZRTP_SOURCE_FILES})
+-set_target_properties(bzrtp PROPERTIES VERSION 0)
++set_target_properties(bzrtp PROPERTIES SOVERSION 0)
+ target_include_directories(bzrtp PUBLIC
+ 	$<INSTALL_INTERFACE:include>
+ 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
