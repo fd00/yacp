@@ -1,0 +1,42 @@
+--- origsrc/libgooglepinyin-0.1.2/CMakeLists.txt	2026-05-30 08:09:32.904151700 +0900
++++ src/libgooglepinyin-0.1.2/CMakeLists.txt	2026-05-30 08:19:51.793996000 +0900
+@@ -2,6 +2,7 @@ project(googlepinyin)
+ cmake_minimum_required(VERSION 3.5)
+ 
+ option(ENABLE_STATIC "Build static library" False)
++include(GNUInstallDirs)
+ 
+ # uninstall target
+ configure_file(
+--- origsrc/libgooglepinyin-0.1.2/data/CMakeLists.txt	2012-02-03 17:20:17.000000000 +0900
++++ src/libgooglepinyin-0.1.2/data/CMakeLists.txt	2026-05-30 08:16:45.056373900 +0900
+@@ -9,7 +9,8 @@ endif (BIGENDIAN)
+ 
+ add_custom_command(OUTPUT dict_pinyin.dat
+                    DEPENDS dictbuilder
+-                   COMMAND dictbuilder ${CMAKE_CURRENT_SOURCE_DIR}/rawdict_utf16_65105_freq${DATA_SUFFIX}.txt ${CMAKE_CURRENT_SOURCE_DIR}/valid_utf16${DATA_SUFFIX}.txt)
++                   COMMAND ${CMAKE_COMMAND} -E env PATH=${PROJECT_BINARY_DIR}/src:$ENV{PATH}
++                   $<TARGET_FILE:dictbuilder> ${CMAKE_CURRENT_SOURCE_DIR}/rawdict_utf16_65105_freq${DATA_SUFFIX}.txt ${CMAKE_CURRENT_SOURCE_DIR}/valid_utf16${DATA_SUFFIX}.txt)
+ 
+ add_custom_target(datafile ALL DEPENDS dict_pinyin.dat)
+ 
+--- origsrc/libgooglepinyin-0.1.2/data/googlepinyin.pc.in	2012-02-03 17:20:17.000000000 +0900
++++ src/libgooglepinyin-0.1.2/data/googlepinyin.pc.in	2026-05-30 08:32:51.050197600 +0900
+@@ -5,6 +5,6 @@ includedir=@includedir@
+ 
+ Name: googlepinyin
+ Description: Google Pinyin library (Fork from android)
+-Version: 1.0
++Version: @VERSION@
+ Cflags: -I${includedir}
+ Libs: -L${libdir} -lgooglepinyin
+--- origsrc/libgooglepinyin-0.1.2/src/CMakeLists.txt	2012-02-03 17:20:17.000000000 +0900
++++ src/libgooglepinyin-0.1.2/src/CMakeLists.txt	2026-05-30 08:20:08.379103500 +0900
+@@ -44,6 +44,7 @@ install(TARGETS googlepinyin-static
+ )
+ endif (ENABLE_STATIC)
+ install(TARGETS googlepinyin
++	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+ )
