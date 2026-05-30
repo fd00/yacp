@@ -1,0 +1,59 @@
+--- origsrc/cpp-kana-1.0.2/CMakeLists.txt	2025-09-29 22:40:54.000000000 +0900
++++ src/cpp-kana-1.0.2/CMakeLists.txt	2026-05-30 11:25:00.639513700 +0900
+@@ -2,7 +2,7 @@
+ # Project
+ # ----------------------------------
+ cmake_minimum_required(VERSION 3.17)
+-project(cpp-kana VERSION 1.0.0.0 LANGUAGES CXX)
++project(cpp-kana VERSION 1.0.2 LANGUAGES CXX)
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ 
+@@ -60,6 +60,10 @@ target_compile_definitions(${PROJECT_NAM
+ target_sources(${PROJECT_NAME} PRIVATE ${_src})
+ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+ 
++if (DEFINED SOVERSION)
++    set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if (CPP_KANA_BUILD_TESTS)
+     add_subdirectory(tests)
+ endif ()
+@@ -125,4 +129,11 @@ if (CPP_KANA_INSTALL)
+             NAMESPACE ${PROJECT_NAME}::
+             DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+     )
+-endif ()
+\ No newline at end of file
++endif ()
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cpp-kana.pc.in ${CMAKE_BINARY_DIR}/cpp-kana.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cpp-kana.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cpp-kana-1.0.2/cpp-kana.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpp-kana-1.0.2/cpp-kana.pc.in	2026-05-30 11:24:52.380106000 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cpp-kana
++Description: Lightweight library for converting Japanese kana to romaji and vice versa
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcpp-kana
++Cflags: -I${includedir}
+--- origsrc/cpp-kana-1.0.2/tests/main.cpp	2025-09-29 22:40:54.000000000 +0900
++++ src/cpp-kana-1.0.2/tests/main.cpp	2026-05-30 10:38:26.528679500 +0900
+@@ -1,6 +1,6 @@
+ #include <iostream>
+ 
+-#include <cpp-kana/kana.h>
++#include <cpp-kana/Kana.h>
+ 
+ int main(int argc, char *argv[]) {
+     const std::string raw1 = "ちゃこれでもやれるだけ飞ばしてきたんだよ";
