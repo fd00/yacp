@@ -1,5 +1,5 @@
---- origsrc/ALPSCore-2.3.2/accumulators/alps-accumulators.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/accumulators/alps-accumulators.pc.in	2025-05-24 19:22:45.168659000 +0900
+--- origsrc/ALPSCore-2.3.3/accumulators/alps-accumulators.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/accumulators/alps-accumulators.pc.in	2026-06-10 22:12:42.419581600 +0900
 @@ -0,0 +1,6 @@
 +Name: @PROJECT_NAME@
 +Description: @PROJECT_NAME@ 
@@ -7,8 +7,8 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-accumulators
 +Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/alea/alps-alea.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/alea/alps-alea.pc.in	2025-05-24 19:23:06.185342000 +0900
+--- origsrc/ALPSCore-2.3.3/alea/alps-alea.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/alea/alps-alea.pc.in	2026-06-10 22:12:42.425253800 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
@@ -18,18 +18,28 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-alea
  Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/common/cmake/ALPSCommonModuleDefinitions.cmake	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/common/cmake/ALPSCommonModuleDefinitions.cmake	2025-05-24 19:17:55.672875200 +0900
+--- origsrc/ALPSCore-2.3.3/common/cmake/ALPSCommonModuleDefinitions.cmake	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/common/cmake/ALPSCommonModuleDefinitions.cmake	2026-06-10 22:26:41.126673900 +0900
 @@ -3,7 +3,7 @@
  #
  
  # Do not forget to adjust as needed!
 -set(ALPSCORE_VERSION "2.2.0")
-+set(ALPSCORE_VERSION "2.3.2")
++set(ALPSCORE_VERSION "2.3.3")
  
  # Disable in-source builds
  if (${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-@@ -232,6 +232,9 @@ function(add_this_package)
+@@ -123,9 +123,6 @@ macro(add_boost) # usage: add_boost(comp
+   if (ALPS_BUILD_SHARED)
+     set(Boost_USE_STATIC_LIBS        OFF)
+   endif()
+-  if(POLICY CMP0167)
+-    cmake_policy(SET CMP0167 NEW)
+-  endif()
+   find_package (Boost 1.56.0 COMPONENTS ${ARGV} REQUIRED)
+   # Remember Boost version
+   set(ALPSCore_BOOST_VERSION ${Boost_MAJOR_VERSION})
+@@ -235,6 +232,9 @@ function(add_this_package)
    if (ALPS_BUILD_PIC) 
      set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
    endif()
@@ -39,7 +49,7 @@
  
    if (ALPS_HAVE_MPI)
      if (MPI_CXX_INCLUDE_PATH)
-@@ -254,10 +257,11 @@ function(add_this_package)
+@@ -257,10 +257,11 @@ function(add_this_package)
    
    install(TARGETS ${PROJECT_NAME} 
            EXPORT ${PROJECT_NAME} 
@@ -52,7 +62,7 @@
    target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include)
  
    install(DIRECTORY include DESTINATION .
-@@ -300,8 +304,8 @@ function(gen_cfg_main)
+@@ -303,8 +304,8 @@ function(gen_cfg_main)
                   "${PROJECT_BINARY_DIR}/stage/ALPSCoreConfig.cmake" @ONLY)
    configure_file("${PROJECT_SOURCE_DIR}/common/cmake/ALPSCoreConfigVersion.cmake.in" 
                   "${PROJECT_BINARY_DIR}/stage/ALPSCoreConfigVersion.cmake" @ONLY)
@@ -63,42 +73,52 @@
  endfunction()
  
  
-@@ -327,5 +331,5 @@ function(gen_cfg_module)
+@@ -330,5 +331,5 @@ function(gen_cfg_module)
      endif()
      configure_file("${PROJECT_SOURCE_DIR}/../common/cmake/ALPSModuleConfig.cmake.in" 
                     "${PROJECT_BINARY_DIR}/stage/${PROJECT_NAME}Config.cmake" @ONLY)
 -    install(FILES "${PROJECT_BINARY_DIR}/stage/${PROJECT_NAME}Config.cmake" DESTINATION "share/${PROJECT_NAME}/")
 +    install(FILES "${PROJECT_BINARY_DIR}/stage/${PROJECT_NAME}Config.cmake" DESTINATION "lib/cmake/${PROJECT_NAME}/")
  endfunction()
---- origsrc/ALPSCore-2.3.2/common/cmake/ALPSEnableTests.cmake	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/common/cmake/ALPSEnableTests.cmake	2025-05-24 18:06:44.358269500 +0900
+--- origsrc/ALPSCore-2.3.3/common/cmake/ALPSEnableTests.cmake	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/common/cmake/ALPSEnableTests.cmake	2026-06-11 07:33:53.004529000 +0900
 @@ -35,14 +35,17 @@ endfunction()
  
  # enable testing with gtest - fetch it if needed
  if (NOT tests_are_already_enabled) 
 -    if (ALPS_GLOBAL_BUILD)
--        set(gtest_root "${PROJECT_SOURCE_DIR}/common/deps/gtest-1.7.0")
+-        set(gtest_root "${PROJECT_SOURCE_DIR}/common/deps/gtest-1.16.0")
 -    else(ALPS_GLOBAL_BUILD)
--        set(gtest_root "${PROJECT_SOURCE_DIR}/../common/deps/gtest-1.7.0")
+-        set(gtest_root "${PROJECT_SOURCE_DIR}/../common/deps/gtest-1.16.0")
 -    endif(ALPS_GLOBAL_BUILD)
+-
+-    UseGtest(${gtest_root})
+-    unset(gtest_root)
 +    find_package(GTest)
 +    if (NOT GTEST_FOUND)
 +        if (ALPS_GLOBAL_BUILD)
-+            set(gtest_root "${PROJECT_SOURCE_DIR}/common/deps/gtest-1.7.0")
++            set(gtest_root "${PROJECT_SOURCE_DIR}/common/deps/gtest-1.16.0")
 +        else(ALPS_GLOBAL_BUILD)
-+            set(gtest_root "${PROJECT_SOURCE_DIR}/../common/deps/gtest-1.7.0")
++            set(gtest_root "${PROJECT_SOURCE_DIR}/../common/deps/gtest-1.16.0")
 +        endif(ALPS_GLOBAL_BUILD)
- 
--    UseGtest(${gtest_root})
--    unset(gtest_root)
++
 +        UseGtest(${gtest_root})
 +        unset(gtest_root)
-+    endif()
++    endif(NOT GTEST_FOUND)
      # set (LINK_TEST  ${GTEST_MAIN_LIBRARIES}) 
      include_directories(SYSTEM ${GTEST_INCLUDE_DIRS})
      set(tests_are_already_enabled TRUE)
---- origsrc/ALPSCore-2.3.2/gf/alps-gf.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/gf/alps-gf.pc.in	2025-05-24 19:23:37.106041600 +0900
+@@ -71,7 +74,7 @@ function(alps_build_gtest_)
+     endif()
+ 
+     if (arg_NOMAIN)
+-        set(link_test_ ${GTEST_LIBRARY})
++        set(link_test_ ${GTEST_LIBRARY} ${GTEST_LIBRARIES})
+     else()
+         set(link_test_ ${GTEST_MAIN_LIBRARIES})
+     endif()
+--- origsrc/ALPSCore-2.3.3/gf/alps-gf.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/gf/alps-gf.pc.in	2026-06-10 22:12:42.425253800 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
@@ -109,8 +129,8 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-hdf5
  Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/hdf5/alps-hdf5.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/hdf5/alps-hdf5.pc.in	2025-05-24 19:24:10.804308900 +0900
+--- origsrc/ALPSCore-2.3.3/hdf5/alps-hdf5.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/hdf5/alps-hdf5.pc.in	2026-06-10 22:12:42.437646500 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
@@ -121,8 +141,8 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-hdf5
  Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/mc/alps-mc.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/mc/alps-mc.pc.in	2025-05-24 19:25:26.641070500 +0900
+--- origsrc/ALPSCore-2.3.3/mc/alps-mc.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/mc/alps-mc.pc.in	2026-06-10 22:12:42.441669400 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
@@ -133,8 +153,8 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-mc
  Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/params/alps-params.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/params/alps-params.pc.in	2025-05-24 19:25:45.318390600 +0900
+--- origsrc/ALPSCore-2.3.3/params/alps-params.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/params/alps-params.pc.in	2026-06-10 22:12:42.443684600 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
@@ -145,8 +165,8 @@
 +Version: @ALPSCORE_VERSION@
 +Libs: -L@CMAKE_INSTALL_PREFIX@/lib -lalps-params
  Cflags: -I@CMAKE_INSTALL_PREFIX@/include
---- origsrc/ALPSCore-2.3.2/utilities/alps-utilities.pc.in	2025-03-20 02:10:56.000000000 +0900
-+++ src/ALPSCore-2.3.2/utilities/alps-utilities.pc.in	2025-05-24 19:26:05.397894200 +0900
+--- origsrc/ALPSCore-2.3.3/utilities/alps-utilities.pc.in	2026-05-08 18:14:47.000000000 +0900
++++ src/ALPSCore-2.3.3/utilities/alps-utilities.pc.in	2026-06-10 22:12:42.443684600 +0900
 @@ -1,6 +1,6 @@
  Name: @PROJECT_NAME@
  Description: @PROJECT_NAME@ 
