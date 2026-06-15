@@ -1,0 +1,50 @@
+--- origsrc/cryptopp-CRYPTOPP_8_6_0/CMakeLists.txt	2026-06-15 07:09:26.320133900 +0900
++++ src/cryptopp-CRYPTOPP_8_6_0/CMakeLists.txt	2026-06-15 19:53:19.655821100 +0900
+@@ -1025,7 +1025,8 @@ if (${CMAKE_VERSION} VERSION_LESS "3.12"
+   add_definitions("${CMAKE_CPP_FLAGS}" "${CMAKE_CXX_FLAGS}" "${CRYPTOPP_COMPILE_DEFINITIONS}" "${CRYPTOPP_COMPILE_OPTIONS}")
+ else()
+   add_compile_definitions("${CMAKE_CPP_FLAGS}" "${CRYPTOPP_COMPILE_DEFINITIONS}")
+-  add_compile_options("${CMAKE_CXX_FLAGS}" "${CRYPTOPP_COMPILE_OPTIONS}")
++  separate_arguments(CMAKE_CXX_FLAGS_LIST UNIX_COMMAND "${CMAKE_CXX_FLAGS}")
++  add_compile_options(${CMAKE_CXX_FLAGS_LIST} ${CRYPTOPP_COMPILE_OPTIONS})
+ endif()
+ 
+ #============================================================================
+@@ -1227,7 +1228,12 @@ endif()
+ enable_testing()
+ if (BUILD_TESTING)
+   add_executable(cryptest ${cryptopp_SOURCES_TEST})
+-  target_link_libraries(cryptest cryptopp-static)
++  if (BUILD_STATIC)
++    target_link_libraries(cryptest cryptopp-static)
++  endif()
++  if (BUILD_SHARED)
++    target_link_libraries(cryptest cryptopp-shared)
++  endif()
+ 
+   # Setting "cryptest" binary name to "cryptest.exe"
+   if (NOT (WIN32 OR CYGWIN))
+@@ -1346,3 +1352,10 @@ message(STATUS "Compiler: ${CMAKE_CXX_CO
+ message(STATUS "Compiler options: ${CMAKE_CXX_FLAGS} ${CRYPTOPP_COMPILE_OPTIONS}")
+ message(STATUS "Compiler definitions: ${CRYPTOPP_COMPILE_DEFINITIONS}")
+ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/cryptopp.pc.in ${CMAKE_BINARY_DIR}/cryptopp.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/cryptopp.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/cryptopp-CRYPTOPP_8_6_0/cryptopp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cryptopp-CRYPTOPP_8_6_0/cryptopp.pc.in	2026-06-15 19:53:42.418760600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: cryptopp
++Description: Free C++ class library of cryptographic schemes
++Version: @PROJECT_VERSION@
++Libs: -L${libdir} -lcryptopp
++Cflags: -I${includedir}
