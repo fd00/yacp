@@ -1,0 +1,43 @@
+--- origsrc/redox/CMakeLists.txt	2026-06-16 11:40:56.000000000 +0900
++++ src/redox/CMakeLists.txt	2026-06-16 11:48:29.167758500 +0900
+@@ -16,7 +16,6 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT
+    set(CMAKE_BUILD_TYPE Release)
+ endif(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+ 
+-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wall")
+ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+ 
+ find_program(CCACHE_FOUND ccache)
+@@ -192,7 +191,7 @@ endif()
+ 
+ if (lib)
+   # Install the dynamic library to /usr/lib[64]
+-  install(TARGETS redox DESTINATION lib${LIB_SUFFIX})
++  install(TARGETS redox RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
+ if (static_lib)
+@@ -237,3 +236,10 @@ set(CPACK_RPM_PACKAGE_ARCHITECTURE "${AR
+ # Select CPack generators
+ set(CPACK_GENERATOR "DEB" "RPM")
+ include(CPack)
++
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/redox.pc.in ${CMAKE_BINARY_DIR}/redox.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/redox.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/redox/redox.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/redox/redox.pc.in	2026-06-16 11:50:02.282880500 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: redox
++Description: Modern, asynchronous, and wicked fast C++11 client for Redis
++Version: @REDOX_VERSION_STRING@
++Libs: -L${libdir} -lredox
++Cflags: -I${includedir}
