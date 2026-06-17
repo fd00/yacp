@@ -1,0 +1,175 @@
+--- origsrc/cpluff-0.2.0/libcpluffxx/cpluffxx.h	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/cpluffxx.h	2026-06-17 11:17:44.225800300 +0900
+@@ -113,7 +113,7 @@ public:
+ 	 * 
+ 	 * @throw api_error if there are not enough system resources
+ 	 */ 
+-	static shared_ptr<framework> init() throw (api_error);
++	static shared_ptr<framework> init();
+ 
+ 	/**
+ 	 * Creates and returns a new plug-in container. The returned plug-in
+@@ -123,7 +123,7 @@ public:
+ 	 * @return reference to a new created plug-in container
+ 	 * @throw api_error if there are not enough system resources
+ 	 */
+-	virtual shared_ptr<plugin_container> new_plugin_container() throw (api_error) = 0;
++	virtual shared_ptr<plugin_container> new_plugin_container() = 0;
+ 
+ protected:
+ 
+@@ -160,7 +160,7 @@ public:
+ 	 * @throw cpluff::api_error if insufficient memory
+ 	 * @sa cpluff::unregister_logger
+ 	 */
+-	virtual void register_logger(logger* logger, logger::severity minseverity) throw (api_error) = 0;
++	virtual void register_logger(logger* logger, logger::severity minseverity) = 0;
+ 
+ 	/**
+ 	 * Removes a logger registration.
+@@ -212,7 +212,7 @@ public:
+ 	 * @sa unregister_plugin_collection
+ 	 * @sa unregister_plugin_collections
+ 	 */
+-	virtual void register_plugin_collection(const char* dir) throw (api_error) = 0;
++	virtual void register_plugin_collection(const char* dir) = 0;
+ 
+ 	/**
+ 	 * Unregisters a plug-in collection previously registered with this
+@@ -244,7 +244,7 @@ public:
+ 	 * @return reference to the plug-in information structure
+ 	 * @throw cp_api_error if loading fails or the plug-in descriptor is malformed
+ 	 */
+-	virtual shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error) = 0;
++	virtual shared_ptr<plugin_info> load_plugin_descriptor(const char* path) = 0;
+ 
+ protected:
+ 
+--- origsrc/cpluff-0.2.0/libcpluffxx/framework.cc	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/framework.cc	2026-06-17 11:18:16.542386800 +0900
+@@ -31,13 +31,13 @@ void framework::reset_fatal_error_handle
+ 	cp_set_fatal_error_handler(NULL);
+ }
+ 
+-shared_ptr<framework> framework::init() throw (api_error) {
++shared_ptr<framework> framework::init() {
+ 	shared_ptr<framework_impl> sp(new framework_impl);
+ 	sp.get()->this_shared(sp);
+ 	return sp;
+ }
+ 
+-CP_HIDDEN shared_ptr<plugin_container> framework_impl::new_plugin_container() throw (api_error) {
++CP_HIDDEN shared_ptr<plugin_container> framework_impl::new_plugin_container() {
+ 	return shared_ptr<plugin_container>(new plugin_container_impl(shared_ptr<framework>(this_weak)));
+ }
+ 
+--- origsrc/cpluff-0.2.0/libcpluffxx/internalxx.h	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/internalxx.h	2026-06-17 11:18:04.698409500 +0900
+@@ -68,7 +68,7 @@ public:
+ 		this_weak = ts;
+ 	}
+ 
+-	CP_HIDDEN shared_ptr<plugin_container> new_plugin_container() throw (api_error);
++	CP_HIDDEN shared_ptr<plugin_container> new_plugin_container();
+ 
+ private:
+ 	weak_ptr<framework> this_weak;
+@@ -107,7 +107,7 @@ public:
+ 	 */
+ 	CP_HIDDEN plugin_context_impl(cp_context_t *context);
+ 
+-	CP_HIDDEN void register_logger(logger* logger, logger::severity minseverity) throw (api_error);
++	CP_HIDDEN void register_logger(logger* logger, logger::severity minseverity);
+ 
+ 	CP_HIDDEN void unregister_logger(logger* logger) throw ();
+ 
+@@ -181,13 +181,13 @@ public:
+ 	 */
+ 	CP_HIDDEN plugin_container_impl(shared_ptr<framework> fw);
+ 	
+-	CP_HIDDEN void register_plugin_collection(const char* dir) throw (api_error);
++	CP_HIDDEN void register_plugin_collection(const char* dir);
+ 
+ 	CP_HIDDEN void unregister_plugin_collection(const char* dir) throw ();
+ 
+ 	CP_HIDDEN void unregister_plugin_collections() throw ();
+ 
+-	CP_HIDDEN shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error);
++	CP_HIDDEN shared_ptr<plugin_info> load_plugin_descriptor(const char* path);
+ 
+ private:
+ 
+--- origsrc/cpluff-0.2.0/libcpluffxx/plugin_container.cc	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/plugin_container.cc	2026-06-17 11:18:29.184026100 +0900
+@@ -9,6 +9,7 @@
+ 
+ namespace cpluff {
+ 
++CP_HIDDEN void check_cp_status(cp_status_t status);
+ 
+ CP_HIDDEN plugin_container_impl::plugin_container_impl(shared_ptr<framework> fw): fw(fw) {
+ 	cp_status_t status;
+@@ -17,7 +18,7 @@ CP_HIDDEN plugin_container_impl::plugin_
+ 	this->context = context;
+ }
+ 
+-CP_HIDDEN void plugin_container_impl::register_plugin_collection(const char* dir) throw (api_error) {
++CP_HIDDEN void plugin_container_impl::register_plugin_collection(const char* dir) {
+ 	check_cp_status(cp_register_pcollection(context, dir));
+ }
+ 
+@@ -29,7 +30,7 @@ CP_HIDDEN void plugin_container_impl::un
+ 	cp_unregister_pcollections(context);
+ }
+ 
+-CP_HIDDEN shared_ptr<plugin_info> plugin_container_impl::load_plugin_descriptor(const char* path) throw (api_error) {
++CP_HIDDEN shared_ptr<plugin_info> plugin_container_impl::load_plugin_descriptor(const char* path) {
+ 	cp_status_t status;
+ 	cp_plugin_info_t *pinfo = cp_load_plugin_descriptor(context, path, &status);
+ 	check_cp_status(status);
+--- origsrc/cpluff-0.2.0/libcpluffxx/plugin_context.cc	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/plugin_context.cc	2026-06-17 11:25:27.454060800 +0900
+@@ -50,7 +50,7 @@ CP_HIDDEN plugin_context_impl::~plugin_c
+ 	cp_destroy_context(context);
+ }
+ 
+-CP_HIDDEN void plugin_context_impl::register_logger(logger* logger, logger::severity minseverity) throw (api_error) {
++CP_HIDDEN void plugin_context_impl::register_logger(logger* logger, logger::severity minseverity) {
+ 	// TODO synchronization
+ 	loggers[logger] = minseverity;
+ 	update_min_logger_severity();
+--- origsrc/cpluff-0.2.0/libcpluffxx/util.cc	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/libcpluffxx/util.cc	2026-06-17 11:34:14.749252000 +0900
+@@ -60,7 +60,7 @@ static const char* status_to_cs_string(c
+ 	}	
+ }
+ 
+-CP_HIDDEN void check_cp_status(cp_status_t status) throw (api_error) {
++CP_HIDDEN void check_cp_status(cp_status_t status) {
+ 	if (status != CP_OK) {
+ 		throw api_error(
+ 			(api_error::code) status,
+--- origsrc/cpluff-0.2.0/test/plugins-source/callbackcounter/Makefile.am	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/test/plugins-source/callbackcounter/Makefile.am	2026-06-17 10:55:16.493906300 +0900
+@@ -14,4 +14,4 @@ plugin_LTLIBRARIES = libruntime.la
+ plugin_DATA = plugin.xml
+ 
+ libruntime_la_SOURCES = callbackcounter.c callbackcounter.h
+-libruntime_la_LDFLAGS = -module -avoid-version
++libruntime_la_LDFLAGS = -no-undefined -module -avoid-version
+--- origsrc/cpluff-0.2.0/test/plugins-source/symprovider/Makefile.am	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/test/plugins-source/symprovider/Makefile.am	2026-06-17 10:55:16.505607400 +0900
+@@ -14,4 +14,4 @@ plugin_LTLIBRARIES = libruntime.la
+ plugin_DATA = plugin.xml
+ 
+ libruntime_la_SOURCES = symprovider.c
+-libruntime_la_LDFLAGS = -module -avoid-version
++libruntime_la_LDFLAGS = -no-undefined -module -avoid-version
+--- origsrc/cpluff-0.2.0/test/plugins-source/symuser/Makefile.am	2016-01-02 06:48:33.000000000 +0900
++++ src/cpluff-0.2.0/test/plugins-source/symuser/Makefile.am	2026-06-17 10:55:16.509748400 +0900
+@@ -14,4 +14,4 @@ plugin_LTLIBRARIES = libruntime.la
+ plugin_DATA = plugin.xml
+ 
+ libruntime_la_SOURCES = symuser.c
+-libruntime_la_LDFLAGS = -module -avoid-version
++libruntime_la_LDFLAGS = -no-undefined -module -avoid-version
