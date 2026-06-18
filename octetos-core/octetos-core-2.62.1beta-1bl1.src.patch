@@ -1,0 +1,200 @@
+--- origsrc/octetos-core-2.62.1-beta/src/MD5sum.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/MD5sum.cc	2026-06-18 22:46:54.418053900 +0900
+@@ -1,7 +1,7 @@
+ 
+ 
+ #include <string.h>
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+     #include <openssl/md5.h>
+ #elif defined(__GNUC__) && (defined(_WIN32) || defined(_WIN64))
+     #include <Wincrypt.h>
+--- origsrc/octetos-core-2.62.1-beta/src/Makefile.am	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/Makefile.am	2026-06-18 22:47:26.839487400 +0900
+@@ -22,6 +22,7 @@ lib_LTLIBRARIES = liboctetos-core.la
+ 
+ liboctetos_core_la_CXXFLAGS = $(FLAGS) 
+ liboctetos_core_la_LIBADD = $(LIBS)
++liboctetos_core_la_LDFLAGS = -no-undefined
+ liboctetos_core_la_SOURCES = \
+ 	Artifact-v2.cc \
+ 	Exception-v2.cc \
+--- origsrc/octetos-core-2.62.1-beta/src/Object.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/Object.cc	2026-06-18 22:33:37.070817600 +0900
+@@ -24,6 +24,8 @@
+ 	#include "config.h"
+ #elif defined(_WIN32) || defined(_WIN64)
+ 	#include "config-win.h"
++#elif defined(__CYGWIN__)
++    #include "config.h"
+ #else
+     #error "Plataforma desconocida"
+ #endif
+--- origsrc/octetos-core-2.62.1-beta/src/Version-v2.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/Version-v2.cc	2026-06-18 22:37:37.520831900 +0900
+@@ -28,6 +28,8 @@
+ 	#include "config.h"
+ #elif defined(_WIN32) || defined(_WIN64)
+     #include "config-win.h"
++#elif defined(__CYGWIN__)
++    #include "config.h"
+ #else
+     #error "Plataforma desconocida"
+ #endif
+@@ -64,7 +66,7 @@ namespace oct::core::v2
+ 
+         if (major < 0 or ((Semver&)obj).getMajor() < 0)
+         {
+-            throw InvalidComparison("Operación invalidad, está comprando objetos Version sin antes asignarles valores.");
++            throw InvalidComparison("Operaciï¿½n invalidad, estï¿½ comprando objetos Version sin antes asignarles valores.");
+         }
+         else if (major > ((Semver&)obj).getMajor())
+         {
+@@ -115,7 +117,7 @@ namespace oct::core::v2
+     {
+         if (major < 0 or ((Semver&)obj).getMajor() < 0)
+         {
+-            throw InvalidComparison("Operación invalidad, está comprando objetos Version sin antes asignarles valores.");
++            throw InvalidComparison("Operaciï¿½n invalidad, estï¿½ comprando objetos Version sin antes asignarles valores.");
+         }
+         else if (major < ((Semver&)obj).getMajor())
+         {
+--- origsrc/octetos-core-2.62.1-beta/src/Version-v3.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/Version-v3.cc	2026-06-18 22:38:05.318875100 +0900
+@@ -30,6 +30,9 @@
+ 	#include "Exception-v3.hh"
+ #elif defined(_WIN32) || defined(_WIN64)
+     #include "config-win.h"
++#elif defined(__CYGWIN__)
++    #include "config.h"
++    #include "Exception-v3.hh"
+ #else
+     #error "Plataforma desconocida"
+ #endif
+--- origsrc/octetos-core-2.62.1-beta/src/Version-v3.hh	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/Version-v3.hh	2026-06-18 22:31:32.539168200 +0900
+@@ -31,6 +31,9 @@
+ #elif defined(_WIN32) || defined(_WIN64)
+ 	#include <core/src/Error.hh>
+ 	#include <core/src/Buffer.hh>
++#elif defined(__CYGWIN__)
++	#include "Error.hh"
++	#include "Buffer.hh"
+ #else
+     #error "Plataforma desconcida."
+ #endif
+--- origsrc/octetos-core-2.62.1-beta/src/cd.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/cd.cc	2026-06-18 22:44:54.441231600 +0900
+@@ -19,7 +19,8 @@
+ 
+ 
+ 
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
++	#define _GNU_SOURCE
+     #include <unistd.h>
+ #elif defined(__GNUC__) && (defined(_WIN32) || defined(_WIN64))
+     #include <direct.h>
+@@ -31,7 +32,7 @@
+ 
+ namespace oct::core
+ {
+-#if defined(__GNUG__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+ 	void Shell::cd(const std::string& dir)
+ 	{
+ 		int ret = ::chdir(dir.c_str());
+@@ -50,7 +51,7 @@ namespace oct::core
+ 		strcwd = buf;
+ 		free((void*)buf);
+ 	}
+-#elif defined(__GNUG__) && (defined(_WIN32) || defined(_WIN64))
++#elif defined(__GNUC__) && (defined(_WIN32) || defined(_WIN64))
+ 	void Shell::cd(const std::string& dir)
+ 	{
+ 		int ret = ::_chdir(dir.c_str());
+--- origsrc/octetos-core-2.62.1-beta/src/core.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/core.cc	2026-06-18 22:38:38.200025600 +0900
+@@ -48,7 +48,7 @@ namespace oct
+ 		print_backtrace("Error signal detected %d:\n",s);
+ 	}
+ #elif (defined(_WIN32) || defined(_WIN64))
+-
++#elif defined(__CYGWIN__)
+ #else
+     #error "Pltaforma desconocida"
+ #endif
+--- origsrc/octetos-core-2.62.1-beta/src/core.hh	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/core.hh	2026-06-18 22:31:49.506785500 +0900
+@@ -31,6 +31,9 @@
+ 	#include "defines.hh"
+ #elif defined(_WIN32) || defined(_WIN64)
+ 	#include <core/src/defines.hh>
++#elif defined(__CYGWIN__)
++	#include <csignal>
++	#include "defines.hh"
+ #else
+ 	#error "Plataforma desconocida"
+ #endif
+@@ -45,7 +48,7 @@ namespace oct
+ 	void signal_abort(int s);
+ 	void signal_segmentv(int s);
+ #elif defined(_WIN32) || defined(_WIN64)
+-
++#elif defined(__CYGWIN__)
+ #else
+     #error "Plataforma desconocida"
+ #endif
+--- origsrc/octetos-core-2.62.1-beta/src/exists.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/exists.cc	2026-06-18 22:45:19.106114200 +0900
+@@ -27,7 +27,7 @@
+ 
+ namespace oct::core
+ {
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+ 	bool Shell::exists(const std::string& filename)
+ 	{
+ 	   	struct stat info;
+--- origsrc/octetos-core-2.62.1-beta/src/mkdir.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/mkdir.cc	2026-06-18 22:45:49.385449500 +0900
+@@ -25,7 +25,7 @@
+ #include <fcntl.h>
+ #include <sstream>
+ 
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+     #include <unistd.h>
+ #elif defined(__GNUC__) && (defined(_WIN32) || defined(_WIN64))
+     #include <direct.h>
+@@ -38,7 +38,7 @@
+ 
+ namespace oct::core
+ {
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+ 	void Shell::mkdir(const std::string& name, bool recursive)
+ 	{
+ 		//Precessing
+--- origsrc/octetos-core-2.62.1-beta/src/rm.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/rm.cc	2026-06-18 22:46:23.971818900 +0900
+@@ -35,7 +35,7 @@
+ namespace oct::core
+ {
+ 
+-#if defined(__GNUC__) && defined(__linux__)
++#if defined(__GNUC__) && (defined(__linux__) || defined(__CYGWIN__))
+     bool Shell::rm(const std::string& path, bool recursive)
+ 	{
+ 		struct stat st;
+--- origsrc/octetos-core-2.62.1-beta/src/shell.cc	2023-06-18 13:17:40.000000000 +0900
++++ src/octetos-core-2.62.1-beta/src/shell.cc	2026-06-18 22:39:23.051942600 +0900
+@@ -129,6 +129,8 @@ namespace oct::core
+         setenv(env->name.c_str(), env->value.c_str(), 1);
+ #elif defined(_WIN32) || defined(_WIN64) || defined(WINDOWS_MINGW)
+         _putenv((env->name + "=" + env->value).c_str());
++#elif defined(__CYGWIN__)
++		setenv(env->name.c_str(), env->value.c_str(), 1);
+ #else
+     #error "Pltaforma desconocida"
+ #endif
