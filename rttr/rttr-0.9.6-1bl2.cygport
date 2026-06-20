@@ -1,5 +1,9 @@
 HOMEPAGE="https://github.com/rttrorg/${PN}"
-SRC_URI="https://github.com/rttrorg/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/rttrorg/${PN}/archive/refs/tags/v${PV}.tar.gz"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-8/debian/patches/01-cmake-version.diff
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}%2Bdfsg1-8/debian/patches/02-cmake-triplet.diff
+"
 
 CATEGORY="Libs"
 SUMMARY="C++ Reflection Library"
@@ -8,12 +12,26 @@ computer program to introspect and modify an object at runtime. It is also the
 name of the library itself, which is written in C++ and released as open
 source library."
 
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE.txt"
+
 inherit cmake
 
 CYGCMAKE_ARGS="
 	-DBUILD_DOCUMENTATION:BOOL=OFF
 	-DBUILD_UNIT_TESTS:BOOL=OFF
+	-DVERSION:STRING=${PV}
 "
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	verbose rm -fr usr/share/${PN}
+}
 
 PKG_NAMES="
 	rttr
@@ -24,7 +42,7 @@ rttr_CONTENTS="
 	usr/share
 "
 librttr_core0_9_6_CONTENTS="
-	usr/bin
+	usr/bin/cyg*-${PV}.dll
 "
 librttr_core_devel_CONTENTS="
 	usr/include
