@@ -1,5 +1,5 @@
 HOMEPAGE="https://github.com/nncarlson/${PN}"
-SRC_URI="https://github.com/nncarlson/${PN}/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/nncarlson/${PN}/archive/refs/tags/v${PV}.tar.gz"
 
 CATEGORY="Libs"
 SUMMARY="Modern Fortran interface to the YAJL library"
@@ -8,35 +8,42 @@ the YAJL C library, which is an event-driven parser for JSON data streams.
 JSON is an open standard data interchange format. It is lightweight, easy for
 humans to read and write, and language independent."
 
+LICENSE="MIT"
+LICENSE_SPDX="SPDX-License-Identifier: MIT"
+LICENSE_URI="LICENSE"
+
+BUILD_REQUIRES="
+	libyajl-devel
+"
+
 inherit cmake
 
-CYGCMAKE_GENERATOR="Unix Makefiles" # CMake Error: The Ninja generator does not support Fortran yet.
-
 CYGCMAKE_ARGS="
-	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DSOVERSION:STRING=${PV[1]}
 	-DVERSION:STRING=${PV}
 "
 
 src_test()
 {
 	cd ${B}
-	PATH=${B}/src:${PATH} ctest
+	PATH=${B}/src:${PATH} ninja_test
 }
 
 PKG_NAMES="
 	yajl-fort
-	libyajl_fort0
+	libyajl_fort${PV[1]}
 	libyajl_fort-devel
 "
 yajl_fort_CONTENTS="
 	usr/share
 "
-libyajl_fort0_CONTENTS="
-	usr/bin
+libyajl_fort1_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
 "
 libyajl_fort_devel_CONTENTS="
+	usr/include
 	usr/lib
 "
 yajl_fort_SUMMARY="${SUMMARY} (licensing & readmes)"
-libyajl_fort0_SUMMARY="${SUMMARY} (runtime)"
+libyajl_fort1_SUMMARY="${SUMMARY} (runtime)"
 libyajl_fort_devel_SUMMARY="${SUMMARY} (development)"
