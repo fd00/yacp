@@ -1,0 +1,161 @@
+--- origsrc/libUnihan-0.5.3-Source/CMakeLists.txt	2008-10-20 16:13:07.000000000 +0900
++++ src/libUnihan-0.5.3-Source/CMakeLists.txt	2026-06-26 08:37:14.735613400 +0900
+@@ -1,7 +1,13 @@
+ cmake_minimum_required(VERSION 2.4)
+ if(COMMAND cmake_policy)
+       cmake_policy(SET CMP0003 NEW)
+-      cmake_policy(SET CMP0005 OLD)
++      if(POLICY CMP0005)
++            if(CMAKE_VERSION VERSION_LESS "3.0")
++                  cmake_policy(SET CMP0005 OLD)
++            else()
++                  cmake_policy(SET CMP0005 NEW)
++            endif()
++      endif()
+ endif(COMMAND cmake_policy)
+ 
+ #Project name
+@@ -17,23 +23,23 @@ SET(DB_PRJ_NAME  "UnihanDb")
+ SET(DB_NAME "Unihan.db")
+ 
+ IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
+-    ADD_DEFINITIONS(-DCMAKE_INSTALL_PREFIX='"/usr"')
++    ADD_DEFINITIONS("-DCMAKE_INSTALL_PREFIX=\"/usr\"")
+     SET(CMAKE_INSTALL_PREFIX /usr)
+ ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
+ 
+ IF(NOT DEFINED datadir)
+-    ADD_DEFINITIONS(-Ddatadir='"${CMAKE_INSTALL_PREFIX}/share"')
++    ADD_DEFINITIONS("-Ddatadir=\"${CMAKE_INSTALL_PREFIX}/share\"")
+     SET(datadir ${CMAKE_INSTALL_PREFIX}/share)
+ ENDIF(NOT DEFINED datadir)
+ 
+ IF(NOT DEFINED docdir)
+-    ADD_DEFINITIONS(-Ddocdir='"${datadir}/doc"')
++    ADD_DEFINITIONS("-Ddocdir=\"${datadir}/doc\"")
+     SET(docdir ${datadir}/doc)
+ ENDIF(NOT DEFINED docdir)
+ 
+ 
+ SET(DB_DIR ${datadir}/${DB_PRJ_NAME})
+-ADD_DEFINITIONS(-DUNIHAN_DEFAULT_DB='"${DB_DIR}/${DB_NAME}"')
++ADD_DEFINITIONS("-DUNIHAN_DEFAULT_DB=\"${DB_DIR}/${DB_NAME}\"")
+ 
+ 
+ ###==================================================================
+@@ -86,15 +92,15 @@ ENDIF(EXISTS  DEVELOPER_SETTING)
+ ###==================================================================
+ # Source code subdirectories
+ #
++FIND_PACKAGE(PkgConfig)
++PKG_CHECK_MODULES(GLIB2 glib-2.0)
++PKG_CHECK_MODULES(SQLITE3 sqlite3)
++
+ ADD_SUBDIRECTORY(src bin)
+ ADD_SUBDIRECTORY(test)
+ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+ 
+-FIND_PACKAGE(PkgConfig)
+-PKG_CHECK_MODULES(GLIB2 glib-2.0)
+-PKG_CHECK_MODULES(SQLITE3 sqlite3)
+-
+ CONFIGURE_FILE(Doxyfile.in Doxyfile)
+ CONFIGURE_FILE(UploadPkg.batch.in UploadPkg.batch)
+ 
+@@ -106,8 +112,13 @@ ADD_CUSTOM_TARGET(${DB_NAME}
+ 
+ SET(MAIN_DOCS AUTHORS README ChangeLog NEWS COPYING COPYING.LESSER )
+ 
++IF (CYGWIN)
++INSTALL(FILES ${MAIN_DOCS} 
++    DESTINATION "${docdir}/${PROJECT_NAME}")
++ELSE ()
+ INSTALL(FILES ${MAIN_DOCS} 
+     DESTINATION "${docdir}/${PROJECT_NAME}-${PRJ_VER}")
++ENDIF()
+ 
+ #ADD_CUSTOM_COMMAND(OUTPUT ${DB_NAME}
+ #    COMMAND /bin/ln -sf ${DB_NAME}.${DB_VER} ${DB_NAME}
+@@ -155,7 +166,7 @@ INCLUDE(CPack)
+ # Document generation
+ #
+ FIND_PACKAGE(Doxygen)
+-IF (EXISTS ${DOXYGEN})
++IF (ENABLE_DOCS AND EXISTS ${DOXYGEN})
+   ADD_CUSTOM_TARGET(doxygen    
+     COMMAND "${DOXYGEN}" "Doxyfile"
+     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+@@ -322,3 +333,9 @@ ADD_TEST(toneMark_zhuyin_inputMethod
+ ADD_TEST(toneMark_zhuyin_numberical
+     ${PROJECT_BINARY_DIR}/test/check_toneMark 15 test) 
+ 
++SET(prefix ${CMAKE_INSTALL_PREFIX})
++SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
++SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
++CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libUnihan.pc.in ${CMAKE_BINARY_DIR}/libUnihan.pc @ONLY)
++INSTALL(FILES ${CMAKE_BINARY_DIR}/libUnihan.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
+--- origsrc/libUnihan-0.5.3-Source/libUnihan.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libUnihan-0.5.3-Source/libUnihan.pc.in	2026-06-26 07:56:32.551204700 +0900
+@@ -0,0 +1,11 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libUnihan
++Description: C library for Unihan character database in fifth normal form
++Version: @PRJ_VER@
++Libs: -L${libdir} -lUnihan
++Cflags: -I${includedir}
++Requires: glib-2.0 sqlite3
+--- origsrc/libUnihan-0.5.3-Source/src/CMakeLists.txt	2008-10-20 16:13:07.000000000 +0900
++++ src/libUnihan-0.5.3-Source/src/CMakeLists.txt	2026-06-26 08:37:24.348100800 +0900
+@@ -43,13 +43,14 @@ TARGET_LINK_LIBRARIES(unihan_query Uniha
+ 
+ IF(NOT DEFINED LIB_INSTALL_DIR)
+     SET(LIB_INSTALL_DIR lib)
+-    ADD_DEFINITIONS(-DLIB_INSTALL_DIR='"${LIB_INSTALL_DIR}"')
++    ADD_DEFINITIONS("-DLIB_INSTALL_DIR=\"${LIB_INSTALL_DIR}\"")
+ ENDIF(NOT DEFINED LIB_INSTALL_DIR)
+ 
+ 
+ INSTALL(TARGETS unihan_converter unihan_query Unihan
+      RUNTIME DESTINATION bin
+      LIBRARY DESTINATION ${LIB_INSTALL_DIR}
++     ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+ )
+ 
+ INSTALL(FILES ${DOCUMENTED_HEADERS}
+--- origsrc/libUnihan-0.5.3-Source/src/collection.c	2008-10-20 16:13:07.000000000 +0900
++++ src/libUnihan-0.5.3-Source/src/collection.c	2026-06-26 08:33:54.796571900 +0900
+@@ -224,7 +224,7 @@ g_array_find(GArray *array, gpointer ele
+     return -1;
+ }
+ 
+-GArray *g_array_copy(GArray *dest,GArray *src){
++GArray *g_array_copy2(GArray *dest,GArray *src){
+     if (src==NULL){
+         if (dest){
+             g_array_free(dest,TRUE);
+@@ -232,7 +232,7 @@ GArray *g_array_copy(GArray *dest,GArray
+         return NULL;
+     }
+     if (dest==NULL){
+-        g_error("g_array_copy: dest cannot be null");
++        g_error("g_array_copy2: dest cannot be null");
+     }
+     G_ARRAY_REMOVE_ALL(dest);
+     return G_ARRAY_CONCAT(dest,src);
+--- origsrc/libUnihan-0.5.3-Source/src/collection.h	2008-10-20 16:13:07.000000000 +0900
++++ src/libUnihan-0.5.3-Source/src/collection.h	2026-06-26 08:33:44.357647400 +0900
+@@ -383,7 +383,7 @@ int g_array_find(GArray *array, gpointer
+  * @param src GArray to be copied to.
+  * @return The GArray \a dest.
+  */
+-GArray *g_array_copy(GArray *dest,GArray *src);
++GArray *g_array_copy2(GArray *dest,GArray *src);
+ 
+ #endif /*COLLECTION_H_*/
+ 
