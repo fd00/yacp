@@ -1,6 +1,6 @@
 --- origsrc/anyrpc-1.0.2/CMakeLists.txt	2020-01-01 05:52:48.000000000 +0900
-+++ src/anyrpc-1.0.2/CMakeLists.txt	2020-10-17 22:56:29.154505100 +0900
-@@ -63,7 +63,7 @@ if (MSVC)
++++ src/anyrpc-1.0.2/CMakeLists.txt	2026-06-28 11:18:10.092938100 +0900
+@@ -63,15 +63,11 @@ if (MSVC)
      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc" )
  elseif (MINGW)
      SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -U__STRICT_ANSI__" )
@@ -9,7 +9,15 @@
      SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer" )
      SET( ASAN_LIBRARY asan )
  endif ()
-@@ -90,11 +90,16 @@ endif ()
+ 
+-if (NOT MSVC)
+-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11" )
+-endif ()
+-
+ if (ANYRPC_ASSERT STREQUAL "assert")
+     set(ANYRPC_ASSERT_LEVEL 2)
+ elseif (ANYRPC_ASSERT STREQUAL "throw")
+@@ -90,11 +86,16 @@ endif ()
  CONFIGURE_FILE( "${PROJECT_SOURCE_DIR}/version.h.in"
                  "${PROJECT_SOURCE_DIR}/include/anyrpc/version.h" )
  
@@ -28,7 +36,7 @@
      endif ()
  endif ()
  
-@@ -111,4 +116,12 @@ endif()
+@@ -111,4 +112,12 @@ endif()
  
  install(DIRECTORY include/anyrpc
      DESTINATION "${INCLUDE_INSTALL_DIR}"
@@ -36,14 +44,14 @@
 +    COMPONENT dev
 +    PATTERN ".gitignore" EXCLUDE)
 +
-+SET(prefix ${CMAKE_INSTALL_PREFIX})
-+SET(exec_prefix ${CMAKE_INSTALL_PREFIX})
-+SET(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-+SET(includedir ${CMAKE_INSTALL_PREFIX}/include)
-+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/anyrpc.pc.in ${CMAKE_BINARY_DIR}/anyrpc.pc @ONLY)
-+INSTALL(FILES ${CMAKE_BINARY_DIR}/anyrpc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++configure_file(${CMAKE_SOURCE_DIR}/anyrpc.pc.in ${CMAKE_BINARY_DIR}/anyrpc.pc @ONLY)
++install(FILES ${CMAKE_BINARY_DIR}/anyrpc.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
 --- origsrc/anyrpc-1.0.2/anyrpc.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/anyrpc-1.0.2/anyrpc.pc.in	2020-10-17 23:06:32.380104100 +0900
++++ src/anyrpc-1.0.2/anyrpc.pc.in	2026-06-28 11:09:02.412836900 +0900
 @@ -0,0 +1,11 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -56,14 +64,34 @@
 +Libs: -L${libdir} -lanyrpc
 +Cflags: -I${includedir}
 +Requires: log4cplus
+--- origsrc/anyrpc-1.0.2/cmake/FindMsgpack.cmake	2020-01-01 05:52:48.000000000 +0900
++++ src/anyrpc-1.0.2/cmake/FindMsgpack.cmake	2026-06-28 11:37:43.568917600 +0900
+@@ -34,7 +34,7 @@ if (WIN32)
+ else ()
+ 	# With a Linux build use PkgConfig to help find the correct parameters
+ 	find_package(PkgConfig)
+-	pkg_check_modules(PC_MSGPACK QUIET msgpack)
++	pkg_check_modules(PC_MSGPACK QUIET msgpack-c)
+ 	set(MSGPACK_DEFINITIONS ${PC_MSGPACK_CFLAGS_OTHER})
+ 	
+ 	# Find the header directory
+@@ -50,7 +50,7 @@ else ()
+ 	
+ 	# Try to find a library that was compiled with the same compiler version as we currently use.
+ 	find_library(MSGPACK_LIBRARY_RELEASE
+-		NAMES libjson_linux-gcc-${_gcc_COMPILER_VERSION}_libmt.so libmsgpack.so
++		NAMES libjson_linux-gcc-${_gcc_COMPILER_VERSION}_libmt.so libmsgpack.so libmsgpack-c.dll.a
+ 		HINTS ${PC_MSGPACK_LIBDIR} ${PC_MSGPACK_LIBRARY_DIRS}
+ 		PATHS /usr/lib /usr/local/lib)
+ 	
 --- origsrc/anyrpc-1.0.2/example/CMakeLists.txt	2020-01-01 05:52:48.000000000 +0900
-+++ src/anyrpc-1.0.2/example/CMakeLists.txt	2020-10-17 21:52:16.856700400 +0900
++++ src/anyrpc-1.0.2/example/CMakeLists.txt	2026-06-28 11:37:53.246233200 +0900
 @@ -31,7 +31,10 @@ if (BUILD_PROTOCOL_MESSAGEPACK)
          include_directories(${MSGPACK_INCLUDE_DIRS})
          add_definitions( -DBUILD_WITH_MSGPACK_LIBRARY )
      else ()
 -    	message( STATUS "The external Msgpack library provides checking of results but is not required" )
-+        pkg_check_modules(MSGPACK msgpack)
++        pkg_check_modules(MSGPACK msgpack-c)
 +        if (NOT MSGPACK_FOUND)
 +            message( STATUS "The external Msgpack library provides checking of results but is not required" )
 +        endif()
@@ -71,7 +99,7 @@
  endif ()
      
 --- origsrc/anyrpc-1.0.2/include/anyrpc/logger.h	2020-01-01 05:52:48.000000000 +0900
-+++ src/anyrpc-1.0.2/include/anyrpc/logger.h	2020-10-17 21:53:38.957317500 +0900
++++ src/anyrpc-1.0.2/include/anyrpc/logger.h	2026-06-28 11:09:02.421685100 +0900
 @@ -21,6 +21,8 @@
  #ifndef ANYRPC_LOGGER_H
  #define ANYRPC_LOGGER_H
