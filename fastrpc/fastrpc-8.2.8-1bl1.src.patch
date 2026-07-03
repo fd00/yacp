@@ -1,0 +1,83 @@
+--- origsrc/fastrpc-8.2.8/src/frpcconnector.cc	2025-11-27 01:59:29.000000000 +0900
++++ src/fastrpc-8.2.8/src/frpcconnector.cc	2026-07-03 21:12:30.225561100 +0900
+@@ -35,6 +35,7 @@
+ 
+ #include <sys/types.h>
+ #include <sys/un.h>
++#include <netdb.h>
+ #include <cstring>
+ #include <cerrno>
+ #include <fcntl.h>
+@@ -79,24 +80,7 @@ namespace {
+     };
+ 
+     const char *host_strerror(int num) {
+-        switch (num) {
+-        case HOST_NOT_FOUND:
+-            return "The specified host is unknown";
+-
+-        case NO_ADDRESS:
+-            return "The requested name is valid but does "
+-                "not have an IP address.";
+-
+-        case NO_RECOVERY:
+-            return "A non-recoverable name server error occurred.";
+-
+-        case TRY_AGAIN:
+-            return "A temporary error occurred on an authoritative "
+-                "name server.  Try again later.";
+-
+-        default:
+-            return "Unknown DNS related error.";
+-        }
++        return gai_strerror(num);
+     }
+ 
+     void checkSocket(int &fd)
+@@ -224,18 +208,15 @@ SimpleConnector_t::SimpleConnector_t(con
+                                      bool keepAlive)
+     : Connector_t(url, connectTimeout, keepAlive)
+ {
+-    struct hostent h, *he;
+-    char tmpbuf[1024];
+-    int errcode;
++    struct addrinfo hints;
++    struct addrinfo *res = nullptr;
++    std::memset(&hints, 0, sizeof(hints));
++    hints.ai_family = AF_INET;
++    hints.ai_socktype = SOCK_STREAM;
+ 
++    int errcode = getaddrinfo(url.host.c_str(), nullptr, &hints, &res);
+ 
+-#if (defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))
+-    he = gethostbyname_r(url.host.c_str(), &h, tmpbuf, 1024, &errcode);
+-#else
+-    gethostbyname_r(url.host.c_str(), &h, tmpbuf, 1024, &he, &errcode);
+-#endif
+-
+-    if (!he) {
++    if (errcode || !res) {
+         // oops
+         throw HTTPError_t::format(HTTP_DNS,
+                                   "Cannot resolve host '%s': <%d, %s>.",
+@@ -244,7 +225,8 @@ SimpleConnector_t::SimpleConnector_t(con
+     }
+ 
+     // remember IP address
+-    ipaddr = *reinterpret_cast<in_addr*>(he->h_addr_list[0]);
++    ipaddr = reinterpret_cast<sockaddr_in*>(res->ai_addr)->sin_addr;
++    freeaddrinfo(res);
+ }
+ 
+ SimpleConnector_t::~SimpleConnector_t() {}
+--- origsrc/fastrpc-8.2.8/test/marshallers.cc	2025-11-27 01:59:29.000000000 +0900
++++ src/fastrpc-8.2.8/test/marshallers.cc	2026-07-03 21:22:24.985035300 +0900
+@@ -765,7 +765,7 @@ void runTests(const TestSettings_t &ts)
+ 
+ int main(int argc, const char *argv[]) {
+     try {
+-        doColor = ::isatty(::fileno(::stderr));
++        doColor = ::isatty(::fileno(stderr));
+ 
+         Args_t args(argv + 1, argv + argc);
+         TestSettings_t ts;
