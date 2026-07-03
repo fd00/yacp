@@ -1,0 +1,114 @@
+--- origsrc/stabber/Makefile.am	2026-07-03 15:51:07.000000000 +0900
++++ src/stabber/Makefile.am	2026-07-03 17:27:16.865807700 +0900
+@@ -12,8 +12,9 @@ sources = \
+     src/server/verify.c src/server/verify.h \
+     src/client/stabber.c src/client/stabber.h
+ 
+-libstabber_la_LDFLAGS = 
++libstabber_la_LDFLAGS = -no-undefined
+ libstabber_la_SOURCES = $(sources)
++libstabber_la_CFLAGS = -I$(top_srcdir)/src
+ 
+ include_HEADERS = stabber.h
+ 
+@@ -26,3 +27,6 @@ bin_PROGRAMS = stabber
+ stabber_SOURCES = stabber.c
+ stabber_CFLAGS = -I$(top_srcdir)
+ stabber_LDADD = libstabber.la -lpthread
++
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/stabber/configure.ac	2026-07-03 15:51:07.000000000 +0900
++++ src/stabber/configure.ac	2026-07-03 17:27:16.868370600 +0900
+@@ -48,4 +48,5 @@ AC_SUBST(AM_CPPFLAGS)
+ AC_CHECK_FUNCS([atexit memset strdup strstr])
+ 
+ AC_CONFIG_FILES([Makefile])
++AC_CONFIG_FILES([stabber.pc])
+ AC_OUTPUT
+--- origsrc/stabber/src/server/httpapi.c	2026-07-03 15:51:07.000000000 +0900
++++ src/stabber/src/server/httpapi.c	2026-07-03 17:22:26.666804300 +0900
+@@ -25,9 +25,8 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdio.h>
+-#ifdef PLATFORM_OSX
+ #include <pthread.h>
+-#else
++#if !defined(PLATFORM_OSX) && !defined(__CYGWIN__)
+ #include <sys/prctl.h>
+ #endif
+ 
+@@ -102,6 +101,8 @@ connection_cb(void* cls, struct MHD_Conn
+ {
+ #ifdef PLATFORM_OSX
+     pthread_setname_np("http");
++#elif defined(__CYGWIN__)
++    pthread_setname_np(pthread_self(), "http");
+ #else
+     prctl(PR_SET_NAME, "http");
+ #endif
+--- origsrc/stabber/src/server/log.c	2026-07-03 15:51:07.000000000 +0900
++++ src/stabber/src/server/log.c	2026-07-03 17:22:57.323511800 +0900
+@@ -26,7 +26,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <errno.h>
+-#ifndef PLATFORM_OSX
++#if !defined(PLATFORM_OSX) && !defined(__CYGWIN__)
+ #include <sys/prctl.h>
+ #endif
+ #include <pthread.h>
+@@ -110,7 +110,7 @@ log_println(stbbr_log_t loglevel, const
+     char thr_name[16];
+     memset(thr_name, 0, 16);
+ 
+-#ifdef PLATFORM_OSX
++#if defined(PLATFORM_OSX) || defined(__CYGWIN__)
+     pthread_t self = pthread_self();
+     pthread_getname_np(self, thr_name, 16);
+ #else
+--- origsrc/stabber/src/server/server.c	2026-07-03 15:51:07.000000000 +0900
++++ src/stabber/src/server/server.c	2026-07-03 17:21:16.827890500 +0900
+@@ -29,9 +29,8 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+-#ifdef PLATFORM_OSX
+ #include <pthread.h>
+-#else
++#if !defined(PLATFORM_OSX) && !defined(__CYGWIN__)
+ #include <sys/prctl.h>
+ #endif
+ 
+@@ -334,6 +333,8 @@ server_run(stbbr_log_t loglevel, int *po
+ 
+ #ifdef PLATFORM_OSX
+     pthread_setname_np("main");
++#elif defined(__CYGWIN__)
++    pthread_setname_np(pthread_self(), "main");
+ #else
+     prctl(PR_SET_NAME, "main");
+ #endif
+@@ -471,6 +472,8 @@ _start_server_cb(void* userdata)
+ {
+ #ifdef PLATFORM_OSX
+     pthread_setname_np("stbr");
++#elif defined(__CYGWIN__)
++    pthread_setname_np(pthread_self(), "stbr");
+ #else
+     prctl(PR_SET_NAME, "stbr");
+ #endif
+--- origsrc/stabber/stabber.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/stabber/stabber.pc.in	2026-07-03 17:27:16.840758600 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: stabber
++Description: Stubbed XMPP Server
++Version: @VERSION@
++Libs: -L${libdir} -lstabber
++Cflags: -I${includedir}
