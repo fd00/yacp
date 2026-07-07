@@ -1,0 +1,177 @@
+--- origsrc/hidrd-0.2.0/configure.ac	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/configure.ac	2026-07-06 23:05:18.685260900 +0900
+@@ -28,7 +28,7 @@ AC_CONFIG_MACRO_DIR([m4/autoconf])
+ 
+ # To have empty CFLAGS instead of undefined and '-g -O2' by default
+ CFLAGS=$CFLAGS
+-CFLAGS="-Os -Wall -Wextra -Werror $CFLAGS"
++CFLAGS="-Os -Wall -Wextra $CFLAGS"
+ ABS_SRCDIR=`cd ${srcdir} ; pwd`
+ ABS_BUILDDIR=`pwd`
+ CPPFLAGS="-I${ABS_BUILDDIR} -I${ABS_BUILDDIR}/include -D_GNU_SOURCE -DNDEBUG $CPPFLAGS"
+--- origsrc/hidrd-0.2.0/include/hidrd/fmt/code/snk.h	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/include/hidrd/fmt/code/snk.h	2026-07-07 18:13:58.385245600 +0900
+@@ -34,7 +34,7 @@ extern "C" {
+ #endif
+ 
+ /** Source code sink type */
+-const hidrd_snk_type    hidrd_code_snk;
++extern const hidrd_snk_type    hidrd_code_snk;
+ 
+ /** Source code sink instance */
+ typedef struct hidrd_code_snk_inst {
+--- origsrc/hidrd-0.2.0/include/hidrd/fmt/natv/snk.h	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/include/hidrd/fmt/natv/snk.h	2026-07-07 18:13:19.835814200 +0900
+@@ -34,7 +34,7 @@ extern "C" {
+ #endif
+ 
+ /** Native sink type */
+-const hidrd_snk_type    hidrd_natv_snk;
++extern const hidrd_snk_type    hidrd_natv_snk;
+ 
+ /** Native sink error code */
+ typedef enum hidrd_natv_snk_err {
+--- origsrc/hidrd-0.2.0/include/hidrd/fmt/spec/snk.h	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/include/hidrd/fmt/spec/snk.h	2026-07-07 18:10:54.461194700 +0900
+@@ -51,7 +51,7 @@ extern bool hidrd_spec_snk_flush(hidrd_s
+ extern void hidrd_spec_snk_clnp(hidrd_snk *snk);
+ 
+ /** Specification example sink type */
+-const hidrd_snk_type    hidrd_spec_snk;
++extern const hidrd_snk_type    hidrd_spec_snk;
+ 
+ /** Specification example sink item state table */
+ typedef struct hidrd_spec_snk_state hidrd_spec_snk_state;
+--- origsrc/hidrd-0.2.0/include/hidrd/usage/all.h.m4	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/include/hidrd/usage/all.h.m4	2026-07-07 17:58:56.678536500 +0900
+@@ -68,9 +68,9 @@ extern "C" {
+ #endif
+ 
+ typedef enum hidrd_usage {
+-#define _U(_page, _id) (((HIDRD_USAGE_PAGE_##_page) << 16) | (_id))
++#define _HU(_page, _id) (((HIDRD_USAGE_PAGE_##_page) << 16) | (_id))
+ 
+-    HIDRD_USAGE_UNDEFINED = _U(UNDEFINED, 0x0000),
++    HIDRD_USAGE_UNDEFINED = _HU(UNDEFINED, 0x0000),
+ 
+ 'pushdef(`PAGE',
+ `ifelse(eval(PAGE_ID_NUM(`$2') > 0), 1,
+@@ -81,7 +81,7 @@ typedef enum hidrd_usage {
+     /*
+      * capitalize_first(`$3') page
+      */
+-`#'define _PU(_id) _U(uppercase(`$2'), _id)
++`#'define _PU(_id) _HU(uppercase(`$2'), _id)
+ 
+ sinclude(`db/usage/id_'lowercase($2)`.m4')dnl
+ 
+@@ -91,7 +91,7 @@ popdef(`ID')dnl
+ ')')dnl
+ include(`db/usage/page.m4')dnl
+ popdef(`PAGE')dnl
+-`#undef _U
++`#undef _HU
+ } hidrd_usage;
+ 
+ #define HIDRD_USAGE_MIN 0
+--- origsrc/hidrd-0.2.0/lib/fmt/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/fmt/Makefile.am	2026-07-07 18:05:55.733240700 +0900
+@@ -71,8 +71,8 @@ noinst_HEADERS += xml.h
+ 
+ libhidrd_fmt_la_SOURCES += xml.c
+ libhidrd_fmt_la_CFLAGS = @LIBXML2_CFLAGS@
+-libhidrd_fmt_la_LDFLAGS = @LIBXML2_LIBS@
+-libhidrd_fmt_la_LIBADD += xml/libhidrd_xml.la
++libhidrd_fmt_la_LDFLAGS = -no-undefined
++libhidrd_fmt_la_LIBADD += xml/libhidrd_xml.la @LIBXML2_LIBS@
+ 
+ check_SCRIPTS += hidrd_xml_read_test hidrd_xml_write_test
+ check_PROGRAMS += hidrd_xml_test
+--- origsrc/hidrd-0.2.0/lib/fmt/code/snk.c	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/fmt/code/snk.c	2026-07-07 18:14:05.878460800 +0900
+@@ -28,6 +28,8 @@
+ #include "hidrd/util/buf.h"
+ #include "hidrd/fmt/code/snk.h"
+ 
++const hidrd_snk_type    hidrd_code_snk;
++
+ static bool
+ hidrd_code_snk_init(hidrd_snk *snk, char **perr,
+                     size_t tabstop, bool comments, bool comments_comments)
+--- origsrc/hidrd-0.2.0/lib/fmt/natv/snk.c	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/fmt/natv/snk.c	2026-07-07 18:13:34.881134000 +0900
+@@ -26,6 +26,8 @@
+ 
+ #include "hidrd/fmt/natv/snk.h"
+ 
++const hidrd_snk_type    hidrd_natv_snk;
++
+ static bool
+ hidrd_natv_snk_init(hidrd_snk *snk, char **perr)
+ {
+--- origsrc/hidrd-0.2.0/lib/fmt/spec/snk.c	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/fmt/spec/snk.c	2026-07-07 18:11:40.239162300 +0900
+@@ -28,6 +28,8 @@
+ #include "hidrd/fmt/spec/snk.h"
+ #include "snk/item.h"
+ 
++const hidrd_snk_type    hidrd_spec_snk;
++
+ static char *
+ hidrd_spec_snk_err_to_str(hidrd_spec_snk_err err)
+ {
+--- origsrc/hidrd-0.2.0/lib/item/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/item/Makefile.am	2026-07-07 15:54:57.007980500 +0900
+@@ -34,6 +34,8 @@ libhidrd_item_la_LIBADD = \
+     ../usage/libhidrd_usage.la  \
+     ../util/libhidrd_util.la
+ 
++libhidrd_item_la_LDFLAGS = -no-undefined
++
+ TESTS = hidrd_item_any_test
+ 
+ hidrd_item_any_test_SOURCES = any_test.c
+--- origsrc/hidrd-0.2.0/lib/opt/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/opt/Makefile.am	2026-07-07 15:58:38.695504000 +0900
+@@ -34,6 +34,8 @@ libhidrd_opt_la_SOURCES = \
+ libhidrd_opt_la_LIBADD = \
+     ../util/libhidrd_util.la
+ 
++libhidrd_opt_la_LDFLAGS = -no-undefined
++
+ TESTS = hidrd_opt_test
+ 
+ hidrd_opt_test_SOURCES = test.c
+--- origsrc/hidrd-0.2.0/lib/strm/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/strm/Makefile.am	2026-07-07 16:00:43.198653900 +0900
+@@ -29,6 +29,8 @@ libhidrd_strm_la_LIBADD = \
+     snk/libhidrd_strm_snk.la    \
+     src/libhidrd_strm_src.la
+ 
++libhidrd_strm_la_LDFLAGS = -no-undefined
++
+ TESTS = 
+ 
+ bin_PROGRAMS =
+--- origsrc/hidrd-0.2.0/lib/usage/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/usage/Makefile.am	2026-07-07 15:52:33.838892200 +0900
+@@ -28,6 +28,8 @@ libhidrd_usage_la_SOURCES = \
+ libhidrd_usage_la_LIBADD = \
+     ../util/libhidrd_util.la
+ 
++libhidrd_usage_la_LDFLAGS = -no-undefined
++
+ %.c: %.c.m4 @top_srcdir@/m4/hidrd/*.m4 @top_srcdir@/db/usage/*.m4
+ 	m4 -I "@top_srcdir@" $< > $@
+ 
+--- origsrc/hidrd-0.2.0/lib/util/Makefile.am	2010-05-28 01:36:38.000000000 +0900
++++ src/hidrd-0.2.0/lib/util/Makefile.am	2026-07-07 15:51:20.103953600 +0900
+@@ -36,6 +36,8 @@ if ENABLE_TOKENS
+ libhidrd_util_la_SOURCES += tkn.c
+ endif
+ 
++libhidrd_util_la_LDFLAGS = -no-undefined
++
+ bin_PROGRAMS =
+ check_PROGRAMS = hidrd_num_test hidrd_ttbl_test
+ 
