@@ -1,0 +1,66 @@
+--- origsrc/akt-0.3.3/Makefile	2021-05-05 18:35:51.000000000 +0900
++++ src/akt-0.3.3/Makefile	2026-07-12 17:43:24.554844500 +0900
+@@ -1,18 +1,19 @@
+-CC=gcc
+-CXX=g++
++CC?=gcc
++CXX?=g++
+ 
+ OMP=-fopenmp
+ 
+-CXXFLAGS = -std=c++11 -O2  $(OMP) -mpopcnt
+-CFLAGS = -O2  $(OMP) -mpopcnt
++CXXFLAGS ?= -std=c++11 -O2  
++CXXFLAGS += $(OMP) -mpopcnt
++CFLAGS ?= -O2
++CFLAGS += $(OMP) -mpopcnt
+ 
+ .PHONY: all
+ all: akt
+ 
+ HTSDIR=htslib-1.6
+-include $(HTSDIR)/htslib.mk
+-HTSLIB = $(HTSDIR)/libhts.a
+-IFLAGS = -I$(HTSDIR)  -I./
++HTSLIB = `pkg-config --libs htslib`
++IFLAGS = `pkg-config --cflags htslib` -I./ -I/usr/include/eigen3
+ LFLAGS = -lz -lm  -lpthread
+ 
+ .PHONY: no_omp
+@@ -37,7 +38,7 @@ profile: CFLAGS =  -pg -O2 $(OMP)
+ profile: all
+ 
+ ##generates a version
+-GIT_HASH := $(shell git describe --abbrev=4 --always )
++GIT_HASH ?= $(shell git describe --abbrev=4 --always )
+ BCFTOOLS_VERSION=1.6
+ VERSION = 0.3.3
+ ifneq "$(wildcard .git)" ""
+@@ -65,7 +66,7 @@ reader.o: reader.cpp
+ pedphase.o: pedphase.cpp pedphase.hh utils.hh HaplotypeBuffer.o
+ utils.o: utils.cpp utils.hh
+ HaplotypeBuffer.o: HaplotypeBuffer.cpp HaplotypeBuffer.hh
+-akt: akt.cpp version.hh $(OBJS) $(HTSLIB)
++akt: akt.cpp version.hh $(OBJS)
+ 	$(CXX) $(CXXFLAGS)   -o akt akt.cpp $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS)
+ 
+ .PHONY: clean
+--- origsrc/akt-0.3.3/RandomSVD.hh	2021-05-05 18:35:51.000000000 +0900
++++ src/akt-0.3.3/RandomSVD.hh	2026-07-12 17:50:09.199452600 +0900
+@@ -12,6 +12,16 @@
+ #include "Eigen/Dense"
+ #include "Eigen/Eigenvalues"
+ 
++#if defined(_U)
++#undef _U
++#endif
++#if defined(_S)
++#undef _S
++#endif
++#if defined(_V)
++#undef _V
++#endif
++
+ template<typename MatrixType>    
+ class RandomSVD {
+     typedef typename MatrixType::Scalar Scalar;
