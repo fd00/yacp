@@ -1,0 +1,109 @@
+--- origsrc/gvcfgenotyper-2019.02.26/Makefile	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/Makefile	2026-07-12 17:06:09.739978200 +0900
+@@ -11,11 +11,13 @@ else
+ 	VERSION= -DGG_VERSION=\"$(VERSION_MAJOR)\"
+ endif
+ 
+-CC=gcc
+-CXX=g++
++CC?=gcc
++CXX?=g++
+ 
+-CXXFLAGS= -std=c++11 -O2 $(VERSION)
+-CFLAGS = -O2 $(VERSION)
++CXXFLAGS?= -std=c++11 -O2
++CXXFLAGS+= $(VERSION)
++CFLAGS?= -O2
++CFLAGS+= $(VERSION)
+ 
+ 
+ IFLAGS = -Isrc/cpp/lib/ -Isrc/c/
+@@ -23,17 +25,16 @@ LFLAGS = -lz -lm -lpthread -llzma -lbz2
+ 
+ #testing stuff
+ TESTFLAGS = -I./external/googletest-release-1.8.0//googletest/include/
+-include external/googletest-release-1.8.0//googletest/make/Makefile
+ 
+ #htslib stuff
+ HTSDIR=external/htslib-1.9
+-include $(HTSDIR)/htslib.mk
+-HTSLIB = $(HTSDIR)/libhts.a
+-IFLAGS += -I$(HTSDIR)
++HTSLIB = `pkg-config --libs htslib`
++IFLAGS += `pkg-config --cflags htslib`
+ 
+ # spdlog
+ SPDLOGDIR=external/spdlog
+-IFLAGS += -I$(SPDLOGDIR)
++IFLAGS += `pkg-config --cflags spdlog`
++LFLAGS += `pkg-config --libs spdlog`
+ 
+ #special builds for debugging and profiling
+ debug: CXXFLAGS = -std=c++11 -g -O1 -Wall $(VERSION)
+@@ -62,7 +63,7 @@ build/%.o: src/c/%.c
+ 	$(CC)  $(CFLAGS) $(IFLAGS) -c -o $@ $<
+ 	$(CC) -MT $@ -MM $(CFLAGS) $(IFLAGS) $< -o $@.d
+ 
+-bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp  $(OBJS) $(HTSLIB)
++bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp  $(OBJS)
+ 	$(CXX) $(CXXFLAGS) -o $@   src/cpp/gvcfgenotyper.cpp $(OBJS) $(HTSLIB) $(IFLAGS) $(LFLAGS)
+ bin/test_gvcfgenotyper:  $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
+ 	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) build/gtest.a build/gtest_main.a
+--- origsrc/gvcfgenotyper-2019.02.26/src/cpp/gvcfgenotyper.cpp	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/src/cpp/gvcfgenotyper.cpp	2026-07-12 17:14:31.213698300 +0900
+@@ -3,8 +3,10 @@
+ 
+ #include <sys/time.h>
+ #include <sys/resource.h>
++#include <unistd.h>
+ 
+-#include "spdlog.h"
++#include <spdlog/spdlog.h>
++#include <spdlog/sinks/basic_file_sink.h>
+ #include "string.h"
+ 
+ static void usage()
+--- origsrc/gvcfgenotyper-2019.02.26/src/cpp/lib/GVCFMerger.hh	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/src/cpp/lib/GVCFMerger.hh	2026-07-12 17:09:28.770465000 +0900
+@@ -5,7 +5,7 @@
+ #include <list>
+ #include <stdexcept>
+ 
+-#include "spdlog.h"
++#include <spdlog/spdlog.h>
+ 
+ 
+ extern "C" {
+--- origsrc/gvcfgenotyper-2019.02.26/src/cpp/lib/GVCFReader.hh	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/src/cpp/lib/GVCFReader.hh	2026-07-12 17:08:43.848708200 +0900
+@@ -19,7 +19,7 @@ extern "C" {
+ #include "VariantBuffer.hh"
+ #include "DepthBuffer.hh"
+ 
+-#include "spdlog.h"
++#include <spdlog/spdlog.h>
+ 
+ 
+ class GVCFReader
+--- origsrc/gvcfgenotyper-2019.02.26/src/cpp/lib/Genotype.hh	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/src/cpp/lib/Genotype.hh	2026-07-12 17:07:26.503721700 +0900
+@@ -15,7 +15,7 @@ extern "C" {
+ 
+ #include "multiAllele.hh"
+ #include "ggutils.hh"
+-#include "spdlog.h"
++#include <spdlog/spdlog.h>
+ 
+ //Genotype stores FORMAT/INFO fields from a VCF record for a single sample.
+ //It contains a number of helper functions to manipulate these format/info
+--- origsrc/gvcfgenotyper-2019.02.26/src/cpp/lib/Normaliser.hh	2019-02-26 23:32:28.000000000 +0900
++++ src/gvcfgenotyper-2019.02.26/src/cpp/lib/Normaliser.hh	2026-07-12 17:08:59.987227400 +0900
+@@ -23,7 +23,7 @@ extern "C" {
+ #define MROWS_MERGE  2
+ //end vcf norm stuff
+ 
+-#include "spdlog.h"
++#include <spdlog/spdlog.h>
+ 
+ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &output);
+ 
