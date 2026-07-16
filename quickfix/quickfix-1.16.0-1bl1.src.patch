@@ -1,0 +1,57 @@
+--- origsrc/quickfix-1.16.0/CMakeLists.txt	2026-05-09 12:17:28.000000000 +0900
++++ src/quickfix-1.16.0/CMakeLists.txt	2026-07-17 07:07:44.069676700 +0900
+@@ -123,4 +123,12 @@ file(REMOVE config.h)
+ configure_file(cmake_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/quickfix/config.h @ONLY)
+ 
+ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/spec/ DESTINATION share/quickfix FILES_MATCHING PATTERN "FIX*.xml")
+- 
++
++include(GNUInstallDirs)
++set(prefix ${CMAKE_INSTALL_PREFIX})
++set(exec_prefix ${CMAKE_INSTALL_PREFIX})
++set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
++set(includedir ${CMAKE_INSTALL_PREFIX}/include)
++set(VERSION ${PROJECT_VERSION})
++configure_file(quickfix.pc.in ${CMAKE_CURRENT_BINARY_DIR}/quickfix.pc @ONLY)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/quickfix.pc DESTINATION lib/pkgconfig)
+--- origsrc/quickfix-1.16.0/src/C++/CMakeLists.txt	2026-05-09 12:17:28.000000000 +0900
++++ src/quickfix-1.16.0/src/C++/CMakeLists.txt	2026-07-16 21:43:25.400174500 +0900
+@@ -95,7 +95,7 @@ target_include_directories(${PROJECT_NAM
+ 
+ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${quickfix_VERSION} SOVERSION ${quickfix_VERSION_MAJOR} )
+ 
+-install(TARGETS ${PROJECT_NAME} DESTINATION lib)
++install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
+ 
+ get_target_property(debug_postfix ${PROJECT_NAME} DEBUG_POSTFIX)
+ if(${debug_postfix} STREQUAL debug_postfix-NOTFOUND)
+--- origsrc/quickfix-1.16.0/src/python3/CMakeLists.txt	2026-05-09 12:17:28.000000000 +0900
++++ src/quickfix-1.16.0/src/python3/CMakeLists.txt	2026-07-17 06:40:37.616007400 +0900
+@@ -10,16 +10,23 @@ add_library(${quickfix_python_lib_name}
+ 
+ target_include_directories(${quickfix_python_lib_name} PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src/C++)
+ 
+-target_link_libraries(${quickfix_python_lib_name} ${PROJECT_NAME})
++target_link_libraries(${quickfix_python_lib_name} ${PROJECT_NAME} ${PYTHON_LIBRARY})
+ 
+ if (HAVE_SSL)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SSL=1")
+   target_link_libraries(${quickfix_python_lib_name} ${PROJECT_NAME} ${OPENSSL_LIBRARIES})
+ endif()
+ 
+-set_target_properties(${quickfix_python_lib_name} PROPERTIES VERSION ${quickfix_python_VERSION} SOVERSION ${quickfix_python_VERSION_MAJOR} PREFIX "")
++set_target_properties(${quickfix_python_lib_name} PROPERTIES PREFIX "")
+ 
+-install(TARGETS ${quickfix_python_lib_name} DESTINATION lib/python3)
+-install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/python/ DESTINATION lib/python3
++if (NOT CYGWIN)
++  set_target_properties(${quickfix_python_lib_name} PROPERTIES VERSION ${quickfix_python_VERSION} SOVERSION ${quickfix_python_VERSION_MAJOR})
++endif()
++
++string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*" "\\1"
++       PYTHON_VERSION_MINOR "${PYTHONLIBS_VERSION_STRING}")
++
++install(TARGETS ${quickfix_python_lib_name} RUNTIME DESTINATION lib/python3.${PYTHON_VERSION_MINOR}/quickfix)
++install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/python/ DESTINATION lib/python3.${PYTHON_VERSION_MINOR}/quickfix
+         FILES_MATCHING PATTERN "quickfix*.py"
+         PATTERN test EXCLUDE)
