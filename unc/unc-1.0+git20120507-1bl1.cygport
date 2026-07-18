@@ -1,0 +1,57 @@
+HOMEPAGE="https://github.com/udoprog/${PN}"
+GIT_URI="https://github.com/udoprog/${PN}.git"
+GIT_REV="6238492182785d282af7af03fa2aaceaf1fd8df4"
+
+CATEGORY="Libs"
+SUMMARY="Lightweight c++ unicode library"
+DESCRIPTION="UNC is a lightweight and simple unicode library."
+
+LICENSE="LicenseRef-Unknown"
+LICENSE_SPDX="SPDX-License-Identifier: LicenseRef-Unknown"
+# LICENSE_URI=""
+
+inherit cmake
+inherit git
+
+CYGCMAKE_ARGS="
+	-DBUILD_SHARED_LIBS:BOOL=ON
+	-DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5
+	-DSOVERSION:STRING=${PV[1]}
+"
+
+src_compile()
+{
+	cd ${B}
+	: ${CYGCMAKE_GENERATOR=Ninja}
+	cygcmake
+	cygninja
+
+	verbose m4 -DPREFIX=/usr -DVERSION=${PV//+git[0-9]*/} < ${S}/pkgconfig/unc.pc.m4 > ${B}/unc.pc	
+}
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	dopkgconfig unc.pc
+}
+
+PKG_NAMES="
+	unc
+	libunc${PV[1]}
+	libunc-devel
+"
+unc_CONTENTS="
+	usr/share
+"
+libunc1_CONTENTS="
+	usr/bin/cyg*-${PV[1]}.dll
+"
+libunc_devel_CONTENTS="
+	usr/include
+	usr/lib
+"
+unc_SUMMARY="${SUMMARY} (licensing & readmes)"
+libunc1_SUMMARY="${SUMMARY} (runtime)"
+libunc_devel_SUMMARY="${SUMMARY} (development)"
