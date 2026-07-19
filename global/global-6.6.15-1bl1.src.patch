@@ -1,0 +1,49 @@
+--- origsrc/global-6.6.15/configure.ac	2026-06-15 16:29:29.000000000 +0900
++++ src/global-6.6.15/configure.ac	2026-07-19 15:25:43.645190100 +0900
+@@ -168,7 +168,7 @@ AC_CHECK_TYPE(sighandler_t,[],[],[
+ #endif])
+ dnl This test was ripped from gnuplot's configure.in:
+ AC_MSG_CHECKING(for sigsetjmp)
+-AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <setjmp.h>]], [[jmp_buf env; sigsetjmp(env, 1);]])],[AC_MSG_RESULT(yes)
++AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <setjmp.h>]], [[sigjmp_buf env; sigsetjmp(env, 1);]])],[AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_SIGSETJMP,1,
+              [ Define if we have sigsetjmp(). ])],[AC_MSG_RESULT(no)])
+ 
+@@ -186,7 +186,7 @@ dnl esac
+ dnl #### end of gtags-cscope ###
+ 
+ AM_CPPFLAGS='-I$(top_srcdir)/libparser $(LTDLINCL) -I$(top_srcdir)/libutil -I$(top_srcdir)/libdb -I$(top_srcdir)/libglibc -I../libutil'
+-DBLIBRARY='../libdb/libglodb.a'
++DBLIBRARY='../libdb/libglodb.la'
+ 
+ dnl
+ dnl This option is for debugging GLOBAL. Not for normal use.
+@@ -245,7 +245,8 @@ AC_ARG_WITH(sqlite3,
+ 			fi
+                         if ! test -r "$withval/lib/libsqlite3.so" \
+                             && ! test -r "$withval/lib64/libsqlite3.so" \
+-                            && ! test -r "$withval/lib/libsqlite3.dylib"; then
++                            && ! test -r "$withval/lib/libsqlite3.dylib" \
++                            && ! test -r "$withval/lib/libsqlite3.dll.a"; then
+                                 AC_MSG_ERROR([library $withval/lib*/libsqlite3.* not found.])
+ 			fi
+ 			AM_CONDITIONAL(USE_SQLITE3_VENDORED, false)
+--- origsrc/global-6.6.15/libdb/Makefile.am	2026-06-15 16:29:29.000000000 +0900
++++ src/global-6.6.15/libdb/Makefile.am	2026-07-19 15:07:12.858680200 +0900
+@@ -10,7 +10,7 @@
+ # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+ # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ #
+-noinst_LIBRARIES = libglodb.a
++noinst_LTLIBRARIES = libglodb.la
+ 
+ INCS = btree.h db.h extern.h mpool.h queue.h compat.h
+ SRCS = bt_close.c bt_conv.c bt_debug.c bt_delete.c bt_get.c bt_open.c bt_overflow.c \
+@@ -23,5 +23,5 @@ AM_CPPFLAGS += -DSQLITE_THREADSAFE=0 -DS
+ endif
+ 
+ noinst_HEADERS = $(INCS)
+-libglodb_a_SOURCES = $(SRCS)
+-libglodb_a_DEPENDENCIES = $(libglodb_a_LIBADD)
++libglodb_la_SOURCES = $(SRCS)
++libglodb_la_DEPENDENCIES = $(libglodb_a_LIBADD)
