@@ -1,0 +1,27 @@
+--- origsrc/leela-zero/CMakeLists.txt	2026-07-24 13:04:17.705759100 +0900
++++ src/leela-zero/CMakeLists.txt	2026-07-24 14:03:28.123465100 +0900
+@@ -19,7 +19,10 @@ include(GNUInstallDirs)
+ 
+ project(leelaz)
+ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+-add_subdirectory(gtest EXCLUDE_FROM_ALL) # We don't want to install gtest, exclude it from `all`
++find_package(gtest)
++if (NOT GTEST_FOUND)
++  add_subdirectory(gtest EXCLUDE_FROM_ALL) # We don't want to install gtest, exclude it from `all`
++endif()
+ 
+ # Required Packages
+ set(Boost_MIN_VERSION "1.58.0")
+@@ -143,7 +146,11 @@ target_link_libraries(tests ${Boost_LIBR
+ target_link_libraries(tests ${BLAS_LIBRARIES})
+ target_link_libraries(tests ${OpenCL_LIBRARIES})
+ target_link_libraries(tests ${ZLIB_LIBRARIES})
+-target_link_libraries(tests gtest_main ${CMAKE_THREAD_LIBS_INIT})
++if (GTEST_FOUND)
++  target_link_libraries(tests GTest::gtest GTest::gtest_main ${CMAKE_THREAD_LIBS_INIT})
++else()
++  target_link_libraries(tests gtest_main ${CMAKE_THREAD_LIBS_INIT})
++endif()
+ 
+ include(GetGitRevisionDescription)
+ git_describe(VERSION --tags)

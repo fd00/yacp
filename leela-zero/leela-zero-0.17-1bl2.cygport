@@ -1,0 +1,53 @@
+HOMEPAGE="https://github.com/${PN}/${PN}"
+GIT_URI="https://github.com/${PN}/${PN}.git"
+GIT_TAG="v${PV}"
+PATCH_URI="
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.3/debian/patches/default-bin-path.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.3/debian/patches/find-eigen3.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.3/debian/patches/cmake-4.patch
+	https://sources.debian.org/data/main/${PN:0:1}/${PN}/${PV}-1.3/debian/patches/boost1.90.patch
+"
+
+CATEGORY="Games"
+SUMMARY="Go engine with no human-provided knowledge"
+DESCRIPTION="Go engine with no human-provided knowledge, modeled after the AlphaGo Zero
+paper."
+
+LICENSE="GPL-3.0-or-later"
+LICENSE_SPDX="SPDX-License-Identifier: GPL-3.0-or-later"
+LICENSE_URI="COPYING"
+
+BUILD_REQUIRES="
+	libboost-devel
+	libgtest-devel
+	libOpenCL-devel
+	libQt5Core-devel
+	zlib-devel
+"
+
+inherit cmake
+inherit git
+
+src_test()
+{
+	cd ${B}
+	ln -fs ${S}/src .
+	pushd gtest
+		verbose ../tests.exe
+	popd
+	rm -f src
+}
+
+DOCS="
+	FAQ.md
+"
+
+src_install()
+{
+	cd ${B}
+	ninja_install
+
+	cd ${D}
+	verbose mkdir -p usr/lib/leelaz
+	verbose mv usr/bin/*.exe usr/lib/leelaz/
+}
