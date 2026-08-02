@@ -1,0 +1,43 @@
+--- origsrc/COSTA-2.3.2/miniapps/CMakeLists.txt	2026-04-19 05:34:56.000000000 +0900
++++ src/COSTA-2.3.2/miniapps/CMakeLists.txt	2026-08-02 14:51:46.160287800 +0900
+@@ -15,6 +15,7 @@ set(scalapack_executables "pxtran_miniap
+ 
+ foreach(exec ${scalapack_executables})
+     add_executable(${exec} "${exec}.cpp")
++    target_include_directories(${exec} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+     target_link_libraries(${exec} PRIVATE costa_prefixed_scalapack cxxopts::cxxopts)
+     if (COSTA_WITH_PROFILING)
+         target_link_libraries(${exec} PRIVATE semiprof::semiprof)
+--- origsrc/COSTA-2.3.2/src/costa/CMakeLists.txt	2026-04-19 05:34:56.000000000 +0900
++++ src/COSTA-2.3.2/src/costa/CMakeLists.txt	2026-08-02 15:09:51.078632800 +0900
+@@ -65,6 +65,10 @@ target_link_libraries(costa PUBLIC MPI::
+ 
+ set_property(TARGET costa PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
++if (DEFINED SOVERSION)
++  set_target_properties(costa PROPERTIES SOVERSION ${SOVERSION})
++endif()
++
+ if(COSTA_WITH_PROFILING)
+   target_compile_definitions(costa PUBLIC COSTA_WITH_PROFILING)
+ endif()
+@@ -84,6 +88,11 @@ if(NOT COSTA_SCALAPACK STREQUAL "OFF")
+   set_property(TARGET costa_prefixed_scalapack PROPERTY POSITION_INDEPENDENT_CODE ON)
+   set_property(TARGET costa_scalapack PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
++  if (DEFINED SOVERSION)
++    set_target_properties(costa_prefixed_scalapack PROPERTIES SOVERSION ${SOVERSION})
++    set_target_properties(costa_scalapack PROPERTIES SOVERSION ${SOVERSION})
++  endif()
++
+   target_link_libraries(costa_scalapack PUBLIC costa
+     costa::scalapack::scalapack
+     $<$<BOOL:${COSTA_WITH_PROFILING}>:semiprof::semiprof>)
+@@ -106,6 +115,7 @@ endif()
+ 
+ install(TARGETS ${INSTALLED_TARGETS_LIST}
+   EXPORT costa_targets
++  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+   INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
