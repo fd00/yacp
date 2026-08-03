@@ -1,0 +1,51 @@
+--- origsrc/cpi-2.2.4/global.h	2026-06-21 21:48:00.000000000 +0900
++++ src/cpi-2.2.4/global.h	2026-08-02 22:58:13.847984900 +0900
+@@ -6,6 +6,7 @@
+ #include <unistd.h>
+ #include <poll.h>
+ #endif
++#include <memory>
+ 
+ namespace cpi {
+ 
+--- origsrc/cpi-2.2.4/main.cpp	2026-06-21 21:48:00.000000000 +0900
++++ src/cpi-2.2.4/main.cpp	2026-08-02 23:06:47.786745500 +0900
+@@ -131,6 +131,10 @@ static void watchUnixSignal(int sig)
+ }
+ #endif
+ 
++#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
++using qsizetype = int;
++#endif
++
+ static bool isAsciiAt(const QString &s, qsizetype pos)
+ {
+     return pos >= 0 && pos < s.size() && s.at(pos).unicode() < 0x80;
+@@ -398,7 +402,7 @@ static int interpreter()
+             return;
+         }
+ 
+-        QStringList lineList = lines.split(QRegularExpression(R"(\R)"), Qt::SkipEmptyParts);
++        QStringList lineList = lines.split(QRegularExpression(R"(\R)"), SkipEmptyParts);
+         for (const auto &line : lineList) {
+             if (line.startsWith('#') || line.startsWith("using ")) {
+                 headers << line;
+--- origsrc/cpi-2.2.4/ptyprocess.cpp	2026-06-21 21:48:00.000000000 +0900
++++ src/cpi-2.2.4/ptyprocess.cpp	2026-08-02 23:08:12.962258500 +0900
+@@ -125,14 +125,14 @@ bool PtyProcess::waitForFinished(int mse
+ 
+         struct pollfd pfd {
+             .fd = _fd,
+-            .events = POLL_IN | POLL_HUP | POLL_ERR,
++            .events = POLLIN | POLLHUP | POLLERR,
+             .revents = 0
+         };
+ 
+         int r = epoll(&pfd, 1, timeout);
+ 
+         if (r > 0) {
+-            if (pfd.revents & (POLL_IN | POLL_HUP | POLL_ERR)) {
++            if (pfd.revents & (POLLIN | POLLHUP | POLLERR)) {
+                 readFromPty();
+             }
+ 
