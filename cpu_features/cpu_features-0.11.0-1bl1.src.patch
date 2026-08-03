@@ -1,17 +1,6 @@
---- origsrc/cpu_features-0.10.1/CMakeLists.txt	2025-05-13 18:53:21.000000000 +0900
-+++ src/cpu_features-0.10.1/CMakeLists.txt	2025-06-01 22:56:30.804315800 +0900
-@@ -178,6 +178,10 @@ target_include_directories(cpu_features
-   PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cpu_features>
- )
- 
-+if (DEFINED SOVERSION)
-+  set_target_properties(cpu_features PROPERTIES SOVERSION "${SOVERSION}")
-+endif()
-+
- if(APPLE)
-   target_compile_definitions(cpu_features PRIVATE HAVE_SYSCTLBYNAME)
- endif()
-@@ -211,40 +215,43 @@ if(BUILD_TESTING)
+--- origsrc/cpu_features-0.11.0/CMakeLists.txt	2026-08-03 20:33:12.365883600 +0900
++++ src/cpu_features-0.11.0/CMakeLists.txt	2026-08-03 20:33:13.840350600 +0900
+@@ -211,40 +211,43 @@ if(BUILD_TESTING)
    # found.
    enable_language(CXX)
  
@@ -29,6 +18,15 @@
 -
 -    if(result)
 -      message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+-    endif()
+-
+-    execute_process(
+-      COMMAND ${CMAKE_COMMAND} --build .
+-      RESULT_VARIABLE result
+-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
+-
+-    if(result)
+-      message(FATAL_ERROR "Build step for googletest failed: ${result}")
 +  find_package(gtest)
 +  if (NOT GTEST_FOUND)
 +    if(NOT TARGET gtest OR NOT TARGET gmock_main)
@@ -67,15 +65,6 @@
 +                      EXCLUDE_FROM_ALL)
      endif()
 -
--    execute_process(
--      COMMAND ${CMAKE_COMMAND} --build .
--      RESULT_VARIABLE result
--      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download)
--
--    if(result)
--      message(FATAL_ERROR "Build step for googletest failed: ${result}")
--    endif()
--
 -    # Prevent overriding the parent project's compiler/linker settings on
 -    # Windows.
 -    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -88,7 +77,7 @@
    endif()
  
    add_subdirectory(test)
-@@ -297,3 +304,10 @@ if(ENABLE_INSTALL)
+@@ -297,3 +300,10 @@ if(ENABLE_INSTALL)
      COMPONENT Devel
    )
  endif()
@@ -99,8 +88,8 @@
 +set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 +configure_file(${CMAKE_SOURCE_DIR}/cpu_features.pc.in ${CMAKE_BINARY_DIR}/cpu_features.pc @ONLY)
 +install(FILES ${CMAKE_BINARY_DIR}/cpu_features.pc DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig)
---- origsrc/cpu_features-0.10.1/cpu_features.pc.in	1970-01-01 09:00:00.000000000 +0900
-+++ src/cpu_features-0.10.1/cpu_features.pc.in	2025-06-01 22:56:43.933305800 +0900
+--- origsrc/cpu_features-0.11.0/cpu_features.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/cpu_features-0.11.0/cpu_features.pc.in	2026-08-03 20:33:13.844379400 +0900
 @@ -0,0 +1,10 @@
 +prefix=@prefix@
 +exec_prefix=@exec_prefix@
@@ -112,8 +101,8 @@
 +Version: @PROJECT_VERSION@
 +Libs: -L${libdir} -lcpu_features
 +Cflags: -I${includedir}
---- origsrc/cpu_features-0.10.1/src/impl_x86_linux_or_android.c	2025-05-13 18:53:21.000000000 +0900
-+++ src/cpu_features-0.10.1/src/impl_x86_linux_or_android.c	2025-06-01 22:48:59.150217100 +0900
+--- origsrc/cpu_features-0.11.0/src/impl_x86_linux_or_android.c	2026-06-01 21:49:57.000000000 +0900
++++ src/cpu_features-0.11.0/src/impl_x86_linux_or_android.c	2026-08-03 20:33:13.846393600 +0900
 @@ -15,7 +15,7 @@
  #include "cpu_features_macros.h"
  
@@ -123,8 +112,8 @@
  
  #include "impl_x86__base_implementation.inl"
  
---- origsrc/cpu_features-0.10.1/test/CMakeLists.txt	2025-05-13 18:53:21.000000000 +0900
-+++ src/cpu_features-0.10.1/test/CMakeLists.txt	2025-06-01 22:52:48.982604900 +0900
+--- origsrc/cpu_features-0.11.0/test/CMakeLists.txt	2026-06-01 21:49:57.000000000 +0900
++++ src/cpu_features-0.11.0/test/CMakeLists.txt	2026-08-03 20:33:13.854026900 +0900
 @@ -19,7 +19,7 @@ target_compile_features(hwcaps_for_testi
  ##------------------------------------------------------------------------------
  add_library(stack_line_reader ../src/stack_line_reader.c)
