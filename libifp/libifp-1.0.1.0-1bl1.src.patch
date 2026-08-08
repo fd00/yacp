@@ -1,0 +1,72 @@
+--- origsrc/libifp-1.0.1.0/Makefile.am	2026-03-30 08:27:53.000000000 +0900
++++ src/libifp-1.0.1.0/Makefile.am	2026-08-08 18:53:27.825276800 +0900
+@@ -29,3 +29,5 @@ test: check
+ 
+ .PHONY: docs deb test
+ 
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = $(PACKAGE).pc
+--- origsrc/libifp-1.0.1.0/configure.ac	2026-04-11 05:23:57.000000000 +0900
++++ src/libifp-1.0.1.0/configure.ac	2026-08-08 18:52:05.515741700 +0900
+@@ -4,7 +4,7 @@ AC_CONFIG_SRCDIR([configure.ac])
+ #The automake documentation says this is a no-no, but I don't understand
+ #what the alternative is.
+ #Commented out until I can find out what the portable alternative is.
+-CFLAGS="$CFLAGS -g -O2 -Wall -W -Wno-unused-parameter"
++#CFLAGS="$CFLAGS -g -O2 -Wall -W -Wno-unused-parameter"
+ ##CFLAGS="-g -O2 -Wall -W"
+ 
+ AM_INIT_AUTOMAKE
+@@ -174,6 +174,7 @@ AC_CONFIG_FILES([docs/doxygen.cfg:docs/d
+ AC_CONFIG_FILES(examples/Makefile)
+ AC_CONFIG_FILES(kbuild/Makefile)
+ AC_CONFIG_FILES(src/Makefile)
++AC_CONFIG_FILES([libifp.pc])
+ AC_OUTPUT
+ 
+ echo ""
+--- origsrc/libifp-1.0.1.0/examples/ifpline.c	2026-01-12 03:48:23.000000000 +0900
++++ src/libifp-1.0.1.0/examples/ifpline.c	2026-08-08 18:38:22.711869900 +0900
+@@ -22,6 +22,7 @@ static const char rcsid[] = "$Id: ifplin
+ #include <fts.h>
+ #include <unistd.h>
+ #include <usb.h>
++#include <limits.h>
+ 
+ #include "ifp.h"
+ 
+--- origsrc/libifp-1.0.1.0/libifp.pc.in	1970-01-01 09:00:00.000000000 +0900
++++ src/libifp-1.0.1.0/libifp.pc.in	2026-08-08 18:52:05.487968200 +0900
+@@ -0,0 +1,10 @@
++prefix=@prefix@
++exec_prefix=@exec_prefix@
++libdir=@libdir@
++includedir=@includedir@
++
++Name: libifp
++Description: General-purpose library-driver for iRiver iFP portable audio players
++Version: @VERSION@
++Libs: -L${libdir} -lifp
++Cflags: -I${includedir}
+--- origsrc/libifp-1.0.1.0/src/Makefile.am	2026-03-30 08:27:53.000000000 +0900
++++ src/libifp-1.0.1.0/src/Makefile.am	2026-08-08 18:37:08.438580400 +0900
+@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libifp.la
+ noinst_LTLIBRARIES = libifp_os_iconv.la libifp_os_libusb.la
+ libifp_la_SOURCES = prim.c comp.c readwrite.c userfile.c error_strings.c tuner.c
+ libifp_la_LDFLAGS = -version-info 5:4:1 -no-undefined $(LIBUSB_LIBS) @LIBICONV@
+-libifp_la_LIBADD = libifp_os_iconv.la libifp_os_libusb.la
++libifp_la_LIBADD = libifp_os_iconv.la libifp_os_libusb.la $(LIBUSB)
+ 
+ libifp_os_iconv_la_SOURCES = ifp_os_iconv.c ifp_os_iconv.h
+ libifp_os_iconv_la_CPPFLAGS = -I$(top_srcdir)/include @INCICONV@
+--- origsrc/libifp-1.0.1.0/src/userfile.c	2026-01-12 04:07:18.000000000 +0900
++++ src/libifp-1.0.1.0/src/userfile.c	2026-08-08 18:34:57.179406900 +0900
+@@ -947,7 +947,7 @@ err_0:
+ 	return i;
+ }
+ 
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__CYGWIN__)
+ int file_compare_fts(const FTSENT * const *p1, const FTSENT * const *p2)
+ #else
+ int file_compare_fts(const FTSENT **p1, const FTSENT **p2)
