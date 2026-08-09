@@ -1,0 +1,50 @@
+name: distribute
+
+# When one of dorgann's own PRs (branch name prefixed "dorgann/", body
+# carrying a dorgann-meta HTML comment with an artifact_id -- see
+# fd00/dorgann's build-package.yml) gets merged, tells dorgann to publish
+# that build as a devel package on gh-pages, via a repository_dispatch
+# event. See fd00/dorgann's doc/spec.md 4.4/4.4.1 for the full design
+# (this deliberately supersedes that doc's original "publish is a
+# separate human decision, independent of merge state" stance, for
+# dorgann-created PRs specifically).
+#
+# Runs (and immediately no-ops, via the job's `if:`) on every PR close in
+# this repo, not just dorgann's -- `pull_request`'s `on:` trigger can only
+# filter by base branch, not head branch, so there's no way to restrict
+# the trigger itself to dorgann/* branches; the job-level `if:` is what
+# actually does that filtering.
+#
+# FUTURE: skip dispatching for packages whose LICENSE doesn't permit
+# binary redistribution (not implemented yet).
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  notify:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'dorgann/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract artifact_id and dispatch to dorgann
+        env:
+          GH_TOKEN: ${{ secrets.DORGANN_SECRET }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          meta_json="$(printf '%s' "$BODY" | grep -o '<!-- dorgann-meta: .* -->' | sed -e 's/^<!-- dorgann-meta: //' -e 's/ -->$//')"
+          if [[ -z "$meta_json" ]]; then
+            echo "No dorgann-meta comment found in PR body -- skipping" >&2
+            exit 0
+          fi
+
+          artifact_id="$(printf '%s' "$meta_json" | jq -r '.artifact_id // empty')"
+          if [[ -z "$artifact_id" ]]; then
+            echo "dorgann-meta has no artifact_id -- skipping" >&2
+            exit 0
+          fi
+
+          echo "Dispatching publish-devel to fd00/dorgann for artifact $artifact_id" >&2
+          gh api repos/fd00/dorgann/dispatches \
+            -f event_type=publish-devel \
+            -F "client_payload[artifact_id]=$artifact_id"
