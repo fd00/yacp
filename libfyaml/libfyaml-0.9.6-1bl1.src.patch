@@ -1,0 +1,101 @@
+--- origsrc/libfyaml-0.9.6/CMakeLists.txt	2026-03-15 13:42:42.000000000 +0000
++++ src/libfyaml-0.9.6/CMakeLists.txt	2026-08-29 05:26:37.639086900 +0000
+@@ -227,6 +227,21 @@ else()
+     endif()
+ endif()
+ 
++# xxhash detection via pkg-config
++set(HAVE_XXHASH 0)
++find_package(PkgConfig)
++if(PKG_CONFIG_FOUND)
++    pkg_check_modules(XXHASH libxxhash)
++    if(XXHASH_FOUND)
++        set(HAVE_XXHASH 1)
++        message(STATUS "Found xxhash via pkg-config")
++    else()
++        message(STATUS "xxhash not found via pkg-config; using bundled xxhash")
++    endif()
++else()
++    message(STATUS "pkg-config not found; using bundled xxhash")
++endif()
++
+ # check framework detection - try CMake config first, then pkg-config, then FetchContent
+ # When cross-compiling with wine we skip find_package/pkg-config (those would
+ # find host libraries) and go straight to FetchContent so check is built for
+@@ -866,7 +881,6 @@ set(LIBSRCS
+     src/util/fy-ctype.c
+     src/util/fy-utf8.c
+     src/util/fy-utils.c
+-    src/xxhash/xxhash.c
+     src/thread/fy-thread.c
+     src/allocator/fy-allocator.c
+     src/allocator/fy-allocator-linear.c
+@@ -885,6 +899,11 @@ set(LIBSRCS
+     src/lib/fy-parse-diag.c
+ )
+ 
++# Add bundled xxhash if system xxhash not found
++if(NOT HAVE_XXHASH)
++    list(APPEND LIBSRCS src/xxhash/xxhash.c)
++endif()
++
+ set(LIBHDRSPUB
+     include/libfyaml/libfyaml-util.h
+     include/libfyaml/libfyaml-core.h
+@@ -1105,7 +1124,7 @@ target_include_directories(fyaml_static
+     PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+-        ${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash
++        $<IF:$<BOOL:${HAVE_XXHASH}>,${XXHASH_INCLUDE_DIRS},${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash>
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/thread
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/allocator
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/blake3
+@@ -1114,10 +1133,15 @@ target_include_directories(fyaml_static
+         ${CMAKE_CURRENT_BINARY_DIR}
+ )
+ 
++if(HAVE_XXHASH)
++    target_link_directories(fyaml_static PRIVATE ${XXHASH_LIBRARY_DIRS})
++endif()
++
+ if(NOT WIN32)
+     target_link_libraries(fyaml_static
+         PUBLIC
+             Threads::Threads
++            $<$<BOOL:${HAVE_XXHASH}>:${XXHASH_LIBRARIES}>
+     )
+ endif()
+ 
+@@ -1172,16 +1196,21 @@ target_include_directories(fyaml
+     PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+-        ${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash
++        $<IF:$<BOOL:${HAVE_XXHASH}>,${XXHASH_INCLUDE_DIRS},${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash>
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/thread
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/allocator
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/blake3
+ )
+ 
++if(HAVE_XXHASH)
++    target_link_directories(fyaml PRIVATE ${XXHASH_LIBRARY_DIRS})
++endif()
++
+ if(NOT WIN32)
+     target_link_libraries(fyaml
+         PUBLIC
+             Threads::Threads
++            $<$<BOOL:${HAVE_XXHASH}>:${XXHASH_LIBRARIES}>
+     )
+ else()
+     # Windows needs no extra libraries for threading (uses kernel32)
+@@ -1290,7 +1319,7 @@ set(INTERNAL_TOOL_INCLUDES
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/valgrind
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/lib
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/util
+-    ${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash
++    $<IF:$<BOOL:${HAVE_XXHASH}>,${XXHASH_INCLUDE_DIRS},${CMAKE_CURRENT_SOURCE_DIR}/src/xxhash>
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/thread
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/allocator
+     ${CMAKE_CURRENT_BINARY_DIR}
